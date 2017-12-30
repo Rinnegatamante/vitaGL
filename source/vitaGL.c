@@ -4,23 +4,27 @@
 
 #define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 
-#define TEXTURES_NUM 32
+#define TEXTURES_NUM 32 // Available texture units number
 
+// Non native primitives implemented
 typedef enum SceGxmPrimitiveTypeExtra{
 	SCE_GXM_PRIMITIVE_NONE = 0,
 	SCE_GXM_PRIMITIVE_QUADS = 1
 } SceGxmPrimitiveTypeExtra;
 
+// Vertex list struct
 typedef struct vertexList{
 	vita2d_texture_vertex v;
 	void* next;
 } vertexList;
 
+// Drawing phases for old openGL
 typedef enum glPhase{
 	NONE = 0,
 	MODEL_CREATION = 1
 } glPhase;
 
+// Internal stuffs for vita2d context usage
 static matrix4x4 _vita2d_projection_matrix;
 static matrix4x4 modelview;
 extern SceGxmContext* _vita2d_context;
@@ -33,21 +37,25 @@ extern const SceGxmProgramParameter* _vita2d_colorWvpParam;
 extern const SceGxmProgramParameter* _vita2d_textureWvpParam;
 extern SceGxmProgramParameter* _vita2d_textureTintColorParam;
 
+// Internal stuffs
 static SceGxmPrimitiveType prim;
 static SceGxmPrimitiveTypeExtra prim_extra = SCE_GXM_PRIMITIVE_NONE;
 static vertexList* model = NULL;
 static vertexList* last = NULL;
 static glPhase phase = NONE;
-static GLenum error = GL_NO_ERROR;
-static GLuint textures[TEXTURES_NUM];
-static vita2d_texture* v2d_textures[TEXTURES_NUM];
-static uint8_t texture_init = 1;
-static int8_t texture_unit = -1;
+static uint8_t texture_init = 1; 
 static uint64_t vertex_count = 0;
 static uint8_t v2d_drawing = 0;
-static matrix4x4* matrix = NULL;
 static uint8_t using_texture = 0;
-static uint32_t current_color = 0xFFFFFFFF;
+
+static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
+static GLuint textures[TEXTURES_NUM]; // Textures array
+static vita2d_texture* v2d_textures[TEXTURES_NUM]; // vita2d textures array
+
+static int8_t texture_unit = -1; // Current in-use texture unit
+static matrix4x4* matrix = NULL; // Current in-use matrix mode
+static uint32_t current_color = 0xFFFFFFFF; // Current in-use color
+static GLboolean depth_test_state = 0; // Current state for GL_DEPTH_TEST
 
 GLenum glGetError(void){
 	return error;
@@ -84,6 +92,7 @@ void glEnable(GLenum cap){
 	switch (cap){
 		case GL_DEPTH_TEST:
 			sceGxmSetFrontDepthFunc(_vita2d_context, SCE_GXM_DEPTH_FUNC_LESS);
+			depth_test_state = 1;
 			break;
 	}
 }
@@ -92,6 +101,7 @@ void glDisable(GLenum cap){
 	switch (cap){
 		case GL_DEPTH_TEST:
 			sceGxmSetFrontDepthFunc(_vita2d_context, SCE_GXM_DEPTH_FUNC_ALWAYS);
+			depth_test_state = 0;
 			break;
 	}
 }
@@ -522,4 +532,17 @@ void glDepthFunc(GLenum func){
 			break;
 	}
 	sceGxmSetFrontDepthFunc(_vita2d_context, gxm_func);
+}
+
+GLboolean glIsEnabled(GLenum cap){
+	GLboolean ret = GL_FALSE;
+	switch (cap){
+		case GL_DEPTH_TEST:
+			ret = depth_test_state;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	return ret;
 }

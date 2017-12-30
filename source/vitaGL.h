@@ -160,4 +160,6 @@ void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 
 void glDepthFunc(GLenum func);
 
+GLboolean glIsEnabled(GLenum cap);
+
 #endif
