@@ -60,7 +60,7 @@ void glClear(GLbitfield mask){
 				vita2d_swap_buffers();
 			}
 			vita2d_start_drawing();
-			//vita2d_clear_screen();
+			vita2d_clear_screen();
 			v2d_drawing = 1;
 			break;
 		default:
