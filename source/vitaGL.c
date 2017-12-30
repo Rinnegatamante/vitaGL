@@ -33,19 +33,21 @@ extern const SceGxmProgramParameter* _vita2d_colorWvpParam;
 extern const SceGxmProgramParameter* _vita2d_textureWvpParam;
 extern SceGxmProgramParameter* _vita2d_textureTintColorParam;
 
-SceGxmPrimitiveType prim;
-SceGxmPrimitiveTypeExtra prim_extra = SCE_GXM_PRIMITIVE_NONE;
-vertexList* model = NULL;
-vertexList* last = NULL;
-glPhase phase = NONE;
-GLenum error = GL_NO_ERROR;
-GLuint textures[TEXTURES_NUM];
-vita2d_texture* v2d_textures[TEXTURES_NUM];
-uint8_t texture_init = 1;
-int8_t texture_unit = -1;
-uint64_t vertex_count = 0;
-uint8_t v2d_drawing = 0;
-matrix4x4* matrix = NULL;
+static SceGxmPrimitiveType prim;
+static SceGxmPrimitiveTypeExtra prim_extra = SCE_GXM_PRIMITIVE_NONE;
+static vertexList* model = NULL;
+static vertexList* last = NULL;
+static glPhase phase = NONE;
+static GLenum error = GL_NO_ERROR;
+static GLuint textures[TEXTURES_NUM];
+static vita2d_texture* v2d_textures[TEXTURES_NUM];
+static uint8_t texture_init = 1;
+static int8_t texture_unit = -1;
+static uint64_t vertex_count = 0;
+static uint8_t v2d_drawing = 0;
+static matrix4x4* matrix = NULL;
+static uint8_t using_texture = 0;
+static uint32_t current_color = 0xFFFFFFFF;
 
 GLenum glGetError(void){
 	return error;
@@ -79,7 +81,19 @@ void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha){
 }
 
 void glEnable(GLenum cap){
-	
+	switch (cap){
+		case GL_DEPTH_TEST:
+			sceGxmSetFrontDepthFunc(_vita2d_context, SCE_GXM_DEPTH_FUNC_LESS);
+			break;
+	}
+}
+
+void glDisable(GLenum cap){
+	switch (cap){
+		case GL_DEPTH_TEST:
+			sceGxmSetFrontDepthFunc(_vita2d_context, SCE_GXM_DEPTH_FUNC_ALWAYS);
+			break;
+	}
 }
 
 void glBegin(GLenum mode){
@@ -96,6 +110,12 @@ void glBegin(GLenum mode){
 		case GL_LINES:
 			prim = SCE_GXM_PRIMITIVE_LINES;
 			break;
+		/*case GL_LINE_LOOP:
+			prim = SCE_GXM_PRIMITIVE_LINES;
+			break;
+		case GL_LINE_STRIP:
+			prim = SCE_GXM_PRIMITIVE_LINES;
+			break;*/
 		case GL_TRIANGLES:
 			prim = SCE_GXM_PRIMITIVE_TRIANGLES;
 			break;
@@ -136,8 +156,7 @@ void glEnd(void){
 	sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
 	sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, (const float*)final_mvp_matrix);
 	
-	sceGxmSetFragmentTexture(_vita2d_context, 0, &v2d_textures[texture_unit]->gxm_tex);
-	
+	if (texture_unit >= GL_TEXTURE0) sceGxmSetFragmentTexture(_vita2d_context, 0, &v2d_textures[texture_unit]->gxm_tex);
 	
 	vita2d_texture_vertex* vertices;
 	uint16_t* indices;
@@ -183,6 +202,7 @@ void glEnd(void){
 	
 	model = NULL;
 	vertex_count = 0;
+	using_texture = 0;
 	sceGxmSetVertexStream(_vita2d_context, 0, vertices);
 	sceGxmDraw(_vita2d_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
 	
@@ -344,6 +364,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 }
 
 void glTexCoord2i(GLint s, GLint t){
+	using_texture = 1;
 	if (phase != MODEL_CREATION){
 		error = GL_INVALID_OPERATION;
 		return;
@@ -360,6 +381,19 @@ void glTexCoord2i(GLint s, GLint t){
 }
 
 void glVertex3f(GLfloat x, GLfloat y, GLfloat z){
+	if (phase != MODEL_CREATION){
+		error = GL_INVALID_OPERATION;
+		return;
+	}
+	if (!using_texture){
+		if (model == NULL){ 
+			last = (vertexList*)malloc(sizeof(vertexList));
+			model = last;
+		}else{
+			last->next = (vertexList*)malloc(sizeof(vertexList));
+			last = last->next;
+		}
+	}
 	last->v.x = x;
 	last->v.y = y;
 	last->v.z = z;
@@ -440,4 +474,52 @@ void glTranslatef(GLfloat x,  GLfloat y,  GLfloat z){
 
 void glScalef (GLfloat x, GLfloat y, GLfloat z){
 	matrix4x4_scale(*matrix, x, y, z);
+}
+
+void glColor3f (GLfloat red, GLfloat green, GLfloat blue){
+	uint8_t r, g, b, a;
+	r = red * 255.0f;
+	g = green * 255.0f;
+	b = blue * 255.0f;
+	current_color = RGBA8(r, g, b, 0xFF);
+}
+
+void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha){
+	uint8_t r, g, b, a;
+	r = red * 255.0f;
+	g = green * 255.0f;
+	b = blue * 255.0f;
+	a = alpha * 255.0f;
+	current_color = RGBA8(r, g, b, a);
+}
+
+void glDepthFunc(GLenum func){
+	SceGxmDepthFunc gxm_func;
+	switch (func){
+		case GL_NEVER:
+			gxm_func = SCE_GXM_DEPTH_FUNC_NEVER;
+			break;
+		case GL_LESS:
+			gxm_func = SCE_GXM_DEPTH_FUNC_LESS;
+			break;
+		case GL_EQUAL:
+			gxm_func = SCE_GXM_DEPTH_FUNC_EQUAL;
+			break;
+		case GL_LEQUAL:
+			gxm_func = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
+			break;
+		case GL_GREATER:
+			gxm_func = SCE_GXM_DEPTH_FUNC_GREATER;
+			break;
+		case GL_NOTEQUAL:
+			gxm_func = SCE_GXM_DEPTH_FUNC_NOT_EQUAL;
+			break;
+		case GL_GEQUAL:
+			gxm_func = SCE_GXM_DEPTH_FUNC_GREATER_EQUAL;
+			break;
+		case GL_ALWAYS:
+			gxm_func = SCE_GXM_DEPTH_FUNC_ALWAYS;
+			break;
+	}
+	sceGxmSetFrontDepthFunc(_vita2d_context, gxm_func);
 }

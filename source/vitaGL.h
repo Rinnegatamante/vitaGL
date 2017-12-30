@@ -103,6 +103,17 @@
 #define GL_TEXTURE_MAG_FILTER             0x2800
 #define GL_TEXTURE_MIN_FILTER             0x2801
 
+#define GL_NEVER                          0x0200
+#define GL_LESS                           0x0201
+#define GL_EQUAL                          0x0202
+#define GL_LEQUAL                         0x0203
+#define GL_GREATER                        0x0204
+#define GL_NOTEQUAL                       0x0205
+#define GL_GEQUAL                         0x0206
+#define GL_ALWAYS                         0x0207
+
+#define GL_DEPTH_TEST                     0x0B71
+
 typedef enum GLbitfield{
 	GL_DEPTH_BUFFER_BIT   = 0x00000100,
 	GL_STENCIL_BUFFER_BIT = 0x00000400,
@@ -115,6 +126,7 @@ void glClear(GLbitfield mask);
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 
 void glEnable(GLenum cap);
+void glDisable (GLenum cap);
 
 void glBegin(GLenum mode);
 void glEnd(void);
@@ -142,5 +154,10 @@ void glLoadMatrixf(const GLfloat * m);
 
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
+
+void glColor3f (GLfloat red, GLfloat green, GLfloat blue);
+void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+
+void glDepthFunc(GLenum func);
 
 #endif
