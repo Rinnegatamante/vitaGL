@@ -788,7 +788,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 			matrix4x4_multiply(mvp_matrix, _vita2d_projection_matrix, modelview);
 			matrix4x4_transpose(final_mvp_matrix,mvp_matrix);
 			
-			if (texture_unit >= 0){
+			if (texture_array_state){
 				sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureVertexProgram);
 				sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureFragmentProgram);
 			}else{
@@ -807,7 +807,8 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				int n = 0, quad_n = 0, v_n = 0;
 				uint32_t idx_count = vertex_count = count;
 				uint8_t* ptr = ((uint8_t*)vertex_array.pointer) + (first * ((vertex_array.num * vertex_array.size) + vertex_array.stride));
-			
+				uint8_t* ptr_tex = ((uint8_t*)texture_array.pointer) + (first * ((texture_array.num * texture_array.size) + texture_array.stride));
+				
 				switch (gxm_ep){
 					case SCE_GXM_PRIMITIVE_NONE:
 						vertices = (vita2d_texture_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_texture_vertex), sizeof(vita2d_texture_vertex));
@@ -815,8 +816,10 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 						indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 						for (n=0; n<count; n++){
 							memcpy(&vertices[n], ptr, vertex_array.size * vertex_array.num);
+							memcpy(&vertices[n].u, ptr_tex, vertex_array.size * 2);
 							indices[n] = n;
 							ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
+							ptr_tex += ((texture_array.num * texture_array.size) + texture_array.stride);
 						}
 						break;
 					case SCE_GXM_PRIMITIVE_QUADS:
@@ -828,7 +831,8 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 						for (i=0; i < quad_n; i++){
 							for (j=0; j < 4; j++){
 								memcpy(&vertices[i*4+j], ptr, vertex_array.size * vertex_array.num);
-								ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
+								memcpy(&vertices[n].u, ptr_tex, vertex_array.size * 2);
+								ptr += ((texture_array.num * texture_array.size) + texture_array.stride);
 							}
 							indices[i*6] = i*4;
 							indices[i*6+1] = i*4+1;
