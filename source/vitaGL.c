@@ -3,6 +3,8 @@
 #include "math_utils.h"
 
 #define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
+#define DEG2RAD(deg) ((deg) * M_PI / 180.0)
+#define RAD2DEG(rad) ((rad) * 180.0 / M_PI)
 
 #define TEXTURES_NUM          32 // Available texture units number
 #define MODELVIEW_STACK_DEPTH 32 // Depth of modelview matrix stack
@@ -493,6 +495,23 @@ void glScalef (GLfloat x, GLfloat y, GLfloat z){
 	matrix4x4_scale(*matrix, x, y, z);
 }
 
+void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z){
+	if (phase == MODEL_CREATION){
+		error = GL_INVALID_OPERATION;
+		return;
+	}
+	float rad = DEG2RAD(angle);
+	if (x == 1.0f){
+		matrix4x4_rotate_x(*matrix, rad);
+	}
+	if (y == 1.0f){
+		matrix4x4_rotate_y(*matrix, rad);
+	}
+	if (z == 1.0f){
+		matrix4x4_rotate_z(*matrix, rad);
+	}
+}
+
 void glColor3f (GLfloat red, GLfloat green, GLfloat blue){
 	uint8_t r, g, b, a;
 	r = red * 255.0f;
@@ -565,12 +584,13 @@ void glPushMatrix(void){
 		}
 		matrix4x4_copy(modelview_matrix_stack[modelview_stack_counter++], *matrix);
 	}else if (matrix == &_vita2d_projection_matrix){
-		if (projection_stack_counter >= MODELVIEW_STACK_DEPTH){
+		if (projection_stack_counter >= GENERIC_STACK_DEPTH){
 			error = GL_STACK_OVERFLOW;
 		}
 		matrix4x4_copy(projection_matrix_stack[projection_stack_counter++], *matrix);
 	}
 }
+
 void glPopMatrix(void){
 	if (phase == MODEL_CREATION){
 		error = GL_INVALID_OPERATION;

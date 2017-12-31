@@ -128,7 +128,7 @@ void glClear(GLbitfield mask);
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 
 void glEnable(GLenum cap);
-void glDisable (GLenum cap);
+void glDisable(GLenum cap);
 
 void glBegin(GLenum mode);
 void glEnd(void);
@@ -156,6 +156,7 @@ void glLoadMatrixf(const GLfloat * m);
 
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
+void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z);
 
 void glColor3f (GLfloat red, GLfloat green, GLfloat blue);
 void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
