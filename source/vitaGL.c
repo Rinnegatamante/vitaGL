@@ -495,6 +495,56 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z){
 	vertex_count++;
 }
 
+void glArrayElement(GLint i){
+	if (i < 0){
+		error = GL_INVALID_VALUE;
+		return;
+	}
+	if (vertex_array_state){
+		float coords[3];
+		uint8_t* ptr = ((uint8_t*)vertex_array.pointer) + (i * ((vertex_array.num * vertex_array.size) + vertex_array.stride));
+		memcpy(coords, ptr, vertex_array.size * vertex_array.num);
+		if (texture_array_state){
+			float tex[2];
+			uint8_t* ptr_tex = ((uint8_t*)texture_array.pointer) + (i * ((texture_array.num * texture_array.size) + texture_array.stride));
+			if (model == NULL){ 
+				last = (vertexList*)malloc(sizeof(vertexList));
+				model = last;
+			}else{
+				last->next = (vertexList*)malloc(sizeof(vertexList));
+				last = last->next;
+			}
+			memcpy(tex, ptr_tex, vertex_array.size * 2);
+			last->v.u = tex[0];
+			last->v.v = tex[1];
+			last->v.x = coords[0];
+			last->v.y = coords[1];
+			last->v.z = coords[2];
+		}else if (color_array_state){
+			float clr[4];
+			uint8_t r,g,b,a;
+			clr[3] = 1.0f;
+			uint8_t* ptr_clr = ((uint8_t*)color_array.pointer) + (i * ((color_array.num * color_array.size) + color_array.stride));	
+			if (model == NULL){ 
+				last = (vertexList*)malloc(sizeof(vertexList));
+				model = last;
+			}else{
+				last->next = (vertexList*)malloc(sizeof(vertexList));
+				last = last->next;
+			}
+			memcpy(clr, ptr_clr, color_array.size * color_array.num);
+			r = clr[0] * 255.0f;
+			g = clr[1] * 255.0f;
+			b = clr[2] * 255.0f;
+			a = clr[3] * 255.0f;
+			last->v2.color = RGBA8(r, g, b, a);
+			last->v2.x = coords[0];
+			last->v2.y = coords[1];
+			last->v2.z = coords[2];
+		}
+	}
+}
+
 void glLoadIdentity(void){
 	matrix4x4_identity(*matrix);
 }

@@ -143,6 +143,7 @@ void glTexCoord2i(GLint s, GLint t);
 void glClientActiveTexture(GLenum texture);
 
 void glVertex3f(GLfloat x, GLfloat y, GLfloat z);
+void glArrayElement(GLint i);
 
 void glMatrixMode(GLenum mode);
 void glLoadIdentity(void);
