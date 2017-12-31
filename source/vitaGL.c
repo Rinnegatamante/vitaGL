@@ -70,7 +70,11 @@ static matrix4x4* matrix = NULL; // Current in-use matrix mode
 static uint32_t current_color = 0xFFFFFFFF; // Current in-use color
 static GLboolean depth_test_state = GL_FALSE; // Current state for GL_DEPTH_TEST
 static GLboolean vertex_array_state = GL_FALSE; // Current state for GL_VERTEX_ARRAY
+static GLboolean color_array_state = GL_FALSE; // Current state for GL_COLOR_ARRAY
+static GLboolean texture_array_state = GL_FALSE; // Current state for GL_TEXTURE_COORD_ARRAY
 static vertexArray vertex_array; // Current in-use vertex array
+static vertexArray color_array; // Current in-use color array
+static vertexArray texture_array; // Current in-use texture array
 
 static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH];
 uint8_t modelview_stack_counter = 0;
@@ -694,6 +698,50 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* poin
 	vertex_array.pointer = pointer;
 }
 
+void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer){
+	if ((stride < 0) || ((size < 3) && (size > 4))){
+		error = GL_INVALID_VALUE;
+		return;
+	}
+	switch (type){
+		case GL_FLOAT:
+			color_array.size = sizeof(GLfloat);
+			break;
+		case GL_SHORT:
+			color_array.size = sizeof(GLshort);
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	
+	color_array.num = size;
+	color_array.stride = stride;
+	color_array.pointer = pointer;
+}
+
+void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer){
+	if ((stride < 0) || ((size < 2) && (size > 4))){
+		error = GL_INVALID_VALUE;
+		return;
+	}
+	switch (type){
+		case GL_FLOAT:
+			texture_array.size = sizeof(GLfloat);
+			break;
+		case GL_SHORT:
+			texture_array.size = sizeof(GLshort);
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	
+	texture_array.num = size;
+	texture_array.stride = stride;
+	texture_array.pointer = pointer;
+}
+
 void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 	SceGxmPrimitiveType gxm_p;
 	SceGxmPrimitiveTypeExtra gxm_ep = SCE_GXM_PRIMITIVE_NONE;
@@ -746,7 +794,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 			void* vertex_wvp_buffer;
 			sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
 	
-			if (texture_unit >= 0){
+			if (texture_array_state){
 				sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, (const float*)final_mvp_matrix);
 				sceGxmSetFragmentTexture(_vita2d_context, 0, &v2d_textures[texture_unit]->gxm_tex);
 				vita2d_texture_vertex* vertices;
@@ -792,14 +840,17 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				sceGxmSetVertexStream(_vita2d_context, 0, vertices);
 				sceGxmDraw(_vita2d_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
 				
-			}else{
+			}else if (color_array_state){
 				sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_colorWvpParam, 0, 16, (const float*)final_mvp_matrix);
 				vita2d_color_vertex* vertices;
+				float clr[4];
+				uint8_t r, g, b, a;
+				clr[3] = 1.0f;
 				uint16_t* indices;
 				int n = 0, quad_n = 0, v_n = 0;
 				uint32_t idx_count = vertex_count = count;
 				uint8_t* ptr = ((uint8_t*)vertex_array.pointer) + (first * ((vertex_array.num * vertex_array.size) + vertex_array.stride));
-			
+				uint8_t* ptr_clr = ((uint8_t*)color_array.pointer) + (first * ((color_array.num * color_array.size) + color_array.stride));
 				switch (gxm_ep){
 					case SCE_GXM_PRIMITIVE_NONE:
 						vertices = (vita2d_color_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_color_vertex), sizeof(vita2d_color_vertex));
@@ -807,9 +858,15 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 						indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 						for (n=0; n<count; n++){
 							memcpy(&vertices[n], ptr, vertex_array.size * vertex_array.num);
-							vertices[n].color = current_color;
+							memcpy(clr, ptr_clr, color_array.size * color_array.num);
+							r = clr[0] * 255.0f;
+							g = clr[1] * 255.0f;
+							b = clr[2] * 255.0f;
+							a = clr[3] * 255.0f;
+							vertices[n].color = RGBA8(r, g, b, a);
 							indices[n] = n;
 							ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
+							ptr_clr += ((color_array.num * color_array.size) + color_array.stride);
 						}
 						break;
 					case SCE_GXM_PRIMITIVE_QUADS:
@@ -821,8 +878,14 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 						for (i=0; i < quad_n; i++){
 							for (j=0; j < 4; j++){
 								memcpy(&vertices[i*4+j], ptr, vertex_array.size * vertex_array.num);
-								vertices[n].color = current_color;
+								memcpy(clr, ptr_clr, color_array.size * color_array.num);
+								r = clr[0] * 255.0f;
+								g = clr[1] * 255.0f;
+								b = clr[2] * 255.0f;
+								a = clr[3] * 255.0f;
+								vertices[n].color = RGBA8(r, g, b, a);
 								ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
+								ptr_clr += ((color_array.num * color_array.size) + color_array.stride);
 							}
 							indices[i*6] = i*4;
 							indices[i*6+1] = i*4+1;
@@ -849,6 +912,12 @@ void glEnableClientState(GLenum array){
 		case GL_VERTEX_ARRAY:
 			vertex_array_state = GL_TRUE;
 			break;
+		case GL_COLOR_ARRAY:
+			color_array_state = GL_TRUE;
+			break;
+		case GL_TEXTURE_COORD_ARRAY:
+			texture_array_state = GL_TRUE;
+			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
@@ -859,6 +928,12 @@ void glDisableClientState(GLenum array){
 	switch (array){
 		case GL_VERTEX_ARRAY:
 			vertex_array_state = GL_FALSE;
+			break;
+		case GL_COLOR_ARRAY:
+			color_array_state = GL_FALSE;
+			break;
+		case GL_TEXTURE_COORD_ARRAY:
+			texture_array_state = GL_FALSE;
 			break;
 		default:
 			error = GL_INVALID_ENUM;

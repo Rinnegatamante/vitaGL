@@ -114,6 +114,8 @@
 #define GL_DEPTH_TEST                     0x0B71
 
 #define GL_VERTEX_ARRAY                   0x8074
+#define GL_COLOR_ARRAY                    0x8076
+#define GL_TEXTURE_COORD_ARRAY            0x8078
 
 typedef enum GLbitfield{
 	GL_DEPTH_BUFFER_BIT   = 0x00000100,
@@ -136,12 +138,10 @@ void glGenTextures(GLsizei n, GLuint* textures);
 void glBindTexture(GLenum target, GLuint texture);
 
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid * data);
-
 void glTexParameteri(GLenum target, GLenum pname, GLint param);
+void glTexCoord2i(GLint s, GLint t);
 
 void glVertex3f(GLfloat x, GLfloat y, GLfloat z);
-
-void glTexCoord2i(GLint s, GLint t);
 
 void glMatrixMode(GLenum mode);
 void glLoadIdentity(void);
@@ -150,15 +150,15 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
 void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
 
-void glMultMatrixf(const GLfloat * m);
-void glLoadMatrixf(const GLfloat * m);
+void glMultMatrixf(const GLfloat* m);
+void glLoadMatrixf(const GLfloat* m);
 
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z);
 
-void glColor3f (GLfloat red, GLfloat green, GLfloat blue);
-void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+void glColor3f(GLfloat red, GLfloat green, GLfloat blue);
+void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 
 void glDepthFunc(GLenum func);
 
@@ -167,7 +167,9 @@ GLboolean glIsEnabled(GLenum cap);
 void glPushMatrix(void);
 void glPopMatrix(void);
 
-void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid * pointer);
+void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
+void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
+void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
 void glDrawArrays(GLenum mode, GLint first, GLsizei count);
 
 void glEnableClientState(GLenum array);
