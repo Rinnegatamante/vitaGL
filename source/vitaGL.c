@@ -465,6 +465,11 @@ void glTexCoord2i(GLint s, GLint t){
 	last->v.v = t;
 }
 
+void glClientActiveTexture(GLenum texture){
+	if (texture < GL_TEXTURE0 && texture > GL_TEXTURE0 + TEXTURES_NUM) error = GL_INVALID_ENUM;
+	else texture_unit = texture - GL_TEXTURE0;
+}
+
 void glVertex3f(GLfloat x, GLfloat y, GLfloat z){
 	if (phase != MODEL_CREATION){
 		error = GL_INVALID_OPERATION;
