@@ -19,8 +19,17 @@ typedef enum SceGxmPrimitiveTypeExtra{
 // Vertex list struct
 typedef struct vertexList{
 	vita2d_texture_vertex v;
+	vita2d_color_vertex v2;
 	void* next;
 } vertexList;
+
+// Vertex array attributes struct
+typedef struct vertexArray{
+	GLint size;
+	GLint num;
+	GLsizei stride;
+	const GLvoid* pointer;
+} vertexArray;
 
 // Drawing phases for old openGL
 typedef enum glPhase{
@@ -59,7 +68,9 @@ static vita2d_texture* v2d_textures[TEXTURES_NUM]; // vita2d textures array
 static int8_t texture_unit = -1; // Current in-use texture unit
 static matrix4x4* matrix = NULL; // Current in-use matrix mode
 static uint32_t current_color = 0xFFFFFFFF; // Current in-use color
-static GLboolean depth_test_state = 0; // Current state for GL_DEPTH_TEST
+static GLboolean depth_test_state = GL_FALSE; // Current state for GL_DEPTH_TEST
+static GLboolean vertex_array_state = GL_FALSE; // Current state for GL_VERTEX_ARRAY
+static vertexArray vertex_array; // Current in-use vertex array
 
 static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH];
 uint8_t modelview_stack_counter = 0;
@@ -168,62 +179,113 @@ void glEnd(void){
 	matrix4x4_multiply(mvp_matrix, _vita2d_projection_matrix, modelview);
 	matrix4x4_transpose(final_mvp_matrix,mvp_matrix);
 	
-	sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureVertexProgram);
-	sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureFragmentProgram);
+	if (texture_unit >= 0){
+		sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureVertexProgram);
+		sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureFragmentProgram);
+	}else{
+		sceGxmSetVertexProgram(_vita2d_context, _vita2d_colorVertexProgram);
+		sceGxmSetFragmentProgram(_vita2d_context, _vita2d_colorFragmentProgram);
+	}
 	
 	void* vertex_wvp_buffer;
 	sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
-	sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, (const float*)final_mvp_matrix);
 	
-	if (texture_unit >= GL_TEXTURE0) sceGxmSetFragmentTexture(_vita2d_context, 0, &v2d_textures[texture_unit]->gxm_tex);
+	if (using_texture){
+		sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, (const float*)final_mvp_matrix);
+		sceGxmSetFragmentTexture(_vita2d_context, 0, &v2d_textures[texture_unit]->gxm_tex);
+		vita2d_texture_vertex* vertices;
+		uint16_t* indices;
+		int n = 0, quad_n = 0, v_n = 0;
+		vertexList* object = model;
+		uint32_t idx_count = vertex_count;
 	
-	vita2d_texture_vertex* vertices;
-	uint16_t* indices;
-	int n = 0, quad_n = 0, v_n = 0;
-	vertexList* object = model;
-	uint32_t idx_count = vertex_count;
-	
-	switch (prim_extra){
-		case SCE_GXM_PRIMITIVE_NONE:
-			vertices = (vita2d_texture_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_texture_vertex), sizeof(vita2d_texture_vertex));
-			indices = (uint16_t*)vita2d_pool_memalign(vertex_count * sizeof(uint16_t), sizeof(uint16_t));
-			while (object != NULL){
-				memcpy(&vertices[n], &object->v, sizeof(vita2d_texture_vertex));
-				indices[n] = n;
-				vertexList* old = object;
-				object = object->next;
-				free(old);
-				n++;
-			}
-			break;
-		case SCE_GXM_PRIMITIVE_QUADS:
-			quad_n = vertex_count >> 2;
-			idx_count = quad_n * 6;
-			vertices = (vita2d_texture_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_texture_vertex), sizeof(vita2d_texture_vertex));
-			indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
-			int i, j;
-			for (i=0; i < quad_n; i++){
-				for (j=0; j < 4; j++){
-					memcpy(&vertices[i*4+j], &object->v, sizeof(vita2d_texture_vertex));
+		switch (prim_extra){
+			case SCE_GXM_PRIMITIVE_NONE:
+				vertices = (vita2d_texture_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_texture_vertex), sizeof(vita2d_texture_vertex));
+				indices = (uint16_t*)vita2d_pool_memalign(vertex_count * sizeof(uint16_t), sizeof(uint16_t));
+				while (object != NULL){
+					memcpy(&vertices[n], &object->v, sizeof(vita2d_texture_vertex));
+					indices[n] = n;
 					vertexList* old = object;
 					object = object->next;
 					free(old);
+					n++;
 				}
-				indices[i*6] = i*4;
-				indices[i*6+1] = i*4+1;
-				indices[i*6+2] = i*4+3;
-				indices[i*6+3] = i*4+1;
-				indices[i*6+4] = i*4+2;
-				indices[i*6+5] = i*4+3;
-			}
-			break;
+				break;
+			case SCE_GXM_PRIMITIVE_QUADS:
+				quad_n = vertex_count >> 2;
+				idx_count = quad_n * 6;
+				vertices = (vita2d_texture_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_texture_vertex), sizeof(vita2d_texture_vertex));
+				indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+				int i, j;
+				for (i=0; i < quad_n; i++){
+					for (j=0; j < 4; j++){
+						memcpy(&vertices[i*4+j], &object->v, sizeof(vita2d_texture_vertex));
+						vertexList* old = object;
+						object = object->next;
+						free(old);
+					}
+					indices[i*6] = i*4;
+					indices[i*6+1] = i*4+1;
+					indices[i*6+2] = i*4+3;
+					indices[i*6+3] = i*4+1;
+					indices[i*6+4] = i*4+2;
+					indices[i*6+5] = i*4+3;
+				}
+				break;
+		}
+		sceGxmSetVertexStream(_vita2d_context, 0, vertices);
+		sceGxmDraw(_vita2d_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
+	}else{
+		sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_colorWvpParam, 0, 16, (const float*)final_mvp_matrix);
+		vita2d_color_vertex* vertices;
+		uint16_t* indices;
+		int n = 0, quad_n = 0, v_n = 0;
+		vertexList* object = model;
+		uint32_t idx_count = vertex_count;
+	
+		switch (prim_extra){
+			case SCE_GXM_PRIMITIVE_NONE:
+				vertices = (vita2d_color_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_color_vertex), sizeof(vita2d_color_vertex));
+				indices = (uint16_t*)vita2d_pool_memalign(vertex_count * sizeof(uint16_t), sizeof(uint16_t));
+				while (object != NULL){
+					memcpy(&vertices[n], &object->v2, sizeof(vita2d_color_vertex));
+					indices[n] = n;
+					vertexList* old = object;
+					object = object->next;
+					free(old);
+					n++;
+				}
+				break;
+			case SCE_GXM_PRIMITIVE_QUADS:
+				quad_n = vertex_count >> 2;
+				idx_count = quad_n * 6;
+				vertices = (vita2d_color_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_color_vertex), sizeof(vita2d_color_vertex));
+				indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+				int i, j;
+				for (i=0; i < quad_n; i++){
+					for (j=0; j < 4; j++){
+						memcpy(&vertices[i*4+j], &object->v2, sizeof(vita2d_color_vertex));
+						vertexList* old = object;
+						object = object->next;
+						free(old);
+					}
+					indices[i*6] = i*4;
+					indices[i*6+1] = i*4+1;
+					indices[i*6+2] = i*4+3;
+					indices[i*6+3] = i*4+1;
+					indices[i*6+4] = i*4+2;
+					indices[i*6+5] = i*4+3;
+				}
+				break;
+		}
+		sceGxmSetVertexStream(_vita2d_context, 0, vertices);
+		sceGxmDraw(_vita2d_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
 	}
 	
 	model = NULL;
 	vertex_count = 0;
 	using_texture = 0;
-	sceGxmSetVertexStream(_vita2d_context, 0, vertices);
-	sceGxmDraw(_vita2d_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
 	
 }
 
@@ -412,10 +474,15 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z){
 			last->next = (vertexList*)malloc(sizeof(vertexList));
 			last = last->next;
 		}
+		last->v2.color = current_color;
+		last->v2.x = x;
+		last->v2.y = y;
+		last->v2.z = z;
+	}else{
+		last->v.x = x;
+		last->v.y = y;
+		last->v.z = z;
 	}
-	last->v.x = x;
-	last->v.y = y;
-	last->v.z = z;
 	vertex_count++;
 }
 
@@ -602,5 +669,199 @@ void glPopMatrix(void){
 	}else if (matrix == &_vita2d_projection_matrix){
 		if (projection_stack_counter == 0) error = GL_STACK_UNDERFLOW;
 		else matrix4x4_copy(*matrix, projection_matrix_stack[--projection_stack_counter]);
+	}
+}
+
+void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer){
+	if ((stride < 0) || ((size < 2) && (size > 4))){
+		error = GL_INVALID_VALUE;
+		return;
+	}
+	switch (type){
+		case GL_FLOAT:
+			vertex_array.size = sizeof(GLfloat);
+			break;
+		case GL_SHORT:
+			vertex_array.size = sizeof(GLshort);
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	
+	vertex_array.num = size;
+	vertex_array.stride = stride;
+	vertex_array.pointer = pointer;
+}
+
+void glDrawArrays(GLenum mode, GLint first, GLsizei count){
+	SceGxmPrimitiveType gxm_p;
+	SceGxmPrimitiveTypeExtra gxm_ep = SCE_GXM_PRIMITIVE_NONE;
+	if (vertex_array_state){
+		switch (mode){
+			case GL_POINTS:
+				gxm_p = SCE_GXM_PRIMITIVE_POINTS;
+				break;
+			case GL_LINES:
+				gxm_p = SCE_GXM_PRIMITIVE_LINES;
+				break;
+			/*case GL_LINE_LOOP:
+				gxm_p = SCE_GXM_PRIMITIVE_LINES;
+				break;
+			case GL_LINE_STRIP:
+				gxm_p = SCE_GXM_PRIMITIVE_LINES;
+				break;*/
+			case GL_TRIANGLES:
+				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLES;
+				break;
+			case GL_TRIANGLE_STRIP:
+				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP;
+				break;
+			case GL_TRIANGLE_FAN:
+				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_FAN;
+				break;
+			case GL_QUADS:
+				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLES;
+				gxm_ep = SCE_GXM_PRIMITIVE_QUADS;
+				break;
+			default:
+				error = GL_INVALID_ENUM;
+				break;
+		}
+		if (error == GL_NO_ERROR){
+			matrix4x4 mvp_matrix;
+			matrix4x4 final_mvp_matrix;
+	
+			matrix4x4_multiply(mvp_matrix, _vita2d_projection_matrix, modelview);
+			matrix4x4_transpose(final_mvp_matrix,mvp_matrix);
+			
+			if (texture_unit >= 0){
+				sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureVertexProgram);
+				sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureFragmentProgram);
+			}else{
+				sceGxmSetVertexProgram(_vita2d_context, _vita2d_colorVertexProgram);
+				sceGxmSetFragmentProgram(_vita2d_context, _vita2d_colorFragmentProgram);
+			}
+			
+			void* vertex_wvp_buffer;
+			sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
+	
+			if (texture_unit >= 0){
+				sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, (const float*)final_mvp_matrix);
+				sceGxmSetFragmentTexture(_vita2d_context, 0, &v2d_textures[texture_unit]->gxm_tex);
+				vita2d_texture_vertex* vertices;
+				uint16_t* indices;
+				int n = 0, quad_n = 0, v_n = 0;
+				uint32_t idx_count = vertex_count = count;
+				uint8_t* ptr = ((uint8_t*)vertex_array.pointer) + (first * ((vertex_array.num * vertex_array.size) + vertex_array.stride));
+			
+				switch (gxm_ep){
+					case SCE_GXM_PRIMITIVE_NONE:
+						vertices = (vita2d_texture_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_texture_vertex), sizeof(vita2d_texture_vertex));
+						memset(vertices, 0, (vertex_count * sizeof(vita2d_texture_vertex), sizeof(vita2d_texture_vertex)));
+						indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+						for (n=0; n<count; n++){
+							memcpy(&vertices[n], ptr, vertex_array.size * vertex_array.num);
+							indices[n] = n;
+							ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
+						}
+						break;
+					case SCE_GXM_PRIMITIVE_QUADS:
+						quad_n = vertex_count >> 2;
+						idx_count = quad_n * 6;
+						vertices = (vita2d_texture_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_texture_vertex), sizeof(vita2d_texture_vertex));
+						indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+						int i, j;
+						for (i=0; i < quad_n; i++){
+							for (j=0; j < 4; j++){
+								memcpy(&vertices[i*4+j], ptr, vertex_array.size * vertex_array.num);
+								ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
+							}
+							indices[i*6] = i*4;
+							indices[i*6+1] = i*4+1;
+							indices[i*6+2] = i*4+3;
+							indices[i*6+3] = i*4+1;
+							indices[i*6+4] = i*4+2;
+							indices[i*6+5] = i*4+3;
+						}
+						break;
+					default:
+						break;
+				}
+				
+				sceGxmSetVertexStream(_vita2d_context, 0, vertices);
+				sceGxmDraw(_vita2d_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
+				
+			}else{
+				sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_colorWvpParam, 0, 16, (const float*)final_mvp_matrix);
+				vita2d_color_vertex* vertices;
+				uint16_t* indices;
+				int n = 0, quad_n = 0, v_n = 0;
+				uint32_t idx_count = vertex_count = count;
+				uint8_t* ptr = ((uint8_t*)vertex_array.pointer) + (first * ((vertex_array.num * vertex_array.size) + vertex_array.stride));
+			
+				switch (gxm_ep){
+					case SCE_GXM_PRIMITIVE_NONE:
+						vertices = (vita2d_color_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_color_vertex), sizeof(vita2d_color_vertex));
+						memset(vertices, 0, (vertex_count * sizeof(vita2d_color_vertex), sizeof(vita2d_color_vertex)));
+						indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+						for (n=0; n<count; n++){
+							memcpy(&vertices[n], ptr, vertex_array.size * vertex_array.num);
+							vertices[n].color = current_color;
+							indices[n] = n;
+							ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
+						}
+						break;
+					case SCE_GXM_PRIMITIVE_QUADS:
+						quad_n = vertex_count >> 2;
+						idx_count = quad_n * 6;
+						vertices = (vita2d_color_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_color_vertex), sizeof(vita2d_color_vertex));
+						indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+						int i, j;
+						for (i=0; i < quad_n; i++){
+							for (j=0; j < 4; j++){
+								memcpy(&vertices[i*4+j], ptr, vertex_array.size * vertex_array.num);
+								vertices[n].color = current_color;
+								ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
+							}
+							indices[i*6] = i*4;
+							indices[i*6+1] = i*4+1;
+							indices[i*6+2] = i*4+3;
+							indices[i*6+3] = i*4+1;
+							indices[i*6+4] = i*4+2;
+							indices[i*6+5] = i*4+3;
+						}
+						break;
+					default:
+						break;
+				}
+				
+				sceGxmSetVertexStream(_vita2d_context, 0, vertices);
+				sceGxmDraw(_vita2d_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
+				
+			}
+		}
+	}
+}
+
+void glEnableClientState(GLenum array){
+	switch (array){
+		case GL_VERTEX_ARRAY:
+			vertex_array_state = GL_TRUE;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+}
+
+void glDisableClientState(GLenum array){
+	switch (array){
+		case GL_VERTEX_ARRAY:
+			vertex_array_state = GL_FALSE;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
 	}
 }

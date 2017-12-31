@@ -12,9 +12,6 @@
 #define GLsizei       int32_t
 #define GLenum        uint16_t
 #define GLubyte       uint8_t
-#define GLclampf      float
-#define GLintptrARB   int
-#define GLsizeiptrARB int
 #define GLvoid        void
 #define GLbyte        int8_t
 #define GLboolean     uint8_t
@@ -116,6 +113,8 @@
 
 #define GL_DEPTH_TEST                     0x0B71
 
+#define GL_VERTEX_ARRAY                   0x8074
+
 typedef enum GLbitfield{
 	GL_DEPTH_BUFFER_BIT   = 0x00000100,
 	GL_STENCIL_BUFFER_BIT = 0x00000400,
@@ -167,5 +166,11 @@ GLboolean glIsEnabled(GLenum cap);
 
 void glPushMatrix(void);
 void glPopMatrix(void);
+
+void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid * pointer);
+void glDrawArrays(GLenum mode, GLint first, GLsizei count);
+
+void glEnableClientState(GLenum array);
+void glDisableClientState(GLenum array);
 
 #endif
