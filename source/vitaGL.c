@@ -4,7 +4,9 @@
 
 #define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 
-#define TEXTURES_NUM 32 // Available texture units number
+#define TEXTURES_NUM          32 // Available texture units number
+#define MODELVIEW_STACK_DEPTH 32 // Depth of modelview matrix stack
+#define GENERIC_STACK_DEPTH   2  // Depth of generic matrix stack
 
 // Non native primitives implemented
 typedef enum SceGxmPrimitiveTypeExtra{
@@ -56,6 +58,11 @@ static int8_t texture_unit = -1; // Current in-use texture unit
 static matrix4x4* matrix = NULL; // Current in-use matrix mode
 static uint32_t current_color = 0xFFFFFFFF; // Current in-use color
 static GLboolean depth_test_state = 0; // Current state for GL_DEPTH_TEST
+
+static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH];
+uint8_t modelview_stack_counter = 0;
+static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH];
+uint8_t projection_stack_counter = 0;
 
 GLenum glGetError(void){
 	return error;
@@ -545,4 +552,35 @@ GLboolean glIsEnabled(GLenum cap){
 			break;
 	}
 	return ret;
+}
+
+void glPushMatrix(void){
+	if (phase == MODEL_CREATION){
+		error = GL_INVALID_OPERATION;
+		return;
+	}
+	if (matrix == &modelview){
+		if (modelview_stack_counter >= MODELVIEW_STACK_DEPTH){
+			error = GL_STACK_OVERFLOW;
+		}
+		matrix4x4_copy(modelview_matrix_stack[modelview_stack_counter++], *matrix);
+	}else if (matrix == &_vita2d_projection_matrix){
+		if (projection_stack_counter >= MODELVIEW_STACK_DEPTH){
+			error = GL_STACK_OVERFLOW;
+		}
+		matrix4x4_copy(projection_matrix_stack[projection_stack_counter++], *matrix);
+	}
+}
+void glPopMatrix(void){
+	if (phase == MODEL_CREATION){
+		error = GL_INVALID_OPERATION;
+		return;
+	}
+	if (matrix == &modelview){
+		if (modelview_stack_counter == 0) error = GL_STACK_UNDERFLOW;
+		else matrix4x4_copy(*matrix, modelview_matrix_stack[--modelview_stack_counter]);
+	}else if (matrix == &_vita2d_projection_matrix){
+		if (projection_stack_counter == 0) error = GL_STACK_UNDERFLOW;
+		else matrix4x4_copy(*matrix, projection_matrix_stack[--projection_stack_counter]);
+	}
 }
