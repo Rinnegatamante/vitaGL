@@ -1,3 +1,5 @@
+// Drawing a fullscreen image on screen with glBegin/glEnd
+
 #include <vitaGL.h>
 
 GLint nofcolors = 4;

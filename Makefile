@@ -28,6 +28,8 @@ $(TARGET).a: $(OBJS)
 clean:
 	@rm -rf $(TARGET).a $(TARGET).elf $(OBJS)
 	make -C samples/sample1 clean
+	make -C samples/sample2 clean
+	make -C samples/sample3 clean
 	
 install: $(TARGET).a
 	@mkdir -p $(VITASDK)/$(PREFIX)/lib/
@@ -37,4 +39,8 @@ install: $(TARGET).a
 	
 samples: $(TARGET).a
 	make -C samples/sample1
-	cp "samples/sample1/vitaGL-sample001.vpk" .
+	cp "samples/sample1/vitaGL-Sample001.vpk" .
+	make -C samples/sample2
+	cp "samples/sample2/vitaGL-Sample002.vpk" .
+	make -C samples/sample3
+	cp "samples/sample3/vitaGL-Sample003.vpk" .
