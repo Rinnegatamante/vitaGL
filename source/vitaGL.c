@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <utils.h> // utils.h file from vita2d
 #include "vitaGL.h"
 #include "math_utils.h"
 
@@ -6,9 +7,9 @@
 #define DEG2RAD(deg) ((deg) * M_PI / 180.0)
 #define RAD2DEG(rad) ((rad) * 180.0 / M_PI)
 
-#define TEXTURES_NUM          32 // Available texture units number
-#define MODELVIEW_STACK_DEPTH 32 // Depth of modelview matrix stack
-#define GENERIC_STACK_DEPTH   2  // Depth of generic matrix stack
+#define TEXTURES_NUM          32   // Available texture units number
+#define MODELVIEW_STACK_DEPTH 32   // Depth of modelview matrix stack
+#define GENERIC_STACK_DEPTH   2    // Depth of generic matrix stack
 
 // Non native primitives implemented
 typedef enum SceGxmPrimitiveTypeExtra{
@@ -617,7 +618,7 @@ void glTranslatef(GLfloat x,  GLfloat y,  GLfloat z){
 	matrix4x4_translate(*matrix, x, y, z);
 }
 
-void glScalef (GLfloat x, GLfloat y, GLfloat z){
+void glScalef(GLfloat x, GLfloat y, GLfloat z){
 	matrix4x4_scale(*matrix, x, y, z);
 }
 
@@ -638,7 +639,7 @@ void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z){
 	}
 }
 
-void glColor3f (GLfloat red, GLfloat green, GLfloat blue){
+void glColor3f(GLfloat red, GLfloat green, GLfloat blue){
 	uint8_t r, g, b, a;
 	r = red * 255.0f;
 	g = green * 255.0f;
@@ -646,13 +647,21 @@ void glColor3f (GLfloat red, GLfloat green, GLfloat blue){
 	current_color = RGBA8(r, g, b, 0xFF);
 }
 
-void glColor4f (GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha){
+void glColor3ub(GLubyte red, GLubyte green, GLubyte blue){
+	current_color = RGBA8(red, green, blue, 0xFF);
+}
+
+void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha){
 	uint8_t r, g, b, a;
 	r = red * 255.0f;
 	g = green * 255.0f;
 	b = blue * 255.0f;
 	a = alpha * 255.0f;
 	current_color = RGBA8(r, g, b, a);
+}
+
+void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha){
+	current_color = RGBA8(red, green, blue, alpha);
 }
 
 void glDepthFunc(GLenum func){

@@ -160,7 +160,9 @@ void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z);
 
 void glColor3f(GLfloat red, GLfloat green, GLfloat blue);
+void glColor3ub(GLubyte red, GLubyte green, GLubyte blue);
 void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
 
 void glDepthFunc(GLenum func);
 
