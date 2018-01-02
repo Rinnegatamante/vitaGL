@@ -2,7 +2,6 @@
 
 #define _VITAGL_H_
 #include <vitasdk.h>
-#include <vita2d.h>
 
 #define GLfloat       float
 #define GLint         int32_t
@@ -165,6 +164,7 @@ void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
 
 void glDepthFunc(GLenum func);
+void glClearDepth(GLdouble depth);
 
 GLboolean glIsEnabled(GLenum cap);
 
@@ -178,5 +178,8 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count);
 
 void glEnableClientState(GLenum array);
 void glDisableClientState(GLenum array);
+
+void vglInit(uint32_t gpu_pool_size);
+void vglEnd(void);
 
 #endif

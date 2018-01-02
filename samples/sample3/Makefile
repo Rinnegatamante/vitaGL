@@ -4,10 +4,8 @@ SOURCES		:= .
 			
 INCLUDES	:= include
 
-LIBS = -lvitaGL -lvita2d -lSceLibKernel_stub -lScePvf_stub \
-	-lSceAppMgr_stub -lSceAppUtil_stub -lScePgf_stub \
-	-ljpeg -lfreetype -lc -lSceCommonDialog_stub -lpng16 -lm -lz \
-	-lSceGxm_stub -lSceDisplay_stub -lSceSysmodule_stub \
+LIBS = -lvitaGL -lSceLibKernel_stub -lSceAppMgr_stub -lSceAppUtil_stub \
+	-lc -lSceCommonDialog_stub -lm -lSceGxm_stub -lSceDisplay_stub -lSceSysmodule_stub \
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
 CPPFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.cpp))

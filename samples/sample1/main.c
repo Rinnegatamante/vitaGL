@@ -9,8 +9,7 @@ GLuint texture = 0;
 int main(){
 	
 	// Initializing graphics device
-	vita2d_init_advanced(0x800000);
-	vita2d_set_vblank_wait(0);
+	vglInit(0x800000);
 	
 	// Loading image to use as texture
 	vita2d_texture* v2d_texture = vita2d_load_PNG_file("app0:texture.png");
@@ -48,6 +47,6 @@ int main(){
 		glLoadIdentity();
 	}
 	
-	vita2d_fini();
+	vglEnd();
 	
 }

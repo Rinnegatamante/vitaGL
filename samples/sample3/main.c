@@ -9,9 +9,7 @@ GLuint texture = 0;
 int main(){
 	
 	// Initializing graphics device
-	vita2d_init_advanced(0x800000);
-	vita2d_set_vblank_wait(0);
-	
+	vglInit(0x800000);
 	
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 	glMatrixMode(GL_PROJECTION);
@@ -35,6 +33,6 @@ int main(){
 		glLoadIdentity();
 	}
 	
-	vita2d_fini();
+	vglEnd();
 	
 }

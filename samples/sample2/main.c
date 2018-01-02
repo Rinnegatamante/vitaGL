@@ -8,8 +8,7 @@ float vertices[] = {100, 100, 0, 150, 100, 0, 100, 150, 0};
 int main(){
 	
 	// Initializing graphics device
-	vita2d_init_advanced(0x800000);
-	vita2d_set_vblank_wait(0);
+	vglInit(0x800000);
 	
 	glClearColor (050.0f, 0.0f, 0.0f, 0.0f);
 	glMatrixMode(GL_PROJECTION);
@@ -32,6 +31,6 @@ int main(){
 		glLoadIdentity();
 	}
 	
-	vita2d_fini();
+	vglEnd();
 	
 }

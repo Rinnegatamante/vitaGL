@@ -1,0 +1,9 @@
+float4 main(
+	float3 position : POSITION,
+	uniform float4x4 u_mvp_matrix) : POSITION
+{
+
+	return mul(u_mvp_matrix, float4(position, 1.0f));
+}
+
+

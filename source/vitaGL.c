@@ -1,15 +1,43 @@
 #include <stdlib.h>
-#include <utils.h> // utils.h file from vita2d
 #include "vitaGL.h"
 #include "math_utils.h"
+#include "gpu_utils.h"
 
-#define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 #define DEG2RAD(deg) ((deg) * M_PI / 180.0)
-#define RAD2DEG(rad) ((rad) * 180.0 / M_PI)
+#define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 
 #define TEXTURES_NUM          32   // Available texture units number
 #define MODELVIEW_STACK_DEPTH 32   // Depth of modelview matrix stack
 #define GENERIC_STACK_DEPTH   2    // Depth of generic matrix stack
+#define DISPLAY_WIDTH         960  // Display width in pixels
+#define DISPLAY_HEIGHT        544  // Display height in pixels
+#define DISPLAY_STRIDE        1024 // Display stride in pixels
+#define DISPLAY_BUFFER_COUNT  2    // Display buffers to use
+#define GXM_TEX_MAX_SIZE      4096 // MAximum width/height in pixels per texture
+
+typedef struct clear_vertex{
+	vector2f position;
+} clear_vertex;
+
+typedef struct position_vertex{
+	vector3f position;
+} position_vertex;
+
+typedef struct color_vertex{
+	vector3f position;
+	vector4f color;
+} color_vertex;
+
+typedef struct texture2d_vertex{
+	vector3f position;
+	vector2f texcoord;
+} texture2d_vertex;
+
+typedef struct texture{
+	SceGxmTexture gxm_tex;
+	SceUID data_UID;
+	SceUID palette_UID;
+} texture;
 
 // Non native primitives implemented
 typedef enum SceGxmPrimitiveTypeExtra{
@@ -19,8 +47,8 @@ typedef enum SceGxmPrimitiveTypeExtra{
 
 // Vertex list struct
 typedef struct vertexList{
-	vita2d_texture_vertex v;
-	vita2d_color_vertex v2;
+	texture2d_vertex v;
+	color_vertex v2;
 	void* next;
 } vertexList;
 
@@ -38,18 +66,88 @@ typedef enum glPhase{
 	MODEL_CREATION = 1
 } glPhase;
 
-// Internal stuffs for vita2d context usage
-static matrix4x4 _vita2d_projection_matrix;
-static matrix4x4 modelview;
-extern SceGxmContext* _vita2d_context;
-extern SceGxmVertexProgram* _vita2d_colorVertexProgram;
-extern SceGxmFragmentProgram* _vita2d_colorFragmentProgram;
-extern SceGxmVertexProgram* _vita2d_textureVertexProgram;
-extern SceGxmFragmentProgram* _vita2d_textureFragmentProgram;
-extern SceGxmFragmentProgram* _vita2d_textureTintFragmentProgram;
-extern const SceGxmProgramParameter* _vita2d_colorWvpParam;
-extern const SceGxmProgramParameter* _vita2d_textureWvpParam;
-extern SceGxmProgramParameter* _vita2d_textureTintColorParam;
+struct display_queue_callback_data {
+	void *addr;
+};
+
+// Internal gxm stuffs
+static matrix4x4 projection_matrix;
+static matrix4x4 modelview_matrix;
+static SceGxmContext* gxm_context;
+static SceUID vdm_ring_buffer_uid;
+static void* vdm_ring_buffer_addr;
+static SceUID vertex_ring_buffer_uid;
+static void* vertex_ring_buffer_addr;
+static SceUID fragment_ring_buffer_uid;
+static void* fragment_ring_buffer_addr;
+static SceUID fragment_usse_ring_buffer_uid;
+static void* fragment_usse_ring_buffer_addr;
+static SceGxmRenderTarget* gxm_render_target;
+static SceGxmColorSurface gxm_color_surfaces[DISPLAY_BUFFER_COUNT];
+static SceUID gxm_color_surfaces_uid[DISPLAY_BUFFER_COUNT];
+static void* gxm_color_surfaces_addr[DISPLAY_BUFFER_COUNT];
+static SceGxmSyncObject* gxm_sync_objects[DISPLAY_BUFFER_COUNT];
+static unsigned int gxm_front_buffer_index;
+static unsigned int gxm_back_buffer_index;
+static SceUID gxm_depth_stencil_surface_uid;
+static void* gxm_depth_stencil_surface_addr;
+static SceGxmDepthStencilSurface gxm_depth_stencil_surface;
+static SceGxmShaderPatcher* gxm_shader_patcher;
+static SceUID gxm_shader_patcher_buffer_uid;
+static void* gxm_shader_patcher_buffer_addr;
+static SceUID gxm_shader_patcher_vertex_usse_uid;
+static void* gxm_shader_patcher_vertex_usse_addr;
+static SceUID gxm_shader_patcher_fragment_usse_uid;
+static void* gxm_shader_patcher_fragment_usse_addr;
+
+extern const SceGxmProgram _binary_shaders_clear_v_cg_gxp_start;
+extern const SceGxmProgram _binary_shaders_clear_f_cg_gxp_start;
+extern const SceGxmProgram _binary_shaders_color_v_cg_gxp_start;
+extern const SceGxmProgram _binary_shaders_color_f_cg_gxp_start;
+extern const SceGxmProgram _binary_shaders_texture2d_v_cg_gxp_start;
+extern const SceGxmProgram _binary_shaders_texture2d_f_cg_gxp_start;
+extern const SceGxmProgram _binary_shaders_disable_color_buffer_v_cg_gxp_start;
+extern const SceGxmProgram _binary_shaders_disable_color_buffer_f_cg_gxp_start;
+
+// Disable color buffer shader
+static SceGxmShaderPatcherId disable_color_buffer_vertex_id;
+static SceGxmShaderPatcherId disable_color_buffer_fragment_id;
+static const SceGxmProgramParameter* disable_color_buffer_position;
+static const SceGxmProgramParameter* disable_color_buffer_matrix;
+static SceGxmVertexProgram* disable_color_buffer_vertex_program_patched;
+static SceGxmFragmentProgram* disable_color_buffer_fragment_program_patched;
+static position_vertex* depth_vertices = NULL;
+static uint16_t* depth_indices = NULL;
+static SceUID depth_vertices_uid, depth_indices_uid;
+
+// Clear shader
+static SceGxmShaderPatcherId clear_vertex_id;
+static SceGxmShaderPatcherId clear_fragment_id;
+static const SceGxmProgramParameter* clear_position;
+static const SceGxmProgramParameter* clear_color;
+static SceGxmVertexProgram* clear_vertex_program_patched;
+static SceGxmFragmentProgram* clear_fragment_program_patched;
+static clear_vertex* clear_vertices = NULL;
+static uint16_t* clear_indices = NULL;
+static SceUID clear_vertices_uid, clear_indices_uid;
+
+// Color shader
+static SceGxmShaderPatcherId color_vertex_id;
+static SceGxmShaderPatcherId color_fragment_id;
+static const SceGxmProgramParameter* color_position;
+static const SceGxmProgramParameter* color_color;
+static const SceGxmProgramParameter* color_wvp;
+static SceGxmVertexProgram* color_vertex_program_patched;
+static SceGxmFragmentProgram* color_fragment_program_patched;
+
+// Texture2D shader
+static SceGxmShaderPatcherId texture2d_vertex_id;
+static SceGxmShaderPatcherId texture2d_fragment_id;
+static const SceGxmProgramParameter* texture2d_position;
+static const SceGxmProgramParameter* texture2d_texcoord;
+static const SceGxmProgramParameter* texture2d_wvp;
+static SceGxmVertexProgram* texture2d_vertex_program_patched;
+static SceGxmFragmentProgram* texture2d_fragment_program_patched;
 
 // Internal stuffs
 static SceGxmPrimitiveType prim;
@@ -59,16 +157,19 @@ static vertexList* last = NULL;
 static glPhase phase = NONE;
 static uint8_t texture_init = 1; 
 static uint64_t vertex_count = 0;
-static uint8_t v2d_drawing = 0;
+static uint8_t drawing = 0;
 static uint8_t using_texture = 0;
 
 static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
 static GLuint textures[TEXTURES_NUM]; // Textures array
-static vita2d_texture* v2d_textures[TEXTURES_NUM]; // vita2d textures array
+static texture* gpu_textures[TEXTURES_NUM]; // Textures array
 
+static SceGxmDepthFunc gxm_depth = SCE_GXM_DEPTH_FUNC_ALWAYS; // Current in-use depth test func
+static GLdouble depth_value = 1.0f; // Current depth test value
 static int8_t texture_unit = -1; // Current in-use texture unit
 static matrix4x4* matrix = NULL; // Current in-use matrix mode
-static uint32_t current_color = 0xFFFFFFFF; // Current in-use color
+static vector4f current_color; // Current in-use color
+static vector4f clear_color_val; // Current clear color for glClear
 static GLboolean depth_test_state = GL_FALSE; // Current state for GL_DEPTH_TEST
 static GLboolean vertex_array_state = GL_FALSE; // Current state for GL_VERTEX_ARRAY
 static GLboolean color_array_state = GL_FALSE; // Current state for GL_COLOR_ARRAY
@@ -82,42 +183,505 @@ uint8_t modelview_stack_counter = 0;
 static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH];
 uint8_t projection_stack_counter = 0;
 
+// Internal functions
+static void* shader_patcher_host_alloc_cb(void *user_data, unsigned int size){
+	return malloc(size);
+}
+
+void shader_patcher_host_free_cb(void *user_data, void *mem){
+	return free(mem);
+}
+
+static void display_queue_callback(const void *callbackData){
+	SceDisplayFrameBuf display_fb;
+	const struct display_queue_callback_data *cb_data = callbackData;
+
+	memset(&display_fb, 0, sizeof(display_fb));
+	display_fb.size = sizeof(display_fb);
+	display_fb.base = cb_data->addr;
+	display_fb.pitch = DISPLAY_STRIDE;
+	display_fb.pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
+	display_fb.width = DISPLAY_WIDTH;
+	display_fb.height = DISPLAY_HEIGHT;
+
+	sceDisplaySetFrameBuf(&display_fb, SCE_DISPLAY_SETBUF_NEXTFRAME);
+}
+
+void vglInit(uint32_t gpu_pool_size){
+	
+	SceGxmInitializeParams gxm_init_params;
+	memset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
+	
+	gxm_init_params.flags = 0;
+	gxm_init_params.displayQueueMaxPendingCount = DISPLAY_BUFFER_COUNT - 1;
+	gxm_init_params.displayQueueCallback = display_queue_callback;
+	gxm_init_params.displayQueueCallbackDataSize = sizeof(struct display_queue_callback_data);
+	gxm_init_params.parameterBufferSize = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE;
+	
+	sceGxmInitialize(&gxm_init_params);
+	
+	vdm_ring_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
+		SCE_GXM_MEMORY_ATTRIB_READ, SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE,
+		&vdm_ring_buffer_uid);
+
+	vertex_ring_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
+		SCE_GXM_MEMORY_ATTRIB_READ, SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE,
+		&vertex_ring_buffer_uid);
+
+	fragment_ring_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
+		SCE_GXM_MEMORY_ATTRIB_READ, SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE,
+		&fragment_ring_buffer_uid);
+
+	unsigned int fragment_usse_offset;
+	fragment_usse_ring_buffer_addr = gpu_fragment_usse_alloc_map(
+		SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE,
+		&fragment_ring_buffer_uid, &fragment_usse_offset);
+
+	SceGxmContextParams gxm_context_params;
+	memset(&gxm_context_params, 0, sizeof(gxm_context_params));
+	gxm_context_params.hostMem = malloc(SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
+	gxm_context_params.hostMemSize = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
+	gxm_context_params.vdmRingBufferMem = vdm_ring_buffer_addr;
+	gxm_context_params.vdmRingBufferMemSize = SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE;
+	gxm_context_params.vertexRingBufferMem = vertex_ring_buffer_addr;
+	gxm_context_params.vertexRingBufferMemSize = SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE;
+	gxm_context_params.fragmentRingBufferMem = fragment_ring_buffer_addr;
+	gxm_context_params.fragmentRingBufferMemSize = SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE;
+	gxm_context_params.fragmentUsseRingBufferMem = fragment_usse_ring_buffer_addr;
+	gxm_context_params.fragmentUsseRingBufferMemSize = SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE;
+	gxm_context_params.fragmentUsseRingBufferOffset = fragment_usse_offset;
+
+	sceGxmCreateContext(&gxm_context_params, &gxm_context);
+
+	SceGxmRenderTargetParams render_target_params;
+	memset(&render_target_params, 0, sizeof(render_target_params));
+	render_target_params.flags = 0;
+	render_target_params.width = DISPLAY_WIDTH;
+	render_target_params.height = DISPLAY_HEIGHT;
+	render_target_params.scenesPerFrame = 1;
+	render_target_params.multisampleMode = SCE_GXM_MULTISAMPLE_NONE;
+	render_target_params.multisampleLocations = 0;
+	render_target_params.driverMemBlock = -1;
+	
+	sceGxmCreateRenderTarget(&render_target_params, &gxm_render_target);
+	
+	int i;
+	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
+		gxm_color_surfaces_addr[i] = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
+			SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
+			ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024),
+			&gxm_color_surfaces_uid[i]);
+
+		memset(gxm_color_surfaces_addr[i], 0, DISPLAY_STRIDE * DISPLAY_HEIGHT);
+
+		sceGxmColorSurfaceInit(&gxm_color_surfaces[i],
+			SCE_GXM_COLOR_FORMAT_A8B8G8R8,
+			SCE_GXM_COLOR_SURFACE_LINEAR,
+			SCE_GXM_COLOR_SURFACE_SCALE_NONE,
+			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
+			DISPLAY_WIDTH,
+			DISPLAY_HEIGHT,
+			DISPLAY_STRIDE,
+			gxm_color_surfaces_addr[i]);
+
+		sceGxmSyncObjectCreate(&gxm_sync_objects[i]);
+	}
+	
+	unsigned int depth_stencil_width = ALIGN(DISPLAY_WIDTH, SCE_GXM_TILE_SIZEX);
+	unsigned int depth_stencil_height = ALIGN(DISPLAY_HEIGHT, SCE_GXM_TILE_SIZEY);
+	unsigned int depth_stencil_samples = depth_stencil_width * depth_stencil_height;
+
+	gxm_depth_stencil_surface_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
+		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
+		4 * depth_stencil_samples, &gxm_depth_stencil_surface_uid);
+
+	sceGxmDepthStencilSurfaceInit(&gxm_depth_stencil_surface,
+		SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24,
+		SCE_GXM_DEPTH_STENCIL_SURFACE_TILED,
+		depth_stencil_width,
+		gxm_depth_stencil_surface_addr,
+		NULL);
+		
+	static const unsigned int shader_patcher_buffer_size = 64 * 1024;
+	static const unsigned int shader_patcher_vertex_usse_size = 64 * 1024;
+	static const unsigned int shader_patcher_fragment_usse_size = 64 * 1024;
+	
+	gxm_shader_patcher_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
+		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_READ,
+		shader_patcher_buffer_size, &gxm_shader_patcher_buffer_uid);
+
+	unsigned int shader_patcher_vertex_usse_offset;
+	gxm_shader_patcher_vertex_usse_addr = gpu_vertex_usse_alloc_map(
+		shader_patcher_vertex_usse_size, &gxm_shader_patcher_vertex_usse_uid,
+		&shader_patcher_vertex_usse_offset);
+
+	unsigned int shader_patcher_fragment_usse_offset;
+	gxm_shader_patcher_fragment_usse_addr = gpu_fragment_usse_alloc_map(
+		shader_patcher_fragment_usse_size, &gxm_shader_patcher_fragment_usse_uid,
+		&shader_patcher_fragment_usse_offset);
+
+	SceGxmShaderPatcherParams shader_patcher_params;
+	memset(&shader_patcher_params, 0, sizeof(shader_patcher_params));
+	shader_patcher_params.userData = NULL;
+	shader_patcher_params.hostAllocCallback = shader_patcher_host_alloc_cb;
+	shader_patcher_params.hostFreeCallback = shader_patcher_host_free_cb;
+	shader_patcher_params.bufferAllocCallback = NULL;
+	shader_patcher_params.bufferFreeCallback = NULL;
+	shader_patcher_params.bufferMem = gxm_shader_patcher_buffer_addr;
+	shader_patcher_params.bufferMemSize = shader_patcher_buffer_size;
+	shader_patcher_params.vertexUsseAllocCallback = NULL;
+	shader_patcher_params.vertexUsseFreeCallback = NULL;
+	shader_patcher_params.vertexUsseMem = gxm_shader_patcher_vertex_usse_addr;
+	shader_patcher_params.vertexUsseMemSize = shader_patcher_vertex_usse_size;
+	shader_patcher_params.vertexUsseOffset = shader_patcher_vertex_usse_offset;
+	shader_patcher_params.fragmentUsseAllocCallback = NULL;
+	shader_patcher_params.fragmentUsseFreeCallback = NULL;
+	shader_patcher_params.fragmentUsseMem = gxm_shader_patcher_fragment_usse_addr;
+	shader_patcher_params.fragmentUsseMemSize = shader_patcher_fragment_usse_size;
+	shader_patcher_params.fragmentUsseOffset = shader_patcher_fragment_usse_offset;
+	
+	sceGxmShaderPatcherCreate(&shader_patcher_params, &gxm_shader_patcher);
+	
+	// Disable color buffer shader register
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_disable_color_buffer_v_cg_gxp_start,
+		&disable_color_buffer_vertex_id);
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_disable_color_buffer_f_cg_gxp_start,
+		&disable_color_buffer_fragment_id);
+
+	const SceGxmProgram *disable_color_buffer_vertex_program =
+		sceGxmShaderPatcherGetProgramFromId(disable_color_buffer_vertex_id);
+	const SceGxmProgram *disable_color_buffer_fragment_program =
+		sceGxmShaderPatcherGetProgramFromId(disable_color_buffer_fragment_id);
+
+	disable_color_buffer_position = sceGxmProgramFindParameterByName(
+		disable_color_buffer_vertex_program, "position");
+
+	disable_color_buffer_matrix = sceGxmProgramFindParameterByName(
+		disable_color_buffer_vertex_program, "u_mvp_matrix");
+		
+	SceGxmVertexAttribute disable_color_buffer_attributes;
+	SceGxmVertexStream disable_color_buffer_stream;
+	disable_color_buffer_attributes.streamIndex = 0;
+	disable_color_buffer_attributes.offset = 0;
+	disable_color_buffer_attributes.format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+	disable_color_buffer_attributes.componentCount = 3;
+	disable_color_buffer_attributes.regIndex = sceGxmProgramParameterGetResourceIndex(
+		disable_color_buffer_position);
+	disable_color_buffer_stream.stride = sizeof(struct position_vertex);
+	disable_color_buffer_stream.indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+	
+	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
+		disable_color_buffer_vertex_id, &disable_color_buffer_attributes,
+		1, &disable_color_buffer_stream, 1, &disable_color_buffer_vertex_program_patched);
+
+	SceGxmBlendInfo disable_color_buffer_blend_info;
+	memset(&disable_color_buffer_blend_info, 0, sizeof(disable_color_buffer_blend_info));
+	disable_color_buffer_blend_info.colorMask = SCE_GXM_COLOR_MASK_NONE;
+	disable_color_buffer_blend_info.colorFunc = SCE_GXM_BLEND_FUNC_NONE;
+	disable_color_buffer_blend_info.alphaFunc = SCE_GXM_BLEND_FUNC_NONE;
+	disable_color_buffer_blend_info.colorSrc = SCE_GXM_BLEND_FACTOR_ZERO;
+	disable_color_buffer_blend_info.colorDst = SCE_GXM_BLEND_FACTOR_ZERO;
+	disable_color_buffer_blend_info.alphaSrc = SCE_GXM_BLEND_FACTOR_ZERO;
+	disable_color_buffer_blend_info.alphaDst = SCE_GXM_BLEND_FACTOR_ZERO;
+
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		disable_color_buffer_fragment_id,
+		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE,
+		&disable_color_buffer_blend_info,
+		disable_color_buffer_fragment_program,
+		&disable_color_buffer_fragment_program_patched);
+		
+	depth_vertices = gpu_alloc_map(
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
+		4 * sizeof(struct position_vertex), &depth_vertices_uid);
+
+	depth_indices = gpu_alloc_map(
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
+		4 * sizeof(unsigned short), &depth_indices_uid);
+
+	depth_vertices[0].position = (vector3f){-1.0f, -1.0f, 1.0f};
+	depth_vertices[1].position = (vector3f){ 1.0f, -1.0f, 1.0f};
+	depth_vertices[2].position = (vector3f){-1.0f,  1.0f, 1.0f};
+	depth_vertices[3].position = (vector3f){ 1.0f,  1.0f, 1.0f};
+
+	depth_indices[0] = 0;
+	depth_indices[1] = 1;
+	depth_indices[2] = 2;
+	depth_indices[3] = 3;
+	
+	// Clear shader register
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_clear_v_cg_gxp_start,
+		&clear_vertex_id);
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_clear_f_cg_gxp_start,
+		&clear_fragment_id);
+
+	const SceGxmProgram *clear_vertex_program =
+		sceGxmShaderPatcherGetProgramFromId(clear_vertex_id);
+	const SceGxmProgram *clear_fragment_program =
+		sceGxmShaderPatcherGetProgramFromId(clear_fragment_id);
+
+	clear_position = sceGxmProgramFindParameterByName(
+		clear_vertex_program, "position");
+
+	clear_color = sceGxmProgramFindParameterByName(
+		clear_fragment_program, "u_clear_color");
+
+	SceGxmVertexAttribute clear_vertex_attribute;
+	SceGxmVertexStream clear_vertex_stream;
+	clear_vertex_attribute.streamIndex = 0;
+	clear_vertex_attribute.offset = 0;
+	clear_vertex_attribute.format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+	clear_vertex_attribute.componentCount = 2;
+	clear_vertex_attribute.regIndex = sceGxmProgramParameterGetResourceIndex(
+		clear_position);
+	clear_vertex_stream.stride = sizeof(struct clear_vertex);
+	clear_vertex_stream.indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+
+	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
+		clear_vertex_id, &clear_vertex_attribute,
+		1, &clear_vertex_stream, 1, &clear_vertex_program_patched);
+
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, clear_fragment_program,
+		&clear_fragment_program_patched);
+
+	clear_vertices = gpu_alloc_map(
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
+		4 * sizeof(struct clear_vertex), &clear_vertices_uid);
+
+	clear_indices = gpu_alloc_map(
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
+		4 * sizeof(unsigned short), &clear_indices_uid);
+
+	clear_vertices[0].position = (vector2f){-1.0f, -1.0f};
+	clear_vertices[1].position = (vector2f){ 1.0f, -1.0f};
+	clear_vertices[2].position = (vector2f){-1.0f,  1.0f};
+	clear_vertices[3].position = (vector2f){ 1.0f,  1.0f};
+
+	clear_indices[0] = 0;
+	clear_indices[1] = 1;
+	clear_indices[2] = 2;
+	clear_indices[3] = 3;
+	
+	// Color shader register
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_color_v_cg_gxp_start,
+		&color_vertex_id);
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_color_f_cg_gxp_start,
+		&color_fragment_id);
+
+	const SceGxmProgram *color_vertex_program =
+		sceGxmShaderPatcherGetProgramFromId(color_vertex_id);
+	const SceGxmProgram *color_fragment_program =
+		sceGxmShaderPatcherGetProgramFromId(color_fragment_id);
+
+	color_position = sceGxmProgramFindParameterByName(
+		color_vertex_program, "position");
+
+	color_color = sceGxmProgramFindParameterByName(
+		color_fragment_program, "color");
+
+	SceGxmVertexAttribute color_vertex_attribute[2];
+	SceGxmVertexStream color_vertex_stream;
+	color_vertex_attribute[0].streamIndex = 0;
+	color_vertex_attribute[0].offset = 0;
+	color_vertex_attribute[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+	color_vertex_attribute[0].componentCount = 3;
+	color_vertex_attribute[0].regIndex = sceGxmProgramParameterGetResourceIndex(
+		color_position);
+	color_vertex_attribute[0].streamIndex = 0;
+	color_vertex_attribute[0].offset = 12;
+	color_vertex_attribute[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+	color_vertex_attribute[0].componentCount = 4;
+	color_vertex_attribute[0].regIndex = sceGxmProgramParameterGetResourceIndex(
+		color_position);
+	color_vertex_stream.stride = sizeof(struct clear_vertex);
+	color_vertex_stream.indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+
+	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
+		color_vertex_id, color_vertex_attribute,
+		1, &color_vertex_stream, 1, &color_vertex_program_patched);
+
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		color_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, color_fragment_program,
+		&color_fragment_program_patched);
+		
+	color_wvp = sceGxmProgramFindParameterByName(color_vertex_program, "u_mvp_matrix");
+		
+	// Texture2D shader register
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_texture2d_v_cg_gxp_start,
+		&texture2d_vertex_id);
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_texture2d_f_cg_gxp_start,
+		&texture2d_fragment_id);
+
+	const SceGxmProgram *texture2d_vertex_program =
+		sceGxmShaderPatcherGetProgramFromId(texture2d_vertex_id);
+	const SceGxmProgram *texture2d_fragment_program =
+		sceGxmShaderPatcherGetProgramFromId(texture2d_fragment_id);
+
+	texture2d_position = sceGxmProgramFindParameterByName(
+		texture2d_vertex_program, "position");
+
+	texture2d_texcoord = sceGxmProgramFindParameterByName(
+		texture2d_fragment_program, "texcoord");
+
+	SceGxmVertexAttribute texture2d_vertex_attribute[2];
+	SceGxmVertexStream texture2d_vertex_stream;
+	texture2d_vertex_attribute[0].streamIndex = 0;
+	texture2d_vertex_attribute[0].offset = 0;
+	texture2d_vertex_attribute[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+	texture2d_vertex_attribute[0].componentCount = 3;
+	texture2d_vertex_attribute[0].regIndex = sceGxmProgramParameterGetResourceIndex(
+		texture2d_position);
+	texture2d_vertex_attribute[0].streamIndex = 0;
+	texture2d_vertex_attribute[0].offset = 12;
+	texture2d_vertex_attribute[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+	texture2d_vertex_attribute[0].componentCount = 2;
+	texture2d_vertex_attribute[0].regIndex = sceGxmProgramParameterGetResourceIndex(
+		texture2d_position);
+	texture2d_vertex_stream.stride = sizeof(struct clear_vertex);
+	texture2d_vertex_stream.indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+
+	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
+		texture2d_vertex_id, texture2d_vertex_attribute,
+		1, &texture2d_vertex_stream, 1, &texture2d_vertex_program_patched);
+
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_fragment_program,
+		&texture2d_fragment_program_patched);
+		
+	texture2d_wvp = sceGxmProgramFindParameterByName(texture2d_vertex_program, "wvp");	
+		
+	// Allocate temp pool for non-VBO drawing
+	gpu_pool_init(gpu_pool_size);
+	
+	// Initializing openGL stuffs
+	current_color.r = current_color.g = current_color.b = current_color.a = 1.0f;
+	
+}
+
+void vglEnd(void){
+	sceGxmDisplayQueueFinish();
+	sceGxmFinish(gxm_context);
+	gpu_unmap_free(clear_vertices_uid);
+	gpu_unmap_free(clear_indices_uid);
+	gpu_unmap_free(depth_vertices_uid);
+	gpu_unmap_free(depth_indices_uid);
+	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, disable_color_buffer_vertex_program_patched);
+	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, disable_color_buffer_fragment_program_patched);
+	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, clear_vertex_program_patched);
+	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, clear_fragment_program_patched);
+	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, color_vertex_program_patched);
+	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, color_fragment_program_patched);
+	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, texture2d_vertex_program_patched);
+	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_program_patched);
+	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, clear_vertex_id);
+	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, clear_fragment_id);
+	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, color_vertex_id);
+	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, color_fragment_id);
+	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, texture2d_vertex_id);
+	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, texture2d_fragment_id);
+	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, disable_color_buffer_vertex_id);
+	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, disable_color_buffer_fragment_id);
+	sceGxmShaderPatcherDestroy(gxm_shader_patcher);
+	gpu_unmap_free(gxm_shader_patcher_buffer_uid);
+	gpu_vertex_usse_unmap_free(gxm_shader_patcher_vertex_usse_uid);
+	gpu_fragment_usse_unmap_free(gxm_shader_patcher_fragment_usse_uid);
+	gpu_unmap_free(gxm_depth_stencil_surface_uid);
+	int i;
+	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
+		gpu_unmap_free(gxm_color_surfaces_uid[i]);
+		sceGxmSyncObjectDestroy(gxm_sync_objects[i]);
+	}
+	sceGxmDestroyRenderTarget(gxm_render_target);
+	gpu_unmap_free(vdm_ring_buffer_uid);
+	gpu_unmap_free(vertex_ring_buffer_uid);
+	gpu_unmap_free(fragment_ring_buffer_uid);
+	gpu_fragment_usse_unmap_free(fragment_usse_ring_buffer_uid);
+	sceGxmDestroyContext(gxm_context);
+	sceGxmTerminate();
+}
+
+// openGL implementation
+
 GLenum glGetError(void){
 	return error;
 }
 
 void glClear(GLbitfield mask){
-	switch (mask){
-		case GL_COLOR_BUFFER_BIT:
-			if (v2d_drawing){
-				vita2d_end_drawing();
-				vita2d_wait_rendering_done();
-				vita2d_swap_buffers();
-			}
-			vita2d_start_drawing();
-			vita2d_clear_screen();
-			v2d_drawing = 1;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
+	if ((mask & GL_COLOR_BUFFER_BIT) == GL_COLOR_BUFFER_BIT){
+		if (drawing){
+			sceGxmEndScene(gxm_context, NULL, NULL);
+			sceGxmFinish(gxm_context);
+			sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
+			struct display_queue_callback_data queue_cb_data;
+			queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
+			sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
+				gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
+			gxm_front_buffer_index = gxm_back_buffer_index;
+			gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
+		}
+		gpu_pool_reset();
+		sceGxmBeginScene(
+			gxm_context,
+			0,
+			gxm_render_target,
+			NULL,
+			NULL,
+			gxm_sync_objects[gxm_back_buffer_index],
+			&gxm_color_surfaces[gxm_back_buffer_index],
+			&gxm_depth_stencil_surface);
+		sceGxmSetFrontDepthWriteEnable(gxm_context, SCE_GXM_DEPTH_WRITE_DISABLED);
+		sceGxmSetFrontDepthFunc(gxm_context, SCE_GXM_DEPTH_FUNC_ALWAYS);
+		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
+		sceGxmSetFragmentProgram(gxm_context, clear_fragment_program_patched);
+		void *color_buffer;
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &color_buffer);
+		sceGxmSetUniformDataF(color_buffer, clear_color, 0, 4, &clear_color_val.r);
+		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLES, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 3);
+		sceGxmSetFrontDepthWriteEnable(gxm_context, depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		sceGxmSetFrontDepthFunc(gxm_context, gxm_depth);
+		drawing = 1;
+	}
+	if ((mask & GL_DEPTH_BUFFER_BIT) == GL_DEPTH_BUFFER_BIT){
+		sceGxmSetFrontDepthWriteEnable(gxm_context, SCE_GXM_DEPTH_WRITE_ENABLED);
+		sceGxmSetFrontDepthFunc(gxm_context, SCE_GXM_DEPTH_FUNC_ALWAYS);
+		sceGxmSetFrontStencilFunc(gxm_context,
+			SCE_GXM_STENCIL_FUNC_ALWAYS,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			0, 0);
+		depth_vertices[0].position.z = depth_value;
+		depth_vertices[1].position.z = depth_value;
+		depth_vertices[2].position.z = depth_value;
+		depth_vertices[3].position.z = depth_value;
+		sceGxmSetVertexProgram(gxm_context, disable_color_buffer_vertex_program_patched);
+		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
+		sceGxmSetVertexStream(gxm_context, 0, depth_vertices);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_indices, 4);
+		sceGxmSetFrontDepthWriteEnable(gxm_context, depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		sceGxmSetFrontDepthFunc(gxm_context, gxm_depth);
 	}
 }
 
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha){
-	uint8_t r, g, b, a;
-	r = red * 255.0f;
-	g = green * 255.0f;
-	b = blue * 255.0f;
-	a = alpha * 255.0f;
-	vita2d_set_clear_color(RGBA8(r, g, b, a));
+	clear_color_val.r = red;
+	clear_color_val.g = green;
+	clear_color_val.b = blue;
+	clear_color_val.a = alpha;
 }
 
 void glEnable(GLenum cap){
 	switch (cap){
 		case GL_DEPTH_TEST:
-			sceGxmSetFrontDepthFunc(_vita2d_context, SCE_GXM_DEPTH_FUNC_LESS);
-			depth_test_state = 1;
+			sceGxmSetFrontDepthWriteEnable(gxm_context, SCE_GXM_DEPTH_WRITE_ENABLED);
+			sceGxmSetFrontDepthFunc(gxm_context, SCE_GXM_DEPTH_FUNC_LESS);
+			depth_test_state = GL_TRUE;
 			break;
 	}
 }
@@ -125,8 +689,9 @@ void glEnable(GLenum cap){
 void glDisable(GLenum cap){
 	switch (cap){
 		case GL_DEPTH_TEST:
-			sceGxmSetFrontDepthFunc(_vita2d_context, SCE_GXM_DEPTH_FUNC_ALWAYS);
-			depth_test_state = 0;
+			sceGxmSetFrontDepthWriteEnable(gxm_context, SCE_GXM_DEPTH_WRITE_DISABLED);
+			sceGxmSetFrontDepthFunc(gxm_context, SCE_GXM_DEPTH_FUNC_ALWAYS);
+			depth_test_state = GL_FALSE;
 			break;
 	}
 }
@@ -145,12 +710,6 @@ void glBegin(GLenum mode){
 		case GL_LINES:
 			prim = SCE_GXM_PRIMITIVE_LINES;
 			break;
-		/*case GL_LINE_LOOP:
-			prim = SCE_GXM_PRIMITIVE_LINES;
-			break;
-		case GL_LINE_STRIP:
-			prim = SCE_GXM_PRIMITIVE_LINES;
-			break;*/
 		case GL_TRIANGLES:
 			prim = SCE_GXM_PRIMITIVE_TRIANGLES;
 			break;
@@ -181,24 +740,24 @@ void glEnd(void){
 	matrix4x4 mvp_matrix;
 	matrix4x4 final_mvp_matrix;
 	
-	matrix4x4_multiply(mvp_matrix, _vita2d_projection_matrix, modelview);
+	matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 	matrix4x4_transpose(final_mvp_matrix,mvp_matrix);
 	
 	if (texture_unit >= 0){
-		sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureVertexProgram);
-		sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureFragmentProgram);
+		sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
+		sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
 	}else{
-		sceGxmSetVertexProgram(_vita2d_context, _vita2d_colorVertexProgram);
-		sceGxmSetFragmentProgram(_vita2d_context, _vita2d_colorFragmentProgram);
+		sceGxmSetVertexProgram(gxm_context, color_vertex_program_patched);
+		sceGxmSetFragmentProgram(gxm_context, color_fragment_program_patched);
 	}
 	
 	void* vertex_wvp_buffer;
-	sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
+	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
 	
 	if (using_texture){
-		sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, (const float*)final_mvp_matrix);
-		sceGxmSetFragmentTexture(_vita2d_context, 0, &v2d_textures[texture_unit]->gxm_tex);
-		vita2d_texture_vertex* vertices;
+		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)final_mvp_matrix);
+		sceGxmSetFragmentTexture(gxm_context, 0, &gpu_textures[texture_unit]->gxm_tex);
+		texture2d_vertex* vertices;
 		uint16_t* indices;
 		int n = 0, quad_n = 0, v_n = 0;
 		vertexList* object = model;
@@ -206,10 +765,10 @@ void glEnd(void){
 	
 		switch (prim_extra){
 			case SCE_GXM_PRIMITIVE_NONE:
-				vertices = (vita2d_texture_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_texture_vertex), sizeof(vita2d_texture_vertex));
-				indices = (uint16_t*)vita2d_pool_memalign(vertex_count * sizeof(uint16_t), sizeof(uint16_t));
+				vertices = (texture2d_vertex*)gpu_pool_memalign(vertex_count * sizeof(texture2d_vertex), sizeof(texture2d_vertex));
+				indices = (uint16_t*)gpu_pool_memalign(vertex_count * sizeof(uint16_t), sizeof(uint16_t));
 				while (object != NULL){
-					memcpy(&vertices[n], &object->v, sizeof(vita2d_texture_vertex));
+					memcpy(&vertices[n], &object->v, sizeof(texture2d_vertex));
 					indices[n] = n;
 					vertexList* old = object;
 					object = object->next;
@@ -220,12 +779,12 @@ void glEnd(void){
 			case SCE_GXM_PRIMITIVE_QUADS:
 				quad_n = vertex_count >> 2;
 				idx_count = quad_n * 6;
-				vertices = (vita2d_texture_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_texture_vertex), sizeof(vita2d_texture_vertex));
-				indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+				vertices = (texture2d_vertex*)gpu_pool_memalign(vertex_count * sizeof(texture2d_vertex), sizeof(texture2d_vertex));
+				indices = (uint16_t*)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 				int i, j;
 				for (i=0; i < quad_n; i++){
 					for (j=0; j < 4; j++){
-						memcpy(&vertices[i*4+j], &object->v, sizeof(vita2d_texture_vertex));
+						memcpy(&vertices[i*4+j], &object->v, sizeof(texture2d_vertex));
 						vertexList* old = object;
 						object = object->next;
 						free(old);
@@ -239,11 +798,11 @@ void glEnd(void){
 				}
 				break;
 		}
-		sceGxmSetVertexStream(_vita2d_context, 0, vertices);
-		sceGxmDraw(_vita2d_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
+		sceGxmSetVertexStream(gxm_context, 0, vertices);
+		sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
 	}else{
-		sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_colorWvpParam, 0, 16, (const float*)final_mvp_matrix);
-		vita2d_color_vertex* vertices;
+		sceGxmSetUniformDataF(vertex_wvp_buffer, color_wvp, 0, 16, (const float*)final_mvp_matrix);
+		color_vertex* vertices;
 		uint16_t* indices;
 		int n = 0, quad_n = 0, v_n = 0;
 		vertexList* object = model;
@@ -251,10 +810,10 @@ void glEnd(void){
 	
 		switch (prim_extra){
 			case SCE_GXM_PRIMITIVE_NONE:
-				vertices = (vita2d_color_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_color_vertex), sizeof(vita2d_color_vertex));
-				indices = (uint16_t*)vita2d_pool_memalign(vertex_count * sizeof(uint16_t), sizeof(uint16_t));
+				vertices = (color_vertex*)gpu_pool_memalign(vertex_count * sizeof(color_vertex), sizeof(color_vertex));
+				indices = (uint16_t*)gpu_pool_memalign(vertex_count * sizeof(uint16_t), sizeof(uint16_t));
 				while (object != NULL){
-					memcpy(&vertices[n], &object->v2, sizeof(vita2d_color_vertex));
+					memcpy(&vertices[n], &object->v2, sizeof(color_vertex));
 					indices[n] = n;
 					vertexList* old = object;
 					object = object->next;
@@ -265,12 +824,12 @@ void glEnd(void){
 			case SCE_GXM_PRIMITIVE_QUADS:
 				quad_n = vertex_count >> 2;
 				idx_count = quad_n * 6;
-				vertices = (vita2d_color_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_color_vertex), sizeof(vita2d_color_vertex));
-				indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+				vertices = (color_vertex*)gpu_pool_memalign(vertex_count * sizeof(color_vertex), sizeof(color_vertex));
+				indices = (uint16_t*)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 				int i, j;
 				for (i=0; i < quad_n; i++){
 					for (j=0; j < 4; j++){
-						memcpy(&vertices[i*4+j], &object->v2, sizeof(vita2d_color_vertex));
+						memcpy(&vertices[i*4+j], &object->v2, sizeof(color_vertex));
 						vertexList* old = object;
 						object = object->next;
 						free(old);
@@ -284,8 +843,8 @@ void glEnd(void){
 				}
 				break;
 		}
-		sceGxmSetVertexStream(_vita2d_context, 0, vertices);
-		sceGxmDraw(_vita2d_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
+		sceGxmSetVertexStream(gxm_context, 0, vertices);
+		sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
 	}
 	
 	model = NULL;
@@ -304,7 +863,7 @@ void glGenTextures(GLsizei n, GLuint* res){
 		texture_init = 0;
 		for (i=0; i < TEXTURES_NUM; i++){
 			textures[i] = GL_TEXTURE0 + i;
-			v2d_textures[i] = NULL;
+			gpu_textures[i] = NULL;
 		}
 	}
 	i = 0;
@@ -336,7 +895,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	SceGxmTextureFormat tex_format;
 	switch (target){
 		case GL_TEXTURE_2D:
-			if (v2d_textures[texture_unit] != NULL) vita2d_free_texture(v2d_textures[texture_unit]);
+			if (gpu_textures[texture_unit] != NULL){
+				gpu_unmap_free(gpu_textures[texture_unit]->data_UID);
+				free(gpu_textures[texture_unit]);
+			}
 			switch (format){
 				case GL_RGB:
 					switch (type){
@@ -387,9 +949,20 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 					break;
 			}
 			if (error == GL_NO_ERROR){
-				v2d_textures[texture_unit] = vita2d_create_empty_texture_rendertarget(width, height, tex_format);
-				uint8_t* tex = (uint8_t*)vita2d_texture_get_datap(v2d_textures[texture_unit]);
-				memcpy(tex, (uint8_t*)data, width*height*internalFormat);
+				if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE){
+					error = GL_INVALID_VALUE;
+					return;
+				}
+				gpu_textures[texture_unit] = (texture*)malloc(sizeof(texture));
+				const int tex_size = width * height * tex_format_to_bytespp(tex_format);
+				void *texture_data = gpu_alloc_map(
+					SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
+					SCE_GXM_MEMORY_ATTRIB_READ,
+					tex_size,
+					&gpu_textures[texture_unit]->data_UID);
+				memcpy(texture_data, (uint8_t*)data, width*height*internalFormat);
+				sceGxmTextureInitLinear(&gpu_textures[texture_unit]->gxm_tex, texture_data, tex_format, width, height, 0);
+				gpu_textures[texture_unit]->palette_UID = 0;
 			}
 			break;
 		default:
@@ -405,10 +978,10 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 				case GL_TEXTURE_MIN_FILTER:
 					switch (param){
 						case GL_NEAREST:
-							vita2d_texture_set_filters(v2d_textures[texture_unit], SCE_GXM_TEXTURE_FILTER_POINT , vita2d_texture_get_mag_filter(v2d_textures[texture_unit]));
+							sceGxmTextureSetMinFilter(&gpu_textures[texture_unit]->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
 							break;
 						case GL_LINEAR:
-							vita2d_texture_set_filters(v2d_textures[texture_unit], SCE_GXM_TEXTURE_FILTER_LINEAR , vita2d_texture_get_mag_filter(v2d_textures[texture_unit]));
+							sceGxmTextureSetMinFilter(&gpu_textures[texture_unit]->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
 							break;
 						case GL_NEAREST_MIPMAP_NEAREST:
 							break;
@@ -423,10 +996,10 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 				case GL_TEXTURE_MAG_FILTER:
 					switch (param){
 						case GL_NEAREST:
-							vita2d_texture_set_filters(v2d_textures[texture_unit], vita2d_texture_get_min_filter(v2d_textures[texture_unit]), SCE_GXM_TEXTURE_FILTER_POINT);
+							sceGxmTextureSetMagFilter(&gpu_textures[texture_unit]->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
 							break;
 						case GL_LINEAR:
-							vita2d_texture_set_filters(v2d_textures[texture_unit], vita2d_texture_get_min_filter(v2d_textures[texture_unit]), SCE_GXM_TEXTURE_FILTER_LINEAR);
+							sceGxmTextureSetMagFilter(&gpu_textures[texture_unit]->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
 							break;
 						case GL_NEAREST_MIPMAP_NEAREST:
 							break;
@@ -462,8 +1035,8 @@ void glTexCoord2i(GLint s, GLint t){
 		last->next = (vertexList*)malloc(sizeof(vertexList));
 		last = last->next;
 	}
-	last->v.u = s;
-	last->v.v = t;
+	last->v.texcoord.x = s;
+	last->v.texcoord.y = t;
 }
 
 void glClientActiveTexture(GLenum texture){
@@ -485,13 +1058,13 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z){
 			last = last->next;
 		}
 		last->v2.color = current_color;
-		last->v2.x = x;
-		last->v2.y = y;
-		last->v2.z = z;
+		last->v2.position.x = x;
+		last->v2.position.y = y;
+		last->v2.position.z = z;
 	}else{
-		last->v.x = x;
-		last->v.y = y;
-		last->v.z = z;
+		last->v.position.x = x;
+		last->v.position.y = y;
+		last->v.position.z = z;
 	}
 	vertex_count++;
 }
@@ -516,15 +1089,12 @@ void glArrayElement(GLint i){
 				last = last->next;
 			}
 			memcpy(tex, ptr_tex, vertex_array.size * 2);
-			last->v.u = tex[0];
-			last->v.v = tex[1];
-			last->v.x = coords[0];
-			last->v.y = coords[1];
-			last->v.z = coords[2];
+			last->v.texcoord.x = tex[0];
+			last->v.texcoord.y = tex[1];
+			last->v.position.x = coords[0];
+			last->v.position.y = coords[1];
+			last->v.position.z = coords[2];
 		}else if (color_array_state){
-			float clr[4];
-			uint8_t r,g,b,a;
-			clr[3] = 1.0f;
 			uint8_t* ptr_clr = ((uint8_t*)color_array.pointer) + (i * ((color_array.num * color_array.size) + color_array.stride));	
 			if (model == NULL){ 
 				last = (vertexList*)malloc(sizeof(vertexList));
@@ -533,15 +1103,11 @@ void glArrayElement(GLint i){
 				last->next = (vertexList*)malloc(sizeof(vertexList));
 				last = last->next;
 			}
-			memcpy(clr, ptr_clr, color_array.size * color_array.num);
-			r = clr[0] * 255.0f;
-			g = clr[1] * 255.0f;
-			b = clr[2] * 255.0f;
-			a = clr[3] * 255.0f;
-			last->v2.color = RGBA8(r, g, b, a);
-			last->v2.x = coords[0];
-			last->v2.y = coords[1];
-			last->v2.z = coords[2];
+			last->v2.color.a = 1.0f;
+			memcpy(&last->v2.color, ptr_clr, color_array.size * color_array.num);
+			last->v2.position.x = coords[0];
+			last->v2.position.y = coords[1];
+			last->v2.position.z = coords[2];
 		}
 	}
 }
@@ -553,10 +1119,10 @@ void glLoadIdentity(void){
 void glMatrixMode(GLenum mode){
 	switch (mode){
 		case GL_MODELVIEW:
-			matrix = &modelview;
+			matrix = &modelview_matrix;
 			break;
 		case GL_PROJECTION:
-			matrix = &_vita2d_projection_matrix;
+			matrix = &projection_matrix;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -640,59 +1206,65 @@ void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z){
 }
 
 void glColor3f(GLfloat red, GLfloat green, GLfloat blue){
-	uint8_t r, g, b, a;
-	r = red * 255.0f;
-	g = green * 255.0f;
-	b = blue * 255.0f;
-	current_color = RGBA8(r, g, b, 0xFF);
+	current_color.r = red;
+	current_color.g = green;
+	current_color.b = blue;
+	current_color.a = 1.0f;
 }
 
 void glColor3ub(GLubyte red, GLubyte green, GLubyte blue){
-	current_color = RGBA8(red, green, blue, 0xFF);
+	current_color.r = (1.0f * red) / 255.0f;
+	current_color.g = (1.0f * green) / 255.0f;
+	current_color.b = (1.0f * blue) / 255.0f;
+	current_color.a = 1.0f;
 }
 
 void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha){
-	uint8_t r, g, b, a;
-	r = red * 255.0f;
-	g = green * 255.0f;
-	b = blue * 255.0f;
-	a = alpha * 255.0f;
-	current_color = RGBA8(r, g, b, a);
+	current_color.r = red;
+	current_color.g = green;
+	current_color.b = blue;
+	current_color.a = alpha;
 }
 
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha){
-	current_color = RGBA8(red, green, blue, alpha);
+	current_color.r = (1.0f * red) / 255.0f;
+	current_color.g = (1.0f * green) / 255.0f;
+	current_color.b = (1.0f * blue) / 255.0f;
+	current_color.a = (1.0f * alpha) / 255.0f;
 }
 
 void glDepthFunc(GLenum func){
-	SceGxmDepthFunc gxm_func;
 	switch (func){
 		case GL_NEVER:
-			gxm_func = SCE_GXM_DEPTH_FUNC_NEVER;
+			gxm_depth = SCE_GXM_DEPTH_FUNC_NEVER;
 			break;
 		case GL_LESS:
-			gxm_func = SCE_GXM_DEPTH_FUNC_LESS;
+			gxm_depth = SCE_GXM_DEPTH_FUNC_LESS;
 			break;
 		case GL_EQUAL:
-			gxm_func = SCE_GXM_DEPTH_FUNC_EQUAL;
+			gxm_depth = SCE_GXM_DEPTH_FUNC_EQUAL;
 			break;
 		case GL_LEQUAL:
-			gxm_func = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
+			gxm_depth = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
 			break;
 		case GL_GREATER:
-			gxm_func = SCE_GXM_DEPTH_FUNC_GREATER;
+			gxm_depth = SCE_GXM_DEPTH_FUNC_GREATER;
 			break;
 		case GL_NOTEQUAL:
-			gxm_func = SCE_GXM_DEPTH_FUNC_NOT_EQUAL;
+			gxm_depth = SCE_GXM_DEPTH_FUNC_NOT_EQUAL;
 			break;
 		case GL_GEQUAL:
-			gxm_func = SCE_GXM_DEPTH_FUNC_GREATER_EQUAL;
+			gxm_depth = SCE_GXM_DEPTH_FUNC_GREATER_EQUAL;
 			break;
 		case GL_ALWAYS:
-			gxm_func = SCE_GXM_DEPTH_FUNC_ALWAYS;
+			gxm_depth = SCE_GXM_DEPTH_FUNC_ALWAYS;
 			break;
 	}
-	sceGxmSetFrontDepthFunc(_vita2d_context, gxm_func);
+	sceGxmSetFrontDepthFunc(gxm_context, gxm_depth);
+}
+
+void glClearDepth(GLdouble depth){
+	depth_value = depth;
 }
 
 GLboolean glIsEnabled(GLenum cap){
@@ -713,12 +1285,12 @@ void glPushMatrix(void){
 		error = GL_INVALID_OPERATION;
 		return;
 	}
-	if (matrix == &modelview){
+	if (matrix == &modelview_matrix){
 		if (modelview_stack_counter >= MODELVIEW_STACK_DEPTH){
 			error = GL_STACK_OVERFLOW;
 		}
 		matrix4x4_copy(modelview_matrix_stack[modelview_stack_counter++], *matrix);
-	}else if (matrix == &_vita2d_projection_matrix){
+	}else if (matrix == &projection_matrix){
 		if (projection_stack_counter >= GENERIC_STACK_DEPTH){
 			error = GL_STACK_OVERFLOW;
 		}
@@ -731,10 +1303,10 @@ void glPopMatrix(void){
 		error = GL_INVALID_OPERATION;
 		return;
 	}
-	if (matrix == &modelview){
+	if (matrix == &modelview_matrix){
 		if (modelview_stack_counter == 0) error = GL_STACK_UNDERFLOW;
 		else matrix4x4_copy(*matrix, modelview_matrix_stack[--modelview_stack_counter]);
-	}else if (matrix == &_vita2d_projection_matrix){
+	}else if (matrix == &projection_matrix){
 		if (projection_stack_counter == 0) error = GL_STACK_UNDERFLOW;
 		else matrix4x4_copy(*matrix, projection_matrix_stack[--projection_stack_counter]);
 	}
@@ -817,12 +1389,6 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 			case GL_LINES:
 				gxm_p = SCE_GXM_PRIMITIVE_LINES;
 				break;
-			/*case GL_LINE_LOOP:
-				gxm_p = SCE_GXM_PRIMITIVE_LINES;
-				break;
-			case GL_LINE_STRIP:
-				gxm_p = SCE_GXM_PRIMITIVE_LINES;
-				break;*/
 			case GL_TRIANGLES:
 				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLES;
 				break;
@@ -844,24 +1410,24 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 			matrix4x4 mvp_matrix;
 			matrix4x4 final_mvp_matrix;
 	
-			matrix4x4_multiply(mvp_matrix, _vita2d_projection_matrix, modelview);
+			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 			matrix4x4_transpose(final_mvp_matrix,mvp_matrix);
 			
 			if (texture_array_state){
-				sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureVertexProgram);
-				sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureFragmentProgram);
+				sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
+				sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
 			}else{
-				sceGxmSetVertexProgram(_vita2d_context, _vita2d_colorVertexProgram);
-				sceGxmSetFragmentProgram(_vita2d_context, _vita2d_colorFragmentProgram);
+				sceGxmSetVertexProgram(gxm_context, color_vertex_program_patched);
+				sceGxmSetFragmentProgram(gxm_context, color_fragment_program_patched);
 			}
 			
 			void* vertex_wvp_buffer;
-			sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
+			sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
 	
 			if (texture_array_state){
-				sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, (const float*)final_mvp_matrix);
-				sceGxmSetFragmentTexture(_vita2d_context, 0, &v2d_textures[texture_unit]->gxm_tex);
-				vita2d_texture_vertex* vertices;
+				sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)final_mvp_matrix);
+				sceGxmSetFragmentTexture(gxm_context, 0, &gpu_textures[texture_unit]->gxm_tex);
+				texture2d_vertex* vertices;
 				uint16_t* indices;
 				int n = 0, quad_n = 0, v_n = 0;
 				uint32_t idx_count = vertex_count = count;
@@ -870,12 +1436,12 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				
 				switch (gxm_ep){
 					case SCE_GXM_PRIMITIVE_NONE:
-						vertices = (vita2d_texture_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_texture_vertex), sizeof(vita2d_texture_vertex));
-						memset(vertices, 0, (vertex_count * sizeof(vita2d_texture_vertex), sizeof(vita2d_texture_vertex)));
-						indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+						vertices = (texture2d_vertex*)gpu_pool_memalign(vertex_count * sizeof(texture2d_vertex), sizeof(texture2d_vertex));
+						memset(vertices, 0, (vertex_count * sizeof(texture2d_vertex), sizeof(texture2d_vertex)));
+						indices = (uint16_t*)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 						for (n=0; n<count; n++){
 							memcpy(&vertices[n], ptr, vertex_array.size * vertex_array.num);
-							memcpy(&vertices[n].u, ptr_tex, vertex_array.size * 2);
+							memcpy(&vertices[n].texcoord, ptr_tex, vertex_array.size * 2);
 							indices[n] = n;
 							ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
 							ptr_tex += ((texture_array.num * texture_array.size) + texture_array.stride);
@@ -884,13 +1450,13 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 					case SCE_GXM_PRIMITIVE_QUADS:
 						quad_n = vertex_count >> 2;
 						idx_count = quad_n * 6;
-						vertices = (vita2d_texture_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_texture_vertex), sizeof(vita2d_texture_vertex));
-						indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+						vertices = (texture2d_vertex*)gpu_pool_memalign(vertex_count * sizeof(texture2d_vertex), sizeof(texture2d_vertex));
+						indices = (uint16_t*)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 						int i, j;
 						for (i=0; i < quad_n; i++){
 							for (j=0; j < 4; j++){
 								memcpy(&vertices[i*4+j], ptr, vertex_array.size * vertex_array.num);
-								memcpy(&vertices[n].u, ptr_tex, vertex_array.size * 2);
+								memcpy(&vertices[n].texcoord, ptr_tex, vertex_array.size * 2);
 								ptr += ((texture_array.num * texture_array.size) + texture_array.stride);
 							}
 							indices[i*6] = i*4;
@@ -905,15 +1471,12 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 						break;
 				}
 				
-				sceGxmSetVertexStream(_vita2d_context, 0, vertices);
-				sceGxmDraw(_vita2d_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
+				sceGxmSetVertexStream(gxm_context, 0, vertices);
+				sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
 				
 			}else if (color_array_state){
-				sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_colorWvpParam, 0, 16, (const float*)final_mvp_matrix);
-				vita2d_color_vertex* vertices;
-				float clr[4];
-				uint8_t r, g, b, a;
-				clr[3] = 1.0f;
+				sceGxmSetUniformDataF(vertex_wvp_buffer, color_wvp, 0, 16, (const float*)final_mvp_matrix);
+				color_vertex* vertices;
 				uint16_t* indices;
 				int n = 0, quad_n = 0, v_n = 0;
 				uint32_t idx_count = vertex_count = count;
@@ -921,17 +1484,12 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				uint8_t* ptr_clr = ((uint8_t*)color_array.pointer) + (first * ((color_array.num * color_array.size) + color_array.stride));
 				switch (gxm_ep){
 					case SCE_GXM_PRIMITIVE_NONE:
-						vertices = (vita2d_color_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_color_vertex), sizeof(vita2d_color_vertex));
-						memset(vertices, 0, (vertex_count * sizeof(vita2d_color_vertex), sizeof(vita2d_color_vertex)));
-						indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+						vertices = (color_vertex*)gpu_pool_memalign(vertex_count * sizeof(color_vertex), sizeof(color_vertex));
+						memset(vertices, 0, (vertex_count * sizeof(color_vertex), sizeof(color_vertex)));
+						indices = (uint16_t*)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 						for (n=0; n<count; n++){
 							memcpy(&vertices[n], ptr, vertex_array.size * vertex_array.num);
-							memcpy(clr, ptr_clr, color_array.size * color_array.num);
-							r = clr[0] * 255.0f;
-							g = clr[1] * 255.0f;
-							b = clr[2] * 255.0f;
-							a = clr[3] * 255.0f;
-							vertices[n].color = RGBA8(r, g, b, a);
+							memcpy(&vertices[n].color, ptr_clr, color_array.size * color_array.num);
 							indices[n] = n;
 							ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
 							ptr_clr += ((color_array.num * color_array.size) + color_array.stride);
@@ -940,18 +1498,13 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 					case SCE_GXM_PRIMITIVE_QUADS:
 						quad_n = vertex_count >> 2;
 						idx_count = quad_n * 6;
-						vertices = (vita2d_color_vertex*)vita2d_pool_memalign(vertex_count * sizeof(vita2d_color_vertex), sizeof(vita2d_color_vertex));
-						indices = (uint16_t*)vita2d_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+						vertices = (color_vertex*)gpu_pool_memalign(vertex_count * sizeof(color_vertex), sizeof(color_vertex));
+						indices = (uint16_t*)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 						int i, j;
 						for (i=0; i < quad_n; i++){
 							for (j=0; j < 4; j++){
 								memcpy(&vertices[i*4+j], ptr, vertex_array.size * vertex_array.num);
-								memcpy(clr, ptr_clr, color_array.size * color_array.num);
-								r = clr[0] * 255.0f;
-								g = clr[1] * 255.0f;
-								b = clr[2] * 255.0f;
-								a = clr[3] * 255.0f;
-								vertices[n].color = RGBA8(r, g, b, a);
+								memcpy(&vertices[n].color, ptr_clr, color_array.size * color_array.num);
 								ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
 								ptr_clr += ((color_array.num * color_array.size) + color_array.stride);
 							}
@@ -967,8 +1520,8 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 						break;
 				}
 				
-				sceGxmSetVertexStream(_vita2d_context, 0, vertices);
-				sceGxmDraw(_vita2d_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
+				sceGxmSetVertexStream(gxm_context, 0, vertices);
+				sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
 				
 			}
 		}

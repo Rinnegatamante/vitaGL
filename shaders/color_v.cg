@@ -1,0 +1,11 @@
+void main(
+	float3 position,
+	float4 color,
+	uniform float4x4 u_mvp_matrix,
+	out float4 out_position: POSITION,
+	out float4 out_color: COLOR)
+{
+	out_position = mul(u_mvp_matrix, float4(position.x, position.y, 0.5f, 1.0f));
+	out_color = color;
+}
+
