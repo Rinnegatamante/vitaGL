@@ -348,9 +348,9 @@ void vglInit(uint32_t gpu_pool_size){
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_disable_color_buffer_f_cg_gxp_start,
 		&disable_color_buffer_fragment_id);
 
-	const SceGxmProgram *disable_color_buffer_vertex_program =
+	const SceGxmProgram* disable_color_buffer_vertex_program =
 		sceGxmShaderPatcherGetProgramFromId(disable_color_buffer_vertex_id);
-	const SceGxmProgram *disable_color_buffer_fragment_program =
+	const SceGxmProgram* disable_color_buffer_fragment_program =
 		sceGxmShaderPatcherGetProgramFromId(disable_color_buffer_fragment_id);
 
 	disable_color_buffer_position = sceGxmProgramFindParameterByName(
@@ -416,9 +416,9 @@ void vglInit(uint32_t gpu_pool_size){
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_clear_f_cg_gxp_start,
 		&clear_fragment_id);
 
-	const SceGxmProgram *clear_vertex_program =
+	const SceGxmProgram* clear_vertex_program =
 		sceGxmShaderPatcherGetProgramFromId(clear_vertex_id);
-	const SceGxmProgram *clear_fragment_program =
+	const SceGxmProgram* clear_fragment_program =
 		sceGxmShaderPatcherGetProgramFromId(clear_fragment_id);
 
 	clear_position = sceGxmProgramFindParameterByName(
@@ -471,9 +471,9 @@ void vglInit(uint32_t gpu_pool_size){
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_color_f_cg_gxp_start,
 		&color_fragment_id);
 
-	const SceGxmProgram *color_vertex_program =
+	const SceGxmProgram* color_vertex_program =
 		sceGxmShaderPatcherGetProgramFromId(color_vertex_id);
-	const SceGxmProgram *color_fragment_program =
+	const SceGxmProgram* color_fragment_program =
 		sceGxmShaderPatcherGetProgramFromId(color_fragment_id);
 
 	color_position = sceGxmProgramFindParameterByName(
@@ -516,9 +516,9 @@ void vglInit(uint32_t gpu_pool_size){
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_texture2d_f_cg_gxp_start,
 		&texture2d_fragment_id);
 
-	const SceGxmProgram *texture2d_vertex_program =
+	const SceGxmProgram* texture2d_vertex_program =
 		sceGxmShaderPatcherGetProgramFromId(texture2d_vertex_id);
-	const SceGxmProgram *texture2d_fragment_program =
+	const SceGxmProgram* texture2d_fragment_program =
 		sceGxmShaderPatcherGetProgramFromId(texture2d_fragment_id);
 
 	texture2d_position = sceGxmProgramFindParameterByName(
@@ -1131,7 +1131,11 @@ void glMatrixMode(GLenum mode){
 }
 
 void glViewport(GLint x,  GLint y,  GLsizei width,  GLsizei height){
-	
+	if ((width < 0) || (height < 0)){
+		error = GL_INVALID_VALUE;
+		return;
+	}
+	sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_NONE, x, y, x+width, y+height);
 }
 
 void glOrtho(GLdouble left,  GLdouble right,  GLdouble bottom,  GLdouble top,  GLdouble nearVal,  GLdouble farVal){
