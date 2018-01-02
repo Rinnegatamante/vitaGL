@@ -134,6 +134,8 @@
 #define GL_INCR_WRAP                      0x8507
 #define GL_DECR_WRAP                      0x8508
 
+#define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 31
+
 typedef enum GLbitfield{
 	GL_DEPTH_BUFFER_BIT   = 0x00000100,
 	GL_STENCIL_BUFFER_BIT = 0x00000400,

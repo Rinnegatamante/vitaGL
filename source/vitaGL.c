@@ -3,6 +3,16 @@
 #include "math_utils.h"
 #include "gpu_utils.h"
 
+// Shaders
+#include "clear_f.h"
+#include "clear_v.h"
+#include "color_f.h"
+#include "color_v.h"
+#include "disable_color_buffer_f.h"
+#include "disable_color_buffer_v.h"
+#include "texture2d_f.h"
+#include "texture2d_v.h"
+
 #define DEG2RAD(deg) ((deg) * M_PI / 180.0)
 #define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 
@@ -71,8 +81,6 @@ struct display_queue_callback_data {
 };
 
 // Internal gxm stuffs
-static matrix4x4 projection_matrix;
-static matrix4x4 modelview_matrix;
 static SceGxmContext* gxm_context;
 static SceUID vdm_ring_buffer_uid;
 static void* vdm_ring_buffer_addr;
@@ -100,23 +108,14 @@ static void* gxm_shader_patcher_vertex_usse_addr;
 static SceUID gxm_shader_patcher_fragment_usse_uid;
 static void* gxm_shader_patcher_fragment_usse_addr;
 
-extern unsigned char _binary_shaders_clear_v_cg_gxp_start;
-extern unsigned char _binary_shaders_clear_f_cg_gxp_start;
-extern unsigned char _binary_shaders_color_v_cg_gxp_start;
-extern unsigned char _binary_shaders_color_f_cg_gxp_start;
-extern unsigned char _binary_shaders_texture2d_v_cg_gxp_start;
-extern unsigned char _binary_shaders_texture2d_f_cg_gxp_start;
-extern unsigned char _binary_shaders_disable_color_buffer_v_cg_gxp_start;
-extern unsigned char _binary_shaders_disable_color_buffer_f_cg_gxp_start;
-
-static const SceGxmProgram* gxm_program_disable_color_buffer_v = (const SceGxmProgram*)&_binary_shaders_disable_color_buffer_v_cg_gxp_start;
-static const SceGxmProgram* gxm_program_disable_color_buffer_f = (const SceGxmProgram*)&_binary_shaders_disable_color_buffer_f_cg_gxp_start;
-static const SceGxmProgram* gxm_program_clear_v = (const SceGxmProgram*)&_binary_shaders_clear_v_cg_gxp_start;
-static const SceGxmProgram* gxm_program_clear_f = (const SceGxmProgram*)&_binary_shaders_clear_f_cg_gxp_start;
-static const SceGxmProgram* gxm_program_color_v = (const SceGxmProgram*)&_binary_shaders_color_v_cg_gxp_start;
-static const SceGxmProgram* gxm_program_color_f = (const SceGxmProgram*)&_binary_shaders_color_f_cg_gxp_start;
-static const SceGxmProgram* gxm_program_texture2d_v = (const SceGxmProgram*)&_binary_shaders_texture2d_v_cg_gxp_start;
-static const SceGxmProgram* gxm_program_texture2d_f = (const SceGxmProgram*)&_binary_shaders_texture2d_f_cg_gxp_start;
+static const SceGxmProgram *const gxm_program_disable_color_buffer_v = (SceGxmProgram*)&disable_color_buffer_v;
+static const SceGxmProgram *const gxm_program_disable_color_buffer_f = (SceGxmProgram*)&disable_color_buffer_f;
+static const SceGxmProgram *const gxm_program_clear_v = (SceGxmProgram*)&clear_v;
+static const SceGxmProgram *const gxm_program_clear_f = (SceGxmProgram*)&clear_f;
+static const SceGxmProgram *const gxm_program_color_v = (SceGxmProgram*)&color_v;
+static const SceGxmProgram *const gxm_program_color_f = (SceGxmProgram*)&color_f;
+static const SceGxmProgram *const gxm_program_texture2d_v = (SceGxmProgram*)&texture2d_v;
+static const SceGxmProgram *const gxm_program_texture2d_f = (SceGxmProgram*)&texture2d_f;
 
 // Disable color buffer shader
 static SceGxmShaderPatcherId disable_color_buffer_vertex_id;
@@ -170,6 +169,8 @@ static uint8_t texture_init = 1;
 static uint64_t vertex_count = 0;
 static uint8_t drawing = 0;
 static uint8_t using_texture = 0;
+static matrix4x4 projection_matrix;
+static matrix4x4 modelview_matrix;
 
 static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
 static GLuint textures[TEXTURES_NUM]; // Textures array

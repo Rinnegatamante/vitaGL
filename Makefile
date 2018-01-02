@@ -2,16 +2,17 @@ TARGET          := libvitaGL
 SOURCES         := source
 SHADERS         := shaders
 
-LIBS = -lSceLibKernel_stub -lSceAppMgr_stub -lm -lSceAppUtil_stub \
-	-lc -lSceCommonDialog_stub -lSceGxm_stub -lSceDisplay_stub -lSceSysmodule_stub \
+LIBS = -lc -lm -lSceGxm_stub -lSceDisplay_stub
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
 CGFILES  := $(foreach dir,$(SHADERS), $(wildcard $(dir)/*.cg))
-OBJS     := $(addsuffix .o,$(CGFILES)) $(CFILES:.c=.o)
+HEADERS  := $(CGFILES:.cg=.h)
+OBJS     := $(CFILES:.c=.o)
 
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
-CFLAGS  = -fno-lto -g -Wl,-q -O3 -ffat-lto-objects
+AR      = $(PREFIX)-ar
+CFLAGS  = -g -Wl,-q -O2
 ASFLAGS = $(CFLAGS)
 
 all: $(TARGET).a
@@ -19,15 +20,17 @@ all: $(TARGET).a
 $(TARGET).a: $(OBJS)
 	$(AR) -rc $@ $^
 
-%_f.cg.o:
-	psp2cgc -profile sce_fp_psp2 $(@:_f.cg.o=_f.cg)
-	$(PREFIX)-objcopy -I binary -O elf32-littlearm -B arm $(@:_f.cg.o=_f_cg.gxp) $@
-	@rm -rf $(@:_f.cg.o=_f_cg.gxp)
+%_f.h:
+	psp2cgc -profile sce_fp_psp2 $(@:_f.h=_f.cg) -o $(@:_f.h=_f.gxp)
+	bin2c $(@:_f.h=_f.gxp) source/$(notdir $(@)) $(notdir $(@:_f.h=_f))
+	@rm -rf $(@:_f.h=_f.gxp)
 	
-%_v.cg.o:
-	psp2cgc -profile sce_vp_psp2 $(@:_v.cg.o=_v.cg)
-	$(PREFIX)-objcopy -I binary -O elf32-littlearm -B arm $(@:_v.cg.o=_v_cg.gxp) $@
-	@rm -rf $(@:_v.cg.o=_v_cg.gxp)
+%_v.h:
+	psp2cgc -profile sce_vp_psp2 $(@:_v.h=_v.cg)  -o $(@:_v.h=_v.gxp)
+	bin2c $(@:_v.h=_v.gxp) source/$(notdir $(@:_v.h=_v.h)) $(notdir $(@:_v.h=_v))
+	@rm -rf $(@:_v.h=_v.gxp)
+
+shaders: $(HEADERS)
 	
 clean:
 	@rm -rf $(TARGET).a $(TARGET).elf $(OBJS)
