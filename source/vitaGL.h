@@ -108,6 +108,7 @@
 #define GL_ALWAYS                         0x0207
 
 #define GL_DEPTH_TEST                     0x0B71
+#define GL_STENCIL_TEST                   0x0B90
 #define GL_BLEND                          0x0BE2
 
 #define GL_VERTEX_ARRAY                   0x8074
@@ -124,6 +125,14 @@
 #define GL_ONE_MINUS_DST_ALPHA            0x0305
 #define GL_DST_COLOR                      0x0306
 #define GL_ONE_MINUS_DST_COLOR            0x0307
+
+#define GL_KEEP                           0x1E00
+#define GL_REPLACE                        0x1E01
+#define GL_INCR                           0x1E02
+#define GL_DECR                           0x1E03
+#define GL_INVERT                         0x150A
+#define GL_INCR_WRAP                      0x8507
+#define GL_DECR_WRAP                      0x8508
 
 typedef enum GLbitfield{
 	GL_DEPTH_BUFFER_BIT   = 0x00000100,
@@ -173,8 +182,12 @@ void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
 
 void glDepthFunc(GLenum func);
-void glBlendFunc(GLenum sfactor, GLenum dfactor);
 void glClearDepth(GLdouble depth);
+
+void glBlendFunc(GLenum sfactor, GLenum dfactor);
+
+void glStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass);
+void glStencilFunc(GLenum func, GLint ref, GLuint mask);
 
 GLboolean glIsEnabled(GLenum cap);
 

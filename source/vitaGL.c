@@ -178,12 +178,19 @@ static texture* gpu_textures[TEXTURES_NUM]; // Textures array
 static SceGxmBlendFactor blend_sfactor = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use source blend factor
 static SceGxmBlendFactor blend_dfactor = SCE_GXM_BLEND_FACTOR_ZERO; // Current in-use dest blend factor
 static SceGxmDepthFunc gxm_depth = SCE_GXM_DEPTH_FUNC_ALWAYS; // Current in-use depth test func
+static SceGxmStencilOp stencil_fail = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when stencil test fails
+static SceGxmStencilOp depth_fail = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test fails
+static SceGxmStencilOp depth_pass = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test passes
+static SceGxmStencilFunc stencil_func = SCE_GXM_STENCIL_FUNC_ALWAYS; // Current in-use stencil function
+static uint8_t stencil_mask = 1; // Current in use mask for stencil test
+static uint8_t stencil_ref = 0; // Current in use reference for stencil test
 static GLdouble depth_value = 1.0f; // Current depth test value
 static int8_t texture_unit = -1; // Current in-use texture unit
 static matrix4x4* matrix = NULL; // Current in-use matrix mode
 static vector4f current_color; // Current in-use color
 static vector4f clear_color_val; // Current clear color for glClear
 static GLboolean depth_test_state = GL_FALSE; // Current state for GL_DEPTH_TEST
+static GLboolean stencil_test_state = GL_FALSE; // Current state for GL_STENCIL_TEST
 static GLboolean vertex_array_state = GL_FALSE; // Current state for GL_VERTEX_ARRAY
 static GLboolean color_array_state = GL_FALSE; // Current state for GL_COLOR_ARRAY
 static GLboolean texture_array_state = GL_FALSE; // Current state for GL_TEXTURE_COORD_ARRAY
@@ -258,6 +265,15 @@ static void change_blend_factor(){
 	_change_blend_factor(&blend_info);
 }
 
+static void change_stencil_settings(){
+	sceGxmSetFrontStencilFunc(gxm_context,
+		stencil_func,
+		stencil_fail,
+		depth_fail,
+		depth_pass,
+		stencil_mask, stencil_mask);
+}
+
 static void disable_blend(){
 	_change_blend_factor(NULL);
 }
@@ -295,7 +311,7 @@ void vglInit(uint32_t gpu_pool_size){
 		&fragment_ring_buffer_uid, &fragment_usse_offset);
 
 	SceGxmContextParams gxm_context_params;
-	memset(&gxm_context_params, 0, sizeof(gxm_context_params));
+	memset(&gxm_context_params, 0, sizeof(SceGxmContextParams));
 	gxm_context_params.hostMem = malloc(SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
 	gxm_context_params.hostMemSize = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
 	gxm_context_params.vdmRingBufferMem = vdm_ring_buffer_addr;
@@ -311,7 +327,7 @@ void vglInit(uint32_t gpu_pool_size){
 	sceGxmCreateContext(&gxm_context_params, &gxm_context);
 
 	SceGxmRenderTargetParams render_target_params;
-	memset(&render_target_params, 0, sizeof(render_target_params));
+	memset(&render_target_params, 0, sizeof(SceGxmRenderTargetParams));
 	render_target_params.flags = 0;
 	render_target_params.width = DISPLAY_WIDTH;
 	render_target_params.height = DISPLAY_HEIGHT;
@@ -378,7 +394,7 @@ void vglInit(uint32_t gpu_pool_size){
 		&shader_patcher_fragment_usse_offset);
 
 	SceGxmShaderPatcherParams shader_patcher_params;
-	memset(&shader_patcher_params, 0, sizeof(shader_patcher_params));
+	memset(&shader_patcher_params, 0, sizeof(SceGxmShaderPatcherParams));
 	shader_patcher_params.userData = NULL;
 	shader_patcher_params.hostAllocCallback = shader_patcher_host_alloc_cb;
 	shader_patcher_params.hostFreeCallback = shader_patcher_host_free_cb;
@@ -405,10 +421,8 @@ void vglInit(uint32_t gpu_pool_size){
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_disable_color_buffer_f,
 		&disable_color_buffer_fragment_id);
 
-	const SceGxmProgram* disable_color_buffer_vertex_program =
-		sceGxmShaderPatcherGetProgramFromId(disable_color_buffer_vertex_id);
-	const SceGxmProgram* disable_color_buffer_fragment_program =
-		sceGxmShaderPatcherGetProgramFromId(disable_color_buffer_fragment_id);
+	const SceGxmProgram* disable_color_buffer_vertex_program = sceGxmShaderPatcherGetProgramFromId(disable_color_buffer_vertex_id);
+	const SceGxmProgram* disable_color_buffer_fragment_program = sceGxmShaderPatcherGetProgramFromId(disable_color_buffer_fragment_id);
 
 	disable_color_buffer_position = sceGxmProgramFindParameterByName(
 		disable_color_buffer_vertex_program, "position");
@@ -432,7 +446,7 @@ void vglInit(uint32_t gpu_pool_size){
 		1, &disable_color_buffer_stream, 1, &disable_color_buffer_vertex_program_patched);
 
 	SceGxmBlendInfo disable_color_buffer_blend_info;
-	memset(&disable_color_buffer_blend_info, 0, sizeof(disable_color_buffer_blend_info));
+	memset(&disable_color_buffer_blend_info, 0, sizeof(SceGxmBlendInfo));
 	disable_color_buffer_blend_info.colorMask = SCE_GXM_COLOR_MASK_NONE;
 	disable_color_buffer_blend_info.colorFunc = SCE_GXM_BLEND_FUNC_NONE;
 	disable_color_buffer_blend_info.alphaFunc = SCE_GXM_BLEND_FUNC_NONE;
@@ -473,10 +487,8 @@ void vglInit(uint32_t gpu_pool_size){
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_clear_f,
 		&clear_fragment_id);
 
-	const SceGxmProgram* clear_vertex_program =
-		sceGxmShaderPatcherGetProgramFromId(clear_vertex_id);
-	const SceGxmProgram* clear_fragment_program =
-		sceGxmShaderPatcherGetProgramFromId(clear_fragment_id);
+	const SceGxmProgram* clear_vertex_program = sceGxmShaderPatcherGetProgramFromId(clear_vertex_id);
+	const SceGxmProgram* clear_fragment_program = sceGxmShaderPatcherGetProgramFromId(clear_fragment_id);
 
 	clear_position = sceGxmProgramFindParameterByName(
 		clear_vertex_program, "position");
@@ -528,10 +540,8 @@ void vglInit(uint32_t gpu_pool_size){
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_color_f,
 		&color_fragment_id);
 
-	const SceGxmProgram* color_vertex_program =
-		sceGxmShaderPatcherGetProgramFromId(color_vertex_id);
-	color_fragment_program =
-		sceGxmShaderPatcherGetProgramFromId(color_fragment_id);
+	const SceGxmProgram* color_vertex_program = sceGxmShaderPatcherGetProgramFromId(color_vertex_id);
+	color_fragment_program = sceGxmShaderPatcherGetProgramFromId(color_fragment_id);
 
 	color_position = sceGxmProgramFindParameterByName(
 		color_vertex_program, "position");
@@ -573,10 +583,8 @@ void vglInit(uint32_t gpu_pool_size){
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_f,
 		&texture2d_fragment_id);
 
-	const SceGxmProgram* texture2d_vertex_program =
-		sceGxmShaderPatcherGetProgramFromId(texture2d_vertex_id);
-	texture2d_fragment_program =
-		sceGxmShaderPatcherGetProgramFromId(texture2d_fragment_id);
+	const SceGxmProgram* texture2d_vertex_program = sceGxmShaderPatcherGetProgramFromId(texture2d_vertex_id);
+	texture2d_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_fragment_id);
 
 	texture2d_position = sceGxmProgramFindParameterByName(
 		texture2d_vertex_program, "position");
@@ -723,6 +731,7 @@ void glClear(GLbitfield mask){
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_indices, 4);
 		sceGxmSetFrontDepthWriteEnable(gxm_context, depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		sceGxmSetFrontDepthFunc(gxm_context, gxm_depth);
+		change_stencil_settings();
 	}
 }
 
@@ -744,6 +753,11 @@ void glEnable(GLenum cap){
 			sceGxmSetFrontDepthFunc(gxm_context, SCE_GXM_DEPTH_FUNC_LESS);
 			depth_test_state = GL_TRUE;
 			break;
+		case GL_STENCIL_TEST:
+			sceGxmSetFrontStencilRef(gxm_context, stencil_ref);
+			change_stencil_settings();
+			stencil_test_state = GL_TRUE;
+			break;
 		case GL_BLEND:
 			change_blend_factor();
 			blend_state = GL_TRUE;
@@ -764,6 +778,15 @@ void glDisable(GLenum cap){
 			sceGxmSetFrontDepthWriteEnable(gxm_context, SCE_GXM_DEPTH_WRITE_DISABLED);
 			sceGxmSetFrontDepthFunc(gxm_context, SCE_GXM_DEPTH_FUNC_ALWAYS);
 			depth_test_state = GL_FALSE;
+			break;
+		case GL_STENCIL_TEST:
+			sceGxmSetFrontStencilFunc(gxm_context,
+				SCE_GXM_STENCIL_FUNC_ALWAYS,
+				SCE_GXM_STENCIL_OP_KEEP,
+				SCE_GXM_STENCIL_OP_KEEP,
+				SCE_GXM_STENCIL_OP_KEEP,
+				0, 0);
+			stencil_test_state = GL_FALSE;
 			break;
 		case GL_BLEND:
 			disable_blend();
@@ -1346,6 +1369,10 @@ void glDepthFunc(GLenum func){
 	sceGxmSetFrontDepthFunc(gxm_context, gxm_depth);
 }
 
+void glClearDepth(GLdouble depth){
+	depth_value = depth;
+}
+
 void glBlendFunc(GLenum sfactor, GLenum dfactor){
 	switch (sfactor){
 		case GL_ZERO:
@@ -1419,8 +1446,131 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor){
 	}
 }
 
-void glClearDepth(GLdouble depth){
-	depth_value = depth;
+void glStencilOp(GLenum sfail,  GLenum dpfail,  GLenum dppass){
+	switch (sfail){
+		case GL_KEEP:
+			stencil_fail = SCE_GXM_STENCIL_OP_KEEP;
+			break;
+		case GL_ZERO:
+			stencil_fail = SCE_GXM_STENCIL_OP_ZERO;
+			break;
+		case GL_REPLACE:
+			stencil_fail = SCE_GXM_STENCIL_OP_REPLACE;
+			break;
+		case GL_INCR:
+			stencil_fail = SCE_GXM_STENCIL_OP_INCR;
+			break;
+		case GL_INCR_WRAP:
+			stencil_fail = SCE_GXM_STENCIL_OP_INCR_WRAP;
+			break;
+		case GL_DECR:
+			stencil_fail = SCE_GXM_STENCIL_OP_DECR;
+			break;
+		case GL_DECR_WRAP:
+			stencil_fail = SCE_GXM_STENCIL_OP_DECR_WRAP;
+			break;
+		case GL_INVERT:
+			stencil_fail = SCE_GXM_STENCIL_OP_INVERT;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	switch (dpfail){
+		case GL_KEEP:
+			depth_fail = SCE_GXM_STENCIL_OP_KEEP;
+			break;
+		case GL_ZERO:
+			depth_fail = SCE_GXM_STENCIL_OP_ZERO;
+			break;
+		case GL_REPLACE:
+			depth_fail = SCE_GXM_STENCIL_OP_REPLACE;
+			break;
+		case GL_INCR:
+			depth_fail = SCE_GXM_STENCIL_OP_INCR;
+			break;
+		case GL_INCR_WRAP:
+			depth_fail = SCE_GXM_STENCIL_OP_INCR_WRAP;
+			break;
+		case GL_DECR:
+			depth_fail = SCE_GXM_STENCIL_OP_DECR;
+			break;
+		case GL_DECR_WRAP:
+			depth_fail = SCE_GXM_STENCIL_OP_DECR_WRAP;
+			break;
+		case GL_INVERT:
+			depth_fail = SCE_GXM_STENCIL_OP_INVERT;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	switch (dppass){
+		case GL_KEEP:
+			depth_pass = SCE_GXM_STENCIL_OP_KEEP;
+			break;
+		case GL_ZERO:
+			depth_pass = SCE_GXM_STENCIL_OP_ZERO;
+			break;
+		case GL_REPLACE:
+			depth_pass = SCE_GXM_STENCIL_OP_REPLACE;
+			break;
+		case GL_INCR:
+			depth_pass = SCE_GXM_STENCIL_OP_INCR;
+			break;
+		case GL_INCR_WRAP:
+			depth_pass = SCE_GXM_STENCIL_OP_INCR_WRAP;
+			break;
+		case GL_DECR:
+			depth_pass = SCE_GXM_STENCIL_OP_DECR;
+			break;
+		case GL_DECR_WRAP:
+			depth_pass = SCE_GXM_STENCIL_OP_DECR_WRAP;
+			break;
+		case GL_INVERT:
+			depth_pass = SCE_GXM_STENCIL_OP_INVERT;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	change_stencil_settings();
+}
+
+void glStencilFunc(GLenum func, GLint ref, GLuint mask){
+	switch (func){
+		case GL_NEVER:
+			stencil_func = SCE_GXM_STENCIL_FUNC_NEVER;
+			break;
+		case GL_LESS:
+			stencil_func = SCE_GXM_STENCIL_FUNC_LESS;
+			break;
+		case GL_LEQUAL:
+			stencil_func = SCE_GXM_STENCIL_FUNC_LESS_EQUAL;
+			break;
+		case GL_GREATER:
+			stencil_func = SCE_GXM_STENCIL_FUNC_GREATER;
+			break;
+		case GL_GEQUAL:
+			stencil_func = SCE_GXM_STENCIL_FUNC_GREATER_EQUAL;
+			break;
+		case GL_EQUAL:
+			stencil_func = SCE_GXM_STENCIL_FUNC_EQUAL;
+			break;
+		case GL_NOTEQUAL:
+			stencil_func = SCE_GXM_STENCIL_FUNC_NOT_EQUAL;
+			break;
+		case GL_ALWAYS:
+			stencil_func = SCE_GXM_STENCIL_FUNC_ALWAYS;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	stencil_mask = mask;
+	stencil_ref = ref;
+	sceGxmSetFrontStencilRef(gxm_context, ref);
+	change_stencil_settings();
 }
 
 GLboolean glIsEnabled(GLenum cap){
@@ -1428,6 +1578,9 @@ GLboolean glIsEnabled(GLenum cap){
 	switch (cap){
 		case GL_DEPTH_TEST:
 			ret = depth_test_state;
+			break;
+		case GL_STENCIL_TEST:
+			ret = stencil_test_state;
 			break;
 		case GL_BLEND:
 			ret = blend_state;
