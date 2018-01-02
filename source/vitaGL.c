@@ -195,6 +195,7 @@ static GLboolean stencil_test_state = GL_FALSE; // Current state for GL_STENCIL_
 static GLboolean vertex_array_state = GL_FALSE; // Current state for GL_VERTEX_ARRAY
 static GLboolean color_array_state = GL_FALSE; // Current state for GL_COLOR_ARRAY
 static GLboolean texture_array_state = GL_FALSE; // Current state for GL_TEXTURE_COORD_ARRAY
+static GLboolean scissor_test_state = GL_FALSE; // Current state for GL_SCISSOR_TEST
 static GLboolean blend_state = GL_FALSE; // Current state for GL_BLEND
 static vertexArray vertex_array; // Current in-use vertex array
 static vertexArray color_array; // Current in-use color array
@@ -763,6 +764,9 @@ void glEnable(GLenum cap){
 			change_blend_factor();
 			blend_state = GL_TRUE;
 			break;
+		case GL_SCISSOR_TEST:
+			scissor_test_state = GL_TRUE;
+			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
@@ -792,6 +796,9 @@ void glDisable(GLenum cap){
 		case GL_BLEND:
 			disable_blend();
 			blend_state = GL_FALSE;
+			break;
+		case GL_SCISSOR_TEST:
+			scissor_test_state = GL_FALSE;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -1241,6 +1248,16 @@ void glViewport(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 	sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_NONE, x, y, x+width, y+height);
 }
 
+void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height){
+	if (scissor_test_state){
+		if ((width < 0) || (height < 0)){
+			error = GL_INVALID_VALUE;
+			return;
+		}
+		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_NONE, x, y, x+width, y+height);
+	}
+}
+
 void glOrtho(GLdouble left,  GLdouble right,  GLdouble bottom,  GLdouble top,  GLdouble nearVal,  GLdouble farVal){
 	if (phase == MODEL_CREATION){
 		error = GL_INVALID_OPERATION;
@@ -1585,6 +1602,10 @@ GLboolean glIsEnabled(GLenum cap){
 			break;
 		case GL_BLEND:
 			ret = blend_state;
+			break;
+		case GL_SCISSOR_TEST:
+			ret = scissor_test_state;
+			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;

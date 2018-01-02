@@ -110,6 +110,7 @@
 #define GL_DEPTH_TEST                     0x0B71
 #define GL_STENCIL_TEST                   0x0B90
 #define GL_BLEND                          0x0BE2
+#define GL_SCISSOR_TEST                   0x0C11
 
 #define GL_VERTEX_ARRAY                   0x8074
 #define GL_COLOR_ARRAY                    0x8076
@@ -190,6 +191,8 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor);
 
 void glStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass);
 void glStencilFunc(GLenum func, GLint ref, GLuint mask);
+
+void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height);
 
 GLboolean glIsEnabled(GLenum cap);
 
