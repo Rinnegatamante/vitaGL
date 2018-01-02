@@ -72,11 +72,8 @@
 #define GL_TEXTURE30                      0x84DE
 #define GL_TEXTURE31                      0x84DF
 
-#define GL_ALPHA                          0x1906
 #define GL_RGB                            0x1907
 #define GL_RGBA                           0x1908
-#define GL_LUMINANCE                      0x1909
-#define GL_LUMINANCE_ALPHA                0x190A
 #define GL_VITA2D_TEXTURE                 0x190B
 
 #define GL_BYTE                           0x1400
@@ -111,10 +108,22 @@
 #define GL_ALWAYS                         0x0207
 
 #define GL_DEPTH_TEST                     0x0B71
+#define GL_BLEND                          0x0BE2
 
 #define GL_VERTEX_ARRAY                   0x8074
 #define GL_COLOR_ARRAY                    0x8076
 #define GL_TEXTURE_COORD_ARRAY            0x8078
+
+#define GL_ZERO                           0
+#define GL_ONE                            1
+#define GL_SRC_COLOR                      0x0300
+#define GL_ONE_MINUS_SRC_COLOR            0x0301
+#define GL_SRC_ALPHA                      0x0302
+#define GL_ONE_MINUS_SRC_ALPHA            0x0303
+#define GL_DST_ALPHA                      0x0304
+#define GL_ONE_MINUS_DST_ALPHA            0x0305
+#define GL_DST_COLOR                      0x0306
+#define GL_ONE_MINUS_DST_COLOR            0x0307
 
 typedef enum GLbitfield{
 	GL_DEPTH_BUFFER_BIT   = 0x00000100,
@@ -164,6 +173,7 @@ void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
 
 void glDepthFunc(GLenum func);
+void glBlendFunc(GLenum sfactor, GLenum dfactor);
 void glClearDepth(GLdouble depth);
 
 GLboolean glIsEnabled(GLenum cap);

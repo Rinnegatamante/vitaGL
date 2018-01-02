@@ -100,14 +100,23 @@ static void* gxm_shader_patcher_vertex_usse_addr;
 static SceUID gxm_shader_patcher_fragment_usse_uid;
 static void* gxm_shader_patcher_fragment_usse_addr;
 
-extern const SceGxmProgram _binary_shaders_clear_v_cg_gxp_start;
-extern const SceGxmProgram _binary_shaders_clear_f_cg_gxp_start;
-extern const SceGxmProgram _binary_shaders_color_v_cg_gxp_start;
-extern const SceGxmProgram _binary_shaders_color_f_cg_gxp_start;
-extern const SceGxmProgram _binary_shaders_texture2d_v_cg_gxp_start;
-extern const SceGxmProgram _binary_shaders_texture2d_f_cg_gxp_start;
-extern const SceGxmProgram _binary_shaders_disable_color_buffer_v_cg_gxp_start;
-extern const SceGxmProgram _binary_shaders_disable_color_buffer_f_cg_gxp_start;
+extern unsigned char _binary_shaders_clear_v_cg_gxp_start;
+extern unsigned char _binary_shaders_clear_f_cg_gxp_start;
+extern unsigned char _binary_shaders_color_v_cg_gxp_start;
+extern unsigned char _binary_shaders_color_f_cg_gxp_start;
+extern unsigned char _binary_shaders_texture2d_v_cg_gxp_start;
+extern unsigned char _binary_shaders_texture2d_f_cg_gxp_start;
+extern unsigned char _binary_shaders_disable_color_buffer_v_cg_gxp_start;
+extern unsigned char _binary_shaders_disable_color_buffer_f_cg_gxp_start;
+
+static const SceGxmProgram* gxm_program_disable_color_buffer_v = (const SceGxmProgram*)&_binary_shaders_disable_color_buffer_v_cg_gxp_start;
+static const SceGxmProgram* gxm_program_disable_color_buffer_f = (const SceGxmProgram*)&_binary_shaders_disable_color_buffer_f_cg_gxp_start;
+static const SceGxmProgram* gxm_program_clear_v = (const SceGxmProgram*)&_binary_shaders_clear_v_cg_gxp_start;
+static const SceGxmProgram* gxm_program_clear_f = (const SceGxmProgram*)&_binary_shaders_clear_f_cg_gxp_start;
+static const SceGxmProgram* gxm_program_color_v = (const SceGxmProgram*)&_binary_shaders_color_v_cg_gxp_start;
+static const SceGxmProgram* gxm_program_color_f = (const SceGxmProgram*)&_binary_shaders_color_f_cg_gxp_start;
+static const SceGxmProgram* gxm_program_texture2d_v = (const SceGxmProgram*)&_binary_shaders_texture2d_v_cg_gxp_start;
+static const SceGxmProgram* gxm_program_texture2d_f = (const SceGxmProgram*)&_binary_shaders_texture2d_f_cg_gxp_start;
 
 // Disable color buffer shader
 static SceGxmShaderPatcherId disable_color_buffer_vertex_id;
@@ -139,6 +148,7 @@ static const SceGxmProgramParameter* color_color;
 static const SceGxmProgramParameter* color_wvp;
 static SceGxmVertexProgram* color_vertex_program_patched;
 static SceGxmFragmentProgram* color_fragment_program_patched;
+static const SceGxmProgram* color_fragment_program;
 
 // Texture2D shader
 static SceGxmShaderPatcherId texture2d_vertex_id;
@@ -148,6 +158,7 @@ static const SceGxmProgramParameter* texture2d_texcoord;
 static const SceGxmProgramParameter* texture2d_wvp;
 static SceGxmVertexProgram* texture2d_vertex_program_patched;
 static SceGxmFragmentProgram* texture2d_fragment_program_patched;
+static const SceGxmProgram* texture2d_fragment_program;
 
 // Internal stuffs
 static SceGxmPrimitiveType prim;
@@ -164,6 +175,8 @@ static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
 static GLuint textures[TEXTURES_NUM]; // Textures array
 static texture* gpu_textures[TEXTURES_NUM]; // Textures array
 
+static SceGxmBlendFactor blend_sfactor = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use source blend factor
+static SceGxmBlendFactor blend_dfactor = SCE_GXM_BLEND_FACTOR_ZERO; // Current in-use dest blend factor
 static SceGxmDepthFunc gxm_depth = SCE_GXM_DEPTH_FUNC_ALWAYS; // Current in-use depth test func
 static GLdouble depth_value = 1.0f; // Current depth test value
 static int8_t texture_unit = -1; // Current in-use texture unit
@@ -174,6 +187,7 @@ static GLboolean depth_test_state = GL_FALSE; // Current state for GL_DEPTH_TEST
 static GLboolean vertex_array_state = GL_FALSE; // Current state for GL_VERTEX_ARRAY
 static GLboolean color_array_state = GL_FALSE; // Current state for GL_COLOR_ARRAY
 static GLboolean texture_array_state = GL_FALSE; // Current state for GL_TEXTURE_COORD_ARRAY
+static GLboolean blend_state = GL_FALSE; // Current state for GL_BLEND
 static vertexArray vertex_array; // Current in-use vertex array
 static vertexArray color_array; // Current in-use color array
 static vertexArray texture_array; // Current in-use texture array
@@ -188,7 +202,7 @@ static void* shader_patcher_host_alloc_cb(void *user_data, unsigned int size){
 	return malloc(size);
 }
 
-void shader_patcher_host_free_cb(void *user_data, void *mem){
+static void shader_patcher_host_free_cb(void *user_data, void *mem){
 	return free(mem);
 }
 
@@ -196,8 +210,8 @@ static void display_queue_callback(const void *callbackData){
 	SceDisplayFrameBuf display_fb;
 	const struct display_queue_callback_data *cb_data = callbackData;
 
-	memset(&display_fb, 0, sizeof(display_fb));
-	display_fb.size = sizeof(display_fb);
+	memset(&display_fb, 0, sizeof(SceDisplayFrameBuf));
+	display_fb.size = sizeof(SceDisplayFrameBuf);
 	display_fb.base = cb_data->addr;
 	display_fb.pitch = DISPLAY_STRIDE;
 	display_fb.pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
@@ -206,6 +220,49 @@ static void display_queue_callback(const void *callbackData){
 
 	sceDisplaySetFrameBuf(&display_fb, SCE_DISPLAY_SETBUF_NEXTFRAME);
 }
+
+static void _change_blend_factor(SceGxmBlendInfo* blend_info){
+	sceGxmFinish(gxm_context);
+	
+	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, color_fragment_program_patched);
+	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_program_patched);
+	
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		color_fragment_id,
+		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE,
+		blend_info,
+		color_fragment_program,
+		&color_fragment_program_patched);
+		
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_fragment_id,
+		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE,
+		blend_info,
+		texture2d_fragment_program,
+		&texture2d_fragment_program_patched);
+}
+
+static void change_blend_factor(){
+	SceGxmBlendInfo blend_info;
+	memset(&blend_info, 0, sizeof(SceGxmBlendInfo));
+	blend_info.colorMask = SCE_GXM_COLOR_MASK_ALL;
+	blend_info.colorFunc = SCE_GXM_BLEND_FUNC_ADD;
+	blend_info.alphaFunc = SCE_GXM_BLEND_FUNC_ADD;
+	blend_info.colorSrc = blend_sfactor;
+	blend_info.colorDst = blend_dfactor;
+	blend_info.alphaSrc = blend_sfactor;
+	blend_info.alphaDst = blend_dfactor;
+	
+	_change_blend_factor(&blend_info);
+}
+
+static void disable_blend(){
+	_change_blend_factor(NULL);
+}
+
+// vitaGL specific functions
 
 void vglInit(uint32_t gpu_pool_size){
 	
@@ -343,9 +400,9 @@ void vglInit(uint32_t gpu_pool_size){
 	sceGxmShaderPatcherCreate(&shader_patcher_params, &gxm_shader_patcher);
 	
 	// Disable color buffer shader register
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_disable_color_buffer_v_cg_gxp_start,
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_disable_color_buffer_v,
 		&disable_color_buffer_vertex_id);
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_disable_color_buffer_f_cg_gxp_start,
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_disable_color_buffer_f,
 		&disable_color_buffer_fragment_id);
 
 	const SceGxmProgram* disable_color_buffer_vertex_program =
@@ -411,9 +468,9 @@ void vglInit(uint32_t gpu_pool_size){
 	depth_indices[3] = 3;
 	
 	// Clear shader register
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_clear_v_cg_gxp_start,
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_clear_v,
 		&clear_vertex_id);
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_clear_f_cg_gxp_start,
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_clear_f,
 		&clear_fragment_id);
 
 	const SceGxmProgram* clear_vertex_program =
@@ -466,14 +523,14 @@ void vglInit(uint32_t gpu_pool_size){
 	clear_indices[3] = 3;
 	
 	// Color shader register
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_color_v_cg_gxp_start,
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_color_v,
 		&color_vertex_id);
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_color_f_cg_gxp_start,
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_color_f,
 		&color_fragment_id);
 
 	const SceGxmProgram* color_vertex_program =
 		sceGxmShaderPatcherGetProgramFromId(color_vertex_id);
-	const SceGxmProgram* color_fragment_program =
+	color_fragment_program =
 		sceGxmShaderPatcherGetProgramFromId(color_fragment_id);
 
 	color_position = sceGxmProgramFindParameterByName(
@@ -511,14 +568,14 @@ void vglInit(uint32_t gpu_pool_size){
 	color_wvp = sceGxmProgramFindParameterByName(color_vertex_program, "u_mvp_matrix");
 		
 	// Texture2D shader register
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_texture2d_v_cg_gxp_start,
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_v,
 		&texture2d_vertex_id);
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, &_binary_shaders_texture2d_f_cg_gxp_start,
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_f,
 		&texture2d_fragment_id);
 
 	const SceGxmProgram* texture2d_vertex_program =
 		sceGxmShaderPatcherGetProgramFromId(texture2d_vertex_id);
-	const SceGxmProgram* texture2d_fragment_program =
+	texture2d_fragment_program =
 		sceGxmShaderPatcherGetProgramFromId(texture2d_fragment_id);
 
 	texture2d_position = sceGxmProgramFindParameterByName(
@@ -677,21 +734,43 @@ void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha){
 }
 
 void glEnable(GLenum cap){
+	if (phase == MODEL_CREATION){
+		error = GL_INVALID_OPERATION;
+		return;
+	}
 	switch (cap){
 		case GL_DEPTH_TEST:
 			sceGxmSetFrontDepthWriteEnable(gxm_context, SCE_GXM_DEPTH_WRITE_ENABLED);
 			sceGxmSetFrontDepthFunc(gxm_context, SCE_GXM_DEPTH_FUNC_LESS);
 			depth_test_state = GL_TRUE;
 			break;
+		case GL_BLEND:
+			change_blend_factor();
+			blend_state = GL_TRUE;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
 	}
 }
 
 void glDisable(GLenum cap){
+	if (phase == MODEL_CREATION){
+		error = GL_INVALID_OPERATION;
+		return;
+	}
 	switch (cap){
 		case GL_DEPTH_TEST:
 			sceGxmSetFrontDepthWriteEnable(gxm_context, SCE_GXM_DEPTH_WRITE_DISABLED);
 			sceGxmSetFrontDepthFunc(gxm_context, SCE_GXM_DEPTH_FUNC_ALWAYS);
 			depth_test_state = GL_FALSE;
+			break;
+		case GL_BLEND:
+			disable_blend();
+			blend_state = GL_FALSE;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
 			break;
 	}
 }
@@ -1267,6 +1346,79 @@ void glDepthFunc(GLenum func){
 	sceGxmSetFrontDepthFunc(gxm_context, gxm_depth);
 }
 
+void glBlendFunc(GLenum sfactor, GLenum dfactor){
+	switch (sfactor){
+		case GL_ZERO:
+			blend_sfactor = SCE_GXM_BLEND_FACTOR_ZERO;
+			break;
+		case GL_ONE:
+			blend_sfactor = SCE_GXM_BLEND_FACTOR_ONE;
+			break;
+		case GL_SRC_COLOR:
+			blend_sfactor = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
+			break;
+		case GL_ONE_MINUS_SRC_COLOR:
+			blend_sfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+			break;
+		case GL_DST_COLOR:
+			blend_sfactor = SCE_GXM_BLEND_FACTOR_DST_COLOR;
+			break;
+		case GL_ONE_MINUS_DST_COLOR:
+			blend_sfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+			break;
+		case GL_SRC_ALPHA:
+			blend_sfactor = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+			break;
+		case GL_ONE_MINUS_SRC_ALPHA:
+			blend_sfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			break;
+		case GL_DST_ALPHA:
+			blend_sfactor = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
+			break;
+		case GL_ONE_MINUS_DST_ALPHA:
+			blend_sfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	switch (dfactor){
+		case GL_ZERO:
+			blend_dfactor = SCE_GXM_BLEND_FACTOR_ZERO;
+			break;
+		case GL_ONE:
+			blend_dfactor = SCE_GXM_BLEND_FACTOR_ONE;
+			break;
+		case GL_SRC_COLOR:
+			blend_dfactor = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
+			break;
+		case GL_ONE_MINUS_SRC_COLOR:
+			blend_dfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+			break;
+		case GL_DST_COLOR:
+			blend_dfactor = SCE_GXM_BLEND_FACTOR_DST_COLOR;
+			break;
+		case GL_ONE_MINUS_DST_COLOR:
+			blend_dfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+			break;
+		case GL_SRC_ALPHA:
+			blend_dfactor = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+			break;
+		case GL_ONE_MINUS_SRC_ALPHA:
+			blend_dfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			break;
+		case GL_DST_ALPHA:
+			blend_dfactor = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
+			break;
+		case GL_ONE_MINUS_DST_ALPHA:
+			blend_dfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+}
+
 void glClearDepth(GLdouble depth){
 	depth_value = depth;
 }
@@ -1277,6 +1429,8 @@ GLboolean glIsEnabled(GLenum cap){
 		case GL_DEPTH_TEST:
 			ret = depth_test_state;
 			break;
+		case GL_BLEND:
+			ret = blend_state;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
