@@ -1141,7 +1141,7 @@ void glTexCoord2i(GLint s, GLint t){
 	last->v.texcoord.y = t;
 }
 
-void glClientActiveTexture(GLenum texture){
+void glActiveTexture(GLenum texture){
 	if (texture < GL_TEXTURE0 && texture > GL_TEXTURE0 + TEXTURES_NUM) error = GL_INVALID_ENUM;
 	else texture_unit = texture - GL_TEXTURE0;
 }
@@ -1871,4 +1871,8 @@ void glDisableClientState(GLenum array){
 			error = GL_INVALID_ENUM;
 			break;
 	}
+}
+
+void glClientActiveTexture(GLenum texture){
+	glActiveTexture(texture);
 }

@@ -157,7 +157,7 @@ void glBindTexture(GLenum target, GLuint texture);
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid * data);
 void glTexParameteri(GLenum target, GLenum pname, GLint param);
 void glTexCoord2i(GLint s, GLint t);
-void glClientActiveTexture(GLenum texture);
+void glActiveTexture(GLenum texture);
 
 void glVertex3f(GLfloat x, GLfloat y, GLfloat z);
 void glArrayElement(GLint i);
@@ -201,6 +201,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count);
 
 void glEnableClientState(GLenum array);
 void glDisableClientState(GLenum array);
+void glClientActiveTexture(GLenum texture);
 
 void vglInit(uint32_t gpu_pool_size);
 void vglEnd(void);
