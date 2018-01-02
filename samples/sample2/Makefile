@@ -4,8 +4,7 @@ SOURCES		:= .
 			
 INCLUDES	:= include
 
-LIBS = -lvitaGL -lSceLibKernel_stub -lSceAppMgr_stub -lSceAppUtil_stub \
-	-lc -lSceCommonDialog_stub -lm -lSceGxm_stub -lSceDisplay_stub -lSceSysmodule_stub \
+LIBS = -lvitaGL -lc -lm -lSceGxm_stub -lSceDisplay_stub
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
 CPPFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.cpp))
@@ -15,11 +14,14 @@ OBJS     := $(addsuffix .o,$(BINFILES)) $(CFILES:.c=.o) $(CPPFILES:.cpp=.o)
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
 CXX      = $(PREFIX)-g++
-CFLAGS  = -fno-lto -g -Wl,-q -O3
+CFLAGS  = -g -Wl,-q -O2
 CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11 -fpermissive
 ASFLAGS = $(CFLAGS)
 
 all: $(TARGET).vpk
+
+debug: CFLAGS += -DDEBUG_BUILD
+debug: all
 
 $(TARGET).vpk: eboot.bin
 	vita-mksfoex -s TITLE_ID=VITAGL$(SAMPLE_NUM) "$(TARGET)" param.sfo
@@ -29,6 +31,7 @@ eboot.bin: $(TARGET).velf
 	vita-make-fself -s $< eboot.bin	
 	
 %.velf: %.elf
+	cp $< $<.unstripped.elf
 	vita-elf-create $< $@
 	
 $(TARGET).elf: $(OBJS)
@@ -36,3 +39,4 @@ $(TARGET).elf: $(OBJS)
 	
 clean:
 	@rm -rf *.velf *.elf *.vpk $(OBJS) param.sfo eboot.bin
+	

@@ -1,6 +1,7 @@
 // Drawing a fullscreen image on screen with glBegin/glEnd
 
 #include <vitaGL.h>
+#include <vita2d.h>
 
 GLint nofcolors = 4;
 GLenum texture_format = GL_VITA2D_TEXTURE;

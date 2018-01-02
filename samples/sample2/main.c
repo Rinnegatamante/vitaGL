@@ -10,7 +10,7 @@ int main(){
 	// Initializing graphics device
 	vglInit(0x800000);
 	
-	glClearColor (050.0f, 0.0f, 0.0f, 0.0f);
+	glClearColor (0.50f, 0.0f, 0.0f, 1.0f);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0, 960, 544, 0, -1, 1);
