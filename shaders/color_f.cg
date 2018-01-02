@@ -1,4 +1,4 @@
-float4 main(float4 color : COLOR) : COLOR
+float4 main(float4 vColor : COLOR) : COLOR
 {
-	return color;
+	return vColor;
 }

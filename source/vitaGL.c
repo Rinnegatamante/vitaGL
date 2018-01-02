@@ -545,10 +545,10 @@ void vglInit(uint32_t gpu_pool_size){
 	color_fragment_program = sceGxmShaderPatcherGetProgramFromId(color_fragment_id);
 
 	color_position = sceGxmProgramFindParameterByName(
-		color_vertex_program, "position");
+		color_vertex_program, "aPosition");
 
 	color_color = sceGxmProgramFindParameterByName(
-		color_fragment_program, "color");
+		color_vertex_program, "aColor");
 
 	SceGxmVertexAttribute color_vertex_attribute[2];
 	SceGxmVertexStream color_vertex_stream;
@@ -558,25 +558,25 @@ void vglInit(uint32_t gpu_pool_size){
 	color_vertex_attribute[0].componentCount = 3;
 	color_vertex_attribute[0].regIndex = sceGxmProgramParameterGetResourceIndex(
 		color_position);
-	color_vertex_attribute[0].streamIndex = 0;
-	color_vertex_attribute[0].offset = 12;
-	color_vertex_attribute[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-	color_vertex_attribute[0].componentCount = 4;
-	color_vertex_attribute[0].regIndex = sceGxmProgramParameterGetResourceIndex(
-		color_position);
-	color_vertex_stream.stride = sizeof(struct clear_vertex);
+	color_vertex_attribute[1].streamIndex = 0;
+	color_vertex_attribute[1].offset = sizeof(vector3f);
+	color_vertex_attribute[1].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+	color_vertex_attribute[1].componentCount = 4;
+	color_vertex_attribute[1].regIndex = sceGxmProgramParameterGetResourceIndex(
+		color_color);
+	color_vertex_stream.stride = sizeof(struct color_vertex);
 	color_vertex_stream.indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 
 	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
 		color_vertex_id, color_vertex_attribute,
-		1, &color_vertex_stream, 1, &color_vertex_program_patched);
+		2, &color_vertex_stream, 1, &color_vertex_program_patched);
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		color_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		SCE_GXM_MULTISAMPLE_NONE, NULL, color_fragment_program,
 		&color_fragment_program_patched);
 		
-	color_wvp = sceGxmProgramFindParameterByName(color_vertex_program, "u_mvp_matrix");
+	color_wvp = sceGxmProgramFindParameterByName(color_vertex_program, "wvp");
 		
 	// Texture2D shader register
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_v,
@@ -591,7 +591,7 @@ void vglInit(uint32_t gpu_pool_size){
 		texture2d_vertex_program, "position");
 
 	texture2d_texcoord = sceGxmProgramFindParameterByName(
-		texture2d_fragment_program, "texcoord");
+		texture2d_vertex_program, "texcoord");
 
 	SceGxmVertexAttribute texture2d_vertex_attribute[2];
 	SceGxmVertexStream texture2d_vertex_stream;
@@ -708,7 +708,7 @@ void glClear(GLbitfield mask){
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &color_buffer);
 		sceGxmSetUniformDataF(color_buffer, clear_color, 0, 4, &clear_color_val.r);
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLES, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 3);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
 		sceGxmSetFrontDepthWriteEnable(gxm_context, depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		sceGxmSetFrontDepthFunc(gxm_context, gxm_depth);
 		drawing = 1;
@@ -1802,6 +1802,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 						for (n=0; n<count; n++){
 							memcpy(&vertices[n], ptr, vertex_array.size * vertex_array.num);
 							memcpy(&vertices[n].color, ptr_clr, color_array.size * color_array.num);
+							if (color_array.num == 3) vertices[n].color.a = 1.0f;
 							indices[n] = n;
 							ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
 							ptr_clr += ((color_array.num * color_array.size) + color_array.stride);
@@ -1817,6 +1818,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 							for (j=0; j < 4; j++){
 								memcpy(&vertices[i*4+j], ptr, vertex_array.size * vertex_array.num);
 								memcpy(&vertices[n].color, ptr_clr, color_array.size * color_array.num);
+								if (color_array.num == 3) vertices[n].color.a = 1.0f;
 								ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
 								ptr_clr += ((color_array.num * color_array.size) + color_array.stride);
 							}
