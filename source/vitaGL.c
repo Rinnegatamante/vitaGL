@@ -601,18 +601,18 @@ void vglInit(uint32_t gpu_pool_size){
 	texture2d_vertex_attribute[0].componentCount = 3;
 	texture2d_vertex_attribute[0].regIndex = sceGxmProgramParameterGetResourceIndex(
 		texture2d_position);
-	texture2d_vertex_attribute[0].streamIndex = 0;
-	texture2d_vertex_attribute[0].offset = 12;
-	texture2d_vertex_attribute[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-	texture2d_vertex_attribute[0].componentCount = 2;
-	texture2d_vertex_attribute[0].regIndex = sceGxmProgramParameterGetResourceIndex(
-		texture2d_position);
-	texture2d_vertex_stream.stride = sizeof(struct clear_vertex);
+	texture2d_vertex_attribute[1].streamIndex = 0;
+	texture2d_vertex_attribute[1].offset = sizeof(vector3f);
+	texture2d_vertex_attribute[1].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+	texture2d_vertex_attribute[1].componentCount = 2;
+	texture2d_vertex_attribute[1].regIndex = sceGxmProgramParameterGetResourceIndex(
+		texture2d_texcoord);
+	texture2d_vertex_stream.stride = sizeof(struct texture2d_vertex);
 	texture2d_vertex_stream.indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 
 	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
 		texture2d_vertex_id, texture2d_vertex_attribute,
-		1, &texture2d_vertex_stream, 1, &texture2d_vertex_program_patched);
+		2, &texture2d_vertex_stream, 1, &texture2d_vertex_program_patched);
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		texture2d_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
