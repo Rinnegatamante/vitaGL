@@ -181,8 +181,10 @@ static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
 static GLuint textures[TEXTURES_NUM]; // Textures array
 static texture* gpu_textures[TEXTURES_NUM]; // Textures array
 
-static SceGxmBlendFactor blend_sfactor = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use source blend factor
-static SceGxmBlendFactor blend_dfactor = SCE_GXM_BLEND_FACTOR_ZERO; // Current in-use dest blend factor
+static SceGxmBlendFactor blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use RGB source blend factor
+static SceGxmBlendFactor blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ZERO; // Current in-use RGB dest blend factor
+static SceGxmBlendFactor blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use A source blend factor
+static SceGxmBlendFactor blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ZERO; // Current in-use A dest blend factor
 static SceGxmDepthFunc gxm_depth = SCE_GXM_DEPTH_FUNC_ALWAYS; // Current in-use depth test func
 static SceGxmStencilOp stencil_fail = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when stencil test fails
 static SceGxmStencilOp depth_fail = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test fails
@@ -269,10 +271,10 @@ static void change_blend_factor(){
 	blend_info.colorMask = SCE_GXM_COLOR_MASK_ALL;
 	blend_info.colorFunc = SCE_GXM_BLEND_FUNC_ADD;
 	blend_info.alphaFunc = SCE_GXM_BLEND_FUNC_ADD;
-	blend_info.colorSrc = blend_sfactor;
-	blend_info.colorDst = blend_dfactor;
-	blend_info.alphaSrc = blend_sfactor;
-	blend_info.alphaDst = blend_dfactor;
+	blend_info.colorSrc = blend_sfactor_rgb;
+	blend_info.colorDst = blend_dfactor_rgb;
+	blend_info.alphaSrc = blend_sfactor_a;
+	blend_info.alphaDst = blend_dfactor_a;
 	
 	_change_blend_factor(&blend_info);
 }
@@ -730,7 +732,7 @@ void glClear(GLbitfield mask){
 		sceGxmSetUniformDataF(color_buffer, clear_color, 0, 4, &clear_color_val.r);
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
-		sceGxmSetFrontDepthWriteEnable(gxm_context, depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		sceGxmSetFrontDepthWriteEnable(gxm_context, depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		sceGxmSetFrontDepthFunc(gxm_context, gxm_depth);
 		drawing = 1;
 	}
@@ -751,7 +753,7 @@ void glClear(GLbitfield mask){
 		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
 		sceGxmSetVertexStream(gxm_context, 0, depth_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_indices, 4);
-		sceGxmSetFrontDepthWriteEnable(gxm_context, depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		sceGxmSetFrontDepthWriteEnable(gxm_context, depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		sceGxmSetFrontDepthFunc(gxm_context, gxm_depth);
 		change_stencil_settings();
 	}
@@ -771,7 +773,6 @@ void glEnable(GLenum cap){
 	}
 	switch (cap){
 		case GL_DEPTH_TEST:
-			sceGxmSetFrontDepthWriteEnable(gxm_context, SCE_GXM_DEPTH_WRITE_ENABLED);
 			sceGxmSetFrontDepthFunc(gxm_context, SCE_GXM_DEPTH_FUNC_LESS);
 			depth_test_state = GL_TRUE;
 			break;
@@ -804,7 +805,6 @@ void glDisable(GLenum cap){
 	}
 	switch (cap){
 		case GL_DEPTH_TEST:
-			sceGxmSetFrontDepthWriteEnable(gxm_context, SCE_GXM_DEPTH_WRITE_DISABLED);
 			sceGxmSetFrontDepthFunc(gxm_context, SCE_GXM_DEPTH_FUNC_ALWAYS);
 			depth_test_state = GL_FALSE;
 			break;
@@ -1461,34 +1461,34 @@ void glDepthMask(GLboolean flag){
 void glBlendFunc(GLenum sfactor, GLenum dfactor){
 	switch (sfactor){
 		case GL_ZERO:
-			blend_sfactor = SCE_GXM_BLEND_FACTOR_ZERO;
+			blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ZERO;
 			break;
 		case GL_ONE:
-			blend_sfactor = SCE_GXM_BLEND_FACTOR_ONE;
+			blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE;
 			break;
 		case GL_SRC_COLOR:
-			blend_sfactor = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
+			blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
 			break;
 		case GL_ONE_MINUS_SRC_COLOR:
-			blend_sfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+			blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
 			break;
 		case GL_DST_COLOR:
-			blend_sfactor = SCE_GXM_BLEND_FACTOR_DST_COLOR;
+			blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_DST_COLOR;
 			break;
 		case GL_ONE_MINUS_DST_COLOR:
-			blend_sfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+			blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
 			break;
 		case GL_SRC_ALPHA:
-			blend_sfactor = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+			blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
 			break;
 		case GL_ONE_MINUS_SRC_ALPHA:
-			blend_sfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 			break;
 		case GL_DST_ALPHA:
-			blend_sfactor = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
+			blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
 			break;
 		case GL_ONE_MINUS_DST_ALPHA:
-			blend_sfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+			blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -1496,34 +1496,177 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor){
 	}
 	switch (dfactor){
 		case GL_ZERO:
-			blend_dfactor = SCE_GXM_BLEND_FACTOR_ZERO;
+			blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ZERO;
 			break;
 		case GL_ONE:
-			blend_dfactor = SCE_GXM_BLEND_FACTOR_ONE;
+			blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE;
 			break;
 		case GL_SRC_COLOR:
-			blend_dfactor = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
+			blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
 			break;
 		case GL_ONE_MINUS_SRC_COLOR:
-			blend_dfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+			blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
 			break;
 		case GL_DST_COLOR:
-			blend_dfactor = SCE_GXM_BLEND_FACTOR_DST_COLOR;
+			blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_DST_COLOR;
 			break;
 		case GL_ONE_MINUS_DST_COLOR:
-			blend_dfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+			blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
 			break;
 		case GL_SRC_ALPHA:
-			blend_dfactor = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+			blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
 			break;
 		case GL_ONE_MINUS_SRC_ALPHA:
-			blend_dfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 			break;
 		case GL_DST_ALPHA:
-			blend_dfactor = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
+			blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
 			break;
 		case GL_ONE_MINUS_DST_ALPHA:
-			blend_dfactor = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+			blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+}
+
+void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha){
+	switch (srcRGB){
+		case GL_ZERO:
+			blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ZERO;
+			break;
+		case GL_ONE:
+			blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE;
+			break;
+		case GL_SRC_COLOR:
+			blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
+			break;
+		case GL_ONE_MINUS_SRC_COLOR:
+			blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+			break;
+		case GL_DST_COLOR:
+			blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_DST_COLOR;
+			break;
+		case GL_ONE_MINUS_DST_COLOR:
+			blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+			break;
+		case GL_SRC_ALPHA:
+			blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+			break;
+		case GL_ONE_MINUS_SRC_ALPHA:
+			blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			break;
+		case GL_DST_ALPHA:
+			blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
+			break;
+		case GL_ONE_MINUS_DST_ALPHA:
+			blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	switch (dstRGB){
+		case GL_ZERO:
+			blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ZERO;
+			break;
+		case GL_ONE:
+			blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE;
+			break;
+		case GL_SRC_COLOR:
+			blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
+			break;
+		case GL_ONE_MINUS_SRC_COLOR:
+			blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+			break;
+		case GL_DST_COLOR:
+			blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_DST_COLOR;
+			break;
+		case GL_ONE_MINUS_DST_COLOR:
+			blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+			break;
+		case GL_SRC_ALPHA:
+			blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+			break;
+		case GL_ONE_MINUS_SRC_ALPHA:
+			blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			break;
+		case GL_DST_ALPHA:
+			blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
+			break;
+		case GL_ONE_MINUS_DST_ALPHA:
+			blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	switch (srcAlpha){
+		case GL_ZERO:
+			blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ZERO;
+			break;
+		case GL_ONE:
+			blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE;
+			break;
+		case GL_SRC_COLOR:
+			blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
+			break;
+		case GL_ONE_MINUS_SRC_COLOR:
+			blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+			break;
+		case GL_DST_COLOR:
+			blend_sfactor_a = SCE_GXM_BLEND_FACTOR_DST_COLOR;
+			break;
+		case GL_ONE_MINUS_DST_COLOR:
+			blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+			break;
+		case GL_SRC_ALPHA:
+			blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+			break;
+		case GL_ONE_MINUS_SRC_ALPHA:
+			blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			break;
+		case GL_DST_ALPHA:
+			blend_sfactor_a = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
+			break;
+		case GL_ONE_MINUS_DST_ALPHA:
+			blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	switch (dstAlpha){
+		case GL_ZERO:
+			blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ZERO;
+			break;
+		case GL_ONE:
+			blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE;
+			break;
+		case GL_SRC_COLOR:
+			blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
+			break;
+		case GL_ONE_MINUS_SRC_COLOR:
+			blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+			break;
+		case GL_DST_COLOR:
+			blend_dfactor_a = SCE_GXM_BLEND_FACTOR_DST_COLOR;
+			break;
+		case GL_ONE_MINUS_DST_COLOR:
+			blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+			break;
+		case GL_SRC_ALPHA:
+			blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+			break;
+		case GL_ONE_MINUS_SRC_ALPHA:
+			blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			break;
+		case GL_DST_ALPHA:
+			blend_dfactor_a = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
+			break;
+		case GL_ONE_MINUS_DST_ALPHA:
+			blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -2115,6 +2258,29 @@ const GLubyte* glGetString(GLenum name){
 		default:
 			error = GL_INVALID_ENUM;
 			return NULL;
+			break;
+	}
+}
+
+void glGetBooleanv(GLenum pname, GLboolean* params){
+	switch (pname){
+		case GL_BLEND:
+			*params = blend_state;
+			break;
+		case GL_BLEND_DST_ALPHA:
+			*params = (blend_dfactor_a == SCE_GXM_BLEND_FACTOR_ZERO) ? GL_FALSE : GL_TRUE;
+			break;
+		case GL_BLEND_DST_RGB:
+			*params = (blend_dfactor_rgb == SCE_GXM_BLEND_FACTOR_ZERO) ? GL_FALSE : GL_TRUE;
+			break;
+		case GL_BLEND_SRC_ALPHA:
+			*params = (blend_sfactor_a == SCE_GXM_BLEND_FACTOR_ZERO) ? GL_FALSE : GL_TRUE;
+			break;
+		case GL_BLEND_SRC_RGB:
+			*params = (blend_sfactor_rgb == SCE_GXM_BLEND_FACTOR_ZERO) ? GL_FALSE : GL_TRUE;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
 			break;
 	}
 }

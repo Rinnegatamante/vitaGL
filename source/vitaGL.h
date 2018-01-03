@@ -147,6 +147,11 @@
 #define GL_VERSION                        0x1F02
 #define GL_EXTENSIONS                     0x1F03
 
+#define GL_BLEND_DST_RGB                  0x80C8
+#define GL_BLEND_SRC_RGB                  0x80C9
+#define GL_BLEND_DST_ALPHA                0x80CA
+#define GL_BLEND_SRC_ALPHA                0x80CB
+
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 31
 
 typedef enum GLbitfield{
@@ -202,6 +207,7 @@ void glClearDepth(GLdouble depth);
 void glDepthMask(GLboolean flag);
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor);
+void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha);
 
 void glStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass);
 void glStencilFunc(GLenum func, GLint ref, GLuint mask);
@@ -210,8 +216,6 @@ void glCullFace(GLenum mode);
 void glFrontFace(GLenum mode);
 
 void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height);
-
-GLboolean glIsEnabled(GLenum cap);
 
 void glPushMatrix(void);
 void glPopMatrix(void);
@@ -228,7 +232,9 @@ void glClientActiveTexture(GLenum texture);
 
 void glFinish(void);
 
+GLboolean glIsEnabled(GLenum cap);
 const GLubyte* glGetString(GLenum name);
+void glGetBooleanv(GLenum pname, GLboolean* params);
 
 void vglInit(uint32_t gpu_pool_size);
 void vglEnd(void);
