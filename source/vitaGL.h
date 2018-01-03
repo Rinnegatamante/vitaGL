@@ -20,7 +20,6 @@
 
 #define GL_MODELVIEW                      0x1700
 #define GL_PROJECTION                     0x1701
-#define GL_TEXTURE                        0x1702
 
 #define GL_POINTS                         0x0000
 #define GL_LINES                          0x0001
@@ -219,6 +218,7 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* poin
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
 void glDrawArrays(GLenum mode, GLint first, GLsizei count);
+void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid * indices);
 
 void glEnableClientState(GLenum array);
 void glDisableClientState(GLenum array);
