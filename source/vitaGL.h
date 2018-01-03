@@ -219,6 +219,8 @@ void glEnableClientState(GLenum array);
 void glDisableClientState(GLenum array);
 void glClientActiveTexture(GLenum texture);
 
+void glFinish(void);
+
 void vglInit(uint32_t gpu_pool_size);
 void vglEnd(void);
 

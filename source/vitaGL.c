@@ -1947,3 +1947,7 @@ void glDisableClientState(GLenum array){
 void glClientActiveTexture(GLenum texture){
 	glActiveTexture(texture);
 }
+
+void glFinish(void){
+	sceGxmFinish(gxm_context);
+}
