@@ -1262,6 +1262,10 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z){
 	vertex_count++;
 }
 
+void glVertex2f(GLfloat x,  GLfloat y){
+	glVertex3f(x, y, 0.5f);
+}
+
 void glArrayElement(GLint i){
 	if (i < 0){
 		error = GL_INVALID_VALUE;

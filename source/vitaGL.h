@@ -1,6 +1,6 @@
 #ifndef _VITAGL_H_
-
 #define _VITAGL_H_
+
 #include <vitasdk.h>
 
 #define GLfloat       float
@@ -180,13 +180,14 @@ void glEnd(void);
 void glGenTextures(GLsizei n, GLuint* textures);
 void glBindTexture(GLenum target, GLuint texture);
 void glDeleteTextures(GLsizei n, const GLuint* textures);
+void glActiveTexture(GLenum texture);
 
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid * data);
 void glTexParameteri(GLenum target, GLenum pname, GLint param);
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param);
 void glTexCoord2i(GLint s, GLint t);
-void glActiveTexture(GLenum texture);
 
+void glVertex2f(GLfloat x, GLfloat y);
 void glVertex3f(GLfloat x, GLfloat y, GLfloat z);
 void glArrayElement(GLint i);
 
