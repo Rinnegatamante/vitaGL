@@ -181,6 +181,8 @@ static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
 static GLuint textures[TEXTURES_NUM]; // Textures array
 static texture* gpu_textures[TEXTURES_NUM]; // Textures array
 
+static SceGxmBlendFunc blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD; // Current in-use RGB blend func
+static SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use A blend func
 static SceGxmBlendFactor blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use RGB source blend factor
 static SceGxmBlendFactor blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ZERO; // Current in-use RGB dest blend factor
 static SceGxmBlendFactor blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use A source blend factor
@@ -269,8 +271,8 @@ static void change_blend_factor(){
 	SceGxmBlendInfo blend_info;
 	memset(&blend_info, 0, sizeof(SceGxmBlendInfo));
 	blend_info.colorMask = SCE_GXM_COLOR_MASK_ALL;
-	blend_info.colorFunc = SCE_GXM_BLEND_FUNC_ADD;
-	blend_info.alphaFunc = SCE_GXM_BLEND_FUNC_ADD;
+	blend_info.colorFunc = blend_func_rgb;
+	blend_info.alphaFunc = blend_func_a;
 	blend_info.colorSrc = blend_sfactor_rgb;
 	blend_info.colorDst = blend_dfactor_rgb;
 	blend_info.alphaSrc = blend_sfactor_a;
@@ -1667,6 +1669,72 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 			break;
 		case GL_ONE_MINUS_DST_ALPHA:
 			blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+}
+
+void glBlendEquation(GLenum mode){
+	switch (mode){
+		case GL_FUNC_ADD:
+			blend_func_rgb = blend_func_a = SCE_GXM_BLEND_FUNC_ADD;
+			break;
+		case GL_FUNC_SUBTRACT:
+			blend_func_rgb = blend_func_a = SCE_GXM_BLEND_FUNC_SUBTRACT;
+			break;
+		case GL_FUNC_REVERSE_SUBTRACT:
+			blend_func_rgb = blend_func_a = SCE_GXM_BLEND_FUNC_REVERSE_SUBTRACT;
+			break;
+		case GL_MIN:
+			blend_func_rgb = blend_func_a = SCE_GXM_BLEND_FUNC_MIN;
+			break;
+		case GL_MAX:
+			blend_func_rgb = blend_func_a = SCE_GXM_BLEND_FUNC_MAX;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+}
+
+void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha){
+	switch (modeRGB){
+		case GL_FUNC_ADD:
+			blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD;
+			break;
+		case GL_FUNC_SUBTRACT:
+			blend_func_rgb = SCE_GXM_BLEND_FUNC_SUBTRACT;
+			break;
+		case GL_FUNC_REVERSE_SUBTRACT:
+			blend_func_rgb = SCE_GXM_BLEND_FUNC_REVERSE_SUBTRACT;
+			break;
+		case GL_MIN:
+			blend_func_rgb = SCE_GXM_BLEND_FUNC_MIN;
+			break;
+		case GL_MAX:
+			blend_func_rgb = SCE_GXM_BLEND_FUNC_MAX;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	switch (modeAlpha){
+		case GL_FUNC_ADD:
+			blend_func_a = SCE_GXM_BLEND_FUNC_ADD;
+			break;
+		case GL_FUNC_SUBTRACT:
+			blend_func_a = SCE_GXM_BLEND_FUNC_SUBTRACT;
+			break;
+		case GL_FUNC_REVERSE_SUBTRACT:
+			blend_func_a = SCE_GXM_BLEND_FUNC_REVERSE_SUBTRACT;
+			break;
+		case GL_MIN:
+			blend_func_a = SCE_GXM_BLEND_FUNC_MIN;
+			break;
+		case GL_MAX:
+			blend_func_a = SCE_GXM_BLEND_FUNC_MAX;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
