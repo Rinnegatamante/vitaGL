@@ -910,6 +910,7 @@ void glEnd(void){
 		switch (prim_extra){
 			case SCE_GXM_PRIMITIVE_NONE:
 				vertices = (texture2d_vertex*)gpu_pool_memalign(vertex_count * sizeof(texture2d_vertex), sizeof(texture2d_vertex));
+				memset(vertices, 0, (vertex_count * sizeof(texture2d_vertex), sizeof(texture2d_vertex)));
 				indices = (uint16_t*)gpu_pool_memalign(vertex_count * sizeof(uint16_t), sizeof(uint16_t));
 				while (object != NULL){
 					memcpy(&vertices[n], &object->v, sizeof(texture2d_vertex));
@@ -924,6 +925,7 @@ void glEnd(void){
 				quad_n = vertex_count >> 2;
 				idx_count = quad_n * 6;
 				vertices = (texture2d_vertex*)gpu_pool_memalign(vertex_count * sizeof(texture2d_vertex), sizeof(texture2d_vertex));
+				memset(vertices, 0, (vertex_count * sizeof(texture2d_vertex), sizeof(texture2d_vertex)));
 				indices = (uint16_t*)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 				int i, j;
 				for (i=0; i < quad_n; i++){
@@ -955,6 +957,7 @@ void glEnd(void){
 		switch (prim_extra){
 			case SCE_GXM_PRIMITIVE_NONE:
 				vertices = (color_vertex*)gpu_pool_memalign(vertex_count * sizeof(color_vertex), sizeof(color_vertex));
+				memset(vertices, 0, (vertex_count * sizeof(color_vertex), sizeof(color_vertex)));
 				indices = (uint16_t*)gpu_pool_memalign(vertex_count * sizeof(uint16_t), sizeof(uint16_t));
 				while (object != NULL){
 					memcpy(&vertices[n], &object->v2, sizeof(color_vertex));
@@ -969,6 +972,7 @@ void glEnd(void){
 				quad_n = vertex_count >> 2;
 				idx_count = quad_n * 6;
 				vertices = (color_vertex*)gpu_pool_memalign(vertex_count * sizeof(color_vertex), sizeof(color_vertex));
+				memset(vertices, 0, (vertex_count * sizeof(color_vertex), sizeof(color_vertex)));
 				indices = (uint16_t*)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 				int i, j;
 				for (i=0; i < quad_n; i++){
@@ -1032,6 +1036,25 @@ void glBindTexture(GLenum target, GLuint texture){
 		default:
 			error = GL_INVALID_ENUM;
 			break;
+	}
+}
+
+void glDeleteTextures(GLsizei n, const GLuint* gl_textures){
+	if (n < 0){
+		error = GL_INVALID_VALUE;
+		return;
+	}
+	int i, j;
+	for (j=0; j<n; j++){
+		if (gl_textures[j] >= GL_TEXTURE0 && gl_textures[j] <= GL_TEXTURE31){
+			uint8_t idx = gl_textures[j] - GL_TEXTURE0;
+			textures[idx] = gl_textures[j];
+			if (gpu_textures[idx] != NULL){
+				gpu_unmap_free(gpu_textures[idx]->data_UID);
+				free(gpu_textures[idx]);
+				gpu_textures[idx] = NULL;
+			}
+		}
 	}
 }
 
