@@ -1192,6 +1192,29 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 	}
 }
 
+void glTexParameterf(GLenum target, GLenum pname, GLfloat param){
+	switch (target){
+		case GL_TEXTURE_2D:
+			switch (pname){
+				case GL_TEXTURE_MIN_FILTER:
+					if (param == GL_NEAREST) sceGxmTextureSetMinFilter(&gpu_textures[texture_unit]->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
+					else if (param == GL_LINEAR) sceGxmTextureSetMinFilter(&gpu_textures[texture_unit]->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
+					break;
+				case GL_TEXTURE_MAG_FILTER:
+					if (param == GL_NEAREST) sceGxmTextureSetMagFilter(&gpu_textures[texture_unit]->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
+					else if (param == GL_LINEAR) sceGxmTextureSetMagFilter(&gpu_textures[texture_unit]->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);	
+					break;
+				default:
+					error = GL_INVALID_ENUM;
+					break;
+			}
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+}
+
 void glTexCoord2i(GLint s, GLint t){
 	using_texture = 1;
 	if (phase != MODEL_CREATION){

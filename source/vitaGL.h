@@ -183,6 +183,7 @@ void glDeleteTextures(GLsizei n, const GLuint* textures);
 
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid * data);
 void glTexParameteri(GLenum target, GLenum pname, GLint param);
+void glTexParameterf(GLenum target, GLenum pname, GLfloat param);
 void glTexCoord2i(GLint s, GLint t);
 void glActiveTexture(GLenum texture);
 
