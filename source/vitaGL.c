@@ -25,6 +25,11 @@
 #define DISPLAY_BUFFER_COUNT  2    // Display buffers to use
 #define GXM_TEX_MAX_SIZE      4096 // MAximum width/height in pixels per texture
 
+const GLubyte* vendor = "Rinnegatamante";
+const GLubyte* renderer = "SGX543MP4+";
+const GLubyte* version = "VitaGL 1.0";
+const GLubyte* extensions = "";
+
 typedef struct clear_vertex{
 	vector2f position;
 } clear_vertex;
@@ -1950,4 +1955,25 @@ void glClientActiveTexture(GLenum texture){
 
 void glFinish(void){
 	sceGxmFinish(gxm_context);
+}
+
+const GLubyte* glGetString(GLenum name){
+	switch (name){
+		case GL_VENDOR:
+			return vendor;
+			break;
+		case GL_RENDERER:
+			return renderer;
+			break;
+		case GL_VERSION:
+			return version;
+			break;
+		case GL_EXTENSIONS:
+			return extensions;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			return NULL;
+			break;
+	}
 }

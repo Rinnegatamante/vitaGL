@@ -143,6 +143,11 @@
 #define GL_BACK                           0x0405
 #define GL_FRONT_AND_BACK                 0x0408
 
+#define GL_VENDOR                         0x1F00
+#define GL_RENDERER                       0x1F01
+#define GL_VERSION                        0x1F02
+#define GL_EXTENSIONS                     0x1F03
+
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 31
 
 typedef enum GLbitfield{
@@ -220,6 +225,8 @@ void glDisableClientState(GLenum array);
 void glClientActiveTexture(GLenum texture);
 
 void glFinish(void);
+
+const GLubyte* glGetString(GLenum name);
 
 void vglInit(uint32_t gpu_pool_size);
 void vglEnd(void);
