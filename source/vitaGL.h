@@ -199,6 +199,7 @@ void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
 
 void glDepthFunc(GLenum func);
 void glClearDepth(GLdouble depth);
+void glDepthMask(GLboolean flag);
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor);
 

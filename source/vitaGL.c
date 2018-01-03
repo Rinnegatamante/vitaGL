@@ -203,6 +203,7 @@ static GLboolean texture_array_state = GL_FALSE; // Current state for GL_TEXTURE
 static GLboolean scissor_test_state = GL_FALSE; // Current state for GL_SCISSOR_TEST
 static GLboolean cull_face_state = GL_FALSE; // Current state for GL_CULL_FACE
 static GLboolean blend_state = GL_FALSE; // Current state for GL_BLEND
+static GLboolean depth_mask_state = GL_TRUE; // Current state for glDepthMask
 static GLenum gl_cull_mode = GL_BACK; // Current in-use openGL cull mode
 static GLenum gl_front_face = GL_CCW; // Current in-use openGL cull mode
 static GLboolean no_polygons_mode = GL_FALSE; // GL_TRUE when cull mode to GL_FRONT_AND_BACK is set
@@ -1446,6 +1447,15 @@ void glDepthFunc(GLenum func){
 
 void glClearDepth(GLdouble depth){
 	depth_value = depth;
+}
+
+void glDepthMask(GLboolean flag){
+	if (phase == MODEL_CREATION){
+		error = GL_INVALID_OPERATION;
+		return;
+	}
+	depth_mask_state = flag;
+	sceGxmSetFrontDepthWriteEnable(gxm_context, depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor){
