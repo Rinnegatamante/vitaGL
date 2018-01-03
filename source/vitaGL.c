@@ -183,8 +183,8 @@ static SceGxmStencilOp stencil_fail = SCE_GXM_STENCIL_OP_KEEP; // Current in-use
 static SceGxmStencilOp depth_fail = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test fails
 static SceGxmStencilOp depth_pass = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test passes
 static SceGxmStencilFunc stencil_func = SCE_GXM_STENCIL_FUNC_ALWAYS; // Current in-use stencil function
-static uint8_t stencil_mask = 1; // Current in use mask for stencil test
-static uint8_t stencil_ref = 0; // Current in use reference for stencil test
+static uint8_t stencil_mask = 1; // Current in-use mask for stencil test
+static uint8_t stencil_ref = 0; // Current in-use reference for stencil test
 static GLdouble depth_value = 1.0f; // Current depth test value
 static int8_t texture_unit = -1; // Current in-use texture unit
 static matrix4x4* matrix = NULL; // Current in-use matrix mode
@@ -196,7 +196,11 @@ static GLboolean vertex_array_state = GL_FALSE; // Current state for GL_VERTEX_A
 static GLboolean color_array_state = GL_FALSE; // Current state for GL_COLOR_ARRAY
 static GLboolean texture_array_state = GL_FALSE; // Current state for GL_TEXTURE_COORD_ARRAY
 static GLboolean scissor_test_state = GL_FALSE; // Current state for GL_SCISSOR_TEST
+static GLboolean cull_face_state = GL_FALSE; // Current state for GL_CULL_FACE
 static GLboolean blend_state = GL_FALSE; // Current state for GL_BLEND
+static GLenum gl_cull_mode = GL_BACK; // Current in-use openGL cull mode
+static GLenum gl_front_face = GL_CCW; // Current in-use openGL cull mode
+static GLboolean no_polygons_mode = GL_FALSE; // GL_TRUE when cull mode to GL_FRONT_AND_BACK is set
 static vertexArray vertex_array; // Current in-use vertex array
 static vertexArray color_array; // Current in-use color array
 static vertexArray texture_array; // Current in-use texture array
@@ -278,6 +282,16 @@ static void change_stencil_settings(){
 
 static void disable_blend(){
 	_change_blend_factor(NULL);
+}
+
+static void change_cull_mode(){
+	if (cull_face_state){
+		if ((gl_front_face == GL_CW) && (gl_cull_mode == GL_BACK)) sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CCW);
+		if ((gl_front_face == GL_CCW) && (gl_cull_mode == GL_BACK)) sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CW);
+		if ((gl_front_face == GL_CCW) && (gl_cull_mode == GL_FRONT)) sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CCW);
+		if ((gl_front_face == GL_CW) && (gl_cull_mode == GL_FRONT)) sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CW);
+		if (gl_cull_mode == GL_FRONT_AND_BACK) no_polygons_mode = GL_TRUE;
+	}else sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_NONE);
 }
 
 // vitaGL specific functions
@@ -767,6 +781,10 @@ void glEnable(GLenum cap){
 		case GL_SCISSOR_TEST:
 			scissor_test_state = GL_TRUE;
 			break;
+		case GL_CULL_FACE:
+			cull_face_state = GL_TRUE;
+			change_cull_mode();
+			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
@@ -799,6 +817,10 @@ void glDisable(GLenum cap){
 			break;
 		case GL_SCISSOR_TEST:
 			scissor_test_state = GL_FALSE;
+			break;
+		case GL_CULL_FACE:
+			cull_face_state = GL_FALSE;
+			change_cull_mode();
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -846,6 +868,13 @@ void glEnd(void){
 		return;
 	}
 	phase = NONE;
+	
+	if (no_polygons_mode && ((prim != SCE_GXM_PRIMITIVE_TRIANGLES) && (prim >= SCE_GXM_PRIMITIVE_TRIANGLE_STRIP))){
+		model = NULL;
+		vertex_count = 0;
+		using_texture = 0;
+		return;
+	}
 	
 	matrix4x4 mvp_matrix;
 	matrix4x4 final_mvp_matrix;
@@ -1591,6 +1620,16 @@ void glStencilFunc(GLenum func, GLint ref, GLuint mask){
 	change_stencil_settings();
 }
 
+void glCullFace(GLenum mode){
+	gl_cull_mode = mode;
+	if (cull_face_state) change_cull_mode();
+}
+
+void glFrontFace(GLenum mode){
+	gl_front_face = mode;
+	if (cull_face_state) change_cull_mode();
+}
+
 GLboolean glIsEnabled(GLenum cap){
 	GLboolean ret = GL_FALSE;
 	switch (cap){
@@ -1605,6 +1644,9 @@ GLboolean glIsEnabled(GLenum cap){
 			break;
 		case GL_SCISSOR_TEST:
 			ret = scissor_test_state;
+			break;
+		case GL_CULL_FACE:
+			ret = cull_face_state;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -1714,6 +1756,7 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* po
 void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 	SceGxmPrimitiveType gxm_p;
 	SceGxmPrimitiveTypeExtra gxm_ep = SCE_GXM_PRIMITIVE_NONE;
+	GLboolean skip_draw = GL_FALSE;
 	if (vertex_array_state){
 		switch (mode){
 			case GL_POINTS:
@@ -1724,22 +1767,26 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				break;
 			case GL_TRIANGLES:
 				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLES;
+				if (no_polygons_mode) skip_draw = GL_TRUE;
 				break;
 			case GL_TRIANGLE_STRIP:
 				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP;
+				if (no_polygons_mode) skip_draw = GL_TRUE;
 				break;
 			case GL_TRIANGLE_FAN:
 				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_FAN;
+				if (no_polygons_mode) skip_draw = GL_TRUE;
 				break;
 			case GL_QUADS:
 				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLES;
 				gxm_ep = SCE_GXM_PRIMITIVE_QUADS;
+				if (no_polygons_mode) skip_draw = GL_TRUE;
 				break;
 			default:
 				error = GL_INVALID_ENUM;
 				break;
 		}
-		if (error == GL_NO_ERROR){
+		if ((error == GL_NO_ERROR) && (!skip_draw)){
 			matrix4x4 mvp_matrix;
 			matrix4x4 final_mvp_matrix;
 	

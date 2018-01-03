@@ -107,6 +107,7 @@
 #define GL_GEQUAL                         0x0206
 #define GL_ALWAYS                         0x0207
 
+#define GL_CULL_FACE                      0x0B44
 #define GL_DEPTH_TEST                     0x0B71
 #define GL_STENCIL_TEST                   0x0B90
 #define GL_BLEND                          0x0BE2
@@ -134,6 +135,13 @@
 #define GL_INVERT                         0x150A
 #define GL_INCR_WRAP                      0x8507
 #define GL_DECR_WRAP                      0x8508
+
+#define GL_CW                             0x0900
+#define GL_CCW                            0x0901
+
+#define GL_FRONT                          0x0404
+#define GL_BACK                           0x0405
+#define GL_FRONT_AND_BACK                 0x0408
 
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 31
 
@@ -191,6 +199,9 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor);
 
 void glStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass);
 void glStencilFunc(GLenum func, GLint ref, GLuint mask);
+
+void glCullFace(GLenum mode);
+void glFrontFace(GLenum mode);
 
 void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height);
 
