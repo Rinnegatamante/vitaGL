@@ -163,6 +163,10 @@
 #define GL_MIN                            0x8007
 #define GL_MAX                            0x8008
 
+#define GL_POLYGON_OFFSET_POINT           0x2A01
+#define GL_POLYGON_OFFSET_LINE            0x2A02
+#define GL_POLYGON_OFFSET_FILL            0x8037
+
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 31
 
 typedef enum GLbitfield{
@@ -214,6 +218,7 @@ void glMatrixMode(GLenum mode);
 void glMultMatrixf(const GLfloat* m);
 void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
 void glPolygonMode(GLenum face, GLenum mode);
+void glPolygonOffset(GLfloat factor, GLfloat units);
 void glPopMatrix(void);
 void glPushMatrix(void);
 void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z);

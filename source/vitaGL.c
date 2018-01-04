@@ -212,9 +212,14 @@ static GLboolean scissor_test_state = GL_FALSE; // Current state for GL_SCISSOR_
 static GLboolean cull_face_state = GL_FALSE; // Current state for GL_CULL_FACE
 static GLboolean blend_state = GL_FALSE; // Current state for GL_BLEND
 static GLboolean depth_mask_state = GL_TRUE; // Current state for glDepthMask
+static GLboolean pol_offset_fill = GL_FALSE; // Current state for GL_POLYGON_OFFSET_FILL
+static GLboolean pol_offset_line = GL_FALSE; // Current state for GL_POLYGON_OFFSET_LINE
+static GLboolean pol_offset_point = GL_FALSE; // Current state for GL_POLYGON_OFFSET_POINT
 static GLenum gl_cull_mode = GL_BACK; // Current in-use openGL cull mode
 static GLenum gl_front_face = GL_CCW; // Current in-use openGL cull mode
 static GLboolean no_polygons_mode = GL_FALSE; // GL_TRUE when cull mode to GL_FRONT_AND_BACK is set
+static GLfloat pol_factor = 0.0f; // Current factor for glPolygonOffset
+static GLfloat pol_units = 0.0f; // Current units for glPolygonOffset
 static vertexArray vertex_array; // Current in-use vertex array
 static vertexArray color_array; // Current in-use color array
 static vertexArray texture_array; // Current in-use texture array
@@ -325,6 +330,37 @@ static void change_cull_mode(){
 		if ((gl_front_face == GL_CW) && (gl_cull_mode == GL_FRONT)) sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CW);
 		if (gl_cull_mode == GL_FRONT_AND_BACK) no_polygons_mode = GL_TRUE;
 	}else sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_NONE);
+}
+
+static void update_polygon_offset(){
+	switch (polygon_mode_front){
+		case SCE_GXM_POLYGON_MODE_LINE:
+			if (pol_offset_line) sceGxmSetFrontDepthBias(gxm_context, pol_factor, pol_units);
+			else sceGxmSetFrontDepthBias(gxm_context, 0.0f, 0.0f);
+			break;
+		case SCE_GXM_POLYGON_MODE_POINT:
+			if (pol_offset_point) sceGxmSetFrontDepthBias(gxm_context, pol_factor, pol_units);
+			else sceGxmSetFrontDepthBias(gxm_context, 0.0f, 0.0f);
+			break;
+		case SCE_GXM_POLYGON_MODE_TRIANGLE_FILL:
+			if (pol_offset_fill) sceGxmSetFrontDepthBias(gxm_context, pol_factor, pol_units);
+			else sceGxmSetFrontDepthBias(gxm_context, 0.0f, 0.0f);
+			break;
+	}
+	switch (polygon_mode_back){
+		case SCE_GXM_POLYGON_MODE_LINE:
+			if (pol_offset_line) sceGxmSetBackDepthBias(gxm_context, pol_factor, pol_units);
+			else sceGxmSetBackDepthBias(gxm_context, 0.0f, 0.0f);
+			break;
+		case SCE_GXM_POLYGON_MODE_POINT:
+			if (pol_offset_point) sceGxmSetBackDepthBias(gxm_context, pol_factor, pol_units);
+			else sceGxmSetBackDepthBias(gxm_context, 0.0f, 0.0f);
+			break;
+		case SCE_GXM_POLYGON_MODE_TRIANGLE_FILL:
+			if (pol_offset_fill) sceGxmSetBackDepthBias(gxm_context, pol_factor, pol_units);
+			else sceGxmSetBackDepthBias(gxm_context, 0.0f, 0.0f);
+			break;
+	}	
 }
 
 // vitaGL specific functions
@@ -829,6 +865,18 @@ void glEnable(GLenum cap){
 			cull_face_state = GL_TRUE;
 			change_cull_mode();
 			break;
+		case GL_POLYGON_OFFSET_FILL:
+			pol_offset_fill = GL_TRUE;
+			update_polygon_offset();
+			break;
+		case GL_POLYGON_OFFSET_LINE:
+			pol_offset_line = GL_TRUE;
+			update_polygon_offset();
+			break;
+		case GL_POLYGON_OFFSET_POINT:
+			pol_offset_point = GL_TRUE;
+			update_polygon_offset();
+			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
@@ -864,6 +912,18 @@ void glDisable(GLenum cap){
 		case GL_CULL_FACE:
 			cull_face_state = GL_FALSE;
 			change_cull_mode();
+			break;
+		case GL_POLYGON_OFFSET_FILL:
+			pol_offset_fill = GL_FALSE;
+			update_polygon_offset();
+			break;
+		case GL_POLYGON_OFFSET_LINE:
+			pol_offset_line = GL_FALSE;
+			update_polygon_offset();
+			break;
+		case GL_POLYGON_OFFSET_POINT:
+			pol_offset_point = GL_FALSE;
+			update_polygon_offset();
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -2039,12 +2099,15 @@ void glPolygonMode(GLenum face,  GLenum mode){
 	}
 	switch (face){
 		case GL_FRONT:
+			polygon_mode_front = new_mode;
 			sceGxmSetFrontPolygonMode(gxm_context, new_mode);
 			break;
 		case GL_BACK:
+			polygon_mode_back = new_mode;
 			sceGxmSetBackPolygonMode(gxm_context, new_mode);
 			break;
 		case GL_FRONT_AND_BACK:
+			polygon_mode_front = polygon_mode_back = new_mode;
 			sceGxmSetFrontPolygonMode(gxm_context, new_mode);
 			sceGxmSetBackPolygonMode(gxm_context, new_mode);
 			break;
@@ -2052,6 +2115,13 @@ void glPolygonMode(GLenum face,  GLenum mode){
 			error = GL_INVALID_ENUM;
 			return;
 	}
+	update_polygon_offset();
+}
+
+void glPolygonOffset(GLfloat factor, GLfloat units){
+	pol_factor = factor;
+	pol_units = units;
+	update_polygon_offset();
 }
 
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer){
