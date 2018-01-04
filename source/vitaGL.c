@@ -188,9 +188,12 @@ static SceGxmBlendFactor blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ZERO; // Curre
 static SceGxmBlendFactor blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use A source blend factor
 static SceGxmBlendFactor blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ZERO; // Current in-use A dest blend factor
 static SceGxmDepthFunc gxm_depth = SCE_GXM_DEPTH_FUNC_ALWAYS; // Current in-use depth test func
-static SceGxmStencilOp stencil_fail = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when stencil test fails
-static SceGxmStencilOp depth_fail = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test fails
-static SceGxmStencilOp depth_pass = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test passes
+static SceGxmStencilOp stencil_fail_front = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when stencil test fails for front
+static SceGxmStencilOp depth_fail_front = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test fails for front
+static SceGxmStencilOp depth_pass_front = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test passes for front
+static SceGxmStencilOp stencil_fail_back = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when stencil test fails for back
+static SceGxmStencilOp depth_fail_back = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test fails for back
+static SceGxmStencilOp depth_pass_back = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test passes for back
 static SceGxmStencilFunc stencil_func = SCE_GXM_STENCIL_FUNC_ALWAYS; // Current in-use stencil function
 static SceGxmPolygonMode polygon_mode_front = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Current in-use polygon mode for front
 static SceGxmPolygonMode polygon_mode_back = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Current in-use polygon mode for back
@@ -310,16 +313,50 @@ static void change_depth_write(SceGxmDepthWriteMode mode){
 static void change_stencil_settings(){
 	sceGxmSetFrontStencilFunc(gxm_context,
 		stencil_func,
-		stencil_fail,
-		depth_fail,
-		depth_pass,
+		stencil_fail_front,
+		depth_fail_front,
+		depth_pass_front,
 		stencil_mask, stencil_mask_front_write);
 	sceGxmSetBackStencilFunc(gxm_context,
 		stencil_func,
-		stencil_fail,
-		depth_fail,
-		depth_pass,
+		stencil_fail_back,
+		depth_fail_back,
+		depth_pass_back,
 		stencil_mask, stencil_mask_back_write);
+}
+
+static GLboolean change_stencil_config(SceGxmStencilOp* cfg, GLenum new){
+	GLboolean ret = GL_TRUE;
+	switch (new){
+		case GL_KEEP:
+			*cfg = SCE_GXM_STENCIL_OP_KEEP;
+			break;
+		case GL_ZERO:
+			*cfg = SCE_GXM_STENCIL_OP_ZERO;
+			break;
+		case GL_REPLACE:
+			*cfg = SCE_GXM_STENCIL_OP_REPLACE;
+			break;
+		case GL_INCR:
+			*cfg = SCE_GXM_STENCIL_OP_INCR;
+			break;
+		case GL_INCR_WRAP:
+			*cfg = SCE_GXM_STENCIL_OP_INCR_WRAP;
+			break;
+		case GL_DECR:
+			*cfg = SCE_GXM_STENCIL_OP_DECR;
+			break;
+		case GL_DECR_WRAP:
+			*cfg = SCE_GXM_STENCIL_OP_DECR_WRAP;
+			break;
+		case GL_INVERT:
+			*cfg = SCE_GXM_STENCIL_OP_INVERT;
+			break;
+		default:
+			ret = GL_FALSE;
+			break;
+	}
+	return ret;
 }
 
 static void change_cull_mode(){
@@ -1864,95 +1901,32 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha){
 	}
 }
 
-void glStencilOp(GLenum sfail,  GLenum dpfail,  GLenum dppass){
-	switch (sfail){
-		case GL_KEEP:
-			stencil_fail = SCE_GXM_STENCIL_OP_KEEP;
+void glStencilOpSeparate(GLenum face, GLenum sfail,  GLenum dpfail,  GLenum dppass){
+	switch (face){
+		case GL_FRONT:
+			if (!change_stencil_config(&stencil_fail_front, sfail)) error = GL_INVALID_ENUM;
+			if (!change_stencil_config(&depth_fail_front, dpfail)) error = GL_INVALID_ENUM;
+			if (!change_stencil_config(&depth_pass_front, dppass)) error = GL_INVALID_ENUM;
 			break;
-		case GL_ZERO:
-			stencil_fail = SCE_GXM_STENCIL_OP_ZERO;
+		case GL_BACK:
+			if (!change_stencil_config(&stencil_fail_back, sfail)) error = GL_INVALID_ENUM;
+			if (!change_stencil_config(&depth_fail_back, dpfail)) error = GL_INVALID_ENUM;
+			if (!change_stencil_config(&depth_pass_front, dppass)) error = GL_INVALID_ENUM;
 			break;
-		case GL_REPLACE:
-			stencil_fail = SCE_GXM_STENCIL_OP_REPLACE;
-			break;
-		case GL_INCR:
-			stencil_fail = SCE_GXM_STENCIL_OP_INCR;
-			break;
-		case GL_INCR_WRAP:
-			stencil_fail = SCE_GXM_STENCIL_OP_INCR_WRAP;
-			break;
-		case GL_DECR:
-			stencil_fail = SCE_GXM_STENCIL_OP_DECR;
-			break;
-		case GL_DECR_WRAP:
-			stencil_fail = SCE_GXM_STENCIL_OP_DECR_WRAP;
-			break;
-		case GL_INVERT:
-			stencil_fail = SCE_GXM_STENCIL_OP_INVERT;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-	switch (dpfail){
-		case GL_KEEP:
-			depth_fail = SCE_GXM_STENCIL_OP_KEEP;
-			break;
-		case GL_ZERO:
-			depth_fail = SCE_GXM_STENCIL_OP_ZERO;
-			break;
-		case GL_REPLACE:
-			depth_fail = SCE_GXM_STENCIL_OP_REPLACE;
-			break;
-		case GL_INCR:
-			depth_fail = SCE_GXM_STENCIL_OP_INCR;
-			break;
-		case GL_INCR_WRAP:
-			depth_fail = SCE_GXM_STENCIL_OP_INCR_WRAP;
-			break;
-		case GL_DECR:
-			depth_fail = SCE_GXM_STENCIL_OP_DECR;
-			break;
-		case GL_DECR_WRAP:
-			depth_fail = SCE_GXM_STENCIL_OP_DECR_WRAP;
-			break;
-		case GL_INVERT:
-			depth_fail = SCE_GXM_STENCIL_OP_INVERT;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-	switch (dppass){
-		case GL_KEEP:
-			depth_pass = SCE_GXM_STENCIL_OP_KEEP;
-			break;
-		case GL_ZERO:
-			depth_pass = SCE_GXM_STENCIL_OP_ZERO;
-			break;
-		case GL_REPLACE:
-			depth_pass = SCE_GXM_STENCIL_OP_REPLACE;
-			break;
-		case GL_INCR:
-			depth_pass = SCE_GXM_STENCIL_OP_INCR;
-			break;
-		case GL_INCR_WRAP:
-			depth_pass = SCE_GXM_STENCIL_OP_INCR_WRAP;
-			break;
-		case GL_DECR:
-			depth_pass = SCE_GXM_STENCIL_OP_DECR;
-			break;
-		case GL_DECR_WRAP:
-			depth_pass = SCE_GXM_STENCIL_OP_DECR_WRAP;
-			break;
-		case GL_INVERT:
-			depth_pass = SCE_GXM_STENCIL_OP_INVERT;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
+		case GL_FRONT_AND_BACK:
+			if (!change_stencil_config(&stencil_fail_front, sfail)) error = GL_INVALID_ENUM;
+			if (!change_stencil_config(&stencil_fail_back, sfail)) error = GL_INVALID_ENUM;
+			if (!change_stencil_config(&depth_fail_front, dpfail)) error = GL_INVALID_ENUM;
+			if (!change_stencil_config(&depth_fail_back, dpfail)) error = GL_INVALID_ENUM;
+			if (!change_stencil_config(&depth_pass_front, dppass)) error = GL_INVALID_ENUM;
+			if (!change_stencil_config(&depth_pass_back, dppass)) error = GL_INVALID_ENUM;
 			break;
 	}
 	change_stencil_settings();
+}
+
+void glStencilOp(GLenum sfail,  GLenum dpfail,  GLenum dppass){
+	glStencilOpSeparate(GL_FRONT_AND_BACK, sfail, dpfail, dppass);
 }
 
 void glStencilFunc(GLenum func, GLint ref, GLuint mask){
@@ -2041,6 +2015,15 @@ GLboolean glIsEnabled(GLenum cap){
 			break;
 		case GL_CULL_FACE:
 			ret = cull_face_state;
+			break;
+		case GL_POLYGON_OFFSET_FILL:
+			ret = pol_offset_fill;
+			break;
+		case GL_POLYGON_OFFSET_LINE:
+			ret = pol_offset_line;
+			break;
+		case GL_POLYGON_OFFSET_POINT:
+			ret = pol_offset_point;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
