@@ -2540,3 +2540,17 @@ void glGetBooleanv(GLenum pname, GLboolean* params){
 			break;
 	}
 }
+
+void glGetFloatv(GLenum pname, GLfloat* data){
+	switch (pname){
+		case GL_POLYGON_OFFSET_FACTOR:
+			*data = pol_factor;
+			break;
+		case GL_POLYGON_OFFSET_UNITS:
+			*data = pol_units;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+}

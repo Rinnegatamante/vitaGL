@@ -152,6 +152,8 @@
 #define GL_LINE                           0x1B01
 #define GL_FILL                           0x1B02
 
+#define GL_POLYGON_OFFSET_UNITS           0x2A00
+#define GL_POLYGON_OFFSET_FACTOR          0x8038
 #define GL_BLEND_DST_RGB                  0x80C8
 #define GL_BLEND_SRC_RGB                  0x80C9
 #define GL_BLEND_DST_ALPHA                0x80CA
@@ -209,6 +211,7 @@ void glFrontFace(GLenum mode);
 void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
 void glGenTextures(GLsizei n, GLuint* textures);
 void glGetBooleanv(GLenum pname, GLboolean* params);
+void glGetFloatv(GLenum pname, GLfloat* data);
 GLenum glGetError(void);
 const GLubyte* glGetString(GLenum name);
 GLboolean glIsEnabled(GLenum cap);
