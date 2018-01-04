@@ -193,6 +193,8 @@ static SceGxmStencilOp depth_fail = SCE_GXM_STENCIL_OP_KEEP; // Current in-use s
 static SceGxmStencilOp depth_pass = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test passes
 static SceGxmStencilFunc stencil_func = SCE_GXM_STENCIL_FUNC_ALWAYS; // Current in-use stencil function
 static uint8_t stencil_mask = 1; // Current in-use mask for stencil test
+static uint8_t stencil_mask_front_write = 0xFF; // Current in-use mask for write stencil test on front
+static uint8_t stencil_mask_back_write = 0xFF; // Current in-use mask for write stencil test on back
 static uint8_t stencil_ref = 0; // Current in-use reference for stencil test
 static GLdouble depth_value = 1.0f; // Current depth test value
 static int8_t texture_unit = -1; // Current in-use texture unit
@@ -290,7 +292,7 @@ static void change_stencil_settings(){
 		stencil_fail,
 		depth_fail,
 		depth_pass,
-		stencil_mask, stencil_mask);
+		stencil_mask, stencil_mask_front_write);
 }
 
 static void disable_blend(){
@@ -1901,6 +1903,28 @@ void glStencilFunc(GLenum func, GLint ref, GLuint mask){
 	stencil_ref = ref;
 	sceGxmSetFrontStencilRef(gxm_context, ref);
 	change_stencil_settings();
+}
+
+void glStencilMaskSeparate(GLenum face, GLuint mask){
+	switch (face){
+		case GL_FRONT:
+			stencil_mask_front_write = mask;
+			break;
+		case GL_BACK:
+			stencil_mask_back_write = mask;
+			break
+		case GL_FRONT_AND_BACK:
+			stencil_mask_front_write = stencil_mask_back_write = mask;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			return;
+	}
+	stencil_mask_front_write = mask;
+}
+
+void glStencilMask(GLuint mask){
+	glStencilMaskSeparate(GL_FRONT_AND_BACK, mask);
 }
 
 void glCullFace(GLenum mode){

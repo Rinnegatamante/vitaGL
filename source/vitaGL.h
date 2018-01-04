@@ -215,6 +215,8 @@ void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height);
 void glStencilFunc(GLenum func, GLint ref, GLuint mask);
+void glStencilMask(GLuint mask);
+void glStencilMaskSeparate(GLenum face, GLuint mask);
 void glStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass);
 void glTexCoord2i(GLint s, GLint t);
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
