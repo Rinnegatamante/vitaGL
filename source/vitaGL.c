@@ -286,6 +286,20 @@ static void change_blend_factor(){
 	_change_blend_factor(&blend_info);
 }
 
+static void disable_blend(){
+	_change_blend_factor(NULL);
+}
+
+static void change_depth_func(SceGxmDepthFunc func){
+	sceGxmSetFrontDepthFunc(gxm_context, func);
+	sceGxmSetBackDepthFunc(gxm_context, func);
+}
+
+static void change_depth_write(SceGxmDepthWriteMode mode){
+	sceGxmSetFrontDepthWriteEnable(gxm_context, mode);
+	sceGxmSetBackDepthWriteEnable(gxm_context, mode);
+}
+
 static void change_stencil_settings(){
 	sceGxmSetFrontStencilFunc(gxm_context,
 		stencil_func,
@@ -293,10 +307,12 @@ static void change_stencil_settings(){
 		depth_fail,
 		depth_pass,
 		stencil_mask, stencil_mask_front_write);
-}
-
-static void disable_blend(){
-	_change_blend_factor(NULL);
+	sceGxmSetBackStencilFunc(gxm_context,
+		stencil_func,
+		stencil_fail,
+		depth_fail,
+		depth_pass,
+		stencil_mask, stencil_mask_back_write);
 }
 
 static void change_cull_mode(){
@@ -650,7 +666,9 @@ void vglInit(uint32_t gpu_pool_size){
 		&texture2d_fragment_program_patched);
 		
 	texture2d_wvp = sceGxmProgramFindParameterByName(texture2d_vertex_program, "wvp");	
-		
+	
+	sceGxmSetTwoSidedEnable(gxm_context, SCE_GXM_TWO_SIDED_ENABLED);
+	
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);
 	
@@ -734,8 +752,8 @@ void glClear(GLbitfield mask){
 			gxm_sync_objects[gxm_back_buffer_index],
 			&gxm_color_surfaces[gxm_back_buffer_index],
 			&gxm_depth_stencil_surface);
-		sceGxmSetFrontDepthWriteEnable(gxm_context, SCE_GXM_DEPTH_WRITE_DISABLED);
-		sceGxmSetFrontDepthFunc(gxm_context, SCE_GXM_DEPTH_FUNC_ALWAYS);
+		change_depth_write(SCE_GXM_DEPTH_WRITE_DISABLED);
+		change_depth_func(SCE_GXM_DEPTH_FUNC_ALWAYS);
 		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, clear_fragment_program_patched);
 		void *color_buffer;
@@ -743,14 +761,20 @@ void glClear(GLbitfield mask){
 		sceGxmSetUniformDataF(color_buffer, clear_color, 0, 4, &clear_color_val.r);
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
-		sceGxmSetFrontDepthWriteEnable(gxm_context, depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-		sceGxmSetFrontDepthFunc(gxm_context, gxm_depth);
+		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		change_depth_func(gxm_depth);
 		drawing = 1;
 	}
 	if ((mask & GL_DEPTH_BUFFER_BIT) == GL_DEPTH_BUFFER_BIT){
-		sceGxmSetFrontDepthWriteEnable(gxm_context, SCE_GXM_DEPTH_WRITE_ENABLED);
-		sceGxmSetFrontDepthFunc(gxm_context, SCE_GXM_DEPTH_FUNC_ALWAYS);
+		change_depth_write(SCE_GXM_DEPTH_WRITE_ENABLED);
+		change_depth_func(SCE_GXM_DEPTH_FUNC_ALWAYS);
 		sceGxmSetFrontStencilFunc(gxm_context,
+			SCE_GXM_STENCIL_FUNC_ALWAYS,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			0, 0);
+		sceGxmSetBackStencilFunc(gxm_context,
 			SCE_GXM_STENCIL_FUNC_ALWAYS,
 			SCE_GXM_STENCIL_OP_KEEP,
 			SCE_GXM_STENCIL_OP_KEEP,
@@ -764,8 +788,8 @@ void glClear(GLbitfield mask){
 		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
 		sceGxmSetVertexStream(gxm_context, 0, depth_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_indices, 4);
-		sceGxmSetFrontDepthWriteEnable(gxm_context, depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-		sceGxmSetFrontDepthFunc(gxm_context, gxm_depth);
+		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		change_depth_func(gxm_depth);
 		change_stencil_settings();
 	}
 }
@@ -1480,7 +1504,7 @@ void glDepthFunc(GLenum func){
 			gxm_depth = SCE_GXM_DEPTH_FUNC_ALWAYS;
 			break;
 	}
-	sceGxmSetFrontDepthFunc(gxm_context, gxm_depth);
+	change_depth_func(gxm_depth);
 }
 
 void glClearDepth(GLdouble depth){
@@ -1493,7 +1517,7 @@ void glDepthMask(GLboolean flag){
 		return;
 	}
 	depth_mask_state = flag;
-	sceGxmSetFrontDepthWriteEnable(gxm_context, depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+	change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor){
@@ -1902,6 +1926,7 @@ void glStencilFunc(GLenum func, GLint ref, GLuint mask){
 	stencil_mask = mask;
 	stencil_ref = ref;
 	sceGxmSetFrontStencilRef(gxm_context, ref);
+	sceGxmSetBackStencilRef(gxm_context, ref);
 	change_stencil_settings();
 }
 
@@ -1912,7 +1937,7 @@ void glStencilMaskSeparate(GLenum face, GLuint mask){
 			break;
 		case GL_BACK:
 			stencil_mask_back_write = mask;
-			break
+			break;
 		case GL_FRONT_AND_BACK:
 			stencil_mask_front_write = stencil_mask_back_write = mask;
 			break;
