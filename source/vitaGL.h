@@ -169,6 +169,19 @@
 #define GL_POLYGON_OFFSET_LINE            0x2A02
 #define GL_POLYGON_OFFSET_FILL            0x8037
 
+#define GL_ARRAY_BUFFER                   0x8892
+#define GL_ELEMENT_ARRAY_BUFFER           0x8893
+
+#define GL_STREAM_DRAW                    0x88E0
+#define GL_STREAM_READ                    0x88E1
+#define GL_STREAM_COPY                    0x88E2
+#define GL_STATIC_DRAW                    0x88E4
+#define GL_STATIC_READ                    0x88E5
+#define GL_STATIC_COPY                    0x88E6
+#define GL_DYNAMIC_DRAW                   0x88E8
+#define GL_DYNAMIC_READ                   0x88E9
+#define GL_DYNAMIC_COPY                   0x88EA
+
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 31
 
 typedef enum GLbitfield{
@@ -181,11 +194,13 @@ typedef enum GLbitfield{
 void glActiveTexture(GLenum texture);
 void glArrayElement(GLint i);
 void glBegin(GLenum mode);
+void glBindBuffer(GLenum target, GLuint buffer);
 void glBindTexture(GLenum target, GLuint texture);
 void glBlendEquation(GLenum mode);
 void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha);
 void glBlendFunc(GLenum sfactor, GLenum dfactor);
 void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha);
+void glBufferData(GLenum target, GLsizei size, const GLvoid* data, GLenum usage);
 void glClear(GLbitfield mask);
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void glClearDepth(GLdouble depth);
@@ -196,6 +211,7 @@ void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
 void glCullFace(GLenum mode);
+void glDeleteBuffers(GLsizei n, const GLuint* gl_buffers);
 void glDeleteTextures(GLsizei n, const GLuint* textures);
 void glDepthFunc(GLenum func);
 void glDepthMask(GLboolean flag);
@@ -209,6 +225,7 @@ void glEnd(void);
 void glFinish(void);
 void glFrontFace(GLenum mode);
 void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
+void glGenBuffers(GLsizei n, GLuint* buffers);
 void glGenTextures(GLsizei n, GLuint* textures);
 void glGetBooleanv(GLenum pname, GLboolean* params);
 void glGetFloatv(GLenum pname, GLfloat* data);
