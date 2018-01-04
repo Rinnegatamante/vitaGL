@@ -883,7 +883,7 @@ void glEnable(GLenum cap){
 	}
 	switch (cap){
 		case GL_DEPTH_TEST:
-			sceGxmSetFrontDepthFunc(gxm_context, SCE_GXM_DEPTH_FUNC_LESS);
+			change_depth_func(SCE_GXM_DEPTH_FUNC_LESS);
 			depth_test_state = GL_TRUE;
 			break;
 		case GL_STENCIL_TEST:
@@ -927,11 +927,17 @@ void glDisable(GLenum cap){
 	}
 	switch (cap){
 		case GL_DEPTH_TEST:
-			sceGxmSetFrontDepthFunc(gxm_context, SCE_GXM_DEPTH_FUNC_ALWAYS);
+			change_depth_func(SCE_GXM_DEPTH_FUNC_ALWAYS);
 			depth_test_state = GL_FALSE;
 			break;
 		case GL_STENCIL_TEST:
 			sceGxmSetFrontStencilFunc(gxm_context,
+				SCE_GXM_STENCIL_FUNC_ALWAYS,
+				SCE_GXM_STENCIL_OP_KEEP,
+				SCE_GXM_STENCIL_OP_KEEP,
+				SCE_GXM_STENCIL_OP_KEEP,
+				0, 0);
+			sceGxmSetBackStencilFunc(gxm_context,
 				SCE_GXM_STENCIL_FUNC_ALWAYS,
 				SCE_GXM_STENCIL_OP_KEEP,
 				SCE_GXM_STENCIL_OP_KEEP,
@@ -1920,6 +1926,9 @@ void glStencilOpSeparate(GLenum face, GLenum sfail,  GLenum dpfail,  GLenum dppa
 			if (!change_stencil_config(&depth_fail_back, dpfail)) error = GL_INVALID_ENUM;
 			if (!change_stencil_config(&depth_pass_front, dppass)) error = GL_INVALID_ENUM;
 			if (!change_stencil_config(&depth_pass_back, dppass)) error = GL_INVALID_ENUM;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
 			break;
 	}
 	change_stencil_settings();
