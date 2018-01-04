@@ -192,6 +192,8 @@ static SceGxmStencilOp stencil_fail = SCE_GXM_STENCIL_OP_KEEP; // Current in-use
 static SceGxmStencilOp depth_fail = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test fails
 static SceGxmStencilOp depth_pass = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test passes
 static SceGxmStencilFunc stencil_func = SCE_GXM_STENCIL_FUNC_ALWAYS; // Current in-use stencil function
+static SceGxmPolygonMode polygon_mode_front = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Current in-use polygon mode for front
+static SceGxmPolygonMode polygon_mode_back = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Current in-use polygon mode for back
 static uint8_t stencil_mask = 1; // Current in-use mask for stencil test
 static uint8_t stencil_mask_front_write = 0xFF; // Current in-use mask for write stencil test on front
 static uint8_t stencil_mask_back_write = 0xFF; // Current in-use mask for write stencil test on back
@@ -2016,6 +2018,39 @@ void glPopMatrix(void){
 	}else if (matrix == &projection_matrix){
 		if (projection_stack_counter == 0) error = GL_STACK_UNDERFLOW;
 		else matrix4x4_copy(*matrix, projection_matrix_stack[--projection_stack_counter]);
+	}
+}
+
+void glPolygonMode(GLenum face,  GLenum mode){
+	SceGxmPolygonMode new_mode;
+	switch (mode){
+		case GL_POINT:
+			new_mode = SCE_GXM_POLYGON_MODE_POINT;
+			break;
+		case GL_LINE:
+			new_mode = SCE_GXM_POLYGON_MODE_LINE;
+			break;
+		case GL_FILL:
+			new_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	switch (face){
+		case GL_FRONT:
+			sceGxmSetFrontPolygonMode(gxm_context, new_mode);
+			break;
+		case GL_BACK:
+			sceGxmSetBackPolygonMode(gxm_context, new_mode);
+			break;
+		case GL_FRONT_AND_BACK:
+			sceGxmSetFrontPolygonMode(gxm_context, new_mode);
+			sceGxmSetBackPolygonMode(gxm_context, new_mode);
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			return;
 	}
 }
 

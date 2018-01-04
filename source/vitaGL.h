@@ -148,6 +148,10 @@
 #define GL_VERSION                        0x1F02
 #define GL_EXTENSIONS                     0x1F03
 
+#define GL_POINT                          0x1B00
+#define GL_LINE                           0x1B01
+#define GL_FILL                           0x1B02
+
 #define GL_BLEND_DST_RGB                  0x80C8
 #define GL_BLEND_SRC_RGB                  0x80C9
 #define GL_BLEND_DST_ALPHA                0x80CA
@@ -209,6 +213,7 @@ void glLoadMatrixf(const GLfloat* m);
 void glMatrixMode(GLenum mode);
 void glMultMatrixf(const GLfloat* m);
 void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
+void glPolygonMode(GLenum face, GLenum mode);
 void glPopMatrix(void);
 void glPushMatrix(void);
 void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z);
