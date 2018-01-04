@@ -194,13 +194,16 @@ static SceGxmStencilOp depth_pass_front = SCE_GXM_STENCIL_OP_KEEP; // Current in
 static SceGxmStencilOp stencil_fail_back = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when stencil test fails for back
 static SceGxmStencilOp depth_fail_back = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test fails for back
 static SceGxmStencilOp depth_pass_back = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test passes for back
-static SceGxmStencilFunc stencil_func = SCE_GXM_STENCIL_FUNC_ALWAYS; // Current in-use stencil function
+static SceGxmStencilFunc stencil_func_front = SCE_GXM_STENCIL_FUNC_ALWAYS; // Current in-use stencil function on front
+static SceGxmStencilFunc stencil_func_back = SCE_GXM_STENCIL_FUNC_ALWAYS; // Current in-use stencil function on back
 static SceGxmPolygonMode polygon_mode_front = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Current in-use polygon mode for front
 static SceGxmPolygonMode polygon_mode_back = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Current in-use polygon mode for back
-static uint8_t stencil_mask = 1; // Current in-use mask for stencil test
+static uint8_t stencil_mask_front = 0xFF; // Current in-use mask for stencil test on front
+static uint8_t stencil_mask_back = 0xFF; // Current in-use mask for stencil test on back
 static uint8_t stencil_mask_front_write = 0xFF; // Current in-use mask for write stencil test on front
 static uint8_t stencil_mask_back_write = 0xFF; // Current in-use mask for write stencil test on back
-static uint8_t stencil_ref = 0; // Current in-use reference for stencil test
+static uint8_t stencil_ref_front = 0; // Current in-use reference for stencil test on front
+static uint8_t stencil_ref_back = 0; // Current in-use reference for stencil test on back
 static GLdouble depth_value = 1.0f; // Current depth test value
 static int8_t texture_unit = -1; // Current in-use texture unit
 static matrix4x4* matrix = NULL; // Current in-use matrix mode
@@ -312,17 +315,19 @@ static void change_depth_write(SceGxmDepthWriteMode mode){
 
 static void change_stencil_settings(){
 	sceGxmSetFrontStencilFunc(gxm_context,
-		stencil_func,
+		stencil_func_front,
 		stencil_fail_front,
 		depth_fail_front,
 		depth_pass_front,
-		stencil_mask, stencil_mask_front_write);
+		stencil_mask_front, stencil_mask_front_write);
 	sceGxmSetBackStencilFunc(gxm_context,
-		stencil_func,
+		stencil_func_back,
 		stencil_fail_back,
 		depth_fail_back,
 		depth_pass_back,
-		stencil_mask, stencil_mask_back_write);
+		stencil_mask_back, stencil_mask_back_write);
+	sceGxmSetFrontStencilRef(gxm_context, stencil_ref_front);
+	sceGxmSetBackStencilRef(gxm_context, stencil_ref_back);
 }
 
 static GLboolean change_stencil_config(SceGxmStencilOp* cfg, GLenum new){
@@ -351,6 +356,40 @@ static GLboolean change_stencil_config(SceGxmStencilOp* cfg, GLenum new){
 			break;
 		case GL_INVERT:
 			*cfg = SCE_GXM_STENCIL_OP_INVERT;
+			break;
+		default:
+			ret = GL_FALSE;
+			break;
+	}
+	return ret;
+}
+
+static GLboolean change_stencil_func_config(SceGxmStencilFunc* cfg, GLenum new){
+	GLboolean ret = GL_TRUE;
+	switch (new){
+		case GL_NEVER:
+			*cfg = SCE_GXM_STENCIL_FUNC_NEVER;
+			break;
+		case GL_LESS:
+			*cfg = SCE_GXM_STENCIL_FUNC_LESS;
+			break;
+		case GL_LEQUAL:
+			*cfg = SCE_GXM_STENCIL_FUNC_LESS_EQUAL;
+			break;
+		case GL_GREATER:
+			*cfg = SCE_GXM_STENCIL_FUNC_GREATER;
+			break;
+		case GL_GEQUAL:
+			*cfg = SCE_GXM_STENCIL_FUNC_GREATER_EQUAL;
+			break;
+		case GL_EQUAL:
+			*cfg = SCE_GXM_STENCIL_FUNC_EQUAL;
+			break;
+		case GL_NOTEQUAL:
+			*cfg = SCE_GXM_STENCIL_FUNC_NOT_EQUAL;
+			break;
+		case GL_ALWAYS:
+			*cfg = SCE_GXM_STENCIL_FUNC_ALWAYS;
 			break;
 		default:
 			ret = GL_FALSE;
@@ -887,7 +926,6 @@ void glEnable(GLenum cap){
 			depth_test_state = GL_TRUE;
 			break;
 		case GL_STENCIL_TEST:
-			sceGxmSetFrontStencilRef(gxm_context, stencil_ref);
 			change_stencil_settings();
 			stencil_test_state = GL_TRUE;
 			break;
@@ -1938,41 +1976,33 @@ void glStencilOp(GLenum sfail,  GLenum dpfail,  GLenum dppass){
 	glStencilOpSeparate(GL_FRONT_AND_BACK, sfail, dpfail, dppass);
 }
 
-void glStencilFunc(GLenum func, GLint ref, GLuint mask){
-	switch (func){
-		case GL_NEVER:
-			stencil_func = SCE_GXM_STENCIL_FUNC_NEVER;
+void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask){
+	switch (face){
+		case GL_FRONT:
+			if (!change_stencil_func_config(&stencil_func_front, func)) error = GL_INVALID_ENUM;
+			stencil_mask_front = mask;
+			stencil_ref_front = ref;
 			break;
-		case GL_LESS:
-			stencil_func = SCE_GXM_STENCIL_FUNC_LESS;
+		case GL_BACK:
+			if (!change_stencil_func_config(&stencil_func_back, func)) error = GL_INVALID_ENUM;
+			stencil_mask_back = mask;
+			stencil_ref_back = ref;
 			break;
-		case GL_LEQUAL:
-			stencil_func = SCE_GXM_STENCIL_FUNC_LESS_EQUAL;
-			break;
-		case GL_GREATER:
-			stencil_func = SCE_GXM_STENCIL_FUNC_GREATER;
-			break;
-		case GL_GEQUAL:
-			stencil_func = SCE_GXM_STENCIL_FUNC_GREATER_EQUAL;
-			break;
-		case GL_EQUAL:
-			stencil_func = SCE_GXM_STENCIL_FUNC_EQUAL;
-			break;
-		case GL_NOTEQUAL:
-			stencil_func = SCE_GXM_STENCIL_FUNC_NOT_EQUAL;
-			break;
-		case GL_ALWAYS:
-			stencil_func = SCE_GXM_STENCIL_FUNC_ALWAYS;
+		case GL_FRONT_AND_BACK:
+			if (!change_stencil_func_config(&stencil_func_front, func)) error = GL_INVALID_ENUM;
+			if (!change_stencil_func_config(&stencil_func_back, func)) error = GL_INVALID_ENUM;
+			stencil_mask_front = stencil_mask_back = mask;
+			stencil_ref_front = stencil_ref_back = ref;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
 	}
-	stencil_mask = mask;
-	stencil_ref = ref;
-	sceGxmSetFrontStencilRef(gxm_context, ref);
-	sceGxmSetBackStencilRef(gxm_context, ref);
 	change_stencil_settings();
+}
+
+void glStencilFunc(GLenum func, GLint ref, GLuint mask){
+	glStencilFuncSeparate(GL_FRONT_AND_BACK, func, ref, mask);
 }
 
 void glStencilMaskSeparate(GLenum face, GLuint mask){
