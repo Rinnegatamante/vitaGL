@@ -434,7 +434,7 @@ static void change_cull_mode(){
 
 static void update_polygon_offset(){
 	switch (polygon_mode_front){
-		case SCE_GXM_POLYGON_MODE_LINE:
+		case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
 			if (pol_offset_line) sceGxmSetFrontDepthBias(gxm_context, pol_factor, pol_units);
 			else sceGxmSetFrontDepthBias(gxm_context, 0.0f, 0.0f);
 			break;
@@ -448,7 +448,7 @@ static void update_polygon_offset(){
 			break;
 	}
 	switch (polygon_mode_back){
-		case SCE_GXM_POLYGON_MODE_LINE:
+		case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
 			if (pol_offset_line) sceGxmSetBackDepthBias(gxm_context, pol_factor, pol_units);
 			else sceGxmSetBackDepthBias(gxm_context, 0.0f, 0.0f);
 			break;
@@ -864,11 +864,13 @@ void vglEnd(void){
 	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, clear_vertex_program_patched);
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, clear_fragment_program_patched);
 	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, rgba_vertex_program_patched);
+	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, rgb_vertex_program_patched);
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, rgba_fragment_program_patched);
 	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, texture2d_vertex_program_patched);
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_program_patched);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, clear_vertex_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, clear_fragment_id);
+	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, rgb_vertex_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, rgba_vertex_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, rgba_fragment_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, texture2d_vertex_id);
@@ -929,6 +931,8 @@ void glClear(GLbitfield mask){
 			&gxm_depth_stencil_surface);
 		change_depth_write(SCE_GXM_DEPTH_WRITE_DISABLED);
 		change_depth_func(SCE_GXM_DEPTH_FUNC_ALWAYS);
+		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
+		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
 		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, clear_fragment_program_patched);
 		void *color_buffer;
@@ -938,6 +942,8 @@ void glClear(GLbitfield mask){
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
 		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		change_depth_func(gxm_depth);
+		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
+		sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back);
 		drawing = 1;
 	}
 	if ((mask & GL_DEPTH_BUFFER_BIT) == GL_DEPTH_BUFFER_BIT){
@@ -2264,10 +2270,10 @@ void glPolygonMode(GLenum face,  GLenum mode){
 	SceGxmPolygonMode new_mode;
 	switch (mode){
 		case GL_POINT:
-			new_mode = SCE_GXM_POLYGON_MODE_POINT;
+			new_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_POINT;
 			break;
 		case GL_LINE:
-			new_mode = SCE_GXM_POLYGON_MODE_LINE;
+			new_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_LINE;
 			break;
 		case GL_FILL:
 			new_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;
