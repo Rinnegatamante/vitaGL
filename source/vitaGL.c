@@ -13,7 +13,6 @@
 #include "texture2d_f.h"
 #include "texture2d_v.h"
 
-#define DEG2RAD(deg) ((deg) * M_PI / 180.0)
 #define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 
 #define TEXTURES_NUM          32   // Available texture units number
@@ -176,6 +175,7 @@ static uint8_t drawing = 0;
 static uint8_t using_texture = 0;
 static matrix4x4 projection_matrix;
 static matrix4x4 modelview_matrix;
+static GLboolean vblank = GL_TRUE;
 
 static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
 static GLuint textures[TEXTURES_NUM]; // Textures array
@@ -242,6 +242,9 @@ static void display_queue_callback(const void *callbackData){
 	display_fb.height = DISPLAY_HEIGHT;
 
 	sceDisplaySetFrameBuf(&display_fb, SCE_DISPLAY_SETBUF_NEXTFRAME);
+	
+	if (vblank) sceDisplayWaitVblankStart();
+	
 }
 
 static void _change_blend_factor(SceGxmBlendInfo* blend_info){
@@ -694,6 +697,10 @@ void vglEnd(void){
 	gpu_fragment_usse_unmap_free(fragment_usse_ring_buffer_uid);
 	sceGxmDestroyContext(gxm_context);
 	sceGxmTerminate();
+}
+
+void vglWaitVblankStart(GLboolean enable){
+	vblank = enable;
 }
 
 // openGL implementation
@@ -1404,7 +1411,7 @@ void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z){
 		error = GL_INVALID_OPERATION;
 		return;
 	}
-	float rad = DEG2RAD(angle);
+	float rad = DEG_TO_RAD(angle);
 	if (x == 1.0f){
 		matrix4x4_rotate_x(*matrix, rad);
 	}
