@@ -71,7 +71,11 @@
 #define GL_TEXTURE30                      0x84DE
 #define GL_TEXTURE31                      0x84DF
 
+#define GL_RED					          0x1903
+#define GL_GREEN				          0x1904
+#define GL_BLUE					          0x1905
 #define GL_ALPHA                          0x1906
+#define GL_RG                             0x8227
 #define GL_RGB                            0x1907
 #define GL_RGBA                           0x1908
 #define GL_LUMINANCE                      0x1909

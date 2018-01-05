@@ -1433,53 +1433,146 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 				gpu_unmap_free(gpu_textures[texture_unit]->data_UID);
 				free(gpu_textures[texture_unit]);
 			}
-			switch (format){
+			switch (internalFormat){
 				case GL_RGB:
-					switch (type){
-						case GL_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_S8S8S8X8_RGB1;
+					if (format == GL_RGB){
+						switch (type){
+							case GL_UNSIGNED_BYTE:
+								tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8X8_RGB1;
+								break;
+							case GL_UNSIGNED_SHORT_5_6_5:
+								tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB;
+								break;
+							default:
+								error = GL_INVALID_ENUM;
+								break;	
+						}
+					}
+					break;
+				case GL_RGBA:
+					if (format == GL_RGBA){
+						switch (type){
+							case GL_UNSIGNED_BYTE:
+								tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_RGBA;
+								break;
+							case GL_UNSIGNED_SHORT_4_4_4_4:
+								tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA;
+								break;
+							case GL_UNSIGNED_SHORT_5_5_5_1:
+								tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
+								break;
+							default:
+								error = GL_INVALID_ENUM;
+								break;
+						}
+					}
+					break;
+				case GL_LUMINANCE:
+					if (format == GL_LUMINANCE){
+						switch (type){
+							case GL_UNSIGNED_BYTE:
+								tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
+								break;
+							default:
+								error = GL_INVALID_ENUM;
+								break;
+						}
+					}
+					break;
+				case GL_LUMINANCE_ALPHA:
+					if (format == GL_LUMINANCE){
+						switch (type){
+							case GL_UNSIGNED_BYTE:
+								tex_format = SCE_GXM_TEXTURE_FORMAT_L8A8;
+								break;
+							default:
+								error = GL_INVALID_ENUM;
+								break;
+						}
+					}
+					break;
+				case GL_ALPHA:
+					if (format == GL_ALPHA){
+						switch (type){
+							case GL_UNSIGNED_BYTE:
+								tex_format = SCE_GXM_TEXTURE_FORMAT_U8_R;
+								break;
+							default:
+								error = GL_INVALID_ENUM;
+								break;
+						}
+					}
+					break;
+				default:
+					switch (format){
+						case GL_RED:
+							switch (type){
+								case GL_BYTE:
+									tex_format = SCE_GXM_TEXTURE_FORMAT_S8_R;
+									break;
+								case GL_UNSIGNED_BYTE:
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U8_R;
+									break;
+								default:
+									error = GL_INVALID_ENUM;
+									break;	
+							}
 							break;
-						case GL_UNSIGNED_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8X8_RGB1;
+						case GL_RG:
+							switch (type){
+								default:
+									error = GL_INVALID_ENUM;
+									break;	
+							}
 							break;
-						case GL_UNSIGNED_SHORT_4_4_4_4:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4X4_RGB1;
+						case GL_RGB:
+							switch (type){
+								case GL_BYTE:
+									tex_format = SCE_GXM_TEXTURE_FORMAT_S8S8S8X8_RGB1;
+									break;
+								case GL_UNSIGNED_BYTE:
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8X8_RGB1;
+									break;
+								case GL_UNSIGNED_SHORT_4_4_4_4:
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4X4_RGB1;
+									break;
+								case GL_UNSIGNED_SHORT_5_5_5_1:
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5X1_RGB1;
+									break;
+								case GL_UNSIGNED_SHORT_5_6_5:
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB;
+									break;
+								default:
+									error = GL_INVALID_ENUM;
+									break;
+							}
 							break;
-						case GL_UNSIGNED_SHORT_5_5_5_1:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5X1_RGB1;
+						case GL_RGBA:
+							switch (type){
+								case GL_BYTE:
+									tex_format = SCE_GXM_TEXTURE_FORMAT_S8S8S8S8_RGBA;
+									break;
+								case GL_UNSIGNED_BYTE:
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_RGBA;
+									break;
+								case GL_UNSIGNED_SHORT_4_4_4_4:
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA;
+									break;
+								case GL_UNSIGNED_SHORT_5_5_5_1:
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
+									break;
+								default:
+									error = GL_INVALID_ENUM;
+									break;
+							}					
 							break;
-						case GL_UNSIGNED_SHORT_5_6_5:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB;
+						case GL_VITA2D_TEXTURE:
+							tex_format = SCE_GXM_TEXTURE_FORMAT_A8B8G8R8;
 							break;
 						default:
 							error = GL_INVALID_ENUM;
 							break;
 					}
-					break;
-				case GL_RGBA:
-					switch (type){
-						case GL_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_S8S8S8S8_RGBA;
-							break;
-						case GL_UNSIGNED_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_RGBA;
-							break;
-						case GL_UNSIGNED_SHORT_4_4_4_4:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA;
-							break;
-						case GL_UNSIGNED_SHORT_5_5_5_1:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}					
-					break;
-				case GL_VITA2D_TEXTURE:
-					tex_format = SCE_GXM_TEXTURE_FORMAT_A8B8G8R8;
-					break;
-				default:
-					error = GL_INVALID_ENUM;
 					break;
 			}
 			if (error == GL_NO_ERROR){
