@@ -71,9 +71,13 @@
 #define GL_TEXTURE30                      0x84DE
 #define GL_TEXTURE31                      0x84DF
 
+#define GL_ALPHA                          0x1906
 #define GL_RGB                            0x1907
 #define GL_RGBA                           0x1908
+#define GL_LUMINANCE                      0x1909
+#define GL_LUMINANCE_ALPHA                0x190A
 #define GL_VITA2D_TEXTURE                 0x190B
+#define GL_INTENSITY                      0x8049
 
 #define GL_BYTE                           0x1400
 #define GL_UNSIGNED_BYTE                  0x1401
@@ -182,6 +186,8 @@
 #define GL_DYNAMIC_READ                   0x88E9
 #define GL_DYNAMIC_COPY                   0x88EA
 
+#define GL_MODELVIEW_MATRIX               0x0BA6
+
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 31
 
 typedef enum GLbitfield{
@@ -206,9 +212,13 @@ void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void glClearDepth(GLdouble depth);
 void glClientActiveTexture(GLenum texture);
 void glColor3f(GLfloat red, GLfloat green, GLfloat blue);
+void glColor3fv(const GLfloat* v);
 void glColor3ub(GLubyte red, GLubyte green, GLubyte blue);
+void glColor3ubv(const GLubyte* v);
 void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+void glColor4fv(const GLfloat* v);
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
+void glColor4ubv(const GLubyte* v);
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
 void glCullFace(GLenum mode);
 void glDeleteBuffers(GLsizei n, const GLuint* gl_buffers);
@@ -250,14 +260,17 @@ void glStencilMask(GLuint mask);
 void glStencilMaskSeparate(GLenum face, GLuint mask);
 void glStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass);
 void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass);
+void glTexCoord2f(GLfloat s, GLfloat t);
 void glTexCoord2i(GLint s, GLint t);
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
-void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid * data);
+void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data);
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param);
 void glTexParameteri(GLenum target, GLenum pname, GLint param);
+void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid* pixels);
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z);
 void glVertex2f(GLfloat x, GLfloat y);
 void glVertex3f(GLfloat x, GLfloat y, GLfloat z);
+void glVertex3fv(const GLfloat* v);
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
