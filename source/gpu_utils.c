@@ -200,6 +200,44 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	else tex->palette_UID = 0;
 }
 
+void gpu_alloc_mipmaps(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void* data, int level, texture* tex){
+	uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
+	uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
+	const int orig_size = orig_w * orig_h * tex_format_to_bytespp(format);
+	uint32_t count = sceGxmTextureGetMipmapCount(&tex->gxm_tex);
+	void* texture_data = sceGxmTextureGetData(&tex->gxm_tex);
+	int n;
+	if (level <= count){
+		uint32_t ptr = (uint32_t)texture_data;
+		uint32_t level_size = orig_size;
+		for (n=0;n<level;n++){
+			ptr += level_size;
+			level_size = level_size>>2;
+		}
+		memcpy((void*)ptr, data, w * h * tex_format_to_bytespp(format));
+	}else{
+		uint32_t size = 0;
+		uint32_t current_size = 0;
+		uint32_t level_size = orig_size;
+		for (n=0;n<=level;n++){
+			size += level_size;
+			level_size = level_size>>2;
+			if ((n+1)==level) current_size = size;
+		}
+		SceUID dataUID;
+		void* texture_data_new = gpu_alloc_map(
+			SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
+			SCE_GXM_MEMORY_ATTRIB_READ,
+			size, &dataUID);
+		memcpy(texture_data_new, texture_data, current_size);
+		memcpy(texture_data_new + current_size, data, w * h * tex_format_to_bytespp(format));
+		sceGxmTextureSetData(&tex->gxm_tex, texture_data_new);
+		sceGxmTextureSetMipmapCount(&tex->gxm_tex, level);
+		gpu_unmap_free(tex->data_UID);
+		tex->data_UID = dataUID;
+	}
+}
+
 void gpu_prepare_rendertarget(texture* tex){
 	if (tex == NULL) return;
 	uint32_t w = sceGxmTextureGetWidth(&tex->gxm_tex);
