@@ -266,7 +266,6 @@ static vertexArray vertex_array; // Current in-use vertex array
 static vertexArray color_array; // Current in-use color array
 static vertexArray texture_array; // Current in-use texture array
 static vector4f current_color = {1.0f, 1.0f, 1.0f, 1.0f}; // Current in-use color
-static GLboolean fixed_pipeline_texture = GL_FALSE; // Current texture usage state for fixed pipeline
 static palette* color_table = NULL; // Current in-use color table
 
 static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH];
@@ -1067,7 +1066,7 @@ void glEnable(GLenum cap){
 			update_polygon_offset();
 			break;
 		case GL_TEXTURE_2D:
-			fixed_pipeline_texture = GL_TRUE;
+			texture_units[server_texture_unit].enabled = GL_TRUE;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -1124,7 +1123,7 @@ void glDisable(GLenum cap){
 			update_polygon_offset();
 			break;
 		case GL_TEXTURE_2D:
-			fixed_pipeline_texture = GL_FALSE;
+			texture_units[server_texture_unit].enabled = GL_FALSE;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -1193,7 +1192,7 @@ void glEnd(void){
 	matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 	matrix4x4_transpose(final_mvp_matrix,mvp_matrix);
 	
-	if ((server_texture_unit >= 0) && fixed_pipeline_texture && (model_uv != NULL)){
+	if ((server_texture_unit >= 0) && (texture_units[server_texture_unit].enabled) && (model_uv != NULL)){
 		sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
 	}else{
@@ -1204,7 +1203,7 @@ void glEnd(void){
 	void* vertex_wvp_buffer;
 	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
 	
-	if ((model_uv != NULL) && fixed_pipeline_texture){
+	if ((server_texture_unit >= 0) && (model_uv != NULL) && (texture_units[server_texture_unit].enabled)){
 		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)final_mvp_matrix);
 		sceGxmSetFragmentTexture(gxm_context, 0, &texture_units[server_texture_unit].textures[texture2d_idx].gxm_tex);
 		vector3f* vertices;
