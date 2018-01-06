@@ -3034,7 +3034,7 @@ void glGetFloatv(GLenum pname, GLfloat* data){
 			memcpy(data, &modelview_matrix, sizeof(matrix4x4));
 			break;
 		case GL_ACTIVE_TEXTURE:
-			*data = (1.0f * server_texture_unit);
+			*data = (1.0f * (server_texture_unit + GL_TEXTURE0));
 			break;
 		default:
 			error = GL_INVALID_ENUM;
