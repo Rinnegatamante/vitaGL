@@ -199,10 +199,10 @@ static uint8_t texture_init = 1;
 static uint8_t buffers_init = 1;
 static uint64_t vertex_count = 0;
 static uint8_t drawing = 0;
-static uint8_t using_texture = 0;
 static matrix4x4 projection_matrix;
 static matrix4x4 modelview_matrix;
 static GLboolean vblank = GL_TRUE;
+static uint8_t np = 0xFF;
 
 static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
 static GLuint textures[TEXTURES_NUM]; // Textures array
@@ -238,7 +238,6 @@ static int8_t texture_unit = -1; // Current in-use texture unit
 static int vertex_array_unit = -1; // Current in-use vertex array unit
 static int index_array_unit = -1; // Current in-use index array unit
 static matrix4x4* matrix = NULL; // Current in-use matrix mode
-static vector4f current_color; // Current in-use color
 static vector4f clear_rgba_val; // Current clear color for glClear
 static GLboolean depth_test_state = GL_FALSE; // Current state for GL_DEPTH_TEST
 static GLboolean stencil_test_state = GL_FALSE; // Current state for GL_STENCIL_TEST
@@ -260,6 +259,9 @@ static GLfloat pol_units = 0.0f; // Current units for glPolygonOffset
 static vertexArray vertex_array; // Current in-use vertex array
 static vertexArray color_array; // Current in-use color array
 static vertexArray texture_array; // Current in-use texture array
+static vector4f current_color = {1.0f, 1.0f, 1.0f, 1.0f}; // Current in-use color
+static GLboolean fixed_pipeline_texture = GL_FALSE; // Current texture usage state for fixed pipeline
+static palette* color_table = NULL; // Current in-use color table
 
 static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH];
 uint8_t modelview_stack_counter = 0;
@@ -875,9 +877,6 @@ void vglInit(uint32_t gpu_pool_size){
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);
 	
-	// Initializing openGL stuffs
-	current_color.r = current_color.g = current_color.b = current_color.a = 1.0f;
-	
 }
 
 void vglEnd(void){
@@ -1047,6 +1046,9 @@ void glEnable(GLenum cap){
 			pol_offset_point = GL_TRUE;
 			update_polygon_offset();
 			break;
+		case GL_TEXTURE_2D:
+			fixed_pipeline_texture = GL_FALSE;
+			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
@@ -1101,6 +1103,9 @@ void glDisable(GLenum cap){
 			pol_offset_point = GL_FALSE;
 			update_polygon_offset();
 			break;
+		case GL_TEXTURE_2D:
+			fixed_pipeline_texture = GL_FALSE;
+			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
@@ -1117,22 +1122,28 @@ void glBegin(GLenum mode){
 	switch (mode){
 		case GL_POINTS:
 			prim = SCE_GXM_PRIMITIVE_POINTS;
+			np = 1;
 			break;
 		case GL_LINES:
 			prim = SCE_GXM_PRIMITIVE_LINES;
+			np = 2;
 			break;
 		case GL_TRIANGLES:
 			prim = SCE_GXM_PRIMITIVE_TRIANGLES;
+			np = 3;
 			break;
 		case GL_TRIANGLE_STRIP:
 			prim = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP;
+			np = 1;
 			break;
 		case GL_TRIANGLE_FAN:
 			prim = SCE_GXM_PRIMITIVE_TRIANGLE_FAN;
+			np = 1;
 			break;
 		case GL_QUADS:
 			prim = SCE_GXM_PRIMITIVE_TRIANGLES;
 			prim_extra = SCE_GXM_PRIMITIVE_QUADS;
+			np = 4;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -1142,6 +1153,8 @@ void glBegin(GLenum mode){
 }
 
 void glEnd(void){
+	if (vertex_count == 0 || ((vertex_count % np) != 0)) return;
+	
 	if (phase != MODEL_CREATION){
 		error = GL_INVALID_OPERATION;
 		return;
@@ -1151,7 +1164,6 @@ void glEnd(void){
 	if (no_polygons_mode && ((prim == SCE_GXM_PRIMITIVE_TRIANGLES) || (prim >= SCE_GXM_PRIMITIVE_TRIANGLE_STRIP))){
 		purge_vertex_list();
 		vertex_count = 0;
-		using_texture = 0;
 		return;
 	}
 	
@@ -1172,7 +1184,7 @@ void glEnd(void){
 	void* vertex_wvp_buffer;
 	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
 	
-	if (using_texture){
+	if ((model_uv != NULL) && fixed_pipeline_texture){
 		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)final_mvp_matrix);
 		sceGxmSetFragmentTexture(gxm_context, 0, &gpu_textures[texture_unit]->gxm_tex);
 		vector3f* vertices;
@@ -1187,7 +1199,7 @@ void glEnd(void){
 			case SCE_GXM_PRIMITIVE_NONE:
 				vertices = (vector3f*)gpu_pool_memalign(vertex_count * sizeof(vector3f), sizeof(vector3f));
 				uv_map = (vector2f*)gpu_pool_memalign(vertex_count * sizeof(vector2f), sizeof(vector2f));
-				memset(vertices, 0, (vertex_count * sizeof(vector3f), sizeof(vector3f)));
+				memset(vertices, 0, (vertex_count * sizeof(vector3f)));
 				indices = (uint16_t*)gpu_pool_memalign(vertex_count * sizeof(uint16_t), sizeof(uint16_t));
 				while (object != NULL){
 					memcpy(&vertices[n], &object->v, sizeof(vector3f));
@@ -1203,7 +1215,7 @@ void glEnd(void){
 				idx_count = quad_n * 6;
 				vertices = (vector3f*)gpu_pool_memalign(vertex_count * sizeof(vector3f), sizeof(vector3f));
 				uv_map = (vector2f*)gpu_pool_memalign(vertex_count * sizeof(vector2f), sizeof(vector2f));
-				memset(vertices, 0, (vertex_count * sizeof(vector3f), sizeof(vector3f)));
+				memset(vertices, 0, (vertex_count * sizeof(vector3f)));
 				indices = (uint16_t*)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 				int i, j;
 				for (i=0; i < quad_n; i++){
@@ -1239,7 +1251,7 @@ void glEnd(void){
 			case SCE_GXM_PRIMITIVE_NONE:
 				vertices = (vector3f*)gpu_pool_memalign(vertex_count * sizeof(vector3f), sizeof(vector3f));
 				colors = (vector4f*)gpu_pool_memalign(vertex_count * sizeof(vector4f), sizeof(vector4f));
-				memset(vertices, 0, (vertex_count * sizeof(vector3f), sizeof(vector3f)));
+				memset(vertices, 0, (vertex_count * sizeof(vector3f)));
 				indices = (uint16_t*)gpu_pool_memalign(vertex_count * sizeof(uint16_t), sizeof(uint16_t));
 				while (object != NULL){
 					memcpy(&vertices[n], &object->v, sizeof(vector3f));
@@ -1255,7 +1267,7 @@ void glEnd(void){
 				idx_count = quad_n * 6;
 				vertices = (vector3f*)gpu_pool_memalign(vertex_count * sizeof(vector3f), sizeof(vector3f));
 				colors = (vector4f*)gpu_pool_memalign(vertex_count * sizeof(vector4f), sizeof(vector4f));
-				memset(vertices, 0, (vertex_count * sizeof(vector3f), sizeof(vector3f)));
+				memset(vertices, 0, (vertex_count * sizeof(vector3f)));
 				indices = (uint16_t*)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 				int i, j;
 				for (i=0; i < quad_n; i++){
@@ -1281,7 +1293,6 @@ void glEnd(void){
 	
 	purge_vertex_list();
 	vertex_count = 0;
-	using_texture = 0;
 	
 }
 
@@ -1425,13 +1436,37 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid* data, GLenum usage)
 	memcpy(gpu_buffers[idx].ptr, data, size);
 }
 
+void glColorTable(GLenum target,  GLenum internalformat,  GLsizei width,  GLenum format,  GLenum type,  const GLvoid * data){
+	if (color_table != NULL){
+		gpu_free_palette(color_table);
+		color_table = NULL;
+	}
+	uint8_t bpe = 0;
+	switch (target){
+		case GL_COLOR_TABLE:
+			switch (format){
+				case GL_RGBA:
+					bpe = 4;
+					break;
+				default:
+					error = GL_INVALID_ENUM;
+					break;
+			}
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	color_table = gpu_alloc_palette(data, width, bpe);
+}
+
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid * data){
 	SceGxmTextureFormat tex_format;
 	switch (target){
 		case GL_TEXTURE_2D:
 			if (gpu_textures[texture_unit] != NULL){
-				gpu_unmap_free(gpu_textures[texture_unit]->data_UID);
-				free(gpu_textures[texture_unit]);
+				gpu_free_texture(gpu_textures[texture_unit]);
+				gpu_textures[texture_unit] = NULL;
 			}
 			switch (internalFormat){
 				case GL_RGB:
@@ -1500,6 +1535,17 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 							default:
 								error = GL_INVALID_ENUM;
 								break;
+						}
+					}
+				case GL_COLOR_INDEX8_EXT:
+					if (format == GL_COLOR_INDEX){
+						switch (type){
+							case GL_UNSIGNED_BYTE:
+								tex_format = SCE_GXM_TEXTURE_FORMAT_P8_RGBA;
+								break;
+							default:
+								error = GL_INVALID_ENUM;
+								break;	
 						}
 					}
 					break;
@@ -1575,13 +1621,12 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 					}
 					break;
 			}
-			if (error == GL_NO_ERROR){
-				if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE){
-					error = GL_INVALID_VALUE;
-					return;
-				}
-				gpu_textures[texture_unit] = gpu_alloc_texture(width, height, tex_format, data);
+			if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE){
+				error = GL_INVALID_VALUE;
+				return;
 			}
+			gpu_textures[texture_unit] = gpu_alloc_texture(width, height, tex_format, data);
+			if (gpu_textures[texture_unit]->palette_UID) sceGxmTextureSetPalette(&gpu_textures[texture_unit]->gxm_tex, color_table->data);
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -1646,54 +1691,52 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 					error = GL_INVALID_ENUM;
 					break;
 			}
-			if (error == GL_NO_ERROR){
-				if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE){
-					error = GL_INVALID_VALUE;
-					return;
-				}
-				texture* temp = gpu_alloc_texture(width, height, tex_format, pixels);
-				matrix4x4 view_matrix, identity_matrix;
-				matrix4x4_identity(identity_matrix);
-				uint32_t tw = sceGxmTextureGetWidth(&gpu_textures[texture_unit]->gxm_tex);
-				uint32_t th = sceGxmTextureGetHeight(&gpu_textures[texture_unit]->gxm_tex);
-				matrix4x4_init_orthographic(view_matrix, 0, tw, th, 0, -1, 1);
-				sceGxmBeginScene(gxm_context, SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY,
-					gpu_textures[texture_unit]->gxm_rtgt,
-					NULL, NULL, NULL,
-					&gpu_textures[texture_unit]->gxm_sfc,
-					&gpu_textures[texture_unit]->gxm_sfd);
-				sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-				sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
-				void* vertex_wvp_buffer;
-				sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
-				matrix4x4 mvp_matrix;
-				matrix4x4 final_mvp_matrix;
-				matrix4x4_multiply(mvp_matrix, view_matrix, identity_matrix);
-				matrix4x4_transpose(final_mvp_matrix, mvp_matrix);
-				sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)final_mvp_matrix);
-				sceGxmSetFragmentTexture(gxm_context, 0, &temp->gxm_tex);
-				vector3f* vertices = (vector3f*)gpu_pool_memalign(4 * sizeof(vector3f), sizeof(vector3f));
-				vector2f* uv_map = (vector2f*)gpu_pool_memalign(4 * sizeof(vector2f), sizeof(vector2f));
-				uint16_t* indices = (uint16_t*)gpu_pool_memalign(4 * sizeof(uint16_t), sizeof(uint16_t));
-				vertices[0] = (vector3f){xoffset,yoffset,0.5f};
-				vertices[1] = (vector3f){xoffset+width,yoffset,0.5f};
-				vertices[2] = (vector3f){xoffset,yoffset+height,0.5f};
-				vertices[3] = (vector3f){xoffset+width,yoffset+height,0.5f};
-				uv_map[0] = (vector2f){0,0};
-				uv_map[1] = (vector2f){1,0};
-				uv_map[2] = (vector2f){0,1};
-				uv_map[3] = (vector2f){1,1};
-				indices[0] = 0;
-				indices[1] = 1;
-				indices[2] = 2;
-				indices[3] = 3;
-				sceGxmSetVertexStream(gxm_context, 0, vertices);
-				sceGxmSetVertexStream(gxm_context, 1, uv_map);
-				sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, indices, 4);
-				sceGxmEndScene(gxm_context, NULL, NULL);
-				sceGxmFinish(gxm_context);
-				gpu_free_texture(temp);
+			if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE){
+				error = GL_INVALID_VALUE;
+				return;
 			}
+			texture* temp = gpu_alloc_texture(width, height, tex_format, pixels);
+			matrix4x4 view_matrix, identity_matrix;
+			matrix4x4_identity(identity_matrix);
+			uint32_t tw = sceGxmTextureGetWidth(&gpu_textures[texture_unit]->gxm_tex);
+			uint32_t th = sceGxmTextureGetHeight(&gpu_textures[texture_unit]->gxm_tex);
+			matrix4x4_init_orthographic(view_matrix, 0, tw, th, 0, -1, 1);
+			sceGxmBeginScene(gxm_context, SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY,
+				gpu_textures[texture_unit]->gxm_rtgt,
+				NULL, NULL, NULL,
+				&gpu_textures[texture_unit]->gxm_sfc,
+				&gpu_textures[texture_unit]->gxm_sfd);
+			sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
+			sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+			void* vertex_wvp_buffer;
+			sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
+			matrix4x4 mvp_matrix;
+			matrix4x4 final_mvp_matrix;
+			matrix4x4_multiply(mvp_matrix, view_matrix, identity_matrix);
+			matrix4x4_transpose(final_mvp_matrix, mvp_matrix);
+			sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)final_mvp_matrix);
+			sceGxmSetFragmentTexture(gxm_context, 0, &temp->gxm_tex);
+			vector3f* vertices = (vector3f*)gpu_pool_memalign(4 * sizeof(vector3f), sizeof(vector3f));
+			vector2f* uv_map = (vector2f*)gpu_pool_memalign(4 * sizeof(vector2f), sizeof(vector2f));
+			uint16_t* indices = (uint16_t*)gpu_pool_memalign(4 * sizeof(uint16_t), sizeof(uint16_t));
+			vertices[0] = (vector3f){xoffset,yoffset,0.5f};
+			vertices[1] = (vector3f){xoffset+width,yoffset,0.5f};
+			vertices[2] = (vector3f){xoffset,yoffset+height,0.5f};
+			vertices[3] = (vector3f){xoffset+width,yoffset+height,0.5f};
+			uv_map[0] = (vector2f){0,0};
+			uv_map[1] = (vector2f){1,0};
+			uv_map[2] = (vector2f){0,1};
+			uv_map[3] = (vector2f){1,1};
+			indices[0] = 0;
+			indices[1] = 1;
+			indices[2] = 2;
+			indices[3] = 3;
+			sceGxmSetVertexStream(gxm_context, 0, vertices);
+			sceGxmSetVertexStream(gxm_context, 1, uv_map);
+			sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, indices, 4);
+			sceGxmEndScene(gxm_context, NULL, NULL);
+			sceGxmFinish(gxm_context);
+			gpu_free_texture(temp);
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -1776,7 +1819,6 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param){
 }
 
 void glTexCoord2i(GLint s, GLint t){
-	using_texture = 1;
 	if (phase != MODEL_CREATION){
 		error = GL_INVALID_OPERATION;
 		return;
@@ -1793,7 +1835,6 @@ void glTexCoord2i(GLint s, GLint t){
 }
 
 void glTexCoord2f(GLfloat s, GLfloat t){
-	using_texture = 1;
 	if (phase != MODEL_CREATION){
 		error = GL_INVALID_OPERATION;
 		return;
@@ -1821,14 +1862,19 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z){
 	}
 	if (model_vertices == NULL){ 
 		last = (vertexList*)malloc(sizeof(vertexList));
+		last2 = (rgbaList*)malloc(sizeof(rgbaList));
 		model_vertices = last;
+		model_color = last2;
 	}else{
 		last->next = (vertexList*)malloc(sizeof(vertexList));
+		last2->next = (rgbaList*)malloc(sizeof(rgbaList));
 		last = last->next;
+		last2 = last2->next;
 	}
 	last->v.x = x;
 	last->v.y = y;
 	last->v.z = z;
+	memcpy(&last2->v, &current_color, sizeof(vector4f));
 	vertex_count++;
 }
 
@@ -1868,7 +1914,6 @@ void glArrayElement(GLint i){
 		}
 		memcpy(&last->v, ptr, vertex_array.size * vertex_array.num);
 		if (texture_array_state){
-			using_texture = 1;
 			uint8_t* ptr_tex = ((uint8_t*)texture_array.pointer) + (i * ((texture_array.num * texture_array.size) + texture_array.stride));
 			if (model_uv == NULL){
 				last3 = (uvList*)malloc(sizeof(uvList));
@@ -2671,7 +2716,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				error = GL_INVALID_ENUM;
 				break;
 		}
-		if ((error == GL_NO_ERROR) && (!skip_draw)){
+		if (!skip_draw){
 			matrix4x4 mvp_matrix;
 			matrix4x4 final_mvp_matrix;
 	
@@ -2787,7 +2832,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 		if (type != GL_UNSIGNED_SHORT) error = GL_INVALID_ENUM;
 		else if (phase == MODEL_CREATION) error = GL_INVALID_OPERATION;
 		else if (count < 0) error = GL_INVALID_VALUE;
-		if ((error == GL_NO_ERROR) && (!skip_draw)){
+		if (!skip_draw){
 			matrix4x4 mvp_matrix;
 			matrix4x4 final_mvp_matrix;
 	

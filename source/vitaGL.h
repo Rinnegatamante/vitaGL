@@ -89,8 +89,10 @@
 #define GL_UNSIGNED_SHORT                 0x1403
 #define GL_FLOAT                          0x1406
 #define GL_FIXED                          0x140C
+#define GL_COLOR_INDEX                    0x1900
 #define GL_UNSIGNED_SHORT_4_4_4_4         0x8033
 #define GL_UNSIGNED_SHORT_5_5_5_1         0x8034
+#define GL_COLOR_INDEX8_EXT               0x80E5
 #define GL_UNSIGNED_SHORT_5_6_5           0x8363
 
 #define GL_TEXTURE_2D                     0x0DE1
@@ -190,6 +192,8 @@
 #define GL_DYNAMIC_READ                   0x88E9
 #define GL_DYNAMIC_COPY                   0x88EA
 
+#define GL_COLOR_TABLE                    0x80D0
+
 #define GL_MODELVIEW_MATRIX               0x0BA6
 
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 31
@@ -224,6 +228,7 @@ void glColor4fv(const GLfloat* v);
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
 void glColor4ubv(const GLubyte* v);
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
+void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid* data);
 void glCullFace(GLenum mode);
 void glDeleteBuffers(GLsizei n, const GLuint* gl_buffers);
 void glDeleteTextures(GLsizei n, const GLuint* textures);

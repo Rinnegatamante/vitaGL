@@ -173,6 +173,19 @@ int tex_format_to_bytespp(SceGxmTextureFormat format){
 	}
 }
 
+palette* gpu_alloc_palette(void* data, uint32_t w, uint32_t bpe){
+	palette* res = (palette*)malloc(sizeof(palette));
+	void *texture_palette = gpu_alloc_map(
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
+		SCE_GXM_MEMORY_ATTRIB_READ,
+		256 * sizeof(uint32_t),
+		&res->palette_UID);
+	if (data == NULL) memset(texture_palette, 0, 256 * sizeof(uint32_t));
+	else if(bpe == 4) memcpy(texture_palette, data, w * sizeof(uint32_t));
+	res->data = texture_palette;
+	return res;
+}
+
 texture* gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void* data){
 	texture* tex = (texture*)malloc(sizeof(texture));
 	
@@ -185,15 +198,8 @@ texture* gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, c
 	else memset(texture_data, 0, tex_size);
 	sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, w, h, 0);
 	
-	if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8){
-		void *texture_palette = gpu_alloc_map(
-			SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-			SCE_GXM_MEMORY_ATTRIB_READ,
-			256 * sizeof(uint32_t),
-			&tex->palette_UID);
-		memset(texture_palette, 0, 256 * sizeof(uint32_t));
-		sceGxmTextureSetPalette(&tex->gxm_tex, texture_palette);
-	}else tex->palette_UID = 0;
+	if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8) tex->palette_UID = 1;
+	else tex->palette_UID = 0;
 	
 	sceGxmColorSurfaceInit(&tex->gxm_sfc,
 		SCE_GXM_COLOR_FORMAT_A8B8G8R8,
@@ -242,4 +248,9 @@ void gpu_free_texture(texture* tex){
 	gpu_unmap_free(tex->palette_UID);
 	gpu_unmap_free(tex->data_UID);
 	free(tex);
+}
+
+void gpu_free_palette(palette* pal){
+	gpu_unmap_free(pal->palette_UID);
+	free(pal);
 }
