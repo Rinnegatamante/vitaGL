@@ -288,5 +288,7 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 void vglEnd(void);
 void vglInit(uint32_t gpu_pool_size);
 void vglWaitVblankStart(GLboolean enable);
+void vglStartRendering();
+void vglStopRendering();
 
 #endif

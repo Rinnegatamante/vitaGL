@@ -62,6 +62,7 @@ int main(){
 	glDepthFunc(GL_LESS);
 	
 	for (;;){
+		vglStartRendering();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		glEnableClientState(GL_VERTEX_ARRAY);
@@ -73,7 +74,7 @@ int main(){
 		glDrawElements(GL_TRIANGLES, 6*6, GL_UNSIGNED_SHORT, indices);
 		glDisableClientState(GL_VERTEX_ARRAY);
 		glDisableClientState(GL_COLOR_ARRAY);
-		
+		vglStopRendering();
 	}
 	
 	vglEnd();

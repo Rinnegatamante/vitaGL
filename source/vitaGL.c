@@ -16,7 +16,6 @@
 
 #define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 
-#define TEXTURE_UNITS_NUM     32   // Available texture units number
 #define TEXTURES_NUM          1024 // Available textures per texture unit
 #define MODELVIEW_STACK_DEPTH 32   // Depth of modelview matrix stack
 #define GENERIC_STACK_DEPTH   2    // Depth of generic matrix stack
@@ -269,11 +268,12 @@ static vector4f current_color = {1.0f, 1.0f, 1.0f, 1.0f}; // Current in-use colo
 static palette* color_table = NULL; // Current in-use color table
 
 static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH];
-uint8_t modelview_stack_counter = 0;
+static uint8_t modelview_stack_counter = 0;
 static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH];
-uint8_t projection_stack_counter = 0;
+static uint8_t projection_stack_counter = 0;
 
 // Internal functions
+
 static void* shader_patcher_host_alloc_cb(void *user_data, unsigned int size){
 	return malloc(size);
 }
@@ -499,6 +499,28 @@ static void update_polygon_offset(){
 }
 
 // vitaGL specific functions
+
+void vglStartRendering(){
+	sceGxmBeginScene(
+		gxm_context, 0, gxm_render_target,
+		NULL, NULL,
+		gxm_sync_objects[gxm_back_buffer_index],
+		&gxm_color_surfaces[gxm_back_buffer_index],
+		&gxm_depth_stencil_surface);
+}
+
+void vglStopRendering(){
+	sceGxmEndScene(gxm_context, NULL, NULL);
+	sceGxmFinish(gxm_context);
+	sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
+	struct display_queue_callback_data queue_cb_data;
+	queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
+	sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
+	gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
+	gxm_front_buffer_index = gxm_back_buffer_index;
+	gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
+	gpu_pool_reset();
+}
 
 void vglInit(uint32_t gpu_pool_size){
 	
@@ -954,27 +976,6 @@ GLenum glGetError(void){
 
 void glClear(GLbitfield mask){
 	if ((mask & GL_COLOR_BUFFER_BIT) == GL_COLOR_BUFFER_BIT){
-		if (drawing){
-			sceGxmEndScene(gxm_context, NULL, NULL);
-			sceGxmFinish(gxm_context);
-			sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
-			struct display_queue_callback_data queue_cb_data;
-			queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
-			sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
-				gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
-			gxm_front_buffer_index = gxm_back_buffer_index;
-			gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
-		}
-		gpu_pool_reset();
-		sceGxmBeginScene(
-			gxm_context,
-			0,
-			gxm_render_target,
-			NULL,
-			NULL,
-			gxm_sync_objects[gxm_back_buffer_index],
-			&gxm_color_surfaces[gxm_back_buffer_index],
-			&gxm_depth_stencil_surface);
 		change_depth_write(SCE_GXM_DEPTH_WRITE_DISABLED);
 		change_depth_func(SCE_GXM_DEPTH_FUNC_ALWAYS);
 		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
@@ -3015,6 +3016,12 @@ void glGetBooleanv(GLenum pname, GLboolean* params){
 			break;
 		case GL_BLEND_SRC_RGB:
 			*params = (blend_sfactor_rgb == SCE_GXM_BLEND_FACTOR_ZERO) ? GL_FALSE : GL_TRUE;
+			break;
+		case GL_DEPTH_TEST:
+			*params = depth_test_state;
+			break;
+		case GL_ACTIVE_TEXTURE:
+			*params = GL_FALSE;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
