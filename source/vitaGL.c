@@ -2698,10 +2698,12 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				break;
 			case GL_LINES:
 				gxm_p = SCE_GXM_PRIMITIVE_LINES;
+				if ((count % 2) != 0) skip_draw = GL_TRUE;
 				break;
 			case GL_TRIANGLES:
 				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLES;
 				if (no_polygons_mode) skip_draw = GL_TRUE;
+				else if ((count % 3) != 0) skip_draw = GL_TRUE;
 				break;
 			case GL_TRIANGLE_STRIP:
 				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP;
@@ -2765,7 +2767,8 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				sceGxmSetVertexStream(gxm_context, 1, uv_map);
 				sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, count);
 			}else if (color_array_state){
-				sceGxmSetUniformDataF(vertex_wvp_buffer, rgba_wvp, 0, 16, (const float*)final_mvp_matrix);
+				if (color_array.num == 3) sceGxmSetUniformDataF(vertex_wvp_buffer, rgb_wvp, 0, 16, (const float*)final_mvp_matrix);
+				else  sceGxmSetUniformDataF(vertex_wvp_buffer, rgba_wvp, 0, 16, (const float*)final_mvp_matrix);
 				vector3f* vertices = NULL;
 				uint8_t* colors = NULL;
 				uint16_t* indices;
