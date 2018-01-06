@@ -30,6 +30,8 @@ int main(){
 	int h = vita2d_texture_get_height(v2d_texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, nofcolors, w, h, 0, texture_format, GL_UNSIGNED_BYTE, vita2d_texture_get_datap(v2d_texture));
 	
+	glEnable(GL_TEXTURE_2D);
+	
 	for (;;){
 		glClear(GL_COLOR_BUFFER_BIT);
 		glBindTexture(GL_TEXTURE_2D, texture);

@@ -186,9 +186,7 @@ palette* gpu_alloc_palette(const void* data, uint32_t w, uint32_t bpe){
 	return res;
 }
 
-texture* gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void* data){
-	texture* tex = (texture*)malloc(sizeof(texture));
-	
+void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void* data, texture* tex){	
 	const int tex_size = w * h * tex_format_to_bytespp(format);
 	void *texture_data = gpu_alloc_map(
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
@@ -200,8 +198,6 @@ texture* gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, c
 	
 	if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8) tex->palette_UID = 1;
 	else tex->palette_UID = 0;
-	
-	return tex;
 }
 
 void gpu_prepare_rendertarget(texture* tex){
@@ -247,15 +243,13 @@ void gpu_prepare_rendertarget(texture* tex){
 }
 
 void gpu_destroy_rendertarget(texture* tex){
-	if (tex == NULL) return;
 	sceGxmDestroyRenderTarget(tex->gxm_rtgt);
 	gpu_unmap_free(tex->depth_UID);
 }
 
 void gpu_free_texture(texture* tex){
-	if (tex == NULL) return;
-	gpu_unmap_free(tex->data_UID);
-	free(tex);
+	if (tex->data_UID != 0) gpu_unmap_free(tex->data_UID);
+	tex->data_UID = 0;
 }
 
 void gpu_free_palette(palette* pal){
