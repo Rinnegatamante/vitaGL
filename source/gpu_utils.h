@@ -29,3 +29,5 @@ texture* gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, c
 void gpu_free_texture(texture* tex);
 palette* gpu_alloc_palette(const void* data, uint32_t w, uint32_t bpe);
 void gpu_free_palette(palette* pal);
+void gpu_prepare_rendertarget(texture* tex);
+void gpu_destroy_rendertarget(texture* tex);

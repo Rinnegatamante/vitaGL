@@ -173,7 +173,7 @@ int tex_format_to_bytespp(SceGxmTextureFormat format){
 	}
 }
 
-palette* gpu_alloc_palette(void* data, uint32_t w, uint32_t bpe){
+palette* gpu_alloc_palette(const void* data, uint32_t w, uint32_t bpe){
 	palette* res = (palette*)malloc(sizeof(palette));
 	void *texture_palette = gpu_alloc_map(
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
@@ -201,12 +201,19 @@ texture* gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, c
 	if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8) tex->palette_UID = 1;
 	else tex->palette_UID = 0;
 	
+	return tex;
+}
+
+void gpu_prepare_rendertarget(texture* tex){
+	if (tex == NULL) return;
+	uint32_t w = sceGxmTextureGetWidth(&tex->gxm_tex);
+	uint32_t h = sceGxmTextureGetHeight(&tex->gxm_tex);
 	sceGxmColorSurfaceInit(&tex->gxm_sfc,
 		SCE_GXM_COLOR_FORMAT_A8B8G8R8,
 		SCE_GXM_COLOR_SURFACE_LINEAR,
 		SCE_GXM_COLOR_SURFACE_SCALE_NONE,
 		SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-		w, h, w, texture_data);	
+		w,h,w,sceGxmTextureGetData(&tex->gxm_tex));	
 		
 	const uint32_t alignedWidth = ALIGN(w, SCE_GXM_TILE_SIZEX);
 	const uint32_t alignedHeight = ALIGN(h, SCE_GXM_TILE_SIZEY);
@@ -237,20 +244,22 @@ texture* gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, c
 	renderTargetParams.driverMemBlock = -1;
 	sceGxmCreateRenderTarget(&renderTargetParams, &tgt);
 	tex->gxm_rtgt = tgt;
-	
-	return tex;
+}
+
+void gpu_destroy_rendertarget(texture* tex){
+	if (tex == NULL) return;
+	sceGxmDestroyRenderTarget(tex->gxm_rtgt);
+	gpu_unmap_free(tex->depth_UID);
 }
 
 void gpu_free_texture(texture* tex){
-	
-	sceGxmDestroyRenderTarget(tex->gxm_rtgt);
-	gpu_unmap_free(tex->depth_UID);
-	gpu_unmap_free(tex->palette_UID);
+	if (tex == NULL) return;
 	gpu_unmap_free(tex->data_UID);
 	free(tex);
 }
 
 void gpu_free_palette(palette* pal){
+	if (pal == NULL) return;
 	gpu_unmap_free(pal->palette_UID);
 	free(pal);
 }

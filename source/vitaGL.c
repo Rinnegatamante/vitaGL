@@ -16,7 +16,7 @@
 
 #define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 
-#define TEXTURES_NUM          32   // Available texture units number
+#define TEXTURES_NUM          80   // Available texture units number
 #define MODELVIEW_STACK_DEPTH 32   // Depth of modelview matrix stack
 #define GENERIC_STACK_DEPTH   2    // Depth of generic matrix stack
 #define DISPLAY_WIDTH         960  // Display width in pixels
@@ -26,6 +26,8 @@
 #define GXM_TEX_MAX_SIZE      4096 // Maximum width/height in pixels per texture
 #define BUFFERS_ADDR        0xA000 // Starting address for buffers indexing
 #define BUFFERS_NUM           128  // Maximum number of allocatable buffers
+
+#define GL_TEXTUREN GL_TEXTURE0 + GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS
 
 const GLubyte* vendor = "Rinnegatamante";
 const GLubyte* renderer = "SGX543MP4+";
@@ -195,8 +197,6 @@ static rgbaList* last2 = NULL;
 static uvList* model_uv = NULL;
 static uvList* last3 = NULL;
 static glPhase phase = NONE;
-static uint8_t texture_init = 1;
-static uint8_t buffers_init = 1;
 static uint64_t vertex_count = 0;
 static uint8_t drawing = 0;
 static matrix4x4 projection_matrix;
@@ -234,7 +234,7 @@ static uint8_t stencil_mask_back_write = 0xFF; // Current in-use mask for write 
 static uint8_t stencil_ref_front = 0; // Current in-use reference for stencil test on front
 static uint8_t stencil_ref_back = 0; // Current in-use reference for stencil test on back
 static GLdouble depth_value = 1.0f; // Current depth test value
-static int8_t texture_unit = -1; // Current in-use texture unit
+static int8_t texture_unit = 0; // Current in-use texture unit
 static int vertex_array_unit = -1; // Current in-use vertex array unit
 static int index_array_unit = -1; // Current in-use index array unit
 static matrix4x4* matrix = NULL; // Current in-use matrix mode
@@ -877,6 +877,18 @@ void vglInit(uint32_t gpu_pool_size){
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);
 	
+	// Init textures
+	for (i=0; i < TEXTURES_NUM; i++){
+		textures[i] = GL_TEXTURE0 + i;
+		gpu_textures[i] = NULL;
+	}
+	
+	// Init buffers
+	for (i=0; i < BUFFERS_NUM; i++){
+		buffers[i] = BUFFERS_ADDR + i;
+		gpu_buffers[i].ptr = NULL;
+	}
+	
 }
 
 void vglEnd(void){
@@ -1173,7 +1185,7 @@ void glEnd(void){
 	matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 	matrix4x4_transpose(final_mvp_matrix,mvp_matrix);
 	
-	if (texture_unit >= 0){
+	if ((texture_unit >= 0) && fixed_pipeline_texture && (model_uv != NULL)){
 		sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
 	}else{
@@ -1302,13 +1314,6 @@ void glGenBuffers(GLsizei n, GLuint* res){
 		error = GL_INVALID_VALUE;
 		return;
 	}
-	if (buffers_init){
-		buffers_init = 0;
-		for (i=0; i < BUFFERS_NUM; i++){
-			buffers[i] = BUFFERS_ADDR + i;
-			gpu_buffers[i].ptr = NULL;
-		}
-	}
 	i = 0;
 	for (i=0; i < BUFFERS_NUM; i++){
 		if (buffers[i] != 0x0000){
@@ -1320,19 +1325,11 @@ void glGenBuffers(GLsizei n, GLuint* res){
 }
 
 void glGenTextures(GLsizei n, GLuint* res){
-	int i = 0, j = 0;
+	int i, j=0;
 	if (n < 0){
 		error = GL_INVALID_VALUE;
 		return;
 	}
-	if (texture_init){
-		texture_init = 0;
-		for (i=0; i < TEXTURES_NUM; i++){
-			textures[i] = GL_TEXTURE0 + i;
-			gpu_textures[i] = NULL;
-		}
-	}
-	i = 0;
 	for (i=0; i < TEXTURES_NUM; i++){
 		if (textures[i] != 0x0000){
 			res[j++] = textures[i];
@@ -1361,7 +1358,7 @@ void glBindBuffer(GLenum target, GLuint buffer){
 }
 
 void glBindTexture(GLenum target, GLuint texture){
-	if ((texture != 0x0000) && ((texture > GL_TEXTURE31) || (texture < GL_TEXTURE0))){
+	if ((texture != 0x0000) && ((texture > GL_TEXTUREN) || (texture < GL_TEXTURE0))){
 		error = GL_INVALID_VALUE;
 		return;
 	}
@@ -1382,7 +1379,7 @@ void glDeleteTextures(GLsizei n, const GLuint* gl_textures){
 	}
 	int i, j;
 	for (j=0; j<n; j++){
-		if (gl_textures[j] >= GL_TEXTURE0 && gl_textures[j] <= GL_TEXTURE31){
+		if (gl_textures[j] >= GL_TEXTURE0 && gl_textures[j] <= GL_TEXTUREN){
 			uint8_t idx = gl_textures[j] - GL_TEXTURE0;
 			textures[idx] = gl_textures[j];
 			if (gpu_textures[idx] != NULL){
@@ -1695,6 +1692,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 				error = GL_INVALID_VALUE;
 				return;
 			}
+			gpu_prepare_rendertarget(gpu_textures[texture_unit]);
 			texture* temp = gpu_alloc_texture(width, height, tex_format, pixels);
 			matrix4x4 view_matrix, identity_matrix;
 			matrix4x4_identity(identity_matrix);
@@ -1737,6 +1735,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			sceGxmEndScene(gxm_context, NULL, NULL);
 			sceGxmFinish(gxm_context);
 			gpu_free_texture(temp);
+			gpu_destroy_rendertarget(gpu_textures[texture_unit]);
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -1851,7 +1850,7 @@ void glTexCoord2f(GLfloat s, GLfloat t){
 }
 
 void glActiveTexture(GLenum texture){
-	if (texture < GL_TEXTURE0 && texture > GL_TEXTURE0 + TEXTURES_NUM) error = GL_INVALID_ENUM;
+	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTUREN)) error = GL_INVALID_ENUM;
 	else texture_unit = texture - GL_TEXTURE0;
 }
 
@@ -3036,6 +3035,9 @@ void glGetFloatv(GLenum pname, GLfloat* data){
 			break;
 		case GL_MODELVIEW_MATRIX:
 			memcpy(data, &modelview_matrix, sizeof(matrix4x4));
+			break;
+		case GL_ACTIVE_TEXTURE:
+			*data = (1.0f * (texture_unit + GL_TEXTURE0));
 			break;
 		default:
 			error = GL_INVALID_ENUM;
