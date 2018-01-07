@@ -13,12 +13,6 @@
 #include "disable_color_buffer_v.h"
 #include "texture2d_f.h"
 #include "texture2d_v.h"
-#include "texture2d_alpha_equal_f.h"
-#include "texture2d_alpha_lequal_f.h"
-#include "texture2d_alpha_gequal_f.h"
-#include "texture2d_alpha_greater_f.h"
-#include "texture2d_alpha_less_f.h"
-#include "texture2d_alpha_notequal_f.h"
 
 #define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 
@@ -102,6 +96,18 @@ typedef enum glPhase{
 	MODEL_CREATION = 1
 } glPhase;
 
+// Alpha operations for alpha testing
+typedef enum alphaOp{
+	GREATER_EQUAL = 0,
+	GREATER = 1,
+	NOT_EQUAL = 2,
+	EQUAL = 3,
+	LESS_EQUAL = 4,
+	LESS = 5,
+	NEVER = 6,
+	ALWAYS = 7
+} alphaOp;
+
 typedef struct texture_unit{
 	GLboolean enabled;
 	matrix4x4 stack[GENERIC_STACK_DEPTH];
@@ -152,12 +158,6 @@ static const SceGxmProgram *const gxm_program_rgba_f = (SceGxmProgram*)&rgba_f;
 static const SceGxmProgram *const gxm_program_rgb_v = (SceGxmProgram*)&rgb_v;
 static const SceGxmProgram *const gxm_program_texture2d_v = (SceGxmProgram*)&texture2d_v;
 static const SceGxmProgram *const gxm_program_texture2d_f = (SceGxmProgram*)&texture2d_f;
-static const SceGxmProgram *const gxm_program_texture2d_alpha_equal_f = (SceGxmProgram*)&texture2d_alpha_equal_f;
-static const SceGxmProgram *const gxm_program_texture2d_alpha_lequal_f = (SceGxmProgram*)&texture2d_alpha_lequal_f;
-static const SceGxmProgram *const gxm_program_texture2d_alpha_gequal_f = (SceGxmProgram*)&texture2d_alpha_gequal_f;
-static const SceGxmProgram *const gxm_program_texture2d_alpha_greater_f = (SceGxmProgram*)&texture2d_alpha_greater_f;
-static const SceGxmProgram *const gxm_program_texture2d_alpha_less_f = (SceGxmProgram*)&texture2d_alpha_less_f;
-static const SceGxmProgram *const gxm_program_texture2d_alpha_notequal_f = (SceGxmProgram*)&texture2d_alpha_notequal_f;
 
 // Disable color buffer shader
 static SceGxmShaderPatcherId disable_color_buffer_vertex_id;
@@ -199,38 +199,14 @@ static const SceGxmProgram* rgba_fragment_program;
 // Texture2D shader
 static SceGxmShaderPatcherId texture2d_vertex_id;
 static SceGxmShaderPatcherId texture2d_fragment_id;
-static SceGxmShaderPatcherId texture2d_alpha_equal_fragment_id;
-static SceGxmShaderPatcherId texture2d_alpha_lequal_fragment_id;
-static SceGxmShaderPatcherId texture2d_alpha_gequal_fragment_id;
-static SceGxmShaderPatcherId texture2d_alpha_greater_fragment_id;
-static SceGxmShaderPatcherId texture2d_alpha_less_fragment_id;
-static SceGxmShaderPatcherId texture2d_alpha_notequal_fragment_id;
 static const SceGxmProgramParameter* texture2d_position;
 static const SceGxmProgramParameter* texture2d_texcoord;
 static const SceGxmProgramParameter* texture2d_wvp;
-static const SceGxmProgramParameter* texture2d_alpha_equal_cut;
-static const SceGxmProgramParameter* texture2d_alpha_lequal_cut;
-static const SceGxmProgramParameter* texture2d_alpha_gequal_cut;
-static const SceGxmProgramParameter* texture2d_alpha_less_cut;
-static const SceGxmProgramParameter* texture2d_alpha_greater_cut;
-static const SceGxmProgramParameter* texture2d_alpha_notequal_cut;
 static const SceGxmProgramParameter* texture2d_alpha_cut;
+static const SceGxmProgramParameter* texture2d_alpha_op;
 static SceGxmVertexProgram* texture2d_vertex_program_patched;
 static SceGxmFragmentProgram* texture2d_fragment_program_patched;
 static const SceGxmProgram* texture2d_fragment_program;
-static SceGxmFragmentProgram* texture2d_alpha_equal_fragment_program_patched;
-static const SceGxmProgram* texture2d_alpha_equal_fragment_program;
-static SceGxmFragmentProgram* texture2d_alpha_lequal_fragment_program_patched;
-static const SceGxmProgram* texture2d_alpha_lequal_fragment_program;
-static SceGxmFragmentProgram* texture2d_alpha_gequal_fragment_program_patched;
-static const SceGxmProgram* texture2d_alpha_gequal_fragment_program;
-static SceGxmFragmentProgram* texture2d_alpha_less_fragment_program_patched;
-static const SceGxmProgram* texture2d_alpha_less_fragment_program;
-static SceGxmFragmentProgram* texture2d_alpha_greater_fragment_program_patched;
-static const SceGxmProgram* texture2d_alpha_greater_fragment_program;
-static SceGxmFragmentProgram* texture2d_alpha_notequal_fragment_program_patched;
-static const SceGxmProgram* texture2d_alpha_notequal_fragment_program;
-static SceGxmFragmentProgram* texture2d_alpha_test_fragment_program_patched;
 
 // Internal stuffs
 static SceGxmPrimitiveType prim;
@@ -248,6 +224,7 @@ static matrix4x4 projection_matrix;
 static matrix4x4 modelview_matrix;
 static GLboolean vblank = GL_TRUE;
 static uint8_t np = 0xFF;
+static float alpha_op = 7.0f;
 
 static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
@@ -346,12 +323,6 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 	
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, rgba_fragment_program_patched);
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_program_patched);
-	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_alpha_equal_fragment_program_patched);
-	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_alpha_lequal_fragment_program_patched);
-	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_alpha_gequal_fragment_program_patched);
-	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_alpha_less_fragment_program_patched);
-	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_alpha_greater_fragment_program_patched);
-	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_alpha_notequal_fragment_program_patched);
 	
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		rgba_fragment_id,
@@ -369,91 +340,37 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 		texture2d_fragment_program,
 		&texture2d_fragment_program_patched);
 		
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		texture2d_alpha_equal_fragment_id,
-		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE,
-		blend_info,
-		texture2d_alpha_equal_fragment_program,
-		&texture2d_alpha_equal_fragment_program_patched);
-	
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		texture2d_alpha_lequal_fragment_id,
-		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE,
-		blend_info,
-		texture2d_alpha_lequal_fragment_program,
-		&texture2d_alpha_lequal_fragment_program_patched);
-		
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		texture2d_alpha_gequal_fragment_id,
-		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE,
-		blend_info,
-		texture2d_alpha_gequal_fragment_program,
-		&texture2d_alpha_gequal_fragment_program_patched);
-		
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		texture2d_alpha_less_fragment_id,
-		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE,
-		blend_info,
-		texture2d_alpha_less_fragment_program,
-		&texture2d_alpha_less_fragment_program_patched);
-		
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		texture2d_alpha_greater_fragment_id,
-		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE,
-		blend_info,
-		texture2d_alpha_greater_fragment_program,
-		&texture2d_alpha_greater_fragment_program_patched);
-		
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		texture2d_alpha_notequal_fragment_id,
-		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE,
-		blend_info,
-		texture2d_alpha_notequal_fragment_program,
-		&texture2d_alpha_notequal_fragment_program_patched);
 }
 
 static void update_alpha_test_settings(){
 	if (alpha_test_state){
 		switch (alpha_func){
 			case GL_EQUAL:
-				texture2d_alpha_test_fragment_program_patched = texture2d_alpha_equal_fragment_program_patched;
-				texture2d_alpha_cut = texture2d_alpha_equal_cut;
+				alpha_op = EQUAL * 1.0f;
 				break;
 			case GL_LEQUAL:
-				texture2d_alpha_test_fragment_program_patched = texture2d_alpha_lequal_fragment_program_patched;
-				texture2d_alpha_cut = texture2d_alpha_lequal_cut;
+				alpha_op = LESS_EQUAL * 1.0f;
 				break;
 			case GL_GEQUAL:
-				texture2d_alpha_test_fragment_program_patched = texture2d_alpha_gequal_fragment_program_patched;
-				texture2d_alpha_cut = texture2d_alpha_gequal_cut;
+				alpha_op = GREATER_EQUAL * 1.0f;
 				break;
 			case GL_LESS:
-				texture2d_alpha_test_fragment_program_patched = texture2d_alpha_less_fragment_program_patched;
-				texture2d_alpha_cut = texture2d_alpha_less_cut;
+				alpha_op = LESS * 1.0f;
 				break;
 			case GL_GREATER:
-				texture2d_alpha_test_fragment_program_patched = texture2d_alpha_greater_fragment_program_patched;
-				texture2d_alpha_cut = texture2d_alpha_greater_cut;
+				alpha_op = GREATER * 1.0f;
 				break;
 			case GL_NOTEQUAL:
-				texture2d_alpha_test_fragment_program_patched = texture2d_alpha_notequal_fragment_program_patched;
-				texture2d_alpha_cut = texture2d_alpha_notequal_cut;
+				alpha_op = NOT_EQUAL * 1.0f;
+				break;
+			case GL_NEVER:
+				alpha_op = NEVER * 1.0f;
 				break;
 			default:
-				texture2d_alpha_test_fragment_program_patched = texture2d_fragment_program_patched;
-				texture2d_alpha_cut = NULL;
+				alpha_op = ALWAYS * 1.0f;
 				break;
 		}
-	}else{
-		texture2d_alpha_test_fragment_program_patched = texture2d_fragment_program_patched;
-		texture2d_alpha_cut = NULL;
-	}
+	}else alpha_op = ALWAYS * 1.0f;
 }
 
 static void change_blend_factor(){
@@ -992,27 +909,9 @@ void vglInit(uint32_t gpu_pool_size){
 		&texture2d_vertex_id);
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_f,
 		&texture2d_fragment_id);
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_alpha_equal_f,
-		&texture2d_alpha_equal_fragment_id);
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_alpha_lequal_f,
-		&texture2d_alpha_lequal_fragment_id);
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_alpha_gequal_f,
-		&texture2d_alpha_gequal_fragment_id);
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_alpha_less_f,
-		&texture2d_alpha_less_fragment_id);
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_alpha_greater_f,
-		&texture2d_alpha_greater_fragment_id);
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_alpha_notequal_f,
-		&texture2d_alpha_notequal_fragment_id);
 
 	const SceGxmProgram* texture2d_vertex_program = sceGxmShaderPatcherGetProgramFromId(texture2d_vertex_id);
 	texture2d_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_fragment_id);
-	texture2d_alpha_equal_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_alpha_equal_fragment_id);
-	texture2d_alpha_lequal_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_alpha_lequal_fragment_id);
-	texture2d_alpha_gequal_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_alpha_gequal_fragment_id);
-	texture2d_alpha_less_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_alpha_less_fragment_id);
-	texture2d_alpha_greater_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_alpha_greater_fragment_id);
-	texture2d_alpha_notequal_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_alpha_notequal_fragment_id);
 	
 	texture2d_position = sceGxmProgramFindParameterByName(
 		texture2d_vertex_program, "position");
@@ -1020,23 +919,11 @@ void vglInit(uint32_t gpu_pool_size){
 	texture2d_texcoord = sceGxmProgramFindParameterByName(
 		texture2d_vertex_program, "texcoord");
 		
-	texture2d_alpha_equal_cut = sceGxmProgramFindParameterByName(
-		texture2d_alpha_equal_fragment_program, "alphaCut");
+	texture2d_alpha_cut = sceGxmProgramFindParameterByName(
+		texture2d_fragment_program, "alphaCut");
 		
-	texture2d_alpha_lequal_cut = sceGxmProgramFindParameterByName(
-		texture2d_alpha_lequal_fragment_program, "alphaCut");
-		
-	texture2d_alpha_gequal_cut = sceGxmProgramFindParameterByName(
-		texture2d_alpha_gequal_fragment_program, "alphaCut");
-		
-	texture2d_alpha_less_cut = sceGxmProgramFindParameterByName(
-		texture2d_alpha_less_fragment_program, "alphaCut");
-		
-	texture2d_alpha_greater_cut = sceGxmProgramFindParameterByName(
-		texture2d_alpha_greater_fragment_program, "alphaCut");
-		
-	texture2d_alpha_notequal_cut = sceGxmProgramFindParameterByName(
-		texture2d_alpha_notequal_fragment_program, "alphaCut");
+	texture2d_alpha_op = sceGxmProgramFindParameterByName(
+		texture2d_fragment_program, "alphaOp");
 
 	SceGxmVertexAttribute texture2d_vertex_attribute[2];
 	SceGxmVertexStream texture2d_vertex_stream[2];
@@ -1065,36 +952,6 @@ void vglInit(uint32_t gpu_pool_size){
 		texture2d_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_fragment_program,
 		&texture2d_fragment_program_patched);
-		
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		texture2d_alpha_equal_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_alpha_equal_fragment_program,
-		&texture2d_alpha_equal_fragment_program_patched);
-		
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		texture2d_alpha_lequal_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_alpha_lequal_fragment_program,
-		&texture2d_alpha_lequal_fragment_program_patched);
-		
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		texture2d_alpha_gequal_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_alpha_gequal_fragment_program,
-		&texture2d_alpha_gequal_fragment_program_patched);
-		
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		texture2d_alpha_less_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_alpha_less_fragment_program,
-		&texture2d_alpha_less_fragment_program_patched);
-		
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		texture2d_alpha_greater_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_alpha_greater_fragment_program,
-		&texture2d_alpha_greater_fragment_program_patched);
-		
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		texture2d_alpha_notequal_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_alpha_notequal_fragment_program,
-		&texture2d_alpha_notequal_fragment_program_patched);
 		
 	texture2d_wvp = sceGxmProgramFindParameterByName(texture2d_vertex_program, "wvp");	
 	
@@ -1404,12 +1261,12 @@ void glEnd(void){
 	uint8_t use_texture = 0;
 	if ((server_texture_unit >= 0) && (server_texture_unit >= 0) && (texture_units[server_texture_unit].enabled) && (model_uv != NULL) && (texture_units[server_texture_unit].textures[texture2d_idx].valid)){
 		sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-		sceGxmSetFragmentProgram(gxm_context, texture2d_alpha_test_fragment_program_patched);
-		if (texture2d_alpha_cut != NULL){
-			void* alpha_buffer;
-			sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
-			sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
-		}
+		sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+		void* alpha_buffer;
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
 		use_texture = 1;
 	}else{
 		sceGxmSetVertexProgram(gxm_context, rgba_vertex_program_patched);
@@ -2944,12 +2801,12 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 			if (texture_array_state){
 				if (!(texture_units[client_texture_unit].textures[texture2d_idx].valid)) return;
 				sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-				sceGxmSetFragmentProgram(gxm_context, texture2d_alpha_test_fragment_program_patched);
-				if (texture2d_alpha_cut != NULL){
-					void* alpha_buffer;
-					sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
-					sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
-				}
+				sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+				void* alpha_buffer;
+				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
+				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
 			}else if (texture_units[client_texture_unit].color_array.num == 3){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
 				sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
@@ -3072,12 +2929,12 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 			if (texture_array_state){
 				if (!(texture_units[client_texture_unit].textures[texture2d_idx].valid)) return;
 				sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-				sceGxmSetFragmentProgram(gxm_context, texture2d_alpha_test_fragment_program_patched);
-				if (texture2d_alpha_cut != NULL){
-					void* alpha_buffer;
-					sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
-					sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
-				}
+				sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+				void* alpha_buffer;
+				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
+				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
 			}else if (texture_units[client_texture_unit].color_array.num == 3){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
 				sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);

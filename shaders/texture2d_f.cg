@@ -1,6 +1,37 @@
 ﻿float4 main(
 	float2 vTexcoord : TEXCOORD0,
-	uniform sampler2D tex)
+	uniform sampler2D tex,
+	uniform float alphaCut,
+	uniform float alphaOp
+	)
 {
-	return tex2D(tex, vTexcoord);
+	float4 texColor = tex2D(tex, vTexcoord);
+	if (alphaOp == 0){
+		if (texColor.a < alphaCut){
+			discard;
+		}
+	}else if (alphaOp == 1.0){
+		if (texColor.a <= alphaCut){
+			discard;
+		}
+	}else if (alphaOp == 2.0){
+		if (texColor.a == alphaCut){
+			discard;
+		}
+	}else if (alphaOp == 3.0){
+		if (texColor.a != alphaCut){
+			discard;
+		}
+	}else if (alphaOp == 4.0){
+		if (texColor.a > alphaCut){
+			discard;
+		}
+	}else if (alphaOp == 5.0){
+		if (texColor.a >= alphaCut){
+			discard;
+		}
+	}else if (alphaOp == 6.0){
+		discard;
+	}
+	return texColor;
 }
