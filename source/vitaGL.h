@@ -207,6 +207,7 @@ typedef enum GLbitfield{
 
 // gl*
 void glActiveTexture(GLenum texture);
+void glAlphaFunc(GLenum func, GLfloat ref);
 void glArrayElement(GLint i);
 void glBegin(GLenum mode);
 void glBindBuffer(GLenum target, GLuint buffer);

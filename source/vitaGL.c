@@ -13,6 +13,12 @@
 #include "disable_color_buffer_v.h"
 #include "texture2d_f.h"
 #include "texture2d_v.h"
+#include "texture2d_alpha_equal_f.h"
+#include "texture2d_alpha_lequal_f.h"
+#include "texture2d_alpha_gequal_f.h"
+#include "texture2d_alpha_greater_f.h"
+#include "texture2d_alpha_less_f.h"
+#include "texture2d_alpha_notequal_f.h"
 
 #define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 
@@ -27,10 +33,10 @@
 #define BUFFERS_ADDR        0xA000 // Starting address for buffers indexing
 #define BUFFERS_NUM           128  // Maximum number of allocatable buffers
 
-const GLubyte* vendor = "Rinnegatamante";
-const GLubyte* renderer = "SGX543MP4+";
-const GLubyte* version = "VitaGL 1.0";
-const GLubyte* extensions = "";
+static const GLubyte* vendor = "Rinnegatamante";
+static const GLubyte* renderer = "SGX543MP4+";
+static const GLubyte* version = "VitaGL 1.0";
+static const GLubyte* extensions = "";
 
 typedef struct clear_vertex{
 	vector2f position;
@@ -100,6 +106,9 @@ typedef struct texture_unit{
 	GLboolean enabled;
 	matrix4x4 stack[GENERIC_STACK_DEPTH];
 	texture   textures[TEXTURES_NUM];
+	vertexArray vertex_array;
+	vertexArray color_array;
+	vertexArray texture_array;
 } texture_unit;
 
 struct display_queue_callback_data {
@@ -143,6 +152,12 @@ static const SceGxmProgram *const gxm_program_rgba_f = (SceGxmProgram*)&rgba_f;
 static const SceGxmProgram *const gxm_program_rgb_v = (SceGxmProgram*)&rgb_v;
 static const SceGxmProgram *const gxm_program_texture2d_v = (SceGxmProgram*)&texture2d_v;
 static const SceGxmProgram *const gxm_program_texture2d_f = (SceGxmProgram*)&texture2d_f;
+static const SceGxmProgram *const gxm_program_texture2d_alpha_equal_f = (SceGxmProgram*)&texture2d_alpha_equal_f;
+static const SceGxmProgram *const gxm_program_texture2d_alpha_lequal_f = (SceGxmProgram*)&texture2d_alpha_lequal_f;
+static const SceGxmProgram *const gxm_program_texture2d_alpha_gequal_f = (SceGxmProgram*)&texture2d_alpha_gequal_f;
+static const SceGxmProgram *const gxm_program_texture2d_alpha_greater_f = (SceGxmProgram*)&texture2d_alpha_greater_f;
+static const SceGxmProgram *const gxm_program_texture2d_alpha_less_f = (SceGxmProgram*)&texture2d_alpha_less_f;
+static const SceGxmProgram *const gxm_program_texture2d_alpha_notequal_f = (SceGxmProgram*)&texture2d_alpha_notequal_f;
 
 // Disable color buffer shader
 static SceGxmShaderPatcherId disable_color_buffer_vertex_id;
@@ -184,12 +199,38 @@ static const SceGxmProgram* rgba_fragment_program;
 // Texture2D shader
 static SceGxmShaderPatcherId texture2d_vertex_id;
 static SceGxmShaderPatcherId texture2d_fragment_id;
+static SceGxmShaderPatcherId texture2d_alpha_equal_fragment_id;
+static SceGxmShaderPatcherId texture2d_alpha_lequal_fragment_id;
+static SceGxmShaderPatcherId texture2d_alpha_gequal_fragment_id;
+static SceGxmShaderPatcherId texture2d_alpha_greater_fragment_id;
+static SceGxmShaderPatcherId texture2d_alpha_less_fragment_id;
+static SceGxmShaderPatcherId texture2d_alpha_notequal_fragment_id;
 static const SceGxmProgramParameter* texture2d_position;
 static const SceGxmProgramParameter* texture2d_texcoord;
 static const SceGxmProgramParameter* texture2d_wvp;
+static const SceGxmProgramParameter* texture2d_alpha_equal_cut;
+static const SceGxmProgramParameter* texture2d_alpha_lequal_cut;
+static const SceGxmProgramParameter* texture2d_alpha_gequal_cut;
+static const SceGxmProgramParameter* texture2d_alpha_less_cut;
+static const SceGxmProgramParameter* texture2d_alpha_greater_cut;
+static const SceGxmProgramParameter* texture2d_alpha_notequal_cut;
+static const SceGxmProgramParameter* texture2d_alpha_cut;
 static SceGxmVertexProgram* texture2d_vertex_program_patched;
 static SceGxmFragmentProgram* texture2d_fragment_program_patched;
 static const SceGxmProgram* texture2d_fragment_program;
+static SceGxmFragmentProgram* texture2d_alpha_equal_fragment_program_patched;
+static const SceGxmProgram* texture2d_alpha_equal_fragment_program;
+static SceGxmFragmentProgram* texture2d_alpha_lequal_fragment_program_patched;
+static const SceGxmProgram* texture2d_alpha_lequal_fragment_program;
+static SceGxmFragmentProgram* texture2d_alpha_gequal_fragment_program_patched;
+static const SceGxmProgram* texture2d_alpha_gequal_fragment_program;
+static SceGxmFragmentProgram* texture2d_alpha_less_fragment_program_patched;
+static const SceGxmProgram* texture2d_alpha_less_fragment_program;
+static SceGxmFragmentProgram* texture2d_alpha_greater_fragment_program_patched;
+static const SceGxmProgram* texture2d_alpha_greater_fragment_program;
+static SceGxmFragmentProgram* texture2d_alpha_notequal_fragment_program_patched;
+static const SceGxmProgram* texture2d_alpha_notequal_fragment_program;
+static SceGxmFragmentProgram* texture2d_alpha_test_fragment_program_patched;
 
 // Internal stuffs
 static SceGxmPrimitiveType prim;
@@ -250,20 +291,20 @@ static GLboolean vertex_array_state = GL_FALSE; // Current state for GL_VERTEX_A
 static GLboolean color_array_state = GL_FALSE; // Current state for GL_COLOR_ARRAY
 static GLboolean texture_array_state = GL_FALSE; // Current state for GL_TEXTURE_COORD_ARRAY
 static GLboolean scissor_test_state = GL_FALSE; // Current state for GL_SCISSOR_TEST
+static GLboolean alpha_test_state = GL_FALSE; // Current state for GL_ALPHA_TEST
 static GLboolean cull_face_state = GL_FALSE; // Current state for GL_CULL_FACE
 static GLboolean blend_state = GL_FALSE; // Current state for GL_BLEND
 static GLboolean depth_mask_state = GL_TRUE; // Current state for glDepthMask
 static GLboolean pol_offset_fill = GL_FALSE; // Current state for GL_POLYGON_OFFSET_FILL
 static GLboolean pol_offset_line = GL_FALSE; // Current state for GL_POLYGON_OFFSET_LINE
 static GLboolean pol_offset_point = GL_FALSE; // Current state for GL_POLYGON_OFFSET_POINT
+static GLenum alpha_func = GL_ALWAYS; // Current in-use alpha test mode
+static GLfloat alpha_ref = 0.0f; // Current in-use alpha test reference value
 static GLenum gl_cull_mode = GL_BACK; // Current in-use openGL cull mode
 static GLenum gl_front_face = GL_CCW; // Current in-use openGL cull mode
 static GLboolean no_polygons_mode = GL_FALSE; // GL_TRUE when cull mode to GL_FRONT_AND_BACK is set
 static GLfloat pol_factor = 0.0f; // Current factor for glPolygonOffset
 static GLfloat pol_units = 0.0f; // Current units for glPolygonOffset
-static vertexArray vertex_array; // Current in-use vertex array
-static vertexArray color_array; // Current in-use color array
-static vertexArray texture_array; // Current in-use texture array
 static vector4f current_color = {1.0f, 1.0f, 1.0f, 1.0f}; // Current in-use color
 static palette* color_table = NULL; // Current in-use color table
 
@@ -305,6 +346,12 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 	
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, rgba_fragment_program_patched);
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_program_patched);
+	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_alpha_equal_fragment_program_patched);
+	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_alpha_lequal_fragment_program_patched);
+	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_alpha_gequal_fragment_program_patched);
+	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_alpha_less_fragment_program_patched);
+	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_alpha_greater_fragment_program_patched);
+	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_alpha_notequal_fragment_program_patched);
 	
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		rgba_fragment_id,
@@ -321,6 +368,92 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 		blend_info,
 		texture2d_fragment_program,
 		&texture2d_fragment_program_patched);
+		
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_alpha_equal_fragment_id,
+		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE,
+		blend_info,
+		texture2d_alpha_equal_fragment_program,
+		&texture2d_alpha_equal_fragment_program_patched);
+	
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_alpha_lequal_fragment_id,
+		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE,
+		blend_info,
+		texture2d_alpha_lequal_fragment_program,
+		&texture2d_alpha_lequal_fragment_program_patched);
+		
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_alpha_gequal_fragment_id,
+		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE,
+		blend_info,
+		texture2d_alpha_gequal_fragment_program,
+		&texture2d_alpha_gequal_fragment_program_patched);
+		
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_alpha_less_fragment_id,
+		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE,
+		blend_info,
+		texture2d_alpha_less_fragment_program,
+		&texture2d_alpha_less_fragment_program_patched);
+		
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_alpha_greater_fragment_id,
+		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE,
+		blend_info,
+		texture2d_alpha_greater_fragment_program,
+		&texture2d_alpha_greater_fragment_program_patched);
+		
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_alpha_notequal_fragment_id,
+		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE,
+		blend_info,
+		texture2d_alpha_notequal_fragment_program,
+		&texture2d_alpha_notequal_fragment_program_patched);
+}
+
+static void update_alpha_test_settings(){
+	if (alpha_test_state){
+		switch (alpha_func){
+			case GL_EQUAL:
+				texture2d_alpha_test_fragment_program_patched = texture2d_alpha_equal_fragment_program_patched;
+				texture2d_alpha_cut = texture2d_alpha_equal_cut;
+				break;
+			case GL_LEQUAL:
+				texture2d_alpha_test_fragment_program_patched = texture2d_alpha_lequal_fragment_program_patched;
+				texture2d_alpha_cut = texture2d_alpha_lequal_cut;
+				break;
+			case GL_GEQUAL:
+				texture2d_alpha_test_fragment_program_patched = texture2d_alpha_gequal_fragment_program_patched;
+				texture2d_alpha_cut = texture2d_alpha_gequal_cut;
+				break;
+			case GL_LESS:
+				texture2d_alpha_test_fragment_program_patched = texture2d_alpha_less_fragment_program_patched;
+				texture2d_alpha_cut = texture2d_alpha_less_cut;
+				break;
+			case GL_GREATER:
+				texture2d_alpha_test_fragment_program_patched = texture2d_alpha_greater_fragment_program_patched;
+				texture2d_alpha_cut = texture2d_alpha_greater_cut;
+				break;
+			case GL_NOTEQUAL:
+				texture2d_alpha_test_fragment_program_patched = texture2d_alpha_notequal_fragment_program_patched;
+				texture2d_alpha_cut = texture2d_alpha_notequal_cut;
+				break;
+			default:
+				texture2d_alpha_test_fragment_program_patched = texture2d_fragment_program_patched;
+				texture2d_alpha_cut = NULL;
+				break;
+		}
+	}else{
+		texture2d_alpha_test_fragment_program_patched = texture2d_fragment_program_patched;
+		texture2d_alpha_cut = NULL;
+	}
 }
 
 static void change_blend_factor(){
@@ -859,6 +992,18 @@ void vglInit(uint32_t gpu_pool_size){
 		&texture2d_vertex_id);
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_f,
 		&texture2d_fragment_id);
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_alpha_equal_f,
+		&texture2d_alpha_equal_fragment_id);
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_alpha_lequal_f,
+		&texture2d_alpha_lequal_fragment_id);
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_alpha_gequal_f,
+		&texture2d_alpha_gequal_fragment_id);
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_alpha_less_f,
+		&texture2d_alpha_less_fragment_id);
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_alpha_greater_f,
+		&texture2d_alpha_greater_fragment_id);
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_alpha_notequal_f,
+		&texture2d_alpha_notequal_fragment_id);
 
 	const SceGxmProgram* texture2d_vertex_program = sceGxmShaderPatcherGetProgramFromId(texture2d_vertex_id);
 	texture2d_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_fragment_id);
@@ -868,6 +1013,24 @@ void vglInit(uint32_t gpu_pool_size){
 
 	texture2d_texcoord = sceGxmProgramFindParameterByName(
 		texture2d_vertex_program, "texcoord");
+		
+	texture2d_alpha_equal_cut = sceGxmProgramFindParameterByName(
+		texture2d_alpha_equal_fragment_program, "alphaCut");
+		
+	texture2d_alpha_lequal_cut = sceGxmProgramFindParameterByName(
+		texture2d_alpha_lequal_fragment_program, "alphaCut");
+		
+	texture2d_alpha_gequal_cut = sceGxmProgramFindParameterByName(
+		texture2d_alpha_gequal_fragment_program, "alphaCut");
+		
+	texture2d_alpha_less_cut = sceGxmProgramFindParameterByName(
+		texture2d_alpha_less_fragment_program, "alphaCut");
+		
+	texture2d_alpha_greater_cut = sceGxmProgramFindParameterByName(
+		texture2d_alpha_greater_fragment_program, "alphaCut");
+		
+	texture2d_alpha_notequal_cut = sceGxmProgramFindParameterByName(
+		texture2d_alpha_notequal_fragment_program, "alphaCut");
 
 	SceGxmVertexAttribute texture2d_vertex_attribute[2];
 	SceGxmVertexStream texture2d_vertex_stream[2];
@@ -897,6 +1060,36 @@ void vglInit(uint32_t gpu_pool_size){
 		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_fragment_program,
 		&texture2d_fragment_program_patched);
 		
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_alpha_equal_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_alpha_equal_fragment_program,
+		&texture2d_alpha_equal_fragment_program_patched);
+		
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_alpha_lequal_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_alpha_lequal_fragment_program,
+		&texture2d_alpha_lequal_fragment_program_patched);
+		
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_alpha_gequal_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_alpha_gequal_fragment_program,
+		&texture2d_alpha_gequal_fragment_program_patched);
+		
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_alpha_less_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_alpha_less_fragment_program,
+		&texture2d_alpha_less_fragment_program_patched);
+		
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_alpha_greater_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_alpha_greater_fragment_program,
+		&texture2d_alpha_greater_fragment_program_patched);
+		
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_alpha_notequal_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_alpha_notequal_fragment_program,
+		&texture2d_alpha_notequal_fragment_program_patched);
+		
 	texture2d_wvp = sceGxmProgramFindParameterByName(texture2d_vertex_program, "wvp");	
 	
 	sceGxmSetTwoSidedEnable(gxm_context, SCE_GXM_TWO_SIDED_ENABLED);
@@ -909,6 +1102,7 @@ void vglInit(uint32_t gpu_pool_size){
 	for (i=0; i < GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS; i++){
 		for (j=0; j < TEXTURES_NUM; j++){
 			texture_units[i].textures[j].used = 0;
+			texture_units[i].textures[j].valid = 0;
 		}
 	}
 	
@@ -1069,6 +1263,10 @@ void glEnable(GLenum cap){
 		case GL_TEXTURE_2D:
 			texture_units[server_texture_unit].enabled = GL_TRUE;
 			break;
+		case GL_ALPHA_TEST:
+			alpha_test_state = GL_TRUE;
+			update_alpha_test_settings();
+			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
@@ -1125,6 +1323,10 @@ void glDisable(GLenum cap){
 			break;
 		case GL_TEXTURE_2D:
 			texture_units[server_texture_unit].enabled = GL_FALSE;
+			break;
+		case GL_ALPHA_TEST:
+			alpha_test_state = GL_FALSE;
+			update_alpha_test_settings();
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -1193,35 +1395,42 @@ void glEnd(void){
 	matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 	matrix4x4_transpose(final_mvp_matrix,mvp_matrix);
 	
-	if ((server_texture_unit >= 0) && (texture_units[server_texture_unit].enabled) && (model_uv != NULL)){
+	uint8_t use_texture = 0;
+	if ((server_texture_unit >= 0) && (server_texture_unit >= 0) && (texture_units[server_texture_unit].enabled) && (model_uv != NULL) && (texture_units[server_texture_unit].textures[texture2d_idx].valid)){
 		sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-		sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+		sceGxmSetFragmentProgram(gxm_context, texture2d_alpha_test_fragment_program_patched);
+		if (texture2d_alpha_cut != NULL){
+			void* alpha_buffer;
+			sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+			sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
+		}
+		use_texture = 1;
 	}else{
 		sceGxmSetVertexProgram(gxm_context, rgba_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
 	}
 	
+	int i, j;
 	void* vertex_wvp_buffer;
 	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
 	
-	if ((server_texture_unit >= 0) && (model_uv != NULL) && (texture_units[server_texture_unit].enabled)){
+	if (use_texture){
 		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)final_mvp_matrix);
 		sceGxmSetFragmentTexture(gxm_context, 0, &texture_units[server_texture_unit].textures[texture2d_idx].gxm_tex);
 		vector3f* vertices;
 		vector2f* uv_map;
 		uint16_t* indices;
-		int n = 0, quad_n = 0, v_n = 0;
+		int n = 0, quad_n = 0;
 		vertexList* object = model_vertices;
 		uvList* object_uv = model_uv;
 		uint64_t idx_count = vertex_count;
-	
 		switch (prim_extra){
 			case SCE_GXM_PRIMITIVE_NONE:
 				vertices = (vector3f*)gpu_pool_memalign(vertex_count * sizeof(vector3f), sizeof(vector3f));
 				uv_map = (vector2f*)gpu_pool_memalign(vertex_count * sizeof(vector2f), sizeof(vector2f));
 				memset(vertices, 0, (vertex_count * sizeof(vector3f)));
 				indices = (uint16_t*)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
-				while (object != NULL){
+				for (i=0; i < vertex_count; i++){
 					memcpy(&vertices[n], &object->v, sizeof(vector3f));
 					memcpy(&uv_map[n], &object_uv->v, sizeof(vector2f));
 					indices[n] = n;
@@ -1237,20 +1446,19 @@ void glEnd(void){
 				uv_map = (vector2f*)gpu_pool_memalign(vertex_count * sizeof(vector2f), sizeof(vector2f));
 				memset(vertices, 0, (vertex_count * sizeof(vector3f)));
 				indices = (uint16_t*)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
-				int i, j;
 				for (i=0; i < quad_n; i++){
-					for (j=0; j < 4; j++){
-						memcpy(&vertices[i*4+j], &object->v, sizeof(vector3f));
-						memcpy(&uv_map[i*4+j], &object_uv->v, sizeof(vector2f));
-						object = object->next;
-						object_uv = object_uv->next;
-					}
 					indices[i*6] = i*4;
 					indices[i*6+1] = i*4+1;
 					indices[i*6+2] = i*4+3;
 					indices[i*6+3] = i*4+1;
 					indices[i*6+4] = i*4+2;
 					indices[i*6+5] = i*4+3;
+				}
+				for (j=0; j < vertex_count; j++){
+					memcpy(&vertices[j], &object->v, sizeof(vector3f));
+					memcpy(&uv_map[j], &object_uv->v, sizeof(vector2f));
+					object = object->next;
+					object_uv = object_uv->next;
 				}
 				break;
 		}
@@ -1262,7 +1470,7 @@ void glEnd(void){
 		vector3f* vertices;
 		vector4f* colors;
 		uint16_t* indices;
-		int n = 0, quad_n = 0, v_n = 0;
+		int n = 0, quad_n = 0;
 		vertexList* object = model_vertices;
 		rgbaList* object_clr = model_color;
 		uint64_t idx_count = vertex_count;
@@ -1273,7 +1481,7 @@ void glEnd(void){
 				colors = (vector4f*)gpu_pool_memalign(vertex_count * sizeof(vector4f), sizeof(vector4f));
 				memset(vertices, 0, (vertex_count * sizeof(vector3f)));
 				indices = (uint16_t*)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
-				while (object != NULL){
+				for (i=0; i < vertex_count; i++){
 					memcpy(&vertices[n], &object->v, sizeof(vector3f));
 					memcpy(&colors[n], &object_clr->v, sizeof(vector4f));
 					indices[n] = n;
@@ -1291,18 +1499,18 @@ void glEnd(void){
 				indices = (uint16_t*)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 				int i, j;
 				for (i=0; i < quad_n; i++){
-					for (j=0; j < 4; j++){
-						memcpy(&vertices[i*4+j], &object->v, sizeof(vector3f));
-						memcpy(&colors[i*4+j], &object_clr->v, sizeof(vector4f));
-						object = object->next;
-						object_clr = object_clr->next;
-					}
 					indices[i*6] = i*4;
 					indices[i*6+1] = i*4+1;
 					indices[i*6+2] = i*4+3;
 					indices[i*6+3] = i*4+1;
 					indices[i*6+4] = i*4+2;
 					indices[i*6+5] = i*4+3;
+				}
+				for (j=0; j < vertex_count; j++){
+					memcpy(&vertices[j], &object->v, sizeof(vector3f));
+					memcpy(&colors[j], &object_clr->v, sizeof(vector4f));
+					object = object->next;
+					object_clr = object_clr->next;
 				}
 				break;
 		}
@@ -1889,6 +2097,7 @@ void glVertex3fv(const GLfloat* v){
 		last2 = last2->next;
 	}
 	memcpy(&last->v, v, sizeof(vector3f));
+	memcpy(&last2->v, &current_color, sizeof(vector4f));
 	vertex_count++;
 }
 
@@ -1902,7 +2111,7 @@ void glArrayElement(GLint i){
 		return;
 	}
 	if (vertex_array_state){
-		uint8_t* ptr = ((uint8_t*)vertex_array.pointer) + (i * ((vertex_array.num * vertex_array.size) + vertex_array.stride));
+		uint8_t* ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer) + (i * ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride));
 		if (model_vertices == NULL){ 
 			last = (vertexList*)malloc(sizeof(vertexList));
 			last2 = (rgbaList*)malloc(sizeof(rgbaList));
@@ -1911,12 +2120,12 @@ void glArrayElement(GLint i){
 		}else{
 			last->next = (vertexList*)malloc(sizeof(vertexList));
 			last2->next = (rgbaList*)malloc(sizeof(rgbaList));
-			last2 = last->next;
+			last2 = last2->next;
 			last = last->next;
 		}
-		memcpy(&last->v, ptr, vertex_array.size * vertex_array.num);
+		memcpy(&last->v, ptr, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num);
 		if (texture_array_state){
-			uint8_t* ptr_tex = ((uint8_t*)texture_array.pointer) + (i * ((texture_array.num * texture_array.size) + texture_array.stride));
+			uint8_t* ptr_tex = ((uint8_t*)texture_units[client_texture_unit].texture_array.pointer) + (i * ((texture_units[client_texture_unit].texture_array.num * texture_units[client_texture_unit].texture_array.size) + texture_units[client_texture_unit].texture_array.stride));
 			if (model_uv == NULL){
 				last3 = (uvList*)malloc(sizeof(uvList));
 				model_uv = last3;
@@ -1924,11 +2133,11 @@ void glArrayElement(GLint i){
 				last3->next = (uvList*)malloc(sizeof(uvList));
 				last3 = last3->next;
 			}
-			memcpy(&last3->v, ptr_tex, vertex_array.size * 2);
+			memcpy(&last3->v, ptr_tex, texture_units[client_texture_unit].vertex_array.size * 2);
 		}else if (color_array_state){
-			uint8_t* ptr_clr = ((uint8_t*)color_array.pointer) + (i * ((color_array.num * color_array.size) + color_array.stride));	
+			uint8_t* ptr_clr = ((uint8_t*)texture_units[client_texture_unit].color_array.pointer) + (i * ((texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size) + texture_units[client_texture_unit].color_array.stride));	
 			last2->v.a = 1.0f;
-			memcpy(&last2->v, ptr_clr, color_array.size * color_array.num);
+			memcpy(&last2->v, ptr_clr, texture_units[client_texture_unit].color_array.size * texture_units[client_texture_unit].color_array.num);
 		}
 	}
 }
@@ -2132,6 +2341,12 @@ void glDepthMask(GLboolean flag){
 	}
 	depth_mask_state = flag;
 	change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+}
+
+void glAlphaFunc(GLenum func, GLfloat ref){
+	alpha_func = func;
+	alpha_ref = ref;
+	update_alpha_test_settings();
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor){
@@ -2624,19 +2839,19 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* poin
 	}
 	switch (type){
 		case GL_FLOAT:
-			vertex_array.size = sizeof(GLfloat);
+			texture_units[client_texture_unit].vertex_array.size = sizeof(GLfloat);
 			break;
 		case GL_SHORT:
-			vertex_array.size = sizeof(GLshort);
+			texture_units[client_texture_unit].vertex_array.size = sizeof(GLshort);
 			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
 	}
 	
-	vertex_array.num = size;
-	vertex_array.stride = stride;
-	vertex_array.pointer = pointer;
+	texture_units[client_texture_unit].vertex_array.num = size;
+	texture_units[client_texture_unit].vertex_array.stride = stride;
+	texture_units[client_texture_unit].vertex_array.pointer = pointer;
 }
 
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer){
@@ -2646,19 +2861,19 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* point
 	}
 	switch (type){
 		case GL_FLOAT:
-			color_array.size = sizeof(GLfloat);
+			texture_units[client_texture_unit].color_array.size = sizeof(GLfloat);
 			break;
 		case GL_SHORT:
-			color_array.size = sizeof(GLshort);
+			texture_units[client_texture_unit].color_array.size = sizeof(GLshort);
 			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
 	}
 	
-	color_array.num = size;
-	color_array.stride = stride;
-	color_array.pointer = pointer;
+	texture_units[client_texture_unit].color_array.num = size;
+	texture_units[client_texture_unit].color_array.stride = stride;
+	texture_units[client_texture_unit].color_array.pointer = pointer;
 }
 
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer){
@@ -2668,19 +2883,19 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* po
 	}
 	switch (type){
 		case GL_FLOAT:
-			texture_array.size = sizeof(GLfloat);
+			texture_units[client_texture_unit].texture_array.size = sizeof(GLfloat);
 			break;
 		case GL_SHORT:
-			texture_array.size = sizeof(GLshort);
+			texture_units[client_texture_unit].texture_array.size = sizeof(GLshort);
 			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
 	}
 	
-	texture_array.num = size;
-	texture_array.stride = stride;
-	texture_array.pointer = pointer;
+	texture_units[client_texture_unit].texture_array.num = size;
+	texture_units[client_texture_unit].texture_array.stride = stride;
+	texture_units[client_texture_unit].texture_array.pointer = pointer;
 }
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count){
@@ -2721,9 +2936,15 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 			matrix4x4_transpose(final_mvp_matrix,mvp_matrix);
 			
 			if (texture_array_state){
+				if (!(texture_units[client_texture_unit].textures[texture2d_idx].valid)) return;
 				sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-				sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
-			}else if (color_array.num == 3){
+				sceGxmSetFragmentProgram(gxm_context, texture2d_alpha_test_fragment_program_patched);
+				if (texture2d_alpha_cut != NULL){
+					void* alpha_buffer;
+					sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
+				}
+			}else if (texture_units[client_texture_unit].color_array.num == 3){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
 				sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
 			}else{
@@ -2742,63 +2963,63 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				uint16_t* indices;
 				int n;
 				if (vertex_array_unit >= 0){
-					vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)vertex_array.pointer) + (first * ((vertex_array.num * vertex_array.size) + vertex_array.stride)));
-					uv_map = (vector2f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)texture_array.pointer) + (first * ((texture_array.num * texture_array.size) + texture_array.stride)));
+					vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)texture_units[client_texture_unit].vertex_array.pointer) + (first * ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride)));
+					uv_map = (vector2f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)texture_units[client_texture_unit].texture_array.pointer) + (first * ((texture_units[client_texture_unit].texture_array.num * texture_units[client_texture_unit].texture_array.size) + texture_units[client_texture_unit].texture_array.stride)));
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 					for (n=0; n<count; n++){
 						indices[n] = n;
 					}
 				}else{
-					uint8_t* ptr = ((uint8_t*)vertex_array.pointer) + (first * ((vertex_array.num * vertex_array.size) + vertex_array.stride));
-					uint8_t* ptr_tex = ((uint8_t*)texture_array.pointer) + (first * ((texture_array.num * texture_array.size) + texture_array.stride));
+					uint8_t* ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer) + (first * ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride));
+					uint8_t* ptr_tex = ((uint8_t*)texture_units[client_texture_unit].texture_array.pointer) + (first * ((texture_units[client_texture_unit].texture_array.num * texture_units[client_texture_unit].texture_array.size) + texture_units[client_texture_unit].texture_array.stride));
 					vertices = (vector3f*)gpu_pool_memalign(count * sizeof(vector3f), sizeof(vector3f));
 					uv_map = (vector2f*)gpu_pool_memalign(count * sizeof(vector2f), sizeof(vector2f));
 					memset(vertices, 0, (count * sizeof(vector3f), sizeof(vector3f)));
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 					int n;
 					for (n=0;n<count;n++){
-						memcpy(&vertices[n], ptr, vertex_array.size * vertex_array.num);
-						memcpy(&uv_map[n], ptr_tex, vertex_array.size * texture_array.num);
-						ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
-						ptr_tex += ((texture_array.num * texture_array.size) + texture_array.stride);
+						memcpy(&vertices[n], ptr, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num);
+						memcpy(&uv_map[n], ptr_tex, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].texture_array.num);
+						ptr += ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride);
+						ptr_tex += ((texture_units[client_texture_unit].texture_array.num * texture_units[client_texture_unit].texture_array.size) + texture_units[client_texture_unit].texture_array.stride);
 						indices[n] = n;
 					}
 				}
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, uv_map);
-				sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, count);
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
 			}else if (color_array_state){
-				if (color_array.num == 3) sceGxmSetUniformDataF(vertex_wvp_buffer, rgb_wvp, 0, 16, (const float*)final_mvp_matrix);
+				if (texture_units[client_texture_unit].color_array.num == 3) sceGxmSetUniformDataF(vertex_wvp_buffer, rgb_wvp, 0, 16, (const float*)final_mvp_matrix);
 				else  sceGxmSetUniformDataF(vertex_wvp_buffer, rgba_wvp, 0, 16, (const float*)final_mvp_matrix);
 				vector3f* vertices = NULL;
 				uint8_t* colors = NULL;
 				uint16_t* indices;
 				int n = 0;
 				if (vertex_array_unit >= 0){
-					vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)vertex_array.pointer) + (first * ((vertex_array.num * vertex_array.size) + vertex_array.stride)));
-					colors = (uint8_t*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)color_array.pointer) + (first * ((color_array.num * color_array.size) + color_array.stride)));
+					vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)texture_units[client_texture_unit].vertex_array.pointer) + (first * ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride)));
+					colors = (uint8_t*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)texture_units[client_texture_unit].color_array.pointer) + (first * ((texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size) + texture_units[client_texture_unit].color_array.stride)));
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 					for (n=0; n<count; n++){
 						indices[n] = n;
 					}
 				}else{
-					uint8_t* ptr = ((uint8_t*)vertex_array.pointer) + (first * ((vertex_array.num * vertex_array.size) + vertex_array.stride));
-					uint8_t* ptr_clr = ((uint8_t*)color_array.pointer) + (first * ((color_array.num * color_array.size) + color_array.stride));
+					uint8_t* ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer) + (first * ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride));
+					uint8_t* ptr_clr = ((uint8_t*)texture_units[client_texture_unit].color_array.pointer) + (first * ((texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size) + texture_units[client_texture_unit].color_array.stride));
 					vertices = (vector3f*)gpu_pool_memalign(count * sizeof(vector3f), sizeof(vector3f));
-					colors = (uint8_t*)gpu_pool_memalign(count * color_array.num * color_array.size, color_array.num * color_array.size);
-					memset(vertices, 0, (vertex_count * sizeof(vector3f), sizeof(vector3f)));
+					colors = (uint8_t*)gpu_pool_memalign(count * texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size, texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size);
+					memset(vertices, 0, (count * sizeof(vector3f), sizeof(vector3f)));
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 					for (n=0; n<count; n++){
-						memcpy(&vertices[n], ptr, vertex_array.size * vertex_array.num);
-						memcpy(&colors[n * color_array.num * color_array.size], ptr_clr, color_array.size * color_array.num);
+						memcpy(&vertices[n], ptr, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num);
+						memcpy(&colors[n * texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size], ptr_clr, texture_units[client_texture_unit].color_array.size * texture_units[client_texture_unit].color_array.num);
 						indices[n] = n;
-						ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
-						ptr_clr += ((color_array.num * color_array.size) + color_array.stride);
+						ptr += ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride);
+						ptr_clr += ((texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size) + texture_units[client_texture_unit].color_array.stride);
 					}
 				}
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, colors);
-				sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, count);	
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);	
 			}
 		}
 	}
@@ -2843,9 +3064,15 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 			matrix4x4_transpose(final_mvp_matrix,mvp_matrix);
 			
 			if (texture_array_state){
+				if (!(texture_units[client_texture_unit].textures[texture2d_idx].valid)) return;
 				sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-				sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
-			}else if (color_array.num == 3){
+				sceGxmSetFragmentProgram(gxm_context, texture2d_alpha_test_fragment_program_patched);
+				if (texture2d_alpha_cut != NULL){
+					void* alpha_buffer;
+					sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
+				}
+			}else if (texture_units[client_texture_unit].color_array.num == 3){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
 				sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
 			}else{
@@ -2868,37 +3095,37 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 					memcpy(indices, gl_indices, sizeof(uint16_t) * count);
 				}
 				if (vertex_array_unit >= 0){
-					vertices = (vector3f*)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)vertex_array.pointer);
-					uv_map = (vector2f*)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)texture_array.pointer);	
+					vertices = (vector3f*)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)texture_units[client_texture_unit].vertex_array.pointer);
+					uv_map = (vector2f*)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)texture_units[client_texture_unit].texture_array.pointer);	
 				}else{
 					int n = 0, j = 0;
-					uint32_t vertex_count = 0;
+					uint64_t vertex_count_int = 0;
 					uint16_t* ptr_idx = (uint16_t*)gl_indices;
 					while (j < count){
-						if (ptr_idx[j] >= vertex_count) vertex_count = ptr_idx[j] + 1;
+						if (ptr_idx[j] >= vertex_count_int) vertex_count_int = ptr_idx[j] + 1;
 						j++;
 					}
-					vertices = (vector3f*)gpu_pool_memalign(vertex_count * sizeof(vector3f), sizeof(vector3f));
-					uv_map = (vector2f*)gpu_pool_memalign(vertex_count * sizeof(vector2f), sizeof(vector2f));
-					if (vertex_array.stride == 0) memcpy(vertices, vertex_array.pointer, vertex_count * (vertex_array.size * vertex_array.num));
-					if (texture_array.stride == 0) memcpy(uv_map, texture_array.pointer, vertex_count * (texture_array.size * texture_array.num));
-					if ((vertex_array.stride != 0) || (texture_array.stride != 0)){
-						if (vertex_array.stride != 0) memset(vertices, 0, (vertex_count * sizeof(texture2d_vertex), sizeof(texture2d_vertex)));
-						uint8_t* ptr = ((uint8_t*)vertex_array.pointer);
-						uint8_t* ptr_tex = ((uint8_t*)texture_array.pointer);
-						for (n=0; n<vertex_count; n++){
-							if (vertex_array.stride != 0)  memcpy(&vertices[n], ptr, vertex_array.size * vertex_array.num);
-							if (texture_array.stride != 0)  memcpy(&uv_map[n], ptr_tex, texture_array.size * texture_array.num);
-							ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
-							ptr_tex += ((texture_array.num * texture_array.size) + texture_array.stride);
+					vertices = (vector3f*)gpu_pool_memalign(vertex_count_int * sizeof(vector3f), sizeof(vector3f));
+					uv_map = (vector2f*)gpu_pool_memalign(vertex_count_int * sizeof(vector2f), sizeof(vector2f));
+					if (texture_units[client_texture_unit].vertex_array.stride == 0) memcpy(vertices, texture_units[client_texture_unit].vertex_array.pointer, vertex_count_int * (texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num));
+					if (texture_units[client_texture_unit].texture_array.stride == 0) memcpy(uv_map, texture_units[client_texture_unit].texture_array.pointer, vertex_count_int * (texture_units[client_texture_unit].texture_array.size * texture_units[client_texture_unit].texture_array.num));
+					if ((texture_units[client_texture_unit].vertex_array.stride != 0) || (texture_units[client_texture_unit].texture_array.stride != 0)){
+						if (texture_units[client_texture_unit].vertex_array.stride != 0) memset(vertices, 0, (vertex_count_int * sizeof(texture2d_vertex), sizeof(texture2d_vertex)));
+						uint8_t* ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer);
+						uint8_t* ptr_tex = ((uint8_t*)texture_units[client_texture_unit].texture_array.pointer);
+						for (n=0; n<vertex_count_int; n++){
+							if (texture_units[client_texture_unit].vertex_array.stride != 0)  memcpy(&vertices[n], ptr, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num);
+							if (texture_units[client_texture_unit].texture_array.stride != 0)  memcpy(&uv_map[n], ptr_tex, texture_units[client_texture_unit].texture_array.size * texture_units[client_texture_unit].texture_array.num);
+							ptr += ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride);
+							ptr_tex += ((texture_units[client_texture_unit].texture_array.num * texture_units[client_texture_unit].texture_array.size) + texture_units[client_texture_unit].texture_array.stride);
 						}
 					}
 				}
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, uv_map);
-				sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, count);
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
 			}else if (color_array_state){
-				if (color_array.num == 3) sceGxmSetUniformDataF(vertex_wvp_buffer, rgb_wvp, 0, 16, (const float*)final_mvp_matrix);
+				if (texture_units[client_texture_unit].color_array.num == 3) sceGxmSetUniformDataF(vertex_wvp_buffer, rgb_wvp, 0, 16, (const float*)final_mvp_matrix);
 				else sceGxmSetUniformDataF(vertex_wvp_buffer, rgba_wvp, 0, 16, (const float*)final_mvp_matrix);
 				vector3f* vertices = NULL;
 				uint8_t* colors = NULL;
@@ -2909,35 +3136,35 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 					memcpy(indices, gl_indices, sizeof(uint16_t) * count);
 				}
 				if (vertex_array_unit >= 0){ 
-					colors = (uint8_t*)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)color_array.pointer);
-					vertices = (vector3f*)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)vertex_array.pointer);
+					colors = (uint8_t*)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)texture_units[client_texture_unit].color_array.pointer);
+					vertices = (vector3f*)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)texture_units[client_texture_unit].vertex_array.pointer);
 				}else{
 					int n = 0, j = 0;
-					uint32_t vertex_count = 0;
+					uint64_t vertex_count_int = 0;
 					uint16_t* ptr_idx = (uint16_t*)gl_indices;
 					while (j < count){
-						if (ptr_idx[j] >= vertex_count) vertex_count = ptr_idx[j] + 1;
+						if (ptr_idx[j] >= vertex_count_int) vertex_count_int = ptr_idx[j] + 1;
 						j++;
 					}
-					vertices = (vector3f*)gpu_pool_memalign(vertex_count * sizeof(vector3f), sizeof(vector3f));
-					colors = (uint8_t*)gpu_pool_memalign(vertex_count * color_array.num * color_array.size, color_array.num * color_array.size);
-					if (vertex_array.stride == 0) memcpy(vertices, vertex_array.pointer, vertex_count * (vertex_array.size * vertex_array.num));
-					if (color_array.stride == 0) memcpy(colors, color_array.pointer, vertex_count * (color_array.size * color_array.num));
-					if ((vertex_array.stride != 0) || (color_array.stride != 0)){
-						if (vertex_array.stride != 0) memset(vertices, 0, (vertex_count * sizeof(texture2d_vertex), sizeof(texture2d_vertex)));
-						uint8_t* ptr = ((uint8_t*)vertex_array.pointer);
-						uint8_t* ptr_clr = ((uint8_t*)color_array.pointer);
-						for (n=0; n<vertex_count; n++){
-							if (vertex_array.stride != 0)  memcpy(&vertices[n], ptr, vertex_array.size * vertex_array.num);
-							if (color_array.stride != 0)  memcpy(&colors[n * color_array.num * color_array.size], ptr_clr, color_array.size * color_array.num);
-							ptr += ((vertex_array.num * vertex_array.size) + vertex_array.stride);
-							ptr_clr += ((color_array.num * color_array.size) + color_array.stride);
+					vertices = (vector3f*)gpu_pool_memalign(vertex_count_int * sizeof(vector3f), sizeof(vector3f));
+					colors = (uint8_t*)gpu_pool_memalign(vertex_count_int * texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size, texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size);
+					if (texture_units[client_texture_unit].vertex_array.stride == 0) memcpy(vertices, texture_units[client_texture_unit].vertex_array.pointer, vertex_count_int * (texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num));
+					if (texture_units[client_texture_unit].color_array.stride == 0) memcpy(colors, texture_units[client_texture_unit].color_array.pointer, vertex_count_int * (texture_units[client_texture_unit].color_array.size * texture_units[client_texture_unit].color_array.num));
+					if ((texture_units[client_texture_unit].vertex_array.stride != 0) || (texture_units[client_texture_unit].color_array.stride != 0)){
+						if (texture_units[client_texture_unit].vertex_array.stride != 0) memset(vertices, 0, (vertex_count_int * sizeof(texture2d_vertex), sizeof(texture2d_vertex)));
+						uint8_t* ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer);
+						uint8_t* ptr_clr = ((uint8_t*)texture_units[client_texture_unit].color_array.pointer);
+						for (n=0; n<vertex_count_int; n++){
+							if (texture_units[client_texture_unit].vertex_array.stride != 0)  memcpy(&vertices[n], ptr, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num);
+							if (texture_units[client_texture_unit].color_array.stride != 0)  memcpy(&colors[n * texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size], ptr_clr, texture_units[client_texture_unit].color_array.size * texture_units[client_texture_unit].color_array.num);
+							ptr += ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride);
+							ptr_clr += ((texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size) + texture_units[client_texture_unit].color_array.stride);
 						}
 					}
 				}
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, colors);
-				sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, count);
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
 			}
 		}
 	}
