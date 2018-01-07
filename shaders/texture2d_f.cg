@@ -2,10 +2,11 @@
 	float2 vTexcoord : TEXCOORD0,
 	uniform sampler2D tex,
 	uniform float alphaCut,
-	uniform float alphaOp
+	uniform float alphaOp,
+	uniform float4 tintColor
 	)
 {
-	float4 texColor = tex2D(tex, vTexcoord);
+	float4 texColor = tex2D(tex, vTexcoord) * tintColor;
 	if (alphaOp == 0){
 		if (texColor.a < alphaCut){
 			discard;

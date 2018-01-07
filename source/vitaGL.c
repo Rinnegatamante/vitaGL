@@ -204,6 +204,7 @@ static const SceGxmProgramParameter* texture2d_texcoord;
 static const SceGxmProgramParameter* texture2d_wvp;
 static const SceGxmProgramParameter* texture2d_alpha_cut;
 static const SceGxmProgramParameter* texture2d_alpha_op;
+static const SceGxmProgramParameter* texture2d_tint_color;
 static SceGxmVertexProgram* texture2d_vertex_program_patched;
 static SceGxmFragmentProgram* texture2d_fragment_program_patched;
 static const SceGxmProgram* texture2d_fragment_program;
@@ -924,6 +925,9 @@ void vglInit(uint32_t gpu_pool_size){
 		
 	texture2d_alpha_op = sceGxmProgramFindParameterByName(
 		texture2d_fragment_program, "alphaOp");
+		
+	texture2d_tint_color = sceGxmProgramFindParameterByName(
+		texture2d_fragment_program, "tintColor");
 
 	SceGxmVertexAttribute texture2d_vertex_attribute[2];
 	SceGxmVertexStream texture2d_vertex_stream[2];
@@ -1267,6 +1271,8 @@ void glEnd(void){
 		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
 		use_texture = 1;
 	}else{
 		sceGxmSetVertexProgram(gxm_context, rgba_vertex_program_patched);
@@ -1939,7 +1945,7 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z){
 	last->v.x = x;
 	last->v.y = y;
 	last->v.z = z;
-	memcpy(&last2->v, &current_color, sizeof(vector4f));
+	memcpy(&last2->v, &current_color.r, sizeof(vector4f));
 	vertex_count++;
 }
 
@@ -1960,7 +1966,7 @@ void glVertex3fv(const GLfloat* v){
 		last2 = last2->next;
 	}
 	memcpy(&last->v, v, sizeof(vector3f));
-	memcpy(&last2->v, &current_color, sizeof(vector4f));
+	memcpy(&last2->v, &current_color.r, sizeof(vector4f));
 	vertex_count++;
 }
 
@@ -2120,7 +2126,7 @@ void glColor3f(GLfloat red, GLfloat green, GLfloat blue){
 }
 
 void glColor3fv(const GLfloat* v){
-	memcpy(&current_color, v, sizeof(vector3f));
+	memcpy(&current_color.r, v, sizeof(vector3f));
 	current_color.a = 1.0f;
 }
 
@@ -2146,7 +2152,7 @@ void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha){
 }
 
 void glColor4fv(const GLfloat* v){
-	memcpy(&current_color, v, sizeof(vector4f));
+	memcpy(&current_color.r, v, sizeof(vector4f));
 }
 
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha){
@@ -2807,6 +2813,8 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
 				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
+				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
 			}else if (texture_units[client_texture_unit].color_array.num == 3){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
 				sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
@@ -2935,6 +2943,8 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
 				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
+				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
 			}else if (texture_units[client_texture_unit].color_array.num == 3){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
 				sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
