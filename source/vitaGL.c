@@ -1007,7 +1007,13 @@ void vglInit(uint32_t gpu_pool_size){
 
 	const SceGxmProgram* texture2d_vertex_program = sceGxmShaderPatcherGetProgramFromId(texture2d_vertex_id);
 	texture2d_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_fragment_id);
-
+	texture2d_alpha_equal_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_alpha_equal_fragment_id);
+	texture2d_alpha_lequal_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_alpha_lequal_fragment_id);
+	texture2d_alpha_gequal_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_alpha_gequal_fragment_id);
+	texture2d_alpha_less_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_alpha_less_fragment_id);
+	texture2d_alpha_greater_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_alpha_greater_fragment_id);
+	texture2d_alpha_notequal_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_alpha_notequal_fragment_id);
+	
 	texture2d_position = sceGxmProgramFindParameterByName(
 		texture2d_vertex_program, "position");
 
