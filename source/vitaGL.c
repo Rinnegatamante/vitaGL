@@ -26,6 +26,7 @@
 #define GXM_TEX_MAX_SIZE      4096 // Maximum width/height in pixels per texture
 #define BUFFERS_ADDR        0xA000 // Starting address for buffers indexing
 #define BUFFERS_NUM           128  // Maximum number of allocatable buffers
+#define MAX_FRAGMENT_PROGS    32   // Maximum number of fragment programs per shader
 
 static const GLubyte* vendor = "Rinnegatamante";
 static const GLubyte* renderer = "SGX543MP4+";
@@ -195,6 +196,7 @@ static SceGxmVertexProgram* rgba_vertex_program_patched;
 static SceGxmVertexProgram* rgb_vertex_program_patched;
 static SceGxmFragmentProgram* rgba_fragment_program_patched;
 static const SceGxmProgram* rgba_fragment_program;
+static SceGxmFragmentProgram* rgba_fragment_programs[MAX_FRAGMENT_PROGS];
 
 // Texture2D shader
 static SceGxmShaderPatcherId texture2d_vertex_id;
@@ -208,8 +210,11 @@ static const SceGxmProgramParameter* texture2d_tint_color;
 static SceGxmVertexProgram* texture2d_vertex_program_patched;
 static SceGxmFragmentProgram* texture2d_fragment_program_patched;
 static const SceGxmProgram* texture2d_fragment_program;
+static SceGxmFragmentProgram* texture2d_fragment_programs[MAX_FRAGMENT_PROGS];
 
 // Internal stuffs
+static SceGxmBlendInfo fragment_program_info[MAX_FRAGMENT_PROGS];
+static uint16_t release_idx = 0;
 static SceGxmPrimitiveType prim;
 static SceGxmPrimitiveTypeExtra prim_extra = SCE_GXM_PRIMITIVE_NONE;
 static vertexList* model_vertices = NULL;
@@ -226,6 +231,7 @@ static matrix4x4 modelview_matrix;
 static GLboolean vblank = GL_TRUE;
 static uint8_t np = 0xFF;
 static float alpha_op = 7.0f;
+static SceGxmBlendInfo cur_blend_info;
 
 static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
@@ -319,11 +325,63 @@ static void display_queue_callback(const void *callbackData){
 	
 }
 
+static void release_unused_programs(){
+	int i;
+	if (cur_blend_info.colorMask == SCE_GXM_COLOR_MASK_NONE){
+		for (i=0;i < release_idx;i++){
+			if (fragment_program_info[i].colorMask != SCE_GXM_COLOR_MASK_NONE){
+				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, rgba_fragment_programs[i]);
+				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_programs[i]);
+			}
+		}
+	}else{
+		for (i=0;i < release_idx;i++){
+			if (cur_blend_info.colorFunc != fragment_program_info[i].colorFunc ||
+				cur_blend_info.alphaFunc != fragment_program_info[i].alphaFunc ||
+				cur_blend_info.colorSrc != fragment_program_info[i].colorSrc ||
+				cur_blend_info.alphaSrc != fragment_program_info[i].alphaFunc ||
+				cur_blend_info.colorDst != fragment_program_info[i].colorDst ||
+				cur_blend_info.alphaDst != fragment_program_info[i].alphaDst){
+				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, rgba_fragment_programs[i]);
+				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_programs[i]);
+			}
+		}
+	}
+	release_idx = 0;
+}
+
 static void _change_blend_factor(SceGxmBlendInfo* blend_info){
-	sceGxmFinish(gxm_context);
+	if (release_idx == MAX_FRAGMENT_PROGS) return;
 	
-	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, rgba_fragment_program_patched);
-	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_program_patched);
+	int i;
+	if (blend_info != NULL){
+		for (i=0;i<release_idx;i++){
+			if (blend_info->colorFunc == fragment_program_info[i].colorFunc &&
+			blend_info->alphaFunc == fragment_program_info[i].alphaFunc &&
+			blend_info->colorSrc == fragment_program_info[i].colorSrc &&
+			blend_info->alphaSrc == fragment_program_info[i].alphaFunc &&
+			blend_info->colorDst == fragment_program_info[i].colorDst &&
+			blend_info->alphaDst == fragment_program_info[i].alphaDst){
+				cur_blend_info = fragment_program_info[i];
+				rgba_fragment_program_patched = rgba_fragment_programs[i];
+				texture2d_fragment_program_patched = texture2d_fragment_programs[i];
+				return;
+			}
+		}
+	}else{
+		for (i=0;i<release_idx;i++){
+			if (fragment_program_info[i].colorMask == SCE_GXM_COLOR_MASK_NONE){
+				cur_blend_info = fragment_program_info[i];
+				rgba_fragment_program_patched = rgba_fragment_programs[i];
+				texture2d_fragment_program_patched = texture2d_fragment_programs[i];
+				return;
+			}
+		}
+	}
+	
+	fragment_program_info[release_idx] = cur_blend_info;
+	rgba_fragment_programs[release_idx] = rgba_fragment_program_patched;
+	texture2d_fragment_programs[release_idx] = texture2d_fragment_program_patched;
 	
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		rgba_fragment_id,
@@ -341,6 +399,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 		texture2d_fragment_program,
 		&texture2d_fragment_program_patched);
 		
+	release_idx++;
 }
 
 static void update_alpha_test_settings(){
@@ -390,6 +449,7 @@ static void change_blend_factor(){
 
 static void disable_blend(){
 	_change_blend_factor(NULL);
+	cur_blend_info.colorMask = SCE_GXM_COLOR_MASK_NONE;
 }
 
 static void change_depth_func(SceGxmDepthFunc func){
@@ -571,6 +631,7 @@ void vglStopRendering(){
 	gxm_front_buffer_index = gxm_back_buffer_index;
 	gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
 	gpu_pool_reset();
+	release_unused_programs();
 }
 
 void vglInit(uint32_t gpu_pool_size){
@@ -979,6 +1040,9 @@ void vglInit(uint32_t gpu_pool_size){
 		gpu_buffers[i].ptr = NULL;
 	}
 	
+	// Setting up current blend info state
+	cur_blend_info.colorMask = SCE_GXM_COLOR_MASK_NONE;
+	
 }
 
 void vglEnd(void){
@@ -1269,9 +1333,7 @@ void glEnd(void){
 		void* alpha_buffer;
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 		sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
 		use_texture = 1;
 	}else{
@@ -1535,7 +1597,6 @@ void glColorTable(GLenum target,  GLenum internalformat,  GLsizei width,  GLenum
 
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid * data){
 	SceGxmTextureFormat tex_format;
-	if (level == 0) gpu_free_texture(&texture_units[server_texture_unit].textures[texture2d_idx]);
 	switch (target){
 		case GL_TEXTURE_2D:
 			switch (internalFormat){
@@ -1709,7 +1770,6 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	SceGxmTextureFormat tex_format;
 	switch (target){
 		case GL_TEXTURE_2D:
-			gpu_free_texture(&texture_units[server_texture_unit].textures[texture2d_idx]);
 			switch (format){
 				case GL_RGB:
 					switch (type){
@@ -1763,7 +1823,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 				error = GL_INVALID_VALUE;
 				return;
 			}
-			gpu_prepare_rendertarget(&texture_units[server_texture_unit].textures[texture2d_idx]);
+			/*gpu_prepare_rendertarget(&texture_units[server_texture_unit].textures[texture2d_idx]);
 			texture temp;
 			gpu_alloc_texture(width, height, tex_format, pixels, &temp);
 			matrix4x4 view_matrix, identity_matrix;
@@ -1807,7 +1867,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			sceGxmEndScene(gxm_context, NULL, NULL);
 			sceGxmFinish(gxm_context);
 			gpu_free_texture(&temp);
-			gpu_destroy_rendertarget(&texture_units[server_texture_unit].textures[texture2d_idx]);
+			gpu_destroy_rendertarget(&texture_units[server_texture_unit].textures[texture2d_idx]);*/
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -2811,9 +2871,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				void* alpha_buffer;
 				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
-				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
 			}else if (texture_units[client_texture_unit].color_array.num == 3){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
@@ -2941,9 +2999,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 				void* alpha_buffer;
 				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
-				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
 			}else if (texture_units[client_texture_unit].color_array.num == 3){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
