@@ -116,6 +116,7 @@ typedef struct texture_unit{
 	vertexArray vertex_array;
 	vertexArray color_array;
 	vertexArray texture_array;
+	GLenum env_mode;
 } texture_unit;
 
 struct display_queue_callback_data {
@@ -1334,7 +1335,20 @@ void glEnd(void){
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
 		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+		vector4f clr;
+		switch (texture_units[server_texture_unit].env_mode){
+			case GL_REPLACE:
+			case GL_MODULATE:
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+				break;
+			case GL_DECAL:
+				clr.r = clr.g = clr.b = clr.a = 1.0f;
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &clr.r);
+				break;
+			case GL_BLEND: // TODO
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+				break;
+		}
 		use_texture = 1;
 	}else{
 		sceGxmSetVertexProgram(gxm_context, rgba_vertex_program_patched);
@@ -2872,7 +2886,20 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+				vector4f clr;
+				switch (texture_units[client_texture_unit].env_mode){
+					case GL_REPLACE:
+					case GL_MODULATE:
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+						break;
+					case GL_DECAL:
+						clr.r = clr.g = clr.b = clr.a = 1.0f;
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &clr.r);
+						break;
+					case GL_BLEND: // TODO
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+						break;
+				}
 			}else if (texture_units[client_texture_unit].color_array.num == 3){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
 				sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
@@ -3000,7 +3027,20 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+				vector4f clr;
+				switch (texture_units[client_texture_unit].env_mode){
+					case GL_REPLACE:
+					case GL_MODULATE:
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+						break;
+					case GL_DECAL:
+						clr.r = clr.g = clr.b = clr.a = 1.0f;
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &clr.r);
+						break;
+					case GL_BLEND: // TODO
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+						break;
+				}
 			}else if (texture_units[client_texture_unit].color_array.num == 3){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
 				sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
@@ -3209,5 +3249,25 @@ void glGetFloatv(GLenum pname, GLfloat* data){
 		default:
 			error = GL_INVALID_ENUM;
 			break;
+	}
+}
+
+void glTexEnvf(GLenum target, GLenum pname, GLfloat param){
+	switch (target){
+		case GL_TEXTURE_ENV:
+			switch (pname){
+				case GL_TEXTURE_ENV_MODE:
+					if (param == GL_MODULATE) texture_units[server_texture_unit].env_mode = GL_MODULATE;
+					else if (param == GL_DECAL) texture_units[server_texture_unit].env_mode = GL_DECAL;
+					else if (param == GL_REPLACE) texture_units[server_texture_unit].env_mode = GL_REPLACE;
+					else if (param == GL_BLEND) texture_units[server_texture_unit].env_mode = GL_BLEND;
+					break;
+				default:
+					error = GL_INVALID_ENUM;
+					break;
+			}
+			break;
+		default:
+			error = GL_INVALID_ENUM;
 	}
 }
