@@ -109,6 +109,14 @@ typedef enum alphaOp{
 	ALWAYS = 7
 } alphaOp;
 
+// Texture environment mode
+typedef enum texEnvMode{
+	MODULATE = 0,
+	DECAL = 1,
+	BLEND = 2,
+	REPLACE = 3
+} texEnvMode;
+
 typedef struct texture_unit{
 	GLboolean enabled;
 	matrix4x4 stack[GENERIC_STACK_DEPTH];
@@ -116,7 +124,7 @@ typedef struct texture_unit{
 	vertexArray vertex_array;
 	vertexArray color_array;
 	vertexArray texture_array;
-	GLenum env_mode;
+	texEnvMode env_mode;
 } texture_unit;
 
 struct display_queue_callback_data {
@@ -208,6 +216,7 @@ static const SceGxmProgramParameter* texture2d_wvp;
 static const SceGxmProgramParameter* texture2d_alpha_cut;
 static const SceGxmProgramParameter* texture2d_alpha_op;
 static const SceGxmProgramParameter* texture2d_tint_color;
+static const SceGxmProgramParameter* texture2d_tex_env;
 static SceGxmVertexProgram* texture2d_vertex_program_patched;
 static SceGxmFragmentProgram* texture2d_fragment_program_patched;
 static const SceGxmProgram* texture2d_fragment_program;
@@ -990,6 +999,9 @@ void vglInit(uint32_t gpu_pool_size){
 		
 	texture2d_tint_color = sceGxmProgramFindParameterByName(
 		texture2d_fragment_program, "tintColor");
+		
+	texture2d_tex_env = sceGxmProgramFindParameterByName(
+		texture2d_fragment_program, "texEnv");
 
 	SceGxmVertexAttribute texture2d_vertex_attribute[2];
 	SceGxmVertexStream texture2d_vertex_stream[2];
@@ -1026,13 +1038,14 @@ void vglInit(uint32_t gpu_pool_size){
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);
 	
-	// Init textures
+	// Init texture units
 	int j;
 	for (i=0; i < GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS; i++){
 		for (j=0; j < TEXTURES_NUM; j++){
 			texture_units[i].textures[j].used = 0;
 			texture_units[i].textures[j].valid = 0;
 		}
+		texture_units[i].env_mode = MODULATE;
 	}
 	
 	// Init buffers
@@ -1329,24 +1342,26 @@ void glEnd(void){
 	
 	uint8_t use_texture = 0;
 	if ((server_texture_unit >= 0) && (server_texture_unit >= 0) && (texture_units[server_texture_unit].enabled) && (model_uv != NULL) && (texture_units[server_texture_unit].textures[texture2d_idx].valid)){
-		sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-		sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
-		void* alpha_buffer;
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-		vector4f clr;
-		switch (texture_units[server_texture_unit].env_mode){
-			case GL_REPLACE:
-			case GL_MODULATE:
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+		switch (texture_units[server_texture_unit].textures[texture2d_idx].type){
+			case GL_RGB:
+			case GL_RGBA:
+			case GL_RG:
+			case GL_COLOR_INDEX:
+			case GL_VITA2D_TEXTURE:
+				sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
+				sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+				void* alpha_buffer;
+				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 1, &current_color.r);
+				float tex_env_mode = texture_units[server_texture_unit].env_mode * 1.0f;
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 4, &tex_env_mode);
 				break;
-			case GL_DECAL:
-				clr.r = clr.g = clr.b = clr.a = 1.0f;
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &clr.r);
-				break;
-			case GL_BLEND: // TODO
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+			default:
+				purge_vertex_list();
+				vertex_count = 0;
+				return;
 				break;
 		}
 		use_texture = 1;
@@ -1770,6 +1785,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 				error = GL_INVALID_VALUE;
 				return;
 			}
+			texture_units[server_texture_unit].textures[texture2d_idx].type = format;
 			if (level == 0) gpu_alloc_texture(width, height, tex_format, data, &texture_units[server_texture_unit].textures[texture2d_idx]);
 			else gpu_alloc_mipmaps(width, height, tex_format, data, level, &texture_units[server_texture_unit].textures[texture2d_idx]);
 			if (texture_units[server_texture_unit].textures[texture2d_idx].palette_UID) sceGxmTextureSetPalette(&texture_units[server_texture_unit].textures[texture2d_idx].gxm_tex, color_table->data);
@@ -2843,7 +2859,6 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* po
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 	SceGxmPrimitiveType gxm_p;
-	SceGxmPrimitiveTypeExtra gxm_ep = SCE_GXM_PRIMITIVE_NONE;
 	GLboolean skip_draw = GL_FALSE;
 	if (vertex_array_state){
 		switch (mode){
@@ -2880,24 +2895,24 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 			
 			if (texture_array_state){
 				if (!(texture_units[client_texture_unit].textures[texture2d_idx].valid)) return;
-				sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-				sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
-				void* alpha_buffer;
-				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-				vector4f clr;
-				switch (texture_units[client_texture_unit].env_mode){
-					case GL_REPLACE:
-					case GL_MODULATE:
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+				switch (texture_units[client_texture_unit].textures[texture2d_idx].type){
+					case GL_RGB:
+					case GL_RGBA:
+					case GL_RG:
+					case GL_COLOR_INDEX:
+					case GL_VITA2D_TEXTURE:
+						sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
+						sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+						void* alpha_buffer;
+						sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 1, &current_color.r);
+						float tex_env_mode = texture_units[client_texture_unit].env_mode * 1.0f;
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 4, &tex_env_mode);
 						break;
-					case GL_DECAL:
-						clr.r = clr.g = clr.b = clr.a = 1.0f;
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &clr.r);
-						break;
-					case GL_BLEND: // TODO
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+					default:
+						return;
 						break;
 				}
 			}else if (texture_units[client_texture_unit].color_array.num == 3){
@@ -2930,7 +2945,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 					uint8_t* ptr_tex = ((uint8_t*)texture_units[client_texture_unit].texture_array.pointer) + (first * ((texture_units[client_texture_unit].texture_array.num * texture_units[client_texture_unit].texture_array.size) + texture_units[client_texture_unit].texture_array.stride));
 					vertices = (vector3f*)gpu_pool_memalign(count * sizeof(vector3f), sizeof(vector3f));
 					uv_map = (vector2f*)gpu_pool_memalign(count * sizeof(vector2f), sizeof(vector2f));
-					memset(vertices, 0, (count * sizeof(vector3f), sizeof(vector3f)));
+					memset(vertices, 0, (count * sizeof(vector3f)));
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 					int n;
 					for (n=0;n<count;n++){
@@ -2963,11 +2978,11 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 					uint8_t* ptr_clr = ((uint8_t*)texture_units[client_texture_unit].color_array.pointer) + (first * ((texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size) + texture_units[client_texture_unit].color_array.stride));
 					vertices = (vector3f*)gpu_pool_memalign(count * sizeof(vector3f), sizeof(vector3f));
 					colors = (uint8_t*)gpu_pool_memalign(count * texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size, texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size);
-					memset(vertices, 0, (count * sizeof(vector3f), sizeof(vector3f)));
+					memset(vertices, 0, (count * sizeof(vector3f)));
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 					for (n=0; n<count; n++){
 						memcpy(&vertices[n], ptr, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num);
-						memcpy(&colors[n * texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size], ptr_clr, texture_units[client_texture_unit].color_array.size * texture_units[client_texture_unit].color_array.num);
+						memcpy(&colors[n], ptr_clr, texture_units[client_texture_unit].color_array.size * texture_units[client_texture_unit].color_array.num);
 						indices[n] = n;
 						ptr += ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride);
 						ptr_clr += ((texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size) + texture_units[client_texture_unit].color_array.stride);
@@ -3021,24 +3036,24 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 			
 			if (texture_array_state){
 				if (!(texture_units[client_texture_unit].textures[texture2d_idx].valid)) return;
-				sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-				sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
-				void* alpha_buffer;
-				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-				vector4f clr;
-				switch (texture_units[client_texture_unit].env_mode){
-					case GL_REPLACE:
-					case GL_MODULATE:
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+				switch (texture_units[client_texture_unit].textures[texture2d_idx].type){
+					case GL_RGB:
+					case GL_RGBA:
+					case GL_RG:
+					case GL_COLOR_INDEX:
+					case GL_VITA2D_TEXTURE:
+						sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
+						sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+						void* alpha_buffer;
+						sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 1, &current_color.r);
+						float tex_env_mode = texture_units[client_texture_unit].env_mode * 1.0f;
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 4, &tex_env_mode);
 						break;
-					case GL_DECAL:
-						clr.r = clr.g = clr.b = clr.a = 1.0f;
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &clr.r);
-						break;
-					case GL_BLEND: // TODO
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+					default:
+						return;
 						break;
 				}
 			}else if (texture_units[client_texture_unit].color_array.num == 3){
@@ -3257,10 +3272,10 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param){
 		case GL_TEXTURE_ENV:
 			switch (pname){
 				case GL_TEXTURE_ENV_MODE:
-					if (param == GL_MODULATE) texture_units[server_texture_unit].env_mode = GL_MODULATE;
-					else if (param == GL_DECAL) texture_units[server_texture_unit].env_mode = GL_DECAL;
-					else if (param == GL_REPLACE) texture_units[server_texture_unit].env_mode = GL_REPLACE;
-					else if (param == GL_BLEND) texture_units[server_texture_unit].env_mode = GL_BLEND;
+					if (param == GL_MODULATE) texture_units[server_texture_unit].env_mode = MODULATE;
+					else if (param == GL_DECAL) texture_units[server_texture_unit].env_mode = DECAL;
+					else if (param == GL_REPLACE) texture_units[server_texture_unit].env_mode = REPLACE;
+					else if (param == GL_BLEND) texture_units[server_texture_unit].env_mode = BLEND;
 					break;
 				default:
 					error = GL_INVALID_ENUM;

@@ -3,11 +3,29 @@
 	uniform sampler2D tex,
 	uniform float alphaCut,
 	uniform float alphaOp,
-	uniform float4 tintColor
+	uniform float4 tintColor,
+	uniform float texEnv
 	)
 {
-	float4 texColor = tex2D(tex, vTexcoord) * tintColor;
-	if (alphaOp == 0){
+	float4 texColor = tex2D(tex, vTexcoord);
+	
+	// Texture Environment
+	if (texEnv == 0.0){ // GL_MODULATE
+		texColor = texColor * tintColor;
+	}else if (texEnv == 1.0){ // GL_DECAL
+		texColor.r = tintColor.r * (1 - texColor.a) + texColor.r * texColor.a;
+		texColor.g = tintColor.g * (1 - texColor.a) + texColor.g * texColor.a;
+		texColor.b = tintColor.b * (1 - texColor.a) + texColor.b * texColor.a;
+		texColor.a = tintColor.a;
+	}else if (texEnv == 2.0){ // GL_BLEND
+		texColor.r = tintColor.r * (1 - texColor.r) + texColor.r * tintColor.r;
+		texColor.g = tintColor.g * (1 - texColor.g) + texColor.g * tintColor.g;
+		texColor.b = tintColor.b * (1 - texColor.b) + texColor.b * tintColor.b;
+		texColor.a = texColor.a * tintColor.a;
+	}
+	
+	// Alpha Test
+	if (alphaOp == 0.0){
 		if (texColor.a < alphaCut){
 			discard;
 		}
@@ -34,5 +52,6 @@
 	}else if (alphaOp == 6.0){
 		discard;
 	}
+	
 	return texColor;
 }

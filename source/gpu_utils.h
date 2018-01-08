@@ -8,6 +8,7 @@ typedef struct texture{
 	SceUID depth_UID;
 	uint8_t used;
 	uint8_t valid;
+	uint32_t type;
 } texture;
 
 typedef struct palette{
