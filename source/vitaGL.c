@@ -2941,18 +2941,33 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 						indices[n] = n;
 					}
 				}else{
-					uint8_t* ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer) + (first * ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride));
-					uint8_t* ptr_tex = ((uint8_t*)texture_units[client_texture_unit].texture_array.pointer) + (first * ((texture_units[client_texture_unit].texture_array.num * texture_units[client_texture_unit].texture_array.size) + texture_units[client_texture_unit].texture_array.stride));
+					uint8_t* ptr;
+					uint8_t* ptr_tex;
 					vertices = (vector3f*)gpu_pool_memalign(count * sizeof(vector3f), sizeof(vector3f));
 					uv_map = (vector2f*)gpu_pool_memalign(count * sizeof(vector2f), sizeof(vector2f));
 					memset(vertices, 0, (count * sizeof(vector3f)));
+					uint8_t vec_set = 0, tex_set = 0;
+					if (texture_units[client_texture_unit].vertex_array.stride == 0){
+						ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer) + (first * (texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size));
+						memcpy(&vertices[n], ptr, count * sizeof(vector3f));
+						vec_set = 1;
+					}else ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer) + (first * texture_units[client_texture_unit].vertex_array.stride);	
+					if (texture_units[client_texture_unit].texture_array.stride == 0){
+						ptr_tex = ((uint8_t*)texture_units[client_texture_unit].texture_array.pointer) + (first * (texture_units[client_texture_unit].texture_array.num * texture_units[client_texture_unit].texture_array.size));
+						memcpy(&uv_map[n], ptr_tex, count * sizeof(vector2f));
+						tex_set = 1;
+					}else ptr_tex = ((uint8_t*)texture_units[client_texture_unit].texture_array.pointer) + (first * texture_units[client_texture_unit].texture_array.stride);
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 					int n;
 					for (n=0;n<count;n++){
-						memcpy(&vertices[n], ptr, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num);
-						memcpy(&uv_map[n], ptr_tex, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].texture_array.num);
-						ptr += ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride);
-						ptr_tex += ((texture_units[client_texture_unit].texture_array.num * texture_units[client_texture_unit].texture_array.size) + texture_units[client_texture_unit].texture_array.stride);
+						if (!vec_set){
+							memcpy(&vertices[n], ptr, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num);
+							ptr += texture_units[client_texture_unit].vertex_array.stride;
+						}
+						if (!tex_set){
+							memcpy(&uv_map[n], ptr_tex, texture_units[client_texture_unit].texture_array.size * texture_units[client_texture_unit].texture_array.num);
+							ptr_tex += texture_units[client_texture_unit].texture_array.stride;
+						}
 						indices[n] = n;
 					}
 				}
@@ -2974,18 +2989,33 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 						indices[n] = n;
 					}
 				}else{
-					uint8_t* ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer) + (first * ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride));
-					uint8_t* ptr_clr = ((uint8_t*)texture_units[client_texture_unit].color_array.pointer) + (first * ((texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size) + texture_units[client_texture_unit].color_array.stride));
+					uint8_t* ptr;
+					uint8_t* ptr_clr;
 					vertices = (vector3f*)gpu_pool_memalign(count * sizeof(vector3f), sizeof(vector3f));
 					colors = (uint8_t*)gpu_pool_memalign(count * texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size, texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size);
 					memset(vertices, 0, (count * sizeof(vector3f)));
+					uint8_t vec_set = 0, clr_set = 0;
+					if (texture_units[client_texture_unit].vertex_array.stride == 0){
+						ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer) + (first * ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size)));
+						memcpy(&vertices[n], ptr, count * sizeof(vector3f));
+						vec_set = 1;
+					}else ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer) + (first * (texture_units[client_texture_unit].vertex_array.stride));
+					if (texture_units[client_texture_unit].color_array.stride == 0){
+						ptr_clr = ((uint8_t*)texture_units[client_texture_unit].color_array.pointer) + (first * ((texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size)));
+						memcpy(&colors[n], ptr_clr, count * texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size);
+						clr_set = 1;
+					}else ptr_clr = ((uint8_t*)texture_units[client_texture_unit].color_array.pointer) + (first * texture_units[client_texture_unit].color_array.size);
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 					for (n=0; n<count; n++){
-						memcpy(&vertices[n], ptr, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num);
-						memcpy(&colors[n], ptr_clr, texture_units[client_texture_unit].color_array.size * texture_units[client_texture_unit].color_array.num);
+						if (!vec_set){
+							memcpy(&vertices[n], ptr, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num);
+							ptr += texture_units[client_texture_unit].vertex_array.stride;
+						}
+						if (!clr_set){
+							memcpy(&colors[n], ptr_clr, texture_units[client_texture_unit].color_array.size * texture_units[client_texture_unit].color_array.num);
+							ptr_clr += texture_units[client_texture_unit].color_array.stride;
+						}
 						indices[n] = n;
-						ptr += ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride);
-						ptr_clr += ((texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size) + texture_units[client_texture_unit].color_array.stride);
 					}
 				}
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
