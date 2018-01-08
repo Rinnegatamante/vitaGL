@@ -274,7 +274,7 @@ static uint8_t stencil_ref_back = 0; // Current in-use reference for stencil tes
 static GLdouble depth_value = 1.0f; // Current depth test value
 static int8_t server_texture_unit = 0; // Current in-use server side texture unit
 static int8_t client_texture_unit = 0; // Current in-use client side texture unit
-static int8_t texture2d_idx = 0; // Current in-use texture index for GL_TEXTURE2D
+static int texture2d_idx = 0; // Current in-use texture index for GL_TEXTURE2D
 static int vertex_array_unit = -1; // Current in-use vertex array unit
 static int index_array_unit = -1; // Current in-use index array unit
 static matrix4x4* matrix = NULL; // Current in-use matrix mode
@@ -1786,7 +1786,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			texture_units[server_texture_unit].textures[texture2d_idx].type = format;
 			if (level == 0) gpu_alloc_texture(width, height, tex_format, data, &texture_units[server_texture_unit].textures[texture2d_idx]);
 			else gpu_alloc_mipmaps(width, height, tex_format, data, level, &texture_units[server_texture_unit].textures[texture2d_idx]);
-			if (texture_units[server_texture_unit].textures[texture2d_idx].palette_UID) sceGxmTextureSetPalette(&texture_units[server_texture_unit].textures[texture2d_idx].gxm_tex, color_table->data);
+			if (texture_units[server_texture_unit].textures[texture2d_idx].valid && texture_units[server_texture_unit].textures[texture2d_idx].palette_UID) sceGxmTextureSetPalette(&texture_units[server_texture_unit].textures[texture2d_idx].gxm_tex, color_table->data);
 			break;
 		default:
 			error = GL_INVALID_ENUM;
