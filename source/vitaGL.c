@@ -14,6 +14,10 @@
 #include "texture2d_f.h"
 #include "texture2d_v.h"
 
+#ifndef max
+    #define max(a,b) ((a) > (b) ? (a) : (b))
+#endif
+
 #define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 
 #define TEXTURES_NUM          1024 // Available textures per texture unit
@@ -3358,5 +3362,72 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param){
 			break;
 		default:
 			error = GL_INVALID_ENUM;
+	}
+}
+
+void glGenerateMipmap(GLenum target){
+	texture* tex = &texture_units[server_texture_unit].textures[texture2d_idx];
+	SceGxmTransferFormat fmt;
+	switch (target){
+		case GL_TEXTURE_2D:
+			switch (tex->type){
+				case GL_RGBA:
+					fmt = SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR;
+					break;
+				case GL_RGB:
+					fmt = SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR;
+				default:
+					break;
+			}
+			int j, mipcount = 0;
+			uint32_t w, h;
+			uint32_t orig_w = w = sceGxmTextureGetWidth(&tex->gxm_tex);
+			uint32_t orig_h = h = sceGxmTextureGetHeight(&tex->gxm_tex);
+			uint32_t size = 0;
+			while ((w > 1) && (h > 1)){
+				size += max(w, 8) * h * sizeof(uint32_t);
+				w /= 2;
+				h /= 2;
+				mipcount++;
+			}
+			SceUID data_UID;
+			void *texture_data = gpu_alloc_map(
+				SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
+				SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
+				size, &data_UID);
+			sceGxmColorSurfaceInit(&tex->gxm_sfc,
+				SCE_GXM_COLOR_FORMAT_A8B8G8R8,
+				SCE_GXM_COLOR_SURFACE_LINEAR,
+				SCE_GXM_COLOR_SURFACE_SCALE_NONE,
+				SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
+				orig_w,orig_h,orig_w,texture_data);
+			SceGxmTextureFormat format = sceGxmTextureGetFormat(&tex->gxm_tex);
+			memcpy(texture_data, sceGxmTextureGetData(&tex->gxm_tex), orig_w * orig_h * tex_format_to_bytespp(format));
+			gpu_free_texture(tex);
+			sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, mipcount);
+			tex->valid = 1;
+			tex->data_UID = data_UID;
+			uint32_t* curPtr = (uint32_t*)texture_data;
+			uint32_t curWidth = orig_w;
+			uint32_t curHeight = orig_h;
+			for (j=0;j<mipcount-1;j++){
+				uint32_t curSrcStride = max(curWidth, 8);
+				uint32_t curDstStride = max((curWidth>>1), 8);
+				uint32_t* dstPtr = curPtr + (curSrcStride * curHeight);
+				sceGxmTransferDownscale(
+					fmt, curPtr, 0, 0,
+					curWidth, curHeight,
+					curSrcStride * sizeof(uint32_t),
+					fmt, dstPtr, 0, 0,
+					curDstStride * sizeof(uint32_t),
+					NULL, SCE_GXM_TRANSFER_FRAGMENT_SYNC, NULL);
+				curPtr = dstPtr;
+				curWidth /= 2;
+				curHeight /= 2;
+			}
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
 	}
 }

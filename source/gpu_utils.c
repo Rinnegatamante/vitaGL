@@ -4,6 +4,10 @@
 
 #define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 
+#ifndef max
+    #define max(a,b) ((a) > (b) ? (a) : (b))
+#endif
+
 // Temporary memory pool
 static void *pool_addr = NULL;
 static SceUID poolUid;
@@ -200,6 +204,12 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		tex_size, &tex->data_UID);
 	if (texture_data != NULL){
+		sceGxmColorSurfaceInit(&tex->gxm_sfc,
+			SCE_GXM_COLOR_FORMAT_A8B8G8R8,
+			SCE_GXM_COLOR_SURFACE_LINEAR,
+			SCE_GXM_COLOR_SURFACE_SCALE_NONE,
+			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
+			w,h,w,texture_data);	
 		if (data != NULL) memcpy(texture_data, (uint8_t*)data, tex_size);
 		else memset(texture_data, 0, tex_size);
 		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, w, h, 0);
@@ -211,53 +221,61 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 }
 
 void gpu_alloc_mipmaps(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void* data, int level, texture* tex){
-	/*uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
-	uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
-	const int orig_size = orig_w * orig_h * tex_format_to_bytespp(format);
+	// Discarding passed content and using sceGxmTransfer to create desired level of mipmap
 	uint32_t count = sceGxmTextureGetMipmapCount(&tex->gxm_tex);
-	void* texture_data = sceGxmTextureGetData(&tex->gxm_tex);
-	int n;
-	if (level <= count){
-		uint32_t ptr = (uint32_t)texture_data;
-		uint32_t level_size = orig_size;
-		for (n=0;n<level;n++){
-			ptr += level_size;
-			level_size = level_size>>2;
+	uint32_t orig_w = w = sceGxmTextureGetWidth(&tex->gxm_tex);
+	uint32_t orig_h = h = sceGxmTextureGetHeight(&tex->gxm_tex);
+	uint32_t size = 0;
+	if (level > count){
+		int j;
+		for (j=0;j<level;j++){
+			size += max(w, 8) * h * sizeof(uint32_t);
+			w /= 2;
+			h /= 2;
 		}
-		memcpy((void*)ptr, data, w * h * tex_format_to_bytespp(format));
-	}else{
-		uint32_t size = 0;
-		uint32_t current_size = 0;
-		uint32_t level_size = orig_size;
-		for (n=0;n<=level;n++){
-			size += level_size;
-			level_size = level_size>>2;
-			if ((n+1)==level) current_size = size;
-		}
-		SceUID dataUID;
-		void* texture_data_new = gpu_alloc_map(
+		SceUID data_UID;
+		void *texture_data = gpu_alloc_map(
 			SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-			SCE_GXM_MEMORY_ATTRIB_READ,
-			size, &dataUID);
-		memcpy(texture_data_new, texture_data, current_size);
-		memcpy(texture_data_new + current_size, data, w * h * tex_format_to_bytespp(format));
-		sceGxmTextureSetData(&tex->gxm_tex, texture_data_new);
-		sceGxmTextureSetMipmapCount(&tex->gxm_tex, level);
-		gpu_unmap_free(tex->data_UID);
-		tex->data_UID = dataUID;
-	}*/
+			SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
+			size, &data_UID);
+		sceGxmColorSurfaceInit(&tex->gxm_sfc,
+			SCE_GXM_COLOR_FORMAT_A8B8G8R8,
+			SCE_GXM_COLOR_SURFACE_LINEAR,
+			SCE_GXM_COLOR_SURFACE_SCALE_NONE,
+			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
+			orig_w,orig_h,orig_w,texture_data);
+		memcpy(texture_data, sceGxmTextureGetData(&tex->gxm_tex), orig_w * orig_h * tex_format_to_bytespp(format));
+		gpu_free_texture(tex);
+		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, level);
+		tex->valid = 1;
+		tex->data_UID = data_UID;
+		uint32_t* curPtr = (uint32_t*)texture_data;
+		uint32_t curWidth = orig_w;
+		uint32_t curHeight = orig_h;
+		for (j=0;j<level-1;j++){
+			uint32_t curSrcStride = max(curWidth, 8);
+			uint32_t curDstStride = max((curWidth>>1), 8);
+			uint32_t* dstPtr = curPtr + (curSrcStride * curHeight);
+			sceGxmTransferDownscale(
+				tex_format_to_bytespp(format) == 4 ? SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR : SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR,
+				curPtr, 0, 0,
+				curWidth, curHeight,
+				curSrcStride * sizeof(uint32_t),
+				tex_format_to_bytespp(format) == 4 ? SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR : SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR,
+				dstPtr, 0, 0,
+				curDstStride * sizeof(uint32_t),
+				NULL, SCE_GXM_TRANSFER_FRAGMENT_SYNC, NULL);
+			curPtr = dstPtr;
+			curWidth /= 2;
+			curHeight /= 2;
+		}
+	}
 }
 
 void gpu_prepare_rendertarget(texture* tex){
 	if (tex == NULL) return;
 	uint32_t w = sceGxmTextureGetWidth(&tex->gxm_tex);
 	uint32_t h = sceGxmTextureGetHeight(&tex->gxm_tex);
-	sceGxmColorSurfaceInit(&tex->gxm_sfc,
-		SCE_GXM_COLOR_FORMAT_A8B8G8R8,
-		SCE_GXM_COLOR_SURFACE_LINEAR,
-		SCE_GXM_COLOR_SURFACE_SCALE_NONE,
-		SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-		w,h,w,sceGxmTextureGetData(&tex->gxm_tex));	
 		
 	const uint32_t alignedWidth = ALIGN(w, SCE_GXM_TILE_SIZEX);
 	const uint32_t alignedHeight = ALIGN(h, SCE_GXM_TILE_SIZEY);

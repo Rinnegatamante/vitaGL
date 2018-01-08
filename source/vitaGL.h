@@ -235,6 +235,7 @@ void glFinish(void);
 void glFrontFace(GLenum mode);
 void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
 void glGenBuffers(GLsizei n, GLuint* buffers);
+void glGenerateMipmap(GLenum target);
 void glGenTextures(GLsizei n, GLuint* textures);
 void glGetBooleanv(GLenum pname, GLboolean* params);
 void glGetFloatv(GLenum pname, GLfloat* data);
