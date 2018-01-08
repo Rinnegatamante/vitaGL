@@ -198,10 +198,11 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	
 	if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8) tex->palette_UID = 1;
 	else tex->palette_UID = 0;
+	tex->valid = 1;
 }
 
 void gpu_alloc_mipmaps(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void* data, int level, texture* tex){
-	uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
+	/*uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
 	uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
 	const int orig_size = orig_w * orig_h * tex_format_to_bytespp(format);
 	uint32_t count = sceGxmTextureGetMipmapCount(&tex->gxm_tex);
@@ -235,7 +236,7 @@ void gpu_alloc_mipmaps(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 		sceGxmTextureSetMipmapCount(&tex->gxm_tex, level);
 		gpu_unmap_free(tex->data_UID);
 		tex->data_UID = dataUID;
-	}
+	}*/
 }
 
 void gpu_prepare_rendertarget(texture* tex){
@@ -288,6 +289,7 @@ void gpu_destroy_rendertarget(texture* tex){
 void gpu_free_texture(texture* tex){
 	if (tex->data_UID != 0) gpu_unmap_free(tex->data_UID);
 	tex->data_UID = 0;
+	tex->valid = 0;
 }
 
 void gpu_free_palette(palette* pal){

@@ -7,6 +7,7 @@ typedef struct texture{
 	SceGxmDepthStencilSurface gxm_sfd;
 	SceUID depth_UID;
 	uint8_t used;
+	uint8_t valid;
 } texture;
 
 typedef struct palette{
