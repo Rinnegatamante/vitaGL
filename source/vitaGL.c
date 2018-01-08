@@ -301,6 +301,8 @@ static GLfloat pol_factor = 0.0f; // Current factor for glPolygonOffset
 static GLfloat pol_units = 0.0f; // Current units for glPolygonOffset
 static vector4f current_color = {1.0f, 1.0f, 1.0f, 1.0f}; // Current in-use color
 static palette* color_table = NULL; // Current in-use color table
+static SceGxmTextureAddrMode u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT; // Current in-use value for GL_TEXTURE_WRAP_S
+static SceGxmTextureAddrMode v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT; // Current in-use value for GL_TEXTURE_WRAP_T
 
 static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH];
 static uint8_t modelview_stack_counter = 0;
@@ -1354,9 +1356,9 @@ void glEnd(void){
 				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
 				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 1, &current_color.r);
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
 				float tex_env_mode = texture_units[server_texture_unit].env_mode * 1.0f;
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 4, &tex_env_mode);
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &tex_env_mode);
 				break;
 			default:
 				purge_vertex_list();
@@ -1376,6 +1378,8 @@ void glEnd(void){
 	
 	if (use_texture){
 		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)final_mvp_matrix);
+		sceGxmTextureSetUAddrMode(&texture_units[server_texture_unit].textures[texture2d_idx].gxm_tex, u_mode);
+		sceGxmTextureSetVAddrMode(&texture_units[server_texture_unit].textures[texture2d_idx].gxm_tex, v_mode);
 		sceGxmSetFragmentTexture(gxm_context, 0, &texture_units[server_texture_unit].textures[texture2d_idx].gxm_tex);
 		vector3f* vertices;
 		vector2f* uv_map;
@@ -1633,10 +1637,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 					if (format == GL_RGB){
 						switch (type){
 							case GL_UNSIGNED_BYTE:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8X8_RGB1;
+								tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8X8_BGR1;
 								break;
 							case GL_UNSIGNED_SHORT_5_6_5:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB;
+								tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR;
 								break;
 							default:
 								error = GL_INVALID_ENUM;
@@ -1648,13 +1652,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 					if (format == GL_RGBA){
 						switch (type){
 							case GL_UNSIGNED_BYTE:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_RGBA;
+								tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
 								break;
 							case GL_UNSIGNED_SHORT_4_4_4_4:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA;
-								break;
-							case GL_UNSIGNED_SHORT_5_5_5_1:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
+								tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR;
 								break;
 							default:
 								error = GL_INVALID_ENUM;
@@ -1701,7 +1702,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 					if (format == GL_COLOR_INDEX){
 						switch (type){
 							case GL_UNSIGNED_BYTE:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_P8_RGBA;
+								tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 								break;
 							default:
 								error = GL_INVALID_ENUM;
@@ -1734,19 +1735,19 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 						case GL_RGB:
 							switch (type){
 								case GL_BYTE:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_S8S8S8X8_RGB1;
+									tex_format = SCE_GXM_TEXTURE_FORMAT_S8S8S8X8_BGR1;
 									break;
 								case GL_UNSIGNED_BYTE:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8X8_RGB1;
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8X8_BGR1;
 									break;
 								case GL_UNSIGNED_SHORT_4_4_4_4:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4X4_RGB1;
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4X4_BGR1;
 									break;
 								case GL_UNSIGNED_SHORT_5_5_5_1:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5X1_RGB1;
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5X1_BGR1;
 									break;
 								case GL_UNSIGNED_SHORT_5_6_5:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB;
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR;
 									break;
 								default:
 									error = GL_INVALID_ENUM;
@@ -1756,16 +1757,13 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 						case GL_RGBA:
 							switch (type){
 								case GL_BYTE:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_S8S8S8S8_RGBA;
+									tex_format = SCE_GXM_TEXTURE_FORMAT_S8S8S8S8_ABGR;
 									break;
 								case GL_UNSIGNED_BYTE:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_RGBA;
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
 									break;
 								case GL_UNSIGNED_SHORT_4_4_4_4:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA;
-									break;
-								case GL_UNSIGNED_SHORT_5_5_5_1:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR;
 									break;
 								default:
 									error = GL_INVALID_ENUM;
@@ -1945,6 +1943,38 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 							break;
 					}
 					break;
+				case GL_TEXTURE_WRAP_S:
+					switch (param){
+						case GL_CLAMP_TO_EDGE:
+							u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+							break;
+						case GL_REPEAT: 
+							u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+							break;
+						case GL_MIRRORED_REPEAT:
+							u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+							break;
+						default:
+							error = GL_INVALID_ENUM;
+							break;
+					}
+					break;
+				case GL_TEXTURE_WRAP_T:
+					switch (param){
+						case GL_CLAMP_TO_EDGE:
+							v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+							break;
+						case GL_REPEAT: 
+							v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+							break;
+						case GL_MIRRORED_REPEAT:
+							v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+							break;
+						default:
+							error = GL_INVALID_ENUM;
+							break;
+					}
+					break;
 				default:
 					error = GL_INVALID_ENUM;
 					break;
@@ -1967,6 +1997,16 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param){
 				case GL_TEXTURE_MAG_FILTER:
 					if (param == GL_NEAREST) sceGxmTextureSetMagFilter(&texture_units[server_texture_unit].textures[texture2d_idx].gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
 					else if (param == GL_LINEAR) sceGxmTextureSetMagFilter(&texture_units[server_texture_unit].textures[texture2d_idx].gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);	
+					break;
+				case GL_TEXTURE_WRAP_S:
+					if (param == GL_CLAMP_TO_EDGE) u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+					else if (param == GL_REPEAT) u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+					else if (param == GL_MIRRORED_REPEAT) u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+					break;
+				case GL_TEXTURE_WRAP_T:
+					if (param == GL_CLAMP_TO_EDGE) v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+					else if (param == GL_REPEAT) v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+					else if (param == GL_MIRRORED_REPEAT) v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
 					break;
 				default:
 					error = GL_INVALID_ENUM;
@@ -2907,9 +2947,9 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 						sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 1, &current_color.r);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
 						float tex_env_mode = texture_units[client_texture_unit].env_mode * 1.0f;
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 4, &tex_env_mode);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &tex_env_mode);
 						break;
 					default:
 						return;
@@ -2928,6 +2968,8 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 	
 			if (texture_array_state){
 				sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)final_mvp_matrix);
+				sceGxmTextureSetUAddrMode(&texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex, u_mode);
+				sceGxmTextureSetVAddrMode(&texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex, v_mode);
 				sceGxmSetFragmentTexture(gxm_context, 0, &texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex);
 				vector3f* vertices = NULL;
 				vector2f* uv_map = NULL;
@@ -3078,9 +3120,9 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 						sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 1, &current_color.r);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
 						float tex_env_mode = texture_units[client_texture_unit].env_mode * 1.0f;
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 4, &tex_env_mode);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &tex_env_mode);
 						break;
 					default:
 						return;
@@ -3099,6 +3141,8 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 	
 			if (texture_array_state){
 				sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)final_mvp_matrix);
+				sceGxmTextureSetUAddrMode(&texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex, u_mode);
+				sceGxmTextureSetVAddrMode(&texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex, v_mode);
 				sceGxmSetFragmentTexture(gxm_context, 0, &texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex);
 				vector3f* vertices = NULL;
 				vector2f* uv_map = NULL;

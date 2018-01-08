@@ -109,6 +109,9 @@
 #define GL_LINEAR_MIPMAP_LINEAR           0x2703
 #define GL_TEXTURE_MAG_FILTER             0x2800
 #define GL_TEXTURE_MIN_FILTER             0x2801
+#define GL_TEXTURE_WRAP_S			      0x2802
+#define GL_TEXTURE_WRAP_T			      0x2803
+#define GL_REPEAT				          0x2901
 #define GL_POLYGON_OFFSET_UNITS           0x2A00
 #define GL_POLYGON_OFFSET_POINT           0x2A01
 #define GL_POLYGON_OFFSET_LINE            0x2A02
@@ -131,8 +134,10 @@
 #define GL_BLEND_SRC_ALPHA                0x80CB
 #define GL_COLOR_TABLE                    0x80D0
 #define GL_COLOR_INDEX8_EXT               0x80E5
+#define GL_CLAMP_TO_EDGE			      0x812F
 #define GL_RG                             0x8227
 #define GL_UNSIGNED_SHORT_5_6_5           0x8363
+#define GL_MIRRORED_REPEAT                0x8370
 #define GL_TEXTURE0                       0x84C0
 #define GL_TEXTURE1                       0x84C1
 #define GL_TEXTURE2                       0x84C2
