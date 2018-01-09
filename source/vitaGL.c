@@ -251,7 +251,7 @@ static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
 static gpubuffer gpu_buffers[BUFFERS_NUM]; // Buffers array
 
-static texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS];
+static texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
 static SceGxmBlendFunc blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD; // Current in-use RGB blend func
 static SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use A blend func
 static SceGxmBlendFactor blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use RGB source blend factor
@@ -2154,6 +2154,8 @@ void glArrayElement(GLint i){
 			else ptr_clr = ((uint8_t*)tex_unit->color_array.pointer) + (i * tex_unit->color_array.stride);
 			last2->v.a = 1.0f;
 			memcpy(&last2->v, ptr_clr, tex_unit->color_array.size * tex_unit->color_array.num);
+		}else{
+			memcpy(&last2->v, &current_color.r, sizeof(vector4f));
 		}
 	}
 }
@@ -2976,7 +2978,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 						return;
 						break;
 				}
-			}else if (tex_unit->color_array.num == 3){
+			}else if (color_array_state && (tex_unit->color_array.num == 3)){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
 				sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
 			}else{
@@ -3079,7 +3081,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 							ptr += tex_unit->vertex_array.stride;
 						}
 						if (!clr_set){
-							memcpy(&colors[n], ptr_clr, tex_unit->color_array.size * tex_unit->color_array.num);
+							memcpy(&colors[n * tex_unit->color_array.num * tex_unit->color_array.size], ptr_clr, tex_unit->color_array.size * tex_unit->color_array.num);
 							ptr_clr += tex_unit->color_array.stride;
 						}
 						indices[n] = n;
@@ -3088,6 +3090,45 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, colors);
 				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);	
+			}else{
+				sceGxmSetUniformDataF(vertex_wvp_buffer, rgba_wvp, 0, 16, (const float*)final_mvp_matrix);
+				vector3f* vertices = NULL;
+				vector4f* colors = NULL;
+				uint16_t* indices;
+				int n = 0;
+				if (vertex_array_unit >= 0){
+					if (tex_unit->vertex_array.stride == 0) vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer) + (first * (tex_unit->vertex_array.num * tex_unit->vertex_array.size)));
+					else vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer) + (first * tex_unit->vertex_array.stride));
+					colors = (vector4f*)gpu_pool_memalign(count * sizeof(vector4f), sizeof(vector4f));
+					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
+					for (n=0; n<count; n++){
+						memcpy(&colors[n], &current_color.r, sizeof(vector4f));
+						indices[n] = n;
+					}
+				}else{
+					uint8_t* ptr;
+					vertices = (vector3f*)gpu_pool_memalign(count * sizeof(vector3f), sizeof(vector3f));
+					colors = (vector4f*)gpu_pool_memalign(count * sizeof(vector4f), sizeof(vector4f));
+					memset(vertices, 0, (count * sizeof(vector3f)));
+					uint8_t vec_set = 0;
+					if (tex_unit->vertex_array.stride == 0){
+						ptr = ((uint8_t*)tex_unit->vertex_array.pointer) + (first * ((tex_unit->vertex_array.num * tex_unit->vertex_array.size)));
+						memcpy(&vertices[n], ptr, count * sizeof(vector3f));
+						vec_set = 1;
+					}else ptr = ((uint8_t*)tex_unit->vertex_array.pointer) + (first * (tex_unit->vertex_array.stride));
+					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
+					for (n=0; n<count; n++){
+						if (!vec_set){
+							memcpy(&vertices[n], ptr, tex_unit->vertex_array.size * tex_unit->vertex_array.num);
+							ptr += tex_unit->vertex_array.stride;
+						}
+						memcpy(&colors[n], &current_color.r, sizeof(vector4f));
+						indices[n] = n;
+					}
+				}
+				sceGxmSetVertexStream(gxm_context, 0, vertices);
+				sceGxmSetVertexStream(gxm_context, 1, colors);
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
 			}
 		}
 	}
@@ -3154,7 +3195,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 						return;
 						break;
 				}
-			}else if (texture_units[client_texture_unit].color_array.num == 3){
+			}else if (color_array_state && (tex_unit->color_array.num == 3)){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
 				sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
 			}else{
@@ -3245,6 +3286,37 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 							ptr_clr += tex_unit->color_array.stride;
 						}
 					}
+				}
+				sceGxmSetVertexStream(gxm_context, 0, vertices);
+				sceGxmSetVertexStream(gxm_context, 1, colors);
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
+			}else{
+				sceGxmSetUniformDataF(vertex_wvp_buffer, rgba_wvp, 0, 16, (const float*)final_mvp_matrix);
+				vector3f* vertices = NULL;
+				vector4f* colors = NULL;
+				uint16_t* indices;
+				if (index_array_unit >= 0) indices = (uint16_t*)((uint32_t)gpu_buffers[index_array_unit].ptr + (uint32_t)gl_indices);
+				else{
+					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
+					memcpy(indices, gl_indices, sizeof(uint16_t) * count);
+				}
+				int n = 0, j = 0;
+				uint64_t vertex_count_int = 0;
+				uint16_t* ptr_idx = (uint16_t*)gl_indices;
+				while (j < count){
+					if (ptr_idx[j] >= vertex_count_int) vertex_count_int = ptr_idx[j] + 1;
+					j++;
+				}
+				if (vertex_array_unit >= 0) vertices = (vector3f*)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer);
+				else vertices = (vector3f*)gpu_pool_memalign(vertex_count_int * sizeof(vector3f), sizeof(vector3f));
+				colors = (vector4f*)gpu_pool_memalign(vertex_count_int * tex_unit->color_array.num * tex_unit->color_array.size, tex_unit->color_array.num * tex_unit->color_array.size);
+				if ((!vertex_array_unit) && tex_unit->vertex_array.stride == 0) memcpy(vertices, tex_unit->vertex_array.pointer, vertex_count_int * (tex_unit->vertex_array.size * tex_unit->vertex_array.num));
+				if ((!vertex_array_unit) && tex_unit->vertex_array.stride != 0) memset(vertices, 0, (vertex_count_int * sizeof(texture2d_vertex), sizeof(texture2d_vertex)));
+				uint8_t* ptr = ((uint8_t*)tex_unit->vertex_array.pointer);
+				for (n=0; n<vertex_count_int; n++){
+					if ((!vertex_array_unit) && tex_unit->vertex_array.stride != 0)  memcpy(&vertices[n], ptr, tex_unit->vertex_array.size * tex_unit->vertex_array.num);
+					memcpy(&colors[n], &current_color.r, sizeof(vector4f));
+					if (!vertex_array_unit) ptr += tex_unit->vertex_array.stride;
 				}
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, colors);
