@@ -2902,6 +2902,7 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* po
 }
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count){
+	texture_unit* tex_unit = &texture_units[client_texture_unit];
 	SceGxmPrimitiveType gxm_p;
 	GLboolean skip_draw = GL_FALSE;
 	if (vertex_array_state){
@@ -2938,8 +2939,8 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 			matrix4x4_transpose(final_mvp_matrix,mvp_matrix);
 			
 			if (texture_array_state){
-				if (!(texture_units[client_texture_unit].textures[texture2d_idx].valid)) return;
-				switch (texture_units[client_texture_unit].textures[texture2d_idx].type){
+				if (!(tex_unit->textures[texture2d_idx].valid)) return;
+				switch (tex_unit->textures[texture2d_idx].type){
 					case GL_RGB:
 					case GL_RGBA:
 					case GL_RG:
@@ -2952,14 +2953,14 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
-						float tex_env_mode = texture_units[client_texture_unit].env_mode * 1.0f;
+						float tex_env_mode = tex_unit->env_mode * 1.0f;
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &tex_env_mode);
 						break;
 					default:
 						return;
 						break;
 				}
-			}else if (texture_units[client_texture_unit].color_array.num == 3){
+			}else if (tex_unit->color_array.num == 3){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
 				sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
 			}else{
@@ -2972,16 +2973,18 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 	
 			if (texture_array_state){
 				sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)final_mvp_matrix);
-				sceGxmTextureSetUAddrMode(&texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex, u_mode);
-				sceGxmTextureSetVAddrMode(&texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex, v_mode);
-				sceGxmSetFragmentTexture(gxm_context, 0, &texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex);
+				sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, u_mode);
+				sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, v_mode);
+				sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 				vector3f* vertices = NULL;
 				vector2f* uv_map = NULL;
 				uint16_t* indices;
 				int n;
 				if (vertex_array_unit >= 0){
-					vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)texture_units[client_texture_unit].vertex_array.pointer) + (first * ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride)));
-					uv_map = (vector2f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)texture_units[client_texture_unit].texture_array.pointer) + (first * ((texture_units[client_texture_unit].texture_array.num * texture_units[client_texture_unit].texture_array.size) + texture_units[client_texture_unit].texture_array.stride)));
+					if (tex_unit->vertex_array.stride == 0) vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer) + (first * (tex_unit->vertex_array.num * tex_unit->vertex_array.size)));
+					else vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer) + (first * tex_unit->vertex_array.stride));
+					if (tex_unit->texture_array.stride == 0) uv_map = (vector2f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->texture_array.pointer) + (first * (tex_unit->texture_array.num * tex_unit->texture_array.size)));
+					else uv_map = (vector2f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->texture_array.pointer) + (first * tex_unit->texture_array.stride));
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 					for (n=0; n<count; n++){
 						indices[n] = n;
@@ -2993,26 +2996,26 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 					uv_map = (vector2f*)gpu_pool_memalign(count * sizeof(vector2f), sizeof(vector2f));
 					memset(vertices, 0, (count * sizeof(vector3f)));
 					uint8_t vec_set = 0, tex_set = 0;
-					if (texture_units[client_texture_unit].vertex_array.stride == 0){
-						ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer) + (first * (texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size));
+					if (tex_unit->vertex_array.stride == 0){
+						ptr = ((uint8_t*)tex_unit->vertex_array.pointer) + (first * (tex_unit->vertex_array.num * tex_unit->vertex_array.size));
 						memcpy(&vertices[n], ptr, count * sizeof(vector3f));
 						vec_set = 1;
-					}else ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer) + (first * texture_units[client_texture_unit].vertex_array.stride);	
-					if (texture_units[client_texture_unit].texture_array.stride == 0){
-						ptr_tex = ((uint8_t*)texture_units[client_texture_unit].texture_array.pointer) + (first * (texture_units[client_texture_unit].texture_array.num * texture_units[client_texture_unit].texture_array.size));
+					}else ptr = ((uint8_t*)tex_unit->vertex_array.pointer) + (first * tex_unit->vertex_array.stride);	
+					if (tex_unit->texture_array.stride == 0){
+						ptr_tex = ((uint8_t*)tex_unit->texture_array.pointer) + (first * (tex_unit->texture_array.num * tex_unit->texture_array.size));
 						memcpy(&uv_map[n], ptr_tex, count * sizeof(vector2f));
 						tex_set = 1;
-					}else ptr_tex = ((uint8_t*)texture_units[client_texture_unit].texture_array.pointer) + (first * texture_units[client_texture_unit].texture_array.stride);
+					}else ptr_tex = ((uint8_t*)tex_unit->texture_array.pointer) + (first * tex_unit->texture_array.stride);
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 					int n;
 					for (n=0;n<count;n++){
 						if (!vec_set){
-							memcpy(&vertices[n], ptr, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num);
-							ptr += texture_units[client_texture_unit].vertex_array.stride;
+							memcpy(&vertices[n], ptr, tex_unit->vertex_array.size * tex_unit->vertex_array.num);
+							ptr += tex_unit->vertex_array.stride;
 						}
 						if (!tex_set){
-							memcpy(&uv_map[n], ptr_tex, texture_units[client_texture_unit].texture_array.size * texture_units[client_texture_unit].texture_array.num);
-							ptr_tex += texture_units[client_texture_unit].texture_array.stride;
+							memcpy(&uv_map[n], ptr_tex, tex_unit->texture_array.size * tex_unit->texture_array.num);
+							ptr_tex += tex_unit->texture_array.stride;
 						}
 						indices[n] = n;
 					}
@@ -3021,15 +3024,17 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				sceGxmSetVertexStream(gxm_context, 1, uv_map);
 				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
 			}else if (color_array_state){
-				if (texture_units[client_texture_unit].color_array.num == 3) sceGxmSetUniformDataF(vertex_wvp_buffer, rgb_wvp, 0, 16, (const float*)final_mvp_matrix);
+				if (tex_unit->color_array.num == 3) sceGxmSetUniformDataF(vertex_wvp_buffer, rgb_wvp, 0, 16, (const float*)final_mvp_matrix);
 				else  sceGxmSetUniformDataF(vertex_wvp_buffer, rgba_wvp, 0, 16, (const float*)final_mvp_matrix);
 				vector3f* vertices = NULL;
 				uint8_t* colors = NULL;
 				uint16_t* indices;
 				int n = 0;
 				if (vertex_array_unit >= 0){
-					vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)texture_units[client_texture_unit].vertex_array.pointer) + (first * ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride)));
-					colors = (uint8_t*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)texture_units[client_texture_unit].color_array.pointer) + (first * ((texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size) + texture_units[client_texture_unit].color_array.stride)));
+					if (tex_unit->vertex_array.stride == 0) vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer) + (first * (tex_unit->vertex_array.num * tex_unit->vertex_array.size)));
+					else vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer) + (first * tex_unit->vertex_array.stride));
+					if (tex_unit->color_array.stride == 0) colors = (uint8_t*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->color_array.pointer) + (first * (tex_unit->color_array.num * tex_unit->color_array.size)));
+					else colors = (uint8_t*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->color_array.pointer) + (first * tex_unit->color_array.stride));
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 					for (n=0; n<count; n++){
 						indices[n] = n;
@@ -3038,28 +3043,28 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 					uint8_t* ptr;
 					uint8_t* ptr_clr;
 					vertices = (vector3f*)gpu_pool_memalign(count * sizeof(vector3f), sizeof(vector3f));
-					colors = (uint8_t*)gpu_pool_memalign(count * texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size, texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size);
+					colors = (uint8_t*)gpu_pool_memalign(count * tex_unit->color_array.num * tex_unit->color_array.size, tex_unit->color_array.num * tex_unit->color_array.size);
 					memset(vertices, 0, (count * sizeof(vector3f)));
 					uint8_t vec_set = 0, clr_set = 0;
-					if (texture_units[client_texture_unit].vertex_array.stride == 0){
-						ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer) + (first * ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size)));
+					if (tex_unit->vertex_array.stride == 0){
+						ptr = ((uint8_t*)tex_unit->vertex_array.pointer) + (first * ((tex_unit->vertex_array.num * tex_unit->vertex_array.size)));
 						memcpy(&vertices[n], ptr, count * sizeof(vector3f));
 						vec_set = 1;
-					}else ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer) + (first * (texture_units[client_texture_unit].vertex_array.stride));
-					if (texture_units[client_texture_unit].color_array.stride == 0){
-						ptr_clr = ((uint8_t*)texture_units[client_texture_unit].color_array.pointer) + (first * ((texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size)));
-						memcpy(&colors[n], ptr_clr, count * texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size);
+					}else ptr = ((uint8_t*)tex_unit->vertex_array.pointer) + (first * (tex_unit->vertex_array.stride));
+					if (tex_unit->color_array.stride == 0){
+						ptr_clr = ((uint8_t*)tex_unit->color_array.pointer) + (first * ((tex_unit->color_array.num * tex_unit->color_array.size)));
+						memcpy(&colors[n], ptr_clr, count * tex_unit->color_array.num * tex_unit->color_array.size);
 						clr_set = 1;
-					}else ptr_clr = ((uint8_t*)texture_units[client_texture_unit].color_array.pointer) + (first * texture_units[client_texture_unit].color_array.size);
+					}else ptr_clr = ((uint8_t*)tex_unit->color_array.pointer) + (first * tex_unit->color_array.size);
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 					for (n=0; n<count; n++){
 						if (!vec_set){
-							memcpy(&vertices[n], ptr, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num);
-							ptr += texture_units[client_texture_unit].vertex_array.stride;
+							memcpy(&vertices[n], ptr, tex_unit->vertex_array.size * tex_unit->vertex_array.num);
+							ptr += tex_unit->vertex_array.stride;
 						}
 						if (!clr_set){
-							memcpy(&colors[n], ptr_clr, texture_units[client_texture_unit].color_array.size * texture_units[client_texture_unit].color_array.num);
-							ptr_clr += texture_units[client_texture_unit].color_array.stride;
+							memcpy(&colors[n], ptr_clr, tex_unit->color_array.size * tex_unit->color_array.num);
+							ptr_clr += tex_unit->color_array.stride;
 						}
 						indices[n] = n;
 					}
