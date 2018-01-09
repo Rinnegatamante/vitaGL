@@ -2113,8 +2113,11 @@ void glArrayElement(GLint i){
 		error = GL_INVALID_VALUE;
 		return;
 	}
+	texture_unit* tex_unit = &texture_units[client_texture_unit];
 	if (vertex_array_state){
-		uint8_t* ptr = ((uint8_t*)texture_units[client_texture_unit].vertex_array.pointer) + (i * ((texture_units[client_texture_unit].vertex_array.num * texture_units[client_texture_unit].vertex_array.size) + texture_units[client_texture_unit].vertex_array.stride));
+		uint8_t* ptr;
+		if (tex_unit->vertex_array.stride == 0) ptr = ((uint8_t*)tex_unit->vertex_array.pointer) + (i * (tex_unit->vertex_array.num * tex_unit->vertex_array.size));
+		else ptr = ((uint8_t*)tex_unit->vertex_array.pointer) + (i * tex_unit->vertex_array.stride);
 		if (model_vertices == NULL){ 
 			last = (vertexList*)malloc(sizeof(vertexList));
 			last2 = (rgbaList*)malloc(sizeof(rgbaList));
@@ -2126,9 +2129,11 @@ void glArrayElement(GLint i){
 			last2 = last2->next;
 			last = last->next;
 		}
-		memcpy(&last->v, ptr, texture_units[client_texture_unit].vertex_array.size * texture_units[client_texture_unit].vertex_array.num);
+		memcpy(&last->v, ptr, tex_unit->vertex_array.size * tex_unit->vertex_array.num);
 		if (texture_array_state){
-			uint8_t* ptr_tex = ((uint8_t*)texture_units[client_texture_unit].texture_array.pointer) + (i * ((texture_units[client_texture_unit].texture_array.num * texture_units[client_texture_unit].texture_array.size) + texture_units[client_texture_unit].texture_array.stride));
+			uint8_t* ptr_tex;
+			if (tex_unit->texture_array.stride == 0) ptr_tex = ((uint8_t*)tex_unit->texture_array.pointer) + (i * (tex_unit->texture_array.num * tex_unit->texture_array.size));
+			else ptr_tex = ((uint8_t*)tex_unit->texture_array.pointer) + (i * tex_unit->texture_array.stride);
 			if (model_uv == NULL){
 				last3 = (uvList*)malloc(sizeof(uvList));
 				model_uv = last3;
@@ -2136,11 +2141,13 @@ void glArrayElement(GLint i){
 				last3->next = (uvList*)malloc(sizeof(uvList));
 				last3 = last3->next;
 			}
-			memcpy(&last3->v, ptr_tex, texture_units[client_texture_unit].vertex_array.size * 2);
+			memcpy(&last3->v, ptr_tex, tex_unit->vertex_array.size * 2);
 		}else if (color_array_state){
-			uint8_t* ptr_clr = ((uint8_t*)texture_units[client_texture_unit].color_array.pointer) + (i * ((texture_units[client_texture_unit].color_array.num * texture_units[client_texture_unit].color_array.size) + texture_units[client_texture_unit].color_array.stride));	
+			uint8_t* ptr_clr;
+			if (tex_unit->color_array.stride == 0) ptr_clr = ((uint8_t*)tex_unit->color_array.pointer) + (i * (tex_unit->color_array.num * tex_unit->color_array.size));
+			else ptr_clr = ((uint8_t*)tex_unit->color_array.pointer) + (i * tex_unit->color_array.stride);
 			last2->v.a = 1.0f;
-			memcpy(&last2->v, ptr_clr, texture_units[client_texture_unit].color_array.size * texture_units[client_texture_unit].color_array.num);
+			memcpy(&last2->v, ptr_clr, tex_unit->color_array.size * tex_unit->color_array.num);
 		}
 	}
 }
@@ -2840,21 +2847,22 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* poin
 		error = GL_INVALID_VALUE;
 		return;
 	}
+	texture_unit* tex_unit = &texture_units[client_texture_unit];
 	switch (type){
 		case GL_FLOAT:
-			texture_units[client_texture_unit].vertex_array.size = sizeof(GLfloat);
+			tex_unit->vertex_array.size = sizeof(GLfloat);
 			break;
 		case GL_SHORT:
-			texture_units[client_texture_unit].vertex_array.size = sizeof(GLshort);
+			tex_unit->vertex_array.size = sizeof(GLshort);
 			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
 	}
 	
-	texture_units[client_texture_unit].vertex_array.num = size;
-	texture_units[client_texture_unit].vertex_array.stride = stride;
-	texture_units[client_texture_unit].vertex_array.pointer = pointer;
+	tex_unit->vertex_array.num = size;
+	tex_unit->vertex_array.stride = stride;
+	tex_unit->vertex_array.pointer = pointer;
 }
 
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer){
@@ -2862,21 +2870,22 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* point
 		error = GL_INVALID_VALUE;
 		return;
 	}
+	texture_unit* tex_unit = &texture_units[client_texture_unit];
 	switch (type){
 		case GL_FLOAT:
-			texture_units[client_texture_unit].color_array.size = sizeof(GLfloat);
+			tex_unit->color_array.size = sizeof(GLfloat);
 			break;
 		case GL_SHORT:
-			texture_units[client_texture_unit].color_array.size = sizeof(GLshort);
+			tex_unit->color_array.size = sizeof(GLshort);
 			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
 	}
 	
-	texture_units[client_texture_unit].color_array.num = size;
-	texture_units[client_texture_unit].color_array.stride = stride;
-	texture_units[client_texture_unit].color_array.pointer = pointer;
+	tex_unit->color_array.num = size;
+	tex_unit->color_array.stride = stride;
+	tex_unit->color_array.pointer = pointer;
 }
 
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer){
@@ -2884,21 +2893,22 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* po
 		error = GL_INVALID_VALUE;
 		return;
 	}
+	texture_unit* tex_unit = &texture_units[client_texture_unit];
 	switch (type){
 		case GL_FLOAT:
-			texture_units[client_texture_unit].texture_array.size = sizeof(GLfloat);
+			tex_unit->texture_array.size = sizeof(GLfloat);
 			break;
 		case GL_SHORT:
-			texture_units[client_texture_unit].texture_array.size = sizeof(GLshort);
+			tex_unit->texture_array.size = sizeof(GLshort);
 			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
 	}
 	
-	texture_units[client_texture_unit].texture_array.num = size;
-	texture_units[client_texture_unit].texture_array.stride = stride;
-	texture_units[client_texture_unit].texture_array.pointer = pointer;
+	tex_unit->texture_array.num = size;
+	tex_unit->texture_array.stride = stride;
+	tex_unit->texture_array.pointer = pointer;
 }
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count){
