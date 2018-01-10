@@ -13,6 +13,8 @@
 #include "disable_color_buffer_v.h"
 #include "texture2d_f.h"
 #include "texture2d_v.h"
+#include "texture2d_rgba_f.h"
+#include "texture2d_rgba_v.h"
 
 #ifndef max
     #define max(a,b) ((a) > (b) ? (a) : (b))
@@ -128,7 +130,7 @@ typedef struct texture_unit{
 	vertexArray vertex_array;
 	vertexArray color_array;
 	vertexArray texture_array;
-	texEnvMode env_mode;
+	int env_mode;
 } texture_unit;
 
 struct display_queue_callback_data {
@@ -172,6 +174,8 @@ static const SceGxmProgram *const gxm_program_rgba_f = (SceGxmProgram*)&rgba_f;
 static const SceGxmProgram *const gxm_program_rgb_v = (SceGxmProgram*)&rgb_v;
 static const SceGxmProgram *const gxm_program_texture2d_v = (SceGxmProgram*)&texture2d_v;
 static const SceGxmProgram *const gxm_program_texture2d_f = (SceGxmProgram*)&texture2d_f;
+static const SceGxmProgram *const gxm_program_texture2d_rgba_v = (SceGxmProgram*)&texture2d_rgba_v;
+static const SceGxmProgram *const gxm_program_texture2d_rgba_f = (SceGxmProgram*)&texture2d_rgba_f;
 
 // Disable color buffer shader
 static SceGxmShaderPatcherId disable_color_buffer_vertex_id;
@@ -221,10 +225,27 @@ static const SceGxmProgramParameter* texture2d_alpha_cut;
 static const SceGxmProgramParameter* texture2d_alpha_op;
 static const SceGxmProgramParameter* texture2d_tint_color;
 static const SceGxmProgramParameter* texture2d_tex_env;
+static const SceGxmProgramParameter* texture2d_tex_env_color;
 static SceGxmVertexProgram* texture2d_vertex_program_patched;
 static SceGxmFragmentProgram* texture2d_fragment_program_patched;
 static const SceGxmProgram* texture2d_fragment_program;
 static SceGxmFragmentProgram* texture2d_fragment_programs[MAX_FRAGMENT_PROGS];
+
+// Texture2D+RGBA shader
+static SceGxmShaderPatcherId texture2d_rgba_vertex_id;
+static SceGxmShaderPatcherId texture2d_rgba_fragment_id;
+static const SceGxmProgramParameter* texture2d_rgba_position;
+static const SceGxmProgramParameter* texture2d_rgba_texcoord;
+static const SceGxmProgramParameter* texture2d_rgba_wvp;
+static const SceGxmProgramParameter* texture2d_rgba_alpha_cut;
+static const SceGxmProgramParameter* texture2d_rgba_alpha_op;
+static const SceGxmProgramParameter* texture2d_rgba_color;
+static const SceGxmProgramParameter* texture2d_rgba_tex_env;
+static const SceGxmProgramParameter* texture2d_rgba_tex_env_color;
+static SceGxmVertexProgram* texture2d_rgba_vertex_program_patched;
+static SceGxmFragmentProgram* texture2d_rgba_fragment_program_patched;
+static const SceGxmProgram* texture2d_rgba_fragment_program;
+static SceGxmFragmentProgram* texture2d_rgba_fragment_programs[MAX_FRAGMENT_PROGS];
 
 // Internal stuffs
 static SceGxmBlendInfo fragment_program_info[MAX_FRAGMENT_PROGS];
@@ -244,7 +265,7 @@ static matrix4x4 projection_matrix;
 static matrix4x4 modelview_matrix;
 static GLboolean vblank = GL_TRUE;
 static uint8_t np = 0xFF;
-static float alpha_op = 7.0f;
+static int alpha_op = ALWAYS;
 static SceGxmBlendInfo cur_blend_info;
 
 static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
@@ -304,10 +325,10 @@ static GLboolean no_polygons_mode = GL_FALSE; // GL_TRUE when cull mode to GL_FR
 static GLfloat pol_factor = 0.0f; // Current factor for glPolygonOffset
 static GLfloat pol_units = 0.0f; // Current units for glPolygonOffset
 static vector4f current_color = {1.0f, 1.0f, 1.0f, 1.0f}; // Current in-use color
+static vector4f texenv_color = {0.0f, 0.0f, 0.0f, 0.0f}; // Current in-use texture environment color
 static palette* color_table = NULL; // Current in-use color table
 static SceGxmTextureAddrMode u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT; // Current in-use value for GL_TEXTURE_WRAP_S
 static SceGxmTextureAddrMode v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT; // Current in-use value for GL_TEXTURE_WRAP_T
-
 static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH];
 static uint8_t modelview_stack_counter = 0;
 static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH];
@@ -348,6 +369,7 @@ static void release_unused_programs(){
 			if (fragment_program_info[i].colorMask != SCE_GXM_COLOR_MASK_NONE){
 				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, rgba_fragment_programs[i]);
 				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_programs[i]);
+				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_rgba_fragment_programs[i]);
 			}
 		}
 	}else{
@@ -355,11 +377,12 @@ static void release_unused_programs(){
 			if (cur_blend_info.colorFunc != fragment_program_info[i].colorFunc ||
 				cur_blend_info.alphaFunc != fragment_program_info[i].alphaFunc ||
 				cur_blend_info.colorSrc != fragment_program_info[i].colorSrc ||
-				cur_blend_info.alphaSrc != fragment_program_info[i].alphaFunc ||
+				cur_blend_info.alphaSrc != fragment_program_info[i].alphaSrc ||
 				cur_blend_info.colorDst != fragment_program_info[i].colorDst ||
 				cur_blend_info.alphaDst != fragment_program_info[i].alphaDst){
 				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, rgba_fragment_programs[i]);
 				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_programs[i]);
+				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_rgba_fragment_programs[i]);
 			}
 		}
 	}
@@ -375,7 +398,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 			if (blend_info->colorFunc == fragment_program_info[i].colorFunc &&
 			blend_info->alphaFunc == fragment_program_info[i].alphaFunc &&
 			blend_info->colorSrc == fragment_program_info[i].colorSrc &&
-			blend_info->alphaSrc == fragment_program_info[i].alphaFunc &&
+			blend_info->alphaSrc == fragment_program_info[i].alphaSrc &&
 			blend_info->colorDst == fragment_program_info[i].colorDst &&
 			blend_info->alphaDst == fragment_program_info[i].alphaDst){
 				cur_blend_info = fragment_program_info[i];
@@ -398,6 +421,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 	fragment_program_info[release_idx] = cur_blend_info;
 	rgba_fragment_programs[release_idx] = rgba_fragment_program_patched;
 	texture2d_fragment_programs[release_idx] = texture2d_fragment_program_patched;
+	texture2d_rgba_fragment_programs[release_idx] = texture2d_rgba_fragment_program_patched;
 	
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		rgba_fragment_id,
@@ -415,6 +439,14 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 		texture2d_fragment_program,
 		&texture2d_fragment_program_patched);
 		
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_rgba_fragment_id,
+		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE,
+		blend_info,
+		texture2d_rgba_fragment_program,
+		&texture2d_rgba_fragment_program_patched);
+		
 	release_idx++;
 }
 
@@ -422,31 +454,31 @@ static void update_alpha_test_settings(){
 	if (alpha_test_state){
 		switch (alpha_func){
 			case GL_EQUAL:
-				alpha_op = EQUAL * 1.0f;
+				alpha_op = EQUAL;
 				break;
 			case GL_LEQUAL:
-				alpha_op = LESS_EQUAL * 1.0f;
+				alpha_op = LESS_EQUAL;
 				break;
 			case GL_GEQUAL:
-				alpha_op = GREATER_EQUAL * 1.0f;
+				alpha_op = GREATER_EQUAL;
 				break;
 			case GL_LESS:
-				alpha_op = LESS * 1.0f;
+				alpha_op = LESS;
 				break;
 			case GL_GREATER:
-				alpha_op = GREATER * 1.0f;
+				alpha_op = GREATER;
 				break;
 			case GL_NOTEQUAL:
-				alpha_op = NOT_EQUAL * 1.0f;
+				alpha_op = NOT_EQUAL;
 				break;
 			case GL_NEVER:
-				alpha_op = NEVER * 1.0f;
+				alpha_op = NEVER;
 				break;
 			default:
-				alpha_op = ALWAYS * 1.0f;
+				alpha_op = ALWAYS;
 				break;
 		}
-	}else alpha_op = ALWAYS * 1.0f;
+	}else alpha_op = ALWAYS;
 }
 
 static void change_blend_factor(){
@@ -1008,6 +1040,9 @@ void vglInit(uint32_t gpu_pool_size){
 		
 	texture2d_tex_env = sceGxmProgramFindParameterByName(
 		texture2d_fragment_program, "texEnv");
+		
+	texture2d_tex_env_color = sceGxmProgramFindParameterByName(
+		texture2d_fragment_program, "texEnvColor");
 
 	SceGxmVertexAttribute texture2d_vertex_attribute[2];
 	SceGxmVertexStream texture2d_vertex_stream[2];
@@ -1038,6 +1073,74 @@ void vglInit(uint32_t gpu_pool_size){
 		&texture2d_fragment_program_patched);
 		
 	texture2d_wvp = sceGxmProgramFindParameterByName(texture2d_vertex_program, "wvp");	
+	
+	// Texture2D+RGBA shader register
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_rgba_v,
+		&texture2d_rgba_vertex_id);
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_texture2d_rgba_f,
+		&texture2d_rgba_fragment_id);
+
+	const SceGxmProgram* texture2d_rgba_vertex_program = sceGxmShaderPatcherGetProgramFromId(texture2d_rgba_vertex_id);
+	texture2d_rgba_fragment_program = sceGxmShaderPatcherGetProgramFromId(texture2d_rgba_fragment_id);
+	
+	texture2d_rgba_position = sceGxmProgramFindParameterByName(
+		texture2d_rgba_vertex_program, "position");
+
+	texture2d_rgba_texcoord = sceGxmProgramFindParameterByName(
+		texture2d_rgba_vertex_program, "texcoord");
+		
+	texture2d_rgba_alpha_cut = sceGxmProgramFindParameterByName(
+		texture2d_rgba_fragment_program, "alphaCut");
+		
+	texture2d_rgba_alpha_op = sceGxmProgramFindParameterByName(
+		texture2d_rgba_fragment_program, "alphaOp");
+		
+	texture2d_rgba_color = sceGxmProgramFindParameterByName(
+		texture2d_rgba_vertex_program, "color");
+		
+	texture2d_rgba_tex_env = sceGxmProgramFindParameterByName(
+		texture2d_rgba_fragment_program, "texEnv");
+		
+	texture2d_rgba_tex_env_color = sceGxmProgramFindParameterByName(
+		texture2d_rgba_fragment_program, "texEnvColor");
+
+	SceGxmVertexAttribute texture2d_rgba_vertex_attribute[3];
+	SceGxmVertexStream texture2d_rgba_vertex_stream[3];
+	texture2d_rgba_vertex_attribute[0].streamIndex = 0;
+	texture2d_rgba_vertex_attribute[0].offset = 0;
+	texture2d_rgba_vertex_attribute[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+	texture2d_rgba_vertex_attribute[0].componentCount = 3;
+	texture2d_rgba_vertex_attribute[0].regIndex = sceGxmProgramParameterGetResourceIndex(
+		texture2d_rgba_position);
+	texture2d_rgba_vertex_attribute[1].streamIndex = 1;
+	texture2d_rgba_vertex_attribute[1].offset = 0;
+	texture2d_rgba_vertex_attribute[1].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+	texture2d_rgba_vertex_attribute[1].componentCount = 2;
+	texture2d_rgba_vertex_attribute[1].regIndex = sceGxmProgramParameterGetResourceIndex(
+		texture2d_rgba_texcoord);
+	texture2d_rgba_vertex_attribute[2].streamIndex = 2;
+	texture2d_rgba_vertex_attribute[2].offset = 0;
+	texture2d_rgba_vertex_attribute[2].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+	texture2d_rgba_vertex_attribute[2].componentCount = 4;
+	texture2d_rgba_vertex_attribute[2].regIndex = sceGxmProgramParameterGetResourceIndex(
+		texture2d_rgba_color);
+	texture2d_rgba_vertex_stream[0].stride = sizeof(vector3f);
+	texture2d_rgba_vertex_stream[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+	texture2d_rgba_vertex_stream[1].stride = sizeof(vector2f);
+	texture2d_rgba_vertex_stream[1].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+	texture2d_rgba_vertex_stream[2].stride = sizeof(vector4f);
+	texture2d_rgba_vertex_stream[2].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+	
+	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
+		texture2d_rgba_vertex_id, texture2d_rgba_vertex_attribute,
+		3, texture2d_rgba_vertex_stream, 3, &texture2d_rgba_vertex_program_patched);
+
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_rgba_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_rgba_fragment_program,
+		&texture2d_rgba_fragment_program_patched);
+		
+	texture2d_rgba_wvp = sceGxmProgramFindParameterByName(texture2d_rgba_vertex_program, "wvp");	
 	
 	sceGxmSetTwoSidedEnable(gxm_context, SCE_GXM_TWO_SIDED_ENABLED);
 	
@@ -1349,28 +1452,17 @@ void glEnd(void){
 	
 	uint8_t use_texture = 0;
 	if ((server_texture_unit >= 0) && (tex_unit->enabled) && (model_uv != NULL) && (tex_unit->textures[texture2d_idx].valid)){
-		switch (tex_unit->textures[texture2d_idx].type){
-			case GL_RGB:
-			case GL_RGBA:
-			case GL_RG:
-			case GL_COLOR_INDEX:
-			case GL_VITA2D_TEXTURE:
-				sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-				sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
-				void* alpha_buffer;
-				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
-				float tex_env_mode = texture_units[server_texture_unit].env_mode * 1.0f;
-				sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &tex_env_mode);
-				break;
-			default:
-				purge_vertex_list();
-				vertex_count = 0;
-				return;
-				break;
-		}
+		sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
+		sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+		void* alpha_buffer;
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
+		float alpha_operation = (float)alpha_op;
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_operation);
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+		float tex_env = (float)tex_unit->env_mode;
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &tex_env);
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env_color, 0, 4, &texenv_color.r);
 		use_texture = 1;
 	}else{
 		sceGxmSetVertexProgram(gxm_context, rgba_vertex_program_patched);
@@ -1687,7 +1779,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 					if (format == GL_LUMINANCE){
 						switch (type){
 							case GL_UNSIGNED_BYTE:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_L8A8;
+								tex_format = SCE_GXM_TEXTURE_FORMAT_A8L8;
 								break;
 							default:
 								error = GL_INVALID_ENUM;
@@ -1699,7 +1791,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 					if (format == GL_ALPHA){
 						switch (type){
 							case GL_UNSIGNED_BYTE:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_U8_R;
+								tex_format = SCE_GXM_TEXTURE_FORMAT_A8;
 								break;
 							default:
 								error = GL_INVALID_ENUM;
@@ -1778,6 +1870,34 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 									break;
 							}					
 							break;
+						case GL_LUMINANCE:
+							switch (type){
+								case GL_UNSIGNED_BYTE:
+									tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
+									break;
+								default:
+									error = GL_INVALID_ENUM;
+									break;
+							}
+						case GL_LUMINANCE_ALPHA:
+							switch (type){
+								case GL_UNSIGNED_BYTE:
+									tex_format = SCE_GXM_TEXTURE_FORMAT_A8L8;
+									break;
+								default:
+									error = GL_INVALID_ENUM;
+									break;
+							}
+							break;
+						case GL_INTENSITY:
+							switch (type){
+								case GL_UNSIGNED_BYTE:
+									tex_format = SCE_GXM_TEXTURE_FORMAT_U8_RRRR;
+									break;
+								default:
+									error = GL_INVALID_ENUM;
+									break;
+							}
 						case GL_VITA2D_TEXTURE:
 							tex_format = SCE_GXM_TEXTURE_FORMAT_A8B8G8R8;
 							break;
@@ -1803,27 +1923,36 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 }
 
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid* pixels){
-	SceGxmTextureFormat tex_format;
+	texture* target_texture = &texture_units[server_texture_unit].textures[texture2d_idx];
+	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&target_texture->gxm_tex);
+	uint32_t stride = sceGxmTextureGetStride(&target_texture->gxm_tex);
+	uint8_t bpp = tex_format_to_bytespp(tex_format);
+	uint8_t* ptr = (uint8_t*)sceGxmTextureGetData(&target_texture->gxm_tex) + xoffset * bpp + yoffset * stride * bpp;
+	uint8_t* ptr_line = ptr;
+	int i,j;
 	switch (target){
 		case GL_TEXTURE_2D:
 			switch (format){
 				case GL_RGB:
 					switch (type){
-						case GL_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_S8S8S8X8_RGB1;
-							break;
 						case GL_UNSIGNED_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8X8_RGB1;
-							break;
-						case GL_UNSIGNED_SHORT_4_4_4_4:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4X4_RGB1;
-							break;
-						case GL_UNSIGNED_SHORT_5_5_5_1:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5X1_RGB1;
-							break;
-						case GL_UNSIGNED_SHORT_5_6_5:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB;
-							break;
+							switch (tex_format){
+								case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
+									for (i=0;i<height;i++){
+										for (j=0;j<width;j++){
+											memcpy(ptr, pixels, 3);
+											ptr[3] = 0xFF;
+											pixels += 3;
+											ptr += bpp;
+										}
+										ptr = ptr_line + stride * bpp;
+										ptr_line = ptr;
+									}
+									break;
+								default:
+									error = GL_INVALID_ENUM;
+									break;
+							}	
 						default:
 							error = GL_INVALID_ENUM;
 							break;
@@ -1831,79 +1960,62 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 					break;
 				case GL_RGBA:
 					switch (type){
-						case GL_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_S8S8S8S8_RGBA;
-							break;
 						case GL_UNSIGNED_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_RGBA;
-							break;
-						case GL_UNSIGNED_SHORT_4_4_4_4:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA;
-							break;
-						case GL_UNSIGNED_SHORT_5_5_5_1:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
-							break;
+							switch (tex_format){
+								case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
+									for (i=0;i<height;i++){
+										memcpy(ptr, pixels, width * bpp);
+										pixels += width * bpp;
+										ptr += stride * bpp;
+									}
+									break;
+								default:
+									error = GL_INVALID_ENUM;
+									break;
+							}	
 						default:
 							error = GL_INVALID_ENUM;
 							break;
-					}					
+					}
 					break;
-				case GL_VITA2D_TEXTURE:
-					tex_format = SCE_GXM_TEXTURE_FORMAT_A8B8G8R8;
+				case GL_LUMINANCE:
+					switch (type){
+						case GL_UNSIGNED_BYTE:
+							switch (tex_format){
+								case SCE_GXM_TEXTURE_FORMAT_L8:
+									for (i=0;i<height;i++){
+										memcpy(ptr, pixels, width * bpp);
+										pixels += width * bpp;
+										ptr += stride * bpp;
+									}
+									break;
+								case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
+									for (i=0;i<height;i++){
+										for (j=0;j<width;j++){
+											ptr[0] = ((uint8_t*)pixels)[0];
+											ptr[1] = ((uint8_t*)pixels)[0];
+											ptr[2] = ((uint8_t*)pixels)[0];
+											ptr[3] = 0xFF;
+											pixels += 1;
+											ptr += bpp;
+										}
+										ptr = ptr_line + stride * bpp;
+										ptr_line = ptr;
+									}
+									break;
+								default:
+									error = GL_INVALID_ENUM;
+									break;
+							}	
+						default:
+							error = GL_INVALID_ENUM;
+							break;
+					}
 					break;
 				default:
 					error = GL_INVALID_ENUM;
 					break;
 			}
-			if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE){
-				error = GL_INVALID_VALUE;
-				return;
-			}
-			/*gpu_prepare_rendertarget(&texture_units[server_texture_unit].textures[texture2d_idx]);
-			texture temp;
-			gpu_alloc_texture(width, height, tex_format, pixels, &temp);
-			matrix4x4 view_matrix, identity_matrix;
-			matrix4x4_identity(identity_matrix);
-			uint32_t tw = sceGxmTextureGetWidth(&texture_units[server_texture_unit].textures[texture2d_idx].gxm_tex);
-			uint32_t th = sceGxmTextureGetHeight(&texture_units[server_texture_unit].textures[texture2d_idx].gxm_tex);
-			matrix4x4_init_orthographic(view_matrix, 0, tw, th, 0, -1, 1);
-			sceGxmBeginScene(gxm_context, SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY,
-				texture_units[server_texture_unit].textures[texture2d_idx].gxm_rtgt,
-				NULL, NULL, NULL,
-				&texture_units[server_texture_unit].textures[texture2d_idx].gxm_sfc,
-				&texture_units[server_texture_unit].textures[texture2d_idx].gxm_sfd);
-			sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-			sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
-			void* vertex_wvp_buffer;
-			sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
-			matrix4x4 mvp_matrix;
-			matrix4x4 final_mvp_matrix;
-			matrix4x4_multiply(mvp_matrix, view_matrix, identity_matrix);
-			matrix4x4_transpose(final_mvp_matrix, mvp_matrix);
-			sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)final_mvp_matrix);
-			sceGxmSetFragmentTexture(gxm_context, 0, &temp.gxm_tex);
-			vector3f* vertices = (vector3f*)gpu_pool_memalign(4 * sizeof(vector3f), sizeof(vector3f));
-			vector2f* uv_map = (vector2f*)gpu_pool_memalign(4 * sizeof(vector2f), sizeof(vector2f));
-			uint16_t* indices = (uint16_t*)gpu_pool_memalign(4 * sizeof(uint16_t), sizeof(uint16_t));
-			vertices[0] = (vector3f){xoffset,yoffset,0.5f};
-			vertices[1] = (vector3f){xoffset+width,yoffset,0.5f};
-			vertices[2] = (vector3f){xoffset,yoffset+height,0.5f};
-			vertices[3] = (vector3f){xoffset+width,yoffset+height,0.5f};
-			uv_map[0] = (vector2f){0,0};
-			uv_map[1] = (vector2f){1,0};
-			uv_map[2] = (vector2f){0,1};
-			uv_map[3] = (vector2f){1,1};
-			indices[0] = 0;
-			indices[1] = 1;
-			indices[2] = 2;
-			indices[3] = 3;
-			sceGxmSetVertexStream(gxm_context, 0, vertices);
-			sceGxmSetVertexStream(gxm_context, 1, uv_map);
-			sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, indices, 4);
-			sceGxmEndScene(gxm_context, NULL, NULL);
-			sceGxmFinish(gxm_context);
-			gpu_free_texture(&temp);
-			gpu_destroy_rendertarget(&texture_units[server_texture_unit].textures[texture2d_idx]);*/
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -2438,6 +2550,7 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor){
 			error = GL_INVALID_ENUM;
 			break;
 	}
+	if (blend_state) change_blend_factor();
 }
 
 void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha){
@@ -2581,6 +2694,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 			error = GL_INVALID_ENUM;
 			break;
 	}
+	if (blend_state) change_blend_factor();
 }
 
 void glBlendEquation(GLenum mode){
@@ -2604,6 +2718,7 @@ void glBlendEquation(GLenum mode){
 			error = GL_INVALID_ENUM;
 			break;
 	}
+	if (blend_state) change_blend_factor();
 }
 
 void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha){
@@ -2647,6 +2762,7 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha){
 			error = GL_INVALID_ENUM;
 			break;
 	}
+	if (blend_state) change_blend_factor();
 }
 
 void glStencilOpSeparate(GLenum face, GLenum sfail,  GLenum dpfail,  GLenum dppass){
@@ -2958,25 +3074,29 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 			
 			if (texture_array_state){
 				if (!(tex_unit->textures[texture2d_idx].valid)) return;
-				switch (tex_unit->textures[texture2d_idx].type){
-					case GL_RGB:
-					case GL_RGBA:
-					case GL_RG:
-					case GL_COLOR_INDEX:
-					case GL_VITA2D_TEXTURE:
-						sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-						sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
-						void* alpha_buffer;
-						sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
-						float tex_env_mode = tex_unit->env_mode * 1.0f;
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &tex_env_mode);
-						break;
-					default:
-						return;
-						break;
+				if (color_array_state){
+					sceGxmSetVertexProgram(gxm_context, texture2d_rgba_vertex_program_patched);
+					sceGxmSetFragmentProgram(gxm_context, texture2d_rgba_fragment_program_patched);
+					void* alpha_buffer;
+					sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_alpha_cut, 0, 1, &alpha_ref);
+					float alpha_operation = (float)alpha_op;
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_alpha_op, 0, 1, &alpha_operation);
+					float env_mode = (float)tex_unit->env_mode;
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_tex_env, 0, 1, &env_mode);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_rgba_tex_env_color, 0, 4, &texenv_color.r);
+				}else{
+					sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
+					sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+					void* alpha_buffer;
+					sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
+					float alpha_operation = (float)alpha_op;
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_operation);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+					float env_mode = (float)tex_unit->env_mode;
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &env_mode);
+					sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env_color, 0, 4, &texenv_color.r);
 				}
 			}else if (color_array_state && (tex_unit->color_array.num == 3)){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
@@ -2990,12 +3110,14 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 			sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
 	
 			if (texture_array_state){
-				sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)final_mvp_matrix);
+				if (color_array_state) sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_wvp, 0, 16, (const float*)final_mvp_matrix);
+				else sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)final_mvp_matrix);
 				sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, u_mode);
 				sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, v_mode);
 				sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 				vector3f* vertices = NULL;
 				vector2f* uv_map = NULL;
+				vector4f* colors = NULL;
 				uint16_t* indices;
 				int n;
 				if (vertex_array_unit >= 0){
@@ -3003,6 +3125,10 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 					else vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer) + (first * tex_unit->vertex_array.stride));
 					if (tex_unit->texture_array.stride == 0) uv_map = (vector2f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->texture_array.pointer) + (first * (tex_unit->texture_array.num * tex_unit->texture_array.size)));
 					else uv_map = (vector2f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->texture_array.pointer) + (first * tex_unit->texture_array.stride));
+					if (color_array_state){
+						if (tex_unit->color_array.stride == 0) colors = (vector4f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->color_array.pointer) + (first * (tex_unit->color_array.num * tex_unit->color_array.size)));
+						else colors = (vector4f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->color_array.pointer) + (first * tex_unit->color_array.stride));
+					}
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 					for (n=0; n<count; n++){
 						indices[n] = n;
@@ -3010,10 +3136,12 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				}else{
 					uint8_t* ptr;
 					uint8_t* ptr_tex;
+					uint8_t* ptr_clr;
 					vertices = (vector3f*)gpu_pool_memalign(count * sizeof(vector3f), sizeof(vector3f));
 					uv_map = (vector2f*)gpu_pool_memalign(count * sizeof(vector2f), sizeof(vector2f));
+					if (color_array_state) colors = (vector4f*)gpu_pool_memalign(count * sizeof(vector4f), sizeof(vector4f));
 					memset(vertices, 0, (count * sizeof(vector3f)));
-					uint8_t vec_set = 0, tex_set = 0;
+					uint8_t vec_set = 0, tex_set = 0, clr_set = 0;
 					if (tex_unit->vertex_array.stride == 0){
 						ptr = ((uint8_t*)tex_unit->vertex_array.pointer) + (first * (tex_unit->vertex_array.num * tex_unit->vertex_array.size));
 						memcpy(&vertices[n], ptr, count * sizeof(vector3f));
@@ -3024,6 +3152,13 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 						memcpy(&uv_map[n], ptr_tex, count * sizeof(vector2f));
 						tex_set = 1;
 					}else ptr_tex = ((uint8_t*)tex_unit->texture_array.pointer) + (first * tex_unit->texture_array.stride);
+					if (color_array_state){
+						if (tex_unit->color_array.stride == 0){
+							ptr_clr = ((uint8_t*)tex_unit->color_array.pointer) + (first * sizeof(vector4f));
+							memcpy(&colors[n], ptr_clr, count * sizeof(vector4f));
+							clr_set = 1;
+						}else ptr_clr = ((uint8_t*)tex_unit->color_array.pointer) + (first * tex_unit->color_array.stride);
+					}
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 					int n;
 					for (n=0;n<count;n++){
@@ -3035,11 +3170,16 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 							memcpy(&uv_map[n], ptr_tex, tex_unit->texture_array.size * tex_unit->texture_array.num);
 							ptr_tex += tex_unit->texture_array.stride;
 						}
+						if (color_array_state && (!clr_set)){
+							memcpy(&colors[n], ptr_clr, tex_unit->color_array.size * tex_unit->color_array.num);
+							ptr_clr += tex_unit->color_array.stride;
+						}
 						indices[n] = n;
 					}
 				}
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, uv_map);
+				if (color_array_state) sceGxmSetVertexStream(gxm_context, 2, colors);
 				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
 			}else if (color_array_state){
 				if (tex_unit->color_array.num == 3) sceGxmSetUniformDataF(vertex_wvp_buffer, rgb_wvp, 0, 16, (const float*)final_mvp_matrix);
@@ -3175,26 +3315,17 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 			
 			if (texture_array_state){
 				if (!(tex_unit->textures[texture2d_idx].valid)) return;
-				switch (tex_unit->textures[texture2d_idx].type){
-					case GL_RGB:
-					case GL_RGBA:
-					case GL_RG:
-					case GL_COLOR_INDEX:
-					case GL_VITA2D_TEXTURE:
-						sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-						sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
-						void* alpha_buffer;
-						sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_op);
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
-						float tex_env_mode = texture_units[client_texture_unit].env_mode * 1.0f;
-						sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &tex_env_mode);
-						break;
-					default:
-						return;
-						break;
-				}
+				sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
+				sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+				void* alpha_buffer;
+				sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
+				float alpha_operation = (float)alpha_op;
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_operation);
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+				float tex_env = (float)tex_unit->env_mode;
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &tex_env);
+				sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env_color, 0, 4, &texenv_color.r);
 			}else if (color_array_state && (tex_unit->color_array.num == 3)){
 				sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
 				sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
@@ -3449,6 +3580,37 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param){
 					else if (param == GL_DECAL) tex_unit->env_mode = DECAL;
 					else if (param == GL_REPLACE) tex_unit->env_mode = REPLACE;
 					else if (param == GL_BLEND) tex_unit->env_mode = BLEND;
+					break;
+				default:
+					error = GL_INVALID_ENUM;
+					break;
+			}
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+	}
+}
+
+void glTexEnvi(GLenum target,  GLenum pname,  GLint param){
+	texture_unit* tex_unit = &texture_units[server_texture_unit];
+	switch (target){
+		case GL_TEXTURE_ENV:
+			switch (pname){
+				case GL_TEXTURE_ENV_MODE:
+					switch (param){
+						case GL_MODULATE:
+							tex_unit->env_mode = MODULATE;
+							break;
+						case GL_DECAL: 
+							tex_unit->env_mode = DECAL;
+							break;
+						case GL_REPLACE:
+							tex_unit->env_mode = REPLACE;
+							break;
+						case GL_BLEND:
+							tex_unit->env_mode = BLEND;
+							break;
+					}
 					break;
 				default:
 					error = GL_INVALID_ENUM;

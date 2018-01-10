@@ -100,6 +100,7 @@
 #define GL_MODULATE                       0x2100
 #define GL_DECAL                          0x2101
 #define GL_TEXTURE_ENV_MODE               0x2200
+#define GL_TEXTURE_ENV_COLOR              0x2201
 #define GL_TEXTURE_ENV                    0x2300
 #define GL_NEAREST                        0x2600
 #define GL_LINEAR                         0x2601
@@ -264,6 +265,7 @@ void glTexCoord2f(GLfloat s, GLfloat t);
 void glTexCoord2i(GLint s, GLint t);
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
 void glTexEnvf(GLenum target, GLenum pname, GLfloat param);
+void glTexEnvi(GLenum target,  GLenum pname,  GLint param);
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data);
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param);
 void glTexParameteri(GLenum target, GLenum pname, GLint param);

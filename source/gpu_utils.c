@@ -201,7 +201,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	const int tex_size = w * h * tex_format_to_bytespp(format);
 	void *texture_data = gpu_alloc_map(
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ,
+		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
 		tex_size, &tex->data_UID);
 	if (texture_data != NULL){
 		sceGxmColorSurfaceInit(&tex->gxm_sfc,
