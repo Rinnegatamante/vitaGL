@@ -404,6 +404,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 				cur_blend_info = fragment_program_info[i];
 				rgba_fragment_program_patched = rgba_fragment_programs[i];
 				texture2d_fragment_program_patched = texture2d_fragment_programs[i];
+				texture2d_rgba_fragment_program_patched = texture2d_rgba_fragment_programs[i];
 				return;
 			}
 		}
@@ -413,6 +414,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 				cur_blend_info = fragment_program_info[i];
 				rgba_fragment_program_patched = rgba_fragment_programs[i];
 				texture2d_fragment_program_patched = texture2d_fragment_programs[i];
+				texture2d_rgba_fragment_program_patched = texture2d_rgba_fragment_programs[i];
 				return;
 			}
 		}
@@ -2044,6 +2046,9 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 							break;
 						case GL_LINEAR_MIPMAP_LINEAR:
 							break;
+						default:
+							error = GL_INVALID_ENUM;
+							break;
 					}
 					break;
 				case GL_TEXTURE_MAG_FILTER:
@@ -2061,6 +2066,9 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 						case GL_NEAREST_MIPMAP_LINEAR:
 							break;
 						case GL_LINEAR_MIPMAP_LINEAR:
+							break;
+						default:
+							error = GL_INVALID_ENUM;
 							break;
 					}
 					break;
