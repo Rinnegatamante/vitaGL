@@ -165,6 +165,14 @@ static void* gxm_shader_patcher_vertex_usse_addr;
 static SceUID gxm_shader_patcher_fragment_usse_uid;
 static void* gxm_shader_patcher_fragment_usse_addr;
 
+// GXM Viewport
+float x_port = 480.0f;
+float y_port = -272.0f;
+float z_port = 0.5f;
+float x_scale = 480.0f;
+float y_scale = 272.0f;
+float z_scale = 0.5f;
+
 static const SceGxmProgram *const gxm_program_disable_color_buffer_v = (SceGxmProgram*)&disable_color_buffer_v;
 static const SceGxmProgram *const gxm_program_disable_color_buffer_f = (SceGxmProgram*)&disable_color_buffer_f;
 static const SceGxmProgram *const gxm_program_clear_v = (SceGxmProgram*)&clear_v;
@@ -685,6 +693,7 @@ void vglStartRendering(){
 		gxm_sync_objects[gxm_back_buffer_index],
 		&gxm_color_surfaces[gxm_back_buffer_index],
 		&gxm_depth_stencil_surface);
+	sceGxmSetViewport(gxm_context,x_port,x_scale,y_port,y_scale,z_port,z_scale);
 }
 
 void vglStopRendering(){
@@ -2337,7 +2346,17 @@ void glViewport(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 		error = GL_INVALID_VALUE;
 		return;
 	}
-	sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_NONE, x, y, x+width, y+height);
+	x_port = x + (width>>1);
+	x_scale = width>>1;
+	y_port = height>>1;
+	y_scale = -(height>>1);
+	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+}
+
+void glDepthRange(GLdouble nearVal, GLdouble farVal){
+	z_port = (farVal - nearVal) / 2;
+	z_scale = (farVal + nearVal) / 2;
+	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 }
 
 void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height){

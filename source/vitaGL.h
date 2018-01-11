@@ -225,6 +225,7 @@ void glDeleteBuffers(GLsizei n, const GLuint* gl_buffers);
 void glDeleteTextures(GLsizei n, const GLuint* textures);
 void glDepthFunc(GLenum func);
 void glDepthMask(GLboolean flag);
+void glDepthRange(GLdouble nearVal, GLdouble farVal);
 void glDisable(GLenum cap);
 void glDisableClientState(GLenum array);
 void glDrawArrays(GLenum mode, GLint first, GLsizei count);
