@@ -2365,7 +2365,7 @@ void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 			error = GL_INVALID_VALUE;
 			return;
 		}
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_NONE, x, y, x+width, y+height);
+		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_NONE, x, y-height, x+width, y);
 	}
 }
 
