@@ -283,5 +283,8 @@ void vglInit(uint32_t gpu_pool_size);
 void vglWaitVblankStart(GLboolean enable);
 void vglStartRendering();
 void vglStopRendering();
+void vglStopRenderingInit();
+void vglStopRenderingTerm();
+void vglUpdateCommonDialog();
 
 #endif

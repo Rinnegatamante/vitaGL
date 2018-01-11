@@ -661,6 +661,23 @@ static void update_polygon_offset(){
 
 // vitaGL specific functions
 
+void vglUpdateCommonDialog(){
+	SceCommonDialogUpdateParam updateParam;
+	memset(&updateParam, 0, sizeof(updateParam));
+
+	updateParam.renderTarget.colorFormat    = SCE_GXM_COLOR_FORMAT_A8B8G8R8;
+	updateParam.renderTarget.surfaceType    = SCE_GXM_COLOR_SURFACE_LINEAR;
+	updateParam.renderTarget.width          = DISPLAY_WIDTH;
+	updateParam.renderTarget.height         = DISPLAY_HEIGHT;
+	updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE;
+
+	updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_back_buffer_index];
+	updateParam.renderTarget.depthSurfaceData = gxm_depth_stencil_surface_addr;
+	updateParam.displaySyncObject = gxm_sync_objects[gxm_back_buffer_index];
+
+	sceCommonDialogUpdate(&updateParam);
+}
+
 void vglStartRendering(){
 	sceGxmBeginScene(
 		gxm_context, 0, gxm_render_target,
@@ -672,6 +689,23 @@ void vglStartRendering(){
 
 void vglStopRendering(){
 	sceGxmEndScene(gxm_context, NULL, NULL);
+	sceGxmFinish(gxm_context);
+	sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
+	struct display_queue_callback_data queue_cb_data;
+	queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
+	sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
+	gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
+	gxm_front_buffer_index = gxm_back_buffer_index;
+	gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
+	gpu_pool_reset();
+	release_unused_programs();
+}
+
+void vglStopRenderingInit(){
+	sceGxmEndScene(gxm_context, NULL, NULL);
+}
+
+void vglStopRenderingTerm(){
 	sceGxmFinish(gxm_context);
 	sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
 	struct display_queue_callback_data queue_cb_data;
