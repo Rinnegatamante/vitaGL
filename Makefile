@@ -22,12 +22,12 @@ $(TARGET).a: $(OBJS)
 
 %_f.h:
 	psp2cgc -profile sce_fp_psp2 $(@:_f.h=_f.cg) -o $(@:_f.h=_f.gxp)
-	bin2c $(@:_f.h=_f.gxp) source/$(notdir $(@)) $(notdir $(@:_f.h=_f))
+	bin2c $(@:_f.h=_f.gxp) source/shaders/$(notdir $(@)) $(notdir $(@:_f.h=_f))
 	@rm -rf $(@:_f.h=_f.gxp)
 	
 %_v.h:
 	psp2cgc -profile sce_vp_psp2 $(@:_v.h=_v.cg)  -o $(@:_v.h=_v.gxp)
-	bin2c $(@:_v.h=_v.gxp) source/$(notdir $(@:_v.h=_v.h)) $(notdir $(@:_v.h=_v))
+	bin2c $(@:_v.h=_v.gxp) source/shaders/$(notdir $(@:_v.h=_v.h)) $(notdir $(@:_v.h=_v))
 	@rm -rf $(@:_v.h=_v.gxp)
 
 shaders: $(HEADERS)

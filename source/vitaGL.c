@@ -4,17 +4,17 @@
 #include "gpu_utils.h"
 
 // Shaders
-#include "clear_f.h"
-#include "clear_v.h"
-#include "rgba_f.h"
-#include "rgba_v.h"
-#include "rgb_v.h"
-#include "disable_color_buffer_f.h"
-#include "disable_color_buffer_v.h"
-#include "texture2d_f.h"
-#include "texture2d_v.h"
-#include "texture2d_rgba_f.h"
-#include "texture2d_rgba_v.h"
+#include "shaders/clear_f.h"
+#include "shaders/clear_v.h"
+#include "shaders/rgba_f.h"
+#include "shaders/rgba_v.h"
+#include "shaders/rgb_v.h"
+#include "shaders/disable_color_buffer_f.h"
+#include "shaders/disable_color_buffer_v.h"
+#include "shaders/texture2d_f.h"
+#include "shaders/texture2d_v.h"
+#include "shaders/texture2d_rgba_f.h"
+#include "shaders/texture2d_rgba_v.h"
 
 #ifndef max
     #define max(a,b) ((a) > (b) ? (a) : (b))
@@ -131,6 +131,7 @@ typedef struct texture_unit{
 	vertexArray color_array;
 	vertexArray texture_array;
 	int env_mode;
+	int tex_id;
 } texture_unit;
 
 struct display_queue_callback_data {
@@ -275,6 +276,7 @@ static GLboolean vblank = GL_TRUE;
 static uint8_t np = 0xFF;
 static int alpha_op = ALWAYS;
 static SceGxmBlendInfo cur_blend_info;
+static int max_texture_unit = 0;
 
 static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
@@ -307,7 +309,6 @@ static uint8_t stencil_ref_back = 0; // Current in-use reference for stencil tes
 static GLdouble depth_value = 1.0f; // Current depth test value
 static int8_t server_texture_unit = 0; // Current in-use server side texture unit
 static int8_t client_texture_unit = 0; // Current in-use client side texture unit
-static int texture2d_idx = 0; // Current in-use texture index for GL_TEXTURE2D
 static int vertex_array_unit = -1; // Current in-use vertex array unit
 static int index_array_unit = -1; // Current in-use index array unit
 static matrix4x4* matrix = NULL; // Current in-use matrix mode
@@ -1361,6 +1362,7 @@ void glEnable(GLenum cap){
 			break;
 		case GL_TEXTURE_2D:
 			texture_units[server_texture_unit].enabled = GL_TRUE;
+			if (server_texture_unit > max_texture_unit) max_texture_unit = server_texture_unit;
 			break;
 		case GL_ALPHA_TEST:
 			alpha_test_state = GL_TRUE;
@@ -1422,6 +1424,7 @@ void glDisable(GLenum cap){
 			break;
 		case GL_TEXTURE_2D:
 			texture_units[server_texture_unit].enabled = GL_FALSE;
+			if (server_texture_unit == max_texture_unit) max_texture_unit--;
 			break;
 		case GL_ALPHA_TEST:
 			alpha_test_state = GL_FALSE;
@@ -1489,6 +1492,7 @@ void glEnd(void){
 	}
 	
 	texture_unit* tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
 	matrix4x4 mvp_matrix;
 	matrix4x4 final_mvp_matrix;
 	
@@ -1681,9 +1685,10 @@ void glBindBuffer(GLenum target, GLuint buffer){
 }
 
 void glBindTexture(GLenum target, GLuint texture){
+	texture_unit* tex_unit = &texture_units[server_texture_unit];
 	switch (target){
 		case GL_TEXTURE_2D:
-			texture2d_idx = texture;
+			tex_unit->tex_id = texture;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -1774,7 +1779,9 @@ void glColorTable(GLenum target,  GLenum internalformat,  GLsizei width,  GLenum
 
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid * data){
 	SceGxmTextureFormat tex_format;
-	texture* tex = &texture_units[server_texture_unit].textures[texture2d_idx];
+	texture_unit* tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
+	texture* tex = &tex_unit->textures[texture2d_idx];
 	switch (target){
 		case GL_TEXTURE_2D:
 			switch (internalFormat){
@@ -1968,7 +1975,9 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 }
 
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid* pixels){
-	texture* target_texture = &texture_units[server_texture_unit].textures[texture2d_idx];
+	texture_unit* tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
+	texture* target_texture = &tex_unit->textures[texture2d_idx];
 	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&target_texture->gxm_tex);
 	uint32_t stride = sceGxmTextureGetStride(&target_texture->gxm_tex);
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
@@ -2069,7 +2078,9 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 }
 
 void glTexParameteri(GLenum target, GLenum pname, GLint param){
-	texture* tex = &texture_units[server_texture_unit].textures[texture2d_idx];
+	texture_unit* tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
+	texture* tex = &tex_unit->textures[texture2d_idx];
 	switch (target){
 		case GL_TEXTURE_2D:
 			switch (pname){
@@ -2159,7 +2170,9 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 }
 
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param){
-	texture* tex = &texture_units[server_texture_unit].textures[texture2d_idx];
+	texture_unit* tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
+	texture* tex = &tex_unit->textures[texture2d_idx];
 	switch (target){
 		case GL_TEXTURE_2D:
 			switch (pname){
@@ -2283,6 +2296,7 @@ void glArrayElement(GLint i){
 		return;
 	}
 	texture_unit* tex_unit = &texture_units[client_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
 	if (vertex_array_state){
 		uint8_t* ptr;
 		if (tex_unit->vertex_array.stride == 0) ptr = ((uint8_t*)tex_unit->vertex_array.pointer) + (i * (tex_unit->vertex_array.num * tex_unit->vertex_array.size));
@@ -3098,6 +3112,7 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* po
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 	texture_unit* tex_unit = &texture_units[client_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
 	SceGxmPrimitiveType gxm_p;
 	GLboolean skip_draw = GL_FALSE;
 	if (vertex_array_state){
@@ -3180,7 +3195,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				vector2f* uv_map = NULL;
 				vector4f* colors = NULL;
 				uint16_t* indices;
-				int n;
+				uint16_t n;
 				if (vertex_array_unit >= 0){
 					if (tex_unit->vertex_array.stride == 0) vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer) + (first * (tex_unit->vertex_array.num * tex_unit->vertex_array.size)));
 					else vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer) + (first * tex_unit->vertex_array.stride));
@@ -3221,7 +3236,6 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 						}else ptr_clr = ((uint8_t*)tex_unit->color_array.pointer) + (first * tex_unit->color_array.stride);
 					}
 					indices = (uint16_t*)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
-					int n;
 					for (n=0;n<count;n++){
 						if (!vec_set){
 							memcpy(&vertices[n], ptr, tex_unit->vertex_array.size * tex_unit->vertex_array.num);
@@ -3248,7 +3262,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				vector3f* vertices = NULL;
 				uint8_t* colors = NULL;
 				uint16_t* indices;
-				int n = 0;
+				uint16_t n = 0;
 				if (vertex_array_unit >= 0){
 					if (tex_unit->vertex_array.stride == 0) vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer) + (first * (tex_unit->vertex_array.num * tex_unit->vertex_array.size)));
 					else vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer) + (first * tex_unit->vertex_array.stride));
@@ -3296,7 +3310,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				vector3f* vertices = NULL;
 				vector4f* colors = NULL;
 				uint16_t* indices;
-				int n = 0;
+				uint16_t n = 0;
 				if (vertex_array_unit >= 0){
 					if (tex_unit->vertex_array.stride == 0) vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer) + (first * (tex_unit->vertex_array.num * tex_unit->vertex_array.size)));
 					else vertices = (vector3f*)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer) + (first * tex_unit->vertex_array.stride));
@@ -3339,6 +3353,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 	SceGxmPrimitiveType gxm_p;
 	SceGxmPrimitiveTypeExtra gxm_ep = SCE_GXM_PRIMITIVE_NONE;
 	texture_unit* tex_unit = &texture_units[client_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
 	GLboolean skip_draw = GL_FALSE;
 	if (vertex_array_state){
 		switch (mode){
@@ -3684,7 +3699,9 @@ void glTexEnvi(GLenum target,  GLenum pname,  GLint param){
 }
 
 void glGenerateMipmap(GLenum target){
-	texture* tex = &texture_units[server_texture_unit].textures[texture2d_idx];
+	texture_unit* tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
+	texture* tex = &tex_unit->textures[texture2d_idx];
 	if (!tex->valid) return;
 	SceGxmTransferFormat fmt;
 	switch (target){
