@@ -48,6 +48,7 @@
 #define GL_ONE_MINUS_DST_ALPHA            0x0305
 #define GL_DST_COLOR                      0x0306
 #define GL_ONE_MINUS_DST_COLOR            0x0307
+#define GL_SRC_ALPHA_SATURATE             0x0308
 #define GL_FRONT                          0x0404
 #define GL_BACK                           0x0405
 #define GL_FRONT_AND_BACK                 0x0408

@@ -32,7 +32,7 @@
 #define GXM_TEX_MAX_SIZE      4096 // Maximum width/height in pixels per texture
 #define BUFFERS_ADDR        0xA000 // Starting address for buffers indexing
 #define BUFFERS_NUM           128  // Maximum number of allocatable buffers
-#define MAX_FRAGMENT_PROGS    32   // Maximum number of fragment programs per shader
+#define MAX_FRAGMENT_PROGS    128  // Maximum number of fragment programs per shader
 
 static const GLubyte* vendor = "Rinnegatamante";
 static const GLubyte* renderer = "SGX543MP4+";
@@ -289,7 +289,7 @@ static SceGxmBlendFactor blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE; // Curren
 static SceGxmBlendFactor blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ZERO; // Current in-use RGB dest blend factor
 static SceGxmBlendFactor blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use A source blend factor
 static SceGxmBlendFactor blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ZERO; // Current in-use A dest blend factor
-static SceGxmDepthFunc gxm_depth = SCE_GXM_DEPTH_FUNC_ALWAYS; // Current in-use depth test func
+static SceGxmDepthFunc gxm_depth = SCE_GXM_DEPTH_FUNC_LESS; // Current in-use depth test func
 static SceGxmStencilOp stencil_fail_front = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when stencil test fails for front
 static SceGxmStencilOp depth_fail_front = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test fails for front
 static SceGxmStencilOp depth_pass_front = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test passes for front
@@ -512,8 +512,8 @@ static void disable_blend(){
 }
 
 static void change_depth_func(SceGxmDepthFunc func){
-	sceGxmSetFrontDepthFunc(gxm_context, func);
-	sceGxmSetBackDepthFunc(gxm_context, func);
+	sceGxmSetFrontDepthFunc(gxm_context, depth_test_state ? func : SCE_GXM_DEPTH_FUNC_ALWAYS);
+	sceGxmSetBackDepthFunc(gxm_context, depth_test_state ? func : SCE_GXM_DEPTH_FUNC_ALWAYS);
 }
 
 static void change_depth_write(SceGxmDepthWriteMode mode){
@@ -1201,6 +1201,8 @@ void vglInit(uint32_t gpu_pool_size){
 			texture_units[i].textures[j].valid = 0;
 		}
 		texture_units[i].env_mode = MODULATE;
+		texture_units[i].tex_id = 0;
+		texture_units[i].enabled = 0;
 	}
 	
 	// Init buffers
@@ -1330,16 +1332,16 @@ void glEnable(GLenum cap){
 	}
 	switch (cap){
 		case GL_DEPTH_TEST:
-			change_depth_func(SCE_GXM_DEPTH_FUNC_LESS);
 			depth_test_state = GL_TRUE;
+			change_depth_func(gxm_depth);
 			break;
 		case GL_STENCIL_TEST:
 			change_stencil_settings();
 			stencil_test_state = GL_TRUE;
 			break;
 		case GL_BLEND:
-			change_blend_factor();
 			blend_state = GL_TRUE;
+			change_blend_factor();
 			break;
 		case GL_SCISSOR_TEST:
 			scissor_test_state = GL_TRUE;
@@ -1381,8 +1383,8 @@ void glDisable(GLenum cap){
 	}
 	switch (cap){
 		case GL_DEPTH_TEST:
-			change_depth_func(SCE_GXM_DEPTH_FUNC_ALWAYS);
 			depth_test_state = GL_FALSE;
+			change_depth_func(SCE_GXM_DEPTH_FUNC_ALWAYS);
 			break;
 		case GL_STENCIL_TEST:
 			sceGxmSetFrontStencilFunc(gxm_context,
@@ -1400,8 +1402,8 @@ void glDisable(GLenum cap){
 			stencil_test_state = GL_FALSE;
 			break;
 		case GL_BLEND:
-			disable_blend();
 			blend_state = GL_FALSE;
+			disable_blend();
 			break;
 		case GL_SCISSOR_TEST:
 			scissor_test_state = GL_FALSE;
@@ -2586,6 +2588,9 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor){
 		case GL_ONE_MINUS_DST_ALPHA:
 			blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
 			break;
+		case GL_SRC_ALPHA_SATURATE:
+			blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
@@ -2620,6 +2625,9 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor){
 			break;
 		case GL_ONE_MINUS_DST_ALPHA:
 			blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+			break;
+		case GL_SRC_ALPHA_SATURATE:
+			blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -2660,6 +2668,9 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		case GL_ONE_MINUS_DST_ALPHA:
 			blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
 			break;
+		case GL_SRC_ALPHA_SATURATE:
+			blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
@@ -2694,6 +2705,9 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 			break;
 		case GL_ONE_MINUS_DST_ALPHA:
 			blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+			break;
+		case GL_SRC_ALPHA_SATURATE:
+			blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
@@ -2730,6 +2744,9 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		case GL_ONE_MINUS_DST_ALPHA:
 			blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
 			break;
+		case GL_SRC_ALPHA_SATURATE:
+			blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
@@ -2764,6 +2781,9 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 			break;
 		case GL_ONE_MINUS_DST_ALPHA:
 			blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+			break;
+		case GL_SRC_ALPHA_SATURATE:
+			blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
