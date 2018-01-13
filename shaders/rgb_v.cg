@@ -1,7 +1,7 @@
 void main(
 	float3 aPosition,
 	float3 aColor,
-	uniform float4x4 wvp,
+	column_major uniform float4x4 wvp,
 	float4 out vPosition: POSITION,
 	float4 out vColor: COLOR)
 {

@@ -78,9 +78,9 @@
 #define GL_MODELVIEW                      0x1700
 #define GL_PROJECTION                     0x1701
 #define GL_COLOR_INDEX                    0x1900
-#define GL_RED					          0x1903
-#define GL_GREEN				          0x1904
-#define GL_BLUE					          0x1905
+#define GL_RED					              0x1903
+#define GL_GREEN				              0x1904
+#define GL_BLUE					              0x1905
 #define GL_ALPHA                          0x1906
 #define GL_RGB                            0x1907
 #define GL_RGBA                           0x1908
@@ -111,9 +111,9 @@
 #define GL_LINEAR_MIPMAP_LINEAR           0x2703
 #define GL_TEXTURE_MAG_FILTER             0x2800
 #define GL_TEXTURE_MIN_FILTER             0x2801
-#define GL_TEXTURE_WRAP_S			      0x2802
-#define GL_TEXTURE_WRAP_T			      0x2803
-#define GL_REPEAT				          0x2901
+#define GL_TEXTURE_WRAP_S			        0x2802
+#define GL_TEXTURE_WRAP_T			        0x2803
+#define GL_REPEAT				              0x2901
 #define GL_POLYGON_OFFSET_UNITS           0x2A00
 #define GL_POLYGON_OFFSET_POINT           0x2A01
 #define GL_POLYGON_OFFSET_LINE            0x2A02
@@ -136,7 +136,7 @@
 #define GL_BLEND_SRC_ALPHA                0x80CB
 #define GL_COLOR_TABLE                    0x80D0
 #define GL_COLOR_INDEX8_EXT               0x80E5
-#define GL_CLAMP_TO_EDGE			      0x812F
+#define GL_CLAMP_TO_EDGE			           0x812F
 #define GL_RG                             0x8227
 #define GL_UNSIGNED_SHORT_5_6_5           0x8363
 #define GL_MIRRORED_REPEAT                0x8370
@@ -227,6 +227,7 @@ void glDeleteTextures(GLsizei n, const GLuint* textures);
 void glDepthFunc(GLenum func);
 void glDepthMask(GLboolean flag);
 void glDepthRange(GLdouble nearVal, GLdouble farVal);
+void glDepthRangef(GLfloat nearVal, GLfloat farVal);
 void glDisable(GLenum cap);
 void glDisableClientState(GLenum array);
 void glDrawArrays(GLenum mode, GLint first, GLsizei count);
@@ -278,6 +279,13 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z);
 void glVertex3fv(const GLfloat* v);
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
+
+// VGL_EXT_gpu_objects_array extension
+void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
+void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
+void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
+void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
+void vglDrawObjects(GLenum mode, GLsizei count);
 
 // vgl*
 void vglEnd(void);
