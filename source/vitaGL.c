@@ -493,7 +493,7 @@ static void update_alpha_test_settings(){
 }
 
 static void change_blend_factor(){
-	SceGxmBlendInfo blend_info;
+	static SceGxmBlendInfo blend_info;
 	memset(&blend_info, 0, sizeof(SceGxmBlendInfo));
 	blend_info.colorMask = SCE_GXM_COLOR_MASK_ALL;
 	blend_info.colorFunc = blend_func_rgb;
@@ -511,9 +511,9 @@ static void disable_blend(){
 	cur_blend_info.colorMask = SCE_GXM_COLOR_MASK_NONE;
 }
 
-static void change_depth_func(SceGxmDepthFunc func){
-	sceGxmSetFrontDepthFunc(gxm_context, depth_test_state ? func : SCE_GXM_DEPTH_FUNC_ALWAYS);
-	sceGxmSetBackDepthFunc(gxm_context, depth_test_state ? func : SCE_GXM_DEPTH_FUNC_ALWAYS);
+static void change_depth_func(){
+	sceGxmSetFrontDepthFunc(gxm_context, depth_test_state ? gxm_depth : SCE_GXM_DEPTH_FUNC_ALWAYS);
+	sceGxmSetBackDepthFunc(gxm_context, depth_test_state ? gxm_depth : SCE_GXM_DEPTH_FUNC_ALWAYS);
 }
 
 static void change_depth_write(SceGxmDepthWriteMode mode){
@@ -1199,6 +1199,7 @@ void vglInit(uint32_t gpu_pool_size){
 		for (j=0; j < TEXTURES_NUM; j++){
 			texture_units[i].textures[j].used = 0;
 			texture_units[i].textures[j].valid = 0;
+			texture_units[i].textures[j].min_filter = texture_units[i].textures[j].mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
 		}
 		texture_units[i].env_mode = MODULATE;
 		texture_units[i].tex_id = 0;
@@ -1271,9 +1272,11 @@ GLenum glGetError(void){
 }
 
 void glClear(GLbitfield mask){
+	GLenum orig_depth_test = depth_test_state;
 	if ((mask & GL_COLOR_BUFFER_BIT) == GL_COLOR_BUFFER_BIT){
 		change_depth_write(SCE_GXM_DEPTH_WRITE_DISABLED);
-		change_depth_func(SCE_GXM_DEPTH_FUNC_ALWAYS);
+		depth_test_state = GL_FALSE;
+		change_depth_func();
 		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
 		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
@@ -1284,26 +1287,28 @@ void glClear(GLbitfield mask){
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
 		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-		change_depth_func(gxm_depth);
+		depth_test_state = orig_depth_test;
+		change_depth_func();
 		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
 		sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back);
 		drawing = 1;
 	}
 	if ((mask & GL_DEPTH_BUFFER_BIT) == GL_DEPTH_BUFFER_BIT){
 		change_depth_write(SCE_GXM_DEPTH_WRITE_ENABLED);
-		change_depth_func(SCE_GXM_DEPTH_FUNC_ALWAYS);
+		depth_test_state = GL_FALSE;
+		change_depth_func();
 		sceGxmSetFrontStencilFunc(gxm_context,
-			SCE_GXM_STENCIL_FUNC_ALWAYS,
-			SCE_GXM_STENCIL_OP_KEEP,
-			SCE_GXM_STENCIL_OP_KEEP,
-			SCE_GXM_STENCIL_OP_KEEP,
-			0, 0);
+			SCE_GXM_STENCIL_FUNC_NEVER,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			0, 0xFF);
 		sceGxmSetBackStencilFunc(gxm_context,
-			SCE_GXM_STENCIL_FUNC_ALWAYS,
-			SCE_GXM_STENCIL_OP_KEEP,
-			SCE_GXM_STENCIL_OP_KEEP,
-			SCE_GXM_STENCIL_OP_KEEP,
-			0, 0);
+			SCE_GXM_STENCIL_FUNC_NEVER,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			0, 0xFF);
 		depth_vertices[0].position.z = depth_value;
 		depth_vertices[1].position.z = depth_value;
 		depth_vertices[2].position.z = depth_value;
@@ -1313,7 +1318,8 @@ void glClear(GLbitfield mask){
 		sceGxmSetVertexStream(gxm_context, 0, depth_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_indices, 4);
 		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-		change_depth_func(gxm_depth);
+		depth_test_state = orig_depth_test;
+		change_depth_func();
 		change_stencil_settings();
 	}
 }
@@ -1333,7 +1339,7 @@ void glEnable(GLenum cap){
 	switch (cap){
 		case GL_DEPTH_TEST:
 			depth_test_state = GL_TRUE;
-			change_depth_func(gxm_depth);
+			change_depth_func();
 			break;
 		case GL_STENCIL_TEST:
 			change_stencil_settings();
@@ -1384,7 +1390,7 @@ void glDisable(GLenum cap){
 	switch (cap){
 		case GL_DEPTH_TEST:
 			depth_test_state = GL_FALSE;
-			change_depth_func(SCE_GXM_DEPTH_FUNC_ALWAYS);
+			change_depth_func();
 			break;
 		case GL_STENCIL_TEST:
 			sceGxmSetFrontStencilFunc(gxm_context,
@@ -1966,8 +1972,11 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 				return;
 			}
 			tex->type = format;
-			if (level == 0) gpu_alloc_texture(width, height, tex_format, data, tex);
-			else gpu_alloc_mipmaps(width, height, tex_format, data, level, tex);
+			if (level == 0){
+				gpu_alloc_texture(width, height, tex_format, data, tex);
+				sceGxmTextureSetMinFilter(&tex->gxm_tex, tex->min_filter);
+				sceGxmTextureSetMagFilter(&tex->gxm_tex, tex->mag_filter);
+			}else gpu_alloc_mipmaps(width, height, tex_format, data, level, tex);
 			if (tex->valid && tex->palette_UID) sceGxmTextureSetPalette(&tex->gxm_tex, color_table->data);
 			break;
 		default:
@@ -2089,9 +2098,11 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 				case GL_TEXTURE_MIN_FILTER:
 					switch (param){
 						case GL_NEAREST:
+							tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
 							sceGxmTextureSetMinFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
 							break;
 						case GL_LINEAR:
+							tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 							sceGxmTextureSetMinFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
 							break;
 						case GL_NEAREST_MIPMAP_NEAREST:
@@ -2110,9 +2121,11 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 				case GL_TEXTURE_MAG_FILTER:
 					switch (param){
 						case GL_NEAREST:
+							tex->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
 							sceGxmTextureSetMagFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
 							break;
 						case GL_LINEAR:
+						    tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 							sceGxmTextureSetMagFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
 							break;
 						case GL_NEAREST_MIPMAP_NEAREST:
@@ -2179,12 +2192,22 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param){
 		case GL_TEXTURE_2D:
 			switch (pname){
 				case GL_TEXTURE_MIN_FILTER:
-					if (param == GL_NEAREST) sceGxmTextureSetMinFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
-					else if (param == GL_LINEAR) sceGxmTextureSetMinFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
+					if (param == GL_NEAREST){
+						tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+						sceGxmTextureSetMinFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
+					}else if (param == GL_LINEAR){
+						tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+						sceGxmTextureSetMinFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
+					}
 					break;
 				case GL_TEXTURE_MAG_FILTER:
-					if (param == GL_NEAREST) sceGxmTextureSetMagFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
-					else if (param == GL_LINEAR) sceGxmTextureSetMagFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);	
+					if (param == GL_NEAREST){
+						tex->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+						sceGxmTextureSetMagFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
+					}else if (param == GL_LINEAR){
+						tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+						sceGxmTextureSetMagFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
+					}	
 					break;
 				case GL_TEXTURE_WRAP_S:
 					if (param == GL_CLAMP_TO_EDGE) u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
@@ -2534,7 +2557,7 @@ void glDepthFunc(GLenum func){
 			gxm_depth = SCE_GXM_DEPTH_FUNC_ALWAYS;
 			break;
 	}
-	change_depth_func(gxm_depth);
+	change_depth_func();
 }
 
 void glClearDepth(GLdouble depth){
@@ -3760,7 +3783,6 @@ void glGenerateMipmap(GLenum target){
 			SceGxmTextureFormat format = sceGxmTextureGetFormat(&tex->gxm_tex);
 			memcpy(texture_data, sceGxmTextureGetData(&tex->gxm_tex), orig_w * orig_h * tex_format_to_bytespp(format));
 			gpu_free_texture(tex);
-			sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, mipcount);
 			tex->valid = 1;
 			tex->data_UID = data_UID;
 			uint32_t* curPtr = (uint32_t*)texture_data;
@@ -3781,6 +3803,7 @@ void glGenerateMipmap(GLenum target){
 				curWidth /= 2;
 				curHeight /= 2;
 			}
+			sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, mipcount);
 			break;
 		default:
 			error = GL_INVALID_ENUM;

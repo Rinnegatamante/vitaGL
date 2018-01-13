@@ -9,6 +9,8 @@ typedef struct texture{
 	uint8_t used;
 	uint8_t valid;
 	uint32_t type;
+	SceGxmTextureFilter min_filter;
+	SceGxmTextureFilter mag_filter;
 } texture;
 
 typedef struct palette{
