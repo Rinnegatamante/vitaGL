@@ -491,7 +491,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 	for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
 		program* p = &progs[j];
 		if (p->valid){
-			p->fprog_stack[i] = p->fprog;
+			p->fprog_stack[release_idx] = p->fprog;
 			sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 				p->fshader->id,
 				SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
@@ -3933,7 +3933,7 @@ void glDeleteShader(GLuint shad){
 }
 
 void glShaderBinary(GLsizei count, const GLuint* handles, GLenum binaryFormat, const void *binary, GLsizei length){
-	shader* s = &shaders[(*handles)-1];
+	shader* s = &shaders[handles[0]-1];
 	s->prog = (SceGxmProgram*)malloc(length);
 	memcpy((void*)s->prog, binary, length);
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
@@ -4029,6 +4029,9 @@ void glLinkProgram(GLuint progr){
 
 void glUseProgram(GLuint prog){
 	cur_program = prog;
+	program* p = &progs[cur_program-1];
+	sceGxmSetVertexProgram(gxm_context, p->vprog);
+	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 }
 
 // VGL_EXT_gxp_shaders extension implementation
@@ -4253,8 +4256,6 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 		if (!skip_draw){
 			if (cur_program != 0){
 				program* p = &progs[cur_program-1];
-				sceGxmSetVertexProgram(gxm_context, p->vprog);
-				sceGxmSetFragmentProgram(gxm_context, p->fprog);
 				if (implicit_wvp){
 					matrix4x4 mvp_matrix;
 					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
@@ -4303,11 +4304,9 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 				}else{
 					sceGxmSetVertexProgram(gxm_context, rgba_vertex_program_patched);
 					sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
-				}
-			
+				}			
 				void* vertex_wvp_buffer;
 				sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
-	
 				if (texture_array_state){
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)mvp_matrix);
 					sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, u_mode);
