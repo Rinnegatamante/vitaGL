@@ -14,6 +14,7 @@
 #define GLvoid        void
 #define GLbyte        int8_t
 #define GLboolean     uint8_t
+#define GLchar        char
 
 #define GL_FALSE                          0
 #define GL_TRUE                           1
@@ -78,9 +79,9 @@
 #define GL_MODELVIEW                      0x1700
 #define GL_PROJECTION                     0x1701
 #define GL_COLOR_INDEX                    0x1900
-#define GL_RED					              0x1903
+#define GL_RED                            0x1903
 #define GL_GREEN				              0x1904
-#define GL_BLUE					              0x1905
+#define GL_BLUE                           0x1905
 #define GL_ALPHA                          0x1906
 #define GL_RGB                            0x1907
 #define GL_RGBA                           0x1908
@@ -111,8 +112,8 @@
 #define GL_LINEAR_MIPMAP_LINEAR           0x2703
 #define GL_TEXTURE_MAG_FILTER             0x2800
 #define GL_TEXTURE_MIN_FILTER             0x2801
-#define GL_TEXTURE_WRAP_S			        0x2802
-#define GL_TEXTURE_WRAP_T			        0x2803
+#define GL_TEXTURE_WRAP_S                 0x2802
+#define GL_TEXTURE_WRAP_T                 0x2803
 #define GL_REPEAT				              0x2901
 #define GL_POLYGON_OFFSET_UNITS           0x2A00
 #define GL_POLYGON_OFFSET_POINT           0x2A01
@@ -136,7 +137,7 @@
 #define GL_BLEND_SRC_ALPHA                0x80CB
 #define GL_COLOR_TABLE                    0x80D0
 #define GL_COLOR_INDEX8_EXT               0x80E5
-#define GL_CLAMP_TO_EDGE			           0x812F
+#define GL_CLAMP_TO_EDGE                  0x812F
 #define GL_RG                             0x8227
 #define GL_UNSIGNED_SHORT_5_6_5           0x8363
 #define GL_MIRRORED_REPEAT                0x8370
@@ -186,6 +187,8 @@
 #define GL_DYNAMIC_DRAW                   0x88E8
 #define GL_DYNAMIC_READ                   0x88E9
 #define GL_DYNAMIC_COPY                   0x88EA
+#define GL_FRAGMENT_SHADER                0x8B30
+#define GL_VERTEX_SHADER                  0x8B31
 
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 32
 
@@ -199,6 +202,7 @@ typedef enum GLbitfield{
 void glActiveTexture(GLenum texture);
 void glAlphaFunc(GLenum func, GLfloat ref);
 void glArrayElement(GLint i);
+void glAttachShader(GLuint prog, GLuint shad);
 void glBegin(GLenum mode);
 void glBindBuffer(GLenum target, GLuint buffer);
 void glBindTexture(GLenum target, GLuint texture);
@@ -221,8 +225,11 @@ void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
 void glColor4ubv(const GLubyte* v);
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
 void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid* data);
+GLuint glCreateProgram(void);
+GLuint glCreateShader(GLenum shaderType);
 void glCullFace(GLenum mode);
 void glDeleteBuffers(GLsizei n, const GLuint* gl_buffers);
+void glDeleteShader(GLuint shad);
 void glDeleteTextures(GLsizei n, const GLuint* textures);
 void glDepthFunc(GLenum func);
 void glDepthMask(GLboolean flag);
@@ -245,7 +252,9 @@ void glGetBooleanv(GLenum pname, GLboolean* params);
 void glGetFloatv(GLenum pname, GLfloat* data);
 GLenum glGetError(void);
 const GLubyte* glGetString(GLenum name);
+GLint glGetUniformLocation(GLuint prog, const GLchar* name);
 GLboolean glIsEnabled(GLenum cap);
+void glLinkProgram(GLuint progr);
 void glLoadIdentity(void);
 void glLoadMatrixf(const GLfloat* m);
 void glMatrixMode(GLenum mode);
@@ -258,6 +267,7 @@ void glPushMatrix(void);
 void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height);
+void glShaderBinary(GLsizei count, const GLuint* handles, GLenum binaryFormat, const void *binary, GLsizei length);
 void glStencilFunc(GLenum func, GLint ref, GLuint mask);
 void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask);
 void glStencilMask(GLuint mask);
@@ -274,6 +284,10 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param);
 void glTexParameteri(GLenum target, GLenum pname, GLint param);
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid* pixels);
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z);
+void glUniform1f(GLint location, GLfloat v0);
+void glUniform4fv(GLint location, GLsizei count, const GLfloat* value);
+void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
+void glUseProgram(GLuint program);
 void glVertex2f(GLfloat x, GLfloat y);
 void glVertex3f(GLfloat x, GLfloat y, GLfloat z);
 void glVertex3fv(const GLfloat* v);
@@ -285,7 +299,11 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
 void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
-void vglDrawObjects(GLenum mode, GLsizei count);
+void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp);
+
+// VGL_EXT_gxp_shaders extension implementation
+void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar* name, const GLuint num, const GLenum type);
+void vglVertexAttribPointer(GLuint index,  GLint size,  GLenum type,  GLboolean normalized,  GLsizei stride, GLuint count, const GLvoid* pointer);
 
 // vgl*
 void vglEnd(void);
