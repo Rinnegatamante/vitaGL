@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "vitaGL.h"
 #include "math_utils.h"
 #include "gpu_utils.h"
@@ -35,6 +36,23 @@
 #define MAX_FRAGMENT_PROGS    128  // Maximum number of fragment programs per shader
 #define MAX_CUSTOM_SHADERS    32   // Maximum number of linkable custom shaders
 #define MAX_SHADER_PARAMS     16   // Maximum number of parameters per custom shader
+
+// Debugging tool
+void LOG(const char *format, ...) {
+	__gnuc_va_list arg;
+	int done;
+	va_start(arg, format);
+	char msg[512];
+	done = vsprintf(msg, format, arg);
+	va_end(arg);
+	int i;
+	sprintf(msg, "%s\n", msg);
+	FILE* log = fopen("ux0:/data/vitaGL.log", "a+");
+	if (log != NULL) {
+		fwrite(msg, 1, strlen(msg), log);
+		fclose(log);
+	}
+}
 
 static const GLubyte* vendor = "Rinnegatamante";
 static const GLubyte* renderer = "SGX543MP4+";
@@ -171,6 +189,7 @@ static SceUID gxm_shader_patcher_vertex_usse_uid;
 static void* gxm_shader_patcher_vertex_usse_addr;
 static SceUID gxm_shader_patcher_fragment_usse_uid;
 static void* gxm_shader_patcher_fragment_usse_addr;
+static uint8_t viewport_mode = 0;
 
 // GXM Viewport
 float x_port = 480.0f;
@@ -275,8 +294,8 @@ typedef struct program{
 	shader* vshader;
 	shader* fshader;
 	GLboolean valid;
-	SceGxmVertexAttribute attr[MAX_SHADER_PARAMS];
-	SceGxmVertexStream stream[MAX_SHADER_PARAMS];
+	SceGxmVertexAttribute attr[16];
+	SceGxmVertexStream stream[16];
 	SceGxmVertexProgram* vprog;
 	SceGxmFragmentProgram* fprog;
 	SceGxmFragmentProgram* fprog_stack[MAX_FRAGMENT_PROGS];
@@ -762,7 +781,7 @@ void vglStartRendering(){
 		gxm_sync_objects[gxm_back_buffer_index],
 		&gxm_color_surfaces[gxm_back_buffer_index],
 		&gxm_depth_stencil_surface);
-	sceGxmSetViewport(gxm_context,x_port,x_scale,y_port,y_scale,z_port,z_scale);
+	if (viewport_mode) sceGxmSetViewport(gxm_context,x_port,x_scale,y_port,y_scale,z_port,z_scale);
 }
 
 void vglStopRendering(){
@@ -2462,6 +2481,7 @@ void glViewport(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 	y_port = height>>1;
 	y_scale = -(height>>1);
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	viewport_mode = 1;
 }
 
 void glDepthRange(GLdouble nearVal, GLdouble farVal){
@@ -4057,7 +4077,7 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar* name, const 
 	attributes->regIndex = sceGxmProgramParameterGetResourceIndex(param);
 	streams->stride = bpe * num;
 	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-	if (index > p->attr_num) p->attr_num = index;
+	if (index >= p->attr_num) p->attr_num = index + 1;
 }
 
 void vglVertexAttribPointer(GLuint index,  GLint size,  GLenum type,  GLboolean normalized,  GLsizei stride, GLuint count, const GLvoid* pointer){
@@ -4265,7 +4285,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 				}
 				sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, u_mode);
 				sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, v_mode);
-				sceGxmSetFragmentTexture(gxm_context, 0, &texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex);
+				sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 				vert_uniforms = NULL;
 				frag_uniforms = NULL;
@@ -4311,7 +4331,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)mvp_matrix);
 					sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, u_mode);
 					sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, v_mode);
-					sceGxmSetFragmentTexture(gxm_context, 0, &texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex);
+					sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 					sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
 					sceGxmSetVertexStream(gxm_context, 1, tex_unit->texture_object);
 					if (color_array_state) sceGxmSetVertexStream(gxm_context, 2, tex_unit->color_object);
