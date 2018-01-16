@@ -910,9 +910,9 @@ void vglInit(uint32_t gpu_pool_size){
 		gxm_depth_stencil_surface_addr,
 		NULL);
 		
-	static const unsigned int shader_patcher_buffer_size = 64 * 1024;
-	static const unsigned int shader_patcher_vertex_usse_size = 64 * 1024;
-	static const unsigned int shader_patcher_fragment_usse_size = 64 * 1024;
+	static const unsigned int shader_patcher_buffer_size = 1024 * 1024;
+	static const unsigned int shader_patcher_vertex_usse_size = 1024 * 1024;
+	static const unsigned int shader_patcher_fragment_usse_size = 1024 * 1024;
 	
 	gxm_shader_patcher_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
 		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_READ,
@@ -3916,6 +3916,7 @@ void glGenerateMipmap(GLenum target){
 				curHeight /= 2;
 			}
 			sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, mipcount);
+			sceGxmTextureSetMipFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_MIP_FILTER_ENABLED);
 			break;
 		default:
 			error = GL_INVALID_ENUM;
