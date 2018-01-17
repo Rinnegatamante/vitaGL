@@ -306,10 +306,19 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar* name, const 
 void vglVertexAttribPointer(GLuint index,  GLint size,  GLenum type,  GLboolean normalized,  GLsizei stride, GLuint count, const GLvoid* pointer);
 
 // vgl*
+typedef struct GLrescaler{
+	float width;
+	float height;
+	void* buffer;
+} GLrescaler;
+
+GLrescaler* vglCreateRescaler(GLuint width, GLuint height);
+void vglDestroyRescaler(GLrescaler* rescaler);
 void vglEnd(void);
 void vglInit(uint32_t gpu_pool_size);
 void vglWaitVblankStart(GLboolean enable);
 void vglStartRendering();
+void vglStartRenderingWithRescaler(GLrescaler* rescaler);
 void vglStopRendering();
 void vglStopRenderingInit();
 void vglStopRenderingTerm();

@@ -190,6 +190,8 @@ static void* gxm_shader_patcher_vertex_usse_addr;
 static SceUID gxm_shader_patcher_fragment_usse_uid;
 static void* gxm_shader_patcher_fragment_usse_addr;
 static uint8_t viewport_mode = 0;
+static GLrescaler* gxm_rescaler = NULL;
+static matrix4x4 gxm_projection, gxm_identity;
 
 // GXM Viewport
 float x_port = 480.0f;
@@ -757,6 +759,20 @@ static void update_polygon_offset(){
 
 // vitaGL specific functions
 
+GLrescaler* vglCreateRescaler(GLuint width, GLuint height){
+	GLrescaler* res = (GLrescaler*)malloc(sizeof(GLrescaler));
+	res->width =  width;
+	res->height =  height;
+	texture* tex = (texture*)malloc(sizeof(texture));
+	tex->valid = 0;
+	gpu_alloc_texture(width, height, SCE_GXM_TEXTURE_FORMAT_A8B8G8R8, NULL, tex);
+	gpu_prepare_rendertarget(tex);
+	res->buffer = tex;
+	matrix4x4_init_orthographic(gxm_projection, 0, 960, 544, 0, -1, 1);
+	matrix4x4_identity(gxm_identity);
+	return res;
+}
+
 void vglUpdateCommonDialog(){
 	SceCommonDialogUpdateParam updateParam;
 	memset(&updateParam, 0, sizeof(updateParam));
@@ -775,6 +791,7 @@ void vglUpdateCommonDialog(){
 }
 
 void vglStartRendering(){
+	gxm_rescaler = NULL;
 	sceGxmBeginScene(
 		gxm_context, 0, gxm_render_target,
 		NULL, NULL,
@@ -784,14 +801,67 @@ void vglStartRendering(){
 	if (viewport_mode) sceGxmSetViewport(gxm_context,x_port,x_scale,y_port,y_scale,z_port,z_scale);
 }
 
+void vglStartRenderingWithRescaler(GLrescaler* rescaler){
+	gxm_rescaler = rescaler;
+	texture* fbo = (texture*)rescaler->buffer;
+	sceGxmBeginScene(
+		gxm_context, SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY,
+		fbo->gxm_rtgt, NULL, NULL, NULL,
+		&fbo->gxm_sfc, &fbo->gxm_sfd);	
+	if (viewport_mode) sceGxmSetViewport(gxm_context,x_port,x_scale,y_port,y_scale,z_port,z_scale);
+}
+
 void vglStopRendering(){
 	sceGxmEndScene(gxm_context, NULL, NULL);
+	gpu_pool_reset();
+	if (gxm_rescaler != NULL){
+		texture* fbo = (texture*)gxm_rescaler->buffer;
+		sceGxmBeginScene(
+			gxm_context, SCE_GXM_SCENE_VERTEX_WAIT_FOR_DEPENDENCY,
+			gxm_render_target, NULL, NULL,
+			gxm_sync_objects[gxm_back_buffer_index],
+			&gxm_color_surfaces[gxm_back_buffer_index],
+			&gxm_depth_stencil_surface);
+		sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
+		sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+		void* alpha_buffer;
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
+		float alpha_operation = 7.0f;
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_operation);
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
+		float env_mode = 5.0f;
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &env_mode);
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env_color, 0, 4, &texenv_color.r);
+		vector3f* v = (vector3f*)gpu_pool_memalign(sizeof(vector3f) * 4, sizeof(vector3f));
+		vector2f* t = (vector2f*)gpu_pool_memalign(sizeof(vector2f) * 4, sizeof(vector2f));
+		v[0].x = 0.0f; v[0].y = 0.0f, v[0].z = 0.0f;
+		v[1].x = 960.0f; v[1].y = 0.0f, v[1].z = 0.0f;
+		v[2].x = 960.0f; v[2].y = 544.0f, v[2].z = 0.0f;
+		v[3].x = 0.0f; v[3].y = 544.0f, v[3].z = 0.0f;
+		t[0].x = 0; t[0].y = 0;
+		t[1].x = 1; t[1].y = 0;
+		t[2].x = 1; t[2].y = 1;
+		t[3].x = 0; t[3].y = 1;
+		uint16_t* i = (uint16_t*)gpu_pool_memalign(sizeof(uint16_t) * 6, sizeof(uint16_t));
+		i[0] = 0; i[1] = 1; i[2] = 2; i[3] = 2; i[4] = 3; i[5] = 0;
+		sceGxmSetFragmentTexture(gxm_context, 0, &fbo->gxm_tex);
+		void* vertex_wvp_buffer;
+		matrix4x4 mvp_matrix;
+		matrix4x4_multiply(mvp_matrix, gxm_projection, gxm_identity);
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
+		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)mvp_matrix);
+		sceGxmSetVertexStream(gxm_context, 0, v);
+		sceGxmSetVertexStream(gxm_context, 1, t);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLES, SCE_GXM_INDEX_FORMAT_U16, i, 6);
+		sceGxmEndScene(gxm_context, NULL, NULL);
+	}
 	sceGxmFinish(gxm_context);
 	sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
 	struct display_queue_callback_data queue_cb_data;
 	queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
 	sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
-	gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
+		gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
 	gxm_front_buffer_index = gxm_back_buffer_index;
 	gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
 	gpu_pool_reset();
@@ -4248,49 +4318,49 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 	texture_unit* tex_unit = &texture_units[client_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	GLboolean skip_draw = GL_FALSE;
-	if (vertex_array_state){
-		switch (mode){
-			case GL_POINTS:
-				gxm_p = SCE_GXM_PRIMITIVE_POINTS;
-				break;
-			case GL_LINES:
-				gxm_p = SCE_GXM_PRIMITIVE_LINES;
-				break;
-			case GL_TRIANGLES:
-				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLES;
-				if (no_polygons_mode) skip_draw = GL_TRUE;
-				break;
-			case GL_TRIANGLE_STRIP:
-				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP;
-				if (no_polygons_mode) skip_draw = GL_TRUE;
-				break;
-			case GL_TRIANGLE_FAN:
-				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_FAN;
-				if (no_polygons_mode) skip_draw = GL_TRUE;
-				break;
-			default:
-				error = GL_INVALID_ENUM;
-				break;
-		}
-		if (phase == MODEL_CREATION) error = GL_INVALID_OPERATION;
-		else if (count < 0) error = GL_INVALID_VALUE;
-		if (!skip_draw){
-			if (cur_program != 0){
-				program* p = &progs[cur_program-1];
-				if (implicit_wvp){
-					matrix4x4 mvp_matrix;
-					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-					if (vert_uniforms == NULL) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
-					if (p->wvp == NULL) p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "wvp");
-					sceGxmSetUniformDataF(vert_uniforms, p->wvp, 0, 16, (const float*)mvp_matrix);
-				}
-				sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, u_mode);
-				sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, v_mode);
-				sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
-				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
-				vert_uniforms = NULL;
-				frag_uniforms = NULL;
-			}else{
+	switch (mode){
+		case GL_POINTS:
+			gxm_p = SCE_GXM_PRIMITIVE_POINTS;
+			break;
+		case GL_LINES:
+			gxm_p = SCE_GXM_PRIMITIVE_LINES;
+			break;
+		case GL_TRIANGLES:
+			gxm_p = SCE_GXM_PRIMITIVE_TRIANGLES;
+			if (no_polygons_mode) skip_draw = GL_TRUE;
+			break;
+		case GL_TRIANGLE_STRIP:
+			gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP;
+			if (no_polygons_mode) skip_draw = GL_TRUE;
+			break;
+		case GL_TRIANGLE_FAN:
+			gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_FAN;
+			if (no_polygons_mode) skip_draw = GL_TRUE;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	if (phase == MODEL_CREATION) error = GL_INVALID_OPERATION;
+	else if (count < 0) error = GL_INVALID_VALUE;
+	if (!skip_draw){
+		if (cur_program != 0){
+			program* p = &progs[cur_program-1];
+			if (implicit_wvp){
+				matrix4x4 mvp_matrix;
+				matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+				if (vert_uniforms == NULL) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
+				if (p->wvp == NULL) p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "wvp");
+				sceGxmSetUniformDataF(vert_uniforms, p->wvp, 0, 16, (const float*)mvp_matrix);
+			}
+			sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, u_mode);
+			sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, v_mode);
+			sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
+			vert_uniforms = NULL;
+			frag_uniforms = NULL;
+		}else{
+			if (vertex_array_state){
 				matrix4x4 mvp_matrix;
 				matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 				if (texture_array_state){
