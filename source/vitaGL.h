@@ -229,6 +229,7 @@ GLuint glCreateProgram(void);
 GLuint glCreateShader(GLenum shaderType);
 void glCullFace(GLenum mode);
 void glDeleteBuffers(GLsizei n, const GLuint* gl_buffers);
+void glDeleteProgram(GLuint prog);
 void glDeleteShader(GLuint shad);
 void glDeleteTextures(GLsizei n, const GLuint* textures);
 void glDepthFunc(GLenum func);

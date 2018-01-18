@@ -4019,8 +4019,21 @@ GLuint glCreateShader(GLenum shaderType){
 }
 
 void glDeleteShader(GLuint shad){
-	if (shaders[shad-1].valid) free((void*)shaders[shad-1].prog);
-	shaders[shad-1].valid = GL_FALSE;
+	shader* s = &shaders[shad-1];
+	if (s->valid){
+		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
+		free((void*)s->prog);
+	}
+	s->valid = GL_FALSE;
+}
+
+void glDeleteProgram(GLuint prog){
+	program* p = &progs[prog-1];
+	if (p->valid){
+		sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog);
+		sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, p->vprog);
+	}
+	p->valid = GL_FALSE;
 }
 
 void glShaderBinary(GLsizei count, const GLuint* handles, GLenum binaryFormat, const void *binary, GLsizei length){
@@ -4045,6 +4058,7 @@ GLuint glCreateProgram(void){
 	return res;
 }
 
+// TODO: Find a way to avoid memory leak
 GLint glGetUniformLocation(GLuint prog, const GLchar* name){
 	program* p = &progs[prog-1];
 	uniform* res = (uniform*)malloc(sizeof(uniform));
