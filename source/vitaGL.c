@@ -2151,8 +2151,8 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	int texture2d_idx = tex_unit->tex_id;
 	texture* target_texture = &tex_unit->textures[texture2d_idx];
 	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&target_texture->gxm_tex);
-	uint32_t stride = sceGxmTextureGetStride(&target_texture->gxm_tex);
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
+	uint32_t stride = ((sceGxmTextureGetWidth(&target_texture->gxm_tex) + 7) & ~7) * bpp;
 	uint8_t* ptr = (uint8_t*)sceGxmTextureGetData(&target_texture->gxm_tex) + xoffset * bpp + yoffset * stride * bpp;
 	uint8_t* ptr_line = ptr;
 	int i,j;
@@ -2171,7 +2171,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 											pixels += 3;
 											ptr += bpp;
 										}
-										ptr = ptr_line + stride * bpp;
+										ptr = ptr_line + stride;
 										ptr_line = ptr;
 									}
 									break;
@@ -2192,7 +2192,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 									for (i=0;i<height;i++){
 										memcpy(ptr, pixels, width * bpp);
 										pixels += width * bpp;
-										ptr += stride * bpp;
+										ptr += stride;
 									}
 									break;
 								default:
@@ -2212,7 +2212,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 									for (i=0;i<height;i++){
 										memcpy(ptr, pixels, width * bpp);
 										pixels += width * bpp;
-										ptr += stride * bpp;
+										ptr += stride;
 									}
 									break;
 								case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
@@ -2225,7 +2225,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 											pixels += 1;
 											ptr += bpp;
 										}
-										ptr = ptr_line + stride * bpp;
+										ptr = ptr_line + stride;
 										ptr_line = ptr;
 									}
 									break;
