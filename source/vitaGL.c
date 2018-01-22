@@ -2153,7 +2153,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&target_texture->gxm_tex);
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
 	uint32_t stride = ((sceGxmTextureGetWidth(&target_texture->gxm_tex) + 7) & ~7) * bpp;
-	uint8_t* ptr = (uint8_t*)sceGxmTextureGetData(&target_texture->gxm_tex) + xoffset * bpp + yoffset * stride * bpp;
+	uint8_t* ptr = (uint8_t*)sceGxmTextureGetData(&target_texture->gxm_tex) + xoffset * bpp + yoffset * stride;
 	uint8_t* ptr_line = ptr;
 	int i,j;
 	switch (target){
