@@ -3952,21 +3952,22 @@ void glGenerateMipmap(GLenum target){
 				mipcount++;
 			}
 			SceUID data_UID;
-			void *texture_data = gpu_alloc_map(
+			SceGxmTextureFormat format = sceGxmTextureGetFormat(&tex->gxm_tex);
+			void* temp = (void*)malloc(orig_w * orig_h * tex_format_to_bytespp(format));
+			memcpy(temp, sceGxmTextureGetData(&tex->gxm_tex), orig_w * orig_h * tex_format_to_bytespp(format));
+			gpu_free_texture(tex);
+			void* texture_data = gpu_alloc_map(
 				SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
 				SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-				size, &data_UID);
+				size, &tex->data_UID);
 			sceGxmColorSurfaceInit(&tex->gxm_sfc,
 				SCE_GXM_COLOR_FORMAT_A8B8G8R8,
 				SCE_GXM_COLOR_SURFACE_LINEAR,
 				SCE_GXM_COLOR_SURFACE_SCALE_NONE,
 				SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
 				orig_w,orig_h,orig_w,texture_data);
-			SceGxmTextureFormat format = sceGxmTextureGetFormat(&tex->gxm_tex);
-			memcpy(texture_data, sceGxmTextureGetData(&tex->gxm_tex), orig_w * orig_h * tex_format_to_bytespp(format));
-			gpu_free_texture(tex);
 			tex->valid = 1;
-			tex->data_UID = data_UID;
+			memcpy(sceGxmTextureGetData(&tex->gxm_tex), temp, orig_w * orig_h * tex_format_to_bytespp(format));
 			uint32_t* curPtr = (uint32_t*)texture_data;
 			uint32_t curWidth = orig_w;
 			uint32_t curHeight = orig_h;
