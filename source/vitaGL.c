@@ -3968,6 +3968,7 @@ void glGenerateMipmap(GLenum target){
 				orig_w,orig_h,orig_w,texture_data);
 			tex->valid = 1;
 			memcpy(sceGxmTextureGetData(&tex->gxm_tex), temp, orig_w * orig_h * tex_format_to_bytespp(format));
+			free(temp);
 			uint32_t* curPtr = (uint32_t*)texture_data;
 			uint32_t curWidth = orig_w;
 			uint32_t curHeight = orig_h;
