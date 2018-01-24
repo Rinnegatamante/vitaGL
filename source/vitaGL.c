@@ -143,6 +143,13 @@ typedef enum texEnvMode{
 	REPLACE = 3
 } texEnvMode;
 
+typedef struct scissor_region{
+	int x;
+	int y;
+	int w;
+	int h;
+} scissor_region;
+
 typedef struct texture_unit{
 	GLboolean enabled;
 	matrix4x4 stack[GENERIC_STACK_DEPTH];
@@ -341,6 +348,7 @@ static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
 static gpubuffer gpu_buffers[BUFFERS_NUM]; // Buffers array
 
+static scissor_region region; // Current scissor test region setup
 static texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
 static SceGxmBlendFunc blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD; // Current in-use RGB blend func
 static SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use A blend func
@@ -548,6 +556,11 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 		&texture2d_rgba_fragment_program_patched);
 		
 	release_idx++;
+}
+
+static void update_scissor_test(){
+	if (scissor_test_state) sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.w, region.h);
+	else sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_NONE, 0, 0, 0, 0);
 }
 
 static void update_alpha_test_settings(){
@@ -1378,6 +1391,11 @@ void vglInit(uint32_t gpu_pool_size){
 	// Setting up current blend info state
 	cur_blend_info.colorMask = SCE_GXM_COLOR_MASK_NONE;
 	
+	// Init scissor test state
+	region.x = region.y = 0;
+	region.w = 960;
+	region.h = 544;
+	
 }
 
 void vglEnd(void){
@@ -1514,6 +1532,7 @@ void glEnable(GLenum cap){
 			break;
 		case GL_SCISSOR_TEST:
 			scissor_test_state = GL_TRUE;
+			update_scissor_test();
 			break;
 		case GL_CULL_FACE:
 			cull_face_state = GL_TRUE;
@@ -1576,6 +1595,7 @@ void glDisable(GLenum cap){
 			break;
 		case GL_SCISSOR_TEST:
 			scissor_test_state = GL_FALSE;
+			update_scissor_test();
 			break;
 		case GL_CULL_FACE:
 			cull_face_state = GL_FALSE;
@@ -2572,7 +2592,11 @@ void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 			error = GL_INVALID_VALUE;
 			return;
 		}
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_NONE, x, y-height, x+width, y);
+		region.x = x;
+		region.y = y - height;
+		region.w = x + width;
+		region.h = y;
+		update_scissor_test();
 	}
 }
 
