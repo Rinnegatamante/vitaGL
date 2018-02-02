@@ -33,7 +33,6 @@
 #define GXM_TEX_MAX_SIZE      4096 // Maximum width/height in pixels per texture
 #define BUFFERS_ADDR        0xA000 // Starting address for buffers indexing
 #define BUFFERS_NUM           128  // Maximum number of allocatable buffers
-#define MAX_FRAGMENT_PROGS    128  // Maximum number of fragment programs per shader
 #define MAX_CUSTOM_SHADERS    32   // Maximum number of linkable custom shaders
 #define MAX_SHADER_PARAMS     16   // Maximum number of parameters per custom shader
 
@@ -256,8 +255,6 @@ static SceGxmVertexProgram* rgba_vertex_program_patched;
 static SceGxmVertexProgram* rgb_vertex_program_patched;
 static SceGxmFragmentProgram* rgba_fragment_program_patched;
 static const SceGxmProgram* rgba_fragment_program;
-static SceGxmFragmentProgram* rgba_fragment_programs[MAX_FRAGMENT_PROGS];
-static SceGxmFragmentProgram* null_blend_rgba_fragment_program_patched;
 
 // Texture2D shader
 static SceGxmShaderPatcherId texture2d_vertex_id;
@@ -273,8 +270,6 @@ static const SceGxmProgramParameter* texture2d_tex_env_color;
 static SceGxmVertexProgram* texture2d_vertex_program_patched;
 static SceGxmFragmentProgram* texture2d_fragment_program_patched;
 static const SceGxmProgram* texture2d_fragment_program;
-static SceGxmFragmentProgram* texture2d_fragment_programs[MAX_FRAGMENT_PROGS];
-static SceGxmFragmentProgram* null_blend_texture2d_fragment_program_patched;
 
 // Texture2D+RGBA shader
 static SceGxmShaderPatcherId texture2d_rgba_vertex_id;
@@ -290,8 +285,6 @@ static const SceGxmProgramParameter* texture2d_rgba_tex_env_color;
 static SceGxmVertexProgram* texture2d_rgba_vertex_program_patched;
 static SceGxmFragmentProgram* texture2d_rgba_fragment_program_patched;
 static const SceGxmProgram* texture2d_rgba_fragment_program;
-static SceGxmFragmentProgram* texture2d_rgba_fragment_programs[MAX_FRAGMENT_PROGS];
-static SceGxmFragmentProgram* null_blend_texture2d_rgba_fragment_program_patched;
 
 // Custom shaders support
 typedef struct shader{
@@ -310,8 +303,6 @@ typedef struct program{
 	SceGxmVertexStream stream[16];
 	SceGxmVertexProgram* vprog;
 	SceGxmFragmentProgram* fprog;
-	SceGxmFragmentProgram* null_blend_fprog;
-	SceGxmFragmentProgram* fprog_stack[MAX_FRAGMENT_PROGS];
 	GLuint attr_num;
 	const SceGxmProgramParameter* wvp;
 } program;
@@ -327,8 +318,6 @@ void* frag_uniforms = NULL;
 void* vert_uniforms = NULL;
 
 // Internal stuffs
-static SceGxmBlendInfo fragment_program_info[MAX_FRAGMENT_PROGS];
-static uint16_t release_idx = 0;
 static SceGxmPrimitiveType prim;
 static SceGxmPrimitiveTypeExtra prim_extra = SCE_GXM_PRIMITIVE_NONE;
 static vertexList* model_vertices = NULL;
@@ -442,117 +431,44 @@ static void display_queue_callback(const void *callbackData){
 	
 }
 
-static uint8_t isSameBlendInfo(SceGxmBlendInfo* b1, SceGxmBlendInfo* b2){
-    return ((b1->colorFunc == b2->colorFunc) &&
-		(b1->alphaFunc == b2->alphaFunc) &&
-		(b1->colorSrc == b2->colorSrc) &&
-		(b1->alphaSrc == b2->alphaSrc) &&
-		(b1->colorDst == b2->colorDst) &&
-		(b1->alphaDst == b2->alphaDst)) ? 1 : 0;
-}
-
-static void release_unused_programs(){
-	/*int i, j;
-	for (i=0;i < release_idx;i++){
-		if ((cur_blend_info_ptr == NULL) || (isSameBlendInfo(cur_blend_info_ptr,&fragment_program_info[i]))){
-			sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, rgba_fragment_programs[i]);
-			sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_programs[i]);
-			sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_rgba_fragment_programs[i]);
-			for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
-				program* p = &progs[j];
-				if (p->valid) sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog_stack[i]);
-			}
+static void _change_blend_factor(SceGxmBlendInfo* blend_info){
+	int j;	
+	for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
+		program* p = &progs[j];
+		if (p->valid){
+			sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+				p->fshader->id,
+				SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+				SCE_GXM_MULTISAMPLE_NONE,
+				blend_info,
+				p->fshader->prog,
+				&p->fprog);
 		}
 	}
-	release_idx = 0;*/
-}
-
-static void _change_blend_factor(SceGxmBlendInfo* blend_info){
-	/*if (release_idx == MAX_FRAGMENT_PROGS) sceKernelExitProcess(0);*/
 	
-	int i,j;
-	/*if (blend_info != NULL){
-		for (i=0;i<release_idx;i++){
-			if (isSameBlendInfo(blend_info,&fragment_program_info[i])){
-				rgba_fragment_program_patched = rgba_fragment_programs[i];
-				texture2d_fragment_program_patched = texture2d_fragment_programs[i];
-				texture2d_rgba_fragment_program_patched = texture2d_rgba_fragment_programs[i];
-				for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
-					program* p = &progs[j];
-					p->fprog = p->fprog_stack[i];
-				}
-				return;
-			}
-		}
-		
-		if (cur_blend_info_ptr != NULL){
-			memcpy(&fragment_program_info[release_idx],cur_blend_info_ptr,sizeof(SceGxmBlendInfo));
-			rgba_fragment_programs[release_idx] = rgba_fragment_program_patched;
-			texture2d_fragment_programs[release_idx] = texture2d_fragment_program_patched;
-			texture2d_rgba_fragment_programs[release_idx] = texture2d_rgba_fragment_program_patched;
-		}*/
-		
-		for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
-			program* p = &progs[j];
-			if (p->valid){
-				//if (cur_blend_info_ptr != NULL) p->fprog_stack[release_idx] = p->fprog;
-				sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-					p->fshader->id,
-					SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-					SCE_GXM_MULTISAMPLE_NONE,
-					blend_info,
-					p->fshader->prog,
-					&p->fprog);
-			}
-		}
-	
-		/*if (cur_blend_info_ptr != NULL) release_idx++;*/
-	
-		sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-			rgba_fragment_id,
-			SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-			SCE_GXM_MULTISAMPLE_NONE,
-			blend_info,
-			rgba_fragment_program,
-			&rgba_fragment_program_patched);
-		
-		sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-			texture2d_fragment_id,
-			SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		rgba_fragment_id,
+		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		SCE_GXM_MULTISAMPLE_NONE,
-			blend_info,
-			texture2d_fragment_program,
-			&texture2d_fragment_program_patched);
+		blend_info,
+		rgba_fragment_program,
+		&rgba_fragment_program_patched);
 		
-		sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-			texture2d_rgba_fragment_id,
-			SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-			SCE_GXM_MULTISAMPLE_NONE,
-			blend_info,
-			texture2d_rgba_fragment_program,
-			&texture2d_rgba_fragment_program_patched);
-			
-	/*}else{
-		rgba_fragment_program_patched = null_blend_rgba_fragment_program_patched;
-		texture2d_fragment_program_patched = null_blend_texture2d_fragment_program_patched;
-		texture2d_rgba_fragment_program_patched = null_blend_texture2d_rgba_fragment_program_patched;
-		for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
-			program* p = &progs[j];
-			if (p->valid){
-				p->fprog = p->null_blend_fprog;
-			}
-		}
-		if (cur_blend_info_ptr != NULL){
-			for (i=0;i<release_idx;i++){
-				if (isSameBlendInfo(&fragment_program_info[i],cur_blend_info_ptr)) return;
-			}
-			memcpy(&fragment_program_info[release_idx],cur_blend_info_ptr,sizeof(SceGxmBlendInfo));
-			rgba_fragment_programs[release_idx] = rgba_fragment_program_patched;
-			texture2d_fragment_programs[release_idx] = texture2d_fragment_program_patched;
-			texture2d_rgba_fragment_programs[release_idx] = texture2d_rgba_fragment_program_patched;
-			release_idx++;
-		}
-	}*/
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_fragment_id,
+		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE,
+		blend_info,
+		texture2d_fragment_program,
+		&texture2d_fragment_program_patched);
+		
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		texture2d_rgba_fragment_id,
+		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		SCE_GXM_MULTISAMPLE_NONE,
+		blend_info,
+		texture2d_rgba_fragment_program,
+		&texture2d_rgba_fragment_program_patched);
 
 }
 
@@ -876,7 +792,6 @@ void vglStopRendering(){
 	gxm_front_buffer_index = gxm_back_buffer_index;
 	gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
 	gpu_pool_reset();
-	release_unused_programs();
 }
 
 void vglStopRenderingInit(){
@@ -893,7 +808,6 @@ void vglStopRenderingTerm(){
 	gxm_front_buffer_index = gxm_back_buffer_index;
 	gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
 	gpu_pool_reset();
-	release_unused_programs();
 }
 
 void vglInit(uint32_t gpu_pool_size){
@@ -1224,7 +1138,6 @@ void vglInit(uint32_t gpu_pool_size){
 		rgba_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		SCE_GXM_MULTISAMPLE_NONE, NULL, rgba_fragment_program,
 		&rgba_fragment_program_patched);
-	null_blend_rgba_fragment_program_patched = rgba_fragment_program_patched;
 		
 	rgba_wvp = sceGxmProgramFindParameterByName(rgba_vertex_program, "wvp");
 	rgb_wvp = sceGxmProgramFindParameterByName(rgb_vertex_program, "wvp");
@@ -1286,7 +1199,6 @@ void vglInit(uint32_t gpu_pool_size){
 		texture2d_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_fragment_program,
 		&texture2d_fragment_program_patched);
-	null_blend_texture2d_fragment_program_patched = texture2d_fragment_program_patched;	
 		
 	texture2d_wvp = sceGxmProgramFindParameterByName(texture2d_vertex_program, "wvp");	
 	
@@ -1355,7 +1267,6 @@ void vglInit(uint32_t gpu_pool_size){
 		texture2d_rgba_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_rgba_fragment_program,
 		&texture2d_rgba_fragment_program_patched);
-	null_blend_texture2d_rgba_fragment_program_patched = texture2d_rgba_fragment_program_patched;	
 		
 	texture2d_rgba_wvp = sceGxmProgramFindParameterByName(texture2d_rgba_vertex_program, "wvp");	
 	
@@ -4054,8 +3965,12 @@ void glDeleteShader(GLuint shad){
 void glDeleteProgram(GLuint prog){
 	program* p = &progs[prog-1];
 	if (p->valid){
-		sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog);
-		sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, p->vprog);
+		uint32_t count, i;
+		sceGxmShaderPatcherGetFragmentProgramRefCount(gxm_shader_patcher, p->fprog, &count);
+		for (i=0;i<count;i++){
+			sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog);
+			sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, p->vprog);
+		}
 	}
 	p->valid = GL_FALSE;
 }
@@ -4154,7 +4069,6 @@ void glLinkProgram(GLuint progr){
 		p->fshader->id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		SCE_GXM_MULTISAMPLE_NONE, NULL, p->fshader->prog,
 		&p->fprog);
-	p->null_blend_fprog = p->fprog;
 }
 
 void glUseProgram(GLuint prog){
