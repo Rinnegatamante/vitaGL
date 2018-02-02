@@ -444,11 +444,11 @@ static void display_queue_callback(const void *callbackData){
 
 static uint8_t isSameBlendInfo(SceGxmBlendInfo* b1, SceGxmBlendInfo* b2){
     return ((b1->colorFunc == b2->colorFunc) &&
-			(b1->alphaFunc == b2->alphaFunc) &&
-			(b1->colorSrc == b2->colorSrc) &&
-			(b1->alphaSrc == b2->alphaSrc) &&
-			(b1->colorDst == b2->colorDst) &&
-			(b1->alphaDst == b2->alphaDst)) ? 1 : 0;
+		(b1->alphaFunc == b2->alphaFunc) &&
+		(b1->colorSrc == b2->colorSrc) &&
+		(b1->alphaSrc == b2->alphaSrc) &&
+		(b1->colorDst == b2->colorDst) &&
+		(b1->alphaDst == b2->alphaDst)) ? 1 : 0;
 }
 
 static void release_unused_programs(){
@@ -468,10 +468,10 @@ static void release_unused_programs(){
 }
 
 static void _change_blend_factor(SceGxmBlendInfo* blend_info){
-	if (release_idx == MAX_FRAGMENT_PROGS) sceKernelExitProcess(0);
+	/*if (release_idx == MAX_FRAGMENT_PROGS) sceKernelExitProcess(0);*/
 	
 	int i,j;
-	if (blend_info != NULL){
+	/*if (blend_info != NULL){
 		for (i=0;i<release_idx;i++){
 			if (isSameBlendInfo(blend_info,&fragment_program_info[i])){
 				rgba_fragment_program_patched = rgba_fragment_programs[i];
@@ -490,12 +490,12 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 			rgba_fragment_programs[release_idx] = rgba_fragment_program_patched;
 			texture2d_fragment_programs[release_idx] = texture2d_fragment_program_patched;
 			texture2d_rgba_fragment_programs[release_idx] = texture2d_rgba_fragment_program_patched;
-		}
+		}*/
 		
 		for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
 			program* p = &progs[j];
 			if (p->valid){
-				if (cur_blend_info_ptr != NULL) p->fprog_stack[release_idx] = p->fprog;
+				//if (cur_blend_info_ptr != NULL) p->fprog_stack[release_idx] = p->fprog;
 				sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 					p->fshader->id,
 					SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
@@ -506,7 +506,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 			}
 		}
 	
-		if (cur_blend_info_ptr != NULL) release_idx++;
+		/*if (cur_blend_info_ptr != NULL) release_idx++;*/
 	
 		sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 			rgba_fragment_id,
@@ -532,7 +532,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 			texture2d_rgba_fragment_program,
 			&texture2d_rgba_fragment_program_patched);
 			
-	}else{
+	/*}else{
 		rgba_fragment_program_patched = null_blend_rgba_fragment_program_patched;
 		texture2d_fragment_program_patched = null_blend_texture2d_fragment_program_patched;
 		texture2d_rgba_fragment_program_patched = null_blend_texture2d_rgba_fragment_program_patched;
@@ -552,7 +552,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 			texture2d_rgba_fragment_programs[release_idx] = texture2d_rgba_fragment_program_patched;
 			release_idx++;
 		}
-	}
+	}*/
 
 }
 
