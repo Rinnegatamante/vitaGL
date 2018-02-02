@@ -33,7 +33,6 @@
 #define GXM_TEX_MAX_SIZE      4096 // Maximum width/height in pixels per texture
 #define BUFFERS_ADDR        0xA000 // Starting address for buffers indexing
 #define BUFFERS_NUM           128  // Maximum number of allocatable buffers
-#define MAX_FRAGMENT_PROGS    128  // Maximum number of fragment programs per shader
 #define MAX_CUSTOM_SHADERS    32   // Maximum number of linkable custom shaders
 #define MAX_SHADER_PARAMS     16   // Maximum number of parameters per custom shader
 
@@ -256,7 +255,6 @@ static SceGxmVertexProgram* rgba_vertex_program_patched;
 static SceGxmVertexProgram* rgb_vertex_program_patched;
 static SceGxmFragmentProgram* rgba_fragment_program_patched;
 static const SceGxmProgram* rgba_fragment_program;
-static SceGxmFragmentProgram* rgba_fragment_programs[MAX_FRAGMENT_PROGS];
 
 // Texture2D shader
 static SceGxmShaderPatcherId texture2d_vertex_id;
@@ -272,7 +270,6 @@ static const SceGxmProgramParameter* texture2d_tex_env_color;
 static SceGxmVertexProgram* texture2d_vertex_program_patched;
 static SceGxmFragmentProgram* texture2d_fragment_program_patched;
 static const SceGxmProgram* texture2d_fragment_program;
-static SceGxmFragmentProgram* texture2d_fragment_programs[MAX_FRAGMENT_PROGS];
 
 // Texture2D+RGBA shader
 static SceGxmShaderPatcherId texture2d_rgba_vertex_id;
@@ -288,7 +285,6 @@ static const SceGxmProgramParameter* texture2d_rgba_tex_env_color;
 static SceGxmVertexProgram* texture2d_rgba_vertex_program_patched;
 static SceGxmFragmentProgram* texture2d_rgba_fragment_program_patched;
 static const SceGxmProgram* texture2d_rgba_fragment_program;
-static SceGxmFragmentProgram* texture2d_rgba_fragment_programs[MAX_FRAGMENT_PROGS];
 
 // Custom shaders support
 typedef struct shader{
@@ -307,7 +303,6 @@ typedef struct program{
 	SceGxmVertexStream stream[16];
 	SceGxmVertexProgram* vprog;
 	SceGxmFragmentProgram* fprog;
-	SceGxmFragmentProgram* fprog_stack[MAX_FRAGMENT_PROGS];
 	GLuint attr_num;
 	const SceGxmProgramParameter* wvp;
 } program;
@@ -323,8 +318,6 @@ void* frag_uniforms = NULL;
 void* vert_uniforms = NULL;
 
 // Internal stuffs
-static SceGxmBlendInfo fragment_program_info[MAX_FRAGMENT_PROGS];
-static uint16_t release_idx = 0;
 static SceGxmPrimitiveType prim;
 static SceGxmPrimitiveTypeExtra prim_extra = SCE_GXM_PRIMITIVE_NONE;
 static vertexList* model_vertices = NULL;
@@ -341,7 +334,7 @@ static matrix4x4 modelview_matrix;
 static GLboolean vblank = GL_TRUE;
 static uint8_t np = 0xFF;
 static int alpha_op = ALWAYS;
-static SceGxmBlendInfo cur_blend_info;
+static SceGxmBlendInfo* cur_blend_info_ptr = NULL;
 static int max_texture_unit = 0;
 
 static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
@@ -438,89 +431,11 @@ static void display_queue_callback(const void *callbackData){
 	
 }
 
-static void release_unused_programs(){
-	int i, j;
-	if (cur_blend_info.colorMask == SCE_GXM_COLOR_MASK_NONE){
-		for (i=0;i < release_idx;i++){
-			if (fragment_program_info[i].colorMask != SCE_GXM_COLOR_MASK_NONE){
-				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, rgba_fragment_programs[i]);
-				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_programs[i]);
-				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_rgba_fragment_programs[i]);
-				for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
-					program* p = &progs[j];
-					if (p->valid) sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog_stack[i]);
-				}
-			}
-		}
-	}else{
-		for (i=0;i < release_idx;i++){
-			if (cur_blend_info.colorFunc != fragment_program_info[i].colorFunc ||
-				cur_blend_info.alphaFunc != fragment_program_info[i].alphaFunc ||
-				cur_blend_info.colorSrc != fragment_program_info[i].colorSrc ||
-				cur_blend_info.alphaSrc != fragment_program_info[i].alphaSrc ||
-				cur_blend_info.colorDst != fragment_program_info[i].colorDst ||
-				cur_blend_info.alphaDst != fragment_program_info[i].alphaDst){
-				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, rgba_fragment_programs[i]);
-				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_programs[i]);
-				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_rgba_fragment_programs[i]);
-				for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
-					program* p = &progs[j];
-					if (p->valid) sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog_stack[i]);
-				}
-			}
-		}
-	}
-	release_idx = 0;
-}
-
 static void _change_blend_factor(SceGxmBlendInfo* blend_info){
-	if (release_idx == MAX_FRAGMENT_PROGS) return;
-	
-	int i,j;
-	if (blend_info != NULL){
-		for (i=0;i<release_idx;i++){
-			if (blend_info->colorFunc == fragment_program_info[i].colorFunc &&
-			blend_info->alphaFunc == fragment_program_info[i].alphaFunc &&
-			blend_info->colorSrc == fragment_program_info[i].colorSrc &&
-			blend_info->alphaSrc == fragment_program_info[i].alphaSrc &&
-			blend_info->colorDst == fragment_program_info[i].colorDst &&
-			blend_info->alphaDst == fragment_program_info[i].alphaDst){
-				cur_blend_info = fragment_program_info[i];
-				rgba_fragment_program_patched = rgba_fragment_programs[i];
-				texture2d_fragment_program_patched = texture2d_fragment_programs[i];
-				texture2d_rgba_fragment_program_patched = texture2d_rgba_fragment_programs[i];
-				for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
-					program* p = &progs[j];
-					p->fprog = p->fprog_stack[i];
-				}
-				return;
-			}
-		}
-	}else{
-		for (i=0;i<release_idx;i++){
-			if (fragment_program_info[i].colorMask == SCE_GXM_COLOR_MASK_NONE){
-				cur_blend_info = fragment_program_info[i];
-				rgba_fragment_program_patched = rgba_fragment_programs[i];
-				texture2d_fragment_program_patched = texture2d_fragment_programs[i];
-				texture2d_rgba_fragment_program_patched = texture2d_rgba_fragment_programs[i];
-				for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
-					program* p = &progs[j];
-					p->fprog = p->fprog_stack[i];
-				}
-				return;
-			}
-		}
-	}
-	
-	fragment_program_info[release_idx] = cur_blend_info;
-	rgba_fragment_programs[release_idx] = rgba_fragment_program_patched;
-	texture2d_fragment_programs[release_idx] = texture2d_fragment_program_patched;
-	texture2d_rgba_fragment_programs[release_idx] = texture2d_rgba_fragment_program_patched;
-	
+	int j;	
 	for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
 		program* p = &progs[j];
 		if (p->valid){
-			p->fprog_stack[release_idx] = p->fprog;
 			sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 				p->fshader->id,
 				SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
@@ -530,7 +445,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 				&p->fprog);
 		}
 	}
-				
+	
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		rgba_fragment_id,
 		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
@@ -554,8 +469,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 		blend_info,
 		texture2d_rgba_fragment_program,
 		&texture2d_rgba_fragment_program_patched);
-		
-	release_idx++;
+
 }
 
 static void update_scissor_test(){
@@ -596,7 +510,6 @@ static void update_alpha_test_settings(){
 
 static void change_blend_factor(){
 	static SceGxmBlendInfo blend_info;
-	memset(&blend_info, 0, sizeof(SceGxmBlendInfo));
 	blend_info.colorMask = SCE_GXM_COLOR_MASK_ALL;
 	blend_info.colorFunc = blend_func_rgb;
 	blend_info.alphaFunc = blend_func_a;
@@ -606,11 +519,12 @@ static void change_blend_factor(){
 	blend_info.alphaDst = blend_dfactor_a;
 	
 	_change_blend_factor(&blend_info);
+	cur_blend_info_ptr = &blend_info;
 }
 
 static void disable_blend(){
 	_change_blend_factor(NULL);
-	cur_blend_info.colorMask = SCE_GXM_COLOR_MASK_NONE;
+	cur_blend_info_ptr = NULL;
 }
 
 static void change_depth_func(){
@@ -878,7 +792,6 @@ void vglStopRendering(){
 	gxm_front_buffer_index = gxm_back_buffer_index;
 	gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
 	gpu_pool_reset();
-	release_unused_programs();
 }
 
 void vglStopRenderingInit(){
@@ -895,7 +808,6 @@ void vglStopRenderingTerm(){
 	gxm_front_buffer_index = gxm_back_buffer_index;
 	gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
 	gpu_pool_reset();
-	release_unused_programs();
 }
 
 void vglInit(uint32_t gpu_pool_size){
@@ -1388,9 +1300,6 @@ void vglInit(uint32_t gpu_pool_size){
 		gpu_buffers[i].ptr = NULL;
 	}
 	
-	// Setting up current blend info state
-	cur_blend_info.colorMask = SCE_GXM_COLOR_MASK_NONE;
-	
 	// Init scissor test state
 	region.x = region.y = 0;
 	region.w = 960;
@@ -1527,8 +1436,8 @@ void glEnable(GLenum cap){
 			stencil_test_state = GL_TRUE;
 			break;
 		case GL_BLEND:
+            if (!blend_state) change_blend_factor();
 			blend_state = GL_TRUE;
-			change_blend_factor();
 			break;
 		case GL_SCISSOR_TEST:
 			scissor_test_state = GL_TRUE;
@@ -1590,8 +1499,8 @@ void glDisable(GLenum cap){
 			stencil_test_state = GL_FALSE;
 			break;
 		case GL_BLEND:
+            if (blend_state) disable_blend();
 			blend_state = GL_FALSE;
-			disable_blend();
 			break;
 		case GL_SCISSOR_TEST:
 			scissor_test_state = GL_FALSE;
@@ -4056,8 +3965,12 @@ void glDeleteShader(GLuint shad){
 void glDeleteProgram(GLuint prog){
 	program* p = &progs[prog-1];
 	if (p->valid){
-		sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog);
-		sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, p->vprog);
+		uint32_t count, i;
+		sceGxmShaderPatcherGetFragmentProgramRefCount(gxm_shader_patcher, p->fprog, &count);
+		for (i=0;i<count;i++){
+			sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog);
+			sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, p->vprog);
+		}
 	}
 	p->valid = GL_FALSE;
 }
