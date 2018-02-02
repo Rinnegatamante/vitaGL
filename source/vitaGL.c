@@ -484,18 +484,18 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 				return;
 			}
 		}
-        
-        if (cur_blend_info_ptr != NULL){
-            memcpy(&fragment_program_info[release_idx],cur_blend_info_ptr,sizeof(SceGxmBlendInfo));
-            rgba_fragment_programs[release_idx] = rgba_fragment_program_patched;
-            texture2d_fragment_programs[release_idx] = texture2d_fragment_program_patched;
-            texture2d_rgba_fragment_programs[release_idx] = texture2d_rgba_fragment_program_patched;
-        }
-        
-        for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
-            program* p = &progs[j];
-            if (p->valid){
-                if (cur_blend_info_ptr != NULL) p->fprog_stack[release_idx] = p->fprog;
+		
+		if (cur_blend_info_ptr != NULL){
+			memcpy(&fragment_program_info[release_idx],cur_blend_info_ptr,sizeof(SceGxmBlendInfo));
+			rgba_fragment_programs[release_idx] = rgba_fragment_program_patched;
+			texture2d_fragment_programs[release_idx] = texture2d_fragment_program_patched;
+			texture2d_rgba_fragment_programs[release_idx] = texture2d_rgba_fragment_program_patched;
+		}
+		
+		for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
+			program* p = &progs[j];
+			if (p->valid){
+				if (cur_blend_info_ptr != NULL) p->fprog_stack[release_idx] = p->fprog;
 				sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 					p->fshader->id,
 					SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
@@ -503,10 +503,10 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 					blend_info,
 					p->fshader->prog,
 					&p->fprog);
-            }
-        }
+			}
+		}
 	
-        if (cur_blend_info_ptr != NULL) release_idx++;
+		if (cur_blend_info_ptr != NULL) release_idx++;
 	
 		sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 			rgba_fragment_id,
@@ -531,28 +531,28 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 			blend_info,
 			texture2d_rgba_fragment_program,
 			&texture2d_rgba_fragment_program_patched);
-            
+			
 	}else{
-        rgba_fragment_program_patched = null_blend_rgba_fragment_program_patched;
+		rgba_fragment_program_patched = null_blend_rgba_fragment_program_patched;
 		texture2d_fragment_program_patched = null_blend_texture2d_fragment_program_patched;
 		texture2d_rgba_fragment_program_patched = null_blend_texture2d_rgba_fragment_program_patched;
-        for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
-            program* p = &progs[j];
-            if (p->valid){
-                p->fprog = p->null_blend_fprog;
-            }
-        }
-        if (cur_blend_info_ptr != NULL){
-            for (i=0;i<release_idx;i++){
-                if (isSameBlendInfo(&fragment_program_info[i],cur_blend_info_ptr)) return;
-            }
-            memcpy(&fragment_program_info[release_idx],cur_blend_info_ptr,sizeof(SceGxmBlendInfo));
-            rgba_fragment_programs[release_idx] = rgba_fragment_program_patched;
-            texture2d_fragment_programs[release_idx] = texture2d_fragment_program_patched;
-            texture2d_rgba_fragment_programs[release_idx] = texture2d_rgba_fragment_program_patched;
-            release_idx++;
-        }
-    }
+		for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
+			program* p = &progs[j];
+			if (p->valid){
+				p->fprog = p->null_blend_fprog;
+			}
+		}
+		if (cur_blend_info_ptr != NULL){
+			for (i=0;i<release_idx;i++){
+				if (isSameBlendInfo(&fragment_program_info[i],cur_blend_info_ptr)) return;
+			}
+			memcpy(&fragment_program_info[release_idx],cur_blend_info_ptr,sizeof(SceGxmBlendInfo));
+			rgba_fragment_programs[release_idx] = rgba_fragment_program_patched;
+			texture2d_fragment_programs[release_idx] = texture2d_fragment_program_patched;
+			texture2d_rgba_fragment_programs[release_idx] = texture2d_rgba_fragment_program_patched;
+			release_idx++;
+		}
+	}
 
 }
 
@@ -603,12 +603,12 @@ static void change_blend_factor(){
 	blend_info.alphaDst = blend_dfactor_a;
 	
 	_change_blend_factor(&blend_info);
-    cur_blend_info_ptr = &blend_info;
+	cur_blend_info_ptr = &blend_info;
 }
 
 static void disable_blend(){
 	_change_blend_factor(NULL);
-    cur_blend_info_ptr = NULL;
+	cur_blend_info_ptr = NULL;
 }
 
 static void change_depth_func(){
