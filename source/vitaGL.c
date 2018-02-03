@@ -1386,8 +1386,8 @@ void glClear(GLbitfield mask){
 		sceGxmSetUniformDataF(color_buffer, clear_color, 0, 4, &clear_rgba_val.r);
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
-		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		depth_test_state = orig_depth_test;
+		change_depth_write(depth_mask_state && depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		change_depth_func();
 		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
 		sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back);
@@ -1417,8 +1417,8 @@ void glClear(GLbitfield mask){
 		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
 		sceGxmSetVertexStream(gxm_context, 0, depth_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_indices, 4);
-		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		depth_test_state = orig_depth_test;
+		change_depth_write(depth_mask_state && depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		change_depth_func();
 		change_stencil_settings();
 	}
@@ -1440,6 +1440,7 @@ void glEnable(GLenum cap){
 		case GL_DEPTH_TEST:
 			depth_test_state = GL_TRUE;
 			change_depth_func();
+			change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 			break;
 		case GL_STENCIL_TEST:
 			change_stencil_settings();
@@ -1492,6 +1493,7 @@ void glDisable(GLenum cap){
 		case GL_DEPTH_TEST:
 			depth_test_state = GL_FALSE;
 			change_depth_func();
+			change_depth_write(SCE_GXM_DEPTH_WRITE_DISABLED);
 			break;
 		case GL_STENCIL_TEST:
 			sceGxmSetFrontStencilFunc(gxm_context,
@@ -2681,7 +2683,7 @@ void glDepthMask(GLboolean flag){
 		return;
 	}
 	depth_mask_state = flag;
-	change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+	change_depth_write(depth_mask_state && depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 }
 
 void glAlphaFunc(GLenum func, GLfloat ref){
