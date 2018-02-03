@@ -520,11 +520,21 @@ static void change_blend_factor(){
 	
 	_change_blend_factor(&blend_info);
 	cur_blend_info_ptr = &blend_info;
+	if (cur_program != 0){
+		program* p = &progs[cur_program-1];
+		sceGxmSetVertexProgram(gxm_context, p->vprog);
+		sceGxmSetFragmentProgram(gxm_context, p->fprog);
+	}
 }
 
 static void disable_blend(){
 	_change_blend_factor(NULL);
 	cur_blend_info_ptr = NULL;
+	if (cur_program != 0){
+		program* p = &progs[cur_program-1];
+		sceGxmSetVertexProgram(gxm_context, p->vprog);
+		sceGxmSetFragmentProgram(gxm_context, p->fprog);
+	}
 }
 
 static void change_depth_func(){
