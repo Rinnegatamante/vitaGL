@@ -18,7 +18,7 @@
 #include "shaders/texture2d_rgba_v.h"
 
 #ifndef max
-    #define max(a,b) ((a) > (b) ? (a) : (b))
+	#define max(a,b) ((a) > (b) ? (a) : (b))
 #endif
 
 #define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
@@ -1447,7 +1447,7 @@ void glEnable(GLenum cap){
 			stencil_test_state = GL_TRUE;
 			break;
 		case GL_BLEND:
-            if (!blend_state) change_blend_factor();
+			if (!blend_state) change_blend_factor();
 			blend_state = GL_TRUE;
 			break;
 		case GL_SCISSOR_TEST:
@@ -1511,7 +1511,7 @@ void glDisable(GLenum cap){
 			stencil_test_state = GL_FALSE;
 			break;
 		case GL_BLEND:
-            if (blend_state) disable_blend();
+			if (blend_state) disable_blend();
 			blend_state = GL_FALSE;
 			break;
 		case GL_SCISSOR_TEST:
@@ -2227,7 +2227,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 							sceGxmTextureSetMagFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
 							break;
 						case GL_LINEAR:
-						    tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+							tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 							sceGxmTextureSetMagFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
 							break;
 						case GL_NEAREST_MIPMAP_NEAREST:
@@ -3942,34 +3942,34 @@ void glGenerateMipmap(GLenum target){
 }
 
 void glReadPixels(GLint x,  GLint y,  GLsizei width,  GLsizei height,  GLenum format,  GLenum type,  GLvoid * data){
-    SceDisplayFrameBuf pParam;
-    pParam.size = sizeof(SceDisplayFrameBuf);
-    sceDisplayGetFrameBuf(&pParam, SCE_DISPLAY_SETBUF_NEXTFRAME);
-    y = 544 - (height + y);
-    int i,j;
-    uint32_t* out = (uint32_t*)data;
-    uint32_t* in = (uint32_t*)pParam.base;
-    in += (x + y * pParam.pitch);
-    switch (format){
-        case GL_RGBA:
-            switch (type){
-                case GL_UNSIGNED_BYTE:
-                    for (i = 0; i < height; i++){
-                        for (j = 0; j < width; j++){
-                            out[(height-(i+1))*width+j] = in[j];
-                        }
-                        in += pParam.pitch;
-                    }
-                    break;
-                default:
-                    error = GL_INVALID_ENUM;
-                    break;
-            }
-            break;
-        default:
-            error = GL_INVALID_ENUM;
-            break;
-    }
+	SceDisplayFrameBuf pParam;
+	pParam.size = sizeof(SceDisplayFrameBuf);
+	sceDisplayGetFrameBuf(&pParam, SCE_DISPLAY_SETBUF_NEXTFRAME);
+	y = 544 - (height + y);
+	int i,j;
+	uint32_t* out = (uint32_t*)data;
+	uint32_t* in = (uint32_t*)pParam.base;
+	in += (x + y * pParam.pitch);
+	switch (format){
+		case GL_RGBA:
+			switch (type){
+				case GL_UNSIGNED_BYTE:
+					for (i = 0; i < height; i++){
+						for (j = 0; j < width; j++){
+							out[(height-(i+1))*width+j] = in[j];
+						}
+						in += pParam.pitch;
+					}
+					break;
+				default:
+					error = GL_INVALID_ENUM;
+					break;
+			}
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
 }
 
 GLuint glCreateShader(GLenum shaderType){
