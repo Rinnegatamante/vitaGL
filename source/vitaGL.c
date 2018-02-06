@@ -3941,6 +3941,37 @@ void glGenerateMipmap(GLenum target){
 	}
 }
 
+void glReadPixels(GLint x,  GLint y,  GLsizei width,  GLsizei height,  GLenum format,  GLenum type,  GLvoid * data){
+    SceDisplayFrameBuf pParam;
+    pParam.size = sizeof(SceDisplayFrameBuf);
+    sceDisplayGetFrameBuf(&pParam, SCE_DISPLAY_SETBUF_NEXTFRAME);
+    y = 544 - (height + y);
+    int i,j;
+    uint32_t* out = (uint32_t*)data;
+    uint32_t* in = (uint32_t*)pParam.base;
+    in += (x + y * pParam.pitch);
+    switch (format){
+        case GL_RGBA:
+            switch (type){
+                case GL_UNSIGNED_BYTE:
+                    for (i = 0; i < height; i++){
+                        for (j = 0; j < width; j++){
+                            out[(height-(i+1))*width+j] = in[j];
+                        }
+                        in += pParam.pitch;
+                    }
+                    break;
+                default:
+                    error = GL_INVALID_ENUM;
+                    break;
+            }
+            break;
+        default:
+            error = GL_INVALID_ENUM;
+            break;
+    }
+}
+
 GLuint glCreateShader(GLenum shaderType){
 	GLuint i, res = 0;
 	for (i=1;i<=MAX_CUSTOM_SHADERS;i++){
