@@ -336,6 +336,7 @@ static uint8_t np = 0xFF;
 static int alpha_op = ALWAYS;
 static SceGxmBlendInfo* cur_blend_info_ptr = NULL;
 static int max_texture_unit = 0;
+extern uint8_t use_vram;
 
 static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
@@ -818,6 +819,10 @@ void vglStopRenderingTerm(){
 	gxm_front_buffer_index = gxm_back_buffer_index;
 	gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
 	gpu_pool_reset();
+}
+
+void vglUseVram(GLboolean usage){
+	use_vram = usage;
 }
 
 void vglInit(uint32_t gpu_pool_size){

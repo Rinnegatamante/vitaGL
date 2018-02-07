@@ -325,5 +325,6 @@ void vglStopRendering();
 void vglStopRenderingInit();
 void vglStopRenderingTerm();
 void vglUpdateCommonDialog();
+void vglUseVram(GLboolean usage);
 
 #endif
