@@ -3815,6 +3815,15 @@ void glGetFloatv(GLenum pname, GLfloat* data){
 		case GL_ACTIVE_TEXTURE:
 			*data = (1.0f * (server_texture_unit + GL_TEXTURE0));
 			break;
+		case GL_MAX_MODELVIEW_STACK_DEPTH:
+			*data = MODELVIEW_STACK_DEPTH;
+			break;
+		case GL_MAX_PROJECTION_STACK_DEPTH:
+			*data = GENERIC_STACK_DEPTH;
+			break;
+		case GL_MAX_TEXTURE_STACK_DEPTH:
+			*data = GENERIC_STACK_DEPTH;
+			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
