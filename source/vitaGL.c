@@ -344,6 +344,7 @@ static gpubuffer gpu_buffers[BUFFERS_NUM]; // Buffers array
 
 static scissor_region region; // Current scissor test region setup
 static texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
+static SceGxmColorMask blend_color_mask = SCE_GXM_COLOR_MASK_ALL; // Current in-use color mask (glColorMask)
 static SceGxmBlendFunc blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD; // Current in-use RGB blend func
 static SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use A blend func
 static SceGxmBlendFactor blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use RGB source blend factor
@@ -511,13 +512,32 @@ static void update_alpha_test_settings(){
 
 static void change_blend_factor(){
 	static SceGxmBlendInfo blend_info;
-	blend_info.colorMask = SCE_GXM_COLOR_MASK_ALL;
+	blend_info.colorMask = blend_color_mask;
 	blend_info.colorFunc = blend_func_rgb;
 	blend_info.alphaFunc = blend_func_a;
 	blend_info.colorSrc = blend_sfactor_rgb;
 	blend_info.colorDst = blend_dfactor_rgb;
 	blend_info.alphaSrc = blend_sfactor_a;
 	blend_info.alphaDst = blend_dfactor_a;
+	
+	_change_blend_factor(&blend_info);
+	cur_blend_info_ptr = &blend_info;
+	if (cur_program != 0){
+		program* p = &progs[cur_program-1];
+		sceGxmSetVertexProgram(gxm_context, p->vprog);
+		sceGxmSetFragmentProgram(gxm_context, p->fprog);
+	}
+}
+
+static void change_blend_mask(){
+	static SceGxmBlendInfo blend_info;
+	blend_info.colorMask = blend_color_mask;
+	blend_info.colorFunc = SCE_GXM_BLEND_FUNC_ADD;
+	blend_info.alphaFunc = SCE_GXM_BLEND_FUNC_ADD;
+	blend_info.colorSrc = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+	blend_info.colorDst = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	blend_info.alphaSrc = SCE_GXM_BLEND_FACTOR_ONE;
+	blend_info.alphaDst = SCE_GXM_BLEND_FACTOR_ZERO;
 	
 	_change_blend_factor(&blend_info);
 	cur_blend_info_ptr = &blend_info;
@@ -2999,6 +3019,16 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha){
 			break;
 	}
 	if (blend_state) change_blend_factor();
+}
+
+void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha){
+	blend_color_mask = SCE_GXM_COLOR_MASK_NONE;
+	if (red) blend_color_mask += SCE_GXM_COLOR_MASK_R;
+	if (green) blend_color_mask += SCE_GXM_COLOR_MASK_G;
+	if (blue) blend_color_mask += SCE_GXM_COLOR_MASK_B;
+	if (alpha) blend_color_mask += SCE_GXM_COLOR_MASK_A;
+	if (blend_state) change_blend_factor();
+	else change_blend_mask();
 }
 
 void glStencilOpSeparate(GLenum face, GLenum sfail,  GLenum dpfail,  GLenum dppass){

@@ -226,6 +226,7 @@ void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void glColor4fv(const GLfloat* v);
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
 void glColor4ubv(const GLubyte* v);
+void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha);
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
 void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid* data);
 GLuint glCreateProgram(void);
