@@ -2514,10 +2514,10 @@ void glViewport(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 		error = GL_INVALID_VALUE;
 		return;
 	}
-	x_port = x + (width>>1);
 	x_scale = width>>1;
-	y_port = height>>1;
+	x_port = x + x_scale;
 	y_scale = -(height>>1);
+	y_port = y - y_scale;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 	viewport_mode = 1;
 }
