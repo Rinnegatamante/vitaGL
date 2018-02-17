@@ -1,6 +1,10 @@
 #ifndef _VITAGL_H_
 #define _VITAGL_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <vitasdk.h>
 
 #define GLfloat       float
@@ -330,5 +334,9 @@ void vglStopRenderingInit();
 void vglStopRenderingTerm();
 void vglUpdateCommonDialog();
 void vglUseVram(GLboolean usage);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
