@@ -1946,6 +1946,9 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 							case GL_UNSIGNED_SHORT_4_4_4_4:
 								tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR;
 								break;
+							case GL_UNSIGNED_SHORT_5_5_5_1:
+								tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
+								break;
 							default:
 								error = GL_INVALID_ENUM;
 								break;
@@ -2155,8 +2158,10 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 				case GL_RGBA:
 					switch (type){
 						case GL_UNSIGNED_BYTE:
+						case GL_UNSIGNED_SHORT_5_5_5_1:
 							switch (tex_format){
 								case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
+								case SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA:
 									for (i=0;i<height;i++){
 										memcpy(ptr, pixels, width * bpp);
 										pixels += width * bpp;
