@@ -1395,7 +1395,9 @@ void vglWaitVblankStart(GLboolean enable){
 // openGL implementation
 
 GLenum glGetError(void){
-	return error;
+	GLenum ret = error;
+	error = GL_NO_ERROR;
+	return ret;
 }
 
 void glClear(GLbitfield mask){
