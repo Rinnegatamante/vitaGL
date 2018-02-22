@@ -57,6 +57,6 @@ samples: $(TARGET).a
 	@make -C samples/sample4
 	cp "samples/sample4/vitaGL-Sample004.vpk" .
 	@make -C samples/sample5
-	cp "samples/sample4/vitaGL-Sample005.vpk" .
+	cp "samples/sample5/vitaGL-Sample005.vpk" .
 	@make -C samples/sample6
-	cp "samples/sample4/vitaGL-Sample006.vpk" .
+	cp "samples/sample6/vitaGL-Sample006.vpk" .
