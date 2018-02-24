@@ -4006,18 +4006,38 @@ void glReadPixels(GLint x,  GLint y,  GLsizei width,  GLsizei height,  GLenum fo
 	sceDisplayGetFrameBuf(&pParam, SCE_DISPLAY_SETBUF_NEXTFRAME);
 	y = 544 - (height + y);
 	int i,j;
-	uint32_t* out = (uint32_t*)data;
-	uint32_t* in = (uint32_t*)pParam.base;
-	in += (x + y * pParam.pitch);
+	uint8_t* out8 = (uint8_t*)data;
+	uint8_t* in8 = (uint8_t*)pParam.base;
+	uint32_t* out32 = (uint32_t*)data;
+	uint32_t* in32 = (uint32_t*)pParam.base;
 	switch (format){
 		case GL_RGBA:
 			switch (type){
 				case GL_UNSIGNED_BYTE:
+					in32 += (x + y * pParam.pitch);
 					for (i = 0; i < height; i++){
 						for (j = 0; j < width; j++){
-							out[(height-(i+1))*width+j] = in[j];
+							out32[(height-(i+1))*width+j] = in32[j];
 						}
-						in += pParam.pitch;
+						in32 += pParam.pitch;
+					}
+					break;
+				default:
+					error = GL_INVALID_ENUM;
+					break;
+			}
+			break;
+		case GL_RGB:
+			switch (type){
+				case GL_UNSIGNED_BYTE:
+					in8 += (x * 4 + y * pParam.pitch * 4);
+					for (i = 0; i < height; i++){
+						for (j = 0; j < width; j++){
+							out8[((height-(i+1))*width+j)*3] = in8[j*4];
+							out8[((height-(i+1))*width+j)*3+1] = in8[j*4+1];
+							out8[((height-(i+1))*width+j)*3+2] = in8[j*4+2];
+						}
+						in8 += pParam.pitch * 4;
 					}
 					break;
 				default:
