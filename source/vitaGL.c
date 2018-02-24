@@ -2520,7 +2520,7 @@ void glViewport(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 	x_scale = width>>1;
 	x_port = x + x_scale;
 	y_scale = -(height>>1);
-	y_port = y - y_scale;
+	y_port = 544 - y + y_scale;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 	viewport_mode = 1;
 }
