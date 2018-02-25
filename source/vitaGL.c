@@ -669,30 +669,22 @@ static void invalidate_depth_test(){
 static void validate_depth_test(){
 	depth_test_state = orig_depth_test;
 	change_depth_func();
-	change_stencil_settings();
 }
 
 static void update_scissor_test(){
 	if (scissor_test_state){
 		scissor_test_vertices[0].position.x = ((2.0f * region.x) / 960.0f) - 1.0f;
-		scissor_test_vertices[0].position.y = ((2.0f * region.y) / 544.0f) - 1.0f;
+		scissor_test_vertices[0].position.y = 1.0f - (2.0f * (region.y + region.h)) / 544.0f;
 		scissor_test_vertices[1].position.x = ((2.0f * (region.x + region.w)) / 960.0f) - 1.0f;
-		scissor_test_vertices[1].position.y = ((2.0f * region.y) / 544.0f) - 1.0f;
-		scissor_test_vertices[2].position.x = ((2.0f * region.x) / 960.0f) - 1.0f;
-		scissor_test_vertices[2].position.y = ((2.0f * (region.y + region.h)) / 960.0f) - 1.0f;
-		scissor_test_vertices[3].position.x = ((2.0f * (region.x + region.w)) / 960.0f) - 1.0f;
-		scissor_test_vertices[3].position.y = ((2.0f * (region.y + region.h)) / 960.0f) - 1.0f;
-	}else{
-		scissor_test_vertices[0].position = (vector2f){-1.0f, -1.0f};
-		scissor_test_vertices[1].position = (vector2f){ 1.0f, -1.0f};
-		scissor_test_vertices[2].position = (vector2f){-1.0f,  1.0f};
-		scissor_test_vertices[3].position = (vector2f){ 1.0f,  1.0f};
+		scissor_test_vertices[1].position.y = 1.0f - (2.0f * (region.y + region.h)) / 544.0f;
+		scissor_test_vertices[2].position.x = ((2.0f * (region.x + region.w)) / 960.0f) - 1.0f;
+		scissor_test_vertices[2].position.y = 1.0f - (2.0f * region.y) / 544.0f;
+		scissor_test_vertices[3].position.x = ((2.0f * region.x) / 960.0f) - 1.0f;
+		scissor_test_vertices[3].position.y = 1.0f - (2.0f * region.y) / 544.0f;
 	}
+	
 	sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 	sceGxmSetFragmentProgram(gxm_context, scissor_test_fragment_program);
-	
-	invalidate_depth_test();
-	change_depth_write(SCE_GXM_DEPTH_WRITE_ENABLED);
 		
 	sceGxmSetFrontStencilFunc(gxm_context,
 		SCE_GXM_STENCIL_FUNC_NEVER,
@@ -723,12 +715,9 @@ static void update_scissor_test(){
 		SCE_GXM_STENCIL_OP_KEEP,
 		0, 0);
 	
-	sceGxmSetVertexStream(gxm_context, 0, scissor_test_vertices);
+	if (scissor_test_state) sceGxmSetVertexStream(gxm_context, 0, scissor_test_vertices);
+	else sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
 	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
-	
-	validate_depth_test();
-	change_depth_write(depth_mask_state && depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-	
 }
 
 static void purge_vertex_list(){
@@ -1173,8 +1162,8 @@ void vglInit(uint32_t gpu_pool_size){
 
 	clear_vertices[0].position = (vector2f){-1.0f, -1.0f};
 	clear_vertices[1].position = (vector2f){ 1.0f, -1.0f};
-	clear_vertices[2].position = (vector2f){-1.0f,  1.0f};
-	clear_vertices[3].position = (vector2f){ 1.0f,  1.0f};
+	clear_vertices[2].position = (vector2f){ 1.0f,  1.0f};
+	clear_vertices[3].position = (vector2f){-1.0f,  1.0f};
 
 	clear_indices[0] = 0;
 	clear_indices[1] = 1;
@@ -1395,11 +1384,6 @@ void vglInit(uint32_t gpu_pool_size){
 	scissor_test_vertices = gpu_alloc_map(
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
 		4 * sizeof(struct clear_vertex), &scissor_test_vertices_uid);
-
-	scissor_test_vertices[0].position = (vector2f){-1.0f, -1.0f};
-	scissor_test_vertices[1].position = (vector2f){ 1.0f, -1.0f};
-	scissor_test_vertices[2].position = (vector2f){-1.0f,  1.0f};
-	scissor_test_vertices[3].position = (vector2f){ 1.0f,  1.0f};
 	
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);
@@ -1521,18 +1505,6 @@ void glClear(GLbitfield mask){
 	if ((mask & GL_DEPTH_BUFFER_BIT) == GL_DEPTH_BUFFER_BIT){
 		change_depth_write(SCE_GXM_DEPTH_WRITE_ENABLED);
 		invalidate_depth_test();
-		sceGxmSetFrontStencilFunc(gxm_context,
-			SCE_GXM_STENCIL_FUNC_NEVER,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			0, 0xFF);
-		sceGxmSetBackStencilFunc(gxm_context,
-			SCE_GXM_STENCIL_FUNC_NEVER,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			0, 0xFF);
 		depth_vertices[0].position.z = depth_value;
 		depth_vertices[1].position.z = depth_value;
 		depth_vertices[2].position.z = depth_value;
