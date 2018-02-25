@@ -189,8 +189,10 @@ static void* gxm_color_surfaces_addr[DISPLAY_BUFFER_COUNT];
 static SceGxmSyncObject* gxm_sync_objects[DISPLAY_BUFFER_COUNT];
 static unsigned int gxm_front_buffer_index;
 static unsigned int gxm_back_buffer_index;
-static SceUID gxm_depth_stencil_surface_uid;
-static void* gxm_depth_stencil_surface_addr;
+static SceUID gxm_depth_surface_uid;
+static SceUID gxm_stencil_surface_uid;
+static void* gxm_depth_surface_addr;
+static void* gxm_stencil_surface_addr;
 static SceGxmDepthStencilSurface gxm_depth_stencil_surface;
 static SceGxmShaderPatcher* gxm_shader_patcher;
 static SceUID gxm_shader_patcher_buffer_uid;
@@ -290,6 +292,11 @@ static SceGxmVertexProgram* texture2d_rgba_vertex_program_patched;
 static SceGxmFragmentProgram* texture2d_rgba_fragment_program_patched;
 static const SceGxmProgram* texture2d_rgba_fragment_program;
 
+// Scissor Test fragment program
+static SceGxmFragmentProgram* scissor_test_fragment_program;
+static clear_vertex* scissor_test_vertices = NULL;
+static SceUID scissor_test_vertices_uid;
+
 // Custom shaders support
 typedef struct shader{
 	GLenum type;
@@ -322,6 +329,7 @@ void* frag_uniforms = NULL;
 void* vert_uniforms = NULL;
 
 // Internal stuffs
+static GLenum orig_depth_test;
 static SceGxmPrimitiveType prim;
 static SceGxmPrimitiveTypeExtra prim_extra = SCE_GXM_PRIMITIVE_NONE;
 static vertexList* model_vertices = NULL;
@@ -474,11 +482,6 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 		texture2d_rgba_fragment_program,
 		&texture2d_rgba_fragment_program_patched);
 
-}
-
-static void update_scissor_test(){
-	if (scissor_test_state) sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.w, region.h);
-	else sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_NONE, 0, 0, 0, 0);
 }
 
 static void update_alpha_test_settings(){
@@ -657,6 +660,77 @@ static GLboolean change_stencil_func_config(SceGxmStencilFunc* cfg, GLenum new){
 	return ret;
 }
 
+static void invalidate_depth_test(){
+	orig_depth_test = depth_test_state;
+	depth_test_state = GL_FALSE;
+	change_depth_func();
+}
+
+static void validate_depth_test(){
+	depth_test_state = orig_depth_test;
+	change_depth_func();
+	change_stencil_settings();
+}
+
+static void update_scissor_test(){
+	if (scissor_test_state){
+		scissor_test_vertices[0].position.x = ((2.0f * region.x) / 960.0f) - 1.0f;
+		scissor_test_vertices[0].position.y = ((2.0f * region.y) / 544.0f) - 1.0f;
+		scissor_test_vertices[1].position.x = ((2.0f * (region.x + region.w)) / 960.0f) - 1.0f;
+		scissor_test_vertices[1].position.y = ((2.0f * region.y) / 544.0f) - 1.0f;
+		scissor_test_vertices[2].position.x = ((2.0f * region.x) / 960.0f) - 1.0f;
+		scissor_test_vertices[2].position.y = ((2.0f * (region.y + region.h)) / 960.0f) - 1.0f;
+		scissor_test_vertices[3].position.x = ((2.0f * (region.x + region.w)) / 960.0f) - 1.0f;
+		scissor_test_vertices[3].position.y = ((2.0f * (region.y + region.h)) / 960.0f) - 1.0f;
+	}else{
+		scissor_test_vertices[0].position = (vector2f){-1.0f, -1.0f};
+		scissor_test_vertices[1].position = (vector2f){ 1.0f, -1.0f};
+		scissor_test_vertices[2].position = (vector2f){-1.0f,  1.0f};
+		scissor_test_vertices[3].position = (vector2f){ 1.0f,  1.0f};
+	}
+	sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
+	sceGxmSetFragmentProgram(gxm_context, scissor_test_fragment_program);
+	
+	invalidate_depth_test();
+	change_depth_write(SCE_GXM_DEPTH_WRITE_ENABLED);
+		
+	sceGxmSetFrontStencilFunc(gxm_context,
+		SCE_GXM_STENCIL_FUNC_NEVER,
+		SCE_GXM_STENCIL_OP_KEEP,
+		SCE_GXM_STENCIL_OP_KEEP,
+		SCE_GXM_STENCIL_OP_KEEP,
+		0, 0);
+	sceGxmSetBackStencilFunc(gxm_context,
+		SCE_GXM_STENCIL_FUNC_NEVER,
+		SCE_GXM_STENCIL_OP_KEEP,
+		SCE_GXM_STENCIL_OP_KEEP,
+		SCE_GXM_STENCIL_OP_KEEP,
+		0, 0);
+	
+	sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
+	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
+	
+	sceGxmSetFrontStencilFunc(gxm_context,
+		SCE_GXM_STENCIL_FUNC_ALWAYS,
+		SCE_GXM_STENCIL_OP_KEEP,
+		SCE_GXM_STENCIL_OP_KEEP,
+		SCE_GXM_STENCIL_OP_KEEP,
+		0, 0);
+	sceGxmSetBackStencilFunc(gxm_context,
+		SCE_GXM_STENCIL_FUNC_ALWAYS,
+		SCE_GXM_STENCIL_OP_KEEP,
+		SCE_GXM_STENCIL_OP_KEEP,
+		SCE_GXM_STENCIL_OP_KEEP,
+		0, 0);
+	
+	sceGxmSetVertexStream(gxm_context, 0, scissor_test_vertices);
+	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
+	
+	validate_depth_test();
+	change_depth_write(depth_mask_state && depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+	
+}
+
 static void purge_vertex_list(){
 	vertexList* old;
 	rgbaList* old2;
@@ -746,7 +820,7 @@ void vglUpdateCommonDialog(){
 	updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE;
 
 	updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_back_buffer_index];
-	updateParam.renderTarget.depthSurfaceData = gxm_depth_stencil_surface_addr;
+	updateParam.renderTarget.depthSurfaceData = gxm_depth_surface_addr;
 	updateParam.displaySyncObject = gxm_sync_objects[gxm_back_buffer_index];
 
 	sceCommonDialogUpdate(&updateParam);
@@ -933,16 +1007,20 @@ void vglInit(uint32_t gpu_pool_size){
 	unsigned int depth_stencil_height = ALIGN(DISPLAY_HEIGHT, SCE_GXM_TILE_SIZEY);
 	unsigned int depth_stencil_samples = depth_stencil_width * depth_stencil_height;
 
-	gxm_depth_stencil_surface_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
+	gxm_depth_surface_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
 		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-		4 * depth_stencil_samples, &gxm_depth_stencil_surface_uid);
+		4 * depth_stencil_samples, &gxm_depth_surface_uid);
+		
+	gxm_stencil_surface_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
+		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
+		1 * depth_stencil_samples, &gxm_stencil_surface_uid);
 
 	sceGxmDepthStencilSurfaceInit(&gxm_depth_stencil_surface,
-		SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24,
+		SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M_S8,
 		SCE_GXM_DEPTH_STENCIL_SURFACE_TILED,
 		depth_stencil_width,
-		gxm_depth_stencil_surface_addr,
-		NULL);
+		gxm_depth_surface_addr,
+		gxm_stencil_surface_addr);
 		
 	static const unsigned int shader_patcher_buffer_size = 1024 * 1024;
 	static const unsigned int shader_patcher_vertex_usse_size = 1024 * 1024;
@@ -1311,6 +1389,18 @@ void vglInit(uint32_t gpu_pool_size){
 	
 	sceGxmSetTwoSidedEnable(gxm_context, SCE_GXM_TWO_SIDED_ENABLED);
 	
+	// Scissor Test shader register
+	sceGxmShaderPatcherCreateMaskUpdateFragmentProgram(gxm_shader_patcher, &scissor_test_fragment_program);
+	
+	scissor_test_vertices = gpu_alloc_map(
+		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
+		4 * sizeof(struct clear_vertex), &scissor_test_vertices_uid);
+
+	scissor_test_vertices[0].position = (vector2f){-1.0f, -1.0f};
+	scissor_test_vertices[1].position = (vector2f){ 1.0f, -1.0f};
+	scissor_test_vertices[2].position = (vector2f){-1.0f,  1.0f};
+	scissor_test_vertices[3].position = (vector2f){ 1.0f,  1.0f};
+	
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);
 	
@@ -1356,6 +1446,8 @@ void vglEnd(void){
 	gpu_unmap_free(clear_indices_uid);
 	gpu_unmap_free(depth_vertices_uid);
 	gpu_unmap_free(depth_indices_uid);
+	gpu_unmap_free(scissor_test_vertices_uid);
+	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, scissor_test_fragment_program);
 	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, disable_color_buffer_vertex_program_patched);
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, disable_color_buffer_fragment_program_patched);
 	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, clear_vertex_program_patched);
@@ -1378,7 +1470,8 @@ void vglEnd(void){
 	gpu_unmap_free(gxm_shader_patcher_buffer_uid);
 	gpu_vertex_usse_unmap_free(gxm_shader_patcher_vertex_usse_uid);
 	gpu_fragment_usse_unmap_free(gxm_shader_patcher_fragment_usse_uid);
-	gpu_unmap_free(gxm_depth_stencil_surface_uid);
+	gpu_unmap_free(gxm_depth_surface_uid);
+	gpu_unmap_free(gxm_stencil_surface_uid);
 	int i;
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
 		gpu_unmap_free(gxm_color_surfaces_uid[i]);
@@ -1409,8 +1502,7 @@ void glClear(GLbitfield mask){
 	GLenum orig_depth_test = depth_test_state;
 	if ((mask & GL_COLOR_BUFFER_BIT) == GL_COLOR_BUFFER_BIT){
 		change_depth_write(SCE_GXM_DEPTH_WRITE_DISABLED);
-		depth_test_state = GL_FALSE;
-		change_depth_func();
+		invalidate_depth_test();
 		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
 		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
@@ -1420,17 +1512,15 @@ void glClear(GLbitfield mask){
 		sceGxmSetUniformDataF(color_buffer, clear_color, 0, 4, &clear_rgba_val.r);
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
-		depth_test_state = orig_depth_test;
 		change_depth_write(depth_mask_state && depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-		change_depth_func();
+		validate_depth_test();
 		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
 		sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back);
 		drawing = 1;
 	}
 	if ((mask & GL_DEPTH_BUFFER_BIT) == GL_DEPTH_BUFFER_BIT){
 		change_depth_write(SCE_GXM_DEPTH_WRITE_ENABLED);
-		depth_test_state = GL_FALSE;
-		change_depth_func();
+		invalidate_depth_test();
 		sceGxmSetFrontStencilFunc(gxm_context,
 			SCE_GXM_STENCIL_FUNC_NEVER,
 			SCE_GXM_STENCIL_OP_REPLACE,
@@ -1451,10 +1541,8 @@ void glClear(GLbitfield mask){
 		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
 		sceGxmSetVertexStream(gxm_context, 0, depth_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_indices, 4);
-		depth_test_state = orig_depth_test;
 		change_depth_write(depth_mask_state && depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-		change_depth_func();
-		change_stencil_settings();
+		validate_depth_test();
 	}
 }
 
@@ -2538,17 +2626,15 @@ void glDepthRangef(GLfloat nearVal, GLfloat farVal){
 }
 
 void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height){
-	if (scissor_test_state){
-		if ((width < 0) || (height < 0)){
-			error = GL_INVALID_VALUE;
-			return;
-		}
-		region.x = x;
-		region.y = y - height;
-		region.w = x + width;
-		region.h = y;
-		update_scissor_test();
+	if ((width < 0) || (height < 0)){
+		error = GL_INVALID_VALUE;
+		return;
 	}
+	region.x = x;
+	region.y = 544 - y - height;
+	region.w = width;
+	region.h = height;
+	if (scissor_test_state) update_scissor_test();
 }
 
 void glOrtho(GLdouble left,  GLdouble right,  GLdouble bottom,  GLdouble top,  GLdouble nearVal,  GLdouble farVal){
