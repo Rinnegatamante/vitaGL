@@ -198,9 +198,10 @@ void gpu_free_texture(texture* tex){
 	tex->valid = 0;
 }
 
-void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void* data, texture* tex){
+void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void* data, texture* tex, uint8_t src_bpp, uint32_t (*read_cb)(void*),  void (*write_cb)(void*, uint32_t)){
 	if (tex->valid) gpu_free_texture(tex);
-	const int tex_size = w * h * tex_format_to_bytespp(format);
+	uint8_t bpp = tex_format_to_bytespp(format);
+	const int tex_size = w * h * bpp;
 	void *texture_data = gpu_alloc_map(
 		(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_RW),
 		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
@@ -218,10 +219,21 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 			SCE_GXM_COLOR_SURFACE_SCALE_NONE,
 			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
 			w,h,w,texture_data);	
-		if (data != NULL) memcpy(texture_data, (uint8_t*)data, tex_size);
-		else memset(texture_data, 0, tex_size);
+		if (data != NULL){
+			if (write_cb == NULL) memcpy(texture_data, (uint8_t*)data, tex_size);
+			else{
+				int i;
+				uint8_t *src = (uint8_t*)data;
+				uint8_t *dst = (uint8_t*)texture_data;
+				for (i=0;i<w*h;i++){
+					uint32_t clr = read_cb(src);
+					write_cb(dst, clr);
+					src += src_bpp;
+					dst += bpp;
+				}
+			}
+		}else memset(texture_data, 0, tex_size);
 		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, w, h, 0);
-	
 		if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8) tex->palette_UID = 1;
 		else tex->palette_UID = 0;
 		tex->valid = 1;
