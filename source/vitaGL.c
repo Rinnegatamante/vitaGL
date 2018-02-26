@@ -3,6 +3,7 @@
 #include "vitaGL.h"
 #include "math_utils.h"
 #include "gpu_utils.h"
+#include "texture_callbacks.h"
 
 // Shaders
 #include "shaders/clear_f.h"
@@ -18,10 +19,8 @@
 #include "shaders/texture2d_rgba_v.h"
 
 #ifndef max
-	#define max(a,b) ((a) > (b) ? (a) : (b))
+#  define max(a,b) ((a) > (b) ? (a) : (b))
 #endif
-
-#define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 
 #define TEXTURES_NUM          1024 // Available textures per texture unit
 #define MODELVIEW_STACK_DEPTH 32   // Depth of modelview matrix stack
@@ -37,6 +36,7 @@
 #define MAX_SHADER_PARAMS     16   // Maximum number of parameters per custom shader
 
 // Debugging tool
+#ifdef ENABLE_LOG
 void LOG(const char *format, ...) {
 	__gnuc_va_list arg;
 	int done;
@@ -52,6 +52,7 @@ void LOG(const char *format, ...) {
 		fclose(log);
 	}
 }
+#endif
 
 static const GLubyte* vendor = "Rinnegatamante";
 static const GLubyte* renderer = "SGX543MP4+";
@@ -1915,32 +1916,6 @@ void glColorTable(GLenum target,  GLenum internalformat,  GLsizei width,  GLenum
 	color_table = gpu_alloc_palette(data, width, bpe);
 }
 
-uint32_t readRGBA(void *data){
-	uint32_t res;
-	memcpy(&res, data, 4);
-	return res;
-}
-
-uint32_t readRGB(void *data){
-	uint32_t res;
-	memcpy(&res, data, 3);
-	uint8_t *r = (uint8_t*)&res;
-	r[3] = 0xFF;
-	return res;
-}
-
-void writeRGBA(void *data, uint32_t color){
-	memcpy(data, &color, 4);
-}
-
-void writeRGB(void *data, uint32_t color){
-	memcpy(data, &color, 3);
-}
-
-void writeR(void *data, uint32_t color){
-	memcpy(data, &color, 1);
-}
-
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid * data){
 	SceGxmTextureFormat tex_format;
 	texture_unit* tex_unit = &texture_units[server_texture_unit];
@@ -1976,9 +1951,11 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	switch (format){
 		case GL_RED:
 		case GL_ALPHA:
+			read_cb = readR;
 			data_bpp = 1;
 			break;
 		case GL_RG:
+			read_cb = readRG;
 			data_bpp = 2;
 			break;
 		case GL_RGB:
@@ -1998,7 +1975,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 					write_cb = writeRGB;
 					switch (type){
 						case GL_UNSIGNED_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8X8_BGR1;
+							tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
 							break;
 						case GL_UNSIGNED_SHORT_5_6_5:
 							tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR;
@@ -2090,9 +2067,8 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 				return;
 			}
 			tex->type = internalFormat;
-			if (level == 0){
-				gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb);
-			}else gpu_alloc_mipmaps(width, height, tex_format, data, level, tex);
+			if (level == 0) gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb);
+			else gpu_alloc_mipmaps(width, height, tex_format, data, level, tex);
 			if (tex->valid && tex->palette_UID) sceGxmTextureSetPalette(&tex->gxm_tex, color_table->data);
 			break;
 		default:
@@ -2194,11 +2170,12 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 					}
 					break;
 			}
+			uint8_t *data = (uint8_t*)pixels;
 			for (i=0;i<height;i++){
 				for (j=0;j<width;j++){
-					uint32_t clr = read_cb((uint8_t*)pixels);
+					uint32_t clr = read_cb((uint8_t*)data);
 					write_cb(ptr, clr);
-					pixels += data_bpp;
+					data += data_bpp;
 					ptr += bpp;
 				}
 				ptr = ptr_line + stride;
