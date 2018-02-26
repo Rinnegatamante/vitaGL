@@ -1,3 +1,5 @@
+#define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
+
 typedef struct texture{
 	SceGxmTexture gxm_tex;
 	SceUID data_UID;

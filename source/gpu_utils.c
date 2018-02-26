@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include "gpu_utils.h"
 
-#define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
-
 #ifndef max
     #define max(a,b) ((a) > (b) ? (a) : (b))
 #endif
@@ -220,12 +218,12 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
 			w,h,w,texture_data);	
 		if (data != NULL){
-			if (write_cb == NULL) memcpy(texture_data, (uint8_t*)data, tex_size);
-			else{
-				int i;
-				uint8_t *src = (uint8_t*)data;
-				uint8_t *dst = (uint8_t*)texture_data;
-				for (i=0;i<w*h;i++){
+			int i, j;
+			uint8_t *src = (uint8_t*)data;
+			uint8_t *dst;
+			for (i=0;i<h;i++){
+				dst = ((uint8_t*)texture_data) + (ALIGN(w, 8) * bpp) * i;
+				for (j=0;j<w;j++){
 					uint32_t clr = read_cb(src);
 					write_cb(dst, clr);
 					src += src_bpp;

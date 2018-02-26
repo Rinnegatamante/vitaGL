@@ -2091,7 +2091,6 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			}
 			tex->type = internalFormat;
 			if (level == 0){
-				if (internalFormat == format) write_cb = NULL;
 				gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb);
 			}else gpu_alloc_mipmaps(width, height, tex_format, data, level, tex);
 			if (tex->valid && tex->palette_UID) sceGxmTextureSetPalette(&tex->gxm_tex, color_table->data);
@@ -2108,7 +2107,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	texture* target_texture = &tex_unit->textures[texture2d_idx];
 	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&target_texture->gxm_tex);
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
-	uint32_t stride = ((sceGxmTextureGetWidth(&target_texture->gxm_tex) + 7) & ~7) * bpp;
+	uint32_t stride = ALIGN(sceGxmTextureGetWidth(&target_texture->gxm_tex), 8) * bpp;
 	uint8_t* ptr = (uint8_t*)sceGxmTextureGetData(&target_texture->gxm_tex) + xoffset * bpp + yoffset * stride;
 	uint8_t* ptr_line = ptr;
 	uint8_t data_bpp = 0;
@@ -2195,7 +2194,6 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 					}
 					break;
 			}
-			if (write_cb == NULL || read_cb == NULL) return;
 			for (i=0;i<height;i++){
 				for (j=0;j<width;j++){
 					uint32_t clr = read_cb((uint8_t*)pixels);
