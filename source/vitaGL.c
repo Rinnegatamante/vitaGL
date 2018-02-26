@@ -1496,7 +1496,7 @@ void glClear(GLbitfield mask){
 		sceGxmSetUniformDataF(color_buffer, clear_color, 0, 4, &clear_rgba_val.r);
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
-		change_depth_write(depth_mask_state && depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		change_depth_write(depth_mask_state && orig_depth_test ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		validate_depth_test();
 		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
 		sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back);
@@ -1513,7 +1513,7 @@ void glClear(GLbitfield mask){
 		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
 		sceGxmSetVertexStream(gxm_context, 0, depth_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_indices, 4);
-		change_depth_write(depth_mask_state && depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		change_depth_write(depth_mask_state && orig_depth_test ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		validate_depth_test();
 	}
 }
