@@ -1,3 +1,5 @@
+#define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
+
 typedef struct texture{
 	SceGxmTexture gxm_tex;
 	SceUID data_UID;
@@ -28,7 +30,7 @@ unsigned int gpu_pool_free_space();
 void gpu_pool_reset();
 void gpu_pool_init(uint32_t temp_pool_size);
 int tex_format_to_bytespp(SceGxmTextureFormat format);
-void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void* data, texture* tex);
+void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void* data, texture* tex, uint8_t src_bpp, uint32_t (*read_cb)(void*),  void (*write_cb)(void*, uint32_t));
 void gpu_free_texture(texture* tex);
 palette* gpu_alloc_palette(const void* data, uint32_t w, uint32_t bpe);
 void gpu_free_palette(palette* pal);

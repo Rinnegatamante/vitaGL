@@ -3,6 +3,7 @@
 #include "vitaGL.h"
 #include "math_utils.h"
 #include "gpu_utils.h"
+#include "texture_callbacks.h"
 
 // Shaders
 #include "shaders/clear_f.h"
@@ -18,10 +19,8 @@
 #include "shaders/texture2d_rgba_v.h"
 
 #ifndef max
-	#define max(a,b) ((a) > (b) ? (a) : (b))
+#  define max(a,b) ((a) > (b) ? (a) : (b))
 #endif
-
-#define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 
 #define TEXTURES_NUM          1024 // Available textures per texture unit
 #define MODELVIEW_STACK_DEPTH 32   // Depth of modelview matrix stack
@@ -37,6 +36,7 @@
 #define MAX_SHADER_PARAMS     16   // Maximum number of parameters per custom shader
 
 // Debugging tool
+#ifdef ENABLE_LOG
 void LOG(const char *format, ...) {
 	__gnuc_va_list arg;
 	int done;
@@ -52,6 +52,7 @@ void LOG(const char *format, ...) {
 		fclose(log);
 	}
 }
+#endif
 
 static const GLubyte* vendor = "Rinnegatamante";
 static const GLubyte* renderer = "SGX543MP4+";
@@ -202,7 +203,6 @@ static void* gxm_shader_patcher_vertex_usse_addr;
 static SceUID gxm_shader_patcher_fragment_usse_uid;
 static void* gxm_shader_patcher_fragment_usse_addr;
 static uint8_t viewport_mode = 0;
-static GLrescaler* gxm_rescaler = NULL;
 static matrix4x4 gxm_projection, gxm_identity;
 
 // GXM Viewport
@@ -784,20 +784,6 @@ static void update_polygon_offset(){
 
 // vitaGL specific functions
 
-GLrescaler* vglCreateRescaler(GLuint width, GLuint height){
-	GLrescaler* res = (GLrescaler*)malloc(sizeof(GLrescaler));
-	res->width =  width;
-	res->height =  height;
-	texture* tex = (texture*)malloc(sizeof(texture));
-	tex->valid = 0;
-	gpu_alloc_texture(width, height, SCE_GXM_TEXTURE_FORMAT_A8B8G8R8, NULL, tex);
-	gpu_prepare_rendertarget(tex);
-	res->buffer = tex;
-	matrix4x4_init_orthographic(gxm_projection, 0, 960, 544, 0, -1, 1);
-	matrix4x4_identity(gxm_identity);
-	return res;
-}
-
 void vglUpdateCommonDialog(){
 	SceCommonDialogUpdateParam updateParam;
 	memset(&updateParam, 0, sizeof(updateParam));
@@ -816,7 +802,6 @@ void vglUpdateCommonDialog(){
 }
 
 void vglStartRendering(){
-	gxm_rescaler = NULL;
 	sceGxmBeginScene(
 		gxm_context, 0, gxm_render_target,
 		NULL, NULL,
@@ -826,61 +811,9 @@ void vglStartRendering(){
 	if (viewport_mode) sceGxmSetViewport(gxm_context,x_port,x_scale,y_port,y_scale,z_port,z_scale);
 }
 
-void vglStartRenderingWithRescaler(GLrescaler* rescaler){
-	gxm_rescaler = rescaler;
-	texture* fbo = (texture*)rescaler->buffer;
-	sceGxmBeginScene(
-		gxm_context, SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY,
-		fbo->gxm_rtgt, NULL, NULL, NULL,
-		&fbo->gxm_sfc, &fbo->gxm_sfd);	
-	if (viewport_mode) sceGxmSetViewport(gxm_context,x_port,x_scale,y_port,y_scale,z_port,z_scale);
-}
-
 void vglStopRendering(){
 	sceGxmEndScene(gxm_context, NULL, NULL);
 	gpu_pool_reset();
-	if (gxm_rescaler != NULL){
-		texture* fbo = (texture*)gxm_rescaler->buffer;
-		sceGxmBeginScene(
-			gxm_context, SCE_GXM_SCENE_VERTEX_WAIT_FOR_DEPENDENCY,
-			gxm_render_target, NULL, NULL,
-			gxm_sync_objects[gxm_back_buffer_index],
-			&gxm_color_surfaces[gxm_back_buffer_index],
-			&gxm_depth_stencil_surface);
-		sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-		sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
-		void* alpha_buffer;
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
-		float alpha_operation = 7.0f;
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_operation);
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
-		float env_mode = 5.0f;
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &env_mode);
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env_color, 0, 4, &texenv_color.r);
-		vector3f* v = (vector3f*)gpu_pool_memalign(sizeof(vector3f) * 4, sizeof(vector3f));
-		vector2f* t = (vector2f*)gpu_pool_memalign(sizeof(vector2f) * 4, sizeof(vector2f));
-		v[0].x = 0.0f; v[0].y = 0.0f, v[0].z = 0.0f;
-		v[1].x = 960.0f; v[1].y = 0.0f, v[1].z = 0.0f;
-		v[2].x = 960.0f; v[2].y = 544.0f, v[2].z = 0.0f;
-		v[3].x = 0.0f; v[3].y = 544.0f, v[3].z = 0.0f;
-		t[0].x = 0; t[0].y = 0;
-		t[1].x = 1; t[1].y = 0;
-		t[2].x = 1; t[2].y = 1;
-		t[3].x = 0; t[3].y = 1;
-		uint16_t* i = (uint16_t*)gpu_pool_memalign(sizeof(uint16_t) * 6, sizeof(uint16_t));
-		i[0] = 0; i[1] = 1; i[2] = 2; i[3] = 2; i[4] = 3; i[5] = 0;
-		sceGxmSetFragmentTexture(gxm_context, 0, &fbo->gxm_tex);
-		void* vertex_wvp_buffer;
-		matrix4x4 mvp_matrix;
-		matrix4x4_multiply(mvp_matrix, gxm_projection, gxm_identity);
-		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
-		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)mvp_matrix);
-		sceGxmSetVertexStream(gxm_context, 0, v);
-		sceGxmSetVertexStream(gxm_context, 1, t);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLES, SCE_GXM_INDEX_FORMAT_U16, i, 6);
-		sceGxmEndScene(gxm_context, NULL, NULL);
-	}
 	sceGxmFinish(gxm_context);
 	sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
 	struct display_queue_callback_data queue_cb_data;
@@ -1988,175 +1921,139 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	texture_unit* tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	texture* tex = &tex_unit->textures[texture2d_idx];
+	uint8_t data_bpp = 0;
+	
+	// Support for legacy GL1.0 internalFormat
+	switch (internalFormat){
+		case 1:
+			internalFormat = GL_RED;
+			break;
+		case 2:
+			internalFormat = GL_RG;
+			break;
+		case 3:
+			internalFormat = GL_RGB;
+			break;
+		case 4:
+			internalFormat = GL_RGBA;
+			break;
+	}
+	
+	/*
+	 * Callbacks are actually used to just perform down/up-sampling
+	 * between U8 texture formats. Reads are expected to give as result
+	 * a RGBA sample that will be wrote depending on texture format
+	 * by the write callback
+	 */
+	void (*write_cb)(void*, uint32_t) = NULL;
+	uint32_t (*read_cb)(void*) = NULL;
+	
+	switch (format){
+		case GL_RED:
+		case GL_ALPHA:
+			read_cb = readR;
+			data_bpp = 1;
+			break;
+		case GL_RG:
+			read_cb = readRG;
+			data_bpp = 2;
+			break;
+		case GL_RGB:
+			data_bpp = 3;
+			read_cb = readRGB;
+			break;
+		case GL_RGBA:
+			data_bpp = 4;
+			read_cb = readRGBA;
+			break;
+	}
+	
 	switch (target){
 		case GL_TEXTURE_2D:
 			switch (internalFormat){
 				case GL_RGB:
-					if (format == GL_RGB){
-						switch (type){
-							case GL_UNSIGNED_BYTE:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8X8_BGR1;
-								break;
-							case GL_UNSIGNED_SHORT_5_6_5:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR;
-								break;
-							default:
-								error = GL_INVALID_ENUM;
-								break;	
-						}
+					write_cb = writeRGB;
+					switch (type){
+						case GL_UNSIGNED_BYTE:
+							tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
+							break;
+						case GL_UNSIGNED_SHORT_5_6_5:
+							tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR;
+							break;
+						default:
+							error = GL_INVALID_ENUM;
+							break;	
 					}
 					break;
 				case GL_RGBA:
-					if (format == GL_RGBA){
-						switch (type){
-							case GL_UNSIGNED_BYTE:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
-								break;
-							case GL_UNSIGNED_SHORT_4_4_4_4:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR;
-								break;
-							default:
-								error = GL_INVALID_ENUM;
-								break;
-						}
+					write_cb = writeRGBA;
+					switch (type){
+						case GL_UNSIGNED_BYTE:
+							tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
+							break;
+						case GL_UNSIGNED_SHORT_4_4_4_4:
+							tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR;
+							break;
+						default:
+							error = GL_INVALID_ENUM;
+							break;
 					}
 					break;
 				case GL_LUMINANCE:
-					if (format == GL_LUMINANCE){
-						switch (type){
-							case GL_UNSIGNED_BYTE:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
-								break;
-							default:
-								error = GL_INVALID_ENUM;
-								break;
-						}
+					write_cb = writeR;
+					switch (type){
+						case GL_UNSIGNED_BYTE:
+							tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
+							break;
+						default:
+							error = GL_INVALID_ENUM;
+							break;
 					}
 					break;
 				case GL_LUMINANCE_ALPHA:
-					if (format == GL_LUMINANCE){
-						switch (type){
-							case GL_UNSIGNED_BYTE:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_A8L8;
-								break;
-							default:
-								error = GL_INVALID_ENUM;
-								break;
-						}
+					switch (type){
+						case GL_UNSIGNED_BYTE:
+							tex_format = SCE_GXM_TEXTURE_FORMAT_A8L8;
+							break;
+						default:
+							error = GL_INVALID_ENUM;
+							break;
+					}
+					break;
+				case GL_INTENSITY:
+					write_cb = writeR;
+					switch (type){
+						case GL_UNSIGNED_BYTE:
+							tex_format = SCE_GXM_TEXTURE_FORMAT_U8_RRRR;
+							break;
+						default:
+							error = GL_INVALID_ENUM;
+							break;
 					}
 					break;
 				case GL_ALPHA:
-					if (format == GL_ALPHA){
-						switch (type){
-							case GL_UNSIGNED_BYTE:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_A8;
-								break;
-							default:
-								error = GL_INVALID_ENUM;
-								break;
-						}
+					write_cb = writeR;
+					switch (type){
+						case GL_UNSIGNED_BYTE:
+							tex_format = SCE_GXM_TEXTURE_FORMAT_A8;
+							break;
+						default:
+							error = GL_INVALID_ENUM;
+							break;
 					}
 				case GL_COLOR_INDEX8_EXT:
-					if (format == GL_COLOR_INDEX){
-						switch (type){
-							case GL_UNSIGNED_BYTE:
-								tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
-								break;
-							default:
-								error = GL_INVALID_ENUM;
-								break;	
-						}
+					switch (type){
+						case GL_UNSIGNED_BYTE:
+							tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
+							break;
+						default:
+							error = GL_INVALID_ENUM;
+							break;	
 					}
 					break;
-				default:
-					switch (format){
-						case GL_RED:
-							switch (type){
-								case GL_BYTE:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_S8_R;
-									break;
-								case GL_UNSIGNED_BYTE:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U8_R;
-									break;
-								default:
-									error = GL_INVALID_ENUM;
-									break;	
-							}
-							break;
-						case GL_RG:
-							switch (type){
-								default:
-									error = GL_INVALID_ENUM;
-									break;	
-							}
-							break;
-						case GL_RGB:
-							switch (type){
-								case GL_BYTE:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_S8S8S8X8_BGR1;
-									break;
-								case GL_UNSIGNED_BYTE:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8X8_BGR1;
-									break;
-								case GL_UNSIGNED_SHORT_4_4_4_4:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4X4_BGR1;
-									break;
-								case GL_UNSIGNED_SHORT_5_5_5_1:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5X1_BGR1;
-									break;
-								case GL_UNSIGNED_SHORT_5_6_5:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR;
-									break;
-								default:
-									error = GL_INVALID_ENUM;
-									break;
-							}
-							break;
-						case GL_RGBA:
-							switch (type){
-								case GL_BYTE:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_S8S8S8S8_ABGR;
-									break;
-								case GL_UNSIGNED_BYTE:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
-									break;
-								case GL_UNSIGNED_SHORT_4_4_4_4:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR;
-									break;
-								default:
-									error = GL_INVALID_ENUM;
-									break;
-							}					
-							break;
-						case GL_LUMINANCE:
-							switch (type){
-								case GL_UNSIGNED_BYTE:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
-									break;
-								default:
-									error = GL_INVALID_ENUM;
-									break;
-							}
-						case GL_LUMINANCE_ALPHA:
-							switch (type){
-								case GL_UNSIGNED_BYTE:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_A8L8;
-									break;
-								default:
-									error = GL_INVALID_ENUM;
-									break;
-							}
-							break;
-						case GL_INTENSITY:
-							switch (type){
-								case GL_UNSIGNED_BYTE:
-									tex_format = SCE_GXM_TEXTURE_FORMAT_U8_RRRR;
-									break;
-								default:
-									error = GL_INVALID_ENUM;
-									break;
-							}
-						case GL_VITA2D_TEXTURE:
+				case GL_VITA2D_TEXTURE:
+					switch (type){
+						case GL_UNSIGNED_BYTE:
 							tex_format = SCE_GXM_TEXTURE_FORMAT_A8B8G8R8;
 							break;
 						default:
@@ -2169,10 +2066,9 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 				error = GL_INVALID_VALUE;
 				return;
 			}
-			tex->type = format;
-			if (level == 0){
-				gpu_alloc_texture(width, height, tex_format, data, tex);
-			}else gpu_alloc_mipmaps(width, height, tex_format, data, level, tex);
+			tex->type = internalFormat;
+			if (level == 0) gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb);
+			else gpu_alloc_mipmaps(width, height, tex_format, data, level, tex);
 			if (tex->valid && tex->palette_UID) sceGxmTextureSetPalette(&tex->gxm_tex, color_table->data);
 			break;
 		default:
@@ -2187,101 +2083,110 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	texture* target_texture = &tex_unit->textures[texture2d_idx];
 	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&target_texture->gxm_tex);
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
-	uint32_t stride = ((sceGxmTextureGetWidth(&target_texture->gxm_tex) + 7) & ~7) * bpp;
+	uint32_t stride = ALIGN(sceGxmTextureGetWidth(&target_texture->gxm_tex), 8) * bpp;
 	uint8_t* ptr = (uint8_t*)sceGxmTextureGetData(&target_texture->gxm_tex) + xoffset * bpp + yoffset * stride;
 	uint8_t* ptr_line = ptr;
+	uint8_t data_bpp = 0;
 	int i,j;
+	
+	/*
+	 * Callbacks are actually used to just perform down/up-sampling
+	 * between U8 texture formats. Reads are expected to give as result
+	 * a RGBA sample that will be wrote depending on texture format
+	 * by the write callback
+	 */
+	void (*write_cb)(void*, uint32_t) = NULL;
+	uint32_t (*read_cb)(void*) = NULL;
+	
+	switch (format){
+		case GL_RED:
+		case GL_ALPHA:
+			data_bpp = 1;
+			break;
+		case GL_RG:
+			data_bpp = 2;
+			break;
+		case GL_RGB:
+			data_bpp = 3;
+			read_cb = readRGB;
+			break;
+		case GL_RGBA:
+			data_bpp = 4;
+			read_cb = readRGBA;
+			break;
+	}
+	
 	switch (target){
 		case GL_TEXTURE_2D:
-			switch (format){
+			switch (target_texture->type){
 				case GL_RGB:
+					write_cb = writeRGB;
 					switch (type){
 						case GL_UNSIGNED_BYTE:
-							switch (tex_format){
-								case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-									for (i=0;i<height;i++){
-										for (j=0;j<width;j++){
-											memcpy(ptr, pixels, 3);
-											ptr[3] = 0xFF;
-											pixels += 3;
-											ptr += bpp;
-										}
-										ptr = ptr_line + stride;
-										ptr_line = ptr;
-									}
-									break;
-								default:
-									error = GL_INVALID_ENUM;
-									break;
-							}	
+							break;
 						default:
 							error = GL_INVALID_ENUM;
-							break;
+							break;	
 					}
 					break;
 				case GL_RGBA:
+					write_cb = writeRGBA;
 					switch (type){
 						case GL_UNSIGNED_BYTE:
-							switch (tex_format){
-								case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-									for (i=0;i<height;i++){
-										memcpy(ptr, pixels, width * bpp);
-										pixels += width * bpp;
-										ptr += stride;
-									}
-									break;
-								default:
-									error = GL_INVALID_ENUM;
-									break;
-							}	
+							break;
 						default:
 							error = GL_INVALID_ENUM;
 							break;
 					}
 					break;
 				case GL_LUMINANCE:
+					write_cb = writeR;
 					switch (type){
 						case GL_UNSIGNED_BYTE:
-							switch (tex_format){
-								case SCE_GXM_TEXTURE_FORMAT_L8:
-									for (i=0;i<height;i++){
-										memcpy(ptr, pixels, width * bpp);
-										pixels += width * bpp;
-										ptr += stride;
-									}
-									break;
-								case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-									for (i=0;i<height;i++){
-										for (j=0;j<width;j++){
-											ptr[0] = ((uint8_t*)pixels)[0];
-											ptr[1] = ((uint8_t*)pixels)[0];
-											ptr[2] = ((uint8_t*)pixels)[0];
-											ptr[3] = 0xFF;
-											pixels += 1;
-											ptr += bpp;
-										}
-										ptr = ptr_line + stride;
-										ptr_line = ptr;
-									}
-									break;
-								default:
-									error = GL_INVALID_ENUM;
-									break;
-							}	
+							break;
 						default:
 							error = GL_INVALID_ENUM;
 							break;
 					}
 					break;
-				default:
-					error = GL_INVALID_ENUM;
+				case GL_INTENSITY:
+					write_cb = writeR;
+					switch (type){
+						case GL_UNSIGNED_BYTE:
+							break;
+						default:
+							error = GL_INVALID_ENUM;
+							break;
+					}
 					break;
+				case GL_ALPHA:
+					write_cb = writeR;
+					switch (type){
+						case GL_UNSIGNED_BYTE:
+							break;
+						default:
+							error = GL_INVALID_ENUM;
+							break;
+					}
+					break;
+			}
+			uint8_t *data = (uint8_t*)pixels;
+			for (i=0;i<height;i++){
+				for (j=0;j<width;j++){
+					uint32_t clr = read_cb((uint8_t*)data);
+					write_cb(ptr, clr);
+					data += data_bpp;
+					ptr += bpp;
+				}
+				ptr = ptr_line + stride;
+				ptr_line = ptr;
 			}
 			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;	
 	}
+	
 }
 
 void glTexParameteri(GLenum target, GLenum pname, GLint param){
@@ -3980,6 +3885,7 @@ void glTexEnvi(GLenum target,  GLenum pname,  GLint param){
 }
 
 void glGenerateMipmap(GLenum target){
+	return;
 	texture_unit* tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	texture* tex = &tex_unit->textures[texture2d_idx];
