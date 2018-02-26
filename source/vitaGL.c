@@ -1661,10 +1661,6 @@ void glEnd(void){
 	
 	if (use_texture){
 		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)mvp_matrix);
-		sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->u_mode);
-		sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->v_mode);
-		sceGxmTextureSetMagFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->mag_filter);
-		sceGxmTextureSetMinFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->min_filter);
 		sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 		vector3f* vertices;
 		vector2f* uv_map;
@@ -2067,6 +2063,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 				return;
 			}
 			tex->type = internalFormat;
+			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
+			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
+			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
+			sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
 			if (level == 0) gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb);
 			else gpu_alloc_mipmaps(width, height, tex_format, data, level, tex);
 			if (tex->valid && tex->palette_UID) sceGxmTextureSetPalette(&tex->gxm_tex, color_table->data);
@@ -2204,18 +2204,19 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 						case GL_LINEAR:
 							tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 							break;
-						case GL_NEAREST_MIPMAP_NEAREST:
+						case GL_NEAREST_MIPMAP_NEAREST: // TODO: Implement this
 							break;
-						case GL_LINEAR_MIPMAP_NEAREST:
+						case GL_LINEAR_MIPMAP_NEAREST: // TODO: Implement this
 							break;
-						case GL_NEAREST_MIPMAP_LINEAR:
+						case GL_NEAREST_MIPMAP_LINEAR: // TODO: Implement this
 							break;
-						case GL_LINEAR_MIPMAP_LINEAR:
+						case GL_LINEAR_MIPMAP_LINEAR: // TODO: Implement this
 							break;
 						default:
 							error = GL_INVALID_ENUM;
 							break;
 					}
+					sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
 					break;
 				case GL_TEXTURE_MAG_FILTER:
 					switch (param){
@@ -2225,23 +2226,25 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 						case GL_LINEAR:
 							tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 							break;
-						case GL_NEAREST_MIPMAP_NEAREST:
+						case GL_NEAREST_MIPMAP_NEAREST: // TODO: Implement this
 							break;
-						case GL_LINEAR_MIPMAP_NEAREST:
+						case GL_LINEAR_MIPMAP_NEAREST: // TODO: Implement this
 							break;
-						case GL_NEAREST_MIPMAP_LINEAR:
+						case GL_NEAREST_MIPMAP_LINEAR: // TODO: Implement this
 							break;
-						case GL_LINEAR_MIPMAP_LINEAR:
+						case GL_LINEAR_MIPMAP_LINEAR: // TODO: Implement this
 							break;
 						default:
 							error = GL_INVALID_ENUM;
 							break;
 					}
+					sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
 					break;
 				case GL_TEXTURE_WRAP_S:
 					switch (param){
 						case GL_CLAMP_TO_EDGE:
 							tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+							
 							break;
 						case GL_REPEAT: 
 							tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
@@ -2253,6 +2256,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 							error = GL_INVALID_ENUM;
 							break;
 					}
+					sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
 					break;
 				case GL_TEXTURE_WRAP_T:
 					switch (param){
@@ -2269,6 +2273,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 							error = GL_INVALID_ENUM;
 							break;
 					}
+					sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 					break;
 				default:
 					error = GL_INVALID_ENUM;
@@ -2289,32 +2294,26 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param){
 		case GL_TEXTURE_2D:
 			switch (pname){
 				case GL_TEXTURE_MIN_FILTER:
-					if (param == GL_NEAREST){
-						tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-						sceGxmTextureSetMinFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
-					}else if (param == GL_LINEAR){
-						tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-						sceGxmTextureSetMinFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
-					}
+					if (param == GL_NEAREST) tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+					if (param == GL_LINEAR) tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+					sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
 					break;
 				case GL_TEXTURE_MAG_FILTER:
-					if (param == GL_NEAREST){
-						tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-						sceGxmTextureSetMagFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
-					}else if (param == GL_LINEAR){
-						tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-						sceGxmTextureSetMagFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
-					}	
+					if (param == GL_NEAREST) tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+					else if (param == GL_LINEAR) tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+					sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
 					break;
 				case GL_TEXTURE_WRAP_S:
 					if (param == GL_CLAMP_TO_EDGE) tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
 					else if (param == GL_REPEAT) tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 					else if (param == GL_MIRRORED_REPEAT) tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+					sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
 					break;
 				case GL_TEXTURE_WRAP_T:
 					if (param == GL_CLAMP_TO_EDGE) tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
 					else if (param == GL_REPEAT) tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 					else if (param == GL_MIRRORED_REPEAT) tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+					sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 					break;
 				default:
 					error = GL_INVALID_ENUM;
@@ -3345,10 +3344,6 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 			if (texture_array_state){
 				if (color_array_state) sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_wvp, 0, 16, (const float*)mvp_matrix);
 				else sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)mvp_matrix);
-				sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->u_mode);
-				sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->v_mode);
-				sceGxmTextureSetMagFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->mag_filter);
-				sceGxmTextureSetMinFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->min_filter);
 				sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 				vector3f* vertices = NULL;
 				vector2f* uv_map = NULL;
@@ -3585,10 +3580,6 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 	
 			if (texture_array_state){
 				sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)mvp_matrix);
-				sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->u_mode);
-				sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->v_mode);
-				sceGxmTextureSetMagFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->mag_filter);
-				sceGxmTextureSetMinFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->min_filter);
 				sceGxmSetFragmentTexture(gxm_context, 0, &texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex);
 				vector3f* vertices = NULL;
 				vector2f* uv_map = NULL;
@@ -4392,10 +4383,6 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 				if (p->wvp == NULL) p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "wvp");
 				sceGxmSetUniformDataF(vert_uniforms, p->wvp, 0, 16, (const float*)mvp_matrix);
 			}
-			sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->u_mode);
-			sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->v_mode);
-			sceGxmTextureSetMagFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->mag_filter);
-			sceGxmTextureSetMinFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->min_filter);
 			sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 			vert_uniforms = NULL;
@@ -4441,10 +4428,6 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 				sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
 				if (texture_array_state){
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)mvp_matrix);
-					sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->u_mode);
-					sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->v_mode);
-					sceGxmTextureSetMagFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->mag_filter);
-					sceGxmTextureSetMinFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->min_filter);
 					sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 					sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
 					sceGxmSetVertexStream(gxm_context, 1, tex_unit->texture_object);
