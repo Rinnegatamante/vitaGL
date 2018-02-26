@@ -3876,7 +3876,6 @@ void glTexEnvi(GLenum target,  GLenum pname,  GLint param){
 }
 
 void glGenerateMipmap(GLenum target){
-	return;
 	texture_unit* tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	texture* tex = &tex_unit->textures[texture2d_idx];
@@ -3947,6 +3946,10 @@ void glGenerateMipmap(GLenum target){
 				curHeight /= 2;
 			}
 			sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, mipcount);
+			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
+			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
+			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
+			sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
 			sceGxmTextureSetMipFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_MIP_FILTER_ENABLED);
 			break;
 		default:
