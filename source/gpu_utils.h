@@ -11,6 +11,7 @@ typedef struct texture{
 	uint8_t used;
 	uint8_t valid;
 	uint32_t type;
+	void (*write_cb)(void*, uint32_t);
 } texture;
 
 typedef struct palette{

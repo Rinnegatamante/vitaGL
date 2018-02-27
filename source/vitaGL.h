@@ -87,14 +87,13 @@ extern "C" {
 #define GL_PROJECTION                     0x1701
 #define GL_COLOR_INDEX                    0x1900
 #define GL_RED                            0x1903
-#define GL_GREEN				              0x1904
+#define GL_GREEN                          0x1904
 #define GL_BLUE                           0x1905
 #define GL_ALPHA                          0x1906
 #define GL_RGB                            0x1907
 #define GL_RGBA                           0x1908
 #define GL_LUMINANCE                      0x1909
 #define GL_LUMINANCE_ALPHA                0x190A
-#define GL_VITA2D_TEXTURE                 0x190B
 #define GL_POINT                          0x1B00
 #define GL_LINE                           0x1B01
 #define GL_FILL                           0x1B02
@@ -121,7 +120,7 @@ extern "C" {
 #define GL_TEXTURE_MIN_FILTER             0x2801
 #define GL_TEXTURE_WRAP_S                 0x2802
 #define GL_TEXTURE_WRAP_T                 0x2803
-#define GL_REPEAT				              0x2901
+#define GL_REPEAT                         0x2901
 #define GL_POLYGON_OFFSET_UNITS           0x2A00
 #define GL_POLYGON_OFFSET_POINT           0x2A01
 #define GL_POLYGON_OFFSET_LINE            0x2A02

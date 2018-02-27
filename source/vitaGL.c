@@ -1661,10 +1661,6 @@ void glEnd(void){
 	
 	if (use_texture){
 		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)mvp_matrix);
-		sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->u_mode);
-		sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->v_mode);
-		sceGxmTextureSetMagFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->mag_filter);
-		sceGxmTextureSetMinFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->min_filter);
 		sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 		vector3f* vertices;
 		vector2f* uv_map;
@@ -1925,18 +1921,18 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	
 	// Support for legacy GL1.0 internalFormat
 	switch (internalFormat){
-		case 1:
-			internalFormat = GL_RED;
-			break;
-		case 2:
-			internalFormat = GL_RG;
-			break;
-		case 3:
-			internalFormat = GL_RGB;
-			break;
-		case 4:
-			internalFormat = GL_RGBA;
-			break;
+	case 1:
+		internalFormat = GL_RED;
+		break;
+	case 2:
+		internalFormat = GL_RG;
+		break;
+	case 3:
+		internalFormat = GL_RGB;
+		break;
+	case 4:
+		internalFormat = GL_RGBA;
+		break;
 	}
 	
 	/*
@@ -1949,124 +1945,102 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	uint32_t (*read_cb)(void*) = NULL;
 	
 	switch (format){
-		case GL_RED:
-		case GL_ALPHA:
+	case GL_RED:
+	case GL_ALPHA:
+		switch (type){
+		case GL_UNSIGNED_BYTE:
 			read_cb = readR;
 			data_bpp = 1;
 			break;
-		case GL_RG:
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+		}
+		break;
+	case GL_RG:
+		switch (type){
+		case GL_UNSIGNED_BYTE:
 			read_cb = readRG;
 			data_bpp = 2;
 			break;
-		case GL_RGB:
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+		}
+		break;
+	case GL_RGB:
+		switch (type){
+		case GL_UNSIGNED_BYTE:
 			data_bpp = 3;
 			read_cb = readRGB;
 			break;
-		case GL_RGBA:
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+		}
+		break;
+	case GL_RGBA:
+		switch (type){
+		case GL_UNSIGNED_BYTE:
 			data_bpp = 4;
 			read_cb = readRGBA;
 			break;
+		case GL_UNSIGNED_SHORT_5_5_5_1:
+			data_bpp = 2;
+			read_cb = readRGBA5551;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+		}
+		break;
 	}
 	
 	switch (target){
 		case GL_TEXTURE_2D:
 			switch (internalFormat){
-				case GL_RGB:
-					write_cb = writeRGB;
-					switch (type){
-						case GL_UNSIGNED_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
-							break;
-						case GL_UNSIGNED_SHORT_5_6_5:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR;
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;	
-					}
-					break;
-				case GL_RGBA:
-					write_cb = writeRGBA;
-					switch (type){
-						case GL_UNSIGNED_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
-							break;
-						case GL_UNSIGNED_SHORT_4_4_4_4:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR;
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}
-					break;
-				case GL_LUMINANCE:
-					write_cb = writeR;
-					switch (type){
-						case GL_UNSIGNED_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}
-					break;
-				case GL_LUMINANCE_ALPHA:
-					switch (type){
-						case GL_UNSIGNED_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_A8L8;
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}
-					break;
-				case GL_INTENSITY:
-					write_cb = writeR;
-					switch (type){
-						case GL_UNSIGNED_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_U8_RRRR;
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}
-					break;
-				case GL_ALPHA:
-					write_cb = writeR;
-					switch (type){
-						case GL_UNSIGNED_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_A8;
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}
-				case GL_COLOR_INDEX8_EXT:
-					switch (type){
-						case GL_UNSIGNED_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;	
-					}
-					break;
-				case GL_VITA2D_TEXTURE:
-					switch (type){
-						case GL_UNSIGNED_BYTE:
-							tex_format = SCE_GXM_TEXTURE_FORMAT_A8B8G8R8;
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}
-					break;
+			case GL_RGB:
+				write_cb = writeRGB;
+				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
+				break;
+			case GL_RGBA:
+				write_cb = writeRGBA;
+				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
+				break;
+			case GL_LUMINANCE:
+				write_cb = writeR;
+				tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
+				break;
+			case GL_LUMINANCE_ALPHA:
+				write_cb = writeRA;
+				tex_format = SCE_GXM_TEXTURE_FORMAT_A8L8;
+				break;
+			case GL_INTENSITY:
+				write_cb = writeR;
+				tex_format = SCE_GXM_TEXTURE_FORMAT_U8_RRRR;
+				break;
+			case GL_ALPHA:
+				write_cb = writeR;
+				tex_format = SCE_GXM_TEXTURE_FORMAT_A8;
+				break;
+			case GL_COLOR_INDEX8_EXT:
+				write_cb = writeR; // TODO: This is a hack
+				tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
+				break;
+			default:
+				error = GL_INVALID_ENUM;
+				break;
 			}
 			if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE){
 				error = GL_INVALID_VALUE;
 				return;
 			}
 			tex->type = internalFormat;
+			tex->write_cb = write_cb;
+			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
+			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
+			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
+			sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
 			if (level == 0) gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb);
 			else gpu_alloc_mipmaps(width, height, tex_format, data, level, tex);
 			if (tex->valid && tex->palette_UID) sceGxmTextureSetPalette(&tex->gxm_tex, color_table->data);
@@ -2099,89 +2073,91 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	uint32_t (*read_cb)(void*) = NULL;
 	
 	switch (format){
-		case GL_RED:
-		case GL_ALPHA:
+	case GL_RED:
+	case GL_ALPHA:
+		switch (type){
+		case GL_UNSIGNED_BYTE:
+			read_cb = readR;
 			data_bpp = 1;
 			break;
-		case GL_RG:
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+		}
+		break;
+	case GL_RG:
+		switch (type){
+		case GL_UNSIGNED_BYTE:
+			read_cb = readRG;
 			data_bpp = 2;
 			break;
-		case GL_RGB:
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+		}
+		break;
+	case GL_RGB:
+		switch (type){
+		case GL_UNSIGNED_BYTE:
 			data_bpp = 3;
 			read_cb = readRGB;
 			break;
-		case GL_RGBA:
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+		}
+		break;
+	case GL_RGBA:
+		switch (type){
+		case GL_UNSIGNED_BYTE:
 			data_bpp = 4;
 			read_cb = readRGBA;
 			break;
+		case GL_UNSIGNED_SHORT_5_5_5_1:
+			data_bpp = 2;
+			read_cb = readRGBA5551;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+		}
+		break;
 	}
 	
 	switch (target){
-		case GL_TEXTURE_2D:
-			switch (target_texture->type){
-				case GL_RGB:
-					write_cb = writeRGB;
-					switch (type){
-						case GL_UNSIGNED_BYTE:
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;	
-					}
-					break;
-				case GL_RGBA:
-					write_cb = writeRGBA;
-					switch (type){
-						case GL_UNSIGNED_BYTE:
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}
-					break;
-				case GL_LUMINANCE:
-					write_cb = writeR;
-					switch (type){
-						case GL_UNSIGNED_BYTE:
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}
-					break;
-				case GL_INTENSITY:
-					write_cb = writeR;
-					switch (type){
-						case GL_UNSIGNED_BYTE:
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}
-					break;
-				case GL_ALPHA:
-					write_cb = writeR;
-					switch (type){
-						case GL_UNSIGNED_BYTE:
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}
-					break;
-			}
-			uint8_t *data = (uint8_t*)pixels;
-			for (i=0;i<height;i++){
-				for (j=0;j<width;j++){
-					uint32_t clr = read_cb((uint8_t*)data);
-					write_cb(ptr, clr);
-					data += data_bpp;
-					ptr += bpp;
-				}
-				ptr = ptr_line + stride;
-				ptr_line = ptr;
-			}
+	case GL_TEXTURE_2D:
+		switch (target_texture->type){
+		case GL_RGB:
+			write_cb = writeRGB;
 			break;
+		case GL_RGBA:
+			write_cb = writeRGBA;
+			break;
+		case GL_LUMINANCE:
+			write_cb = writeR;
+			break;
+		case GL_LUMINANCE_ALPHA:
+			write_cb = writeRA;
+			break;
+		case GL_INTENSITY:
+			write_cb = writeR;
+			break;
+		case GL_ALPHA:
+			write_cb = writeR;
+			break;
+		}
+		uint8_t *data = (uint8_t*)pixels;
+		for (i=0;i<height;i++){
+			for (j=0;j<width;j++){
+				uint32_t clr = read_cb((uint8_t*)data);
+				write_cb(ptr, clr);
+				data += data_bpp;
+				ptr += bpp;
+			}
+			ptr = ptr_line + stride;
+			ptr_line = ptr;
+		}
+		break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;	
@@ -2204,18 +2180,19 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 						case GL_LINEAR:
 							tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 							break;
-						case GL_NEAREST_MIPMAP_NEAREST:
+						case GL_NEAREST_MIPMAP_NEAREST: // TODO: Implement this
 							break;
-						case GL_LINEAR_MIPMAP_NEAREST:
+						case GL_LINEAR_MIPMAP_NEAREST: // TODO: Implement this
 							break;
-						case GL_NEAREST_MIPMAP_LINEAR:
+						case GL_NEAREST_MIPMAP_LINEAR: // TODO: Implement this
 							break;
-						case GL_LINEAR_MIPMAP_LINEAR:
+						case GL_LINEAR_MIPMAP_LINEAR: // TODO: Implement this
 							break;
 						default:
 							error = GL_INVALID_ENUM;
 							break;
 					}
+					sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
 					break;
 				case GL_TEXTURE_MAG_FILTER:
 					switch (param){
@@ -2225,23 +2202,25 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 						case GL_LINEAR:
 							tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 							break;
-						case GL_NEAREST_MIPMAP_NEAREST:
+						case GL_NEAREST_MIPMAP_NEAREST: // TODO: Implement this
 							break;
-						case GL_LINEAR_MIPMAP_NEAREST:
+						case GL_LINEAR_MIPMAP_NEAREST: // TODO: Implement this
 							break;
-						case GL_NEAREST_MIPMAP_LINEAR:
+						case GL_NEAREST_MIPMAP_LINEAR: // TODO: Implement this
 							break;
-						case GL_LINEAR_MIPMAP_LINEAR:
+						case GL_LINEAR_MIPMAP_LINEAR: // TODO: Implement this
 							break;
 						default:
 							error = GL_INVALID_ENUM;
 							break;
 					}
+					sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
 					break;
 				case GL_TEXTURE_WRAP_S:
 					switch (param){
 						case GL_CLAMP_TO_EDGE:
 							tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+							
 							break;
 						case GL_REPEAT: 
 							tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
@@ -2253,6 +2232,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 							error = GL_INVALID_ENUM;
 							break;
 					}
+					sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
 					break;
 				case GL_TEXTURE_WRAP_T:
 					switch (param){
@@ -2269,6 +2249,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param){
 							error = GL_INVALID_ENUM;
 							break;
 					}
+					sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 					break;
 				default:
 					error = GL_INVALID_ENUM;
@@ -2289,32 +2270,26 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param){
 		case GL_TEXTURE_2D:
 			switch (pname){
 				case GL_TEXTURE_MIN_FILTER:
-					if (param == GL_NEAREST){
-						tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-						sceGxmTextureSetMinFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
-					}else if (param == GL_LINEAR){
-						tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-						sceGxmTextureSetMinFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
-					}
+					if (param == GL_NEAREST) tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+					if (param == GL_LINEAR) tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+					sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
 					break;
 				case GL_TEXTURE_MAG_FILTER:
-					if (param == GL_NEAREST){
-						tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-						sceGxmTextureSetMagFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
-					}else if (param == GL_LINEAR){
-						tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-						sceGxmTextureSetMagFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
-					}	
+					if (param == GL_NEAREST) tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+					else if (param == GL_LINEAR) tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+					sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
 					break;
 				case GL_TEXTURE_WRAP_S:
 					if (param == GL_CLAMP_TO_EDGE) tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
 					else if (param == GL_REPEAT) tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 					else if (param == GL_MIRRORED_REPEAT) tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+					sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
 					break;
 				case GL_TEXTURE_WRAP_T:
 					if (param == GL_CLAMP_TO_EDGE) tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
 					else if (param == GL_REPEAT) tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 					else if (param == GL_MIRRORED_REPEAT) tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+					sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 					break;
 				default:
 					error = GL_INVALID_ENUM;
@@ -3345,10 +3320,6 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 			if (texture_array_state){
 				if (color_array_state) sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_wvp, 0, 16, (const float*)mvp_matrix);
 				else sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)mvp_matrix);
-				sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->u_mode);
-				sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->v_mode);
-				sceGxmTextureSetMagFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->mag_filter);
-				sceGxmTextureSetMinFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->min_filter);
 				sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 				vector3f* vertices = NULL;
 				vector2f* uv_map = NULL;
@@ -3585,10 +3556,6 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 	
 			if (texture_array_state){
 				sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)mvp_matrix);
-				sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->u_mode);
-				sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->v_mode);
-				sceGxmTextureSetMagFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->mag_filter);
-				sceGxmTextureSetMinFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->min_filter);
 				sceGxmSetFragmentTexture(gxm_context, 0, &texture_units[client_texture_unit].textures[texture2d_idx].gxm_tex);
 				vector3f* vertices = NULL;
 				vector2f* uv_map = NULL;
@@ -3885,7 +3852,6 @@ void glTexEnvi(GLenum target,  GLenum pname,  GLint param){
 }
 
 void glGenerateMipmap(GLenum target){
-	return;
 	texture_unit* tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	texture* tex = &tex_unit->textures[texture2d_idx];
@@ -3956,6 +3922,10 @@ void glGenerateMipmap(GLenum target){
 				curHeight /= 2;
 			}
 			sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, mipcount);
+			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
+			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
+			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
+			sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
 			sceGxmTextureSetMipFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_MIP_FILTER_ENABLED);
 			break;
 		default:
@@ -4392,10 +4362,6 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 				if (p->wvp == NULL) p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "wvp");
 				sceGxmSetUniformDataF(vert_uniforms, p->wvp, 0, 16, (const float*)mvp_matrix);
 			}
-			sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->u_mode);
-			sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->v_mode);
-			sceGxmTextureSetMagFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->mag_filter);
-			sceGxmTextureSetMinFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->min_filter);
 			sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 			vert_uniforms = NULL;
@@ -4441,10 +4407,6 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 				sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
 				if (texture_array_state){
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)mvp_matrix);
-					sceGxmTextureSetUAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->u_mode);
-					sceGxmTextureSetVAddrMode(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->v_mode);
-					sceGxmTextureSetMagFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->mag_filter);
-					sceGxmTextureSetMinFilter(&tex_unit->textures[texture2d_idx].gxm_tex, tex_unit->min_filter);
 					sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 					sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
 					sceGxmSetVertexStream(gxm_context, 1, tex_unit->texture_object);
