@@ -1,8 +1,10 @@
-#include <stdlib.h>
-#include <stdio.h>
+/*
+ *
+ */
+#include "shared.h"
 #include "vitaGL.h"
-#include "math_utils.h"
-#include "gpu_utils.h"
+#include "utils/math_utils.h"
+#include "utils/gpu_utils.h"
 #include "texture_callbacks.h"
 
 // Shaders
@@ -17,47 +19,6 @@
 #include "shaders/texture2d_v.h"
 #include "shaders/texture2d_rgba_f.h"
 #include "shaders/texture2d_rgba_v.h"
-
-#ifndef max
-#  define max(a,b) ((a) > (b) ? (a) : (b))
-#endif
-
-#define TEXTURES_NUM          1024 // Available textures per texture unit
-#define MODELVIEW_STACK_DEPTH 32   // Depth of modelview matrix stack
-#define GENERIC_STACK_DEPTH   2    // Depth of generic matrix stack
-#define DISPLAY_WIDTH         960  // Display width in pixels
-#define DISPLAY_HEIGHT        544  // Display height in pixels
-#define DISPLAY_STRIDE        1024 // Display stride in pixels
-#define DISPLAY_BUFFER_COUNT  2    // Display buffers to use
-#define GXM_TEX_MAX_SIZE      4096 // Maximum width/height in pixels per texture
-#define BUFFERS_ADDR        0xA000 // Starting address for buffers indexing
-#define BUFFERS_NUM           128  // Maximum number of allocatable buffers
-#define MAX_CUSTOM_SHADERS    32   // Maximum number of linkable custom shaders
-#define MAX_SHADER_PARAMS     16   // Maximum number of parameters per custom shader
-
-// Debugging tool
-#ifdef ENABLE_LOG
-void LOG(const char *format, ...) {
-	__gnuc_va_list arg;
-	int done;
-	va_start(arg, format);
-	char msg[512];
-	done = vsprintf(msg, format, arg);
-	va_end(arg);
-	int i;
-	sprintf(msg, "%s\n", msg);
-	FILE* log = fopen("ux0:/data/vitaGL.log", "a+");
-	if (log != NULL) {
-		fwrite(msg, 1, strlen(msg), log);
-		fclose(log);
-	}
-}
-#endif
-
-static const GLubyte* vendor = "Rinnegatamante";
-static const GLubyte* renderer = "SGX543MP4+";
-static const GLubyte* version = "VitaGL 1.0";
-static const GLubyte* extensions = "VGL_EXT_gpu_objects_array VGL_EXT_gxp_shaders";
 
 typedef struct clear_vertex{
 	vector2f position;
@@ -174,7 +135,6 @@ struct display_queue_callback_data {
 };
 
 // Internal gxm stuffs
-static SceGxmContext* gxm_context;
 static SceUID vdm_ring_buffer_uid;
 static void* vdm_ring_buffer_addr;
 static SceUID vertex_ring_buffer_uid;
@@ -195,7 +155,7 @@ static SceUID gxm_stencil_surface_uid;
 static void* gxm_depth_surface_addr;
 static void* gxm_stencil_surface_addr;
 static SceGxmDepthStencilSurface gxm_depth_stencil_surface;
-static SceGxmShaderPatcher* gxm_shader_patcher;
+
 static SceUID gxm_shader_patcher_buffer_uid;
 static void* gxm_shader_patcher_buffer_addr;
 static SceUID gxm_shader_patcher_vertex_usse_uid;
@@ -297,37 +257,6 @@ static SceGxmFragmentProgram* scissor_test_fragment_program;
 static clear_vertex* scissor_test_vertices = NULL;
 static SceUID scissor_test_vertices_uid;
 
-// Custom shaders support
-typedef struct shader{
-	GLenum type;
-	GLboolean valid;
-	SceGxmShaderPatcherId id;
-	const SceGxmProgram* prog;
-} shader;
-static shader shaders[MAX_CUSTOM_SHADERS];
-
-typedef struct program{
-	shader* vshader;
-	shader* fshader;
-	GLboolean valid;
-	SceGxmVertexAttribute attr[16];
-	SceGxmVertexStream stream[16];
-	SceGxmVertexProgram* vprog;
-	SceGxmFragmentProgram* fprog;
-	GLuint attr_num;
-	const SceGxmProgramParameter* wvp;
-} program;
-static program progs[MAX_CUSTOM_SHADERS / 2];
-
-typedef struct uniform{
-	GLboolean isVertex;
-	const SceGxmProgramParameter* ptr;
-} uniform;
-
-static GLuint cur_program = 0;
-void* frag_uniforms = NULL;
-void* vert_uniforms = NULL;
-
 // Internal stuffs
 static GLenum orig_depth_test;
 static SceGxmPrimitiveType prim;
@@ -341,8 +270,6 @@ static uvList* last3 = NULL;
 static glPhase phase = NONE;
 static uint64_t vertex_count = 0;
 static uint8_t drawing = 0;
-static matrix4x4 projection_matrix;
-static matrix4x4 modelview_matrix;
 static GLboolean vblank = GL_TRUE;
 static uint8_t np = 0xFF;
 static int alpha_op = ALWAYS;
@@ -350,7 +277,7 @@ static SceGxmBlendInfo* cur_blend_info_ptr = NULL;
 static int max_texture_unit = 0;
 extern uint8_t use_vram;
 
-static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
+
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
 static gpubuffer gpu_buffers[BUFFERS_NUM]; // Buffers array
 
@@ -359,10 +286,6 @@ static texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Avail
 static SceGxmColorMask blend_color_mask = SCE_GXM_COLOR_MASK_ALL; // Current in-use color mask (glColorMask)
 static SceGxmBlendFunc blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD; // Current in-use RGB blend func
 static SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use A blend func
-static SceGxmBlendFactor blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use RGB source blend factor
-static SceGxmBlendFactor blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ZERO; // Current in-use RGB dest blend factor
-static SceGxmBlendFactor blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use A source blend factor
-static SceGxmBlendFactor blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ZERO; // Current in-use A dest blend factor
 static SceGxmDepthFunc gxm_depth = SCE_GXM_DEPTH_FUNC_LESS; // Current in-use depth test func
 static SceGxmStencilOp stencil_fail_front = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when stencil test fails for front
 static SceGxmStencilOp depth_fail_front = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test fails for front
@@ -381,13 +304,10 @@ static uint8_t stencil_mask_back_write = 0xFF; // Current in-use mask for write 
 static uint8_t stencil_ref_front = 0; // Current in-use reference for stencil test on front
 static uint8_t stencil_ref_back = 0; // Current in-use reference for stencil test on back
 static GLdouble depth_value = 1.0f; // Current depth test value
-static int8_t server_texture_unit = 0; // Current in-use server side texture unit
-static int8_t client_texture_unit = 0; // Current in-use client side texture unit
 static int vertex_array_unit = -1; // Current in-use vertex array unit
 static int index_array_unit = -1; // Current in-use index array unit
 static matrix4x4* matrix = NULL; // Current in-use matrix mode
 static vector4f clear_rgba_val; // Current clear color for glClear
-static GLboolean depth_test_state = GL_FALSE; // Current state for GL_DEPTH_TEST
 static GLboolean stencil_test_state = GL_FALSE; // Current state for GL_STENCIL_TEST
 static GLboolean vertex_array_state = GL_FALSE; // Current state for GL_VERTEX_ARRAY
 static GLboolean color_array_state = GL_FALSE; // Current state for GL_COLOR_ARRAY
@@ -395,7 +315,6 @@ static GLboolean texture_array_state = GL_FALSE; // Current state for GL_TEXTURE
 static GLboolean scissor_test_state = GL_FALSE; // Current state for GL_SCISSOR_TEST
 static GLboolean alpha_test_state = GL_FALSE; // Current state for GL_ALPHA_TEST
 static GLboolean cull_face_state = GL_FALSE; // Current state for GL_CULL_FACE
-static GLboolean blend_state = GL_FALSE; // Current state for GL_BLEND
 static GLboolean depth_mask_state = GL_TRUE; // Current state for glDepthMask
 static GLboolean pol_offset_fill = GL_FALSE; // Current state for GL_POLYGON_OFFSET_FILL
 static GLboolean pol_offset_line = GL_FALSE; // Current state for GL_POLYGON_OFFSET_LINE
@@ -405,8 +324,6 @@ static GLfloat alpha_ref = 0.0f; // Current in-use alpha test reference value
 static GLenum gl_cull_mode = GL_BACK; // Current in-use openGL cull mode
 static GLenum gl_front_face = GL_CCW; // Current in-use openGL cull mode
 static GLboolean no_polygons_mode = GL_FALSE; // GL_TRUE when cull mode to GL_FRONT_AND_BACK is set
-static GLfloat pol_factor = 0.0f; // Current factor for glPolygonOffset
-static GLfloat pol_units = 0.0f; // Current units for glPolygonOffset
 static vector4f current_color = {1.0f, 1.0f, 1.0f, 1.0f}; // Current in-use color
 static vector4f texenv_color = {0.0f, 0.0f, 0.0f, 0.0f}; // Current in-use texture environment color
 static palette* color_table = NULL; // Current in-use color table
@@ -444,19 +361,7 @@ static void display_queue_callback(const void *callbackData){
 }
 
 static void _change_blend_factor(SceGxmBlendInfo* blend_info){
-	int j;	
-	for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
-		program* p = &progs[j];
-		if (p->valid){
-			sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-				p->fshader->id,
-				SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-				SCE_GXM_MULTISAMPLE_NONE,
-				blend_info,
-				p->fshader->prog,
-				&p->fprog);
-		}
-	}
+	changeCustomShadersBlend(blend_info);
 	
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		rgba_fragment_id,
@@ -528,9 +433,7 @@ static void change_blend_factor(){
 	_change_blend_factor(&blend_info);
 	cur_blend_info_ptr = &blend_info;
 	if (cur_program != 0){
-		program* p = &progs[cur_program-1];
-		sceGxmSetVertexProgram(gxm_context, p->vprog);
-		sceGxmSetFragmentProgram(gxm_context, p->fprog);
+		reloadCustomShader();
 	}
 }
 
@@ -547,9 +450,7 @@ static void change_blend_mask(){
 	_change_blend_factor(&blend_info);
 	cur_blend_info_ptr = &blend_info;
 	if (cur_program != 0){
-		program* p = &progs[cur_program-1];
-		sceGxmSetVertexProgram(gxm_context, p->vprog);
-		sceGxmSetFragmentProgram(gxm_context, p->fprog);
+		reloadCustomShader();
 	}
 }
 
@@ -558,9 +459,7 @@ static void disable_blend(){
 		_change_blend_factor(NULL);
 		cur_blend_info_ptr = NULL;
 		if (cur_program != 0){
-			program* p = &progs[cur_program-1];
-			sceGxmSetVertexProgram(gxm_context, p->vprog);
-			sceGxmSetFragmentProgram(gxm_context, p->fprog);
+			reloadCustomShader();
 		}
 	}else change_blend_mask();
 }
@@ -1338,10 +1237,7 @@ void vglInit(uint32_t gpu_pool_size){
 	}
 	
 	// Init custom shaders
-	for (i=0; i < MAX_CUSTOM_SHADERS; i++){
-		shaders[i].valid = 0;
-		progs[i>>1].valid = 0;
-	}
+	resetCustomShaders();
 	
 	// Init buffers
 	for (i=0; i < BUFFERS_NUM; i++){
@@ -1632,7 +1528,6 @@ void glEnd(void){
 	
 	texture_unit* tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	matrix4x4 mvp_matrix;
 	
 	matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 	
@@ -3276,7 +3171,6 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				break;
 		}
 		if (!skip_draw){
-			matrix4x4 mvp_matrix;
 	
 			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 			
@@ -3513,7 +3407,6 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 		else if (phase == MODEL_CREATION) error = GL_INVALID_OPERATION;
 		else if (count < 0) error = GL_INVALID_VALUE;
 		if (!skip_draw){
-			matrix4x4 mvp_matrix;
 	
 			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 			
@@ -3720,85 +3613,6 @@ void glFinish(void){
 	sceGxmFinish(gxm_context);
 }
 
-const GLubyte* glGetString(GLenum name){
-	switch (name){
-		case GL_VENDOR:
-			return vendor;
-			break;
-		case GL_RENDERER:
-			return renderer;
-			break;
-		case GL_VERSION:
-			return version;
-			break;
-		case GL_EXTENSIONS:
-			return extensions;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			return NULL;
-			break;
-	}
-}
-
-void glGetBooleanv(GLenum pname, GLboolean* params){
-	switch (pname){
-		case GL_BLEND:
-			*params = blend_state;
-			break;
-		case GL_BLEND_DST_ALPHA:
-			*params = (blend_dfactor_a == SCE_GXM_BLEND_FACTOR_ZERO) ? GL_FALSE : GL_TRUE;
-			break;
-		case GL_BLEND_DST_RGB:
-			*params = (blend_dfactor_rgb == SCE_GXM_BLEND_FACTOR_ZERO) ? GL_FALSE : GL_TRUE;
-			break;
-		case GL_BLEND_SRC_ALPHA:
-			*params = (blend_sfactor_a == SCE_GXM_BLEND_FACTOR_ZERO) ? GL_FALSE : GL_TRUE;
-			break;
-		case GL_BLEND_SRC_RGB:
-			*params = (blend_sfactor_rgb == SCE_GXM_BLEND_FACTOR_ZERO) ? GL_FALSE : GL_TRUE;
-			break;
-		case GL_DEPTH_TEST:
-			*params = depth_test_state;
-			break;
-		case GL_ACTIVE_TEXTURE:
-			*params = GL_FALSE;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-}
-
-void glGetFloatv(GLenum pname, GLfloat* data){
-	switch (pname){
-		case GL_POLYGON_OFFSET_FACTOR:
-			*data = pol_factor;
-			break;
-		case GL_POLYGON_OFFSET_UNITS:
-			*data = pol_units;
-			break;
-		case GL_MODELVIEW_MATRIX:
-			memcpy(data, &modelview_matrix, sizeof(matrix4x4));
-			break;
-		case GL_ACTIVE_TEXTURE:
-			*data = (1.0f * (server_texture_unit + GL_TEXTURE0));
-			break;
-		case GL_MAX_MODELVIEW_STACK_DEPTH:
-			*data = MODELVIEW_STACK_DEPTH;
-			break;
-		case GL_MAX_PROJECTION_STACK_DEPTH:
-			*data = GENERIC_STACK_DEPTH;
-			break;
-		case GL_MAX_TEXTURE_STACK_DEPTH:
-			*data = GENERIC_STACK_DEPTH;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-}
-
 void glTexEnvf(GLenum target, GLenum pname, GLfloat param){
 	texture_unit* tex_unit = &texture_units[server_texture_unit];
 	switch (target){
@@ -3985,213 +3799,6 @@ void glReadPixels(GLint x,  GLint y,  GLsizei width,  GLsizei height,  GLenum fo
 	}
 }
 
-GLuint glCreateShader(GLenum shaderType){
-	GLuint i, res = 0;
-	for (i=1;i<=MAX_CUSTOM_SHADERS;i++){
-		if (!(shaders[i-1].valid)){
-			res = i;
-			break;
-		}
-	}
-	if (res == 0) return res;
-	switch (shaderType){
-		case GL_FRAGMENT_SHADER:
-			shaders[res-1].type = GL_FRAGMENT_SHADER;
-			break;
-		case GL_VERTEX_SHADER:
-			shaders[res-1].type = GL_VERTEX_SHADER;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-	shaders[res-1].valid = GL_TRUE;
-	return res;
-}
-
-void glDeleteShader(GLuint shad){
-	shader* s = &shaders[shad-1];
-	if (s->valid){
-		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
-		free((void*)s->prog);
-	}
-	s->valid = GL_FALSE;
-}
-
-void glDeleteProgram(GLuint prog){
-	program* p = &progs[prog-1];
-	if (p->valid){
-		uint32_t count, i;
-		sceGxmShaderPatcherGetFragmentProgramRefCount(gxm_shader_patcher, p->fprog, &count);
-		for (i=0;i<count;i++){
-			sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog);
-			sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, p->vprog);
-		}
-	}
-	p->valid = GL_FALSE;
-}
-
-void glShaderBinary(GLsizei count, const GLuint* handles, GLenum binaryFormat, const void *binary, GLsizei length){
-	shader* s = &shaders[handles[0]-1];
-	s->prog = (SceGxmProgram*)malloc(length);
-	memcpy((void*)s->prog, binary, length);
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
-	s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
-}
-
-GLuint glCreateProgram(void){
-	GLuint i, res = 0;
-	for (i=1;i<=(MAX_CUSTOM_SHADERS/2);i++){
-		if (!(progs[i-1].valid)){
-			res = i;
-			progs[i-1].valid = GL_TRUE;
-			progs[i-1].attr_num = 0;
-			progs[i-1].wvp = NULL;
-			break;
-		}
-	}
-	return res;
-}
-
-// TODO: Find a way to avoid memory leak
-GLint glGetUniformLocation(GLuint prog, const GLchar* name){
-	program* p = &progs[prog-1];
-	uniform* res = (uniform*)malloc(sizeof(uniform));
-	res->ptr = sceGxmProgramFindParameterByName(p->vshader->prog, name);
-	res->isVertex = GL_TRUE;
-	if (res->ptr == NULL){ 
-		res->ptr = sceGxmProgramFindParameterByName(p->fshader->prog, name);
-		res->isVertex = GL_FALSE;
-	}
-	return (GLint)res;
-}
-
-void glUniform1f(GLint location, GLfloat v0){
-	uniform* u = (uniform*)location;
-	if (u->isVertex){
-		if (vert_uniforms == NULL) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
-		sceGxmSetUniformDataF(vert_uniforms, u->ptr, 0, 1, &v0);
-	}else{
-		if (frag_uniforms == NULL) sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &frag_uniforms);
-		sceGxmSetUniformDataF(frag_uniforms, u->ptr, 0, 1, &v0);
-	}
-}
-
-void glUniform4fv(GLint location, GLsizei count, const GLfloat* value){
-	uniform* u = (uniform*)location;
-	if (u->isVertex){
-		if (vert_uniforms == NULL) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
-		sceGxmSetUniformDataF(vert_uniforms, u->ptr, 0, 4*count, value);
-	}else{
-		if (frag_uniforms == NULL) sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &frag_uniforms);
-		sceGxmSetUniformDataF(frag_uniforms, u->ptr, 0, 4*count, value);
-	}
-}
-
-void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value){
-	uniform* u = (uniform*)location;
-	if (u->isVertex){
-		if (vert_uniforms == NULL) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
-		sceGxmSetUniformDataF(vert_uniforms, u->ptr, 0, 16*count, value);
-	}else{
-		if (frag_uniforms == NULL) sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &frag_uniforms);
-		sceGxmSetUniformDataF(frag_uniforms, u->ptr, 0, 16*count, value);
-	}
-}
-
-void glAttachShader(GLuint prog, GLuint shad){
-	shader* s = &shaders[shad-1];
-	program* p = &progs[prog-1];
-	if (p->valid && s->valid){
-		switch (s->type){
-			case GL_VERTEX_SHADER:
-				p->vshader = s;
-				break;
-			case GL_FRAGMENT_SHADER:
-				p->fshader = s;
-				break;
-			default:
-				break;
-		}
-	}else error = GL_INVALID_VALUE;
-}
-
-void glLinkProgram(GLuint progr){
-	program* p = &progs[progr-1];
-	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
-		p->vshader->id, p->attr, p->attr_num,
-		p->stream, p->attr_num, &p->vprog);
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		p->fshader->id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, p->fshader->prog,
-		&p->fprog);
-}
-
-void glUseProgram(GLuint prog){
-	cur_program = prog;
-	program* p = &progs[cur_program-1];
-	sceGxmSetVertexProgram(gxm_context, p->vprog);
-	sceGxmSetFragmentProgram(gxm_context, p->fprog);
-}
-
-// VGL_EXT_gxp_shaders extension implementation
-
-void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar* name, const GLuint num, const GLenum type){
-	program* p = &progs[prog-1];
-	SceGxmVertexAttribute* attributes = &p->attr[index];
-	SceGxmVertexStream* streams = &p->stream[index];
-	const SceGxmProgramParameter* param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
-	attributes->streamIndex = index;
-	attributes->offset = 0;
-	int bpe;
-	switch (type){
-		case GL_FLOAT:
-			attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-			bpe = sizeof(float);
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-	attributes->componentCount = num;
-	attributes->regIndex = sceGxmProgramParameterGetResourceIndex(param);
-	streams->stride = bpe * num;
-	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-	if (index >= p->attr_num) p->attr_num = index + 1;
-}
-
-void vglVertexAttribPointer(GLuint index,  GLint size,  GLenum type,  GLboolean normalized,  GLsizei stride, GLuint count, const GLvoid* pointer){
-	if (stride < 0){
-		error = GL_INVALID_VALUE;
-		return;
-	}
-	int bpe;
-	switch (type){
-		case GL_FLOAT:
-			bpe = sizeof(GLfloat);
-			break;
-		case GL_SHORT:
-			bpe = sizeof(GLshort);
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-	void* ptr = gpu_pool_memalign(count * bpe * size, bpe * size);
-	if (stride == 0) memcpy(ptr, pointer, count * bpe * size);
-	else{
-		int i;
-		uint8_t* dst = (uint8_t*)ptr;
-		uint8_t* src = (uint8_t*)pointer;
-		for (i=0;i<count;i++){
-			memcpy(dst, src, bpe * size);
-			dst += (bpe*size);
-			src += stride;
-		}
-	}
-	sceGxmSetVertexStream(gxm_context, index, ptr);
-}
-
 // VGL_EXT_gpu_objects_array extension implementation
 
 void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer){
@@ -4354,21 +3961,13 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 	else if (count < 0) error = GL_INVALID_VALUE;
 	if (!skip_draw){
 		if (cur_program != 0){
-			program* p = &progs[cur_program-1];
-			if (implicit_wvp){
-				matrix4x4 mvp_matrix;
-				matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-				if (vert_uniforms == NULL) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
-				if (p->wvp == NULL) p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "wvp");
-				sceGxmSetUniformDataF(vert_uniforms, p->wvp, 0, 16, (const float*)mvp_matrix);
-			}
+			_vglDrawObjects_CustomShadersIMPL(mode, count, implicit_wvp);
 			sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 			vert_uniforms = NULL;
 			frag_uniforms = NULL;
 		}else{
 			if (vertex_array_state){
-				matrix4x4 mvp_matrix;
 				matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 				if (texture_array_state){
 					if (!(tex_unit->textures[texture2d_idx].valid)) return;

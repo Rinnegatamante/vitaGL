@@ -5,8 +5,6 @@
 extern "C" {
 #endif
 
-#include <vitasdk.h>
-
 #define GLfloat       float
 #define GLint         int32_t
 #define GLdouble      double
@@ -276,7 +274,7 @@ void glReadPixels(GLint x,  GLint y,  GLsizei width,  GLsizei height,  GLenum fo
 void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height);
-void glShaderBinary(GLsizei count, const GLuint* handles, GLenum binaryFormat, const void *binary, GLsizei length);
+void glShaderBinary(GLsizei count, const GLuint* handles, GLenum binaryFormat, const void *binary, GLsizei length); // NOTE: Uses GXP shaders
 void glStencilFunc(GLenum func, GLint ref, GLuint mask);
 void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask);
 void glStencilMask(GLuint mask);
