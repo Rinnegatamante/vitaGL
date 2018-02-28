@@ -130,48 +130,7 @@ typedef struct texture_unit{
 	SceGxmTextureAddrMode v_mode;
 } texture_unit;
 
-struct display_queue_callback_data {
-	void *addr;
-};
-
-// Internal gxm stuffs
-static SceUID vdm_ring_buffer_uid;
-static void* vdm_ring_buffer_addr;
-static SceUID vertex_ring_buffer_uid;
-static void* vertex_ring_buffer_addr;
-static SceUID fragment_ring_buffer_uid;
-static void* fragment_ring_buffer_addr;
-static SceUID fragment_usse_ring_buffer_uid;
-static void* fragment_usse_ring_buffer_addr;
-static SceGxmRenderTarget* gxm_render_target;
-static SceGxmColorSurface gxm_color_surfaces[DISPLAY_BUFFER_COUNT];
-static SceUID gxm_color_surfaces_uid[DISPLAY_BUFFER_COUNT];
-static void* gxm_color_surfaces_addr[DISPLAY_BUFFER_COUNT];
-static SceGxmSyncObject* gxm_sync_objects[DISPLAY_BUFFER_COUNT];
-static unsigned int gxm_front_buffer_index;
-static unsigned int gxm_back_buffer_index;
-static SceUID gxm_depth_surface_uid;
-static SceUID gxm_stencil_surface_uid;
-static void* gxm_depth_surface_addr;
-static void* gxm_stencil_surface_addr;
-static SceGxmDepthStencilSurface gxm_depth_stencil_surface;
-
-static SceUID gxm_shader_patcher_buffer_uid;
-static void* gxm_shader_patcher_buffer_addr;
-static SceUID gxm_shader_patcher_vertex_usse_uid;
-static void* gxm_shader_patcher_vertex_usse_addr;
-static SceUID gxm_shader_patcher_fragment_usse_uid;
-static void* gxm_shader_patcher_fragment_usse_addr;
-static uint8_t viewport_mode = 0;
 static matrix4x4 gxm_projection, gxm_identity;
-
-// GXM Viewport
-float x_port = 480.0f;
-float y_port = -272.0f;
-float z_port = 0.5f;
-float x_scale = 480.0f;
-float y_scale = 272.0f;
-float z_scale = 0.5f;
 
 static const SceGxmProgram *const gxm_program_disable_color_buffer_v = (SceGxmProgram*)&disable_color_buffer_v;
 static const SceGxmProgram *const gxm_program_disable_color_buffer_f = (SceGxmProgram*)&disable_color_buffer_f;
@@ -270,7 +229,6 @@ static uvList* last3 = NULL;
 static glPhase phase = NONE;
 static uint64_t vertex_count = 0;
 static uint8_t drawing = 0;
-static GLboolean vblank = GL_TRUE;
 static uint8_t np = 0xFF;
 static int alpha_op = ALWAYS;
 static SceGxmBlendInfo* cur_blend_info_ptr = NULL;
@@ -333,32 +291,6 @@ static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH];
 static uint8_t projection_stack_counter = 0;
 
 // Internal functions
-
-static void* shader_patcher_host_alloc_cb(void *user_data, unsigned int size){
-	return malloc(size);
-}
-
-static void shader_patcher_host_free_cb(void *user_data, void *mem){
-	return free(mem);
-}
-
-static void display_queue_callback(const void *callbackData){
-	SceDisplayFrameBuf display_fb;
-	const struct display_queue_callback_data *cb_data = callbackData;
-
-	memset(&display_fb, 0, sizeof(SceDisplayFrameBuf));
-	display_fb.size = sizeof(SceDisplayFrameBuf);
-	display_fb.base = cb_data->addr;
-	display_fb.pitch = DISPLAY_STRIDE;
-	display_fb.pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
-	display_fb.width = DISPLAY_WIDTH;
-	display_fb.height = DISPLAY_HEIGHT;
-
-	sceDisplaySetFrameBuf(&display_fb, SCE_DISPLAY_SETBUF_NEXTFRAME);
-	
-	if (vblank) sceDisplayWaitVblankStart();
-	
-}
 
 static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 	changeCustomShadersBlend(blend_info);
@@ -683,205 +615,29 @@ static void update_polygon_offset(){
 
 // vitaGL specific functions
 
-void vglUpdateCommonDialog(){
-	SceCommonDialogUpdateParam updateParam;
-	memset(&updateParam, 0, sizeof(updateParam));
-
-	updateParam.renderTarget.colorFormat    = SCE_GXM_COLOR_FORMAT_A8B8G8R8;
-	updateParam.renderTarget.surfaceType    = SCE_GXM_COLOR_SURFACE_LINEAR;
-	updateParam.renderTarget.width          = DISPLAY_WIDTH;
-	updateParam.renderTarget.height         = DISPLAY_HEIGHT;
-	updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE;
-
-	updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_back_buffer_index];
-	updateParam.renderTarget.depthSurfaceData = gxm_depth_surface_addr;
-	updateParam.displaySyncObject = gxm_sync_objects[gxm_back_buffer_index];
-
-	sceCommonDialogUpdate(&updateParam);
-}
-
-void vglStartRendering(){
-	sceGxmBeginScene(
-		gxm_context, 0, gxm_render_target,
-		NULL, NULL,
-		gxm_sync_objects[gxm_back_buffer_index],
-		&gxm_color_surfaces[gxm_back_buffer_index],
-		&gxm_depth_stencil_surface);
-	if (viewport_mode) sceGxmSetViewport(gxm_context,x_port,x_scale,y_port,y_scale,z_port,z_scale);
-}
-
-void vglStopRendering(){
-	sceGxmEndScene(gxm_context, NULL, NULL);
-	gpu_pool_reset();
-	sceGxmFinish(gxm_context);
-	sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
-	struct display_queue_callback_data queue_cb_data;
-	queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
-	sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
-		gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
-	gxm_front_buffer_index = gxm_back_buffer_index;
-	gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
-	gpu_pool_reset();
-}
-
-void vglStopRenderingInit(){
-	sceGxmEndScene(gxm_context, NULL, NULL);
-}
-
-void vglStopRenderingTerm(){
-	sceGxmFinish(gxm_context);
-	sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
-	struct display_queue_callback_data queue_cb_data;
-	queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
-	sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
-	gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
-	gxm_front_buffer_index = gxm_back_buffer_index;
-	gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
-	gpu_pool_reset();
-}
-
 void vglUseVram(GLboolean usage){
 	use_vram = usage;
 }
 
 void vglInit(uint32_t gpu_pool_size){
 	
-	SceGxmInitializeParams gxm_init_params;
-	memset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
+	// Initializing sceGxm
+	initGxm();
 	
-	gxm_init_params.flags = 0;
-	gxm_init_params.displayQueueMaxPendingCount = DISPLAY_BUFFER_COUNT - 1;
-	gxm_init_params.displayQueueCallback = display_queue_callback;
-	gxm_init_params.displayQueueCallbackDataSize = sizeof(struct display_queue_callback_data);
-	gxm_init_params.parameterBufferSize = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE;
+	// Initializing sceGxm context
+	initGxmContext();
+
+	// Creating render target for the display
+	createDisplayRenderTarget();
 	
-	sceGxmInitialize(&gxm_init_params);
+	// Creating color surfaces for the display
+	initDisplayColorSurfaces();
 	
-	vdm_ring_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ, SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE,
-		&vdm_ring_buffer_uid);
-
-	vertex_ring_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ, SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE,
-		&vertex_ring_buffer_uid);
-
-	fragment_ring_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ, SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE,
-		&fragment_ring_buffer_uid);
-
-	unsigned int fragment_usse_offset;
-	fragment_usse_ring_buffer_addr = gpu_fragment_usse_alloc_map(
-		SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE,
-		&fragment_ring_buffer_uid, &fragment_usse_offset);
-
-	SceGxmContextParams gxm_context_params;
-	memset(&gxm_context_params, 0, sizeof(SceGxmContextParams));
-	gxm_context_params.hostMem = malloc(SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
-	gxm_context_params.hostMemSize = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
-	gxm_context_params.vdmRingBufferMem = vdm_ring_buffer_addr;
-	gxm_context_params.vdmRingBufferMemSize = SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE;
-	gxm_context_params.vertexRingBufferMem = vertex_ring_buffer_addr;
-	gxm_context_params.vertexRingBufferMemSize = SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE;
-	gxm_context_params.fragmentRingBufferMem = fragment_ring_buffer_addr;
-	gxm_context_params.fragmentRingBufferMemSize = SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE;
-	gxm_context_params.fragmentUsseRingBufferMem = fragment_usse_ring_buffer_addr;
-	gxm_context_params.fragmentUsseRingBufferMemSize = SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE;
-	gxm_context_params.fragmentUsseRingBufferOffset = fragment_usse_offset;
-
-	sceGxmCreateContext(&gxm_context_params, &gxm_context);
-
-	SceGxmRenderTargetParams render_target_params;
-	memset(&render_target_params, 0, sizeof(SceGxmRenderTargetParams));
-	render_target_params.flags = 0;
-	render_target_params.width = DISPLAY_WIDTH;
-	render_target_params.height = DISPLAY_HEIGHT;
-	render_target_params.scenesPerFrame = 1;
-	render_target_params.multisampleMode = SCE_GXM_MULTISAMPLE_NONE;
-	render_target_params.multisampleLocations = 0;
-	render_target_params.driverMemBlock = -1;
+	// Creating depth and stencil surfaces for the display
+	initDepthStencilSurfaces();
 	
-	sceGxmCreateRenderTarget(&render_target_params, &gxm_render_target);
-	
-	int i;
-	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
-		gxm_color_surfaces_addr[i] = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-			SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-			ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024),
-			&gxm_color_surfaces_uid[i]);
-
-		memset(gxm_color_surfaces_addr[i], 0, DISPLAY_STRIDE * DISPLAY_HEIGHT);
-
-		sceGxmColorSurfaceInit(&gxm_color_surfaces[i],
-			SCE_GXM_COLOR_FORMAT_A8B8G8R8,
-			SCE_GXM_COLOR_SURFACE_LINEAR,
-			SCE_GXM_COLOR_SURFACE_SCALE_NONE,
-			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-			DISPLAY_WIDTH,
-			DISPLAY_HEIGHT,
-			DISPLAY_STRIDE,
-			gxm_color_surfaces_addr[i]);
-
-		sceGxmSyncObjectCreate(&gxm_sync_objects[i]);
-	}
-	
-	unsigned int depth_stencil_width = ALIGN(DISPLAY_WIDTH, SCE_GXM_TILE_SIZEX);
-	unsigned int depth_stencil_height = ALIGN(DISPLAY_HEIGHT, SCE_GXM_TILE_SIZEY);
-	unsigned int depth_stencil_samples = depth_stencil_width * depth_stencil_height;
-
-	gxm_depth_surface_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-		4 * depth_stencil_samples, &gxm_depth_surface_uid);
-		
-	gxm_stencil_surface_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-		1 * depth_stencil_samples, &gxm_stencil_surface_uid);
-
-	sceGxmDepthStencilSurfaceInit(&gxm_depth_stencil_surface,
-		SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M_S8,
-		SCE_GXM_DEPTH_STENCIL_SURFACE_TILED,
-		depth_stencil_width,
-		gxm_depth_surface_addr,
-		gxm_stencil_surface_addr);
-		
-	static const unsigned int shader_patcher_buffer_size = 1024 * 1024;
-	static const unsigned int shader_patcher_vertex_usse_size = 1024 * 1024;
-	static const unsigned int shader_patcher_fragment_usse_size = 1024 * 1024;
-	
-	gxm_shader_patcher_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_READ,
-		shader_patcher_buffer_size, &gxm_shader_patcher_buffer_uid);
-
-	unsigned int shader_patcher_vertex_usse_offset;
-	gxm_shader_patcher_vertex_usse_addr = gpu_vertex_usse_alloc_map(
-		shader_patcher_vertex_usse_size, &gxm_shader_patcher_vertex_usse_uid,
-		&shader_patcher_vertex_usse_offset);
-
-	unsigned int shader_patcher_fragment_usse_offset;
-	gxm_shader_patcher_fragment_usse_addr = gpu_fragment_usse_alloc_map(
-		shader_patcher_fragment_usse_size, &gxm_shader_patcher_fragment_usse_uid,
-		&shader_patcher_fragment_usse_offset);
-
-	SceGxmShaderPatcherParams shader_patcher_params;
-	memset(&shader_patcher_params, 0, sizeof(SceGxmShaderPatcherParams));
-	shader_patcher_params.userData = NULL;
-	shader_patcher_params.hostAllocCallback = shader_patcher_host_alloc_cb;
-	shader_patcher_params.hostFreeCallback = shader_patcher_host_free_cb;
-	shader_patcher_params.bufferAllocCallback = NULL;
-	shader_patcher_params.bufferFreeCallback = NULL;
-	shader_patcher_params.bufferMem = gxm_shader_patcher_buffer_addr;
-	shader_patcher_params.bufferMemSize = shader_patcher_buffer_size;
-	shader_patcher_params.vertexUsseAllocCallback = NULL;
-	shader_patcher_params.vertexUsseFreeCallback = NULL;
-	shader_patcher_params.vertexUsseMem = gxm_shader_patcher_vertex_usse_addr;
-	shader_patcher_params.vertexUsseMemSize = shader_patcher_vertex_usse_size;
-	shader_patcher_params.vertexUsseOffset = shader_patcher_vertex_usse_offset;
-	shader_patcher_params.fragmentUsseAllocCallback = NULL;
-	shader_patcher_params.fragmentUsseFreeCallback = NULL;
-	shader_patcher_params.fragmentUsseMem = gxm_shader_patcher_fragment_usse_addr;
-	shader_patcher_params.fragmentUsseMemSize = shader_patcher_fragment_usse_size;
-	shader_patcher_params.fragmentUsseOffset = shader_patcher_fragment_usse_offset;
-	
-	sceGxmShaderPatcherCreate(&shader_patcher_params, &gxm_shader_patcher);
+	// Starting a sceGxmShaderPatcher instance
+	startShaderPatcher();
 	
 	// Disable color buffer shader register
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_disable_color_buffer_v,
@@ -1221,7 +977,7 @@ void vglInit(uint32_t gpu_pool_size){
 	gpu_pool_init(gpu_pool_size);
 	
 	// Init texture units
-	int j;
+	int i, j;
 	for (i=0; i < GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS; i++){
 		for (j=0; j < TEXTURES_NUM; j++){
 			texture_units[i].textures[j].used = 0;
@@ -1253,13 +1009,18 @@ void vglInit(uint32_t gpu_pool_size){
 }
 
 void vglEnd(void){
-	sceGxmDisplayQueueFinish();
-	sceGxmFinish(gxm_context);
+	
+	// Wait for rendering to be finished
+	waitRenderingDone();
+	
+	// Deallocating default vertices buffers
 	gpu_unmap_free(clear_vertices_uid);
 	gpu_unmap_free(clear_indices_uid);
 	gpu_unmap_free(depth_vertices_uid);
 	gpu_unmap_free(depth_indices_uid);
 	gpu_unmap_free(scissor_test_vertices_uid);
+	
+	// Releasing shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, scissor_test_fragment_program);
 	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, disable_color_buffer_vertex_program_patched);
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, disable_color_buffer_fragment_program_patched);
@@ -1270,6 +1031,8 @@ void vglEnd(void){
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, rgba_fragment_program_patched);
 	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, texture2d_vertex_program_patched);
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_program_patched);
+	
+	// Unregistering shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, clear_vertex_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, clear_fragment_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, rgb_vertex_id);
@@ -1279,24 +1042,25 @@ void vglEnd(void){
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, texture2d_fragment_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, disable_color_buffer_vertex_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, disable_color_buffer_fragment_id);
-	sceGxmShaderPatcherDestroy(gxm_shader_patcher);
-	gpu_unmap_free(gxm_shader_patcher_buffer_uid);
-	gpu_vertex_usse_unmap_free(gxm_shader_patcher_vertex_usse_uid);
-	gpu_fragment_usse_unmap_free(gxm_shader_patcher_fragment_usse_uid);
-	gpu_unmap_free(gxm_depth_surface_uid);
-	gpu_unmap_free(gxm_stencil_surface_uid);
-	int i;
-	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
-		gpu_unmap_free(gxm_color_surfaces_uid[i]);
-		sceGxmSyncObjectDestroy(gxm_sync_objects[i]);
-	}
-	sceGxmDestroyRenderTarget(gxm_render_target);
-	gpu_unmap_free(vdm_ring_buffer_uid);
-	gpu_unmap_free(vertex_ring_buffer_uid);
-	gpu_unmap_free(fragment_ring_buffer_uid);
-	gpu_fragment_usse_unmap_free(fragment_usse_ring_buffer_uid);
-	sceGxmDestroyContext(gxm_context);
+	
+	// Terminating shader patcher
+	stopShaderPatcher();
+	
+	// Deallocating depth and stencil surfaces for display
+	termDepthStencilSurfaces();
+	
+	// Terminating display's color surfaces
+	termDisplayColorSurfaces();
+	
+	// Destroing display's render target
+	destroyDisplayRenderTarget();
+	
+	// Terminating sceGxm context
+	termGxmContext();
+	
+	// Terminating sceGxm
 	sceGxmTerminate();
+	
 }
 
 void vglWaitVblankStart(GLboolean enable){

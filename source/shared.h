@@ -57,6 +57,14 @@ void LOG(const char *format, ...) {
 #  define max(a,b) ((a) > (b) ? (a) : (b))
 #endif
 
+// sceGxm viewport setup (NOTE: origin is on center screen)
+float x_port = 480.0f;
+float y_port = -272.0f;
+float z_port = 0.5f;
+float x_scale = 480.0f;
+float y_scale = 272.0f;
+float z_scale = 0.5f;
+
 SceGxmContext *gxm_context; // sceGxm context instance
 GLenum error = GL_NO_ERROR; // Error returned by glGetError
 SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
@@ -65,7 +73,23 @@ matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 matrix4x4 projection_matrix; // Projection Matrix
 matrix4x4 modelview_matrix; // ModelView Matrix
 
-GLuint cur_program = 0; // Current in-use custom program (0 = No custom program)
+GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
+uint8_t viewport_mode = 0; // Current setting for viewport mode
+GLboolean vblank = GL_TRUE; // Current setting for VSync
+
+/* gxm.c */
+void initGxm(void); // Inits sceGxm
+void initGxmContext(void); // Inits sceGxm context
+void termGxmContext(void); // Terms sceGxm context
+void createDisplayRenderTarget(void); // Creates render target for the display
+void destroyDisplayRenderTarget(void); // Destroys render target for the display
+void initDisplayColorSurfaces(void); // Creates color surfaces for the display
+void termDisplayColorSurfaces(void); // Destroys color surfaces for the display
+void initDepthStencilSurfaces(void); // Creates depth and stencil surfaces for the display
+void termDepthStencilSurfaces(void); // Destroys depth and stencil surfaces for the display
+void startShaderPatcher(void); // Creates a shader patcher instance
+void stopShaderPatcher(void); // Destroys a shader patcher instance
+void waitRenderingDone(void); // Waits for rendering to be finished
 
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders
