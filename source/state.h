@@ -3,7 +3,7 @@
  * Header file managing state of openGL machine
  */
 
- #ifndef _STATE_H_
+#ifndef _STATE_H_
 #define _STATE_H_
  
 // Blending

@@ -26,8 +26,6 @@
 #define GXM_TEX_MAX_SIZE      4096 // Maximum width/height in pixels per texture
 #define BUFFERS_ADDR        0xA000 // Starting address for buffers indexing
 #define BUFFERS_NUM           128  // Maximum number of allocatable buffers
-#define MAX_CUSTOM_SHADERS    32   // Maximum number of linkable custom shaders
-#define MAX_SHADER_PARAMS 16 // Maximum number of parameters per custom shader
 
 // Internal stuffs
 void* frag_uniforms = NULL;

@@ -5,6 +5,9 @@
  
 #include "shared.h"
 
+#define MAX_CUSTOM_SHADERS    32   // Maximum number of linkable custom shaders
+#define MAX_SHADER_PARAMS     16   // Maximum number of parameters per custom shader
+
 // Uniform struct
 typedef struct uniform{
 	GLboolean isVertex;
