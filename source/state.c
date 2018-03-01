@@ -20,5 +20,7 @@ GLfloat pol_factor = 0.0f;	// Current factor for glPolygonOffset
 GLfloat pol_units = 0.0f;	// Current units for glPolygonOffset
 
 // Texture Units
-int8_t server_texture_unit = 0;	// Current in use server side texture unit
 int8_t client_texture_unit = 0;	// Current in use client side texture unit
+
+// Miscellaneous
+glPhase phase = NONE; // Current drawing phase for legacy openGL

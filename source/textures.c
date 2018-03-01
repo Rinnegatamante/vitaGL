@@ -7,12 +7,78 @@
  
 texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
 palette *color_table = NULL; // Current in-use color table
- 
+int8_t server_texture_unit = 0;	// Current in use server side texture unit
+
 /*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -
  * ------------------------------
  */
+ 
+void glGenTextures(GLsizei n, GLuint* res){
+	
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (n < 0){
+		error = GL_INVALID_VALUE;
+		return;
+	}
+#endif
+
+	// Aliasing to make code more readable
+	texture_unit* tex_unit = &texture_units[server_texture_unit];
+	
+	// Reserving a texture and returning its id if available
+	int i, j=0;
+	for (i=0; i < TEXTURES_NUM; i++){
+		if (!(tex_unit->textures[i].used)){
+			res[j++] = i;
+			tex_unit->textures[i].used = 1;
+		}
+		if (j >= n) break;
+	}
+	
+}
+
+void glBindTexture(GLenum target, GLuint texture){
+	
+	// Aliasing to make code more readable
+	texture_unit* tex_unit = &texture_units[server_texture_unit];
+	
+	// Setting current in use texture id for the in use server texture unit
+	switch (target){
+		case GL_TEXTURE_2D:
+			tex_unit->tex_id = texture;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	
+}
+
+void glDeleteTextures(GLsizei n, const GLuint* gl_textures){
+	
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (n < 0){
+		error = GL_INVALID_VALUE;
+		return;
+	}
+#endif
+	
+	// Aliasing to make code more readable
+	texture_unit* tex_unit = &texture_units[server_texture_unit];
+	
+	// Deallocating given textures and invalidating used texture ids
+	int j;
+	for (j=0; j<n; j++){
+		GLuint i = gl_textures[j];
+		tex_unit->textures[i].used = 0;
+		gpu_free_texture(&tex_unit->textures[i]);
+	}
+	
+}
  
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid * data){
 	

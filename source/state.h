@@ -43,7 +43,7 @@ typedef struct texture_unit{
 // Blending
 extern GLboolean blend_state; // Current state for GL_BLEND
 extern SceGxmBlendFactor blend_sfactor_rgb;		// Current in use RGB source blend factor
-extern SceGxmBlendFactor blend_dfactor_rgb;	// Current in use RGB dest blend factor
+extern SceGxmBlendFactor blend_dfactor_rgb;		// Current in use RGB dest blend factor
 extern SceGxmBlendFactor blend_sfactor_a;		// Current in use A source blend factor
 extern SceGxmBlendFactor blend_dfactor_a;		// Current in use A dest blend factor
 

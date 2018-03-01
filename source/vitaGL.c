@@ -202,7 +202,6 @@ static rgbaList* model_color = NULL;
 static rgbaList* last2 = NULL;
 static uvList* model_uv = NULL;
 static uvList* last3 = NULL;
-glPhase phase = NONE;
 static uint64_t vertex_count = 0;
 static uint8_t drawing = 0;
 static uint8_t np = 0xFF;
@@ -1417,22 +1416,6 @@ void glGenBuffers(GLsizei n, GLuint* res){
 	}
 }
 
-void glGenTextures(GLsizei n, GLuint* res){
-	int i, j=0;
-	if (n < 0){
-		error = GL_INVALID_VALUE;
-		return;
-	}
-	texture_unit* tex_unit = &texture_units[server_texture_unit];
-	for (i=0; i < TEXTURES_NUM; i++){
-		if (!(tex_unit->textures[i].used)){
-			res[j++] = i;
-			tex_unit->textures[i].used = 1;
-		}
-		if (j >= n) break;
-	}
-}
-
 void glBindBuffer(GLenum target, GLuint buffer){
 	if ((buffer != 0x0000) && ((buffer >= BUFFERS_ADDR + BUFFERS_NUM) || (buffer < BUFFERS_ADDR))){
 		error = GL_INVALID_VALUE;
@@ -1448,32 +1431,6 @@ void glBindBuffer(GLenum target, GLuint buffer){
 		default:
 			error = GL_INVALID_ENUM;
 			break;
-	}
-}
-
-void glBindTexture(GLenum target, GLuint texture){
-	texture_unit* tex_unit = &texture_units[server_texture_unit];
-	switch (target){
-		case GL_TEXTURE_2D:
-			tex_unit->tex_id = texture;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-}
-
-void glDeleteTextures(GLsizei n, const GLuint* gl_textures){
-	if (n < 0){
-		error = GL_INVALID_VALUE;
-		return;
-	}
-	int j;
-	texture_unit* tex_unit = &texture_units[server_texture_unit];
-	for (j=0; j<n; j++){
-		GLuint i = gl_textures[j];
-		tex_unit->textures[i].used = 0;
-		gpu_free_texture(&tex_unit->textures[i]);
 	}
 }
 
