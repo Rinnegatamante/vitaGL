@@ -3,7 +3,7 @@
  * Utilities for math operations
  */
  
-#include "shared.h"
+#include "../shared.h"
 #include <math.h>
 
 // NOTE: matrices are row-major.

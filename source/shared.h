@@ -6,14 +6,6 @@
  
 #ifndef _SHARED_H_
 #define _SHARED_H_
- 
-#include <stdlib.h>
-#include <stdio.h>
-#include <vitasdk.h> 
-#include "vitaGL.h"
-#include "utils/math_utils.h"
-#include "utils/gpu_utils.h"
-#include "state.h"
 
 // Internal constants
 #define TEXTURES_NUM          1024 // Available textures per texture unit
@@ -26,6 +18,15 @@
 #define GXM_TEX_MAX_SIZE      4096 // Maximum width/height in pixels per texture
 #define BUFFERS_ADDR        0xA000 // Starting address for buffers indexing
 #define BUFFERS_NUM           128  // Maximum number of allocatable buffers
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <vitasdk.h> 
+#include "vitaGL.h"
+#include "utils/math_utils.h"
+#include "utils/gpu_utils.h"
+#include "state.h"
+#include "texture_callbacks.h"
 
 // Internal stuffs
 extern void* frag_uniforms;
