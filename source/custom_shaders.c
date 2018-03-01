@@ -8,6 +8,12 @@
 #define MAX_CUSTOM_SHADERS    32   // Maximum number of linkable custom shaders
 #define MAX_SHADER_PARAMS     16   // Maximum number of parameters per custom shader
 
+// Internal stuffs
+void* frag_uniforms = NULL;
+void* vert_uniforms = NULL;
+
+GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
+
 // Uniform struct
 typedef struct uniform{
 	GLboolean isVertex;

@@ -28,8 +28,8 @@
 #define BUFFERS_NUM           128  // Maximum number of allocatable buffers
 
 // Internal stuffs
-void* frag_uniforms = NULL;
-void* vert_uniforms = NULL;
+extern void* frag_uniforms;
+extern void* vert_uniforms;
 
 // Debugging tool
 #ifdef ENABLE_LOG
@@ -56,24 +56,24 @@ void LOG(const char *format, ...) {
 #endif
 
 // sceGxm viewport setup (NOTE: origin is on center screen)
-float x_port = 480.0f;
-float y_port = -272.0f;
-float z_port = 0.5f;
-float x_scale = 480.0f;
-float y_scale = 272.0f;
-float z_scale = 0.5f;
+extern float x_port;
+extern float y_port;
+extern float z_port;
+extern float x_scale;
+extern float y_scale;
+extern float z_scale;
 
-SceGxmContext *gxm_context; // sceGxm context instance
-GLenum error = GL_NO_ERROR; // Error returned by glGetError
-SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
+extern SceGxmContext *gxm_context; // sceGxm context instance
+extern GLenum error; // Error returned by glGetError
+extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 
 matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 matrix4x4 projection_matrix; // Projection Matrix
 matrix4x4 modelview_matrix; // ModelView Matrix
 
-GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
-uint8_t viewport_mode = 0; // Current setting for viewport mode
-GLboolean vblank = GL_TRUE; // Current setting for VSync
+extern GLuint cur_program; // Current in use custom program (0 = No custom program)
+extern uint8_t viewport_mode; // Current setting for viewport mode
+extern GLboolean vblank; // Current setting for VSync
 
 /* gxm.c */
 void initGxm(void); // Inits sceGxm

@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+#include <vitasdk.h>
+
 #define GLfloat       float
 #define GLint         int32_t
 #define GLdouble      double
