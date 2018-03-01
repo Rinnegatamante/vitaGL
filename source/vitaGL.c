@@ -70,12 +70,6 @@ typedef struct uvList{
 	void* next;
 } uvList;
 
-// Drawing phases for old openGL
-typedef enum glPhase{
-	NONE = 0,
-	MODEL_CREATION = 1
-} glPhase;
-
 // Alpha operations for alpha testing
 typedef enum alphaOp{
 	GREATER_EQUAL = 0,
@@ -102,8 +96,6 @@ typedef struct scissor_region{
 	int w;
 	int h;
 } scissor_region;
-
-static matrix4x4 gxm_projection, gxm_identity;
 
 // sceGxm viewport setup (NOTE: origin is on center screen)
 float x_port = 480.0f;
@@ -210,7 +202,7 @@ static rgbaList* model_color = NULL;
 static rgbaList* last2 = NULL;
 static uvList* model_uv = NULL;
 static uvList* last3 = NULL;
-static glPhase phase = NONE;
+glPhase phase = NONE;
 static uint64_t vertex_count = 0;
 static uint8_t drawing = 0;
 static uint8_t np = 0xFF;
@@ -247,7 +239,6 @@ static uint8_t stencil_ref_back = 0; // Current in-use reference for stencil tes
 static GLdouble depth_value = 1.0f; // Current depth test value
 static int vertex_array_unit = -1; // Current in-use vertex array unit
 static int index_array_unit = -1; // Current in-use index array unit
-static matrix4x4* matrix = NULL; // Current in-use matrix mode
 static vector4f clear_rgba_val; // Current clear color for glClear
 static GLboolean stencil_test_state = GL_FALSE; // Current state for GL_STENCIL_TEST
 static GLboolean vertex_array_state = GL_FALSE; // Current state for GL_VERTEX_ARRAY
@@ -1656,24 +1647,6 @@ void glArrayElement(GLint i){
 	}
 }
 
-void glLoadIdentity(void){
-	matrix4x4_identity(*matrix);
-}
-
-void glMatrixMode(GLenum mode){
-	switch (mode){
-		case GL_MODELVIEW:
-			matrix = &modelview_matrix;
-			break;
-		case GL_PROJECTION:
-			matrix = &projection_matrix;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-}
-
 void glViewport(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 	if ((width < 0) || (height < 0)){
 		error = GL_INVALID_VALUE;
@@ -1709,77 +1682,6 @@ void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 	region.w = width;
 	region.h = height;
 	if (scissor_test_state) update_scissor_test();
-}
-
-void glOrtho(GLdouble left,  GLdouble right,  GLdouble bottom,  GLdouble top,  GLdouble nearVal,  GLdouble farVal){
-	if (phase == MODEL_CREATION){
-		error = GL_INVALID_OPERATION;
-		return;
-	}else if ((left == right) || (bottom == top) || (nearVal == farVal)){
-		error = GL_INVALID_VALUE;
-		return;
-	}
-	matrix4x4_init_orthographic(*matrix, left, right, bottom, top, nearVal, farVal);
-}
-
-void glFrustum(GLdouble left,  GLdouble right,  GLdouble bottom,  GLdouble top,  GLdouble nearVal,  GLdouble farVal){
-	if (phase == MODEL_CREATION){
-		error = GL_INVALID_OPERATION;
-		return;
-	}else if ((left == right) || (bottom == top) || (nearVal < 0) || (farVal < 0)){
-		error = GL_INVALID_VALUE;
-		return;
-	}
-	matrix4x4_init_frustum(*matrix, left, right, bottom, top, nearVal, farVal);
-}
-
-void glMultMatrixf(const GLfloat* m){
-	matrix4x4 res;
-	matrix4x4 tmp;
-	int i,j;
-	for (i=0;i<4;i++){
-		for (j=0;j<4;j++){
-			tmp[i][j] = m[i*4+j];
-		}
-	}
-	matrix4x4_multiply(res, *matrix, tmp);
-	matrix4x4_copy(*matrix, res);
-}
-
-void glLoadMatrixf(const GLfloat* m){
-	matrix4x4 tmp;
-	int i,j;
-	for (i=0;i<4;i++){
-		for (j=0;j<4;j++){
-			tmp[i][j] = m[i*4+j];
-		}
-	}
-	matrix4x4_copy(*matrix, tmp);
-}
-
-void glTranslatef(GLfloat x,  GLfloat y,  GLfloat z){
-	matrix4x4_translate(*matrix, x, y, z);
-}
-
-void glScalef(GLfloat x, GLfloat y, GLfloat z){
-	matrix4x4_scale(*matrix, x, y, z);
-}
-
-void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z){
-	if (phase == MODEL_CREATION){
-		error = GL_INVALID_OPERATION;
-		return;
-	}
-	float rad = DEG_TO_RAD(angle);
-	if (x == 1.0f){
-		matrix4x4_rotate_x(*matrix, rad);
-	}
-	if (y == 1.0f){
-		matrix4x4_rotate_y(*matrix, rad);
-	}
-	if (z == 1.0f){
-		matrix4x4_rotate_z(*matrix, rad);
-	}
 }
 
 void glColor3f(GLfloat red, GLfloat green, GLfloat blue){

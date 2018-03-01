@@ -3,18 +3,18 @@
  * Implementation for textures related functions
  */
  
- #include "shared.h"
+#include "shared.h"
  
- texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
- palette *color_table = NULL; // Current in-use color table
+texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
+palette *color_table = NULL; // Current in-use color table
  
- /*
+/*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -
  * ------------------------------
  */
  
- void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid * data){
+void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid * data){
 	
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];

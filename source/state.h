@@ -6,6 +6,12 @@
 #ifndef _STATE_H_
 #define _STATE_H_
 
+// Drawing phases constants for legacy openGL
+typedef enum glPhase{
+	NONE = 0,
+	MODEL_CREATION = 1
+} glPhase;
+
 // Vertex array attributes struct
 typedef struct vertexArray{
 	GLint size;
@@ -53,5 +59,11 @@ extern texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Avail
 extern int8_t server_texture_unit;	// Current in use server side texture unit
 extern int8_t client_texture_unit;	// Current in use client side texture unit
 extern palette *color_table; // Current in-use color table
+
+// Matrices
+extern matrix4x4 *matrix; // Current in-use matrix mode
+
+// Miscellaneous
+extern glPhase phase; // Current drawing phase for legacy openGL
 
 #endif
