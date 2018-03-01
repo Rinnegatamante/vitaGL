@@ -1,130 +1,151 @@
-#include <vitasdk.h>
-#include <stdlib.h>
-#include "gpu_utils.h"
+/* 
+ * gpu_utils.c:
+ * Utilities for GPU usage
+ */
+ 
+ #include "../shared.h"
 
-#ifndef max
-    #define max(a,b) ((a) > (b) ? (a) : (b))
-#endif
-
+// VRAM usage setting
 uint8_t use_vram = 0;
 
-// Temporary memory pool
+// vitaGL memory pool setup
 static void *pool_addr = NULL;
 static SceUID poolUid;
 static unsigned int pool_index = 0;
 static unsigned int pool_size = 0;
 
 void* gpu_alloc_map(SceKernelMemBlockType type, SceGxmMemoryAttribFlags gpu_attrib, size_t size, SceUID *uid){
-	SceUID memuid;
+	
+	// Aligning memory size
 	void *addr;
-
 	if (type == SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW)
 		size = ALIGN(size, 256 * 1024);
 	else
 		size = ALIGN(size, 4 * 1024);
 
-	memuid = sceKernelAllocMemBlock("gpumem", type, size, NULL);
-	if (memuid < 0)
-		return NULL;
+	// Allocating requested memblock
+	*uid = sceKernelAllocMemBlock("gpumem", type, size, NULL);
+	if (*uid < 0) return NULL;
 
-	if (sceKernelGetMemBlockBase(memuid, &addr) < 0)
-		return NULL;
+	// Getting memblock starting address
+	if (sceKernelGetMemBlockBase(*uid, &addr) < 0) return NULL;
 
+	// Mapping memblock into sceGxm
 	if (sceGxmMapMemory(addr, size, gpu_attrib) < 0) {
-		sceKernelFreeMemBlock(memuid);
+		sceKernelFreeMemBlock(*uid);
 		return NULL;
 	}
 
-	if (uid)
-		*uid = memuid;
-
+	// Returning memblock starting address
 	return addr;
+	
 }
 
 void gpu_unmap_free(SceUID uid){
+	
+	// Checking for memblock coherency
 	void *addr;
+	if (sceKernelGetMemBlockBase(uid, &addr) < 0) return;
 
-	if (sceKernelGetMemBlockBase(uid, &addr) < 0)
-		return;
-
+	// Unmapping memblock from sceGxm
 	sceGxmUnmapMemory(addr);
 
+	// Deallocating memblock
 	sceKernelFreeMemBlock(uid);
+	
 }
 
 void* gpu_vertex_usse_alloc_map(size_t size, SceUID *uid, unsigned int *usse_offset){
-	SceUID memuid;
+	
+	// Aligning memory size
 	void *addr;
-
 	size = ALIGN(size, 4 * 1024);
 
-	memuid = sceKernelAllocMemBlock("gpu_vertex_usse",
+	// Allocating memblock
+	*uid = sceKernelAllocMemBlock("gpu_vertex_usse",
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, size, NULL);
-	if (memuid < 0)
-		return NULL;
+	if (*uid < 0) return NULL;
 
-	if (sceKernelGetMemBlockBase(memuid, &addr) < 0)
-		return NULL;
+	// Getting memblock starting address
+	if (sceKernelGetMemBlockBase(*uid, &addr) < 0) return NULL;
 
-	if (sceGxmMapVertexUsseMemory(addr, size, usse_offset) < 0)
-		return NULL;
+	// Mapping memblock into sceGxm
+	if (sceGxmMapVertexUsseMemory(addr, size, usse_offset) < 0) return NULL;
 
+	// Returning memblock starting address
 	return addr;
+	
 }
 
 void gpu_vertex_usse_unmap_free(SceUID uid){
+	
+	// Checking memblock coherency
 	void *addr;
+	if (sceKernelGetMemBlockBase(uid, &addr) < 0) return;
 
-	if (sceKernelGetMemBlockBase(uid, &addr) < 0)
-		return;
-
+	// Unmapping memblock from sceGxm
 	sceGxmUnmapVertexUsseMemory(addr);
 
+	// Deallocating memblock
 	sceKernelFreeMemBlock(uid);
+	
 }
 
 void *gpu_fragment_usse_alloc_map(size_t size, SceUID *uid, unsigned int *usse_offset){
-	SceUID memuid;
-	void *addr;
 
+	// Aligning memory size
+	void *addr;
 	size = ALIGN(size, 4 * 1024);
 
-	memuid = sceKernelAllocMemBlock("gpu_fragment_usse",
+	// Allocating memblock
+	*uid = sceKernelAllocMemBlock("gpu_fragment_usse",
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, size, NULL);
-	if (memuid < 0)
-		return NULL;
+	if (*uid < 0) return NULL;
 
-	if (sceKernelGetMemBlockBase(memuid, &addr) < 0)
-		return NULL;
+	// Getting memblock starting address
+	if (sceKernelGetMemBlockBase(*uid, &addr) < 0) return NULL;
 
-	if (sceGxmMapFragmentUsseMemory(addr, size, usse_offset) < 0)
-		return NULL;
+	// Mapping memblock into sceGxm
+	if (sceGxmMapFragmentUsseMemory(addr, size, usse_offset) < 0) return NULL;
 
+	// Returning memblock starting address
 	return addr;
+	
 }
 
 void gpu_fragment_usse_unmap_free(SceUID uid){
+	
+	// Checking memblock coherency
 	void *addr;
-
 	if (sceKernelGetMemBlockBase(uid, &addr) < 0)
 		return;
 
+	// Unmapping memblock from sceGxm
 	sceGxmUnmapFragmentUsseMemory(addr);
 
+	// Deallocating memblock
 	sceKernelFreeMemBlock(uid);
+	
 }
 
 void* gpu_pool_malloc(unsigned int size){
+	
+	// Reserving vitaGL mempool space
 	if ((pool_index + size) < pool_size) {
 		void *addr = (void *)((unsigned int)pool_addr + pool_index);
 		pool_index += size;
 		return addr;
 	}
+	
 	return NULL;
 }
 
 void* gpu_pool_memalign(unsigned int size, unsigned int alignment){
-	unsigned int new_index = (pool_index + alignment - 1) & ~(alignment - 1);
+	
+	// Aligning requested memory size
+	unsigned int new_index = ALIGN(pool_index, alignment);
+	
+	// Reserving vitaGL mempool space
 	if ((new_index + size) < pool_size) {
 		void *addr = (void *)((unsigned int)pool_addr + new_index);
 		pool_index = new_index + size;
@@ -134,23 +155,34 @@ void* gpu_pool_memalign(unsigned int size, unsigned int alignment){
 }
 
 unsigned int gpu_pool_free_space(){
+	
+	// Returning vitaGL available mempool space
 	return pool_size - pool_index;
+	
 }
 
 void gpu_pool_reset(){
+	
+	// Resetting vitaGL available mempool space
 	pool_index = 0;
+	
 }
 
 void gpu_pool_init(uint32_t temp_pool_size){
+	
+	// Allocating vitaGL mempool
 	pool_size = temp_pool_size;
 	pool_addr = gpu_alloc_map(
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW,
 		SCE_GXM_MEMORY_ATTRIB_READ,
 		pool_size,
 		&poolUid);
+	
 }
 
 int tex_format_to_bytespp(SceGxmTextureFormat format){
+	
+	// Calculating bpp for the requested texture format
 	switch (format & 0x9f000000U) {
 		case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
 		case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
@@ -175,30 +207,54 @@ int tex_format_to_bytespp(SceGxmTextureFormat format){
 		default:
 			return 4;
 	}
+	
 }
 
-palette* gpu_alloc_palette(const void* data, uint32_t w, uint32_t bpe){
-	palette* res = (palette*)malloc(sizeof(palette));
+palette *gpu_alloc_palette(const void* data, uint32_t w, uint32_t bpe){
+	
+	// Allocating a palette object
+	palette *res = (palette*)malloc(sizeof(palette));
+	
+	// Allocating palette data buffer
 	void *texture_palette = gpu_alloc_map(
 		(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_RW),
-		SCE_GXM_MEMORY_ATTRIB_READ,
-		256 * sizeof(uint32_t),
-		&res->palette_UID);
+		SCE_GXM_MEMORY_ATTRIB_READ, 256 * sizeof(uint32_t), &res->palette_UID);
+	if (texture_palette == NULL){ // If alloc fails, use the non-preferred memblock type
+		texture_palette = gpu_alloc_map(
+			(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW),
+			SCE_GXM_MEMORY_ATTRIB_READ, 256 * sizeof(uint32_t), &res->palette_UID);
+	}
+		
+	// Initializing palette
 	if (data == NULL) memset(texture_palette, 0, 256 * sizeof(uint32_t));
-	else if(bpe == 4) memcpy(texture_palette, data, w * sizeof(uint32_t));
+	else if (bpe == 4) memcpy(texture_palette, data, w * sizeof(uint32_t));
 	res->data = texture_palette;
+	
+	// Returning palette
 	return res;
+	
 }
 
-void gpu_free_texture(texture* tex){
+void gpu_free_texture(texture *tex){
+	
+	// Deallocating texture
 	if (tex->data_UID != 0) gpu_unmap_free(tex->data_UID);
+	
+	// Invalidating texture object
 	tex->data_UID = 0;
 	tex->valid = 0;
+	
 }
 
-void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void* data, texture* tex, uint8_t src_bpp, uint32_t (*read_cb)(void*),  void (*write_cb)(void*, uint32_t)){
+void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void*),  void (*write_cb)(void*, uint32_t)){
+	
+	// If there's already a texture in passed texture object we first dealloc it
 	if (tex->valid) gpu_free_texture(tex);
+	
+	// Getting texture format bpp
 	uint8_t bpp = tex_format_to_bytespp(format);
+	
+	// Allocating texture data buffer
 	const int tex_size = w * h * bpp;
 	void *texture_data = gpu_alloc_map(
 		(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_RW),
@@ -210,13 +266,10 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 			SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
 			tex_size, &tex->data_UID);
 	}
+	
 	if (texture_data != NULL){
-		sceGxmColorSurfaceInit(&tex->gxm_sfc,
-			SCE_GXM_COLOR_FORMAT_A8B8G8R8,
-			SCE_GXM_COLOR_SURFACE_LINEAR,
-			SCE_GXM_COLOR_SURFACE_SCALE_NONE,
-			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-			w,h,w,texture_data);	
+		
+		// Initializing texture data buffer
 		if (data != NULL){
 			int i, j;
 			uint8_t *src = (uint8_t*)data;
@@ -231,114 +284,115 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 				}
 			}
 		}else memset(texture_data, 0, tex_size);
+		
+		// Initializing texture and validating it
 		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, w, h, 0);
 		if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8) tex->palette_UID = 1;
 		else tex->palette_UID = 0;
 		tex->valid = 1;
+		
 	}
 }
 
-void gpu_alloc_mipmaps(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void* data, int level, texture* tex){
-	// Discarding passed content and using sceGxmTransfer to create desired level of mipmap
+void gpu_alloc_mipmaps(int level, texture *tex){
+	
+	// Getting current mipmap count in passed texture
 	uint32_t count = sceGxmTextureGetMipmapCount(&tex->gxm_tex);
+	
+	// Getting textures info and calculating bpp
+	uint32_t w, h;
 	uint32_t orig_w = w = sceGxmTextureGetWidth(&tex->gxm_tex);
 	uint32_t orig_h = h = sceGxmTextureGetHeight(&tex->gxm_tex);
-	uint32_t size = 0;
-	if (level > count){
+	SceGxmTextureFormat format = sceGxmTextureGetFormat(&tex->gxm_tex);
+	uint32_t bpp = tex_format_to_bytespp(format);
+	
+	// Checking if we need at least one more new mipmap level
+	if ((level > count) || (level < 0)){ // Note: level < 0 means we will use max possible mipmaps level
+		
+		// Calculating new texture data buffer size
+		uint32_t size = 0;
 		int j;
-		for (j=0;j<level;j++){
-			size += max(w, 8) * h * sizeof(uint32_t);
-			w /= 2;
-			h /= 2;
+		if (level > 0){
+			for (j=0;j<level;j++){
+				size += max(w, 8) * h * bpp;
+				w /= 2;
+				h /= 2;
+			}
+		}else{
+			level = 0;
+			while ((w > 1) && (h > 1)){
+				size += max(w, 8) * h * bpp;
+				w /= 2;
+				h /= 2;
+				level++;
+			}
 		}
-		SceUID data_UID;
+		
+		// Calculating needed sceGxmTransfer format for the downscale process
+		SceGxmTransferFormat fmt;
+		switch (tex->type){
+			case GL_RGBA:
+				fmt = SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR;
+				break;
+			case GL_RGB:
+				fmt = SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR;
+			default:
+				break;
+		}
+			
+		// Moving texture data to heap and deallocating texture memblock
+		void *temp = (void*)malloc(orig_w * orig_h * bpp);
+		memcpy(temp, sceGxmTextureGetData(&tex->gxm_tex), orig_w * orig_h * bpp);
+		gpu_free_texture(tex);
+			
+		// Allocating the new texture data buffer
 		void *texture_data = gpu_alloc_map(
 			(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_RW),
 			SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-			size, &data_UID);
+			size, &tex->data_UID);
 		if (texture_data == NULL){ // If alloc fails, use the non-preferred memblock type
 			texture_data = gpu_alloc_map(
 				(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW),
 				SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-				size, &data_UID);
+				size, &tex->data_UID);
 		}
-		sceGxmColorSurfaceInit(&tex->gxm_sfc,
-			SCE_GXM_COLOR_FORMAT_A8B8G8R8,
-			SCE_GXM_COLOR_SURFACE_LINEAR,
-			SCE_GXM_COLOR_SURFACE_SCALE_NONE,
-			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-			orig_w,orig_h,orig_w,texture_data);
-		memcpy(texture_data, sceGxmTextureGetData(&tex->gxm_tex), orig_w * orig_h * tex_format_to_bytespp(format));
-		gpu_free_texture(tex);
-		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, level);
 		tex->valid = 1;
-		tex->data_UID = data_UID;
-		uint32_t* curPtr = (uint32_t*)texture_data;
+		
+		// Moving back old texture data from heap to texture memblock
+		memcpy(texture_data, temp, orig_w * orig_h * bpp);
+		free(temp);
+		
+		// Performing a chain downscale process to generate requested mipmaps
+		uint8_t *curPtr = (uint8_t*)texture_data;
 		uint32_t curWidth = orig_w;
 		uint32_t curHeight = orig_h;
-		for (j=0;j<level-1;j++){
+		for (j = 0; j < level - 1; j++){
 			uint32_t curSrcStride = max(curWidth, 8);
 			uint32_t curDstStride = max((curWidth>>1), 8);
-			uint32_t* dstPtr = curPtr + (curSrcStride * curHeight);
+			uint8_t *dstPtr = curPtr + (curSrcStride * curHeight * bpp);
 			sceGxmTransferDownscale(
-				tex_format_to_bytespp(format) == 4 ? SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR : SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR,
-				curPtr, 0, 0,
+				fmt, curPtr, 0, 0,
 				curWidth, curHeight,
-				curSrcStride * sizeof(uint32_t),
-				tex_format_to_bytespp(format) == 4 ? SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR : SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR,
-				dstPtr, 0, 0,
-				curDstStride * sizeof(uint32_t),
+				curSrcStride * bpp,
+				fmt, dstPtr, 0, 0,
+				curDstStride * bpp,
 				NULL, SCE_GXM_TRANSFER_FRAGMENT_SYNC, NULL);
 			curPtr = dstPtr;
 			curWidth /= 2;
 			curHeight /= 2;
 		}
+		
+		// Initializing texture in sceGxm
+		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, level);
+		
 	}
 }
 
-void gpu_prepare_rendertarget(texture* tex){
-	if (tex == NULL) return;
-	uint32_t w = sceGxmTextureGetWidth(&tex->gxm_tex);
-	uint32_t h = sceGxmTextureGetHeight(&tex->gxm_tex);
-		
-	const uint32_t alignedWidth = ALIGN(w, SCE_GXM_TILE_SIZEX);
-	const uint32_t alignedHeight = ALIGN(h, SCE_GXM_TILE_SIZEY);
-	uint32_t sampleCount = alignedWidth*alignedHeight;
-	uint32_t depthStrideInSamples = alignedWidth;
+void gpu_free_palette(palette *pal){
 	
-	void *depthBufferData = gpu_alloc_map(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-		4*sampleCount, &tex->depth_UID);
-		
-	sceGxmDepthStencilSurfaceInit(
-		&tex->gxm_sfd,
-		SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24,
-		SCE_GXM_DEPTH_STENCIL_SURFACE_TILED,
-		depthStrideInSamples,
-		depthBufferData, NULL);
-	
-	SceGxmRenderTarget *tgt = NULL;
-	SceGxmRenderTargetParams renderTargetParams;
-	memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
-	renderTargetParams.flags = 0;
-	renderTargetParams.width = w;
-	renderTargetParams.height = h;
-	renderTargetParams.scenesPerFrame = 1;
-	renderTargetParams.multisampleMode = SCE_GXM_MULTISAMPLE_NONE;
-	renderTargetParams.multisampleLocations = 0;
-	renderTargetParams.driverMemBlock = -1;
-	sceGxmCreateRenderTarget(&renderTargetParams, &tgt);
-	tex->gxm_rtgt = tgt;
-}
-
-void gpu_destroy_rendertarget(texture* tex){
-	sceGxmDestroyRenderTarget(tex->gxm_rtgt);
-	gpu_unmap_free(tex->depth_UID);
-}
-
-void gpu_free_palette(palette* pal){
+	// Unmapping and deallocating palette memblock and object
 	if (pal == NULL) return;
 	gpu_unmap_free(pal->palette_UID);
 	free(pal);
+	
 }

@@ -1708,7 +1708,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			tex->type = internalFormat;
 			tex->write_cb = write_cb;
 			if (level == 0) gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb);
-			else gpu_alloc_mipmaps(width, height, tex_format, data, level, tex);
+			else gpu_alloc_mipmaps(level, tex);
 			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
 			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
@@ -3445,67 +3445,9 @@ void glGenerateMipmap(GLenum target){
 	int texture2d_idx = tex_unit->tex_id;
 	texture* tex = &tex_unit->textures[texture2d_idx];
 	if (!tex->valid) return;
-	SceGxmTransferFormat fmt;
 	switch (target){
 		case GL_TEXTURE_2D:
-			switch (tex->type){
-				case GL_RGBA:
-					fmt = SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR;
-					break;
-				case GL_RGB:
-					fmt = SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR;
-				default:
-					break;
-			}
-			SceGxmTextureFormat format = sceGxmTextureGetFormat(&tex->gxm_tex);
-			uint32_t bpp = tex_format_to_bytespp(format);
-			int j, mipcount = 0;
-			uint32_t w, h;
-			uint32_t orig_w = w = sceGxmTextureGetWidth(&tex->gxm_tex);
-			uint32_t orig_h = h = sceGxmTextureGetHeight(&tex->gxm_tex);
-			uint32_t size = 0;
-			while ((w > 1) && (h > 1)){
-				size += max(w, 8) * h * bpp;
-				w /= 2;
-				h /= 2;
-				mipcount++;
-			}
-			SceUID data_UID;
-			void* temp = (void*)malloc(orig_w * orig_h * bpp);
-			memcpy(temp, sceGxmTextureGetData(&tex->gxm_tex), orig_w * orig_h * bpp);
-			gpu_free_texture(tex);
-			void *texture_data = gpu_alloc_map(
-				(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_RW),
-				SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-				size, &tex->data_UID);
-			if (texture_data == NULL){ // If alloc fails, use the non-preferred memblock type
-				texture_data = gpu_alloc_map(
-					(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW),
-					SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-					size, &tex->data_UID);
-			}
-			tex->valid = 1;
-			memcpy(texture_data, temp, orig_w * orig_h * bpp);
-			free(temp);
-			uint8_t* curPtr = (uint8_t*)texture_data;
-			uint32_t curWidth = orig_w;
-			uint32_t curHeight = orig_h;
-			for (j=0;j<mipcount-1;j++){
-				uint32_t curSrcStride = max(curWidth, 8);
-				uint32_t curDstStride = max((curWidth>>1), 8);
-				uint8_t* dstPtr = curPtr + (curSrcStride * curHeight * bpp);
-				sceGxmTransferDownscale(
-					fmt, curPtr, 0, 0,
-					curWidth, curHeight,
-					curSrcStride * bpp,
-					fmt, dstPtr, 0, 0,
-					curDstStride * bpp,
-					NULL, SCE_GXM_TRANSFER_FRAGMENT_SYNC, NULL);
-				curPtr = dstPtr;
-				curWidth /= 2;
-				curHeight /= 2;
-			}
-			sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, mipcount);
+			gpu_alloc_mipmaps(-1, tex);
 			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
 			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
