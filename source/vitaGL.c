@@ -132,6 +132,17 @@ typedef struct texture_unit{
 
 static matrix4x4 gxm_projection, gxm_identity;
 
+// sceGxm viewport setup (NOTE: origin is on center screen)
+float x_port = 480.0f;
+float y_port = -272.0f;
+float z_port = 0.5f;
+float x_scale = 480.0f;
+float y_scale = 272.0f;
+float z_scale = 0.5f;
+
+uint8_t viewport_mode = 0; // Current setting for viewport mode
+GLboolean vblank = GL_TRUE; // Current setting for VSync
+
 static const SceGxmProgram *const gxm_program_disable_color_buffer_v = (SceGxmProgram*)&disable_color_buffer_v;
 static const SceGxmProgram *const gxm_program_disable_color_buffer_f = (SceGxmProgram*)&disable_color_buffer_f;
 static const SceGxmProgram *const gxm_program_clear_v = (SceGxmProgram*)&clear_v;
@@ -1696,12 +1707,12 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			}
 			tex->type = internalFormat;
 			tex->write_cb = write_cb;
+			if (level == 0) gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb);
+			else gpu_alloc_mipmaps(width, height, tex_format, data, level, tex);
 			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
 			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
 			sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
-			if (level == 0) gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb);
-			else gpu_alloc_mipmaps(width, height, tex_format, data, level, tex);
 			if (tex->valid && tex->palette_UID) sceGxmTextureSetPalette(&tex->gxm_tex, color_table->data);
 			break;
 		default:
@@ -3446,21 +3457,22 @@ void glGenerateMipmap(GLenum target){
 				default:
 					break;
 			}
+			SceGxmTextureFormat format = sceGxmTextureGetFormat(&tex->gxm_tex);
+			uint32_t bpp = tex_format_to_bytespp(format);
 			int j, mipcount = 0;
 			uint32_t w, h;
 			uint32_t orig_w = w = sceGxmTextureGetWidth(&tex->gxm_tex);
 			uint32_t orig_h = h = sceGxmTextureGetHeight(&tex->gxm_tex);
 			uint32_t size = 0;
 			while ((w > 1) && (h > 1)){
-				size += max(w, 8) * h * sizeof(uint32_t);
+				size += max(w, 8) * h * bpp;
 				w /= 2;
 				h /= 2;
 				mipcount++;
 			}
 			SceUID data_UID;
-			SceGxmTextureFormat format = sceGxmTextureGetFormat(&tex->gxm_tex);
-			void* temp = (void*)malloc(orig_w * orig_h * tex_format_to_bytespp(format));
-			memcpy(temp, sceGxmTextureGetData(&tex->gxm_tex), orig_w * orig_h * tex_format_to_bytespp(format));
+			void* temp = (void*)malloc(orig_w * orig_h * bpp);
+			memcpy(temp, sceGxmTextureGetData(&tex->gxm_tex), orig_w * orig_h * bpp);
 			gpu_free_texture(tex);
 			void *texture_data = gpu_alloc_map(
 				(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_RW),
@@ -3472,28 +3484,22 @@ void glGenerateMipmap(GLenum target){
 					SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
 					size, &tex->data_UID);
 			}
-			sceGxmColorSurfaceInit(&tex->gxm_sfc,
-				SCE_GXM_COLOR_FORMAT_A8B8G8R8,
-				SCE_GXM_COLOR_SURFACE_LINEAR,
-				SCE_GXM_COLOR_SURFACE_SCALE_NONE,
-				SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-				orig_w,orig_h,orig_w,texture_data);
 			tex->valid = 1;
-			memcpy(texture_data, temp, orig_w * orig_h * tex_format_to_bytespp(format));
+			memcpy(texture_data, temp, orig_w * orig_h * bpp);
 			free(temp);
-			uint32_t* curPtr = (uint32_t*)texture_data;
+			uint8_t* curPtr = (uint8_t*)texture_data;
 			uint32_t curWidth = orig_w;
 			uint32_t curHeight = orig_h;
 			for (j=0;j<mipcount-1;j++){
 				uint32_t curSrcStride = max(curWidth, 8);
 				uint32_t curDstStride = max((curWidth>>1), 8);
-				uint32_t* dstPtr = curPtr + (curSrcStride * curHeight);
+				uint8_t* dstPtr = curPtr + (curSrcStride * curHeight * bpp);
 				sceGxmTransferDownscale(
 					fmt, curPtr, 0, 0,
 					curWidth, curHeight,
-					curSrcStride * sizeof(uint32_t),
+					curSrcStride * bpp,
 					fmt, dstPtr, 0, 0,
-					curDstStride * sizeof(uint32_t),
+					curDstStride * bpp,
 					NULL, SCE_GXM_TRANSFER_FRAGMENT_SYNC, NULL);
 				curPtr = dstPtr;
 				curWidth /= 2;
