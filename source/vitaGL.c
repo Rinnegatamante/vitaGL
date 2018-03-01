@@ -2992,26 +2992,6 @@ void glTexEnvi(GLenum target,  GLenum pname,  GLint param){
 	}
 }
 
-void glGenerateMipmap(GLenum target){
-	texture_unit* tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id;
-	texture* tex = &tex_unit->textures[texture2d_idx];
-	if (!tex->valid) return;
-	switch (target){
-		case GL_TEXTURE_2D:
-			gpu_alloc_mipmaps(-1, tex);
-			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
-			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
-			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
-			sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
-			sceGxmTextureSetMipFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_MIP_FILTER_ENABLED);
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-}
-
 void glReadPixels(GLint x,  GLint y,  GLsizei width,  GLsizei height,  GLenum format,  GLenum type,  GLvoid * data){
 	SceDisplayFrameBuf pParam;
 	pParam.size = sizeof(SceDisplayFrameBuf);

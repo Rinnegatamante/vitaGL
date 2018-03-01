@@ -53,4 +53,5 @@ extern texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Avail
 extern int8_t server_texture_unit;	// Current in use server side texture unit
 extern int8_t client_texture_unit;	// Current in use client side texture unit
 extern palette *color_table; // Current in-use color table
+
 #endif
