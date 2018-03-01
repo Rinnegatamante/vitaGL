@@ -1,19 +1,12 @@
-#include <string.h>
-#include <math.h>
-#include "math_utils.h"
-
-/*
- * Note: matrices are row-major.
+/* 
+ * math_utils.c:
+ * Utilities for math operations
  */
+ 
+#include "shared.h"
+#include <math.h>
 
-static inline float sgn(float a)
-{
-	if (a > 0.0f)
-		return 1.0f;
-	if (a < 0.0f)
-		return -1.0f;
-	return 0.0f;
-}
+// NOTE: matrices are row-major.
 
 void matrix4x4_identity(matrix4x4 m)
 {
