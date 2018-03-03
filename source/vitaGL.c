@@ -128,8 +128,8 @@ static const SceGxmProgramParameter* disable_color_buffer_matrix;
 static SceGxmVertexProgram* disable_color_buffer_vertex_program_patched;
 static SceGxmFragmentProgram* disable_color_buffer_fragment_program_patched;
 static position_vertex* depth_vertices = NULL;
-static uint16_t* depth_indices = NULL;
-static SceUID depth_vertices_uid, depth_indices_uid;
+static uint16_t* depth_clear_indices = NULL;
+static SceUID depth_vertices_uid, depth_clear_indices_uid;
 
 // Clear shader
 static SceGxmShaderPatcherId clear_vertex_id;
@@ -139,8 +139,7 @@ static const SceGxmProgramParameter* clear_color;
 static SceGxmVertexProgram* clear_vertex_program_patched;
 static SceGxmFragmentProgram* clear_fragment_program_patched;
 static clear_vertex* clear_vertices = NULL;
-static uint16_t* clear_indices = NULL;
-static SceUID clear_vertices_uid, clear_indices_uid;
+static SceUID clear_vertices_uid;
 
 // Color (RGBA/RGB) shader
 static SceGxmShaderPatcherId rgba_vertex_id;
@@ -503,7 +502,7 @@ static void update_scissor_test(){
 		0, 0);
 	
 	sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
-	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
+	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 	
 	sceGxmSetFrontStencilFunc(gxm_context,
 		SCE_GXM_STENCIL_FUNC_ALWAYS,
@@ -520,7 +519,7 @@ static void update_scissor_test(){
 	
 	if (scissor_test_state) sceGxmSetVertexStream(gxm_context, 0, scissor_test_vertices);
 	else sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
-	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
+	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 }
 
 static void purge_vertex_list(){
@@ -663,19 +662,19 @@ void vglInit(uint32_t gpu_pool_size){
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
 		4 * sizeof(struct position_vertex), &depth_vertices_uid);
 
-	depth_indices = gpu_alloc_map(
+	depth_clear_indices = gpu_alloc_map(
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
-		4 * sizeof(unsigned short), &depth_indices_uid);
+		4 * sizeof(unsigned short), &depth_clear_indices_uid);
 
 	depth_vertices[0].position = (vector3f){-1.0f, -1.0f, 1.0f};
 	depth_vertices[1].position = (vector3f){ 1.0f, -1.0f, 1.0f};
 	depth_vertices[2].position = (vector3f){-1.0f,  1.0f, 1.0f};
 	depth_vertices[3].position = (vector3f){ 1.0f,  1.0f, 1.0f};
 
-	depth_indices[0] = 0;
-	depth_indices[1] = 1;
-	depth_indices[2] = 2;
-	depth_indices[3] = 3;
+	depth_clear_indices[0] = 0;
+	depth_clear_indices[1] = 1;
+	depth_clear_indices[2] = 2;
+	depth_clear_indices[3] = 3;
 	
 	// Clear shader register
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_clear_v,
@@ -716,19 +715,10 @@ void vglInit(uint32_t gpu_pool_size){
 		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
 		4 * sizeof(struct clear_vertex), &clear_vertices_uid);
 
-	clear_indices = gpu_alloc_map(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
-		4 * sizeof(unsigned short), &clear_indices_uid);
-
 	clear_vertices[0].position = (vector2f){-1.0f, -1.0f};
 	clear_vertices[1].position = (vector2f){ 1.0f, -1.0f};
 	clear_vertices[2].position = (vector2f){ 1.0f,  1.0f};
 	clear_vertices[3].position = (vector2f){-1.0f,  1.0f};
-
-	clear_indices[0] = 0;
-	clear_indices[1] = 1;
-	clear_indices[2] = 2;
-	clear_indices[3] = 3;
 	
 	// Color shader register
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_rgba_v,
@@ -987,9 +977,8 @@ void vglEnd(void){
 	
 	// Deallocating default vertices buffers
 	gpu_unmap_free(clear_vertices_uid);
-	gpu_unmap_free(clear_indices_uid);
 	gpu_unmap_free(depth_vertices_uid);
-	gpu_unmap_free(depth_indices_uid);
+	gpu_unmap_free(depth_clear_indices_uid);
 	gpu_unmap_free(scissor_test_vertices_uid);
 	
 	// Releasing shader programs from sceGxmShaderPatcher
@@ -1060,7 +1049,7 @@ void glClear(GLbitfield mask){
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &color_buffer);
 		sceGxmSetUniformDataF(color_buffer, clear_color, 0, 4, &clear_rgba_val.r);
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		change_depth_write(depth_mask_state && orig_depth_test ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		validate_depth_test();
 		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
@@ -1077,7 +1066,7 @@ void glClear(GLbitfield mask){
 		sceGxmSetVertexProgram(gxm_context, disable_color_buffer_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
 		sceGxmSetVertexStream(gxm_context, 0, depth_vertices);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_indices, 4);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		change_depth_write(depth_mask_state && orig_depth_test ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		validate_depth_test();
 	}
