@@ -557,30 +557,30 @@ static void change_cull_mode(){
 static void update_polygon_offset(){
 	switch (polygon_mode_front){
 		case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
-			if (pol_offset_line) sceGxmSetFrontDepthBias(gxm_context, pol_factor, pol_units);
-			else sceGxmSetFrontDepthBias(gxm_context, 0.0f, 0.0f);
+			if (pol_offset_line) sceGxmSetFrontDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
+			else sceGxmSetFrontDepthBias(gxm_context, 0, 0);
 			break;
 		case SCE_GXM_POLYGON_MODE_TRIANGLE_POINT:
-			if (pol_offset_point) sceGxmSetFrontDepthBias(gxm_context, pol_factor, pol_units);
-			else sceGxmSetFrontDepthBias(gxm_context, 0.0f, 0.0f);
+			if (pol_offset_point) sceGxmSetFrontDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
+			else sceGxmSetFrontDepthBias(gxm_context, 0, 0);
 			break;
 		case SCE_GXM_POLYGON_MODE_TRIANGLE_FILL:
-			if (pol_offset_fill) sceGxmSetFrontDepthBias(gxm_context, pol_factor, pol_units);
-			else sceGxmSetFrontDepthBias(gxm_context, 0.0f, 0.0f);
+			if (pol_offset_fill) sceGxmSetFrontDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
+			else sceGxmSetFrontDepthBias(gxm_context, 0, 0);
 			break;
 	}
 	switch (polygon_mode_back){
 		case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
-			if (pol_offset_line) sceGxmSetBackDepthBias(gxm_context, pol_factor, pol_units);
-			else sceGxmSetBackDepthBias(gxm_context, 0.0f, 0.0f);
+			if (pol_offset_line) sceGxmSetBackDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
+			else sceGxmSetBackDepthBias(gxm_context, 0, 0);
 			break;
 		case SCE_GXM_POLYGON_MODE_TRIANGLE_POINT:
-			if (pol_offset_point) sceGxmSetBackDepthBias(gxm_context, pol_factor, pol_units);
-			else sceGxmSetBackDepthBias(gxm_context, 0.0f, 0.0f);
+			if (pol_offset_point) sceGxmSetBackDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
+			else sceGxmSetBackDepthBias(gxm_context, 0, 0);
 			break;
 		case SCE_GXM_POLYGON_MODE_TRIANGLE_FILL:
-			if (pol_offset_fill) sceGxmSetBackDepthBias(gxm_context, pol_factor, pol_units);
-			else sceGxmSetBackDepthBias(gxm_context, 0.0f, 0.0f);
+			if (pol_offset_fill) sceGxmSetBackDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
+			else sceGxmSetBackDepthBias(gxm_context, 0, 0);
 			break;
 	}	
 }
@@ -1060,7 +1060,7 @@ void glClear(GLbitfield mask){
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &color_buffer);
 		sceGxmSetUniformDataF(color_buffer, clear_color, 0, 4, &clear_rgba_val.r);
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
 		change_depth_write(depth_mask_state && orig_depth_test ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		validate_depth_test();
 		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
@@ -1077,7 +1077,7 @@ void glClear(GLbitfield mask){
 		sceGxmSetVertexProgram(gxm_context, disable_color_buffer_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
 		sceGxmSetVertexStream(gxm_context, 0, depth_vertices);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_indices, 4);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_indices, 4);
 		change_depth_write(depth_mask_state && orig_depth_test ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		validate_depth_test();
 	}
