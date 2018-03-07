@@ -6,7 +6,11 @@
  #include "shared.h"
  
 matrix4x4 *matrix = NULL; // Current in-use matrix mode
- 
+static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH]; // Modelview matrices stack
+static uint8_t modelview_stack_counter = 0; // Modelview matrices stack counter
+static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH]; // Projection matrices stack
+static uint8_t projection_stack_counter = 0; // Projection matrices stack counter
+
 /*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -
@@ -145,4 +149,72 @@ void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z){
 		matrix4x4_rotate_z(*matrix, rad);
 	}
 	
+}
+
+void glPushMatrix(void){
+	
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION){
+		error = GL_INVALID_OPERATION;
+		return;
+	}
+#endif
+	
+	if (matrix == &modelview_matrix){
+		
+#ifndef SKIP_ERROR_HANDLING
+		// Error handling
+		if (modelview_stack_counter >= MODELVIEW_STACK_DEPTH){
+			error = GL_STACK_OVERFLOW;
+		}else
+#endif
+			// Copying current matrix into the matrix stack and increasing stack counter
+			matrix4x4_copy(modelview_matrix_stack[modelview_stack_counter++], *matrix);
+			
+	}else if (matrix == &projection_matrix){
+		
+#ifndef SKIP_ERROR_HANDLING
+		// Error handling
+		if (projection_stack_counter >= GENERIC_STACK_DEPTH){
+			error = GL_STACK_OVERFLOW;
+		}else
+#endif
+			// Copying current matrix into the matrix stack and increasing stack counter
+			matrix4x4_copy(projection_matrix_stack[projection_stack_counter++], *matrix);
+			
+	}
+}
+
+void glPopMatrix(void){
+	
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION){
+		error = GL_INVALID_OPERATION;
+		return;
+	}
+#endif
+	
+	if (matrix == &modelview_matrix){
+		
+#ifndef SKIP_ERROR_HANDLING
+		// Error handling
+		if (modelview_stack_counter == 0) error = GL_STACK_UNDERFLOW;
+		else
+#endif
+			// Copying last matrix on stack into current matrix and decreasing stack counter
+			matrix4x4_copy(*matrix, modelview_matrix_stack[--modelview_stack_counter]);
+			
+	}else if (matrix == &projection_matrix){
+		
+#ifndef SKIP_ERROR_HANDLING
+		// Error handling		
+		if (projection_stack_counter == 0) error = GL_STACK_UNDERFLOW;
+		else
+#endif
+			// Copying last matrix on stack into current matrix and decreasing stack counter
+			matrix4x4_copy(*matrix, projection_matrix_stack[--projection_stack_counter]);
+			
+	}
 }

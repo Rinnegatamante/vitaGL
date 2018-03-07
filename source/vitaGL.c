@@ -183,10 +183,6 @@ static GLenum gl_front_face = GL_CCW; // Current in-use openGL cull mode
 static GLboolean no_polygons_mode = GL_FALSE; // GL_TRUE when cull mode to GL_FRONT_AND_BACK is set
 static vector4f current_color = {1.0f, 1.0f, 1.0f, 1.0f}; // Current in-use color
 static vector4f texenv_color = {0.0f, 0.0f, 0.0f, 0.0f}; // Current in-use texture environment color
-static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH];
-static uint8_t modelview_stack_counter = 0;
-static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH];
-static uint8_t projection_stack_counter = 0;
 
 // Internal functions
 
@@ -1764,38 +1760,6 @@ GLboolean glIsEnabled(GLenum cap){
 			break;
 	}
 	return ret;
-}
-
-void glPushMatrix(void){
-	if (phase == MODEL_CREATION){
-		error = GL_INVALID_OPERATION;
-		return;
-	}
-	if (matrix == &modelview_matrix){
-		if (modelview_stack_counter >= MODELVIEW_STACK_DEPTH){
-			error = GL_STACK_OVERFLOW;
-		}
-		matrix4x4_copy(modelview_matrix_stack[modelview_stack_counter++], *matrix);
-	}else if (matrix == &projection_matrix){
-		if (projection_stack_counter >= GENERIC_STACK_DEPTH){
-			error = GL_STACK_OVERFLOW;
-		}
-		matrix4x4_copy(projection_matrix_stack[projection_stack_counter++], *matrix);
-	}
-}
-
-void glPopMatrix(void){
-	if (phase == MODEL_CREATION){
-		error = GL_INVALID_OPERATION;
-		return;
-	}
-	if (matrix == &modelview_matrix){
-		if (modelview_stack_counter == 0) error = GL_STACK_UNDERFLOW;
-		else matrix4x4_copy(*matrix, modelview_matrix_stack[--modelview_stack_counter]);
-	}else if (matrix == &projection_matrix){
-		if (projection_stack_counter == 0) error = GL_STACK_UNDERFLOW;
-		else matrix4x4_copy(*matrix, projection_matrix_stack[--projection_stack_counter]);
-	}
 }
 
 void glPolygonMode(GLenum face,  GLenum mode){
