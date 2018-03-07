@@ -400,3 +400,10 @@ void vglUpdateCommonDialog(){
 	sceCommonDialogUpdate(&updateParam);
 	
 }
+
+void glFinish(void){
+	
+	// Waiting for GPU to finish drawing jobs
+	sceGxmFinish(gxm_context);
+	
+}

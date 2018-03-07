@@ -20,6 +20,26 @@ typedef struct vertexArray{
 	const GLvoid* pointer;
 } vertexArray;
 
+// Scissor test region struct
+typedef struct scissor_region{
+	int x;
+	int y;
+	int w;
+	int h;
+} scissor_region;
+
+// Alpha operations for alpha testing
+typedef enum alphaOp{
+	GREATER_EQUAL = 0,
+	GREATER = 1,
+	NOT_EQUAL = 2,
+	EQUAL = 3,
+	LESS_EQUAL = 4,
+	LESS = 5,
+	NEVER = 6,
+	ALWAYS = 7
+} alphaOp;
+
 // Texture unit struct
 typedef struct texture_unit{
 	GLboolean enabled;
@@ -49,6 +69,37 @@ extern SceGxmBlendFactor blend_dfactor_a;		// Current in use A dest blend factor
 
 // Depth Test
 extern GLboolean depth_test_state;	// Current state for GL_DEPTH_TEST
+extern SceGxmDepthFunc gxm_depth; // Current in-use depth test func
+extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
+extern GLdouble depth_value; // Current depth test depth value
+extern GLboolean depth_mask_state; // Current state for glDepthMask
+
+// Scissor Test
+extern scissor_region region; // Current scissor test region setup
+extern GLboolean scissor_test_state; // Current state for GL_SCISSOR_TEST
+
+// Stencil Test
+extern uint8_t stencil_mask_front; // Current in use mask for stencil test on front
+extern uint8_t stencil_mask_back; // Current in use mask for stencil test on back
+extern uint8_t stencil_mask_front_write; // Current in use mask for write stencil test on front
+extern uint8_t stencil_mask_back_write; // Current in use mask for write stencil test on back
+extern uint8_t stencil_ref_front; // Current in use reference for stencil test on front
+extern uint8_t stencil_ref_back; // Current in use reference for stencil test on back
+extern SceGxmStencilOp stencil_fail_front; // Current in use stencil operation when stencil test fails for front
+extern SceGxmStencilOp depth_fail_front; // Current in use stencil operation when depth test fails for front
+extern SceGxmStencilOp depth_pass_front; // Current in use stencil operation when depth test passes for front
+extern SceGxmStencilOp stencil_fail_back; // Current in use stencil operation when stencil test fails for back
+extern SceGxmStencilOp depth_fail_back; // Current in use stencil operation when depth test fails for back
+extern SceGxmStencilOp depth_pass_back; // Current in use stencil operation when depth test passes for back
+extern SceGxmStencilFunc stencil_func_front; // Current in use stencil function on front
+extern SceGxmStencilFunc stencil_func_back; // Current in use stencil function on back
+extern GLboolean stencil_test_state; // Current state for GL_STENCIL_TEST
+
+// Alpha Test
+extern GLenum alpha_func; // Current in use alpha test mode
+extern GLfloat alpha_ref; // Current in use alpha test reference value
+extern int alpha_op; // Current in use alpha test operation
+extern GLboolean alpha_test_state; // Current state for GL_ALPHA_TEST
 
 // Polygon Mode
 extern GLfloat pol_factor;	// Current factor for glPolygonOffset

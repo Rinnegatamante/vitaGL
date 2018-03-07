@@ -28,6 +28,34 @@
 #include "state.h"
 #include "texture_callbacks.h"
 
+// 2D vertex for 2D canvas struct
+typedef struct clear_vertex{
+	vector2f position;
+} clear_vertex;
+
+// 3D vertex for position struct
+typedef struct position_vertex{
+	vector3f position;
+} position_vertex;
+
+// 3D vertex for position + 4D vertex for RGBA color struct
+typedef struct rgba_vertex{
+	vector3f position;
+	vector4f color;
+} rgba_vertex;
+
+// 3D vertex for position + 3D vertex for RGB color struct
+typedef struct rgb_vertex{
+	vector3f position;
+	vector3f color;
+} rgb_vertex;
+
+// 3D vertex for position + 2D vertex for UV map struct
+typedef struct texture2d_vertex{
+	vector3f position;
+	vector2f texcoord;
+} texture2d_vertex;
+
 // Internal stuffs
 extern void* frag_uniforms;
 extern void* vert_uniforms;
@@ -76,6 +104,18 @@ extern GLuint cur_program; // Current in use custom program (0 = No custom progr
 extern uint8_t viewport_mode; // Current setting for viewport mode
 extern GLboolean vblank; // Current setting for VSync
 
+extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
+
+extern SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program
+extern clear_vertex *scissor_test_vertices; // Scissor test region vertices
+extern SceUID scissor_test_vertices_uid; // Scissor test vertices memblock id
+
+extern uint16_t *depth_clear_indices; // Memblock starting address for clear screen indices
+
+// Clear screen shaders
+extern SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
+extern clear_vertex *clear_vertices; // Memblock starting address for clear screen vertices
+
 /* gxm.c */
 void initGxm(void); // Inits sceGxm
 void initGxmContext(void); // Inits sceGxm context
@@ -89,6 +129,18 @@ void termDepthStencilSurfaces(void); // Destroys depth and stencil surfaces for 
 void startShaderPatcher(void); // Creates a shader patcher instance
 void stopShaderPatcher(void); // Destroys a shader patcher instance
 void waitRenderingDone(void); // Waits for rendering to be finished
+
+/* tests.c */
+void change_depth_write(SceGxmDepthWriteMode mode); // Changes current in use depth write mode
+void change_depth_func(void); // Changes current in use depth test function
+void invalidate_depth_test(void); // Invalidates depth test state
+void validate_depth_test(void); // Resets original depth test state after invalidation
+void change_stencil_settings(void); // Changes current in use stencil test parameters
+GLboolean change_stencil_config(SceGxmStencilOp* cfg, GLenum new); // Changes current in use stencil test operation value
+GLboolean change_stencil_func_config(SceGxmStencilFunc* cfg, GLenum new); // Changes current in use stencil test function value
+void update_alpha_test_settings(void); // Changes current in use alpha test operation value
+void update_scissor_test(void); // Changes current in use scissor test region
+void resetScissorTestRegion(void); // Resets scissor test region to default values
 
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders
