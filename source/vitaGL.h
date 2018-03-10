@@ -285,6 +285,7 @@ void glStencilMaskSeparate(GLenum face, GLuint mask);
 void glStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass);
 void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass);
 void glTexCoord2f(GLfloat s, GLfloat t);
+void glTexCoord2fv(GLfloat *f);
 void glTexCoord2i(GLint s, GLint t);
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
 void glTexEnvf(GLenum target, GLenum pname, GLfloat param);

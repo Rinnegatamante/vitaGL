@@ -1256,6 +1256,22 @@ void glTexCoord2f(GLfloat s, GLfloat t){
 	last3->v.y = t;
 }
 
+void glTexCoord2fv(GLfloat *f){
+	if (phase != MODEL_CREATION){
+		error = GL_INVALID_OPERATION;
+		return;
+	}
+	if (model_uv == NULL){ 
+		last3 = (uvList*)malloc(sizeof(uvList));
+		model_uv = last3;
+	}else{
+		last3->next = (uvList*)malloc(sizeof(uvList));
+		last3 = last3->next;
+	}
+	last3->v.x = f[0];
+	last3->v.y = f[1];
+}
+
 void glVertex3f(GLfloat x, GLfloat y, GLfloat z){
 	if (phase != MODEL_CREATION){
 		error = GL_INVALID_OPERATION;
