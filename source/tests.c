@@ -9,7 +9,7 @@
 GLboolean depth_test_state = GL_FALSE;	// Current state for GL_DEPTH_TEST
 SceGxmDepthFunc gxm_depth = SCE_GXM_DEPTH_FUNC_LESS; // Current in-use depth test func
 GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
-GLdouble depth_value = 1.0f; // Current depth test depth value
+GLdouble depth_value = 1.0f; // Current depth test clear value
 GLboolean depth_mask_state = GL_TRUE; // Current state for glDepthMask
 
 // Scissor Test
@@ -35,6 +35,7 @@ SceGxmStencilOp depth_pass_back = SCE_GXM_STENCIL_OP_KEEP; // Current in use ste
 SceGxmStencilFunc stencil_func_front = SCE_GXM_STENCIL_FUNC_ALWAYS; // Current in use stencil function on front
 SceGxmStencilFunc stencil_func_back = SCE_GXM_STENCIL_FUNC_ALWAYS; // Current in use stencil function on back
 GLboolean stencil_test_state = GL_FALSE; // Current state for GL_STENCIL_TEST
+GLint stencil_value = 0; // Current stencil test clear value
 
 // Alpha Test
 GLenum alpha_func = GL_ALWAYS; // Current in-use alpha test mode
@@ -454,4 +455,8 @@ void glStencilMaskSeparate(GLenum face, GLuint mask){
 
 void glStencilMask(GLuint mask){
 	glStencilMaskSeparate(GL_FRONT_AND_BACK, mask);
+}
+
+void glClearStencil(GLint s){
+	stencil_value = s;
 }

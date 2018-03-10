@@ -71,7 +71,7 @@ extern SceGxmBlendFactor blend_dfactor_a;		// Current in use A dest blend factor
 extern GLboolean depth_test_state;	// Current state for GL_DEPTH_TEST
 extern SceGxmDepthFunc gxm_depth; // Current in-use depth test func
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
-extern GLdouble depth_value; // Current depth test depth value
+extern GLdouble depth_value; // Current depth test clear value
 extern GLboolean depth_mask_state; // Current state for glDepthMask
 
 // Scissor Test
@@ -94,6 +94,7 @@ extern SceGxmStencilOp depth_pass_back; // Current in use stencil operation when
 extern SceGxmStencilFunc stencil_func_front; // Current in use stencil function on front
 extern SceGxmStencilFunc stencil_func_back; // Current in use stencil function on back
 extern GLboolean stencil_test_state; // Current state for GL_STENCIL_TEST
+extern GLint stencil_value; // Current stencil test clear value
 
 // Alpha Test
 extern GLenum alpha_func; // Current in use alpha test mode
