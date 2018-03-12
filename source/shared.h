@@ -13,7 +13,6 @@
 #define GENERIC_STACK_DEPTH   2    // Depth of generic matrix stack
 #define DISPLAY_WIDTH_DEF     960  // Default display width in pixels
 #define DISPLAY_HEIGHT_DEF    544  // Default display height in pixels
-#define DISPLAY_STRIDE        1024 // Display stride in pixels
 #define DISPLAY_BUFFER_COUNT  2    // Display buffers to use
 #define GXM_TEX_MAX_SIZE      4096 // Maximum width/height in pixels per texture
 #define BUFFERS_ADDR        0xA000 // Starting address for buffers indexing
@@ -22,6 +21,7 @@
 // Internal constants set in bootup phase
 extern int DISPLAY_WIDTH;            // Display width in pixels
 extern int DISPLAY_HEIGHT;           // Display height in pixels
+extern int DISPLAY_STRIDE;           // Display stride in pixels
 extern float DISPLAY_WIDTH_FLOAT;   // Display width in pixels (float)
 extern float DISPLAY_HEIGHT_FLOAT;  // Display height in pixels (float)
 
