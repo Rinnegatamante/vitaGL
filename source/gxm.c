@@ -43,6 +43,11 @@ matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 matrix4x4 projection_matrix; // Projection Matrix
 matrix4x4 modelview_matrix; // ModelView Matrix
 
+int DISPLAY_WIDTH;            // Display width in pixels
+int DISPLAY_HEIGHT;           // Display height in pixels
+float DISPLAY_WIDTH_FLOAT;   // Display width in pixels (float)
+float DISPLAY_HEIGHT_FLOAT;  // Display height in pixels (float)
+
 // sceDisplay callback data
 struct display_queue_callback_data {
 	void *addr;

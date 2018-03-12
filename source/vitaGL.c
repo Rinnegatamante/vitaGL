@@ -327,7 +327,13 @@ void vglUseVram(GLboolean usage){
 	use_vram = usage;
 }
 
-void vglInit(uint32_t gpu_pool_size){
+void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
+	
+	// Setting our display size
+	DISPLAY_WIDTH = width;
+	DISPLAY_HEIGHT = height;
+	DISPLAY_WIDTH_FLOAT = width * 1.0f;
+	DISPLAY_HEIGHT_FLOAT = height * 1.0f;
 	
 	// Initializing sceGxm
 	initGxm();
@@ -703,6 +709,10 @@ void vglInit(uint32_t gpu_pool_size){
 	// Init scissor test state
 	resetScissorTestRegion();
 	
+}
+
+void vglInit(uint32_t gpu_pool_size){
+	vglInitExtended(gpu_pool_size, DISPLAY_WIDTH_DEF, DISPLAY_HEIGHT_DEF);
 }
 
 void vglEnd(void){
@@ -1375,7 +1385,7 @@ void glViewport(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 	x_scale = width>>1;
 	x_port = x + x_scale;
 	y_scale = -(height>>1);
-	y_port = 544 - y + y_scale;
+	y_port = DISPLAY_HEIGHT - y + y_scale;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 	viewport_mode = 1;
 }
@@ -2439,7 +2449,7 @@ void glReadPixels(GLint x,  GLint y,  GLsizei width,  GLsizei height,  GLenum fo
 	SceDisplayFrameBuf pParam;
 	pParam.size = sizeof(SceDisplayFrameBuf);
 	sceDisplayGetFrameBuf(&pParam, SCE_DISPLAY_SETBUF_NEXTFRAME);
-	y = 544 - (height + y);
+	y = DISPLAY_HEIGHT - (height + y);
 	int i,j;
 	uint8_t* out8 = (uint8_t*)data;
 	uint8_t* in8 = (uint8_t*)pParam.base;

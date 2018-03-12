@@ -214,14 +214,14 @@ void update_scissor_test(){
 	
 	// Calculating scissor test region vertices
 	if (scissor_test_state){
-		scissor_test_vertices[0].position.x = ((2.0f * region.x) / 960.0f) - 1.0f;
-		scissor_test_vertices[0].position.y = 1.0f - (2.0f * (region.y + region.h)) / 544.0f;
-		scissor_test_vertices[1].position.x = ((2.0f * (region.x + region.w)) / 960.0f) - 1.0f;
-		scissor_test_vertices[1].position.y = 1.0f - (2.0f * (region.y + region.h)) / 544.0f;
-		scissor_test_vertices[2].position.x = ((2.0f * (region.x + region.w)) / 960.0f) - 1.0f;
-		scissor_test_vertices[2].position.y = 1.0f - (2.0f * region.y) / 544.0f;
-		scissor_test_vertices[3].position.x = ((2.0f * region.x) / 960.0f) - 1.0f;
-		scissor_test_vertices[3].position.y = 1.0f - (2.0f * region.y) / 544.0f;
+		scissor_test_vertices[0].position.x = ((2.0f * region.x) / DISPLAY_WIDTH_FLOAT) - 1.0f;
+		scissor_test_vertices[0].position.y = 1.0f - (2.0f * (region.y + region.h)) / DISPLAY_HEIGHT_FLOAT;
+		scissor_test_vertices[1].position.x = ((2.0f * (region.x + region.w)) / DISPLAY_WIDTH_FLOAT) - 1.0f;
+		scissor_test_vertices[1].position.y = 1.0f - (2.0f * (region.y + region.h)) / DISPLAY_HEIGHT_FLOAT;
+		scissor_test_vertices[2].position.x = ((2.0f * (region.x + region.w)) / DISPLAY_WIDTH_FLOAT) - 1.0f;
+		scissor_test_vertices[2].position.y = 1.0f - (2.0f * region.y) / DISPLAY_HEIGHT_FLOAT;
+		scissor_test_vertices[3].position.x = ((2.0f * region.x) / DISPLAY_WIDTH_FLOAT) - 1.0f;
+		scissor_test_vertices[3].position.y = 1.0f - (2.0f * region.y) / DISPLAY_HEIGHT_FLOAT;
 	}
 	
 	// Setting current vertex program to clear screen one and fragment program to scissor test one
@@ -267,8 +267,8 @@ void resetScissorTestRegion(void){
 	
 	// Setting scissor test region to default values
 	region.x = region.y = 0;
-	region.w = 960;
-	region.h = 544;
+	region.w = DISPLAY_WIDTH;
+	region.h = DISPLAY_HEIGHT;
 	
 }
 
@@ -290,7 +290,7 @@ void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 	
 	// Converting openGL scissor test region to sceGxm one
 	region.x = x;
-	region.y = 544 - y - height;
+	region.y = DISPLAY_HEIGHT - y - height;
 	region.w = width;
 	region.h = height;
 	

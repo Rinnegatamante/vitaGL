@@ -11,13 +11,19 @@
 #define TEXTURES_NUM          1024 // Available textures per texture unit
 #define MODELVIEW_STACK_DEPTH 32   // Depth of modelview matrix stack
 #define GENERIC_STACK_DEPTH   2    // Depth of generic matrix stack
-#define DISPLAY_WIDTH         960  // Display width in pixels
-#define DISPLAY_HEIGHT        544  // Display height in pixels
+#define DISPLAY_WIDTH_DEF     960  // Default display width in pixels
+#define DISPLAY_HEIGHT_DEF    544  // Default display height in pixels
 #define DISPLAY_STRIDE        1024 // Display stride in pixels
 #define DISPLAY_BUFFER_COUNT  2    // Display buffers to use
 #define GXM_TEX_MAX_SIZE      4096 // Maximum width/height in pixels per texture
 #define BUFFERS_ADDR        0xA000 // Starting address for buffers indexing
 #define BUFFERS_NUM           128  // Maximum number of allocatable buffers
+
+// Internal constants set in bootup phase
+extern int DISPLAY_WIDTH;            // Display width in pixels
+extern int DISPLAY_HEIGHT;           // Display height in pixels
+extern float DISPLAY_WIDTH_FLOAT;   // Display width in pixels (float)
+extern float DISPLAY_HEIGHT_FLOAT;  // Display height in pixels (float)
 
 #include <stdlib.h>
 #include <stdio.h>

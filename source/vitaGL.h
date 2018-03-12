@@ -319,6 +319,7 @@ void vglVertexAttribPointer(GLuint index,  GLint size,  GLenum type,  GLboolean 
 // vgl*
 void vglEnd(void);
 void vglInit(uint32_t gpu_pool_size);
+void vglInitExtended(uint32_t gpu_pool_size, int width, int height);
 void vglWaitVblankStart(GLboolean enable);
 void vglStartRendering();
 void vglStopRendering();
