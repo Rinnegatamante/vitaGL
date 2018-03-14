@@ -8,7 +8,7 @@
 #define _SHARED_H_
 
 // Internal constants
-#define TEXTURES_NUM          1024 // Available textures per texture unit
+#define TEXTURES_NUM          1536 // Available textures per texture unit
 #define MODELVIEW_STACK_DEPTH 32   // Depth of modelview matrix stack
 #define GENERIC_STACK_DEPTH   2    // Depth of generic matrix stack
 #define DISPLAY_WIDTH_DEF     960  // Default display width in pixels
@@ -68,21 +68,7 @@ extern void* vert_uniforms;
 
 // Debugging tool
 #ifdef ENABLE_LOG
-void LOG(const char *format, ...) {
-	__gnuc_va_list arg;
-	int done;
-	va_start(arg, format);
-	char msg[512];
-	done = vsprintf(msg, format, arg);
-	va_end(arg);
-	int i;
-	sprintf(msg, "%s\n", msg);
-	FILE* log = fopen("ux0:/data/vitaGL.log", "a+");
-	if (log != NULL) {
-		fwrite(msg, 1, strlen(msg), log);
-		fclose(log);
-	}
-}
+void LOG(const char *format, ...);
 #endif
 
 // Depending on SDK, that could be or not defined
