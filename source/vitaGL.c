@@ -186,6 +186,24 @@ static vector4f texenv_color = {0.0f, 0.0f, 0.0f, 0.0f}; // Current in-use textu
 
 // Internal functions
 
+#ifdef ENABLE_LOG
+void LOG(const char *format, ...) {
+	__gnuc_va_list arg;
+	int done;
+	va_start(arg, format);
+	char msg[512];
+	done = vsprintf(msg, format, arg);
+	va_end(arg);
+	int i;
+	sprintf(msg, "%s\n", msg);
+	FILE* log = fopen("ux0:/data/vitaGL.log", "a+");
+	if (log != NULL) {
+		fwrite(msg, 1, strlen(msg), log);
+		fclose(log);
+	}
+}
+#endif
+
 static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 	changeCustomShadersBlend(blend_info);
 	
@@ -348,6 +366,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
 		DISPLAY_STRIDE = 960;
 		break;
 	}
+	
 	// Initializing sceGxm
 	initGxm();
 	
@@ -1404,14 +1423,14 @@ void glViewport(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 }
 
 void glDepthRange(GLdouble nearVal, GLdouble farVal){
-	z_port = (farVal - nearVal) / 2.0f;
-	z_scale = (farVal + nearVal) / 2.0f;
+	z_port = (farVal + nearVal) / 2.0f;
+	z_scale = (farVal - nearVal) / 2.0f;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 }
 
 void glDepthRangef(GLfloat nearVal, GLfloat farVal){
-	z_port = (farVal - nearVal) / 2.0f;
-	z_scale = (farVal + nearVal) / 2.0f;
+	z_port = (farVal + nearVal) / 2.0f;
+	z_scale = (farVal - nearVal) / 2.0f;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 }
 
