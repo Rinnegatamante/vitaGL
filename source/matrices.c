@@ -85,7 +85,7 @@ void glMultMatrixf(const GLfloat* m){
 	int i,j;
 	for (i=0;i<4;i++){
 		for (j=0;j<4;j++){
-			tmp[i][j] = m[i*4+j];
+			tmp[i][j] = m[j*4+i];
 		}
 	}
 	
@@ -104,7 +104,7 @@ void glLoadMatrixf(const GLfloat* m){
 	int i,j;
 	for (i=0;i<4;i++){
 		for (j=0;j<4;j++){
-			tmp[i][j] = m[i*4+j];
+			tmp[i][j] = m[j*4+i];
 		}
 	}
 	
