@@ -5,47 +5,37 @@
  
 #include "../shared.h"
 
-#define TM_ALIGNMENT 8      // seems to be enough, set to 16 if something explodes
-#define TM_MAX_BLOCKS 4096  // should be at least 2*TEXTURES_NUM
+#define MEM_ALIGNMENT 8     // seems to be enough, set to 16 if something explodes
 
 typedef struct tm_block_s {
 	struct tm_block_s *next;  // next block in list (either free or allocated)
-	int32_t type;             // -1 when unused in pool, RAM_MEMORY or VRAM_MEMORY when used
+	int32_t type;             // one of VGLmemtype (VGL_MEM_ALL when unused)
 	uintptr_t base;           // block start address
 	uint32_t offset;          // offset for USSE stuff (unused)
 	uint32_t size;            // block size
 } tm_block_t;
 
-static void *mempool_addr[2] = {NULL, NULL};    // addresses of heap memblocks (VRAM, RAM)
-static SceUID mempool_id[2] = {0, 0};           // UIDs of heap memblocks (VRAM, RAM)
-static size_t mempool_size[2] = {0, 0};         // sizes of heap memlbocks (VRAM, RAM)
+static void *mempool_addr[2] = {NULL, NULL};  // addresses of heap memblocks (VRAM, RAM)
+static SceUID mempool_id[2] = {0, 0};         // UIDs of heap memblocks (VRAM, RAM)
+static size_t mempool_size[2] = {0, 0};       // sizes of heap memlbocks (VRAM, RAM)
 
-static tm_block_t tm_blockpool[TM_MAX_BLOCKS];  // pool to get new heap block headers from
-static int tm_blocknum;                         // number of used headers in the pool (unused)
+static int tm_initialized;
 
-static tm_block_t *tm_alloclist; // list of allocated blocks
-static tm_block_t *tm_freelist;  // list of free blocks
+static tm_block_t *tm_alloclist;  // list of allocated blocks
+static tm_block_t *tm_freelist;   // list of free blocks
 
-static uint32_t tm_free[3];      // 0 is total, 1 is VRAM, 2 is RAM
+static uint32_t tm_free[VGL_MEM_TYPE_COUNT];  // see enum VGLmemtype
 
 // heap funcs //
 
 // get new block header
-static tm_block_t *heap_blk_new(void) {
-	for (int i = 0; i < TM_MAX_BLOCKS; ++i) {
-		if (tm_blockpool[i].type == -1) {
-			tm_blockpool[i].type = 0;
-			tm_blocknum++;
-			return tm_blockpool + i;
-		}
-	}
-	return NULL;
+static inline tm_block_t *heap_blk_new(void) {
+	return calloc(1, sizeof(tm_block_t));
 }
 
 // release block header
 static inline void heap_blk_release(tm_block_t *block) {
-	block->type = -1;
-	tm_blocknum--;
+	free(block);
 }
 
 // determine if two blocks can be merged into one
@@ -191,15 +181,32 @@ static void heap_blk_free(uintptr_t base) {
 static void heap_init(void) {
 	tm_alloclist = NULL;
 	tm_freelist = NULL;
-	for (int i = 0; i < TM_MAX_BLOCKS; ++i)
-		tm_blockpool[i].type = -1;
+
+	for (int i = 0; i < VGL_MEM_TYPE_COUNT; ++i)
+		tm_free[i] = 0;
+
+	tm_initialized = 1;
 }
 
-// resets heap state
+// resets heap state and frees allocated block headers
 static void heap_destroy(void) {
-	tm_free[0] = 0;
-	tm_free[1] = 0;
-	tm_free[2] = 0;
+	tm_block_t *n;
+
+	tm_block_t *p = tm_alloclist;
+	while (p) {
+		n = p->next;
+		heap_blk_release(p);
+		p = n;
+	}
+
+	p = tm_freelist;
+	while (p) {
+		n = p->next;
+		heap_blk_release(p);
+		p = n;
+	}
+
+	tm_initialized = 0;
 }
 
 // adds a memblock to the heap
@@ -256,23 +263,23 @@ int mem_init(size_t size_ram, size_t size_cdram){
 	// Initialize heap
 	heap_init();
 	// Add both memblocks to heap
-	heap_extend(VRAM_MEMORY, mempool_addr[0], mempool_size[0]);
-	heap_extend(RAM_MEMORY, mempool_addr[1], mempool_size[1]);
+	heap_extend(VGL_MEM_VRAM, mempool_addr[0], mempool_size[0]);
+	heap_extend(VGL_MEM_RAM, mempool_addr[1], mempool_size[1]);
 
 	return 1;
 }
 
-void mempool_free(void* ptr, mem_type type){
+void mempool_free(void* ptr, VGLmemtype type){
 	heap_free(ptr); // type is already stored in heap for alloc'd blocks
 }
 
-void *mempool_alloc(size_t size, mem_type type){
+void *mempool_alloc(size_t size, VGLmemtype type){
 	void* res = NULL;
-	if (size <= tm_free[type]) res = heap_alloc(type, size, TM_ALIGNMENT);
+	if (size <= tm_free[type]) res = heap_alloc(type, size, MEM_ALIGNMENT);
 	return res;
 }
 
 // Returns currently free space on mempool
-size_t mempool_get_free_space(mem_type type) {
+size_t mempool_get_free_space(VGLmemtype type) {
 	return tm_free[type];
 }

@@ -436,9 +436,9 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
 		disable_color_buffer_fragment_program,
 		&disable_color_buffer_fragment_program_patched);
 		
-	depth_vertices = gpu_alloc_mapped(4 * sizeof(struct position_vertex), RAM_MEMORY);
+	depth_vertices = gpu_alloc_mapped(4 * sizeof(struct position_vertex), VGL_MEM_RAM);
 
-	depth_clear_indices = gpu_alloc_mapped(4 * sizeof(unsigned short), RAM_MEMORY);
+	depth_clear_indices = gpu_alloc_mapped(4 * sizeof(unsigned short), VGL_MEM_RAM);
 
 	depth_vertices[0].position = (vector3f){-1.0f, -1.0f, 1.0f};
 	depth_vertices[1].position = (vector3f){ 1.0f, -1.0f, 1.0f};
@@ -485,7 +485,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
 		SCE_GXM_MULTISAMPLE_NONE, NULL, clear_fragment_program,
 		&clear_fragment_program_patched);
 
-	clear_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), RAM_MEMORY);
+	clear_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), VGL_MEM_RAM);
 
 	clear_vertices[0].position = (vector2f){-1.0f, -1.0f};
 	clear_vertices[1].position = (vector2f){ 1.0f, -1.0f};
@@ -703,7 +703,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
 	// Scissor Test shader register
 	sceGxmShaderPatcherCreateMaskUpdateFragmentProgram(gxm_shader_patcher, &scissor_test_fragment_program);
 	
-	scissor_test_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), RAM_MEMORY);
+	scissor_test_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), VGL_MEM_RAM);
 	
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);
@@ -748,10 +748,10 @@ void vglEnd(void){
 	waitRenderingDone();
 	
 	// Deallocating default vertices buffers
-	gpu_free_mapped(clear_vertices, RAM_MEMORY);
-	gpu_free_mapped(depth_vertices, RAM_MEMORY);
-	gpu_free_mapped(depth_clear_indices, RAM_MEMORY);
-	gpu_free_mapped(scissor_test_vertices, RAM_MEMORY);
+	gpu_free_mapped(clear_vertices, VGL_MEM_RAM);
+	gpu_free_mapped(depth_vertices, VGL_MEM_RAM);
+	gpu_free_mapped(depth_clear_indices, VGL_MEM_RAM);
+	gpu_free_mapped(scissor_test_vertices, VGL_MEM_RAM);
 	
 	// Releasing shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, scissor_test_fragment_program);
@@ -1229,7 +1229,7 @@ void glDeleteBuffers(GLsizei n, const GLuint* gl_buffers){
 			uint8_t idx = gl_buffers[j] - BUFFERS_ADDR;
 			buffers[idx] = gl_buffers[j];
 			if (gpu_buffers[idx].ptr != NULL){
-				gpu_free_mapped(gpu_buffers[idx].ptr, VRAM_MEMORY);
+				gpu_free_mapped(gpu_buffers[idx].ptr, VGL_MEM_VRAM);
 				gpu_buffers[idx].ptr = NULL;
 			}
 		}
@@ -1253,7 +1253,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid* data, GLenum usage)
 			error = GL_INVALID_ENUM;
 			break;
 	}
-	gpu_buffers[idx].ptr = gpu_alloc_mapped(size, VRAM_MEMORY);
+	gpu_buffers[idx].ptr = gpu_alloc_mapped(size, VGL_MEM_VRAM);
 	memcpy(gpu_buffers[idx].ptr, data, size);
 }
 
@@ -2753,6 +2753,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 	}
 }
 
-uint32_t vglMemFree(void) {
-	return mempool_get_free_space(VRAM_MEMORY);
+size_t vglMemFree(VGLmemtype type) {
+	if (type >= VGL_MEM_TYPE_COUNT) return 0;
+	return mempool_get_free_space(type);
 }
