@@ -3,14 +3,13 @@
  * Utilities for GPU usage
  */
  
- #include "../shared.h"
+#include "../shared.h"
 
 // VRAM usage setting
 uint8_t use_vram = 0;
 
 // vitaGL memory pool setup
 static void *pool_addr = NULL;
-static SceUID poolUid;
 static unsigned int pool_index = 0;
 static unsigned int pool_size = 0;
 
@@ -22,6 +21,8 @@ void* gpu_alloc_map(SceKernelMemBlockType type, SceGxmMemoryAttribFlags gpu_attr
 		size = ALIGN(size, 256 * 1024);
 	}else{
 		size = ALIGN(size, 4 * 1024);
+	}
+	if (type == SCE_KERNEL_MEMBLOCK_TYPE_USER_RW){
 		*uid = (SceUID)malloc(size);
 		return (void*)*uid;
 	}
@@ -44,93 +45,63 @@ void* gpu_alloc_map(SceKernelMemBlockType type, SceGxmMemoryAttribFlags gpu_attr
 	
 }
 
-void gpu_unmap_free(SceUID uid){
+void *gpu_alloc_mapped(size_t size, mem_type type){
 	
-	// Checking for memblock coherency
-	void *addr;
-	if (sceKernelGetMemBlockBase(uid, &addr) < 0){
-		free(uid);
-		return;
-	}
-	
-	// Unmapping memblock from sceGxm
-	sceGxmUnmapMemory(addr);
-
-	// Deallocating memblock
-	sceKernelFreeMemBlock(uid);
+	// Allocating requested memblock
+	return mempool_alloc(size, type);
 	
 }
 
-void* gpu_vertex_usse_alloc_map(size_t size, SceUID *uid, unsigned int *usse_offset){
+void gpu_free_mapped(void *ptr, mem_type type){
 	
-	// Aligning memory size
-	void *addr;
-	size = ALIGN(size, 4 * 1024);
+	// Deallocating requested memblock
+	mempool_free(ptr, type);
+	
+}
+
+void* gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset){
 
 	// Allocating memblock
-	*uid = sceKernelAllocMemBlock("gpu_vertex_usse",
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, size, NULL);
-	if (*uid < 0) return NULL;
+	void *addr = mempool_alloc(size, RAM_MEMORY); 
 
-	// Getting memblock starting address
-	if (sceKernelGetMemBlockBase(*uid, &addr) < 0) return NULL;
-
-	// Mapping memblock into sceGxm
-	if (sceGxmMapVertexUsseMemory(addr, size, usse_offset) < 0) return NULL;
+	// Mapping memblock into sceGxm as vertex USSE memory
+	sceGxmMapVertexUsseMemory(addr, size, usse_offset);
 
 	// Returning memblock starting address
 	return addr;
 	
 }
 
-void gpu_vertex_usse_unmap_free(SceUID uid){
+void gpu_vertex_usse_free_mapped(void *addr){
 	
-	// Checking memblock coherency
-	void *addr;
-	if (sceKernelGetMemBlockBase(uid, &addr) < 0) return;
-
-	// Unmapping memblock from sceGxm
+	// Unmapping memblock from sceGxm as vertex USSE memory
 	sceGxmUnmapVertexUsseMemory(addr);
 
 	// Deallocating memblock
-	sceKernelFreeMemBlock(uid);
+	mempool_free(addr, RAM_MEMORY);
 	
 }
 
-void *gpu_fragment_usse_alloc_map(size_t size, SceUID *uid, unsigned int *usse_offset){
-
-	// Aligning memory size
-	void *addr;
-	size = ALIGN(size, 4 * 1024);
+void *gpu_fragment_usse_alloc_mapped(size_t size, unsigned int *usse_offset){
 
 	// Allocating memblock
-	*uid = sceKernelAllocMemBlock("gpu_fragment_usse",
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, size, NULL);
-	if (*uid < 0) return NULL;
+	void *addr = mempool_alloc(size, RAM_MEMORY); 
 
-	// Getting memblock starting address
-	if (sceKernelGetMemBlockBase(*uid, &addr) < 0) return NULL;
-
-	// Mapping memblock into sceGxm
-	if (sceGxmMapFragmentUsseMemory(addr, size, usse_offset) < 0) return NULL;
+	// Mapping memblock into sceGxm as fragment USSE memory
+	sceGxmMapFragmentUsseMemory(addr, size, usse_offset);
 
 	// Returning memblock starting address
 	return addr;
 	
 }
 
-void gpu_fragment_usse_unmap_free(SceUID uid){
+void gpu_fragment_usse_free_mapped(void *addr){
 	
-	// Checking memblock coherency
-	void *addr;
-	if (sceKernelGetMemBlockBase(uid, &addr) < 0)
-		return;
-
-	// Unmapping memblock from sceGxm
+	// Unmapping memblock from sceGxm as fragment USSE memory
 	sceGxmUnmapFragmentUsseMemory(addr);
 
 	// Deallocating memblock
-	sceKernelFreeMemBlock(uid);
+	mempool_free(addr, RAM_MEMORY);
 	
 }
 
@@ -178,11 +149,7 @@ void gpu_pool_init(uint32_t temp_pool_size){
 	
 	// Allocating vitaGL mempool
 	pool_size = temp_pool_size;
-	pool_addr = gpu_alloc_map(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ,
-		pool_size,
-		&poolUid);
+	pool_addr = gpu_alloc_mapped(temp_pool_size, RAM_MEMORY);
 	
 }
 
@@ -220,17 +187,15 @@ palette *gpu_alloc_palette(const void* data, uint32_t w, uint32_t bpe){
 	
 	// Allocating a palette object
 	palette *res = (palette*)malloc(sizeof(palette));
+	res->type = use_vram ? VRAM_MEMORY : RAM_MEMORY;
 	
 	// Allocating palette data buffer
-	void *texture_palette = gpu_alloc_map(
-		(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_RW),
-		SCE_GXM_MEMORY_ATTRIB_READ, 256 * sizeof(uint32_t), &res->palette_UID);
+	void *texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), res->type);
 	if (texture_palette == NULL){ // If alloc fails, use the non-preferred memblock type
-		texture_palette = gpu_alloc_map(
-			(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW),
-			SCE_GXM_MEMORY_ATTRIB_READ, 256 * sizeof(uint32_t), &res->palette_UID);
+		res->type = use_vram ? VRAM_MEMORY : RAM_MEMORY;
+		texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), res->type);
 	}
-		
+	
 	// Initializing palette
 	if (data == NULL) memset(texture_palette, 0, 256 * sizeof(uint32_t));
 	else if (bpe == 4) memcpy(texture_palette, data, w * sizeof(uint32_t));
@@ -244,10 +209,9 @@ palette *gpu_alloc_palette(const void* data, uint32_t w, uint32_t bpe){
 void gpu_free_texture(texture *tex){
 	
 	// Deallocating texture
-	if (tex->data_UID != 0) gpu_unmap_free(tex->data_UID);
+	if (tex->data != NULL) mempool_free(tex->data, tex->mtype);
 	
 	// Invalidating texture object
-	tex->data_UID = 0;
 	tex->valid = 0;
 	
 }
@@ -261,16 +225,12 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	uint8_t bpp = tex_format_to_bytespp(format);
 	
 	// Allocating texture data buffer
-	const int tex_size = w * h * bpp;
-	void *texture_data = gpu_alloc_map(
-		(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_RW),
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-		tex_size, &tex->data_UID);
+	tex->mtype = use_vram ? VRAM_MEMORY : RAM_MEMORY;
+	const int tex_size = ALIGN(w, 8) * h * bpp;
+	void *texture_data = gpu_alloc_mapped(tex_size, tex->mtype);
 	if (texture_data == NULL){ // If alloc fails, use the non-preferred memblock type
-		texture_data = gpu_alloc_map(
-			(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW),
-			SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-			tex_size, &tex->data_UID);
+		tex->mtype = use_vram ? VRAM_MEMORY : RAM_MEMORY;
+		texture_data = gpu_alloc_mapped(tex_size, tex->mtype);
 	}
 	
 	if (texture_data != NULL){
@@ -296,6 +256,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 		if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8) tex->palette_UID = 1;
 		else tex->palette_UID = 0;
 		tex->valid = 1;
+		tex->data = texture_data;
 		
 	}
 }
@@ -352,15 +313,12 @@ void gpu_alloc_mipmaps(int level, texture *tex){
 		gpu_free_texture(tex);
 			
 		// Allocating the new texture data buffer
-		void *texture_data = gpu_alloc_map(
-			(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_RW),
-			SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-			size, &tex->data_UID);
+		tex->mtype = use_vram ? VRAM_MEMORY : RAM_MEMORY;
+		const int tex_size = ALIGN(w, 8) * h * bpp;
+		void *texture_data = gpu_alloc_mapped(size, tex->mtype);
 		if (texture_data == NULL){ // If alloc fails, use the non-preferred memblock type
-			texture_data = gpu_alloc_map(
-				(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW),
-				SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-				size, &tex->data_UID);
+			tex->mtype = use_vram ? VRAM_MEMORY : RAM_MEMORY;
+			texture_data = gpu_alloc_mapped(size, tex->mtype);
 		}
 		tex->valid = 1;
 		
@@ -390,15 +348,16 @@ void gpu_alloc_mipmaps(int level, texture *tex){
 		
 		// Initializing texture in sceGxm
 		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, level);
+		tex->data = texture_data;
 		
 	}
 }
 
 void gpu_free_palette(palette *pal){
 	
-	// Unmapping and deallocating palette memblock and object
+	// Deallocating palette memblock and object
 	if (pal == NULL) return;
-	gpu_unmap_free(pal->palette_UID);
+	mempool_free(pal->data, pal->type);
 	free(pal);
 	
 }

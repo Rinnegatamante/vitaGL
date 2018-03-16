@@ -3,8 +3,6 @@
  */
 #include "shared.h"
 #include "vitaGL.h"
-#include "utils/math_utils.h"
-#include "utils/gpu_utils.h"
 #include "texture_callbacks.h"
 
 // Shaders
@@ -22,7 +20,6 @@
 
 typedef struct gpubuffer{
 	void* ptr;
-	SceUID data_UID;
 } gpubuffer;
 
 // Non native primitives implemented
@@ -87,7 +84,6 @@ static SceGxmVertexProgram* disable_color_buffer_vertex_program_patched;
 static SceGxmFragmentProgram* disable_color_buffer_fragment_program_patched;
 static position_vertex* depth_vertices = NULL;
 uint16_t* depth_clear_indices = NULL; // Memblock starting address for clear screen indices
-static SceUID depth_vertices_uid, depth_clear_indices_uid;
 
 // Clear shader
 static SceGxmShaderPatcherId clear_vertex_id;
@@ -97,7 +93,6 @@ static const SceGxmProgramParameter* clear_color;
 SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
 static SceGxmFragmentProgram* clear_fragment_program_patched;
 clear_vertex *clear_vertices = NULL; // Memblock starting address for clear screen vertices
-static SceUID clear_vertices_uid;
 
 // Color (RGBA/RGB) shader
 static SceGxmShaderPatcherId rgba_vertex_id;
@@ -160,9 +155,6 @@ static uint8_t np = 0xFF;
 static SceGxmBlendInfo* cur_blend_info_ptr = NULL;
 static int max_texture_unit = 0;
 extern uint8_t use_vram;
-
-extern int _newlib_heap_memblock;
-extern unsigned _newlib_heap_size;
 
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
 static gpubuffer gpu_buffers[BUFFERS_NUM]; // Buffers array
@@ -373,10 +365,13 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
 	// Initializing sceGxm
 	initGxm();
 	
-	// Mapping newlib heap into sceGxm
-	void *addr = NULL;
-	sceKernelGetMemBlockBase(_newlib_heap_memblock, &addr);
-	sceGxmMapMemory(addr, _newlib_heap_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	// Getting max allocatable CDRAM and RAM memory
+	SceKernelFreeMemorySizeInfo info;
+    info.size = sizeof(SceKernelFreeMemorySizeInfo);
+	sceKernelGetFreeMemorySize(&info);
+	
+	// Initializing memory heap for CDRAM and RAM memory
+	mem_init(info.size_user, info.size_cdram);
 	
 	// Initializing sceGxm context
 	initGxmContext();
@@ -441,13 +436,9 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
 		disable_color_buffer_fragment_program,
 		&disable_color_buffer_fragment_program_patched);
 		
-	depth_vertices = gpu_alloc_map(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
-		4 * sizeof(struct position_vertex), &depth_vertices_uid);
+	depth_vertices = gpu_alloc_mapped(4 * sizeof(struct position_vertex), RAM_MEMORY);
 
-	depth_clear_indices = gpu_alloc_map(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
-		4 * sizeof(unsigned short), &depth_clear_indices_uid);
+	depth_clear_indices = gpu_alloc_mapped(4 * sizeof(unsigned short), RAM_MEMORY);
 
 	depth_vertices[0].position = (vector3f){-1.0f, -1.0f, 1.0f};
 	depth_vertices[1].position = (vector3f){ 1.0f, -1.0f, 1.0f};
@@ -494,9 +485,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
 		SCE_GXM_MULTISAMPLE_NONE, NULL, clear_fragment_program,
 		&clear_fragment_program_patched);
 
-	clear_vertices = gpu_alloc_map(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
-		4 * sizeof(struct clear_vertex), &clear_vertices_uid);
+	clear_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), RAM_MEMORY);
 
 	clear_vertices[0].position = (vector2f){-1.0f, -1.0f};
 	clear_vertices[1].position = (vector2f){ 1.0f, -1.0f};
@@ -714,9 +703,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
 	// Scissor Test shader register
 	sceGxmShaderPatcherCreateMaskUpdateFragmentProgram(gxm_shader_patcher, &scissor_test_fragment_program);
 	
-	scissor_test_vertices = gpu_alloc_map(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
-		4 * sizeof(struct clear_vertex), &scissor_test_vertices_uid);
+	scissor_test_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), RAM_MEMORY);
 	
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);
@@ -761,10 +748,10 @@ void vglEnd(void){
 	waitRenderingDone();
 	
 	// Deallocating default vertices buffers
-	gpu_unmap_free(clear_vertices_uid);
-	gpu_unmap_free(depth_vertices_uid);
-	gpu_unmap_free(depth_clear_indices_uid);
-	gpu_unmap_free(scissor_test_vertices_uid);
+	gpu_free_mapped(clear_vertices, RAM_MEMORY);
+	gpu_free_mapped(depth_vertices, RAM_MEMORY);
+	gpu_free_mapped(depth_clear_indices, RAM_MEMORY);
+	gpu_free_mapped(scissor_test_vertices, RAM_MEMORY);
 	
 	// Releasing shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, scissor_test_fragment_program);
@@ -1242,7 +1229,7 @@ void glDeleteBuffers(GLsizei n, const GLuint* gl_buffers){
 			uint8_t idx = gl_buffers[j] - BUFFERS_ADDR;
 			buffers[idx] = gl_buffers[j];
 			if (gpu_buffers[idx].ptr != NULL){
-				gpu_unmap_free(gpu_buffers[idx].data_UID);
+				gpu_free_mapped(gpu_buffers[idx].ptr, VRAM_MEMORY);
 				gpu_buffers[idx].ptr = NULL;
 			}
 		}
@@ -1266,11 +1253,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid* data, GLenum usage)
 			error = GL_INVALID_ENUM;
 			break;
 	}
-	gpu_buffers[idx].ptr = gpu_alloc_map(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ,
-		size,
-		&gpu_buffers[idx].data_UID);
+	gpu_buffers[idx].ptr = gpu_alloc_mapped(size, VRAM_MEMORY);
 	memcpy(gpu_buffers[idx].ptr, data, size);
 }
 

@@ -5,32 +5,22 @@
 
 #include "shared.h" 
 
-static SceUID vdm_ring_buffer_uid; // VDM ring buffer memblock id
 static void *vdm_ring_buffer_addr; // VDM ring buffer memblock starting address
-static SceUID vertex_ring_buffer_uid; // vertex ring buffer memblock id
 static void *vertex_ring_buffer_addr; // vertex ring buffer memblock starting address
-static SceUID fragment_ring_buffer_uid; // fragment ring buffer memblock id
 static void *fragment_ring_buffer_addr; // fragment ring buffer memblock starting address
-static SceUID fragment_usse_ring_buffer_uid; // fragment USSE ring buffer memblock id
 static void *fragment_usse_ring_buffer_addr; // fragment USSE ring buffer memblock starting address
 
 static SceGxmRenderTarget *gxm_render_target; // Display render target
 static SceGxmColorSurface gxm_color_surfaces[DISPLAY_BUFFER_COUNT]; // Display color surfaces
-static SceUID gxm_color_surfaces_uid[DISPLAY_BUFFER_COUNT]; // Display color surfaces memblock ids
 static void* gxm_color_surfaces_addr[DISPLAY_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
 static SceGxmSyncObject *gxm_sync_objects[DISPLAY_BUFFER_COUNT]; // Display sync objects
 static unsigned int gxm_front_buffer_index; // Display front buffer id
 static unsigned int gxm_back_buffer_index; // Display back buffer id
 
-static SceUID gxm_shader_patcher_buffer_uid; // Shader Patcher buffer memblock id
 static void *gxm_shader_patcher_buffer_addr; // Shader PAtcher buffer memblock starting address
-static SceUID gxm_shader_patcher_vertex_usse_uid; // Shader Patcher vertex USSE memblock id
 static void *gxm_shader_patcher_vertex_usse_addr; // Shader Patcher vertex USSE memblock starting address
-static SceUID gxm_shader_patcher_fragment_usse_uid; // Shader Patcher fragment USSE memblock id
 static void *gxm_shader_patcher_fragment_usse_addr; // Shader Patcher fragment USSE memblock starting address
 
-static SceUID gxm_depth_surface_uid; // Depth surface memblock id
-static SceUID gxm_stencil_surface_uid; // Stencil surface memblock id
 static void *gxm_depth_surface_addr; // Depth surface memblock starting address
 static void *gxm_stencil_surface_addr; // Stencil surface memblock starting address
 static SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil surfaces setup for sceGxm
@@ -105,25 +95,18 @@ void initGxm(void){
 void initGxmContext(void){
 	
 	// Allocating VDM ring buffer
-	vdm_ring_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ, SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE,
-		&vdm_ring_buffer_uid);
+	vdm_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE, VRAM_MEMORY);
 
 	// Allocating vertex ring buffer
-	vertex_ring_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ, SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE,
-		&vertex_ring_buffer_uid);
+	vertex_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE, VRAM_MEMORY);
 
 	// Allocating fragment ring buffer
-	fragment_ring_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ, SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE,
-		&fragment_ring_buffer_uid);
+	fragment_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE, VRAM_MEMORY);
 
 	// Allocating fragment USSE ring buffer
 	unsigned int fragment_usse_offset;
-	fragment_usse_ring_buffer_addr = gpu_fragment_usse_alloc_map(
-		SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE,
-		&fragment_ring_buffer_uid, &fragment_usse_offset);
+	fragment_usse_ring_buffer_addr = gpu_fragment_usse_alloc_mapped(
+		SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE, &fragment_usse_offset);
 
 	// Setting sceGxm context parameters
 	SceGxmContextParams gxm_context_params;
@@ -148,10 +131,10 @@ void initGxmContext(void){
 void termGxmContext(void){
 	
 	// Deallocating ring buffers
-	gpu_unmap_free(vdm_ring_buffer_uid);
-	gpu_unmap_free(vertex_ring_buffer_uid);
-	gpu_unmap_free(fragment_ring_buffer_uid);
-	gpu_fragment_usse_unmap_free(fragment_usse_ring_buffer_uid);
+	gpu_free_mapped(vdm_ring_buffer_addr, VRAM_MEMORY);
+	gpu_free_mapped(vertex_ring_buffer_addr, VRAM_MEMORY);
+	gpu_free_mapped(fragment_ring_buffer_addr, VRAM_MEMORY);
+	gpu_fragment_usse_free_mapped(fragment_usse_ring_buffer_addr);
 	
 	// Destroying sceGxm context
 	sceGxmDestroyContext(gxm_context);
@@ -189,10 +172,9 @@ void initDisplayColorSurfaces(void){
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
 		
 		// Allocating color surface memblock
-		gxm_color_surfaces_addr[i] = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-			SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
+		gxm_color_surfaces_addr[i] = gpu_alloc_mapped(
 			ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024),
-			&gxm_color_surfaces_uid[i]);
+			VRAM_MEMORY);
 		
 		// Initializing allocated color surface
 		memset(gxm_color_surfaces_addr[i], 0, DISPLAY_STRIDE * DISPLAY_HEIGHT);
@@ -218,7 +200,7 @@ void termDisplayColorSurfaces(void){
 	// Deallocating display's color surfaces and destroying sync objects
 	int i;
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
-		gpu_unmap_free(gxm_color_surfaces_uid[i]);
+		gpu_free_mapped(gxm_color_surfaces_addr[i], VRAM_MEMORY);
 		sceGxmSyncObjectDestroy(gxm_sync_objects[i]);
 	}
 	
@@ -232,14 +214,10 @@ void initDepthStencilSurfaces(void){
 	unsigned int depth_stencil_samples = depth_stencil_width * depth_stencil_height;
 
 	// Allocating depth surface
-	gxm_depth_surface_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-		4 * depth_stencil_samples, &gxm_depth_surface_uid);
+	gxm_depth_surface_addr = gpu_alloc_mapped(4 * depth_stencil_samples, VRAM_MEMORY);
 	
 	// Allocating stencil surface
-	gxm_stencil_surface_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-		1 * depth_stencil_samples, &gxm_stencil_surface_uid);
+	gxm_stencil_surface_addr = gpu_alloc_mapped(1 * depth_stencil_samples, VRAM_MEMORY);
 
 	// Initializing depth and stencil surfaces
 	sceGxmDepthStencilSurfaceInit(&gxm_depth_stencil_surface,
@@ -254,8 +232,8 @@ void initDepthStencilSurfaces(void){
 void termDepthStencilSurfaces(void){
 	
 	// Deallocating depth and stencil surfaces memblocks
-	gpu_unmap_free(gxm_depth_surface_uid);
-	gpu_unmap_free(gxm_stencil_surface_uid);
+	gpu_free_mapped(gxm_depth_surface_addr, VRAM_MEMORY);
+	gpu_free_mapped(gxm_stencil_surface_addr, VRAM_MEMORY);
 	
 }
 
@@ -267,21 +245,18 @@ void startShaderPatcher(void){
 	static const unsigned int shader_patcher_fragment_usse_size = 1024 * 1024;
 	
 	// Allocating Shader Patcher buffer
-	gxm_shader_patcher_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_READ,
-		shader_patcher_buffer_size, &gxm_shader_patcher_buffer_uid);
+	gxm_shader_patcher_buffer_addr = gpu_alloc_mapped(
+		shader_patcher_buffer_size, VRAM_MEMORY);
 
 	// Allocating Shader Patcher vertex USSE buffer
 	unsigned int shader_patcher_vertex_usse_offset;
-	gxm_shader_patcher_vertex_usse_addr = gpu_vertex_usse_alloc_map(
-		shader_patcher_vertex_usse_size, &gxm_shader_patcher_vertex_usse_uid,
-		&shader_patcher_vertex_usse_offset);
+	gxm_shader_patcher_vertex_usse_addr = gpu_vertex_usse_alloc_mapped(
+		shader_patcher_vertex_usse_size, &shader_patcher_vertex_usse_offset);
 
 	// Allocating Shader Patcher fragment USSE buffer
 	unsigned int shader_patcher_fragment_usse_offset;
-	gxm_shader_patcher_fragment_usse_addr = gpu_fragment_usse_alloc_map(
-		shader_patcher_fragment_usse_size, &gxm_shader_patcher_fragment_usse_uid,
-		&shader_patcher_fragment_usse_offset);
+	gxm_shader_patcher_fragment_usse_addr = gpu_fragment_usse_alloc_mapped(
+		shader_patcher_fragment_usse_size, &shader_patcher_fragment_usse_offset);
 
 	// Populating shader patcher parameters
 	SceGxmShaderPatcherParams shader_patcher_params;
@@ -315,9 +290,9 @@ void stopShaderPatcher(void){
 	sceGxmShaderPatcherDestroy(gxm_shader_patcher);
 	
 	// Freeing shader patcher buffers
-	gpu_unmap_free(gxm_shader_patcher_buffer_uid);
-	gpu_vertex_usse_unmap_free(gxm_shader_patcher_vertex_usse_uid);
-	gpu_fragment_usse_unmap_free(gxm_shader_patcher_fragment_usse_uid);
+	gpu_free_mapped(gxm_shader_patcher_buffer_addr, VRAM_MEMORY);
+	gpu_vertex_usse_free_mapped(gxm_shader_patcher_vertex_usse_addr);
+	gpu_fragment_usse_free_mapped(gxm_shader_patcher_fragment_usse_addr);
 
 }
 
