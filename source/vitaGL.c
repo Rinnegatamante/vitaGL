@@ -1,8 +1,8 @@
-#include <stdlib.h>
-#include <stdio.h>
+/*
+ *
+ */
+#include "shared.h"
 #include "vitaGL.h"
-#include "math_utils.h"
-#include "gpu_utils.h"
 #include "texture_callbacks.h"
 
 // Shaders
@@ -18,73 +18,8 @@
 #include "shaders/texture2d_rgba_f.h"
 #include "shaders/texture2d_rgba_v.h"
 
-#ifndef max
-#  define max(a,b) ((a) > (b) ? (a) : (b))
-#endif
-
-#define TEXTURES_NUM          1024 // Available textures per texture unit
-#define MODELVIEW_STACK_DEPTH 32   // Depth of modelview matrix stack
-#define GENERIC_STACK_DEPTH   2    // Depth of generic matrix stack
-#define DISPLAY_WIDTH         960  // Display width in pixels
-#define DISPLAY_HEIGHT        544  // Display height in pixels
-#define DISPLAY_STRIDE        1024 // Display stride in pixels
-#define DISPLAY_BUFFER_COUNT  2    // Display buffers to use
-#define GXM_TEX_MAX_SIZE      4096 // Maximum width/height in pixels per texture
-#define BUFFERS_ADDR        0xA000 // Starting address for buffers indexing
-#define BUFFERS_NUM           128  // Maximum number of allocatable buffers
-#define MAX_CUSTOM_SHADERS    32   // Maximum number of linkable custom shaders
-#define MAX_SHADER_PARAMS     16   // Maximum number of parameters per custom shader
-
-// Debugging tool
-#ifdef ENABLE_LOG
-void LOG(const char *format, ...) {
-	__gnuc_va_list arg;
-	int done;
-	va_start(arg, format);
-	char msg[512];
-	done = vsprintf(msg, format, arg);
-	va_end(arg);
-	int i;
-	sprintf(msg, "%s\n", msg);
-	FILE* log = fopen("ux0:/data/vitaGL.log", "a+");
-	if (log != NULL) {
-		fwrite(msg, 1, strlen(msg), log);
-		fclose(log);
-	}
-}
-#endif
-
-static const GLubyte* vendor = "Rinnegatamante";
-static const GLubyte* renderer = "SGX543MP4+";
-static const GLubyte* version = "VitaGL 1.0";
-static const GLubyte* extensions = "VGL_EXT_gpu_objects_array VGL_EXT_gxp_shaders";
-
-typedef struct clear_vertex{
-	vector2f position;
-} clear_vertex;
-
-typedef struct position_vertex{
-	vector3f position;
-} position_vertex;
-
-typedef struct rgba_vertex{
-	vector3f position;
-	vector4f color;
-} rgba_vertex;
-
-typedef struct rgb_vertex{
-	vector3f position;
-	vector3f color;
-} rgb_vertex;
-
-typedef struct texture2d_vertex{
-	vector3f position;
-	vector2f texcoord;
-} texture2d_vertex;
-
 typedef struct gpubuffer{
 	void* ptr;
-	SceUID data_UID;
 } gpubuffer;
 
 // Non native primitives implemented
@@ -109,32 +44,6 @@ typedef struct uvList{
 	void* next;
 } uvList;
 
-// Vertex array attributes struct
-typedef struct vertexArray{
-	GLint size;
-	GLint num;
-	GLsizei stride;
-	const GLvoid* pointer;
-} vertexArray;
-
-// Drawing phases for old openGL
-typedef enum glPhase{
-	NONE = 0,
-	MODEL_CREATION = 1
-} glPhase;
-
-// Alpha operations for alpha testing
-typedef enum alphaOp{
-	GREATER_EQUAL = 0,
-	GREATER = 1,
-	NOT_EQUAL = 2,
-	EQUAL = 3,
-	LESS_EQUAL = 4,
-	LESS = 5,
-	NEVER = 6,
-	ALWAYS = 7
-} alphaOp;
-
 // Texture environment mode
 typedef enum texEnvMode{
 	MODULATE = 0,
@@ -143,75 +52,16 @@ typedef enum texEnvMode{
 	REPLACE = 3
 } texEnvMode;
 
-typedef struct scissor_region{
-	int x;
-	int y;
-	int w;
-	int h;
-} scissor_region;
-
-typedef struct texture_unit{
-	GLboolean enabled;
-	matrix4x4 stack[GENERIC_STACK_DEPTH];
-	texture   textures[TEXTURES_NUM];
-	vertexArray vertex_array;
-	vertexArray color_array;
-	vertexArray texture_array;
-	void* vertex_object;
-	void* color_object;
-	void* texture_object;
-	void* index_object;
-	int env_mode;
-	int tex_id;
-	SceGxmTextureFilter min_filter;
-	SceGxmTextureFilter mag_filter;
-	SceGxmTextureAddrMode u_mode;
-	SceGxmTextureAddrMode v_mode;
-} texture_unit;
-
-struct display_queue_callback_data {
-	void *addr;
-};
-
-// Internal gxm stuffs
-static SceGxmContext* gxm_context;
-static SceUID vdm_ring_buffer_uid;
-static void* vdm_ring_buffer_addr;
-static SceUID vertex_ring_buffer_uid;
-static void* vertex_ring_buffer_addr;
-static SceUID fragment_ring_buffer_uid;
-static void* fragment_ring_buffer_addr;
-static SceUID fragment_usse_ring_buffer_uid;
-static void* fragment_usse_ring_buffer_addr;
-static SceGxmRenderTarget* gxm_render_target;
-static SceGxmColorSurface gxm_color_surfaces[DISPLAY_BUFFER_COUNT];
-static SceUID gxm_color_surfaces_uid[DISPLAY_BUFFER_COUNT];
-static void* gxm_color_surfaces_addr[DISPLAY_BUFFER_COUNT];
-static SceGxmSyncObject* gxm_sync_objects[DISPLAY_BUFFER_COUNT];
-static unsigned int gxm_front_buffer_index;
-static unsigned int gxm_back_buffer_index;
-static SceUID gxm_depth_surface_uid;
-static SceUID gxm_stencil_surface_uid;
-static void* gxm_depth_surface_addr;
-static void* gxm_stencil_surface_addr;
-static SceGxmDepthStencilSurface gxm_depth_stencil_surface;
-static SceGxmShaderPatcher* gxm_shader_patcher;
-static SceUID gxm_shader_patcher_buffer_uid;
-static void* gxm_shader_patcher_buffer_addr;
-static SceUID gxm_shader_patcher_vertex_usse_uid;
-static void* gxm_shader_patcher_vertex_usse_addr;
-static SceUID gxm_shader_patcher_fragment_usse_uid;
-static void* gxm_shader_patcher_fragment_usse_addr;
-static uint8_t viewport_mode = 0;
-static matrix4x4 gxm_projection, gxm_identity;
-
-// GXM Viewport
+// sceGxm viewport setup (NOTE: origin is on center screen)
 float x_port = 480.0f;
 float y_port = -272.0f;
 float z_port = 0.5f;
 float x_scale = 480.0f;
 float y_scale = 272.0f;
 float z_scale = 0.5f;
+
+uint8_t viewport_mode = 0; // Current setting for viewport mode
+GLboolean vblank = GL_TRUE; // Current setting for VSync
 
 static const SceGxmProgram *const gxm_program_disable_color_buffer_v = (SceGxmProgram*)&disable_color_buffer_v;
 static const SceGxmProgram *const gxm_program_disable_color_buffer_f = (SceGxmProgram*)&disable_color_buffer_f;
@@ -233,19 +83,16 @@ static const SceGxmProgramParameter* disable_color_buffer_matrix;
 static SceGxmVertexProgram* disable_color_buffer_vertex_program_patched;
 static SceGxmFragmentProgram* disable_color_buffer_fragment_program_patched;
 static position_vertex* depth_vertices = NULL;
-static uint16_t* depth_indices = NULL;
-static SceUID depth_vertices_uid, depth_indices_uid;
+uint16_t* depth_clear_indices = NULL; // Memblock starting address for clear screen indices
 
 // Clear shader
 static SceGxmShaderPatcherId clear_vertex_id;
 static SceGxmShaderPatcherId clear_fragment_id;
 static const SceGxmProgramParameter* clear_position;
 static const SceGxmProgramParameter* clear_color;
-static SceGxmVertexProgram* clear_vertex_program_patched;
+SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
 static SceGxmFragmentProgram* clear_fragment_program_patched;
-static clear_vertex* clear_vertices = NULL;
-static uint16_t* clear_indices = NULL;
-static SceUID clear_vertices_uid, clear_indices_uid;
+clear_vertex *clear_vertices = NULL; // Memblock starting address for clear screen vertices
 
 // Color (RGBA/RGB) shader
 static SceGxmShaderPatcherId rgba_vertex_id;
@@ -292,44 +139,7 @@ static SceGxmVertexProgram* texture2d_rgba_vertex_program_patched;
 static SceGxmFragmentProgram* texture2d_rgba_fragment_program_patched;
 static const SceGxmProgram* texture2d_rgba_fragment_program;
 
-// Scissor Test fragment program
-static SceGxmFragmentProgram* scissor_test_fragment_program;
-static clear_vertex* scissor_test_vertices = NULL;
-static SceUID scissor_test_vertices_uid;
-
-// Custom shaders support
-typedef struct shader{
-	GLenum type;
-	GLboolean valid;
-	SceGxmShaderPatcherId id;
-	const SceGxmProgram* prog;
-} shader;
-static shader shaders[MAX_CUSTOM_SHADERS];
-
-typedef struct program{
-	shader* vshader;
-	shader* fshader;
-	GLboolean valid;
-	SceGxmVertexAttribute attr[16];
-	SceGxmVertexStream stream[16];
-	SceGxmVertexProgram* vprog;
-	SceGxmFragmentProgram* fprog;
-	GLuint attr_num;
-	const SceGxmProgramParameter* wvp;
-} program;
-static program progs[MAX_CUSTOM_SHADERS / 2];
-
-typedef struct uniform{
-	GLboolean isVertex;
-	const SceGxmProgramParameter* ptr;
-} uniform;
-
-static GLuint cur_program = 0;
-void* frag_uniforms = NULL;
-void* vert_uniforms = NULL;
-
 // Internal stuffs
-static GLenum orig_depth_test;
 static SceGxmPrimitiveType prim;
 static SceGxmPrimitiveTypeExtra prim_extra = SCE_GXM_PRIMITIVE_NONE;
 static vertexList* model_vertices = NULL;
@@ -338,125 +148,59 @@ static rgbaList* model_color = NULL;
 static rgbaList* last2 = NULL;
 static uvList* model_uv = NULL;
 static uvList* last3 = NULL;
-static glPhase phase = NONE;
 static uint64_t vertex_count = 0;
 static uint8_t drawing = 0;
-static matrix4x4 projection_matrix;
-static matrix4x4 modelview_matrix;
-static GLboolean vblank = GL_TRUE;
 static uint8_t np = 0xFF;
-static int alpha_op = ALWAYS;
+
 static SceGxmBlendInfo* cur_blend_info_ptr = NULL;
 static int max_texture_unit = 0;
 extern uint8_t use_vram;
 
-static GLenum error = GL_NO_ERROR; // Error global returned by glGetError
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
 static gpubuffer gpu_buffers[BUFFERS_NUM]; // Buffers array
-
-static scissor_region region; // Current scissor test region setup
-static texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
 static SceGxmColorMask blend_color_mask = SCE_GXM_COLOR_MASK_ALL; // Current in-use color mask (glColorMask)
 static SceGxmBlendFunc blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD; // Current in-use RGB blend func
 static SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use A blend func
-static SceGxmBlendFactor blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use RGB source blend factor
-static SceGxmBlendFactor blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ZERO; // Current in-use RGB dest blend factor
-static SceGxmBlendFactor blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE; // Current in-use A source blend factor
-static SceGxmBlendFactor blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ZERO; // Current in-use A dest blend factor
-static SceGxmDepthFunc gxm_depth = SCE_GXM_DEPTH_FUNC_LESS; // Current in-use depth test func
-static SceGxmStencilOp stencil_fail_front = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when stencil test fails for front
-static SceGxmStencilOp depth_fail_front = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test fails for front
-static SceGxmStencilOp depth_pass_front = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test passes for front
-static SceGxmStencilOp stencil_fail_back = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when stencil test fails for back
-static SceGxmStencilOp depth_fail_back = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test fails for back
-static SceGxmStencilOp depth_pass_back = SCE_GXM_STENCIL_OP_KEEP; // Current in-use stencil OP when depth test passes for back
-static SceGxmStencilFunc stencil_func_front = SCE_GXM_STENCIL_FUNC_ALWAYS; // Current in-use stencil function on front
-static SceGxmStencilFunc stencil_func_back = SCE_GXM_STENCIL_FUNC_ALWAYS; // Current in-use stencil function on back
 static SceGxmPolygonMode polygon_mode_front = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Current in-use polygon mode for front
 static SceGxmPolygonMode polygon_mode_back = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Current in-use polygon mode for back
-static uint8_t stencil_mask_front = 0xFF; // Current in-use mask for stencil test on front
-static uint8_t stencil_mask_back = 0xFF; // Current in-use mask for stencil test on back
-static uint8_t stencil_mask_front_write = 0xFF; // Current in-use mask for write stencil test on front
-static uint8_t stencil_mask_back_write = 0xFF; // Current in-use mask for write stencil test on back
-static uint8_t stencil_ref_front = 0; // Current in-use reference for stencil test on front
-static uint8_t stencil_ref_back = 0; // Current in-use reference for stencil test on back
-static GLdouble depth_value = 1.0f; // Current depth test value
-static int8_t server_texture_unit = 0; // Current in-use server side texture unit
-static int8_t client_texture_unit = 0; // Current in-use client side texture unit
 static int vertex_array_unit = -1; // Current in-use vertex array unit
 static int index_array_unit = -1; // Current in-use index array unit
-static matrix4x4* matrix = NULL; // Current in-use matrix mode
 static vector4f clear_rgba_val; // Current clear color for glClear
-static GLboolean depth_test_state = GL_FALSE; // Current state for GL_DEPTH_TEST
-static GLboolean stencil_test_state = GL_FALSE; // Current state for GL_STENCIL_TEST
 static GLboolean vertex_array_state = GL_FALSE; // Current state for GL_VERTEX_ARRAY
 static GLboolean color_array_state = GL_FALSE; // Current state for GL_COLOR_ARRAY
 static GLboolean texture_array_state = GL_FALSE; // Current state for GL_TEXTURE_COORD_ARRAY
-static GLboolean scissor_test_state = GL_FALSE; // Current state for GL_SCISSOR_TEST
-static GLboolean alpha_test_state = GL_FALSE; // Current state for GL_ALPHA_TEST
 static GLboolean cull_face_state = GL_FALSE; // Current state for GL_CULL_FACE
-static GLboolean blend_state = GL_FALSE; // Current state for GL_BLEND
-static GLboolean depth_mask_state = GL_TRUE; // Current state for glDepthMask
 static GLboolean pol_offset_fill = GL_FALSE; // Current state for GL_POLYGON_OFFSET_FILL
 static GLboolean pol_offset_line = GL_FALSE; // Current state for GL_POLYGON_OFFSET_LINE
 static GLboolean pol_offset_point = GL_FALSE; // Current state for GL_POLYGON_OFFSET_POINT
-static GLenum alpha_func = GL_ALWAYS; // Current in-use alpha test mode
-static GLfloat alpha_ref = 0.0f; // Current in-use alpha test reference value
 static GLenum gl_cull_mode = GL_BACK; // Current in-use openGL cull mode
 static GLenum gl_front_face = GL_CCW; // Current in-use openGL cull mode
 static GLboolean no_polygons_mode = GL_FALSE; // GL_TRUE when cull mode to GL_FRONT_AND_BACK is set
-static GLfloat pol_factor = 0.0f; // Current factor for glPolygonOffset
-static GLfloat pol_units = 0.0f; // Current units for glPolygonOffset
 static vector4f current_color = {1.0f, 1.0f, 1.0f, 1.0f}; // Current in-use color
 static vector4f texenv_color = {0.0f, 0.0f, 0.0f, 0.0f}; // Current in-use texture environment color
-static palette* color_table = NULL; // Current in-use color table
-static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH];
-static uint8_t modelview_stack_counter = 0;
-static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH];
-static uint8_t projection_stack_counter = 0;
 
 // Internal functions
 
-static void* shader_patcher_host_alloc_cb(void *user_data, unsigned int size){
-	return malloc(size);
+#ifdef ENABLE_LOG
+void LOG(const char *format, ...) {
+	__gnuc_va_list arg;
+	int done;
+	va_start(arg, format);
+	char msg[512];
+	done = vsprintf(msg, format, arg);
+	va_end(arg);
+	int i;
+	sprintf(msg, "%s\n", msg);
+	FILE* log = fopen("ux0:/data/vitaGL.log", "a+");
+	if (log != NULL) {
+		fwrite(msg, 1, strlen(msg), log);
+		fclose(log);
+	}
 }
-
-static void shader_patcher_host_free_cb(void *user_data, void *mem){
-	return free(mem);
-}
-
-static void display_queue_callback(const void *callbackData){
-	SceDisplayFrameBuf display_fb;
-	const struct display_queue_callback_data *cb_data = callbackData;
-
-	memset(&display_fb, 0, sizeof(SceDisplayFrameBuf));
-	display_fb.size = sizeof(SceDisplayFrameBuf);
-	display_fb.base = cb_data->addr;
-	display_fb.pitch = DISPLAY_STRIDE;
-	display_fb.pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
-	display_fb.width = DISPLAY_WIDTH;
-	display_fb.height = DISPLAY_HEIGHT;
-
-	sceDisplaySetFrameBuf(&display_fb, SCE_DISPLAY_SETBUF_NEXTFRAME);
-	
-	if (vblank) sceDisplayWaitVblankStart();
-	
-}
+#endif
 
 static void _change_blend_factor(SceGxmBlendInfo* blend_info){
-	int j;	
-	for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
-		program* p = &progs[j];
-		if (p->valid){
-			sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-				p->fshader->id,
-				SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-				SCE_GXM_MULTISAMPLE_NONE,
-				blend_info,
-				p->fshader->prog,
-				&p->fprog);
-		}
-	}
+	changeCustomShadersBlend(blend_info);
 	
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		rgba_fragment_id,
@@ -484,37 +228,6 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 
 }
 
-static void update_alpha_test_settings(){
-	if (alpha_test_state){
-		switch (alpha_func){
-			case GL_EQUAL:
-				alpha_op = EQUAL;
-				break;
-			case GL_LEQUAL:
-				alpha_op = LESS_EQUAL;
-				break;
-			case GL_GEQUAL:
-				alpha_op = GREATER_EQUAL;
-				break;
-			case GL_LESS:
-				alpha_op = LESS;
-				break;
-			case GL_GREATER:
-				alpha_op = GREATER;
-				break;
-			case GL_NOTEQUAL:
-				alpha_op = NOT_EQUAL;
-				break;
-			case GL_NEVER:
-				alpha_op = NEVER;
-				break;
-			default:
-				alpha_op = ALWAYS;
-				break;
-		}
-	}else alpha_op = ALWAYS;
-}
-
 static void change_blend_factor(){
 	static SceGxmBlendInfo blend_info;
 	blend_info.colorMask = blend_color_mask;
@@ -528,9 +241,7 @@ static void change_blend_factor(){
 	_change_blend_factor(&blend_info);
 	cur_blend_info_ptr = &blend_info;
 	if (cur_program != 0){
-		program* p = &progs[cur_program-1];
-		sceGxmSetVertexProgram(gxm_context, p->vprog);
-		sceGxmSetFragmentProgram(gxm_context, p->fprog);
+		reloadCustomShader();
 	}
 }
 
@@ -547,9 +258,7 @@ static void change_blend_mask(){
 	_change_blend_factor(&blend_info);
 	cur_blend_info_ptr = &blend_info;
 	if (cur_program != 0){
-		program* p = &progs[cur_program-1];
-		sceGxmSetVertexProgram(gxm_context, p->vprog);
-		sceGxmSetFragmentProgram(gxm_context, p->fprog);
+		reloadCustomShader();
 	}
 }
 
@@ -558,166 +267,9 @@ static void disable_blend(){
 		_change_blend_factor(NULL);
 		cur_blend_info_ptr = NULL;
 		if (cur_program != 0){
-			program* p = &progs[cur_program-1];
-			sceGxmSetVertexProgram(gxm_context, p->vprog);
-			sceGxmSetFragmentProgram(gxm_context, p->fprog);
+			reloadCustomShader();
 		}
 	}else change_blend_mask();
-}
-
-static void change_depth_func(){
-	sceGxmSetFrontDepthFunc(gxm_context, depth_test_state ? gxm_depth : SCE_GXM_DEPTH_FUNC_ALWAYS);
-	sceGxmSetBackDepthFunc(gxm_context, depth_test_state ? gxm_depth : SCE_GXM_DEPTH_FUNC_ALWAYS);
-}
-
-static void change_depth_write(SceGxmDepthWriteMode mode){
-	sceGxmSetFrontDepthWriteEnable(gxm_context, mode);
-	sceGxmSetBackDepthWriteEnable(gxm_context, mode);
-}
-
-static void change_stencil_settings(){
-	sceGxmSetFrontStencilFunc(gxm_context,
-		stencil_func_front,
-		stencil_fail_front,
-		depth_fail_front,
-		depth_pass_front,
-		stencil_mask_front, stencil_mask_front_write);
-	sceGxmSetBackStencilFunc(gxm_context,
-		stencil_func_back,
-		stencil_fail_back,
-		depth_fail_back,
-		depth_pass_back,
-		stencil_mask_back, stencil_mask_back_write);
-	sceGxmSetFrontStencilRef(gxm_context, stencil_ref_front);
-	sceGxmSetBackStencilRef(gxm_context, stencil_ref_back);
-}
-
-static GLboolean change_stencil_config(SceGxmStencilOp* cfg, GLenum new){
-	GLboolean ret = GL_TRUE;
-	switch (new){
-		case GL_KEEP:
-			*cfg = SCE_GXM_STENCIL_OP_KEEP;
-			break;
-		case GL_ZERO:
-			*cfg = SCE_GXM_STENCIL_OP_ZERO;
-			break;
-		case GL_REPLACE:
-			*cfg = SCE_GXM_STENCIL_OP_REPLACE;
-			break;
-		case GL_INCR:
-			*cfg = SCE_GXM_STENCIL_OP_INCR;
-			break;
-		case GL_INCR_WRAP:
-			*cfg = SCE_GXM_STENCIL_OP_INCR_WRAP;
-			break;
-		case GL_DECR:
-			*cfg = SCE_GXM_STENCIL_OP_DECR;
-			break;
-		case GL_DECR_WRAP:
-			*cfg = SCE_GXM_STENCIL_OP_DECR_WRAP;
-			break;
-		case GL_INVERT:
-			*cfg = SCE_GXM_STENCIL_OP_INVERT;
-			break;
-		default:
-			ret = GL_FALSE;
-			break;
-	}
-	return ret;
-}
-
-static GLboolean change_stencil_func_config(SceGxmStencilFunc* cfg, GLenum new){
-	GLboolean ret = GL_TRUE;
-	switch (new){
-		case GL_NEVER:
-			*cfg = SCE_GXM_STENCIL_FUNC_NEVER;
-			break;
-		case GL_LESS:
-			*cfg = SCE_GXM_STENCIL_FUNC_LESS;
-			break;
-		case GL_LEQUAL:
-			*cfg = SCE_GXM_STENCIL_FUNC_LESS_EQUAL;
-			break;
-		case GL_GREATER:
-			*cfg = SCE_GXM_STENCIL_FUNC_GREATER;
-			break;
-		case GL_GEQUAL:
-			*cfg = SCE_GXM_STENCIL_FUNC_GREATER_EQUAL;
-			break;
-		case GL_EQUAL:
-			*cfg = SCE_GXM_STENCIL_FUNC_EQUAL;
-			break;
-		case GL_NOTEQUAL:
-			*cfg = SCE_GXM_STENCIL_FUNC_NOT_EQUAL;
-			break;
-		case GL_ALWAYS:
-			*cfg = SCE_GXM_STENCIL_FUNC_ALWAYS;
-			break;
-		default:
-			ret = GL_FALSE;
-			break;
-	}
-	return ret;
-}
-
-static void invalidate_depth_test(){
-	orig_depth_test = depth_test_state;
-	depth_test_state = GL_FALSE;
-	change_depth_func();
-}
-
-static void validate_depth_test(){
-	depth_test_state = orig_depth_test;
-	change_depth_func();
-}
-
-static void update_scissor_test(){
-	if (scissor_test_state){
-		scissor_test_vertices[0].position.x = ((2.0f * region.x) / 960.0f) - 1.0f;
-		scissor_test_vertices[0].position.y = 1.0f - (2.0f * (region.y + region.h)) / 544.0f;
-		scissor_test_vertices[1].position.x = ((2.0f * (region.x + region.w)) / 960.0f) - 1.0f;
-		scissor_test_vertices[1].position.y = 1.0f - (2.0f * (region.y + region.h)) / 544.0f;
-		scissor_test_vertices[2].position.x = ((2.0f * (region.x + region.w)) / 960.0f) - 1.0f;
-		scissor_test_vertices[2].position.y = 1.0f - (2.0f * region.y) / 544.0f;
-		scissor_test_vertices[3].position.x = ((2.0f * region.x) / 960.0f) - 1.0f;
-		scissor_test_vertices[3].position.y = 1.0f - (2.0f * region.y) / 544.0f;
-	}
-	
-	sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
-	sceGxmSetFragmentProgram(gxm_context, scissor_test_fragment_program);
-		
-	sceGxmSetFrontStencilFunc(gxm_context,
-		SCE_GXM_STENCIL_FUNC_NEVER,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		0, 0);
-	sceGxmSetBackStencilFunc(gxm_context,
-		SCE_GXM_STENCIL_FUNC_NEVER,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		0, 0);
-	
-	sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
-	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
-	
-	sceGxmSetFrontStencilFunc(gxm_context,
-		SCE_GXM_STENCIL_FUNC_ALWAYS,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		0, 0);
-	sceGxmSetBackStencilFunc(gxm_context,
-		SCE_GXM_STENCIL_FUNC_ALWAYS,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		0, 0);
-	
-	if (scissor_test_state) sceGxmSetVertexStream(gxm_context, 0, scissor_test_vertices);
-	else sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
-	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
 }
 
 static void purge_vertex_list(){
@@ -754,235 +306,87 @@ static void change_cull_mode(){
 static void update_polygon_offset(){
 	switch (polygon_mode_front){
 		case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
-			if (pol_offset_line) sceGxmSetFrontDepthBias(gxm_context, pol_factor, pol_units);
-			else sceGxmSetFrontDepthBias(gxm_context, 0.0f, 0.0f);
+			if (pol_offset_line) sceGxmSetFrontDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
+			else sceGxmSetFrontDepthBias(gxm_context, 0, 0);
 			break;
 		case SCE_GXM_POLYGON_MODE_TRIANGLE_POINT:
-			if (pol_offset_point) sceGxmSetFrontDepthBias(gxm_context, pol_factor, pol_units);
-			else sceGxmSetFrontDepthBias(gxm_context, 0.0f, 0.0f);
+			if (pol_offset_point) sceGxmSetFrontDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
+			else sceGxmSetFrontDepthBias(gxm_context, 0, 0);
 			break;
 		case SCE_GXM_POLYGON_MODE_TRIANGLE_FILL:
-			if (pol_offset_fill) sceGxmSetFrontDepthBias(gxm_context, pol_factor, pol_units);
-			else sceGxmSetFrontDepthBias(gxm_context, 0.0f, 0.0f);
+			if (pol_offset_fill) sceGxmSetFrontDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
+			else sceGxmSetFrontDepthBias(gxm_context, 0, 0);
 			break;
 	}
 	switch (polygon_mode_back){
 		case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
-			if (pol_offset_line) sceGxmSetBackDepthBias(gxm_context, pol_factor, pol_units);
-			else sceGxmSetBackDepthBias(gxm_context, 0.0f, 0.0f);
+			if (pol_offset_line) sceGxmSetBackDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
+			else sceGxmSetBackDepthBias(gxm_context, 0, 0);
 			break;
 		case SCE_GXM_POLYGON_MODE_TRIANGLE_POINT:
-			if (pol_offset_point) sceGxmSetBackDepthBias(gxm_context, pol_factor, pol_units);
-			else sceGxmSetBackDepthBias(gxm_context, 0.0f, 0.0f);
+			if (pol_offset_point) sceGxmSetBackDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
+			else sceGxmSetBackDepthBias(gxm_context, 0, 0);
 			break;
 		case SCE_GXM_POLYGON_MODE_TRIANGLE_FILL:
-			if (pol_offset_fill) sceGxmSetBackDepthBias(gxm_context, pol_factor, pol_units);
-			else sceGxmSetBackDepthBias(gxm_context, 0.0f, 0.0f);
+			if (pol_offset_fill) sceGxmSetBackDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
+			else sceGxmSetBackDepthBias(gxm_context, 0, 0);
 			break;
 	}	
 }
 
 // vitaGL specific functions
 
-void vglUpdateCommonDialog(){
-	SceCommonDialogUpdateParam updateParam;
-	memset(&updateParam, 0, sizeof(updateParam));
-
-	updateParam.renderTarget.colorFormat    = SCE_GXM_COLOR_FORMAT_A8B8G8R8;
-	updateParam.renderTarget.surfaceType    = SCE_GXM_COLOR_SURFACE_LINEAR;
-	updateParam.renderTarget.width          = DISPLAY_WIDTH;
-	updateParam.renderTarget.height         = DISPLAY_HEIGHT;
-	updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE;
-
-	updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_back_buffer_index];
-	updateParam.renderTarget.depthSurfaceData = gxm_depth_surface_addr;
-	updateParam.displaySyncObject = gxm_sync_objects[gxm_back_buffer_index];
-
-	sceCommonDialogUpdate(&updateParam);
-}
-
-void vglStartRendering(){
-	sceGxmBeginScene(
-		gxm_context, 0, gxm_render_target,
-		NULL, NULL,
-		gxm_sync_objects[gxm_back_buffer_index],
-		&gxm_color_surfaces[gxm_back_buffer_index],
-		&gxm_depth_stencil_surface);
-	if (viewport_mode) sceGxmSetViewport(gxm_context,x_port,x_scale,y_port,y_scale,z_port,z_scale);
-}
-
-void vglStopRendering(){
-	sceGxmEndScene(gxm_context, NULL, NULL);
-	gpu_pool_reset();
-	sceGxmFinish(gxm_context);
-	sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
-	struct display_queue_callback_data queue_cb_data;
-	queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
-	sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
-		gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
-	gxm_front_buffer_index = gxm_back_buffer_index;
-	gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
-	gpu_pool_reset();
-}
-
-void vglStopRenderingInit(){
-	sceGxmEndScene(gxm_context, NULL, NULL);
-}
-
-void vglStopRenderingTerm(){
-	sceGxmFinish(gxm_context);
-	sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
-	struct display_queue_callback_data queue_cb_data;
-	queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
-	sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
-	gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
-	gxm_front_buffer_index = gxm_back_buffer_index;
-	gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
-	gpu_pool_reset();
-}
-
 void vglUseVram(GLboolean usage){
 	use_vram = usage;
 }
 
-void vglInit(uint32_t gpu_pool_size){
+void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
 	
-	SceGxmInitializeParams gxm_init_params;
-	memset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
-	
-	gxm_init_params.flags = 0;
-	gxm_init_params.displayQueueMaxPendingCount = DISPLAY_BUFFER_COUNT - 1;
-	gxm_init_params.displayQueueCallback = display_queue_callback;
-	gxm_init_params.displayQueueCallbackDataSize = sizeof(struct display_queue_callback_data);
-	gxm_init_params.parameterBufferSize = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE;
-	
-	sceGxmInitialize(&gxm_init_params);
-	
-	vdm_ring_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ, SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE,
-		&vdm_ring_buffer_uid);
-
-	vertex_ring_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ, SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE,
-		&vertex_ring_buffer_uid);
-
-	fragment_ring_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ, SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE,
-		&fragment_ring_buffer_uid);
-
-	unsigned int fragment_usse_offset;
-	fragment_usse_ring_buffer_addr = gpu_fragment_usse_alloc_map(
-		SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE,
-		&fragment_ring_buffer_uid, &fragment_usse_offset);
-
-	SceGxmContextParams gxm_context_params;
-	memset(&gxm_context_params, 0, sizeof(SceGxmContextParams));
-	gxm_context_params.hostMem = malloc(SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
-	gxm_context_params.hostMemSize = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
-	gxm_context_params.vdmRingBufferMem = vdm_ring_buffer_addr;
-	gxm_context_params.vdmRingBufferMemSize = SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE;
-	gxm_context_params.vertexRingBufferMem = vertex_ring_buffer_addr;
-	gxm_context_params.vertexRingBufferMemSize = SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE;
-	gxm_context_params.fragmentRingBufferMem = fragment_ring_buffer_addr;
-	gxm_context_params.fragmentRingBufferMemSize = SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE;
-	gxm_context_params.fragmentUsseRingBufferMem = fragment_usse_ring_buffer_addr;
-	gxm_context_params.fragmentUsseRingBufferMemSize = SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE;
-	gxm_context_params.fragmentUsseRingBufferOffset = fragment_usse_offset;
-
-	sceGxmCreateContext(&gxm_context_params, &gxm_context);
-
-	SceGxmRenderTargetParams render_target_params;
-	memset(&render_target_params, 0, sizeof(SceGxmRenderTargetParams));
-	render_target_params.flags = 0;
-	render_target_params.width = DISPLAY_WIDTH;
-	render_target_params.height = DISPLAY_HEIGHT;
-	render_target_params.scenesPerFrame = 1;
-	render_target_params.multisampleMode = SCE_GXM_MULTISAMPLE_NONE;
-	render_target_params.multisampleLocations = 0;
-	render_target_params.driverMemBlock = -1;
-	
-	sceGxmCreateRenderTarget(&render_target_params, &gxm_render_target);
-	
-	int i;
-	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
-		gxm_color_surfaces_addr[i] = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-			SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-			ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024),
-			&gxm_color_surfaces_uid[i]);
-
-		memset(gxm_color_surfaces_addr[i], 0, DISPLAY_STRIDE * DISPLAY_HEIGHT);
-
-		sceGxmColorSurfaceInit(&gxm_color_surfaces[i],
-			SCE_GXM_COLOR_FORMAT_A8B8G8R8,
-			SCE_GXM_COLOR_SURFACE_LINEAR,
-			SCE_GXM_COLOR_SURFACE_SCALE_NONE,
-			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-			DISPLAY_WIDTH,
-			DISPLAY_HEIGHT,
-			DISPLAY_STRIDE,
-			gxm_color_surfaces_addr[i]);
-
-		sceGxmSyncObjectCreate(&gxm_sync_objects[i]);
+	// Setting our display size
+	DISPLAY_WIDTH = width;
+	DISPLAY_HEIGHT = height;
+	DISPLAY_WIDTH_FLOAT = width * 1.0f;
+	DISPLAY_HEIGHT_FLOAT = height * 1.0f;
+	switch (DISPLAY_WIDTH){
+	case 480:
+		DISPLAY_STRIDE = 512;
+		break;
+	case 640:
+		DISPLAY_STRIDE = 640;
+		break;
+	case 720:
+		DISPLAY_STRIDE = 768;
+		break;
+	default:
+		DISPLAY_STRIDE = 960;
+		break;
 	}
 	
-	unsigned int depth_stencil_width = ALIGN(DISPLAY_WIDTH, SCE_GXM_TILE_SIZEX);
-	unsigned int depth_stencil_height = ALIGN(DISPLAY_HEIGHT, SCE_GXM_TILE_SIZEY);
-	unsigned int depth_stencil_samples = depth_stencil_width * depth_stencil_height;
-
-	gxm_depth_surface_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-		4 * depth_stencil_samples, &gxm_depth_surface_uid);
-		
-	gxm_stencil_surface_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-		1 * depth_stencil_samples, &gxm_stencil_surface_uid);
-
-	sceGxmDepthStencilSurfaceInit(&gxm_depth_stencil_surface,
-		SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M_S8,
-		SCE_GXM_DEPTH_STENCIL_SURFACE_TILED,
-		depth_stencil_width,
-		gxm_depth_surface_addr,
-		gxm_stencil_surface_addr);
-		
-	static const unsigned int shader_patcher_buffer_size = 1024 * 1024;
-	static const unsigned int shader_patcher_vertex_usse_size = 1024 * 1024;
-	static const unsigned int shader_patcher_fragment_usse_size = 1024 * 1024;
+	// Initializing sceGxm
+	initGxm();
 	
-	gxm_shader_patcher_buffer_addr = gpu_alloc_map(SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_READ,
-		shader_patcher_buffer_size, &gxm_shader_patcher_buffer_uid);
-
-	unsigned int shader_patcher_vertex_usse_offset;
-	gxm_shader_patcher_vertex_usse_addr = gpu_vertex_usse_alloc_map(
-		shader_patcher_vertex_usse_size, &gxm_shader_patcher_vertex_usse_uid,
-		&shader_patcher_vertex_usse_offset);
-
-	unsigned int shader_patcher_fragment_usse_offset;
-	gxm_shader_patcher_fragment_usse_addr = gpu_fragment_usse_alloc_map(
-		shader_patcher_fragment_usse_size, &gxm_shader_patcher_fragment_usse_uid,
-		&shader_patcher_fragment_usse_offset);
-
-	SceGxmShaderPatcherParams shader_patcher_params;
-	memset(&shader_patcher_params, 0, sizeof(SceGxmShaderPatcherParams));
-	shader_patcher_params.userData = NULL;
-	shader_patcher_params.hostAllocCallback = shader_patcher_host_alloc_cb;
-	shader_patcher_params.hostFreeCallback = shader_patcher_host_free_cb;
-	shader_patcher_params.bufferAllocCallback = NULL;
-	shader_patcher_params.bufferFreeCallback = NULL;
-	shader_patcher_params.bufferMem = gxm_shader_patcher_buffer_addr;
-	shader_patcher_params.bufferMemSize = shader_patcher_buffer_size;
-	shader_patcher_params.vertexUsseAllocCallback = NULL;
-	shader_patcher_params.vertexUsseFreeCallback = NULL;
-	shader_patcher_params.vertexUsseMem = gxm_shader_patcher_vertex_usse_addr;
-	shader_patcher_params.vertexUsseMemSize = shader_patcher_vertex_usse_size;
-	shader_patcher_params.vertexUsseOffset = shader_patcher_vertex_usse_offset;
-	shader_patcher_params.fragmentUsseAllocCallback = NULL;
-	shader_patcher_params.fragmentUsseFreeCallback = NULL;
-	shader_patcher_params.fragmentUsseMem = gxm_shader_patcher_fragment_usse_addr;
-	shader_patcher_params.fragmentUsseMemSize = shader_patcher_fragment_usse_size;
-	shader_patcher_params.fragmentUsseOffset = shader_patcher_fragment_usse_offset;
+	// Getting max allocatable CDRAM and RAM memory
+	SceKernelFreeMemorySizeInfo info;
+    info.size = sizeof(SceKernelFreeMemorySizeInfo);
+	sceKernelGetFreeMemorySize(&info);
 	
-	sceGxmShaderPatcherCreate(&shader_patcher_params, &gxm_shader_patcher);
+	// Initializing memory heap for CDRAM and RAM memory
+	mem_init(info.size_user, info.size_cdram);
+	
+	// Initializing sceGxm context
+	initGxmContext();
+
+	// Creating render target for the display
+	createDisplayRenderTarget();
+	
+	// Creating color surfaces for the display
+	initDisplayColorSurfaces();
+	
+	// Creating depth and stencil surfaces for the display
+	initDepthStencilSurfaces();
+	
+	// Starting a sceGxmShaderPatcher instance
+	startShaderPatcher();
 	
 	// Disable color buffer shader register
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_disable_color_buffer_v,
@@ -1032,23 +436,19 @@ void vglInit(uint32_t gpu_pool_size){
 		disable_color_buffer_fragment_program,
 		&disable_color_buffer_fragment_program_patched);
 		
-	depth_vertices = gpu_alloc_map(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
-		4 * sizeof(struct position_vertex), &depth_vertices_uid);
+	depth_vertices = gpu_alloc_mapped(4 * sizeof(struct position_vertex), RAM_MEMORY);
 
-	depth_indices = gpu_alloc_map(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
-		4 * sizeof(unsigned short), &depth_indices_uid);
+	depth_clear_indices = gpu_alloc_mapped(4 * sizeof(unsigned short), RAM_MEMORY);
 
 	depth_vertices[0].position = (vector3f){-1.0f, -1.0f, 1.0f};
 	depth_vertices[1].position = (vector3f){ 1.0f, -1.0f, 1.0f};
 	depth_vertices[2].position = (vector3f){-1.0f,  1.0f, 1.0f};
 	depth_vertices[3].position = (vector3f){ 1.0f,  1.0f, 1.0f};
 
-	depth_indices[0] = 0;
-	depth_indices[1] = 1;
-	depth_indices[2] = 2;
-	depth_indices[3] = 3;
+	depth_clear_indices[0] = 0;
+	depth_clear_indices[1] = 1;
+	depth_clear_indices[2] = 2;
+	depth_clear_indices[3] = 3;
 	
 	// Clear shader register
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_clear_v,
@@ -1085,23 +485,12 @@ void vglInit(uint32_t gpu_pool_size){
 		SCE_GXM_MULTISAMPLE_NONE, NULL, clear_fragment_program,
 		&clear_fragment_program_patched);
 
-	clear_vertices = gpu_alloc_map(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
-		4 * sizeof(struct clear_vertex), &clear_vertices_uid);
-
-	clear_indices = gpu_alloc_map(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
-		4 * sizeof(unsigned short), &clear_indices_uid);
+	clear_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), RAM_MEMORY);
 
 	clear_vertices[0].position = (vector2f){-1.0f, -1.0f};
 	clear_vertices[1].position = (vector2f){ 1.0f, -1.0f};
 	clear_vertices[2].position = (vector2f){ 1.0f,  1.0f};
 	clear_vertices[3].position = (vector2f){-1.0f,  1.0f};
-
-	clear_indices[0] = 0;
-	clear_indices[1] = 1;
-	clear_indices[2] = 2;
-	clear_indices[3] = 3;
 	
 	// Color shader register
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_rgba_v,
@@ -1314,15 +703,13 @@ void vglInit(uint32_t gpu_pool_size){
 	// Scissor Test shader register
 	sceGxmShaderPatcherCreateMaskUpdateFragmentProgram(gxm_shader_patcher, &scissor_test_fragment_program);
 	
-	scissor_test_vertices = gpu_alloc_map(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, SCE_GXM_MEMORY_ATTRIB_READ,
-		4 * sizeof(struct clear_vertex), &scissor_test_vertices_uid);
+	scissor_test_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), RAM_MEMORY);
 	
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);
 	
 	// Init texture units
-	int j;
+	int i, j;
 	for (i=0; i < GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS; i++){
 		for (j=0; j < TEXTURES_NUM; j++){
 			texture_units[i].textures[j].used = 0;
@@ -1338,10 +725,7 @@ void vglInit(uint32_t gpu_pool_size){
 	}
 	
 	// Init custom shaders
-	for (i=0; i < MAX_CUSTOM_SHADERS; i++){
-		shaders[i].valid = 0;
-		progs[i>>1].valid = 0;
-	}
+	resetCustomShaders();
 	
 	// Init buffers
 	for (i=0; i < BUFFERS_NUM; i++){
@@ -1350,20 +734,26 @@ void vglInit(uint32_t gpu_pool_size){
 	}
 	
 	// Init scissor test state
-	region.x = region.y = 0;
-	region.w = 960;
-	region.h = 544;
+	resetScissorTestRegion();
 	
 }
 
+void vglInit(uint32_t gpu_pool_size){
+	vglInitExtended(gpu_pool_size, DISPLAY_WIDTH_DEF, DISPLAY_HEIGHT_DEF);
+}
+
 void vglEnd(void){
-	sceGxmDisplayQueueFinish();
-	sceGxmFinish(gxm_context);
-	gpu_unmap_free(clear_vertices_uid);
-	gpu_unmap_free(clear_indices_uid);
-	gpu_unmap_free(depth_vertices_uid);
-	gpu_unmap_free(depth_indices_uid);
-	gpu_unmap_free(scissor_test_vertices_uid);
+	
+	// Wait for rendering to be finished
+	waitRenderingDone();
+	
+	// Deallocating default vertices buffers
+	gpu_free_mapped(clear_vertices, RAM_MEMORY);
+	gpu_free_mapped(depth_vertices, RAM_MEMORY);
+	gpu_free_mapped(depth_clear_indices, RAM_MEMORY);
+	gpu_free_mapped(scissor_test_vertices, RAM_MEMORY);
+	
+	// Releasing shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, scissor_test_fragment_program);
 	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, disable_color_buffer_vertex_program_patched);
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, disable_color_buffer_fragment_program_patched);
@@ -1374,6 +764,8 @@ void vglEnd(void){
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, rgba_fragment_program_patched);
 	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, texture2d_vertex_program_patched);
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, texture2d_fragment_program_patched);
+	
+	// Unregistering shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, clear_vertex_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, clear_fragment_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, rgb_vertex_id);
@@ -1383,24 +775,25 @@ void vglEnd(void){
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, texture2d_fragment_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, disable_color_buffer_vertex_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, disable_color_buffer_fragment_id);
-	sceGxmShaderPatcherDestroy(gxm_shader_patcher);
-	gpu_unmap_free(gxm_shader_patcher_buffer_uid);
-	gpu_vertex_usse_unmap_free(gxm_shader_patcher_vertex_usse_uid);
-	gpu_fragment_usse_unmap_free(gxm_shader_patcher_fragment_usse_uid);
-	gpu_unmap_free(gxm_depth_surface_uid);
-	gpu_unmap_free(gxm_stencil_surface_uid);
-	int i;
-	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
-		gpu_unmap_free(gxm_color_surfaces_uid[i]);
-		sceGxmSyncObjectDestroy(gxm_sync_objects[i]);
-	}
-	sceGxmDestroyRenderTarget(gxm_render_target);
-	gpu_unmap_free(vdm_ring_buffer_uid);
-	gpu_unmap_free(vertex_ring_buffer_uid);
-	gpu_unmap_free(fragment_ring_buffer_uid);
-	gpu_fragment_usse_unmap_free(fragment_usse_ring_buffer_uid);
-	sceGxmDestroyContext(gxm_context);
+	
+	// Terminating shader patcher
+	stopShaderPatcher();
+	
+	// Deallocating depth and stencil surfaces for display
+	termDepthStencilSurfaces();
+	
+	// Terminating display's color surfaces
+	termDisplayColorSurfaces();
+	
+	// Destroing display's render target
+	destroyDisplayRenderTarget();
+	
+	// Terminating sceGxm context
+	termGxmContext();
+	
+	// Terminating sceGxm
 	sceGxmTerminate();
+	
 }
 
 void vglWaitVblankStart(GLboolean enable){
@@ -1428,7 +821,7 @@ void glClear(GLbitfield mask){
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &color_buffer);
 		sceGxmSetUniformDataF(color_buffer, clear_color, 0, 4, &clear_rgba_val.r);
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, clear_indices, 4);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		change_depth_write(depth_mask_state && orig_depth_test ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		validate_depth_test();
 		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
@@ -1445,9 +838,32 @@ void glClear(GLbitfield mask){
 		sceGxmSetVertexProgram(gxm_context, disable_color_buffer_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
 		sceGxmSetVertexStream(gxm_context, 0, depth_vertices);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_indices, 4);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		change_depth_write(depth_mask_state && orig_depth_test ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		validate_depth_test();
+	}
+	if ((mask & GL_STENCIL_BUFFER_BIT) == GL_STENCIL_BUFFER_BIT){
+		change_depth_write(SCE_GXM_DEPTH_WRITE_DISABLED);
+		invalidate_depth_test();
+		sceGxmSetVertexProgram(gxm_context, disable_color_buffer_vertex_program_patched);
+		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
+		sceGxmSetFrontStencilFunc(gxm_context,
+			SCE_GXM_STENCIL_FUNC_NEVER,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			0, stencil_value);
+		sceGxmSetBackStencilFunc(gxm_context,
+			SCE_GXM_STENCIL_FUNC_NEVER,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			0, stencil_value);
+		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+		change_depth_write(depth_mask_state && orig_depth_test ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		validate_depth_test();
+		change_stencil_settings();
 	}
 }
 
@@ -1632,7 +1048,6 @@ void glEnd(void){
 	
 	texture_unit* tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	matrix4x4 mvp_matrix;
 	
 	matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 	
@@ -1785,22 +1200,6 @@ void glGenBuffers(GLsizei n, GLuint* res){
 	}
 }
 
-void glGenTextures(GLsizei n, GLuint* res){
-	int i, j=0;
-	if (n < 0){
-		error = GL_INVALID_VALUE;
-		return;
-	}
-	texture_unit* tex_unit = &texture_units[server_texture_unit];
-	for (i=0; i < TEXTURES_NUM; i++){
-		if (!(tex_unit->textures[i].used)){
-			res[j++] = i;
-			tex_unit->textures[i].used = 1;
-		}
-		if (j >= n) break;
-	}
-}
-
 void glBindBuffer(GLenum target, GLuint buffer){
 	if ((buffer != 0x0000) && ((buffer >= BUFFERS_ADDR + BUFFERS_NUM) || (buffer < BUFFERS_ADDR))){
 		error = GL_INVALID_VALUE;
@@ -1819,32 +1218,6 @@ void glBindBuffer(GLenum target, GLuint buffer){
 	}
 }
 
-void glBindTexture(GLenum target, GLuint texture){
-	texture_unit* tex_unit = &texture_units[server_texture_unit];
-	switch (target){
-		case GL_TEXTURE_2D:
-			tex_unit->tex_id = texture;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-}
-
-void glDeleteTextures(GLsizei n, const GLuint* gl_textures){
-	if (n < 0){
-		error = GL_INVALID_VALUE;
-		return;
-	}
-	int j;
-	texture_unit* tex_unit = &texture_units[server_texture_unit];
-	for (j=0; j<n; j++){
-		GLuint i = gl_textures[j];
-		tex_unit->textures[i].used = 0;
-		gpu_free_texture(&tex_unit->textures[i]);
-	}
-}
-
 void glDeleteBuffers(GLsizei n, const GLuint* gl_buffers){
 	if (n < 0){
 		error = GL_INVALID_VALUE;
@@ -1856,7 +1229,7 @@ void glDeleteBuffers(GLsizei n, const GLuint* gl_buffers){
 			uint8_t idx = gl_buffers[j] - BUFFERS_ADDR;
 			buffers[idx] = gl_buffers[j];
 			if (gpu_buffers[idx].ptr != NULL){
-				gpu_unmap_free(gpu_buffers[idx].data_UID);
+				gpu_free_mapped(gpu_buffers[idx].ptr, VRAM_MEMORY);
 				gpu_buffers[idx].ptr = NULL;
 			}
 		}
@@ -1880,426 +1253,8 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid* data, GLenum usage)
 			error = GL_INVALID_ENUM;
 			break;
 	}
-	gpu_buffers[idx].ptr = gpu_alloc_map(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-		SCE_GXM_MEMORY_ATTRIB_READ,
-		size,
-		&gpu_buffers[idx].data_UID);
+	gpu_buffers[idx].ptr = gpu_alloc_mapped(size, VRAM_MEMORY);
 	memcpy(gpu_buffers[idx].ptr, data, size);
-}
-
-void glColorTable(GLenum target,  GLenum internalformat,  GLsizei width,  GLenum format,  GLenum type,  const GLvoid * data){
-	if (color_table != NULL){
-		gpu_free_palette(color_table);
-		color_table = NULL;
-	}
-	uint8_t bpe = 0;
-	switch (target){
-		case GL_COLOR_TABLE:
-			switch (format){
-				case GL_RGBA:
-					bpe = 4;
-					break;
-				default:
-					error = GL_INVALID_ENUM;
-					break;
-			}
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-	color_table = gpu_alloc_palette(data, width, bpe);
-}
-
-void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid * data){
-	SceGxmTextureFormat tex_format;
-	texture_unit* tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id;
-	texture* tex = &tex_unit->textures[texture2d_idx];
-	uint8_t data_bpp = 0;
-	
-	// Support for legacy GL1.0 internalFormat
-	switch (internalFormat){
-	case 1:
-		internalFormat = GL_RED;
-		break;
-	case 2:
-		internalFormat = GL_RG;
-		break;
-	case 3:
-		internalFormat = GL_RGB;
-		break;
-	case 4:
-		internalFormat = GL_RGBA;
-		break;
-	}
-	
-	/*
-	 * Callbacks are actually used to just perform down/up-sampling
-	 * between U8 texture formats. Reads are expected to give as result
-	 * a RGBA sample that will be wrote depending on texture format
-	 * by the write callback
-	 */
-	void (*write_cb)(void*, uint32_t) = NULL;
-	uint32_t (*read_cb)(void*) = NULL;
-	
-	switch (format){
-	case GL_RED:
-	case GL_ALPHA:
-		switch (type){
-		case GL_UNSIGNED_BYTE:
-			read_cb = readR;
-			data_bpp = 1;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-		}
-		break;
-	case GL_RG:
-		switch (type){
-		case GL_UNSIGNED_BYTE:
-			read_cb = readRG;
-			data_bpp = 2;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-		}
-		break;
-	case GL_RGB:
-		switch (type){
-		case GL_UNSIGNED_BYTE:
-			data_bpp = 3;
-			read_cb = readRGB;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-		}
-		break;
-	case GL_RGBA:
-		switch (type){
-		case GL_UNSIGNED_BYTE:
-			data_bpp = 4;
-			read_cb = readRGBA;
-			break;
-		case GL_UNSIGNED_SHORT_5_5_5_1:
-			data_bpp = 2;
-			read_cb = readRGBA5551;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-		}
-		break;
-	}
-	
-	switch (target){
-		case GL_TEXTURE_2D:
-			switch (internalFormat){
-			case GL_RGB:
-				write_cb = writeRGB;
-				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
-				break;
-			case GL_RGBA:
-				write_cb = writeRGBA;
-				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
-				break;
-			case GL_LUMINANCE:
-				write_cb = writeR;
-				tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
-				break;
-			case GL_LUMINANCE_ALPHA:
-				write_cb = writeRA;
-				tex_format = SCE_GXM_TEXTURE_FORMAT_A8L8;
-				break;
-			case GL_INTENSITY:
-				write_cb = writeR;
-				tex_format = SCE_GXM_TEXTURE_FORMAT_U8_RRRR;
-				break;
-			case GL_ALPHA:
-				write_cb = writeR;
-				tex_format = SCE_GXM_TEXTURE_FORMAT_A8;
-				break;
-			case GL_COLOR_INDEX8_EXT:
-				write_cb = writeR; // TODO: This is a hack
-				tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
-				break;
-			default:
-				error = GL_INVALID_ENUM;
-				break;
-			}
-			if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE){
-				error = GL_INVALID_VALUE;
-				return;
-			}
-			tex->type = internalFormat;
-			tex->write_cb = write_cb;
-			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
-			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
-			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
-			sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
-			if (level == 0) gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb);
-			else gpu_alloc_mipmaps(width, height, tex_format, data, level, tex);
-			if (tex->valid && tex->palette_UID) sceGxmTextureSetPalette(&tex->gxm_tex, color_table->data);
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;	
-	}
-}
-
-void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid* pixels){
-	texture_unit* tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id;
-	texture* target_texture = &tex_unit->textures[texture2d_idx];
-	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&target_texture->gxm_tex);
-	uint8_t bpp = tex_format_to_bytespp(tex_format);
-	uint32_t stride = ALIGN(sceGxmTextureGetWidth(&target_texture->gxm_tex), 8) * bpp;
-	uint8_t* ptr = (uint8_t*)sceGxmTextureGetData(&target_texture->gxm_tex) + xoffset * bpp + yoffset * stride;
-	uint8_t* ptr_line = ptr;
-	uint8_t data_bpp = 0;
-	int i,j;
-	
-	/*
-	 * Callbacks are actually used to just perform down/up-sampling
-	 * between U8 texture formats. Reads are expected to give as result
-	 * a RGBA sample that will be wrote depending on texture format
-	 * by the write callback
-	 */
-	void (*write_cb)(void*, uint32_t) = NULL;
-	uint32_t (*read_cb)(void*) = NULL;
-	
-	switch (format){
-	case GL_RED:
-	case GL_ALPHA:
-		switch (type){
-		case GL_UNSIGNED_BYTE:
-			read_cb = readR;
-			data_bpp = 1;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-		}
-		break;
-	case GL_RG:
-		switch (type){
-		case GL_UNSIGNED_BYTE:
-			read_cb = readRG;
-			data_bpp = 2;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-		}
-		break;
-	case GL_RGB:
-		switch (type){
-		case GL_UNSIGNED_BYTE:
-			data_bpp = 3;
-			read_cb = readRGB;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-		}
-		break;
-	case GL_RGBA:
-		switch (type){
-		case GL_UNSIGNED_BYTE:
-			data_bpp = 4;
-			read_cb = readRGBA;
-			break;
-		case GL_UNSIGNED_SHORT_5_5_5_1:
-			data_bpp = 2;
-			read_cb = readRGBA5551;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-		}
-		break;
-	}
-	
-	switch (target){
-	case GL_TEXTURE_2D:
-		switch (target_texture->type){
-		case GL_RGB:
-			write_cb = writeRGB;
-			break;
-		case GL_RGBA:
-			write_cb = writeRGBA;
-			break;
-		case GL_LUMINANCE:
-			write_cb = writeR;
-			break;
-		case GL_LUMINANCE_ALPHA:
-			write_cb = writeRA;
-			break;
-		case GL_INTENSITY:
-			write_cb = writeR;
-			break;
-		case GL_ALPHA:
-			write_cb = writeR;
-			break;
-		}
-		uint8_t *data = (uint8_t*)pixels;
-		for (i=0;i<height;i++){
-			for (j=0;j<width;j++){
-				uint32_t clr = read_cb((uint8_t*)data);
-				write_cb(ptr, clr);
-				data += data_bpp;
-				ptr += bpp;
-			}
-			ptr = ptr_line + stride;
-			ptr_line = ptr;
-		}
-		break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;	
-	}
-	
-}
-
-void glTexParameteri(GLenum target, GLenum pname, GLint param){
-	texture_unit* tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id;
-	texture* tex = &tex_unit->textures[texture2d_idx];
-	switch (target){
-		case GL_TEXTURE_2D:
-			switch (pname){
-				case GL_TEXTURE_MIN_FILTER:
-					switch (param){
-						case GL_NEAREST:
-							tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-							break;
-						case GL_LINEAR:
-							tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-							break;
-						case GL_NEAREST_MIPMAP_NEAREST: // TODO: Implement this
-							break;
-						case GL_LINEAR_MIPMAP_NEAREST: // TODO: Implement this
-							break;
-						case GL_NEAREST_MIPMAP_LINEAR: // TODO: Implement this
-							break;
-						case GL_LINEAR_MIPMAP_LINEAR: // TODO: Implement this
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}
-					sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
-					break;
-				case GL_TEXTURE_MAG_FILTER:
-					switch (param){
-						case GL_NEAREST:
-							tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-							break;
-						case GL_LINEAR:
-							tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-							break;
-						case GL_NEAREST_MIPMAP_NEAREST: // TODO: Implement this
-							break;
-						case GL_LINEAR_MIPMAP_NEAREST: // TODO: Implement this
-							break;
-						case GL_NEAREST_MIPMAP_LINEAR: // TODO: Implement this
-							break;
-						case GL_LINEAR_MIPMAP_LINEAR: // TODO: Implement this
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}
-					sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
-					break;
-				case GL_TEXTURE_WRAP_S:
-					switch (param){
-						case GL_CLAMP_TO_EDGE:
-							tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
-							
-							break;
-						case GL_REPEAT: 
-							tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-							break;
-						case GL_MIRRORED_REPEAT:
-							tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}
-					sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
-					break;
-				case GL_TEXTURE_WRAP_T:
-					switch (param){
-						case GL_CLAMP_TO_EDGE:
-							tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
-							break;
-						case GL_REPEAT: 
-							tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-							break;
-						case GL_MIRRORED_REPEAT:
-							tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
-							break;
-						default:
-							error = GL_INVALID_ENUM;
-							break;
-					}
-					sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
-					break;
-				default:
-					error = GL_INVALID_ENUM;
-					break;
-			}
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-}
-
-void glTexParameterf(GLenum target, GLenum pname, GLfloat param){
-	texture_unit* tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id;
-	texture* tex = &tex_unit->textures[texture2d_idx];
-	switch (target){
-		case GL_TEXTURE_2D:
-			switch (pname){
-				case GL_TEXTURE_MIN_FILTER:
-					if (param == GL_NEAREST) tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-					if (param == GL_LINEAR) tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-					sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
-					break;
-				case GL_TEXTURE_MAG_FILTER:
-					if (param == GL_NEAREST) tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-					else if (param == GL_LINEAR) tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-					sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
-					break;
-				case GL_TEXTURE_WRAP_S:
-					if (param == GL_CLAMP_TO_EDGE) tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
-					else if (param == GL_REPEAT) tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-					else if (param == GL_MIRRORED_REPEAT) tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
-					sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
-					break;
-				case GL_TEXTURE_WRAP_T:
-					if (param == GL_CLAMP_TO_EDGE) tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
-					else if (param == GL_REPEAT) tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-					else if (param == GL_MIRRORED_REPEAT) tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
-					sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
-					break;
-				default:
-					error = GL_INVALID_ENUM;
-					break;
-			}
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
 }
 
 void glTexCoord2i(GLint s, GLint t){
@@ -2334,9 +1289,20 @@ void glTexCoord2f(GLfloat s, GLfloat t){
 	last3->v.y = t;
 }
 
-void glActiveTexture(GLenum texture){
-	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE31)) error = GL_INVALID_ENUM;
-	else server_texture_unit = texture - GL_TEXTURE0;
+void glTexCoord2fv(GLfloat *f){
+	if (phase != MODEL_CREATION){
+		error = GL_INVALID_OPERATION;
+		return;
+	}
+	if (model_uv == NULL){ 
+		last3 = (uvList*)malloc(sizeof(uvList));
+		model_uv = last3;
+	}else{
+		last3->next = (uvList*)malloc(sizeof(uvList));
+		last3 = last3->next;
+	}
+	last3->v.x = f[0];
+	last3->v.y = f[1];
 }
 
 void glVertex3f(GLfloat x, GLfloat y, GLfloat z){
@@ -2434,24 +1400,6 @@ void glArrayElement(GLint i){
 	}
 }
 
-void glLoadIdentity(void){
-	matrix4x4_identity(*matrix);
-}
-
-void glMatrixMode(GLenum mode){
-	switch (mode){
-		case GL_MODELVIEW:
-			matrix = &modelview_matrix;
-			break;
-		case GL_PROJECTION:
-			matrix = &projection_matrix;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-}
-
 void glViewport(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 	if ((width < 0) || (height < 0)){
 		error = GL_INVALID_VALUE;
@@ -2460,104 +1408,21 @@ void glViewport(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 	x_scale = width>>1;
 	x_port = x + x_scale;
 	y_scale = -(height>>1);
-	y_port = 544 - y + y_scale;
+	y_port = DISPLAY_HEIGHT - y + y_scale;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 	viewport_mode = 1;
 }
 
 void glDepthRange(GLdouble nearVal, GLdouble farVal){
-	z_port = (farVal - nearVal) / 2.0f;
-	z_scale = (farVal + nearVal) / 2.0f;
+	z_port = (farVal + nearVal) / 2.0f;
+	z_scale = (farVal - nearVal) / 2.0f;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 }
 
 void glDepthRangef(GLfloat nearVal, GLfloat farVal){
-	z_port = (farVal - nearVal) / 2.0f;
-	z_scale = (farVal + nearVal) / 2.0f;
+	z_port = (farVal + nearVal) / 2.0f;
+	z_scale = (farVal - nearVal) / 2.0f;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-}
-
-void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height){
-	if ((width < 0) || (height < 0)){
-		error = GL_INVALID_VALUE;
-		return;
-	}
-	region.x = x;
-	region.y = 544 - y - height;
-	region.w = width;
-	region.h = height;
-	if (scissor_test_state) update_scissor_test();
-}
-
-void glOrtho(GLdouble left,  GLdouble right,  GLdouble bottom,  GLdouble top,  GLdouble nearVal,  GLdouble farVal){
-	if (phase == MODEL_CREATION){
-		error = GL_INVALID_OPERATION;
-		return;
-	}else if ((left == right) || (bottom == top) || (nearVal == farVal)){
-		error = GL_INVALID_VALUE;
-		return;
-	}
-	matrix4x4_init_orthographic(*matrix, left, right, bottom, top, nearVal, farVal);
-}
-
-void glFrustum(GLdouble left,  GLdouble right,  GLdouble bottom,  GLdouble top,  GLdouble nearVal,  GLdouble farVal){
-	if (phase == MODEL_CREATION){
-		error = GL_INVALID_OPERATION;
-		return;
-	}else if ((left == right) || (bottom == top) || (nearVal < 0) || (farVal < 0)){
-		error = GL_INVALID_VALUE;
-		return;
-	}
-	matrix4x4_init_frustum(*matrix, left, right, bottom, top, nearVal, farVal);
-}
-
-void glMultMatrixf(const GLfloat* m){
-	matrix4x4 res;
-	matrix4x4 tmp;
-	int i,j;
-	for (i=0;i<4;i++){
-		for (j=0;j<4;j++){
-			tmp[i][j] = m[i*4+j];
-		}
-	}
-	matrix4x4_multiply(res, *matrix, tmp);
-	matrix4x4_copy(*matrix, res);
-}
-
-void glLoadMatrixf(const GLfloat* m){
-	matrix4x4 tmp;
-	int i,j;
-	for (i=0;i<4;i++){
-		for (j=0;j<4;j++){
-			tmp[i][j] = m[i*4+j];
-		}
-	}
-	matrix4x4_copy(*matrix, tmp);
-}
-
-void glTranslatef(GLfloat x,  GLfloat y,  GLfloat z){
-	matrix4x4_translate(*matrix, x, y, z);
-}
-
-void glScalef(GLfloat x, GLfloat y, GLfloat z){
-	matrix4x4_scale(*matrix, x, y, z);
-}
-
-void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z){
-	if (phase == MODEL_CREATION){
-		error = GL_INVALID_OPERATION;
-		return;
-	}
-	float rad = DEG_TO_RAD(angle);
-	if (x == 1.0f){
-		matrix4x4_rotate_x(*matrix, rad);
-	}
-	if (y == 1.0f){
-		matrix4x4_rotate_y(*matrix, rad);
-	}
-	if (z == 1.0f){
-		matrix4x4_rotate_z(*matrix, rad);
-	}
 }
 
 void glColor3f(GLfloat red, GLfloat green, GLfloat blue){
@@ -2609,55 +1474,6 @@ void glColor4ubv(const GLubyte* c){
 	current_color.g = (1.0f * c[1]) / 255.0f;
 	current_color.b = (1.0f * c[2]) / 255.0f;
 	current_color.a = (1.0f * c[3]) / 255.0f;
-}
-
-void glDepthFunc(GLenum func){
-	switch (func){
-		case GL_NEVER:
-			gxm_depth = SCE_GXM_DEPTH_FUNC_NEVER;
-			break;
-		case GL_LESS:
-			gxm_depth = SCE_GXM_DEPTH_FUNC_LESS;
-			break;
-		case GL_EQUAL:
-			gxm_depth = SCE_GXM_DEPTH_FUNC_EQUAL;
-			break;
-		case GL_LEQUAL:
-			gxm_depth = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
-			break;
-		case GL_GREATER:
-			gxm_depth = SCE_GXM_DEPTH_FUNC_GREATER;
-			break;
-		case GL_NOTEQUAL:
-			gxm_depth = SCE_GXM_DEPTH_FUNC_NOT_EQUAL;
-			break;
-		case GL_GEQUAL:
-			gxm_depth = SCE_GXM_DEPTH_FUNC_GREATER_EQUAL;
-			break;
-		case GL_ALWAYS:
-			gxm_depth = SCE_GXM_DEPTH_FUNC_ALWAYS;
-			break;
-	}
-	change_depth_func();
-}
-
-void glClearDepth(GLdouble depth){
-	depth_value = depth;
-}
-
-void glDepthMask(GLboolean flag){
-	if (phase == MODEL_CREATION){
-		error = GL_INVALID_OPERATION;
-		return;
-	}
-	depth_mask_state = flag;
-	change_depth_write(depth_mask_state && depth_test_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-}
-
-void glAlphaFunc(GLenum func, GLfloat ref){
-	alpha_func = func;
-	alpha_ref = ref;
-	update_alpha_test_settings();
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor){
@@ -2974,88 +1790,6 @@ void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
 	else change_blend_mask();
 }
 
-void glStencilOpSeparate(GLenum face, GLenum sfail,  GLenum dpfail,  GLenum dppass){
-	switch (face){
-		case GL_FRONT:
-			if (!change_stencil_config(&stencil_fail_front, sfail)) error = GL_INVALID_ENUM;
-			if (!change_stencil_config(&depth_fail_front, dpfail)) error = GL_INVALID_ENUM;
-			if (!change_stencil_config(&depth_pass_front, dppass)) error = GL_INVALID_ENUM;
-			break;
-		case GL_BACK:
-			if (!change_stencil_config(&stencil_fail_back, sfail)) error = GL_INVALID_ENUM;
-			if (!change_stencil_config(&depth_fail_back, dpfail)) error = GL_INVALID_ENUM;
-			if (!change_stencil_config(&depth_pass_front, dppass)) error = GL_INVALID_ENUM;
-			break;
-		case GL_FRONT_AND_BACK:
-			if (!change_stencil_config(&stencil_fail_front, sfail)) error = GL_INVALID_ENUM;
-			if (!change_stencil_config(&stencil_fail_back, sfail)) error = GL_INVALID_ENUM;
-			if (!change_stencil_config(&depth_fail_front, dpfail)) error = GL_INVALID_ENUM;
-			if (!change_stencil_config(&depth_fail_back, dpfail)) error = GL_INVALID_ENUM;
-			if (!change_stencil_config(&depth_pass_front, dppass)) error = GL_INVALID_ENUM;
-			if (!change_stencil_config(&depth_pass_back, dppass)) error = GL_INVALID_ENUM;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-	change_stencil_settings();
-}
-
-void glStencilOp(GLenum sfail,  GLenum dpfail,  GLenum dppass){
-	glStencilOpSeparate(GL_FRONT_AND_BACK, sfail, dpfail, dppass);
-}
-
-void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask){
-	switch (face){
-		case GL_FRONT:
-			if (!change_stencil_func_config(&stencil_func_front, func)) error = GL_INVALID_ENUM;
-			stencil_mask_front = mask;
-			stencil_ref_front = ref;
-			break;
-		case GL_BACK:
-			if (!change_stencil_func_config(&stencil_func_back, func)) error = GL_INVALID_ENUM;
-			stencil_mask_back = mask;
-			stencil_ref_back = ref;
-			break;
-		case GL_FRONT_AND_BACK:
-			if (!change_stencil_func_config(&stencil_func_front, func)) error = GL_INVALID_ENUM;
-			if (!change_stencil_func_config(&stencil_func_back, func)) error = GL_INVALID_ENUM;
-			stencil_mask_front = stencil_mask_back = mask;
-			stencil_ref_front = stencil_ref_back = ref;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-	change_stencil_settings();
-}
-
-void glStencilFunc(GLenum func, GLint ref, GLuint mask){
-	glStencilFuncSeparate(GL_FRONT_AND_BACK, func, ref, mask);
-}
-
-void glStencilMaskSeparate(GLenum face, GLuint mask){
-	switch (face){
-		case GL_FRONT:
-			stencil_mask_front_write = mask;
-			break;
-		case GL_BACK:
-			stencil_mask_back_write = mask;
-			break;
-		case GL_FRONT_AND_BACK:
-			stencil_mask_front_write = stencil_mask_back_write = mask;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			return;
-	}
-	stencil_mask_front_write = mask;
-}
-
-void glStencilMask(GLuint mask){
-	glStencilMaskSeparate(GL_FRONT_AND_BACK, mask);
-}
-
 void glCullFace(GLenum mode){
 	gl_cull_mode = mode;
 	if (cull_face_state) change_cull_mode();
@@ -3098,38 +1832,6 @@ GLboolean glIsEnabled(GLenum cap){
 			break;
 	}
 	return ret;
-}
-
-void glPushMatrix(void){
-	if (phase == MODEL_CREATION){
-		error = GL_INVALID_OPERATION;
-		return;
-	}
-	if (matrix == &modelview_matrix){
-		if (modelview_stack_counter >= MODELVIEW_STACK_DEPTH){
-			error = GL_STACK_OVERFLOW;
-		}
-		matrix4x4_copy(modelview_matrix_stack[modelview_stack_counter++], *matrix);
-	}else if (matrix == &projection_matrix){
-		if (projection_stack_counter >= GENERIC_STACK_DEPTH){
-			error = GL_STACK_OVERFLOW;
-		}
-		matrix4x4_copy(projection_matrix_stack[projection_stack_counter++], *matrix);
-	}
-}
-
-void glPopMatrix(void){
-	if (phase == MODEL_CREATION){
-		error = GL_INVALID_OPERATION;
-		return;
-	}
-	if (matrix == &modelview_matrix){
-		if (modelview_stack_counter == 0) error = GL_STACK_UNDERFLOW;
-		else matrix4x4_copy(*matrix, modelview_matrix_stack[--modelview_stack_counter]);
-	}else if (matrix == &projection_matrix){
-		if (projection_stack_counter == 0) error = GL_STACK_UNDERFLOW;
-		else matrix4x4_copy(*matrix, projection_matrix_stack[--projection_stack_counter]);
-	}
 }
 
 void glPolygonMode(GLenum face,  GLenum mode){
@@ -3276,7 +1978,6 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				break;
 		}
 		if (!skip_draw){
-			matrix4x4 mvp_matrix;
 	
 			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 			
@@ -3513,7 +2214,6 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 		else if (phase == MODEL_CREATION) error = GL_INVALID_OPERATION;
 		else if (count < 0) error = GL_INVALID_VALUE;
 		if (!skip_draw){
-			matrix4x4 mvp_matrix;
 	
 			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 			
@@ -3716,89 +2416,6 @@ void glClientActiveTexture(GLenum texture){
 	else client_texture_unit = texture - GL_TEXTURE0;
 }
 
-void glFinish(void){
-	sceGxmFinish(gxm_context);
-}
-
-const GLubyte* glGetString(GLenum name){
-	switch (name){
-		case GL_VENDOR:
-			return vendor;
-			break;
-		case GL_RENDERER:
-			return renderer;
-			break;
-		case GL_VERSION:
-			return version;
-			break;
-		case GL_EXTENSIONS:
-			return extensions;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			return NULL;
-			break;
-	}
-}
-
-void glGetBooleanv(GLenum pname, GLboolean* params){
-	switch (pname){
-		case GL_BLEND:
-			*params = blend_state;
-			break;
-		case GL_BLEND_DST_ALPHA:
-			*params = (blend_dfactor_a == SCE_GXM_BLEND_FACTOR_ZERO) ? GL_FALSE : GL_TRUE;
-			break;
-		case GL_BLEND_DST_RGB:
-			*params = (blend_dfactor_rgb == SCE_GXM_BLEND_FACTOR_ZERO) ? GL_FALSE : GL_TRUE;
-			break;
-		case GL_BLEND_SRC_ALPHA:
-			*params = (blend_sfactor_a == SCE_GXM_BLEND_FACTOR_ZERO) ? GL_FALSE : GL_TRUE;
-			break;
-		case GL_BLEND_SRC_RGB:
-			*params = (blend_sfactor_rgb == SCE_GXM_BLEND_FACTOR_ZERO) ? GL_FALSE : GL_TRUE;
-			break;
-		case GL_DEPTH_TEST:
-			*params = depth_test_state;
-			break;
-		case GL_ACTIVE_TEXTURE:
-			*params = GL_FALSE;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-}
-
-void glGetFloatv(GLenum pname, GLfloat* data){
-	switch (pname){
-		case GL_POLYGON_OFFSET_FACTOR:
-			*data = pol_factor;
-			break;
-		case GL_POLYGON_OFFSET_UNITS:
-			*data = pol_units;
-			break;
-		case GL_MODELVIEW_MATRIX:
-			memcpy(data, &modelview_matrix, sizeof(matrix4x4));
-			break;
-		case GL_ACTIVE_TEXTURE:
-			*data = (1.0f * (server_texture_unit + GL_TEXTURE0));
-			break;
-		case GL_MAX_MODELVIEW_STACK_DEPTH:
-			*data = MODELVIEW_STACK_DEPTH;
-			break;
-		case GL_MAX_PROJECTION_STACK_DEPTH:
-			*data = GENERIC_STACK_DEPTH;
-			break;
-		case GL_MAX_TEXTURE_STACK_DEPTH:
-			*data = GENERIC_STACK_DEPTH;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-}
-
 void glTexEnvf(GLenum target, GLenum pname, GLfloat param){
 	texture_unit* tex_unit = &texture_units[server_texture_unit];
 	switch (target){
@@ -3851,94 +2468,11 @@ void glTexEnvi(GLenum target,  GLenum pname,  GLint param){
 	}
 }
 
-void glGenerateMipmap(GLenum target){
-	texture_unit* tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id;
-	texture* tex = &tex_unit->textures[texture2d_idx];
-	if (!tex->valid) return;
-	SceGxmTransferFormat fmt;
-	switch (target){
-		case GL_TEXTURE_2D:
-			switch (tex->type){
-				case GL_RGBA:
-					fmt = SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR;
-					break;
-				case GL_RGB:
-					fmt = SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR;
-				default:
-					break;
-			}
-			int j, mipcount = 0;
-			uint32_t w, h;
-			uint32_t orig_w = w = sceGxmTextureGetWidth(&tex->gxm_tex);
-			uint32_t orig_h = h = sceGxmTextureGetHeight(&tex->gxm_tex);
-			uint32_t size = 0;
-			while ((w > 1) && (h > 1)){
-				size += max(w, 8) * h * sizeof(uint32_t);
-				w /= 2;
-				h /= 2;
-				mipcount++;
-			}
-			SceUID data_UID;
-			SceGxmTextureFormat format = sceGxmTextureGetFormat(&tex->gxm_tex);
-			void* temp = (void*)malloc(orig_w * orig_h * tex_format_to_bytespp(format));
-			memcpy(temp, sceGxmTextureGetData(&tex->gxm_tex), orig_w * orig_h * tex_format_to_bytespp(format));
-			gpu_free_texture(tex);
-			void *texture_data = gpu_alloc_map(
-				(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_RW),
-				SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-				size, &tex->data_UID);
-			if (texture_data == NULL){ // If alloc fails, use the non-preferred memblock type
-				texture_data = gpu_alloc_map(
-					(use_vram ? SCE_KERNEL_MEMBLOCK_TYPE_USER_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW),
-					SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-					size, &tex->data_UID);
-			}
-			sceGxmColorSurfaceInit(&tex->gxm_sfc,
-				SCE_GXM_COLOR_FORMAT_A8B8G8R8,
-				SCE_GXM_COLOR_SURFACE_LINEAR,
-				SCE_GXM_COLOR_SURFACE_SCALE_NONE,
-				SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-				orig_w,orig_h,orig_w,texture_data);
-			tex->valid = 1;
-			memcpy(texture_data, temp, orig_w * orig_h * tex_format_to_bytespp(format));
-			free(temp);
-			uint32_t* curPtr = (uint32_t*)texture_data;
-			uint32_t curWidth = orig_w;
-			uint32_t curHeight = orig_h;
-			for (j=0;j<mipcount-1;j++){
-				uint32_t curSrcStride = max(curWidth, 8);
-				uint32_t curDstStride = max((curWidth>>1), 8);
-				uint32_t* dstPtr = curPtr + (curSrcStride * curHeight);
-				sceGxmTransferDownscale(
-					fmt, curPtr, 0, 0,
-					curWidth, curHeight,
-					curSrcStride * sizeof(uint32_t),
-					fmt, dstPtr, 0, 0,
-					curDstStride * sizeof(uint32_t),
-					NULL, SCE_GXM_TRANSFER_FRAGMENT_SYNC, NULL);
-				curPtr = dstPtr;
-				curWidth /= 2;
-				curHeight /= 2;
-			}
-			sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, mipcount);
-			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
-			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
-			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
-			sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
-			sceGxmTextureSetMipFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_MIP_FILTER_ENABLED);
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-}
-
 void glReadPixels(GLint x,  GLint y,  GLsizei width,  GLsizei height,  GLenum format,  GLenum type,  GLvoid * data){
 	SceDisplayFrameBuf pParam;
 	pParam.size = sizeof(SceDisplayFrameBuf);
 	sceDisplayGetFrameBuf(&pParam, SCE_DISPLAY_SETBUF_NEXTFRAME);
-	y = 544 - (height + y);
+	y = DISPLAY_HEIGHT - (height + y);
 	int i,j;
 	uint8_t* out8 = (uint8_t*)data;
 	uint8_t* in8 = (uint8_t*)pParam.base;
@@ -3983,213 +2517,6 @@ void glReadPixels(GLint x,  GLint y,  GLsizei width,  GLsizei height,  GLenum fo
 			error = GL_INVALID_ENUM;
 			break;
 	}
-}
-
-GLuint glCreateShader(GLenum shaderType){
-	GLuint i, res = 0;
-	for (i=1;i<=MAX_CUSTOM_SHADERS;i++){
-		if (!(shaders[i-1].valid)){
-			res = i;
-			break;
-		}
-	}
-	if (res == 0) return res;
-	switch (shaderType){
-		case GL_FRAGMENT_SHADER:
-			shaders[res-1].type = GL_FRAGMENT_SHADER;
-			break;
-		case GL_VERTEX_SHADER:
-			shaders[res-1].type = GL_VERTEX_SHADER;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-	shaders[res-1].valid = GL_TRUE;
-	return res;
-}
-
-void glDeleteShader(GLuint shad){
-	shader* s = &shaders[shad-1];
-	if (s->valid){
-		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
-		free((void*)s->prog);
-	}
-	s->valid = GL_FALSE;
-}
-
-void glDeleteProgram(GLuint prog){
-	program* p = &progs[prog-1];
-	if (p->valid){
-		uint32_t count, i;
-		sceGxmShaderPatcherGetFragmentProgramRefCount(gxm_shader_patcher, p->fprog, &count);
-		for (i=0;i<count;i++){
-			sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog);
-			sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, p->vprog);
-		}
-	}
-	p->valid = GL_FALSE;
-}
-
-void glShaderBinary(GLsizei count, const GLuint* handles, GLenum binaryFormat, const void *binary, GLsizei length){
-	shader* s = &shaders[handles[0]-1];
-	s->prog = (SceGxmProgram*)malloc(length);
-	memcpy((void*)s->prog, binary, length);
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
-	s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
-}
-
-GLuint glCreateProgram(void){
-	GLuint i, res = 0;
-	for (i=1;i<=(MAX_CUSTOM_SHADERS/2);i++){
-		if (!(progs[i-1].valid)){
-			res = i;
-			progs[i-1].valid = GL_TRUE;
-			progs[i-1].attr_num = 0;
-			progs[i-1].wvp = NULL;
-			break;
-		}
-	}
-	return res;
-}
-
-// TODO: Find a way to avoid memory leak
-GLint glGetUniformLocation(GLuint prog, const GLchar* name){
-	program* p = &progs[prog-1];
-	uniform* res = (uniform*)malloc(sizeof(uniform));
-	res->ptr = sceGxmProgramFindParameterByName(p->vshader->prog, name);
-	res->isVertex = GL_TRUE;
-	if (res->ptr == NULL){ 
-		res->ptr = sceGxmProgramFindParameterByName(p->fshader->prog, name);
-		res->isVertex = GL_FALSE;
-	}
-	return (GLint)res;
-}
-
-void glUniform1f(GLint location, GLfloat v0){
-	uniform* u = (uniform*)location;
-	if (u->isVertex){
-		if (vert_uniforms == NULL) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
-		sceGxmSetUniformDataF(vert_uniforms, u->ptr, 0, 1, &v0);
-	}else{
-		if (frag_uniforms == NULL) sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &frag_uniforms);
-		sceGxmSetUniformDataF(frag_uniforms, u->ptr, 0, 1, &v0);
-	}
-}
-
-void glUniform4fv(GLint location, GLsizei count, const GLfloat* value){
-	uniform* u = (uniform*)location;
-	if (u->isVertex){
-		if (vert_uniforms == NULL) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
-		sceGxmSetUniformDataF(vert_uniforms, u->ptr, 0, 4*count, value);
-	}else{
-		if (frag_uniforms == NULL) sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &frag_uniforms);
-		sceGxmSetUniformDataF(frag_uniforms, u->ptr, 0, 4*count, value);
-	}
-}
-
-void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value){
-	uniform* u = (uniform*)location;
-	if (u->isVertex){
-		if (vert_uniforms == NULL) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
-		sceGxmSetUniformDataF(vert_uniforms, u->ptr, 0, 16*count, value);
-	}else{
-		if (frag_uniforms == NULL) sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &frag_uniforms);
-		sceGxmSetUniformDataF(frag_uniforms, u->ptr, 0, 16*count, value);
-	}
-}
-
-void glAttachShader(GLuint prog, GLuint shad){
-	shader* s = &shaders[shad-1];
-	program* p = &progs[prog-1];
-	if (p->valid && s->valid){
-		switch (s->type){
-			case GL_VERTEX_SHADER:
-				p->vshader = s;
-				break;
-			case GL_FRAGMENT_SHADER:
-				p->fshader = s;
-				break;
-			default:
-				break;
-		}
-	}else error = GL_INVALID_VALUE;
-}
-
-void glLinkProgram(GLuint progr){
-	program* p = &progs[progr-1];
-	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
-		p->vshader->id, p->attr, p->attr_num,
-		p->stream, p->attr_num, &p->vprog);
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		p->fshader->id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, p->fshader->prog,
-		&p->fprog);
-}
-
-void glUseProgram(GLuint prog){
-	cur_program = prog;
-	program* p = &progs[cur_program-1];
-	sceGxmSetVertexProgram(gxm_context, p->vprog);
-	sceGxmSetFragmentProgram(gxm_context, p->fprog);
-}
-
-// VGL_EXT_gxp_shaders extension implementation
-
-void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar* name, const GLuint num, const GLenum type){
-	program* p = &progs[prog-1];
-	SceGxmVertexAttribute* attributes = &p->attr[index];
-	SceGxmVertexStream* streams = &p->stream[index];
-	const SceGxmProgramParameter* param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
-	attributes->streamIndex = index;
-	attributes->offset = 0;
-	int bpe;
-	switch (type){
-		case GL_FLOAT:
-			attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-			bpe = sizeof(float);
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-	attributes->componentCount = num;
-	attributes->regIndex = sceGxmProgramParameterGetResourceIndex(param);
-	streams->stride = bpe * num;
-	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-	if (index >= p->attr_num) p->attr_num = index + 1;
-}
-
-void vglVertexAttribPointer(GLuint index,  GLint size,  GLenum type,  GLboolean normalized,  GLsizei stride, GLuint count, const GLvoid* pointer){
-	if (stride < 0){
-		error = GL_INVALID_VALUE;
-		return;
-	}
-	int bpe;
-	switch (type){
-		case GL_FLOAT:
-			bpe = sizeof(GLfloat);
-			break;
-		case GL_SHORT:
-			bpe = sizeof(GLshort);
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-	void* ptr = gpu_pool_memalign(count * bpe * size, bpe * size);
-	if (stride == 0) memcpy(ptr, pointer, count * bpe * size);
-	else{
-		int i;
-		uint8_t* dst = (uint8_t*)ptr;
-		uint8_t* src = (uint8_t*)pointer;
-		for (i=0;i<count;i++){
-			memcpy(dst, src, bpe * size);
-			dst += (bpe*size);
-			src += stride;
-		}
-	}
-	sceGxmSetVertexStream(gxm_context, index, ptr);
 }
 
 // VGL_EXT_gpu_objects_array extension implementation
@@ -4354,21 +2681,13 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 	else if (count < 0) error = GL_INVALID_VALUE;
 	if (!skip_draw){
 		if (cur_program != 0){
-			program* p = &progs[cur_program-1];
-			if (implicit_wvp){
-				matrix4x4 mvp_matrix;
-				matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-				if (vert_uniforms == NULL) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
-				if (p->wvp == NULL) p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "wvp");
-				sceGxmSetUniformDataF(vert_uniforms, p->wvp, 0, 16, (const float*)mvp_matrix);
-			}
+			_vglDrawObjects_CustomShadersIMPL(mode, count, implicit_wvp);
 			sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 			vert_uniforms = NULL;
 			frag_uniforms = NULL;
 		}else{
 			if (vertex_array_state){
-				matrix4x4 mvp_matrix;
 				matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 				if (texture_array_state){
 					if (!(tex_unit->textures[texture2d_idx].valid)) return;

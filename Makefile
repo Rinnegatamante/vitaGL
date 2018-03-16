@@ -1,5 +1,5 @@
 TARGET          := libvitaGL
-SOURCES         := source
+SOURCES         := source source/utils
 SHADERS         := shaders
 
 LIBS = -lc -lm -lSceGxm_stub -lSceDisplay_stub
@@ -11,8 +11,8 @@ OBJS     := $(CFILES:.c=.o)
 
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
-AR      = $(PREFIX)-ar
-CFLAGS  = -g -Wl,-q -O3 -ffast-math -mtune=cortex-a9 -mfpu=neon
+AR      = $(PREFIX)-gcc-ar
+CFLAGS  = -g -Wl,-q -O3 -ffast-math -mtune=cortex-a9 -mfpu=neon -flto -DENABLE_LOG
 ASFLAGS = $(CFLAGS)
 
 all: $(TARGET).a

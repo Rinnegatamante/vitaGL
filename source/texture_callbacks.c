@@ -1,3 +1,8 @@
+/* 
+ * texture_callbacks.c:
+ * Implementation for texture data reading/writing callbacks
+ */
+ 
 #include <stdlib.h>
 #include <vitasdk.h>
 #include "texture_callbacks.h"

@@ -220,6 +220,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid* data, GLenum usage)
 void glClear(GLbitfield mask);
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void glClearDepth(GLdouble depth);
+void glClearStencil(GLint s);
 void glClientActiveTexture(GLenum texture);
 void glColor3f(GLfloat red, GLfloat green, GLfloat blue);
 void glColor3fv(const GLfloat* v);
@@ -276,7 +277,7 @@ void glReadPixels(GLint x,  GLint y,  GLsizei width,  GLsizei height,  GLenum fo
 void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height);
-void glShaderBinary(GLsizei count, const GLuint* handles, GLenum binaryFormat, const void *binary, GLsizei length);
+void glShaderBinary(GLsizei count, const GLuint* handles, GLenum binaryFormat, const void *binary, GLsizei length); // NOTE: Uses GXP shaders
 void glStencilFunc(GLenum func, GLint ref, GLuint mask);
 void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask);
 void glStencilMask(GLuint mask);
@@ -284,6 +285,7 @@ void glStencilMaskSeparate(GLenum face, GLuint mask);
 void glStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass);
 void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass);
 void glTexCoord2f(GLfloat s, GLfloat t);
+void glTexCoord2fv(GLfloat *f);
 void glTexCoord2i(GLint s, GLint t);
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
 void glTexEnvf(GLenum target, GLenum pname, GLfloat param);
@@ -317,6 +319,7 @@ void vglVertexAttribPointer(GLuint index,  GLint size,  GLenum type,  GLboolean 
 // vgl*
 void vglEnd(void);
 void vglInit(uint32_t gpu_pool_size);
+void vglInitExtended(uint32_t gpu_pool_size, int width, int height);
 void vglWaitVblankStart(GLboolean enable);
 void vglStartRendering();
 void vglStopRendering();

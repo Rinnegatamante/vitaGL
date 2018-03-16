@@ -1,3 +1,8 @@
+/* 
+ * texture_callbacks.h:
+ * Header file for texture data reading/writing callbacks exposed by texture_callbacks.c
+ */
+ 
 #ifndef _TEXTURE_CALLBACKS_H_
 #define _TEXTURE_CALLBACKS_H_
 
