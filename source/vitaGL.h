@@ -327,6 +327,7 @@ void vglStopRenderingInit();
 void vglStopRenderingTerm();
 void vglUpdateCommonDialog();
 void vglUseVram(GLboolean usage);
+uint32_t vglMemFree(void);
 
 #ifdef __cplusplus
 }

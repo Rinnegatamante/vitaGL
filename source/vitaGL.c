@@ -371,7 +371,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
 	sceKernelGetFreeMemorySize(&info);
 	
 	// Initializing memory heap for CDRAM and RAM memory
-	mem_init(info.size_user, info.size_cdram);
+	mem_init(info.size_user - 16 * 1024 * 1024, info.size_cdram - 1 * 1024 * 1024); // leave some just in case
 	
 	// Initializing sceGxm context
 	initGxmContext();
@@ -2751,4 +2751,8 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 			}
 		}
 	}
+}
+
+uint32_t vglMemFree(void) {
+	return mempool_get_free_space(VRAM_MEMORY);
 }
