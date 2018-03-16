@@ -192,7 +192,7 @@ palette *gpu_alloc_palette(const void* data, uint32_t w, uint32_t bpe){
 	// Allocating palette data buffer
 	void *texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), res->type);
 	if (texture_palette == NULL){ // If alloc fails, use the non-preferred memblock type
-		res->type = use_vram ? VRAM_MEMORY : RAM_MEMORY;
+		res->type = use_vram ? RAM_MEMORY : VRAM_MEMORY;
 		texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), res->type);
 	}
 	
@@ -229,7 +229,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	const int tex_size = ALIGN(w, 8) * h * bpp;
 	void *texture_data = gpu_alloc_mapped(tex_size, tex->mtype);
 	if (texture_data == NULL){ // If alloc fails, use the non-preferred memblock type
-		tex->mtype = use_vram ? VRAM_MEMORY : RAM_MEMORY;
+		tex->mtype = use_vram ? RAM_MEMORY : VRAM_MEMORY;
 		texture_data = gpu_alloc_mapped(tex_size, tex->mtype);
 	}
 	
@@ -317,7 +317,7 @@ void gpu_alloc_mipmaps(int level, texture *tex){
 		const int tex_size = ALIGN(w, 8) * h * bpp;
 		void *texture_data = gpu_alloc_mapped(size, tex->mtype);
 		if (texture_data == NULL){ // If alloc fails, use the non-preferred memblock type
-			tex->mtype = use_vram ? VRAM_MEMORY : RAM_MEMORY;
+			tex->mtype = use_vram ? RAM_MEMORY : VRAM_MEMORY;
 			texture_data = gpu_alloc_mapped(size, tex->mtype);
 		}
 		tex->valid = 1;
