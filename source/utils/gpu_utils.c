@@ -18,12 +18,18 @@ void* gpu_alloc_map(SceKernelMemBlockType type, SceGxmMemoryAttribFlags gpu_attr
 	
 	// Aligning memory size
 	void *addr;
-	if (type == SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW){
+	switch (type){
+	case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
 		size = ALIGN(size, 256 * 1024);
-	}else{
+		break;
+	case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
 		size = ALIGN(size, 4 * 1024);
-		*uid = (SceUID)malloc(size);
-		return (void*)*uid;
+		*uid = _newlib_heap_memblock;
+		return malloc(size);
+		break;
+	default: 
+		size = ALIGN(size, 4 * 1024);
+		break;
 	}
 	
 	// Allocating requested memblock
@@ -48,10 +54,7 @@ void gpu_unmap_free(SceUID uid){
 	
 	// Checking for memblock coherency
 	void *addr;
-	if (sceKernelGetMemBlockBase(uid, &addr) < 0){
-		free(uid);
-		return;
-	}
+	if (sceKernelGetMemBlockBase(uid, &addr) < 0) return;
 	
 	// Unmapping memblock from sceGxm
 	sceGxmUnmapMemory(addr);
@@ -244,7 +247,10 @@ palette *gpu_alloc_palette(const void* data, uint32_t w, uint32_t bpe){
 void gpu_free_texture(texture *tex){
 	
 	// Deallocating texture
-	if (tex->data_UID != 0) gpu_unmap_free(tex->data_UID);
+	if (tex->data_UID != 0){
+		if (tex->data_UID == _newlib_heap_memblock) free(tex->data);
+		else gpu_unmap_free(tex->data_UID);
+	}
 	
 	// Invalidating texture object
 	tex->data_UID = 0;
@@ -292,6 +298,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 		}else memset(texture_data, 0, tex_size);
 		
 		// Initializing texture and validating it
+		tex->data = texture_data;
 		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, w, h, 0);
 		if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8) tex->palette_UID = 1;
 		else tex->palette_UID = 0;
@@ -389,6 +396,7 @@ void gpu_alloc_mipmaps(int level, texture *tex){
 		}
 		
 		// Initializing texture in sceGxm
+		tex->data = texture_data;
 		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, level);
 		
 	}
@@ -398,7 +406,8 @@ void gpu_free_palette(palette *pal){
 	
 	// Unmapping and deallocating palette memblock and object
 	if (pal == NULL) return;
-	gpu_unmap_free(pal->palette_UID);
+	if (pal->palette_UID == _newlib_heap_memblock) free(pal->data);
+	else gpu_unmap_free(pal->palette_UID);
 	free(pal);
 	
 }

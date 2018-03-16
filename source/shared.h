@@ -25,6 +25,10 @@ extern int DISPLAY_STRIDE;           // Display stride in pixels
 extern float DISPLAY_WIDTH_FLOAT;   // Display width in pixels (float)
 extern float DISPLAY_HEIGHT_FLOAT;  // Display height in pixels (float)
 
+// Used for some hacks to get newlib heap GPU mapped
+extern int _newlib_heap_memblock;
+extern unsigned _newlib_heap_size;
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <vitasdk.h> 
