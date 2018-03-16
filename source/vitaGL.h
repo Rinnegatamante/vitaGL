@@ -316,6 +316,13 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp);
 void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar* name, const GLuint num, const GLenum type);
 void vglVertexAttribPointer(GLuint index,  GLint size,  GLenum type,  GLboolean normalized,  GLsizei stride, GLuint count, const GLvoid* pointer);
 
+typedef enum {
+	VGL_MEM_ALL = 0,   // any memory type (used to monitor total heap usage)
+	VGL_MEM_VRAM = 1,  // CDRAM
+	VGL_MEM_RAM = 2,   // USER_RW RAM
+	VGL_MEM_TYPE_COUNT
+} VGLmemtype;
+
 // vgl*
 void vglEnd(void);
 void vglInit(uint32_t gpu_pool_size);
@@ -327,6 +334,7 @@ void vglStopRenderingInit();
 void vglStopRenderingTerm();
 void vglUpdateCommonDialog();
 void vglUseVram(GLboolean usage);
+size_t vglMemFree(VGLmemtype type);
 
 #ifdef __cplusplus
 }

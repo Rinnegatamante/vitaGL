@@ -45,14 +45,14 @@ void* gpu_alloc_map(SceKernelMemBlockType type, SceGxmMemoryAttribFlags gpu_attr
 	
 }
 
-void *gpu_alloc_mapped(size_t size, mem_type type){
+void *gpu_alloc_mapped(size_t size, VGLmemtype type){
 	
 	// Allocating requested memblock
 	return mempool_alloc(size, type);
 	
 }
 
-void gpu_free_mapped(void *ptr, mem_type type){
+void gpu_free_mapped(void *ptr, VGLmemtype type){
 	
 	// Deallocating requested memblock
 	mempool_free(ptr, type);
@@ -62,7 +62,7 @@ void gpu_free_mapped(void *ptr, mem_type type){
 void* gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset){
 
 	// Allocating memblock
-	void *addr = mempool_alloc(size, RAM_MEMORY); 
+	void *addr = mempool_alloc(size, VGL_MEM_RAM); 
 
 	// Mapping memblock into sceGxm as vertex USSE memory
 	sceGxmMapVertexUsseMemory(addr, size, usse_offset);
@@ -78,14 +78,14 @@ void gpu_vertex_usse_free_mapped(void *addr){
 	sceGxmUnmapVertexUsseMemory(addr);
 
 	// Deallocating memblock
-	mempool_free(addr, RAM_MEMORY);
+	mempool_free(addr, VGL_MEM_RAM);
 	
 }
 
 void *gpu_fragment_usse_alloc_mapped(size_t size, unsigned int *usse_offset){
 
 	// Allocating memblock
-	void *addr = mempool_alloc(size, RAM_MEMORY); 
+	void *addr = mempool_alloc(size, VGL_MEM_RAM); 
 
 	// Mapping memblock into sceGxm as fragment USSE memory
 	sceGxmMapFragmentUsseMemory(addr, size, usse_offset);
@@ -101,7 +101,7 @@ void gpu_fragment_usse_free_mapped(void *addr){
 	sceGxmUnmapFragmentUsseMemory(addr);
 
 	// Deallocating memblock
-	mempool_free(addr, RAM_MEMORY);
+	mempool_free(addr, VGL_MEM_RAM);
 	
 }
 
@@ -149,7 +149,7 @@ void gpu_pool_init(uint32_t temp_pool_size){
 	
 	// Allocating vitaGL mempool
 	pool_size = temp_pool_size;
-	pool_addr = gpu_alloc_mapped(temp_pool_size, RAM_MEMORY);
+	pool_addr = gpu_alloc_mapped(temp_pool_size, VGL_MEM_RAM);
 	
 }
 
@@ -187,12 +187,12 @@ palette *gpu_alloc_palette(const void* data, uint32_t w, uint32_t bpe){
 	
 	// Allocating a palette object
 	palette *res = (palette*)malloc(sizeof(palette));
-	res->type = use_vram ? VRAM_MEMORY : RAM_MEMORY;
+	res->type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 	
 	// Allocating palette data buffer
 	void *texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), res->type);
 	if (texture_palette == NULL){ // If alloc fails, use the non-preferred memblock type
-		res->type = use_vram ? VRAM_MEMORY : RAM_MEMORY;
+		res->type = use_vram ? VGL_MEM_RAM : VGL_MEM_VRAM;
 		texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), res->type);
 	}
 	
@@ -225,11 +225,11 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	uint8_t bpp = tex_format_to_bytespp(format);
 	
 	// Allocating texture data buffer
-	tex->mtype = use_vram ? VRAM_MEMORY : RAM_MEMORY;
+	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 	const int tex_size = ALIGN(w, 8) * h * bpp;
 	void *texture_data = gpu_alloc_mapped(tex_size, tex->mtype);
 	if (texture_data == NULL){ // If alloc fails, use the non-preferred memblock type
-		tex->mtype = use_vram ? VRAM_MEMORY : RAM_MEMORY;
+		tex->mtype = use_vram ? VGL_MEM_RAM : VGL_MEM_VRAM;
 		texture_data = gpu_alloc_mapped(tex_size, tex->mtype);
 	}
 	
@@ -313,11 +313,11 @@ void gpu_alloc_mipmaps(int level, texture *tex){
 		gpu_free_texture(tex);
 			
 		// Allocating the new texture data buffer
-		tex->mtype = use_vram ? VRAM_MEMORY : RAM_MEMORY;
+		tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 		const int tex_size = ALIGN(w, 8) * h * bpp;
 		void *texture_data = gpu_alloc_mapped(size, tex->mtype);
 		if (texture_data == NULL){ // If alloc fails, use the non-preferred memblock type
-			tex->mtype = use_vram ? VRAM_MEMORY : RAM_MEMORY;
+			tex->mtype = use_vram ? VGL_MEM_RAM : VGL_MEM_VRAM;
 			texture_data = gpu_alloc_mapped(size, tex->mtype);
 		}
 		tex->valid = 1;
