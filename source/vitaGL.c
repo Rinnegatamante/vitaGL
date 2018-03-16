@@ -161,6 +161,9 @@ static SceGxmBlendInfo* cur_blend_info_ptr = NULL;
 static int max_texture_unit = 0;
 extern uint8_t use_vram;
 
+extern int _newlib_heap_memblock;
+extern unsigned _newlib_heap_size;
+
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
 static gpubuffer gpu_buffers[BUFFERS_NUM]; // Buffers array
 static SceGxmColorMask blend_color_mask = SCE_GXM_COLOR_MASK_ALL; // Current in-use color mask (glColorMask)
@@ -369,6 +372,11 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
 	
 	// Initializing sceGxm
 	initGxm();
+	
+	// Mapping newlib heap into sceGxm
+	void *addr = NULL;
+	sceKernelGetMemBlockBase(_newlib_heap_memblock, &addr);
+	sceGxmMapMemory(addr, _newlib_heap_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
 	
 	// Initializing sceGxm context
 	initGxmContext();

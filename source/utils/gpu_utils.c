@@ -18,11 +18,14 @@ void* gpu_alloc_map(SceKernelMemBlockType type, SceGxmMemoryAttribFlags gpu_attr
 	
 	// Aligning memory size
 	void *addr;
-	if (type == SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW)
+	if (type == SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW){
 		size = ALIGN(size, 256 * 1024);
-	else
+	}else{
 		size = ALIGN(size, 4 * 1024);
-
+		*uid = (SceUID)malloc(size);
+		return (void*)*uid;
+	}
+	
 	// Allocating requested memblock
 	*uid = sceKernelAllocMemBlock("gpumem", type, size, NULL);
 	if (*uid < 0) return NULL;
@@ -45,8 +48,11 @@ void gpu_unmap_free(SceUID uid){
 	
 	// Checking for memblock coherency
 	void *addr;
-	if (sceKernelGetMemBlockBase(uid, &addr) < 0) return;
-
+	if (sceKernelGetMemBlockBase(uid, &addr) < 0){
+		free(uid);
+		return;
+	}
+	
 	// Unmapping memblock from sceGxm
 	sceGxmUnmapMemory(addr);
 
