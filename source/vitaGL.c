@@ -1417,12 +1417,14 @@ void glDepthRange(GLdouble nearVal, GLdouble farVal){
 	z_port = (farVal + nearVal) / 2.0f;
 	z_scale = (farVal - nearVal) / 2.0f;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	viewport_mode = 1;
 }
 
 void glDepthRangef(GLfloat nearVal, GLfloat farVal){
 	z_port = (farVal + nearVal) / 2.0f;
 	z_scale = (farVal - nearVal) / 2.0f;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	viewport_mode = 1;
 }
 
 void glColor3f(GLfloat red, GLfloat green, GLfloat blue){
