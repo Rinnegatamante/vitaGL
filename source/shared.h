@@ -32,6 +32,7 @@ extern float DISPLAY_HEIGHT_FLOAT;  // Display height in pixels (float)
 #include "utils/math_utils.h"
 #include "utils/gpu_utils.h"
 #include "utils/mem_utils.h"
+#include "shaders.h"
 #include "state.h"
 #include "texture_callbacks.h"
 
@@ -62,6 +63,12 @@ typedef struct texture2d_vertex{
 	vector3f position;
 	vector2f texcoord;
 } texture2d_vertex;
+
+// Non native primitives implemented
+typedef enum SceGxmPrimitiveTypeExtra{
+	SCE_GXM_PRIMITIVE_NONE = 0,
+	SCE_GXM_PRIMITIVE_QUADS = 1
+} SceGxmPrimitiveTypeExtra;
 
 // Internal stuffs
 extern void* frag_uniforms;

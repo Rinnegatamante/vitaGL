@@ -43,6 +43,9 @@ typedef enum alphaOp{
 // Texture unit struct
 typedef struct texture_unit{
 	GLboolean enabled;
+	GLboolean vertex_array_state;
+	GLboolean color_array_state;
+	GLboolean texture_array_state;
 	matrix4x4 stack[GENERIC_STACK_DEPTH];
 	texture   textures[TEXTURES_NUM];
 	vertexArray vertex_array;
@@ -117,5 +120,12 @@ extern matrix4x4 *matrix; // Current in-use matrix mode
 
 // Miscellaneous
 extern glPhase phase; // Current drawing phase for legacy openGL
+extern vector4f current_color; // Current in use color
+
+// Culling
+extern GLboolean no_polygons_mode; // GL_TRUE when cull mode is set to GL_FRONT_AND_BACK
+
+// Texture Environment
+extern vector4f texenv_color; // Current in use texture environment color
 
 #endif
