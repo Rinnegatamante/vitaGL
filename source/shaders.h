@@ -3,6 +3,8 @@
  * Header file for default shaders related stuffs
  */
 
+#ifndef _SHADERS_H_
+#define _SHADERS_H_
 
 // Disable color buffer shader
 SceGxmShaderPatcherId disable_color_buffer_vertex_id;
@@ -64,3 +66,5 @@ const SceGxmProgramParameter* texture2d_rgba_tex_env_color;
 SceGxmVertexProgram* texture2d_rgba_vertex_program_patched;
 SceGxmFragmentProgram* texture2d_rgba_fragment_program_patched;
 const SceGxmProgram* texture2d_rgba_fragment_program;
+
+#endif
