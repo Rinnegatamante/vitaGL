@@ -45,14 +45,14 @@ void* gpu_alloc_map(SceKernelMemBlockType type, SceGxmMemoryAttribFlags gpu_attr
 	
 }
 
-void *gpu_alloc_mapped(size_t size, VGLmemtype type){
+void *gpu_alloc_mapped(size_t size, vglMemType type){
 	
 	// Allocating requested memblock
 	return mempool_alloc(size, type);
 	
 }
 
-void gpu_free_mapped(void *ptr, VGLmemtype type){
+void gpu_free_mapped(void *ptr, vglMemType type){
 	
 	// Deallocating requested memblock
 	mempool_free(ptr, type);

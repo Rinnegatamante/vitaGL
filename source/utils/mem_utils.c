@@ -9,7 +9,7 @@
 
 typedef struct tm_block_s {
 	struct tm_block_s *next;  // next block in list (either free or allocated)
-	int32_t type;             // one of VGLmemtype (VGL_MEM_ALL when unused)
+	int32_t type;             // one of vglMemType (VGL_MEM_ALL when unused)
 	uintptr_t base;           // block start address
 	uint32_t offset;          // offset for USSE stuff (unused)
 	uint32_t size;            // block size
@@ -24,7 +24,7 @@ static int tm_initialized;
 static tm_block_t *tm_alloclist;  // list of allocated blocks
 static tm_block_t *tm_freelist;   // list of free blocks
 
-static uint32_t tm_free[VGL_MEM_TYPE_COUNT];  // see enum VGLmemtype
+static uint32_t tm_free[VGL_MEM_TYPE_COUNT];  // see enum vglMemType
 
 // heap funcs //
 
@@ -269,17 +269,17 @@ int mem_init(size_t size_ram, size_t size_cdram){
 	return 1;
 }
 
-void mempool_free(void* ptr, VGLmemtype type){
+void mempool_free(void* ptr, vglMemType type){
 	heap_free(ptr); // type is already stored in heap for alloc'd blocks
 }
 
-void *mempool_alloc(size_t size, VGLmemtype type){
+void *mempool_alloc(size_t size, vglMemType type){
 	void* res = NULL;
 	if (size <= tm_free[type]) res = heap_alloc(type, size, MEM_ALIGNMENT);
 	return res;
 }
 
 // Returns currently free space on mempool
-size_t mempool_get_free_space(VGLmemtype type) {
+size_t mempool_get_free_space(vglMemType type) {
 	return tm_free[type];
 }

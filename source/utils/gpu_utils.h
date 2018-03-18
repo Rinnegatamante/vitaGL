@@ -15,7 +15,7 @@
 typedef struct texture{
 	SceGxmTexture gxm_tex;
 	void *data;
-	VGLmemtype mtype;
+	vglMemType mtype;
 	SceUID palette_UID;
 	SceUID depth_UID;
 	uint8_t used;
@@ -27,14 +27,14 @@ typedef struct texture{
 // Palette object struct
 typedef struct palette{
 	void *data;
-	VGLmemtype type;
+	vglMemType type;
 } palette;
 
 // Alloc a generic memblock into sceGxm mapped memory
-void* gpu_alloc_mapped(size_t size, VGLmemtype type);
+void* gpu_alloc_mapped(size_t size, vglMemType type);
 
 // Dealloc a generic memblock from sceGxm mapped memory
-void gpu_free_mapped(void *ptr, VGLmemtype type);
+void gpu_free_mapped(void *ptr, vglMemType type);
 
 // Alloc into sceGxm mapped memory a vertex USSE memblock
 void *gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset);

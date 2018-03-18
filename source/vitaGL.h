@@ -321,7 +321,7 @@ typedef enum {
 	VGL_MEM_VRAM = 1,  // CDRAM
 	VGL_MEM_RAM = 2,   // USER_RW RAM
 	VGL_MEM_TYPE_COUNT
-} VGLmemtype;
+} vglMemType;
 
 // vgl*
 void vglEnd(void);
@@ -334,7 +334,7 @@ void vglStopRenderingInit();
 void vglStopRenderingTerm();
 void vglUpdateCommonDialog();
 void vglUseVram(GLboolean usage);
-size_t vglMemFree(VGLmemtype type);
+size_t vglMemFree(vglMemType type);
 
 #ifdef __cplusplus
 }

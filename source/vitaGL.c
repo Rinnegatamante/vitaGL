@@ -2755,7 +2755,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 	}
 }
 
-size_t vglMemFree(VGLmemtype type) {
+size_t vglMemFree(vglMemType type) {
 	if (type >= VGL_MEM_TYPE_COUNT) return 0;
 	return mempool_get_free_space(type);
 }
