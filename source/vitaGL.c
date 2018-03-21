@@ -227,7 +227,7 @@ void vglUseVram(GLboolean usage){
 	use_vram = usage;
 }
 
-void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
+void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold){
 	
 	// Setting our display size
 	DISPLAY_WIDTH = width;
@@ -258,7 +258,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
 	sceKernelGetFreeMemorySize(&info);
 	
 	// Initializing memory heap for CDRAM and RAM memory
-	mem_init(info.size_user - 16 * 1024 * 1024, info.size_cdram - 1 * 1024 * 1024); // leave some just in case
+	mem_init(info.size_user - ram_threshold, info.size_cdram - 1 * 1024 * 1024); // leave some just in case
 	
 	// Initializing sceGxm context
 	initGxmContext();
@@ -626,7 +626,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height){
 }
 
 void vglInit(uint32_t gpu_pool_size){
-	vglInitExtended(gpu_pool_size, DISPLAY_WIDTH_DEF, DISPLAY_HEIGHT_DEF);
+	vglInitExtended(gpu_pool_size, DISPLAY_WIDTH_DEF, DISPLAY_HEIGHT_DEF, 0x1000000);
 }
 
 void vglEnd(void){
