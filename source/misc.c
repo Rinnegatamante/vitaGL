@@ -55,6 +55,49 @@ static void change_cull_mode(){
  * ------------------------------
  */
  
+void glPolygonMode(GLenum face,  GLenum mode){
+	SceGxmPolygonMode new_mode;
+	switch (mode){
+		case GL_POINT:
+			new_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_POINT;
+			break;
+		case GL_LINE:
+			new_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_LINE;
+			break;
+		case GL_FILL:
+			new_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+	switch (face){
+		case GL_FRONT:
+			polygon_mode_front = new_mode;
+			sceGxmSetFrontPolygonMode(gxm_context, new_mode);
+			break;
+		case GL_BACK:
+			polygon_mode_back = new_mode;
+			sceGxmSetBackPolygonMode(gxm_context, new_mode);
+			break;
+		case GL_FRONT_AND_BACK:
+			polygon_mode_front = polygon_mode_back = new_mode;
+			sceGxmSetFrontPolygonMode(gxm_context, new_mode);
+			sceGxmSetBackPolygonMode(gxm_context, new_mode);
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			return;
+	}
+	update_polygon_offset();
+}
+
+void glPolygonOffset(GLfloat factor, GLfloat units){
+	pol_factor = factor;
+	pol_units = units;
+	update_polygon_offset();
+}
+ 
 void glCullFace(GLenum mode){
 	gl_cull_mode = mode;
 	if (cull_face_state) change_cull_mode();
