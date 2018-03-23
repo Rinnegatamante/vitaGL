@@ -306,11 +306,15 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* poin
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
 // VGL_EXT_gpu_objects_array extension
-void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
-void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
-void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
+void vglColorPointerMapped(const GLvoid* pointer);
 void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp);
+void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
+void vglIndexPointerMapped(const GLvoid* pointer);
+void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
+void vglTexCoordPointerMapped(const GLvoid* pointer);
+void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
+void vglVertexPointerMapped(const GLvoid* pointer);
 
 // VGL_EXT_gxp_shaders extension implementation
 void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar* name, const GLuint num, const GLenum type);
@@ -327,14 +331,15 @@ typedef enum {
 void vglEnd(void);
 void vglInit(uint32_t gpu_pool_size);
 void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold);
-void vglWaitVblankStart(GLboolean enable);
+void vglMapHeapMem(void);
+size_t vglMemFree(vglMemType type);
 void vglStartRendering();
 void vglStopRendering();
 void vglStopRenderingInit();
 void vglStopRenderingTerm();
 void vglUpdateCommonDialog();
 void vglUseVram(GLboolean usage);
-size_t vglMemFree(vglMemType type);
+void vglWaitVblankStart(GLboolean enable);
 
 #ifdef __cplusplus
 }

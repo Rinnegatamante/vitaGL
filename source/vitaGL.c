@@ -2151,6 +2151,26 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid* po
 	}
 }
 
+void vglVertexPointerMapped(const GLvoid* pointer){
+	texture_unit* tex_unit = &texture_units[client_texture_unit];
+	tex_unit->vertex_object = pointer;
+}
+
+void vglColorPointerMapped(const GLvoid* pointer){
+	texture_unit* tex_unit = &texture_units[client_texture_unit];
+	tex_unit->color_object = pointer;
+}
+
+void vglTexCoordPointerMapped(const GLvoid* pointer){
+	texture_unit* tex_unit = &texture_units[client_texture_unit];
+	tex_unit->texture_object = pointer;
+}
+
+void vglIndexPointerMapped(const GLvoid* pointer){
+	texture_unit* tex_unit = &texture_units[client_texture_unit];
+	tex_unit->index_object = pointer;
+}
+
 void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 	SceGxmPrimitiveType gxm_p;
 	texture_unit* tex_unit = &texture_units[client_texture_unit];

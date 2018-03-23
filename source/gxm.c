@@ -39,6 +39,9 @@ int DISPLAY_STRIDE;           // Display stride in pixels
 float DISPLAY_WIDTH_FLOAT;   // Display width in pixels (float)
 float DISPLAY_HEIGHT_FLOAT;  // Display height in pixels (float)
 
+extern int _newlib_heap_memblock;  // Newlib Heap memblock
+extern unsigned _newlib_heap_size; // Newlib Heap size
+
 // sceDisplay callback data
 struct display_queue_callback_data {
 	void *addr;
@@ -311,6 +314,17 @@ void waitRenderingDone(void){
  * - IMPLEMENTATION STARTS HERE -
  * ------------------------------
  */
+ 
+void vglMapHeapMem(){
+	
+	// Getting newlib heap memblock starting address
+	void *addr = NULL;
+	sceKernelGetMemBlockBase(_newlib_heap_memblock, &addr);
+	
+	// Mapping newlib heap into sceGxm
+	sceGxmMapMemory(addr, _newlib_heap_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	
+}
  
  void vglStartRendering(){
 	 
