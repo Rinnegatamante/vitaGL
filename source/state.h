@@ -121,9 +121,20 @@ extern matrix4x4 *matrix; // Current in-use matrix mode
 // Miscellaneous
 extern glPhase phase; // Current drawing phase for legacy openGL
 extern vector4f current_color; // Current in use color
+extern vector4f clear_rgba_val; // Current clear color for glClear
 
 // Culling
 extern GLboolean no_polygons_mode; // GL_TRUE when cull mode is set to GL_FRONT_AND_BACK
+extern GLboolean cull_face_state;  // Current state for GL_CULL_FACE
+extern GLenum gl_cull_mode;  // Current in use openGL cull mode
+extern GLenum gl_front_face; // Current in use openGL setting for front facing primitives
+
+// Polygon Offset
+extern GLboolean pol_offset_fill;  // Current state for GL_POLYGON_OFFSET_FILL
+extern GLboolean pol_offset_line;  // Current state for GL_POLYGON_OFFSET_LINE
+extern GLboolean pol_offset_point; // Current state for GL_POLYGON_OFFSET_POINT
+extern SceGxmPolygonMode polygon_mode_front; // Current in use polygon mode for front
+extern SceGxmPolygonMode polygon_mode_back;  // Current in use polygon mode for back
 
 // Texture Environment
 extern vector4f texenv_color; // Current in use texture environment color

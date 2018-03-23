@@ -13,6 +13,7 @@ const SceGxmProgramParameter* disable_color_buffer_position;
 const SceGxmProgramParameter* disable_color_buffer_matrix;
 SceGxmVertexProgram* disable_color_buffer_vertex_program_patched;
 SceGxmFragmentProgram* disable_color_buffer_fragment_program_patched;
+position_vertex *depth_vertices;
 
 // Clear shader
 SceGxmShaderPatcherId clear_vertex_id;

@@ -550,25 +550,89 @@ void glGenerateMipmap(GLenum target){
 	int texture2d_idx = tex_unit->tex_id;
 	texture* tex = &tex_unit->textures[texture2d_idx];
 	
+#ifndef SKIP_ERROR_HANDLING
 	// Checking if current texture is valid
 	if (!tex->valid) return;
-	
-	switch (target){
-		case GL_TEXTURE_2D:
-		
-			// Generating mipmaps to the max possible level
-			gpu_alloc_mipmaps(-1, tex);
-			
-			// Setting texture parameters
-			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
-			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
-			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
-			sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
-			sceGxmTextureSetMipFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_MIP_FILTER_ENABLED);
+#endif
 
+	switch (target){
+	case GL_TEXTURE_2D:
+		
+		// Generating mipmaps to the max possible level
+		gpu_alloc_mipmaps(-1, tex);
+			
+		// Setting texture parameters
+		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
+		sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
+		sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
+		sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
+		sceGxmTextureSetMipFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_MIP_FILTER_ENABLED);
+
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
+}
+
+void glTexEnvf(GLenum target, GLenum pname, GLfloat param){
+	
+	// Aliasing texture unit for cleaner code
+	texture_unit* tex_unit = &texture_units[server_texture_unit];
+	
+	// Properly changing texture environment settings as per request
+	switch (target){
+		case GL_TEXTURE_ENV:
+			switch (pname){
+				case GL_TEXTURE_ENV_MODE:
+					if (param == GL_MODULATE) tex_unit->env_mode = MODULATE;
+					else if (param == GL_DECAL) tex_unit->env_mode = DECAL;
+					else if (param == GL_REPLACE) tex_unit->env_mode = REPLACE;
+					else if (param == GL_BLEND) tex_unit->env_mode = BLEND;
+					break;
+				default:
+					error = GL_INVALID_ENUM;
+					break;
+			}
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+	}
+}
+
+void glTexEnvi(GLenum target,  GLenum pname,  GLint param){
+	
+	// Aliasing texture unit for cleaner code
+	texture_unit* tex_unit = &texture_units[server_texture_unit];
+	
+	// Properly changing texture environment settings as per request
+	switch (target){
+	case GL_TEXTURE_ENV:
+		switch (pname){
+		case GL_TEXTURE_ENV_MODE:
+			switch (param){
+			case GL_MODULATE:
+				tex_unit->env_mode = MODULATE;
+				break;
+			case GL_DECAL: 
+				tex_unit->env_mode = DECAL;
+				break;
+			case GL_REPLACE:
+				tex_unit->env_mode = REPLACE;
+				break;
+			case GL_BLEND:
+				tex_unit->env_mode = BLEND;
+				break;
+			}
 			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
+		}
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
 	}
+	
 }

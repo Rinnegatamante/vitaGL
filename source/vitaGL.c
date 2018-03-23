@@ -22,14 +22,6 @@ typedef struct gpubuffer{
 	void* ptr;
 } gpubuffer;
 
-// Texture environment mode
-typedef enum texEnvMode{
-	MODULATE = 0,
-	DECAL = 1,
-	BLEND = 2,
-	REPLACE = 3
-} texEnvMode;
-
 // sceGxm viewport setup (NOTE: origin is on center screen)
 float x_port = 480.0f;
 float y_port = -272.0f;
@@ -54,18 +46,16 @@ static const SceGxmProgram *const gxm_program_texture2d_rgba_v = (SceGxmProgram*
 static const SceGxmProgram *const gxm_program_texture2d_rgba_f = (SceGxmProgram*)&texture2d_rgba_f;
 
 // Disable color buffer shader
-uint16_t* depth_clear_indices = NULL; // Memblock starting address for clear screen indices
-position_vertex* depth_vertices = NULL;
+uint16_t *depth_clear_indices = NULL; // Memblock starting address for clear screen indices
 
 // Clear shader
 SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
 clear_vertex *clear_vertices = NULL; // Memblock starting address for clear screen vertices
 
 // Internal stuffs
-static uint8_t drawing = 0;
+uint8_t drawing = 0;
 
 static SceGxmBlendInfo* cur_blend_info_ptr = NULL;
-static int max_texture_unit = 0;
 extern uint8_t use_vram;
 
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
@@ -73,18 +63,9 @@ static gpubuffer gpu_buffers[BUFFERS_NUM]; // Buffers array
 static SceGxmColorMask blend_color_mask = SCE_GXM_COLOR_MASK_ALL; // Current in-use color mask (glColorMask)
 static SceGxmBlendFunc blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD; // Current in-use RGB blend func
 static SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use A blend func
-static SceGxmPolygonMode polygon_mode_front = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Current in-use polygon mode for front
-static SceGxmPolygonMode polygon_mode_back = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Current in-use polygon mode for back
 static int vertex_array_unit = -1; // Current in-use vertex array unit
 static int index_array_unit = -1; // Current in-use index array unit
-static vector4f clear_rgba_val; // Current clear color for glClear
-static GLboolean cull_face_state = GL_FALSE; // Current state for GL_CULL_FACE
-static GLboolean pol_offset_fill = GL_FALSE; // Current state for GL_POLYGON_OFFSET_FILL
-static GLboolean pol_offset_line = GL_FALSE; // Current state for GL_POLYGON_OFFSET_LINE
-static GLboolean pol_offset_point = GL_FALSE; // Current state for GL_POLYGON_OFFSET_POINT
-static GLenum gl_cull_mode = GL_BACK; // Current in-use openGL cull mode
-static GLenum gl_front_face = GL_CCW; // Current in-use openGL cull mode
-GLboolean no_polygons_mode = GL_FALSE; // GL_TRUE when cull mode is set to GL_FRONT_AND_BACK
+
 vector4f texenv_color = {0.0f, 0.0f, 0.0f, 0.0f}; // Current in use texture environment color
 
 // Internal functions
@@ -136,7 +117,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 
 }
 
-static void change_blend_factor(){
+void change_blend_factor(){
 	static SceGxmBlendInfo blend_info;
 	blend_info.colorMask = blend_color_mask;
 	blend_info.colorFunc = blend_func_rgb;
@@ -153,7 +134,7 @@ static void change_blend_factor(){
 	}
 }
 
-static void change_blend_mask(){
+void change_blend_mask(){
 	static SceGxmBlendInfo blend_info;
 	blend_info.colorMask = blend_color_mask;
 	blend_info.colorFunc = SCE_GXM_BLEND_FUNC_ADD;
@@ -170,7 +151,7 @@ static void change_blend_mask(){
 	}
 }
 
-static void disable_blend(){
+void disable_blend(){
 	if (blend_color_mask == SCE_GXM_COLOR_MASK_ALL){
 		_change_blend_factor(NULL);
 		cur_blend_info_ptr = NULL;
@@ -178,47 +159,6 @@ static void disable_blend(){
 			reloadCustomShader();
 		}
 	}else change_blend_mask();
-}
-
-static void change_cull_mode(){
-	if (cull_face_state){
-		if ((gl_front_face == GL_CW) && (gl_cull_mode == GL_BACK)) sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CCW);
-		if ((gl_front_face == GL_CCW) && (gl_cull_mode == GL_BACK)) sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CW);
-		if ((gl_front_face == GL_CCW) && (gl_cull_mode == GL_FRONT)) sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CCW);
-		if ((gl_front_face == GL_CW) && (gl_cull_mode == GL_FRONT)) sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CW);
-		if (gl_cull_mode == GL_FRONT_AND_BACK) no_polygons_mode = GL_TRUE;
-	}else sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_NONE);
-}
-
-static void update_polygon_offset(){
-	switch (polygon_mode_front){
-		case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
-			if (pol_offset_line) sceGxmSetFrontDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
-			else sceGxmSetFrontDepthBias(gxm_context, 0, 0);
-			break;
-		case SCE_GXM_POLYGON_MODE_TRIANGLE_POINT:
-			if (pol_offset_point) sceGxmSetFrontDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
-			else sceGxmSetFrontDepthBias(gxm_context, 0, 0);
-			break;
-		case SCE_GXM_POLYGON_MODE_TRIANGLE_FILL:
-			if (pol_offset_fill) sceGxmSetFrontDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
-			else sceGxmSetFrontDepthBias(gxm_context, 0, 0);
-			break;
-	}
-	switch (polygon_mode_back){
-		case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
-			if (pol_offset_line) sceGxmSetBackDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
-			else sceGxmSetBackDepthBias(gxm_context, 0, 0);
-			break;
-		case SCE_GXM_POLYGON_MODE_TRIANGLE_POINT:
-			if (pol_offset_point) sceGxmSetBackDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
-			else sceGxmSetBackDepthBias(gxm_context, 0, 0);
-			break;
-		case SCE_GXM_POLYGON_MODE_TRIANGLE_FILL:
-			if (pol_offset_fill) sceGxmSetBackDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
-			else sceGxmSetBackDepthBias(gxm_context, 0, 0);
-			break;
-	}	
 }
 
 // vitaGL specific functions
@@ -689,193 +629,6 @@ void vglWaitVblankStart(GLboolean enable){
 
 // openGL implementation
 
-GLenum glGetError(void){
-	GLenum ret = error;
-	error = GL_NO_ERROR;
-	return ret;
-}
-
-void glClear(GLbitfield mask){
-	GLenum orig_depth_test = depth_test_state;
-	if ((mask & GL_COLOR_BUFFER_BIT) == GL_COLOR_BUFFER_BIT){
-		invalidate_depth_test();
-		change_depth_write(SCE_GXM_DEPTH_WRITE_DISABLED);
-		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
-		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
-		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
-		sceGxmSetFragmentProgram(gxm_context, clear_fragment_program_patched);
-		void *color_buffer;
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &color_buffer);
-		sceGxmSetUniformDataF(color_buffer, clear_color, 0, 4, &clear_rgba_val.r);
-		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
-		validate_depth_test();
-		change_depth_write((depth_mask_state && orig_depth_test) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
-		sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back);
-		drawing = 1;
-	}
-	if ((mask & GL_DEPTH_BUFFER_BIT) == GL_DEPTH_BUFFER_BIT){
-		invalidate_depth_test();
-		change_depth_write(SCE_GXM_DEPTH_WRITE_ENABLED);
-		depth_vertices[0].position.z = depth_value;
-		depth_vertices[1].position.z = depth_value;
-		depth_vertices[2].position.z = depth_value;
-		depth_vertices[3].position.z = depth_value;
-		sceGxmSetVertexProgram(gxm_context, disable_color_buffer_vertex_program_patched);
-		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
-		sceGxmSetVertexStream(gxm_context, 0, depth_vertices);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
-		validate_depth_test();
-		change_depth_write((depth_mask_state && orig_depth_test) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-	}
-	if ((mask & GL_STENCIL_BUFFER_BIT) == GL_STENCIL_BUFFER_BIT){
-		invalidate_depth_test();
-		change_depth_write(SCE_GXM_DEPTH_WRITE_DISABLED);
-		sceGxmSetVertexProgram(gxm_context, disable_color_buffer_vertex_program_patched);
-		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
-		sceGxmSetFrontStencilFunc(gxm_context,
-			SCE_GXM_STENCIL_FUNC_NEVER,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			0, stencil_value);
-		sceGxmSetBackStencilFunc(gxm_context,
-			SCE_GXM_STENCIL_FUNC_NEVER,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			0, stencil_value);
-		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
-		validate_depth_test();
-		change_depth_write((depth_mask_state && orig_depth_test) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-		change_stencil_settings();
-	}
-}
-
-void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha){
-	clear_rgba_val.r = red;
-	clear_rgba_val.g = green;
-	clear_rgba_val.b = blue;
-	clear_rgba_val.a = alpha;
-}
-
-void glEnable(GLenum cap){
-	if (phase == MODEL_CREATION){
-		error = GL_INVALID_OPERATION;
-		return;
-	}
-	switch (cap){
-		case GL_DEPTH_TEST:
-			depth_test_state = GL_TRUE;
-			change_depth_func();
-			break;
-		case GL_STENCIL_TEST:
-			change_stencil_settings();
-			stencil_test_state = GL_TRUE;
-			break;
-		case GL_BLEND:
-			if (!blend_state) change_blend_factor();
-			blend_state = GL_TRUE;
-			break;
-		case GL_SCISSOR_TEST:
-			scissor_test_state = GL_TRUE;
-			update_scissor_test();
-			break;
-		case GL_CULL_FACE:
-			cull_face_state = GL_TRUE;
-			change_cull_mode();
-			break;
-		case GL_POLYGON_OFFSET_FILL:
-			pol_offset_fill = GL_TRUE;
-			update_polygon_offset();
-			break;
-		case GL_POLYGON_OFFSET_LINE:
-			pol_offset_line = GL_TRUE;
-			update_polygon_offset();
-			break;
-		case GL_POLYGON_OFFSET_POINT:
-			pol_offset_point = GL_TRUE;
-			update_polygon_offset();
-			break;
-		case GL_TEXTURE_2D:
-			texture_units[server_texture_unit].enabled = GL_TRUE;
-			if (server_texture_unit > max_texture_unit) max_texture_unit = server_texture_unit;
-			break;
-		case GL_ALPHA_TEST:
-			alpha_test_state = GL_TRUE;
-			update_alpha_test_settings();
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-}
-
-void glDisable(GLenum cap){
-	if (phase == MODEL_CREATION){
-		error = GL_INVALID_OPERATION;
-		return;
-	}
-	switch (cap){
-		case GL_DEPTH_TEST:
-			depth_test_state = GL_FALSE;
-			change_depth_func();
-			break;
-		case GL_STENCIL_TEST:
-			sceGxmSetFrontStencilFunc(gxm_context,
-				SCE_GXM_STENCIL_FUNC_ALWAYS,
-				SCE_GXM_STENCIL_OP_KEEP,
-				SCE_GXM_STENCIL_OP_KEEP,
-				SCE_GXM_STENCIL_OP_KEEP,
-				0, 0);
-			sceGxmSetBackStencilFunc(gxm_context,
-				SCE_GXM_STENCIL_FUNC_ALWAYS,
-				SCE_GXM_STENCIL_OP_KEEP,
-				SCE_GXM_STENCIL_OP_KEEP,
-				SCE_GXM_STENCIL_OP_KEEP,
-				0, 0);
-			stencil_test_state = GL_FALSE;
-			break;
-		case GL_BLEND:
-			if (blend_state) disable_blend();
-			blend_state = GL_FALSE;
-			break;
-		case GL_SCISSOR_TEST:
-			scissor_test_state = GL_FALSE;
-			update_scissor_test();
-			break;
-		case GL_CULL_FACE:
-			cull_face_state = GL_FALSE;
-			change_cull_mode();
-			break;
-		case GL_POLYGON_OFFSET_FILL:
-			pol_offset_fill = GL_FALSE;
-			update_polygon_offset();
-			break;
-		case GL_POLYGON_OFFSET_LINE:
-			pol_offset_line = GL_FALSE;
-			update_polygon_offset();
-			break;
-		case GL_POLYGON_OFFSET_POINT:
-			pol_offset_point = GL_FALSE;
-			update_polygon_offset();
-			break;
-		case GL_TEXTURE_2D:
-			texture_units[server_texture_unit].enabled = GL_FALSE;
-			if (server_texture_unit == max_texture_unit) max_texture_unit--;
-			break;
-		case GL_ALPHA_TEST:
-			alpha_test_state = GL_FALSE;
-			update_alpha_test_settings();
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-}
-
 void glGenBuffers(GLsizei n, GLuint* res){
 	int i = 0, j = 0;
 	if (n < 0){
@@ -947,33 +700,6 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid* data, GLenum usage)
 	}
 	gpu_buffers[idx].ptr = gpu_alloc_mapped(size, VGL_MEM_VRAM);
 	memcpy(gpu_buffers[idx].ptr, data, size);
-}
-
-void glViewport(GLint x,  GLint y,  GLsizei width,  GLsizei height){
-	if ((width < 0) || (height < 0)){
-		error = GL_INVALID_VALUE;
-		return;
-	}
-	x_scale = width>>1;
-	x_port = x + x_scale;
-	y_scale = -(height>>1);
-	y_port = DISPLAY_HEIGHT - y + y_scale;
-	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-	viewport_mode = 1;
-}
-
-void glDepthRange(GLdouble nearVal, GLdouble farVal){
-	z_port = (farVal + nearVal) / 2.0f;
-	z_scale = (farVal - nearVal) / 2.0f;
-	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-	viewport_mode = 1;
-}
-
-void glDepthRangef(GLfloat nearVal, GLfloat farVal){
-	z_port = (farVal + nearVal) / 2.0f;
-	z_scale = (farVal - nearVal) / 2.0f;
-	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-	viewport_mode = 1;
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor){
@@ -1288,93 +1014,6 @@ void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
 	if (alpha) blend_color_mask += SCE_GXM_COLOR_MASK_A;
 	if (blend_state) change_blend_factor();
 	else change_blend_mask();
-}
-
-void glCullFace(GLenum mode){
-	gl_cull_mode = mode;
-	if (cull_face_state) change_cull_mode();
-}
-
-void glFrontFace(GLenum mode){
-	gl_front_face = mode;
-	if (cull_face_state) change_cull_mode();
-}
-
-GLboolean glIsEnabled(GLenum cap){
-	GLboolean ret = GL_FALSE;
-	switch (cap){
-		case GL_DEPTH_TEST:
-			ret = depth_test_state;
-			break;
-		case GL_STENCIL_TEST:
-			ret = stencil_test_state;
-			break;
-		case GL_BLEND:
-			ret = blend_state;
-			break;
-		case GL_SCISSOR_TEST:
-			ret = scissor_test_state;
-			break;
-		case GL_CULL_FACE:
-			ret = cull_face_state;
-			break;
-		case GL_POLYGON_OFFSET_FILL:
-			ret = pol_offset_fill;
-			break;
-		case GL_POLYGON_OFFSET_LINE:
-			ret = pol_offset_line;
-			break;
-		case GL_POLYGON_OFFSET_POINT:
-			ret = pol_offset_point;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-	return ret;
-}
-
-void glPolygonMode(GLenum face,  GLenum mode){
-	SceGxmPolygonMode new_mode;
-	switch (mode){
-		case GL_POINT:
-			new_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_POINT;
-			break;
-		case GL_LINE:
-			new_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_LINE;
-			break;
-		case GL_FILL:
-			new_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
-	switch (face){
-		case GL_FRONT:
-			polygon_mode_front = new_mode;
-			sceGxmSetFrontPolygonMode(gxm_context, new_mode);
-			break;
-		case GL_BACK:
-			polygon_mode_back = new_mode;
-			sceGxmSetBackPolygonMode(gxm_context, new_mode);
-			break;
-		case GL_FRONT_AND_BACK:
-			polygon_mode_front = polygon_mode_back = new_mode;
-			sceGxmSetFrontPolygonMode(gxm_context, new_mode);
-			sceGxmSetBackPolygonMode(gxm_context, new_mode);
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			return;
-	}
-	update_polygon_offset();
-}
-
-void glPolygonOffset(GLfloat factor, GLfloat units){
-	pol_factor = factor;
-	pol_units = units;
-	update_polygon_offset();
 }
 
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer){
@@ -1916,109 +1555,6 @@ void glDisableClientState(GLenum array){
 void glClientActiveTexture(GLenum texture){
 	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE31)) error = GL_INVALID_ENUM;
 	else client_texture_unit = texture - GL_TEXTURE0;
-}
-
-void glTexEnvf(GLenum target, GLenum pname, GLfloat param){
-	texture_unit* tex_unit = &texture_units[server_texture_unit];
-	switch (target){
-		case GL_TEXTURE_ENV:
-			switch (pname){
-				case GL_TEXTURE_ENV_MODE:
-					if (param == GL_MODULATE) tex_unit->env_mode = MODULATE;
-					else if (param == GL_DECAL) tex_unit->env_mode = DECAL;
-					else if (param == GL_REPLACE) tex_unit->env_mode = REPLACE;
-					else if (param == GL_BLEND) tex_unit->env_mode = BLEND;
-					break;
-				default:
-					error = GL_INVALID_ENUM;
-					break;
-			}
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-	}
-}
-
-void glTexEnvi(GLenum target,  GLenum pname,  GLint param){
-	texture_unit* tex_unit = &texture_units[server_texture_unit];
-	switch (target){
-		case GL_TEXTURE_ENV:
-			switch (pname){
-				case GL_TEXTURE_ENV_MODE:
-					switch (param){
-						case GL_MODULATE:
-							tex_unit->env_mode = MODULATE;
-							break;
-						case GL_DECAL: 
-							tex_unit->env_mode = DECAL;
-							break;
-						case GL_REPLACE:
-							tex_unit->env_mode = REPLACE;
-							break;
-						case GL_BLEND:
-							tex_unit->env_mode = BLEND;
-							break;
-					}
-					break;
-				default:
-					error = GL_INVALID_ENUM;
-					break;
-			}
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-	}
-}
-
-void glReadPixels(GLint x,  GLint y,  GLsizei width,  GLsizei height,  GLenum format,  GLenum type,  GLvoid * data){
-	SceDisplayFrameBuf pParam;
-	pParam.size = sizeof(SceDisplayFrameBuf);
-	sceDisplayGetFrameBuf(&pParam, SCE_DISPLAY_SETBUF_NEXTFRAME);
-	y = DISPLAY_HEIGHT - (height + y);
-	int i,j;
-	uint8_t* out8 = (uint8_t*)data;
-	uint8_t* in8 = (uint8_t*)pParam.base;
-	uint32_t* out32 = (uint32_t*)data;
-	uint32_t* in32 = (uint32_t*)pParam.base;
-	switch (format){
-		case GL_RGBA:
-			switch (type){
-				case GL_UNSIGNED_BYTE:
-					in32 += (x + y * pParam.pitch);
-					for (i = 0; i < height; i++){
-						for (j = 0; j < width; j++){
-							out32[(height-(i+1))*width+j] = in32[j];
-						}
-						in32 += pParam.pitch;
-					}
-					break;
-				default:
-					error = GL_INVALID_ENUM;
-					break;
-			}
-			break;
-		case GL_RGB:
-			switch (type){
-				case GL_UNSIGNED_BYTE:
-					in8 += (x * 4 + y * pParam.pitch * 4);
-					for (i = 0; i < height; i++){
-						for (j = 0; j < width; j++){
-							out8[((height-(i+1))*width+j)*3] = in8[j*4];
-							out8[((height-(i+1))*width+j)*3+1] = in8[j*4+1];
-							out8[((height-(i+1))*width+j)*3+2] = in8[j*4+2];
-						}
-						in8 += pParam.pitch * 4;
-					}
-					break;
-				default:
-					error = GL_INVALID_ENUM;
-					break;
-			}
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
-	}
 }
 
 // VGL_EXT_gpu_objects_array extension implementation

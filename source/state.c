@@ -21,3 +21,17 @@ int8_t client_texture_unit = 0;	// Current in use client side texture unit
 
 // Miscellaneous
 glPhase phase = NONE; // Current drawing phase for legacy openGL
+vector4f clear_rgba_val; // Current clear color for glClear
+
+// Cullling
+GLboolean cull_face_state = GL_FALSE; // Current state for GL_CULL_FACE
+GLenum gl_cull_mode = GL_BACK; // Current in use openGL cull mode
+GLenum gl_front_face = GL_CCW; // Current in use openGL setting for front facing primitives
+GLboolean no_polygons_mode = GL_FALSE; // GL_TRUE when cull mode is set to GL_FRONT_AND_BACK
+
+// Polygon Offset
+GLboolean pol_offset_fill = GL_FALSE;  // Current state for GL_POLYGON_OFFSET_FILL
+GLboolean pol_offset_line = GL_FALSE;  // Current state for GL_POLYGON_OFFSET_LINE
+GLboolean pol_offset_point = GL_FALSE; // Current state for GL_POLYGON_OFFSET_POINT
+SceGxmPolygonMode polygon_mode_front = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Current in use polygon mode for front
+SceGxmPolygonMode polygon_mode_back = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;  // Current in use polygon mode for back

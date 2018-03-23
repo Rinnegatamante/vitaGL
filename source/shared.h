@@ -32,9 +32,16 @@ extern float DISPLAY_HEIGHT_FLOAT;  // Display height in pixels (float)
 #include "utils/math_utils.h"
 #include "utils/gpu_utils.h"
 #include "utils/mem_utils.h"
-#include "shaders.h"
 #include "state.h"
 #include "texture_callbacks.h"
+
+// Texture environment mode
+typedef enum texEnvMode{
+	MODULATE = 0,
+	DECAL = 1,
+	BLEND = 2,
+	REPLACE = 3
+} texEnvMode;
 
 // 2D vertex for 2D canvas struct
 typedef struct clear_vertex{
@@ -70,9 +77,12 @@ typedef enum SceGxmPrimitiveTypeExtra{
 	SCE_GXM_PRIMITIVE_QUADS = 1
 } SceGxmPrimitiveTypeExtra;
 
+#include "shaders.h"
+
 // Internal stuffs
 extern void* frag_uniforms;
 extern void* vert_uniforms;
+extern uint8_t drawing;
 
 // Debugging tool
 #ifdef ENABLE_LOG
@@ -141,6 +151,10 @@ GLboolean change_stencil_func_config(SceGxmStencilFunc* cfg, GLenum new); // Cha
 void update_alpha_test_settings(void); // Changes current in use alpha test operation value
 void update_scissor_test(void); // Changes current in use scissor test region
 void resetScissorTestRegion(void); // Resets scissor test region to default values
+
+/* blending.c */
+void change_blend_factor(void); // Changes current blending settings for all used shaders
+void disable_blend(void); // Disables blending for all used shaders
 
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders
