@@ -40,7 +40,8 @@ typedef enum texEnvMode{
 	MODULATE = 0,
 	DECAL = 1,
 	BLEND = 2,
-	REPLACE = 3
+	ADD = 3,
+	REPLACE = 4
 } texEnvMode;
 
 // 2D vertex for 2D canvas struct

@@ -589,6 +589,7 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param){
 					else if (param == GL_DECAL) tex_unit->env_mode = DECAL;
 					else if (param == GL_REPLACE) tex_unit->env_mode = REPLACE;
 					else if (param == GL_BLEND) tex_unit->env_mode = BLEND;
+					else if (param == GL_ADD) tex_unit->env_mode = ADD;
 					break;
 				default:
 					error = GL_INVALID_ENUM;
@@ -622,6 +623,9 @@ void glTexEnvi(GLenum target,  GLenum pname,  GLint param){
 				break;
 			case GL_BLEND:
 				tex_unit->env_mode = BLEND;
+				break;
+			case GL_ADD:
+				tex_unit->env_mode = ADD;
 				break;
 			}
 			break;
