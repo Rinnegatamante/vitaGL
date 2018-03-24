@@ -1,5 +1,5 @@
 TARGET          := libvitaGL
-SOURCES         := source source/utils
+SOURCES         := source source/utils source/hacks
 SHADERS         := shaders
 
 LIBS = -lc -lm -lSceGxm_stub -lSceDisplay_stub
