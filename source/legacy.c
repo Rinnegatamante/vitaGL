@@ -449,7 +449,7 @@ void glEnd(void){
 	if ((server_texture_unit >= 0) && (tex_unit->enabled) && (model_uv != NULL) && (tex_unit->textures[texture2d_idx].valid)){
 		
 		// Setting proper vertex and fragment programs
-		sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
+		sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched[0]);
 		sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
 		
 		// Setting fragment uniforms for alpha test and texture environment
@@ -466,7 +466,7 @@ void glEnd(void){
 	}else{
 		
 		// Setting proper vertex and fragment programs
-		sceGxmSetVertexProgram(gxm_context, rgba_vertex_program_patched);
+		sceGxmSetVertexProgram(gxm_context, rgba_vertex_program_patched[0]);
 		sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
 		
 	}

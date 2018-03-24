@@ -32,8 +32,6 @@ extern float DISPLAY_HEIGHT_FLOAT;  // Display height in pixels (float)
 #include "utils/math_utils.h"
 #include "utils/gpu_utils.h"
 #include "utils/mem_utils.h"
-#include "state.h"
-#include "texture_callbacks.h"
 
 // Texture environment mode
 typedef enum texEnvMode{
@@ -78,6 +76,8 @@ typedef enum SceGxmPrimitiveTypeExtra{
 } SceGxmPrimitiveTypeExtra;
 
 #include "shaders.h"
+#include "state.h"
+#include "texture_callbacks.h"
 
 // Internal stuffs
 extern void* frag_uniforms;

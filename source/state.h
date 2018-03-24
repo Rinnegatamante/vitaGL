@@ -42,6 +42,7 @@ typedef enum alphaOp{
 
 // Texture unit struct
 typedef struct texture_unit{
+	vectorizeAttr attr;
 	GLboolean enabled;
 	GLboolean vertex_array_state;
 	GLboolean color_array_state;

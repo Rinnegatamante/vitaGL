@@ -306,19 +306,19 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* poin
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
 // VGL_EXT_gpu_objects_array extension
-void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
-void vglColorPointerMapped(GLenum type, const GLvoid* pointer);
+void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
+void vglColorPointerMapped(GLenum type, const GLvoid *pointer);
 void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp);
-void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
+void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
 void vglIndexPointerMapped(const GLvoid* pointer);
-void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
-void vglTexCoordPointerMapped(const GLvoid* pointer);
-void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
-void vglVertexPointerMapped(const GLvoid* pointer);
+void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
+void vglTexCoordPointerMapped(GLboolean vectorized, const GLvoid *pointer);
+void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
+void vglVertexPointerMapped(GLboolean vectorized, const GLvoid *pointer);
 
 // VGL_EXT_gxp_shaders extension implementation
-void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar* name, const GLuint num, const GLenum type);
-void vglVertexAttribPointer(GLuint index,  GLint size,  GLenum type,  GLboolean normalized,  GLsizei stride, GLuint count, const GLvoid* pointer);
+void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type);
+void vglVertexAttribPointer(GLuint index,  GLint size,  GLenum type,  GLboolean normalized,  GLsizei stride, GLuint count, const GLvoid *pointer);
 
 typedef enum {
 	VGL_MEM_ALL = 0,   // any memory type (used to monitor total heap usage)

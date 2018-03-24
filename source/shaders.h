@@ -6,6 +6,13 @@
 #ifndef _SHADERS_H_
 #define _SHADERS_H_
 
+typedef enum vectorizeAttr{
+	VECTORIZE_NONE = 0,
+	VECTORIZE_VECTORS = 1,
+	VECTORIZE_TEXCOORDS = 2,
+	VECTORIZE_BOTH = 3
+} vectorizeAttr;
+
 // Disable color buffer shader
 SceGxmShaderPatcherId disable_color_buffer_vertex_id;
 SceGxmShaderPatcherId disable_color_buffer_fragment_id;
@@ -33,10 +40,10 @@ const SceGxmProgramParameter *rgba_wvp;
 const SceGxmProgramParameter *rgb_position;
 const SceGxmProgramParameter *rgb_color;
 const SceGxmProgramParameter *rgb_wvp;
-SceGxmVertexProgram *rgba_vertex_program_patched;
-SceGxmVertexProgram *rgba_u8n_vertex_program_patched;
-SceGxmVertexProgram *rgb_vertex_program_patched;
-SceGxmVertexProgram *rgb_u8n_vertex_program_patched;
+SceGxmVertexProgram *rgba_vertex_program_patched[2];
+SceGxmVertexProgram *rgba_u8n_vertex_program_patched[2];
+SceGxmVertexProgram *rgb_vertex_program_patched[2];
+SceGxmVertexProgram *rgb_u8n_vertex_program_patched[2];
 SceGxmFragmentProgram *rgba_fragment_program_patched;
 const SceGxmProgram *rgba_fragment_program;
 
@@ -51,7 +58,7 @@ const SceGxmProgramParameter *texture2d_alpha_op;
 const SceGxmProgramParameter *texture2d_tint_color;
 const SceGxmProgramParameter *texture2d_tex_env;
 const SceGxmProgramParameter *texture2d_tex_env_color;
-SceGxmVertexProgram *texture2d_vertex_program_patched;
+SceGxmVertexProgram *texture2d_vertex_program_patched[4];
 SceGxmFragmentProgram *texture2d_fragment_program_patched;
 const SceGxmProgram *texture2d_fragment_program;
 
@@ -66,8 +73,8 @@ const SceGxmProgramParameter *texture2d_rgba_alpha_op;
 const SceGxmProgramParameter *texture2d_rgba_color;
 const SceGxmProgramParameter *texture2d_rgba_tex_env;
 const SceGxmProgramParameter *texture2d_rgba_tex_env_color;
-SceGxmVertexProgram *texture2d_rgba_vertex_program_patched;
-SceGxmVertexProgram *texture2d_rgba_u8n_vertex_program_patched;
+SceGxmVertexProgram *texture2d_rgba_vertex_program_patched[4];
+SceGxmVertexProgram *texture2d_rgba_u8n_vertex_program_patched[4];
 SceGxmFragmentProgram *texture2d_rgba_fragment_program_patched;
 const SceGxmProgram *texture2d_rgba_fragment_program;
 
