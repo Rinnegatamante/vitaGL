@@ -307,7 +307,7 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
 // VGL_EXT_gpu_objects_array extension
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
-void vglColorPointerMapped(const GLvoid* pointer);
+void vglColorPointerMapped(GLenum type, const GLvoid* pointer);
 void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp);
 void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
 void vglIndexPointerMapped(const GLvoid* pointer);

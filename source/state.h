@@ -51,6 +51,7 @@ typedef struct texture_unit{
 	vertexArray vertex_array;
 	vertexArray color_array;
 	vertexArray texture_array;
+	GLenum color_object_type;
 	void* vertex_object;
 	void* color_object;
 	void* texture_object;
