@@ -364,3 +364,35 @@ void glReadPixels(GLint x,  GLint y,  GLsizei width,  GLsizei height,  GLenum fo
 			break;
 	}
 }
+
+void glLineWidth(GLfloat width){
+	
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (width <= 0){
+		error = GL_INVALID_VALUE;
+		return;
+	}
+#endif
+
+	// Changing line and point width as requested
+	sceGxmSetFrontPointLineWidth(gxm_context, width);
+	sceGxmSetBackPointLineWidth(gxm_context, width);
+	
+}
+
+void glPointSize(GLfloat size){
+	
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (size <= 0){
+		error = GL_INVALID_VALUE;
+		return;
+	}
+#endif
+
+	// Changing line and point width as requested
+	sceGxmSetFrontPointLineWidth(gxm_context, size);
+	sceGxmSetBackPointLineWidth(gxm_context, size);
+	
+}
