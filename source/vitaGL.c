@@ -584,6 +584,12 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	// Init scissor test state
 	resetScissorTestRegion();
 	
+	// Init viewport state
+	gl_viewport.x = 0;
+	gl_viewport.y = 0;
+	gl_viewport.w = DISPLAY_WIDTH;
+	gl_viewport.h = DISPLAY_HEIGHT;
+	
 }
 
 void vglInit(uint32_t gpu_pool_size){

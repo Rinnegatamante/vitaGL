@@ -65,12 +65,15 @@ extern "C" {
 #define GL_OUT_OF_MEMORY                  0x0505
 #define GL_CW                             0x0900
 #define GL_CCW                            0x0901
+#define GL_POLYGON_MODE                   0x0B40
 #define GL_CULL_FACE                      0x0B44
 #define GL_DEPTH_TEST                     0x0B71
 #define GL_STENCIL_TEST                   0x0B90
+#define GL_VIEWPORT                       0x0BA2
 #define GL_MODELVIEW_MATRIX               0x0BA6
 #define GL_ALPHA_TEST                     0x0BC0
 #define GL_BLEND                          0x0BE2
+#define GL_SCISSOR_BOX                    0x0C10
 #define GL_SCISSOR_TEST                   0x0C11
 #define GL_MAX_MODELVIEW_STACK_DEPTH      0x0D36
 #define GL_MAX_PROJECTION_STACK_DEPTH     0x0D38
@@ -134,6 +137,7 @@ extern "C" {
 #define GL_POLYGON_OFFSET_FILL            0x8037
 #define GL_POLYGON_OFFSET_FACTOR          0x8038
 #define GL_INTENSITY                      0x8049
+#define GL_TEXTURE_BINDING_2D             0x8069
 #define GL_VERTEX_ARRAY                   0x8074
 #define GL_COLOR_ARRAY                    0x8076
 #define GL_TEXTURE_COORD_ARRAY            0x8078
@@ -260,6 +264,7 @@ void glGenTextures(GLsizei n, GLuint* textures);
 void glGetBooleanv(GLenum pname, GLboolean* params);
 void glGetFloatv(GLenum pname, GLfloat* data);
 GLenum glGetError(void);
+void glGetIntegerv(GLenum pname, GLint* data);
 const GLubyte* glGetString(GLenum name);
 GLint glGetUniformLocation(GLuint prog, const GLchar* name);
 GLboolean glIsEnabled(GLenum cap);

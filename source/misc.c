@@ -74,14 +74,17 @@ void glPolygonMode(GLenum face,  GLenum mode){
 	switch (face){
 		case GL_FRONT:
 			polygon_mode_front = new_mode;
+			gl_polygon_mode_front = mode;
 			sceGxmSetFrontPolygonMode(gxm_context, new_mode);
 			break;
 		case GL_BACK:
 			polygon_mode_back = new_mode;
+			gl_polygon_mode_back = mode;
 			sceGxmSetBackPolygonMode(gxm_context, new_mode);
 			break;
 		case GL_FRONT_AND_BACK:
 			polygon_mode_front = polygon_mode_back = new_mode;
+			gl_polygon_mode_front = gl_polygon_mode_back = mode;
 			sceGxmSetFrontPolygonMode(gxm_context, new_mode);
 			sceGxmSetBackPolygonMode(gxm_context, new_mode);
 			break;
@@ -118,6 +121,10 @@ void glViewport(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 	y_scale = -(height>>1);
 	y_port = DISPLAY_HEIGHT - y + y_scale;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	gl_viewport.x = x;
+	gl_viewport.y = y;
+	gl_viewport.w = width;
+	gl_viewport.h = height;
 	viewport_mode = 1;
 }
 

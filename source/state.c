@@ -35,3 +35,6 @@ GLboolean pol_offset_line = GL_FALSE;  // Current state for GL_POLYGON_OFFSET_LI
 GLboolean pol_offset_point = GL_FALSE; // Current state for GL_POLYGON_OFFSET_POINT
 SceGxmPolygonMode polygon_mode_front = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Current in use polygon mode for front
 SceGxmPolygonMode polygon_mode_back = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;  // Current in use polygon mode for back
+GLenum gl_polygon_mode_front = GL_FILL; // Current in use polygon mode for front
+GLenum gl_polygon_mode_back = GL_FILL; // Current in use polygon mode for back
+viewport gl_viewport; // Current viewport state

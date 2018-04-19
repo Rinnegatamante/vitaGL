@@ -67,7 +67,7 @@ void glGetBooleanv(GLenum pname, GLboolean* params){
 	}
 }
 
-void glGetFloatv(GLenum pname, GLfloat* data){
+void glGetFloatv(GLenum pname, GLfloat *data){
 	switch (pname){
 	case GL_POLYGON_OFFSET_FACTOR: // Polygon offset factor
 		*data = pol_factor;
@@ -89,6 +89,37 @@ void glGetFloatv(GLenum pname, GLfloat* data){
 		break;
 	case GL_MAX_TEXTURE_STACK_DEPTH: // Max texture stack depth
 		*data = GENERIC_STACK_DEPTH;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
+}
+
+void glGetIntegerv(GLenum pname, GLint *data){
+	
+	// Aliasing to make code more readable
+	texture_unit* server_tex_unit = &texture_units[server_texture_unit];
+	
+	switch (pname){
+	case GL_POLYGON_MODE:
+		data[0] = gl_polygon_mode_front;
+		data[1] = gl_polygon_mode_back;
+		break;
+	case GL_SCISSOR_BOX:
+		data[0] = region.x;
+		data[1] = region.y;
+		data[2] = region.w;
+		data[3] = region.h;
+		break;
+	case GL_TEXTURE_BINDING_2D:
+		*data = server_tex_unit->tex_id;
+		break;
+	case GL_VIEWPORT:
+		data[0] = gl_viewport.x;
+		data[1] = gl_viewport.y;
+		data[2] = gl_viewport.w;
+		data[3] = gl_viewport.h;
 		break;
 	default:
 		error = GL_INVALID_ENUM;
