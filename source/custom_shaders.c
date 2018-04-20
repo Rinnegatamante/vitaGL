@@ -350,7 +350,7 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 }
 
 // Equivalent of glVertexAttribLocation but for sceGxm architecture
-void vglVertexAttribPointer(GLuint index,  GLint size,  GLenum type,  GLboolean normalized,  GLsizei stride, GLuint count, const GLvoid *pointer){
+void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLuint count, const GLvoid *pointer){
 	
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -392,5 +392,12 @@ void vglVertexAttribPointer(GLuint index,  GLint size,  GLenum type,  GLboolean 
 	
 	// Setting vertex stream to passed index in sceGxm
 	sceGxmSetVertexStream(gxm_context, index, ptr);
+	
+}
+
+void vglVertexAttribPointerMapped(GLuint index, const GLvoid *pointer){
+	
+	// Setting vertex stream to passed index in sceGxm
+	sceGxmSetVertexStream(gxm_context, index, pointer);
 	
 }
