@@ -335,6 +335,10 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		bpe = sizeof(float);
 		break;
+	case GL_UNSIGNED_BYTE:
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_U8N;
+		bpe = sizeof(uint8_t);
+		break;
 	default:
 		error = GL_INVALID_ENUM;
 		break;
