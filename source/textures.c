@@ -640,3 +640,22 @@ void glTexEnvi(GLenum target,  GLenum pname,  GLint param){
 	}
 	
 }
+
+void *vglGetTexDataPointer(GLenum target){
+	
+	// Aliasing texture unit for cleaner code
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
+	texture *tex = &tex_unit->textures[texture2d_idx];
+	
+	switch (target){
+	case GL_TEXTURE_2D:
+		return tex->data;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
+	
+	return NULL;
+}
