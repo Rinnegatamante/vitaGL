@@ -25,6 +25,8 @@ static void *gxm_depth_surface_addr; // Depth surface memblock starting address
 static void *gxm_stencil_surface_addr; // Stencil surface memblock starting address
 static SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil surfaces setup for sceGxm
 
+static uint8_t heap_mapped = GL_FALSE; // Check for heap memory mapping into sceGxm
+
 SceGxmContext *gxm_context; // sceGxm context instance
 GLenum error = GL_NO_ERROR; // Error returned by glGetError
 SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
@@ -317,12 +319,17 @@ void waitRenderingDone(void){
  
 void vglMapHeapMem(){
 	
-	// Getting newlib heap memblock starting address
-	void *addr = NULL;
-	sceKernelGetMemBlockBase(_newlib_heap_memblock, &addr);
+	if (!heap_mapped) {
 	
-	// Mapping newlib heap into sceGxm
-	sceGxmMapMemory(addr, _newlib_heap_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+		// Getting newlib heap memblock starting address
+		void *addr = NULL;
+		sceKernelGetMemBlockBase(_newlib_heap_memblock, &addr);
+	
+		// Mapping newlib heap into sceGxm
+		sceGxmMapMemory(addr, _newlib_heap_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+		heap_mapped = GL_TRUE;
+	
+	}
 	
 }
  
