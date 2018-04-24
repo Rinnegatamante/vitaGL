@@ -265,6 +265,7 @@ void glUniform1f(GLint location, GLfloat v0){
 	
 	// Grabbing passed uniform
 	uniform* u = (uniform*)location;
+	if (u->ptr == NULL) return;
 	
 	// Setting passed value to desired uniform
 	if (u->isVertex){
@@ -281,6 +282,7 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value){
 	
 	// Grabbing passed uniform
 	uniform *u = (uniform*)location;
+	if (u->ptr == NULL) return;
 	
 	// Setting passed value to desired uniform
 	if (u->isVertex){
@@ -296,6 +298,7 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 	
 	// Grabbing passed uniform
 	uniform *u = (uniform*)location;
+	if (u->ptr == NULL) return;
 	
 	// Setting passed value to desired uniform
 	if (u->isVertex){
