@@ -75,6 +75,7 @@ void changeCustomShadersBlend(SceGxmBlendInfo *blend_info){
 }
 
 void reloadCustomShader(void){
+	if (cur_program == 0) return;
 	program *p = &progs[cur_program-1];
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
