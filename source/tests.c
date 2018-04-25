@@ -452,7 +452,7 @@ void glStencilMaskSeparate(GLenum face, GLuint mask){
 		error = GL_INVALID_ENUM;
 		return;
 	}
-	stencil_mask_front_write = mask;
+	change_stencil_settings();
 	
 }
 
