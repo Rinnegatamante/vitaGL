@@ -264,6 +264,8 @@ void update_scissor_test(){
 	else sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
 	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 
+    if (scissor_test_state) sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x , region.y, region.x + region.w, region.y + region.h);
+    else sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, gl_viewport.x, DISPLAY_HEIGHT - gl_viewport.y - gl_viewport.h, gl_viewport.x + gl_viewport.w, gl_viewport.y + gl_viewport.h);
 }
 
 void resetScissorTestRegion(void){
