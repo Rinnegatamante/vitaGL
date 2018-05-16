@@ -284,6 +284,10 @@ void glClear(GLbitfield mask){
 		depth_vertices[3].position.z = depth_value;
 		sceGxmSetVertexProgram(gxm_context, disable_color_buffer_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
+		matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+		void* vertex_wvp_buffer;
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
+		sceGxmSetUniformDataF(vertex_wvp_buffer, disable_color_buffer_matrix, 0, 16, (const float*)mvp_matrix);
 		sceGxmSetVertexStream(gxm_context, 0, depth_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		validate_depth_test();
@@ -306,6 +310,10 @@ void glClear(GLbitfield mask){
 			SCE_GXM_STENCIL_OP_REPLACE,
 			SCE_GXM_STENCIL_OP_REPLACE,
 			0, stencil_value);
+		matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+		void* vertex_wvp_buffer;
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
+		sceGxmSetUniformDataF(vertex_wvp_buffer, disable_color_buffer_matrix, 0, 16, (const float*)mvp_matrix);
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		validate_depth_test();
