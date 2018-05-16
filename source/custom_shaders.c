@@ -84,8 +84,10 @@ void reloadCustomShader(void){
 void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 	program *p = &progs[cur_program-1];
 	if (implicit_wvp){
-		matrix4x4 mvp_matrix;
-		matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+		if (mvp_modified){
+			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+			mvp_modified = GL_FALSE;
+		}
 		if (vert_uniforms == NULL) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
 		if (p->wvp == NULL) p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "wvp");
 		sceGxmSetUniformDataF(vert_uniforms, p->wvp, 0, 16, (const float*)mvp_matrix);

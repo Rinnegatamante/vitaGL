@@ -1145,7 +1145,10 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 		}
 		if (!skip_draw){
 	
-			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+			if (mvp_modified){
+				matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+				mvp_modified = GL_FALSE;
+			}
 			
 			if (tex_unit->texture_array_state){
 				if (!(tex_unit->textures[texture2d_idx].valid)) return;
@@ -1381,7 +1384,10 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 		else if (count < 0) error = GL_INVALID_VALUE;
 		if (!skip_draw){
 	
-			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+			if (mvp_modified){
+				matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+				mvp_modified = GL_FALSE;
+			}
 			
 			if (tex_unit->texture_array_state){
 				if (!(tex_unit->textures[texture2d_idx].valid)) return;
@@ -1778,7 +1784,10 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 			frag_uniforms = NULL;
 		}else{
 			if (tex_unit->vertex_array_state){
-				matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+				if (mvp_modified){
+					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+					mvp_modified = GL_FALSE;
+				}
 				if (tex_unit->texture_array_state){
 					if (!(tex_unit->textures[texture2d_idx].valid)) return;
 					if (tex_unit->color_array_state){

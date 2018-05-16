@@ -10,6 +10,7 @@ static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH]; // Modelview mat
 static uint8_t modelview_stack_counter = 0; // Modelview matrices stack counter
 static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH]; // Projection matrices stack
 static uint8_t projection_stack_counter = 0; // Projection matrices stack counter
+GLboolean mvp_modified = GL_TRUE; // Check if ModelViewProjection matrix needs to be recreated
 
 /*
  * ------------------------------
@@ -49,6 +50,7 @@ void glOrtho(GLdouble left,  GLdouble right,  GLdouble bottom,  GLdouble top,  G
 	
 	// Initializing ortho matrix with requested parameters
 	matrix4x4_init_orthographic(*matrix, left, right, bottom, top, nearVal, farVal);
+	mvp_modified = GL_TRUE;
 	
 }
 
@@ -67,6 +69,7 @@ void glFrustum(GLdouble left,  GLdouble right,  GLdouble bottom,  GLdouble top, 
 	
 	// Initializing frustum matrix with requested parameters
 	matrix4x4_init_frustum(*matrix, left, right, bottom, top, nearVal, farVal);
+	mvp_modified = GL_TRUE;
 	
 }
 
@@ -74,6 +77,7 @@ void glLoadIdentity(void){
 	
 	// Set current in use matrix to identity one
 	matrix4x4_identity(*matrix);
+	mvp_modified = GL_TRUE;
 	
 }
 
@@ -94,6 +98,7 @@ void glMultMatrixf(const GLfloat* m){
 	
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
+	mvp_modified = GL_TRUE;
 	
 }
 
@@ -110,6 +115,7 @@ void glLoadMatrixf(const GLfloat* m){
 	
 	// Copying passed matrix to in use one
 	matrix4x4_copy(*matrix, tmp);
+	mvp_modified = GL_TRUE;
 	
 }
 
@@ -117,6 +123,7 @@ void glTranslatef(GLfloat x,  GLfloat y,  GLfloat z){
 	
 	// Translating in use matrix
 	matrix4x4_translate(*matrix, x, y, z);
+	mvp_modified = GL_TRUE;
 	
 }
 
@@ -124,6 +131,7 @@ void glScalef(GLfloat x, GLfloat y, GLfloat z){
 	
 	// Scaling in use matrix
 	matrix4x4_scale(*matrix, x, y, z);
+	mvp_modified = GL_TRUE;
 	
 }
 
@@ -148,6 +156,7 @@ void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z){
 	if (z == 1.0f){
 		matrix4x4_rotate_z(*matrix, rad);
 	}
+	mvp_modified = GL_TRUE;
 	
 }
 
@@ -217,4 +226,5 @@ void glPopMatrix(void){
 			matrix4x4_copy(*matrix, projection_matrix_stack[--projection_stack_counter]);
 			
 	}
+	mvp_modified = GL_TRUE;
 }

@@ -284,7 +284,10 @@ void glClear(GLbitfield mask){
 		depth_vertices[3].position.z = depth_value;
 		sceGxmSetVertexProgram(gxm_context, disable_color_buffer_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
-		matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+		if (mvp_modified){
+			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+			mvp_modified = GL_FALSE;
+		}
 		void* vertex_wvp_buffer;
 		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
 		sceGxmSetUniformDataF(vertex_wvp_buffer, disable_color_buffer_matrix, 0, 16, (const float*)mvp_matrix);
@@ -310,7 +313,10 @@ void glClear(GLbitfield mask){
 			SCE_GXM_STENCIL_OP_REPLACE,
 			SCE_GXM_STENCIL_OP_REPLACE,
 			0, stencil_value);
-		matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+		if (mvp_modified){
+			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+			mvp_modified = GL_FALSE;
+		}
 		void* vertex_wvp_buffer;
 		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
 		sceGxmSetUniformDataF(vertex_wvp_buffer, disable_color_buffer_matrix, 0, 16, (const float*)mvp_matrix);

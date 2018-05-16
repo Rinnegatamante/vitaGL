@@ -110,6 +110,7 @@ extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader pa
 matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 matrix4x4 projection_matrix; // Projection Matrix
 matrix4x4 modelview_matrix; // ModelView Matrix
+extern GLboolean mvp_modified; // Check if ModelViewProjection matrix needs to be recreated
 
 extern GLuint cur_program; // Current in use custom program (0 = No custom program)
 extern uint8_t viewport_mode; // Current setting for viewport mode

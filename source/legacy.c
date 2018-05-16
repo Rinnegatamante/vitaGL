@@ -443,7 +443,10 @@ void glEnd(void){
 	int texture2d_idx = tex_unit->tex_id;
 	
 	// Calculating mvp matrix
-	matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+	if (mvp_modified){
+		matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+		mvp_modified = GL_FALSE;
+	}
 	
 	// Checking if we have to write a texture
 	if ((server_texture_unit >= 0) && (tex_unit->enabled) && (model_uv != NULL) && (tex_unit->textures[texture2d_idx].valid)){
