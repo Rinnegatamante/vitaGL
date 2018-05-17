@@ -1,9 +1,8 @@
 float4 main(
-	float3 position : POSITION,
-	column_major uniform float4x4 u_mvp_matrix) : POSITION
+	float3 position) : POSITION
 {
 
-	return mul(u_mvp_matrix, float4(position, 1.0f));
+	return float4(position, 1.0f);
 }
 
 

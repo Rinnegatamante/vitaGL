@@ -226,9 +226,6 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	disable_color_buffer_position = sceGxmProgramFindParameterByName(
 		disable_color_buffer_vertex_program, "position");
-
-	disable_color_buffer_matrix = sceGxmProgramFindParameterByName(
-		disable_color_buffer_vertex_program, "u_mvp_matrix");
 		
 	SceGxmVertexAttribute disable_color_buffer_attributes;
 	SceGxmVertexStream disable_color_buffer_stream;
