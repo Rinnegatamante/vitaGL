@@ -3,7 +3,7 @@
 #include <vitaGL.h>
 
 GLint nofcolors = 4;
-GLenum texture_format = GL_VITA2D_TEXTURE;
+GLenum texture_format = GL_ACTIVE_TEXTURE;
 GLuint texture = 0;
 
 int main(){
