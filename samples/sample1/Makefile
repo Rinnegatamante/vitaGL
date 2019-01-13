@@ -25,7 +25,7 @@ all: $(TARGET).vpk
 
 $(TARGET).vpk: eboot.bin
 	vita-mksfoex -s TITLE_ID=VITAGL$(SAMPLE_NUM) "$(TARGET)" param.sfo
-	vita-pack-vpk -s param.sfo -b eboot.bin -a texture.png=texture.png $@
+	vita-pack-vpk -s param.sfo -b eboot.bin -a texture.bmp=texture.bmp $@
 
 eboot.bin: $(TARGET).velf
 	vita-make-fself -s $< eboot.bin	
