@@ -89,7 +89,7 @@ void glMultMatrixf(const GLfloat* m){
 	int i,j;
 	for (i=0;i<4;i++){
 		for (j=0;j<4;j++){
-			tmp[i][j] = m[j*4+i];
+			tmp[i][j] = m[i*4+j];
 		}
 	}
 	
@@ -109,12 +109,9 @@ void glLoadMatrixf(const GLfloat* m){
 	int i,j;
 	for (i=0;i<4;i++){
 		for (j=0;j<4;j++){
-			tmp[i][j] = m[j*4+i];
+			(*matrix)[i][j] = m[i*4+j];
 		}
 	}
-	
-	// Copying passed matrix to in use one
-	matrix4x4_copy(*matrix, tmp);
 	mvp_modified = GL_TRUE;
 	
 }
