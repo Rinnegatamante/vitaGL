@@ -2,10 +2,6 @@
 
 #include <vitaGL.h>
 
-GLint nofcolors = 4;
-GLenum texture_format = GL_ACTIVE_TEXTURE;
-GLuint texture = 0;
-
 int main(){
 	
 	// Initializing graphics device
