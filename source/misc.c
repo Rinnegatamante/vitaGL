@@ -112,10 +112,12 @@ void glFrontFace(GLenum mode){
 }
 
 void glViewport(GLint x,  GLint y,  GLsizei width,  GLsizei height){
+#ifndef SKIP_ERROR_HANDLING
 	if ((width < 0) || (height < 0)){
 		error = GL_INVALID_VALUE;
 		return;
 	}
+#endif
 	x_scale = width>>1;
 	x_port = x + x_scale;
 	y_scale = -(height>>1);
@@ -143,10 +145,12 @@ void glDepthRangef(GLfloat nearVal, GLfloat farVal){
 }
 
 void glEnable(GLenum cap){
+#ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION){
 		error = GL_INVALID_OPERATION;
 		return;
 	}
+#endif
 	switch (cap){
 	case GL_DEPTH_TEST:
 		depth_test_state = GL_TRUE;
@@ -194,10 +198,12 @@ void glEnable(GLenum cap){
 }
 
 void glDisable(GLenum cap){
+#ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION){
 		error = GL_INVALID_OPERATION;
 		return;
 	}
+#endif
 	switch (cap){
 	case GL_DEPTH_TEST:
 		depth_test_state = GL_FALSE;

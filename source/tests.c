@@ -307,32 +307,7 @@ void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 void glDepthFunc(GLenum func){
 	
 	// Properly translating openGL function to sceGxm one
-	switch (func){
-	case GL_NEVER:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_NEVER;
-		break;
-	case GL_LESS:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_LESS;
-		break;
-	case GL_EQUAL:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_EQUAL;
-		break;
-	case GL_LEQUAL:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
-		break;
-	case GL_GREATER:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_GREATER;
-		break;
-	case GL_NOTEQUAL:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_NOT_EQUAL;
-		break;
-	case GL_GEQUAL:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_GREATER_EQUAL;
-		break;
-	case GL_ALWAYS:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_ALWAYS;
-		break;
-	}
+	gxm_depth = func;
 	
 	// Updating in use depth function
 	change_depth_func();
@@ -348,13 +323,13 @@ void glClearDepth(GLdouble depth){
 
 void glDepthMask(GLboolean flag){
 	
-	#ifndef SKIP_ERROR_HANDLING
+#ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION){
 		error = GL_INVALID_OPERATION;
 		return;
 	}
-	#endif
+#endif
 	
 	// Set current in use depth mask and invoking a depth write mode update
 	depth_mask_state = flag;
