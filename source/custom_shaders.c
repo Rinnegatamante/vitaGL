@@ -11,6 +11,7 @@
 // Internal stuffs
 void *frag_uniforms = NULL;
 void *vert_uniforms = NULL;
+int max_program = 0; // Current max program id
 
 GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
 
@@ -60,22 +61,19 @@ void resetCustomShaders(void){
 
 void changeCustomShadersBlend(SceGxmBlendInfo *blend_info){
 	int j;	
-	for (j=0;j<MAX_CUSTOM_SHADERS/2;j++){
+	for (j=0;j<max_program;j++){
 		program *p = &progs[j];
-		if (p->valid){
-			sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-				p->fshader->id,
-				SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-				SCE_GXM_MULTISAMPLE_NONE,
-				blend_info,
-				p->fshader->prog,
-				&p->fprog);
-		}
+		sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+			p->fshader->id,
+			SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+			SCE_GXM_MULTISAMPLE_NONE,
+			blend_info,
+			p->vshader->prog,
+			&p->fprog);
 	}
 }
 
 void reloadCustomShader(void){
-	if (cur_program == 0) return;
 	program *p = &progs[cur_program-1];
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
@@ -83,6 +81,7 @@ void reloadCustomShader(void){
 
 void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 	program *p = &progs[cur_program-1];
+	reloadCustomShader();
 	if (implicit_wvp){
 		if (mvp_modified){
 			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
@@ -192,6 +191,7 @@ GLuint glCreateProgram(void){
 			progs[i-1].valid = GL_TRUE;
 			progs[i-1].attr_num = 0;
 			progs[i-1].wvp = NULL;
+			max_program++;
 			break;
 		}
 		
@@ -213,6 +213,7 @@ void glDeleteProgram(GLuint prog){
 			sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog);
 			sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, p->vprog);
 		}
+		max_program--;
 	}
 	p->valid = GL_FALSE;
 	
@@ -229,7 +230,7 @@ void glLinkProgram(GLuint progr){
 		p->stream, p->attr_num, &p->vprog);
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		p->fshader->id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, p->fshader->prog,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, p->vshader->prog,
 		&p->fprog);
 		
 }
@@ -238,9 +239,6 @@ void glUseProgram(GLuint prog){
 	
 	// Setting current custom program to passed program
 	cur_program = prog;
-	
-	// Setting in-use vertex and fragment program in sceGxm
-	reloadCustomShader();
 	
 }
 

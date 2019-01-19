@@ -161,7 +161,7 @@ void glEnable(GLenum cap){
 		stencil_test_state = GL_TRUE;
 		break;
 	case GL_BLEND:
-		if (!blend_state) change_blend_factor();
+		if (!blend_state) blend_modified = GL_TRUE;
 		blend_state = GL_TRUE;
 		break;
 	case GL_SCISSOR_TEST:
@@ -225,7 +225,7 @@ void glDisable(GLenum cap){
 		stencil_test_state = GL_FALSE;
 		break;
 	case GL_BLEND:
-		if (blend_state) disable_blend();
+		if (blend_state) blend_modified = GL_TRUE;
 		blend_state = GL_FALSE;
 		break;
 	case GL_SCISSOR_TEST:

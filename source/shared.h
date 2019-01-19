@@ -124,6 +124,8 @@ extern SceUID scissor_test_vertices_uid; // Scissor test vertices memblock id
 
 extern uint16_t *depth_clear_indices; // Memblock starting address for clear screen indices
 
+extern GLboolean blend_modified; // Check if blend mode needs to be changed
+
 // Clear screen shaders
 extern SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
 extern clear_vertex *clear_vertices; // Memblock starting address for clear screen vertices

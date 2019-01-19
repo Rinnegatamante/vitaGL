@@ -30,6 +30,8 @@ float x_scale = 480.0f;
 float y_scale = 272.0f;
 float z_scale = 0.5f;
 
+GLboolean blend_modified = GL_TRUE; // Check if blend mode needs to be changed
+
 uint8_t viewport_mode = 0; // Current setting for viewport mode
 GLboolean vblank = GL_TRUE; // Current setting for VSync
 
@@ -55,7 +57,6 @@ clear_vertex *clear_vertices = NULL; // Memblock starting address for clear scre
 // Internal stuffs
 uint8_t drawing = 0;
 
-static SceGxmBlendInfo* cur_blend_info_ptr = NULL;
 extern uint8_t use_vram;
 
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
@@ -89,32 +90,32 @@ void LOG(const char *format, ...) {
 #endif
 
 static void _change_blend_factor(SceGxmBlendInfo* blend_info){
-	changeCustomShadersBlend(blend_info);
-	
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		rgba_fragment_id,
-		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE,
-		blend_info,
-		rgba_fragment_program,
-		&rgba_fragment_program_patched);
+	if (cur_program != 0) changeCustomShadersBlend(blend_info);
+	else{
+		sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+			rgba_fragment_id,
+			SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+			SCE_GXM_MULTISAMPLE_NONE,
+			blend_info,
+			NULL,
+			&rgba_fragment_program_patched);
 		
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		texture2d_fragment_id,
-		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE,
-		blend_info,
-		texture2d_fragment_program,
-		&texture2d_fragment_program_patched);
+		sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+			texture2d_fragment_id,
+			SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+			SCE_GXM_MULTISAMPLE_NONE,
+			blend_info,
+			NULL,
+			&texture2d_fragment_program_patched);
 		
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		texture2d_rgba_fragment_id,
-		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE,
-		blend_info,
-		texture2d_rgba_fragment_program,
-		&texture2d_rgba_fragment_program_patched);
-
+		sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+			texture2d_rgba_fragment_id,
+			SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+			SCE_GXM_MULTISAMPLE_NONE,
+			blend_info,
+			NULL,
+			&texture2d_rgba_fragment_program_patched);
+	}
 }
 
 void change_blend_factor(){
@@ -128,10 +129,6 @@ void change_blend_factor(){
 	blend_info.alphaDst = blend_dfactor_a;
 	
 	_change_blend_factor(&blend_info);
-	cur_blend_info_ptr = &blend_info;
-	if (cur_program != 0){
-		reloadCustomShader();
-	}
 }
 
 void change_blend_mask(){
@@ -139,26 +136,12 @@ void change_blend_mask(){
 	blend_info.colorMask = blend_color_mask;
 	blend_info.colorFunc = SCE_GXM_BLEND_FUNC_ADD;
 	blend_info.alphaFunc = SCE_GXM_BLEND_FUNC_ADD;
-	blend_info.colorSrc = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
-	blend_info.colorDst = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	blend_info.colorSrc = SCE_GXM_BLEND_FACTOR_ONE;
+	blend_info.colorDst = SCE_GXM_BLEND_FACTOR_ZERO;
 	blend_info.alphaSrc = SCE_GXM_BLEND_FACTOR_ONE;
 	blend_info.alphaDst = SCE_GXM_BLEND_FACTOR_ZERO;
 	
 	_change_blend_factor(&blend_info);
-	cur_blend_info_ptr = &blend_info;
-	if (cur_program != 0){
-		reloadCustomShader();
-	}
-}
-
-void disable_blend(){
-	if (blend_color_mask == SCE_GXM_COLOR_MASK_ALL){
-		_change_blend_factor(NULL);
-		cur_blend_info_ptr = NULL;
-		if (cur_program != 0){
-			reloadCustomShader();
-		}
-	}else change_blend_mask();
 }
 
 // vitaGL specific functions
@@ -257,7 +240,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		SCE_GXM_MULTISAMPLE_NONE,
 		&disable_color_buffer_blend_info,
-		disable_color_buffer_fragment_program,
+		NULL,
 		&disable_color_buffer_fragment_program_patched);
 		
 	depth_vertices = gpu_alloc_mapped(4 * sizeof(struct position_vertex), VGL_MEM_RAM);
@@ -306,7 +289,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, clear_fragment_program,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, NULL,
 		&clear_fragment_program_patched);
 
 	clear_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), VGL_MEM_RAM);
@@ -402,7 +385,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		rgba_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, rgba_fragment_program,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, NULL,
 		&rgba_fragment_program_patched);
 		
 	rgba_wvp = sceGxmProgramFindParameterByName(rgba_vertex_program, "wvp");
@@ -463,7 +446,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		texture2d_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_fragment_program,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, NULL,
 		&texture2d_fragment_program_patched);
 		
 	texture2d_wvp = sceGxmProgramFindParameterByName(texture2d_vertex_program, "wvp");	
@@ -538,7 +521,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		texture2d_rgba_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_rgba_fragment_program,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, NULL,
 		&texture2d_rgba_fragment_program_patched);
 		
 	texture2d_rgba_wvp = sceGxmProgramFindParameterByName(texture2d_rgba_vertex_program, "wvp");	
@@ -737,7 +720,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid* data, GLenum usage)
 void glBlendFunc(GLenum sfactor, GLenum dfactor){
 	blend_sfactor_rgb = blend_sfactor_a = sfactor;
 	blend_dfactor_rgb = blend_dfactor_a = dfactor;
-	if (blend_state) change_blend_factor();
+	if (blend_state) blend_modified = GL_TRUE;
 }
 
 void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha){
@@ -745,18 +728,18 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 	blend_dfactor_rgb = dstRGB;
 	blend_sfactor_a = srcAlpha;
 	blend_dfactor_a = dstAlpha;
-	if (blend_state) change_blend_factor();
+	if (blend_state) blend_modified = GL_TRUE;
 }
 
 void glBlendEquation(GLenum mode){
 	blend_func_rgb = blend_func_a = mode;
-	if (blend_state) change_blend_factor();
+	if (blend_state) blend_modified = GL_TRUE;
 }
 
 void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha){
 	blend_func_rgb = modeRGB;
 	blend_func_a = modeAlpha;
-	if (blend_state) change_blend_factor();
+	if (blend_state) blend_modified = GL_TRUE;
 }
 
 void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha){
@@ -765,8 +748,7 @@ void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
 	if (green) blend_color_mask += SCE_GXM_COLOR_MASK_G;
 	if (blue) blend_color_mask += SCE_GXM_COLOR_MASK_B;
 	if (alpha) blend_color_mask += SCE_GXM_COLOR_MASK_A;
-	if (blend_state) change_blend_factor();
-	else change_blend_mask();
+	blend_modified = GL_TRUE;
 }
 
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer){
@@ -849,12 +831,15 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 	int texture2d_idx = tex_unit->tex_id;
 	if (tex_unit->vertex_array_state){
 		if (!no_polygons_mode){
-	
+			if (blend_modified){
+				if (blend_state) change_blend_factor();
+				else change_blend_mask();
+				blend_modified = GL_FALSE;
+			}
 			if (mvp_modified){
 				matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 				mvp_modified = GL_FALSE;
 			}
-			
 			if (tex_unit->texture_array_state){
 				if (!(tex_unit->textures[texture2d_idx].valid)) return;
 				if (tex_unit->color_array_state){
@@ -1064,12 +1049,15 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 		else if (count < 0) error = GL_INVALID_VALUE;
 #endif
 		if (!no_polygons_mode){
-	
+			if (blend_modified){
+				if (blend_state) change_blend_factor();
+				else change_blend_mask();
+				blend_modified = GL_FALSE;
+			}
 			if (mvp_modified){
 				matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 				mvp_modified = GL_FALSE;
 			}
-			
 			if (tex_unit->texture_array_state){
 				if (!(tex_unit->textures[texture2d_idx].valid)) return;
 				if (tex_unit->color_array_state){
@@ -1445,6 +1433,11 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 	else if (count < 0) error = GL_INVALID_VALUE;
 #endif
 	if (!no_polygons_mode){
+		if (blend_modified){
+			if (blend_state) change_blend_factor();
+			else change_blend_mask();
+			blend_modified = GL_FALSE;
+		}
 		if (cur_program != 0){
 			_vglDrawObjects_CustomShadersIMPL(mode, count, implicit_wvp);
 			sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);

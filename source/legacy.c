@@ -442,6 +442,13 @@ void glEnd(void){
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	
+	// Changing blend mode if required
+	if (blend_modified){
+		if (blend_state) change_blend_factor();
+		else change_blend_mask();
+		blend_modified = GL_FALSE;
+	}
+	
 	// Calculating mvp matrix
 	if (mvp_modified){
 		matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
