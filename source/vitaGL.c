@@ -96,7 +96,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		SCE_GXM_MULTISAMPLE_NONE,
 		blend_info,
-		rgba_fragment_program,
+		NULL,
 		&rgba_fragment_program_patched);
 		
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
@@ -104,7 +104,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		SCE_GXM_MULTISAMPLE_NONE,
 		blend_info,
-		texture2d_fragment_program,
+		NULL,
 		&texture2d_fragment_program_patched);
 		
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
@@ -112,7 +112,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		SCE_GXM_MULTISAMPLE_NONE,
 		blend_info,
-		texture2d_rgba_fragment_program,
+		NULL,
 		&texture2d_rgba_fragment_program_patched);
 
 }
@@ -256,8 +256,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		disable_color_buffer_fragment_id,
 		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		SCE_GXM_MULTISAMPLE_NONE,
-		&disable_color_buffer_blend_info,
-		disable_color_buffer_fragment_program,
+		&disable_color_buffer_blend_info, NULL,
 		&disable_color_buffer_fragment_program_patched);
 		
 	depth_vertices = gpu_alloc_mapped(4 * sizeof(struct position_vertex), VGL_MEM_RAM);
@@ -306,7 +305,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, clear_fragment_program,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, NULL,
 		&clear_fragment_program_patched);
 
 	clear_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), VGL_MEM_RAM);
@@ -402,7 +401,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		rgba_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, rgba_fragment_program,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, NULL,
 		&rgba_fragment_program_patched);
 		
 	rgba_wvp = sceGxmProgramFindParameterByName(rgba_vertex_program, "wvp");
@@ -463,7 +462,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		texture2d_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_fragment_program,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, NULL,
 		&texture2d_fragment_program_patched);
 		
 	texture2d_wvp = sceGxmProgramFindParameterByName(texture2d_vertex_program, "wvp");	
@@ -538,7 +537,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		texture2d_rgba_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, texture2d_rgba_fragment_program,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, NULL,
 		&texture2d_rgba_fragment_program_patched);
 		
 	texture2d_rgba_wvp = sceGxmProgramFindParameterByName(texture2d_rgba_vertex_program, "wvp");	

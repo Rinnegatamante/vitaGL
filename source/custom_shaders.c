@@ -68,7 +68,7 @@ void changeCustomShadersBlend(SceGxmBlendInfo *blend_info){
 				SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 				SCE_GXM_MULTISAMPLE_NONE,
 				blend_info,
-				p->fshader->prog,
+				p->vshader->prog,
 				&p->fprog);
 		}
 	}
@@ -229,7 +229,7 @@ void glLinkProgram(GLuint progr){
 		p->stream, p->attr_num, &p->vprog);
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		p->fshader->id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, p->fshader->prog,
+		SCE_GXM_MULTISAMPLE_NONE, NULL, p->vshader->prog,
 		&p->fprog);
 		
 }
