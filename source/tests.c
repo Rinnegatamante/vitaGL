@@ -307,7 +307,32 @@ void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height){
 void glDepthFunc(GLenum func){
 	
 	// Properly translating openGL function to sceGxm one
-	gxm_depth = func;
+	switch (func){
+	case GL_NEVER:
+		gxm_depth = SCE_GXM_DEPTH_FUNC_NEVER;
+		break;
+	case GL_LESS:
+		gxm_depth = SCE_GXM_DEPTH_FUNC_LESS;
+		break;
+	case GL_EQUAL:
+		gxm_depth = SCE_GXM_DEPTH_FUNC_EQUAL;
+		break;
+	case GL_LEQUAL:
+		gxm_depth = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
+		break;
+	case GL_GREATER:
+		gxm_depth = SCE_GXM_DEPTH_FUNC_GREATER;
+		break;
+	case GL_NOTEQUAL:
+		gxm_depth = SCE_GXM_DEPTH_FUNC_NOT_EQUAL;
+		break;
+	case GL_GEQUAL:
+		gxm_depth = SCE_GXM_DEPTH_FUNC_GREATER_EQUAL;
+		break;
+	case GL_ALWAYS:
+		gxm_depth = SCE_GXM_DEPTH_FUNC_ALWAYS;
+		break;
+	}
 	
 	// Updating in use depth function
 	change_depth_func();

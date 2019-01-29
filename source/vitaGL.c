@@ -734,27 +734,306 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid* data, GLenum usage)
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor){
-	blend_sfactor_rgb = blend_sfactor_a = sfactor;
-	blend_dfactor_rgb = blend_dfactor_a = dfactor;
+	switch (sfactor){
+		case GL_ZERO:
+		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ZERO;
+		break;
+	case GL_ONE:
+		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE;
+		break;
+	case GL_SRC_COLOR:
+		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
+		break;
+	case GL_ONE_MINUS_SRC_COLOR:
+		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+		break;
+	case GL_DST_COLOR:
+		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_DST_COLOR;
+		break;
+	case GL_ONE_MINUS_DST_COLOR:
+		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+		break;
+	case GL_SRC_ALPHA:
+		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+		break;
+	case GL_ONE_MINUS_SRC_ALPHA:
+		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		break;
+	case GL_DST_ALPHA:
+		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
+		break;
+	case GL_ONE_MINUS_DST_ALPHA:
+		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+		break;
+	case GL_SRC_ALPHA_SATURATE:
+		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
+	switch (dfactor){
+	case GL_ZERO:
+		blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ZERO;
+		break;
+	case GL_ONE:
+		blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE;
+		break;
+	case GL_SRC_COLOR:
+		blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
+		break;
+	case GL_ONE_MINUS_SRC_COLOR:
+		blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+		break;
+	case GL_DST_COLOR:
+		blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_DST_COLOR;
+		break;
+	case GL_ONE_MINUS_DST_COLOR:
+		blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+		break;
+	case GL_SRC_ALPHA:
+		blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+		break;
+	case GL_ONE_MINUS_SRC_ALPHA:
+		blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		break;
+	case GL_DST_ALPHA:
+		blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
+		break;
+	case GL_ONE_MINUS_DST_ALPHA:
+		blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+		break;
+	case GL_SRC_ALPHA_SATURATE:
+		blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
 	if (blend_state) change_blend_factor();
 }
 
 void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha){
-	blend_sfactor_rgb = srcRGB;
-	blend_dfactor_rgb = dstRGB;
-	blend_sfactor_a = srcAlpha;
-	blend_dfactor_a = dstAlpha;
+	switch (srcRGB){
+	case GL_ZERO:
+		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ZERO;
+		break;
+	case GL_ONE:
+		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE;
+		break;
+	case GL_SRC_COLOR:
+		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
+		break;
+	case GL_ONE_MINUS_SRC_COLOR:
+		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+		break;
+	case GL_DST_COLOR:
+		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_DST_COLOR;
+		break;
+	case GL_ONE_MINUS_DST_COLOR:
+		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+		break;
+	case GL_SRC_ALPHA:
+		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+		break;
+	case GL_ONE_MINUS_SRC_ALPHA:
+		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		break;
+	case GL_DST_ALPHA:
+		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
+		break;
+	case GL_ONE_MINUS_DST_ALPHA:
+		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+		break;
+	case GL_SRC_ALPHA_SATURATE:
+		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
+	switch (dstRGB){
+	case GL_ZERO:
+		blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ZERO;
+		break;
+	case GL_ONE:
+		blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE;
+		break;
+	case GL_SRC_COLOR:
+		blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
+		break;
+	case GL_ONE_MINUS_SRC_COLOR:
+		blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+		break;
+	case GL_DST_COLOR:
+		blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_DST_COLOR;
+		break;
+	case GL_ONE_MINUS_DST_COLOR:
+		blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+		break;
+	case GL_SRC_ALPHA:
+		blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+		break;
+	case GL_ONE_MINUS_SRC_ALPHA:
+		blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		break;
+	case GL_DST_ALPHA:
+		blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
+		break;
+	case GL_ONE_MINUS_DST_ALPHA:
+		blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+		break;
+	case GL_SRC_ALPHA_SATURATE:
+		blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
+	switch (srcAlpha){
+	case GL_ZERO:
+		blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ZERO;
+		break;
+	case GL_ONE:
+		blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE;
+		break;
+	case GL_SRC_COLOR:
+		blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
+		break;
+	case GL_ONE_MINUS_SRC_COLOR:
+		blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+		break;
+	case GL_DST_COLOR:
+		blend_sfactor_a = SCE_GXM_BLEND_FACTOR_DST_COLOR;
+		break;
+	case GL_ONE_MINUS_DST_COLOR:
+		blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+		break;
+	case GL_SRC_ALPHA:
+		blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+		break;
+	case GL_ONE_MINUS_SRC_ALPHA:
+		blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		break;
+	case GL_DST_ALPHA:
+		blend_sfactor_a = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
+		break;
+	case GL_ONE_MINUS_DST_ALPHA:
+		blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+		break;
+	case GL_SRC_ALPHA_SATURATE:
+		blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
+	switch (dstAlpha){
+	case GL_ZERO:
+		blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ZERO;
+		break;
+	case GL_ONE:
+		blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE;
+		break;
+	case GL_SRC_COLOR:
+		blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_COLOR;
+		break;
+	case GL_ONE_MINUS_SRC_COLOR:
+		blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+		break;
+	case GL_DST_COLOR:
+		blend_dfactor_a = SCE_GXM_BLEND_FACTOR_DST_COLOR;
+		break;
+	case GL_ONE_MINUS_DST_COLOR:
+		blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+		break;
+	case GL_SRC_ALPHA:
+		blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+		break;
+	case GL_ONE_MINUS_SRC_ALPHA:
+		blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		break;
+	case GL_DST_ALPHA:
+		blend_dfactor_a = SCE_GXM_BLEND_FACTOR_DST_ALPHA;
+		break;
+	case GL_ONE_MINUS_DST_ALPHA:
+		blend_dfactor_a = SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+		break;
+	case GL_SRC_ALPHA_SATURATE:
+		blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
 	if (blend_state) change_blend_factor();
 }
 
 void glBlendEquation(GLenum mode){
-	blend_func_rgb = blend_func_a = mode;
+	switch (mode){
+	case GL_FUNC_ADD:
+		blend_func_rgb = blend_func_a = SCE_GXM_BLEND_FUNC_ADD;
+		break;
+	case GL_FUNC_SUBTRACT:
+		blend_func_rgb = blend_func_a = SCE_GXM_BLEND_FUNC_SUBTRACT;
+		break;
+	case GL_FUNC_REVERSE_SUBTRACT:
+		blend_func_rgb = blend_func_a = SCE_GXM_BLEND_FUNC_REVERSE_SUBTRACT;
+		break;
+	case GL_MIN:
+		blend_func_rgb = blend_func_a = SCE_GXM_BLEND_FUNC_MIN;
+		break;
+	case GL_MAX:
+		blend_func_rgb = blend_func_a = SCE_GXM_BLEND_FUNC_MAX;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
 	if (blend_state) change_blend_factor();
 }
 
 void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha){
-	blend_func_rgb = modeRGB;
-	blend_func_a = modeAlpha;
+	switch (modeRGB){
+	case GL_FUNC_ADD:
+		blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD;
+		break;
+	case GL_FUNC_SUBTRACT:
+		blend_func_rgb = SCE_GXM_BLEND_FUNC_SUBTRACT;
+		break;
+	case GL_FUNC_REVERSE_SUBTRACT:
+		blend_func_rgb = SCE_GXM_BLEND_FUNC_REVERSE_SUBTRACT;
+		break;
+	case GL_MIN:
+		blend_func_rgb = SCE_GXM_BLEND_FUNC_MIN;
+		break;
+	case GL_MAX:
+		blend_func_rgb = SCE_GXM_BLEND_FUNC_MAX;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
+	switch (modeAlpha){
+	case GL_FUNC_ADD:
+		blend_func_a = SCE_GXM_BLEND_FUNC_ADD;
+		break;
+	case GL_FUNC_SUBTRACT:
+		blend_func_a = SCE_GXM_BLEND_FUNC_SUBTRACT;
+		break;
+	case GL_FUNC_REVERSE_SUBTRACT:
+		blend_func_a = SCE_GXM_BLEND_FUNC_REVERSE_SUBTRACT;
+		break;
+	case GL_MIN:
+		blend_func_a = SCE_GXM_BLEND_FUNC_MIN;
+		break;
+	case GL_MAX:
+		blend_func_a = SCE_GXM_BLEND_FUNC_MAX;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
 	if (blend_state) change_blend_factor();
 }
 
@@ -846,8 +1125,35 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* po
 void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 	texture_unit* tex_unit = &texture_units[client_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
+	SceGxmPrimitiveType gxm_p;
+	GLboolean skip_draw = GL_FALSE;
 	if (tex_unit->vertex_array_state){
-		if (!no_polygons_mode){
+		switch (mode){
+			case GL_POINTS:
+				gxm_p = SCE_GXM_PRIMITIVE_POINTS;
+				break;
+			case GL_LINES:
+				gxm_p = SCE_GXM_PRIMITIVE_LINES;
+				if ((count % 2) != 0) skip_draw = GL_TRUE;
+				break;
+			case GL_TRIANGLES:
+				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLES;
+				if (no_polygons_mode) skip_draw = GL_TRUE;
+				else if ((count % 3) != 0) skip_draw = GL_TRUE;
+				break;
+			case GL_TRIANGLE_STRIP:
+				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP;
+				if (no_polygons_mode) skip_draw = GL_TRUE;
+				break;
+			case GL_TRIANGLE_FAN:
+				gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_FAN;
+				if (no_polygons_mode) skip_draw = GL_TRUE;
+				break;
+			default:
+				error = GL_INVALID_ENUM;
+				break;
+		}
+		if (!skip_draw){
 	
 			if (mvp_modified){
 				matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
@@ -959,7 +1265,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, uv_map);
 				if (tex_unit->color_array_state) sceGxmSetVertexStream(gxm_context, 2, colors);
-				sceGxmDraw(gxm_context, mode, SCE_GXM_INDEX_FORMAT_U16, indices, count);
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
 			}else if (tex_unit->color_array_state){
 				if (tex_unit->color_array.num == 3) sceGxmSetUniformDataF(vertex_wvp_buffer, rgb_wvp, 0, 16, (const float*)mvp_matrix);
 				else  sceGxmSetUniformDataF(vertex_wvp_buffer, rgba_wvp, 0, 16, (const float*)mvp_matrix);
@@ -1008,7 +1314,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				}
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, colors);
-				sceGxmDraw(gxm_context, mode, SCE_GXM_INDEX_FORMAT_U16, indices, count);	
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);	
 			}else{
 				sceGxmSetUniformDataF(vertex_wvp_buffer, rgba_wvp, 0, 16, (const float*)mvp_matrix);
 				vector3f* vertices = NULL;
@@ -1047,22 +1353,48 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count){
 				}
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, colors);
-				sceGxmDraw(gxm_context, mode, SCE_GXM_INDEX_FORMAT_U16, indices, count);
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
 			}
 		}
 	}
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_indices){
+	SceGxmPrimitiveType gxm_p;
+	SceGxmPrimitiveTypeExtra gxm_ep = SCE_GXM_PRIMITIVE_NONE;
 	texture_unit* tex_unit = &texture_units[client_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
+	GLboolean skip_draw = GL_FALSE;
 	if (tex_unit->vertex_array_state){
 #ifndef SKIP_ERROR_HANDLING
 		if (type != GL_UNSIGNED_SHORT) error = GL_INVALID_ENUM;
 		else if (phase == MODEL_CREATION) error = GL_INVALID_OPERATION;
 		else if (count < 0) error = GL_INVALID_VALUE;
 #endif
-		if (!no_polygons_mode){
+		switch (mode){
+		case GL_POINTS:
+			gxm_p = SCE_GXM_PRIMITIVE_POINTS;
+			break;
+		case GL_LINES:
+			gxm_p = SCE_GXM_PRIMITIVE_LINES;
+			break;
+		case GL_TRIANGLES:
+			gxm_p = SCE_GXM_PRIMITIVE_TRIANGLES;
+			if (no_polygons_mode) skip_draw = GL_TRUE;
+			break;
+		case GL_TRIANGLE_STRIP:
+			gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP;
+			if (no_polygons_mode) skip_draw = GL_TRUE;
+			break;
+		case GL_TRIANGLE_FAN:
+			gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_FAN;
+			if (no_polygons_mode) skip_draw = GL_TRUE;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+		}
+		if (!skip_draw){
 	
 			if (mvp_modified){
 				matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
@@ -1151,7 +1483,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, uv_map);
 				if (tex_unit->color_array_state) sceGxmSetVertexStream(gxm_context, 2, colors);
-				sceGxmDraw(gxm_context, mode, SCE_GXM_INDEX_FORMAT_U16, indices, count);
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
 			}else if (tex_unit->color_array_state){
 				if (tex_unit->color_array.num == 3) sceGxmSetUniformDataF(vertex_wvp_buffer, rgb_wvp, 0, 16, (const float*)mvp_matrix);
 				else sceGxmSetUniformDataF(vertex_wvp_buffer, rgba_wvp, 0, 16, (const float*)mvp_matrix);
@@ -1192,7 +1524,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 				}
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, colors);
-				sceGxmDraw(gxm_context, mode, SCE_GXM_INDEX_FORMAT_U16, indices, count);
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
 			}else{
 				sceGxmSetUniformDataF(vertex_wvp_buffer, rgba_wvp, 0, 16, (const float*)mvp_matrix);
 				vector3f* vertices = NULL;
@@ -1223,7 +1555,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* gl_in
 				}
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, colors);
-				sceGxmDraw(gxm_context, mode, SCE_GXM_INDEX_FORMAT_U16, indices, count);
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
 			}
 		}
 	}
@@ -1437,17 +1769,42 @@ void vglIndexPointerMapped(const GLvoid* pointer){
 }
 
 void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
+	SceGxmPrimitiveType gxm_p;
 	texture_unit* tex_unit = &texture_units[client_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) error = GL_INVALID_OPERATION;
 	else if (count < 0) error = GL_INVALID_VALUE;
 #endif
-	if (!no_polygons_mode){
+	GLboolean skip_draw = GL_FALSE;
+	switch (mode){
+	case GL_POINTS:
+		gxm_p = SCE_GXM_PRIMITIVE_POINTS;
+		break;
+	case GL_LINES:
+		gxm_p = SCE_GXM_PRIMITIVE_LINES;
+		break;
+	case GL_TRIANGLES:
+		gxm_p = SCE_GXM_PRIMITIVE_TRIANGLES;
+		if (no_polygons_mode) skip_draw = GL_TRUE;
+		break;
+	case GL_TRIANGLE_STRIP:
+		gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP;
+		if (no_polygons_mode) skip_draw = GL_TRUE;
+		break;
+	case GL_TRIANGLE_FAN:
+		gxm_p = SCE_GXM_PRIMITIVE_TRIANGLE_FAN;
+		if (no_polygons_mode) skip_draw = GL_TRUE;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
+	if (!skip_draw){
 		if (cur_program != 0){
 			_vglDrawObjects_CustomShadersIMPL(mode, count, implicit_wvp);
 			sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
-			sceGxmDraw(gxm_context, mode, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 			vert_uniforms = NULL;
 			frag_uniforms = NULL;
 		}else{
@@ -1500,13 +1857,13 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 					sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
 					sceGxmSetVertexStream(gxm_context, 1, tex_unit->texture_object);
 					if (tex_unit->color_array_state) sceGxmSetVertexStream(gxm_context, 2, tex_unit->color_object);
-					sceGxmDraw(gxm_context, mode, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
+					sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 				}else if (tex_unit->color_array_state){
 					if (tex_unit->color_array.num == 3) sceGxmSetUniformDataF(vertex_wvp_buffer, rgb_wvp, 0, 16, (const float*)mvp_matrix);
 					else sceGxmSetUniformDataF(vertex_wvp_buffer, rgba_wvp, 0, 16, (const float*)mvp_matrix);
 					sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
 					sceGxmSetVertexStream(gxm_context, 1, tex_unit->color_object);
-					sceGxmDraw(gxm_context, mode, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
+					sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 				}else{
 					sceGxmSetUniformDataF(vertex_wvp_buffer, rgba_wvp, 0, 16, (const float*)mvp_matrix);
 					vector4f* colors = (vector4f*)gpu_pool_memalign(count * sizeof(vector4f), sizeof(vector4f));
@@ -1516,7 +1873,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 					}
 					sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
 					sceGxmSetVertexStream(gxm_context, 1, colors);
-					sceGxmDraw(gxm_context, mode, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
+					sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 				}
 			}
 		}
