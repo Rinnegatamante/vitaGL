@@ -115,6 +115,9 @@ void glGetIntegerv(GLenum pname, GLint *data){
 	case GL_TEXTURE_BINDING_2D:
 		*data = server_tex_unit->tex_id;
 		break;
+	case GL_MAX_TEXTURE_SIZE:
+		*data = 1024;
+		break;
 	case GL_VIEWPORT:
 		data[0] = gl_viewport.x;
 		data[1] = gl_viewport.y;

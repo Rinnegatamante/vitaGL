@@ -76,6 +76,7 @@ extern "C" {
 #define GL_BLEND                          0x0BE2
 #define GL_SCISSOR_BOX                    0x0C10
 #define GL_SCISSOR_TEST                   0x0C11
+#define GL_MAX_TEXTURE_SIZE               0x0D33
 #define GL_MAX_MODELVIEW_STACK_DEPTH      0x0D36
 #define GL_MAX_PROJECTION_STACK_DEPTH     0x0D38
 #define GL_MAX_TEXTURE_STACK_DEPTH        0x0D39
