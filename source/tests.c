@@ -85,23 +85,42 @@ void validate_depth_test(){
 
 void change_stencil_settings(){
 	
-	// Setting stencil function for both front and back primitives
-	sceGxmSetFrontStencilFunc(gxm_context,
-		stencil_func_front,
-		stencil_fail_front,
-		depth_fail_front,
-		depth_pass_front,
-		stencil_mask_front, stencil_mask_front_write);
-	sceGxmSetBackStencilFunc(gxm_context,
-		stencil_func_back,
-		stencil_fail_back,
-		depth_fail_back,
-		depth_pass_back,
-		stencil_mask_back, stencil_mask_back_write);
+	if (stencil_test_state) {
 		
-	// Setting stencil ref for both front and back primitives
-	sceGxmSetFrontStencilRef(gxm_context, stencil_ref_front);
-	sceGxmSetBackStencilRef(gxm_context, stencil_ref_back);
+		// Setting stencil function for both front and back primitives
+		sceGxmSetFrontStencilFunc(gxm_context,
+			stencil_func_front,
+			stencil_fail_front,
+			depth_fail_front,
+			depth_pass_front,
+			stencil_mask_front, stencil_mask_front_write);
+		sceGxmSetBackStencilFunc(gxm_context,
+			stencil_func_back,
+			stencil_fail_back,
+			depth_fail_back,
+			depth_pass_back,
+			stencil_mask_back, stencil_mask_back_write);
+		
+		// Setting stencil ref for both front and back primitives
+		sceGxmSetFrontStencilRef(gxm_context, stencil_ref_front);
+		sceGxmSetBackStencilRef(gxm_context, stencil_ref_back);
+		
+	} else {
+		
+		sceGxmSetFrontStencilFunc(gxm_context,
+			SCE_GXM_STENCIL_FUNC_ALWAYS,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			0, 0);
+		sceGxmSetBackStencilFunc(gxm_context,
+			SCE_GXM_STENCIL_FUNC_ALWAYS,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			0, 0);
+			
+	}
 	
 }
 
