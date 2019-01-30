@@ -267,28 +267,34 @@ void gpu_alloc_mipmaps(int level, texture *tex){
 	uint32_t count = sceGxmTextureGetMipmapCount(&tex->gxm_tex);
 	
 	// Getting textures info and calculating bpp
-	uint32_t w, h;
-	uint32_t orig_w = w = sceGxmTextureGetWidth(&tex->gxm_tex);
-	uint32_t orig_h = h = sceGxmTextureGetHeight(&tex->gxm_tex);
+	uint32_t w, h, stride;
+	uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
+	uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
 	SceGxmTextureFormat format = sceGxmTextureGetFormat(&tex->gxm_tex);
 	uint32_t bpp = tex_format_to_bytespp(format);
 	
 	// Checking if we need at least one more new mipmap level
 	if ((level > count) || (level < 0)){ // Note: level < 0 means we will use max possible mipmaps level
 		
+		uint32_t jumps[10];
+		for (w = 1; w < orig_w ; w<<=1){}
+		for (h = 1; h < orig_h ; h<<=1){}
+		
 		// Calculating new texture data buffer size
 		uint32_t size = 0;
 		int j;
 		if (level > 0){
 			for (j=0;j<level;j++){
-				size += max(w, 8) * h * bpp;
+				jumps[j] =  max(w, 8) * h * bpp;
+				size += jumps[j];
 				w /= 2;
 				h /= 2;
 			}
 		}else{
 			level = 0;
 			while ((w > 1) && (h > 1)){
-				size += max(w, 8) * h * bpp;
+				jumps[level] = max(w, 8) * h * bpp;
+				size += jumps[level];
 				w /= 2;
 				h /= 2;
 				level++;
@@ -308,13 +314,13 @@ void gpu_alloc_mipmaps(int level, texture *tex){
 		}
 			
 		// Moving texture data to heap and deallocating texture memblock
-		void *temp = (void*)malloc(orig_w * orig_h * bpp);
-		memcpy(temp, sceGxmTextureGetData(&tex->gxm_tex), orig_w * orig_h * bpp);
+		stride = ALIGN(orig_w, 8);
+		void *temp = (void*)malloc(stride * orig_h * bpp);
+		memcpy(temp, sceGxmTextureGetData(&tex->gxm_tex), stride * orig_h * bpp);
 		gpu_free_texture(tex);
 			
 		// Allocating the new texture data buffer
 		tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-		const int tex_size = ALIGN(w, 8) * h * bpp;
 		void *texture_data = gpu_alloc_mapped(size, tex->mtype);
 		if (texture_data == NULL){ // If alloc fails, use the non-preferred memblock type
 			tex->mtype = use_vram ? VGL_MEM_RAM : VGL_MEM_VRAM;
@@ -323,17 +329,19 @@ void gpu_alloc_mipmaps(int level, texture *tex){
 		tex->valid = 1;
 		
 		// Moving back old texture data from heap to texture memblock
-		memcpy(texture_data, temp, orig_w * orig_h * bpp);
+		memcpy(texture_data, temp, stride * orig_h * bpp);
 		free(temp);
 		
 		// Performing a chain downscale process to generate requested mipmaps
 		uint8_t *curPtr = (uint8_t*)texture_data;
 		uint32_t curWidth = orig_w;
 		uint32_t curHeight = orig_h;
+		if (curWidth % 2) curWidth--;
+		if (curHeight % 2) curHeight--;
 		for (j = 0; j < level - 1; j++){
-			uint32_t curSrcStride = max(curWidth, 8);
-			uint32_t curDstStride = max((curWidth>>1), 8);
-			uint8_t *dstPtr = curPtr + (curSrcStride * curHeight * bpp);
+			uint32_t curSrcStride = ALIGN(curWidth, 8);
+			uint32_t curDstStride = ALIGN(curWidth>>1, 8);
+			uint8_t *dstPtr = curPtr + jumps[j];
 			sceGxmTransferDownscale(
 				fmt, curPtr, 0, 0,
 				curWidth, curHeight,
@@ -349,7 +357,6 @@ void gpu_alloc_mipmaps(int level, texture *tex){
 		// Initializing texture in sceGxm
 		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, level);
 		tex->data = texture_data;
-		
 	}
 }
 
