@@ -54,6 +54,7 @@ clear_vertex *clear_vertices = NULL; // Memblock starting address for clear scre
 
 // Internal stuffs
 uint8_t drawing = 0;
+SceGxmMultisampleMode msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
 
 static SceGxmBlendInfo* cur_blend_info_ptr = NULL;
 extern uint8_t use_vram;
@@ -94,7 +95,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		rgba_fragment_id,
 		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE,
+		msaa_mode,
 		blend_info,
 		NULL,
 		&rgba_fragment_program_patched);
@@ -102,7 +103,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		texture2d_fragment_id,
 		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE,
+		msaa_mode,
 		blend_info,
 		NULL,
 		&texture2d_fragment_program_patched);
@@ -110,7 +111,7 @@ static void _change_blend_factor(SceGxmBlendInfo* blend_info){
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		texture2d_rgba_fragment_id,
 		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE,
+		msaa_mode,
 		blend_info,
 		NULL,
 		&texture2d_rgba_fragment_program_patched);
@@ -167,9 +168,10 @@ void vglUseVram(GLboolean usage){
 	use_vram = usage;
 }
 
-void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold){
+void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa){
 	
 	// Setting our display size
+	msaa_mode = msaa;
 	DISPLAY_WIDTH = width;
 	DISPLAY_HEIGHT = height;
 	DISPLAY_WIDTH_FLOAT = width * 1.0f;
@@ -255,7 +257,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		disable_color_buffer_fragment_id,
 		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE,
+		msaa,
 		&disable_color_buffer_blend_info, NULL,
 		&disable_color_buffer_fragment_program_patched);
 		
@@ -305,7 +307,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, NULL,
+		msaa, NULL, NULL,
 		&clear_fragment_program_patched);
 
 	clear_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), VGL_MEM_RAM);
@@ -401,7 +403,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		rgba_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, NULL,
+		msaa, NULL, NULL,
 		&rgba_fragment_program_patched);
 		
 	rgba_wvp = sceGxmProgramFindParameterByName(rgba_vertex_program, "wvp");
@@ -462,7 +464,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		texture2d_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, NULL,
+		msaa, NULL, NULL,
 		&texture2d_fragment_program_patched);
 		
 	texture2d_wvp = sceGxmProgramFindParameterByName(texture2d_vertex_program, "wvp");	
@@ -537,7 +539,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		texture2d_rgba_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		SCE_GXM_MULTISAMPLE_NONE, NULL, NULL,
+		msaa, NULL, NULL,
 		&texture2d_rgba_fragment_program_patched);
 		
 	texture2d_rgba_wvp = sceGxmProgramFindParameterByName(texture2d_rgba_vertex_program, "wvp");	
@@ -589,7 +591,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 }
 
 void vglInit(uint32_t gpu_pool_size){
-	vglInitExtended(gpu_pool_size, DISPLAY_WIDTH_DEF, DISPLAY_HEIGHT_DEF, 0x1000000);
+	vglInitExtended(gpu_pool_size, DISPLAY_WIDTH_DEF, DISPLAY_HEIGHT_DEF, 0x1000000, SCE_GXM_MULTISAMPLE_NONE);
 }
 
 void vglEnd(void){

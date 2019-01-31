@@ -155,7 +155,7 @@ void createDisplayRenderTarget(void){
 	render_target_params.width = DISPLAY_WIDTH;
 	render_target_params.height = DISPLAY_HEIGHT;
 	render_target_params.scenesPerFrame = 1;
-	render_target_params.multisampleMode = SCE_GXM_MULTISAMPLE_NONE;
+	render_target_params.multisampleMode = msaa_mode;
 	render_target_params.multisampleLocations = 0;
 	render_target_params.driverMemBlock = -1;
 	
@@ -186,7 +186,7 @@ void initDisplayColorSurfaces(void){
 		sceGxmColorSurfaceInit(&gxm_color_surfaces[i],
 			SCE_GXM_COLOR_FORMAT_A8B8G8R8,
 			SCE_GXM_COLOR_SURFACE_LINEAR,
-			SCE_GXM_COLOR_SURFACE_SCALE_NONE,
+			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
 			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
 			DISPLAY_WIDTH,
 			DISPLAY_HEIGHT,
@@ -217,7 +217,9 @@ void initDepthStencilSurfaces(void){
 	unsigned int depth_stencil_width = ALIGN(DISPLAY_WIDTH, SCE_GXM_TILE_SIZEX);
 	unsigned int depth_stencil_height = ALIGN(DISPLAY_HEIGHT, SCE_GXM_TILE_SIZEY);
 	unsigned int depth_stencil_samples = depth_stencil_width * depth_stencil_height;
-
+	if (msaa_mode == SCE_GXM_MULTISAMPLE_2X) depth_stencil_samples = depth_stencil_samples * 2;
+	else if (msaa_mode == SCE_GXM_MULTISAMPLE_4X) depth_stencil_samples = depth_stencil_samples * 4;
+	
 	// Allocating depth surface
 	gxm_depth_surface_addr = gpu_alloc_mapped(4 * depth_stencil_samples, VGL_MEM_VRAM);
 	
@@ -228,7 +230,7 @@ void initDepthStencilSurfaces(void){
 	sceGxmDepthStencilSurfaceInit(&gxm_depth_stencil_surface,
 		SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M_S8,
 		SCE_GXM_DEPTH_STENCIL_SURFACE_TILED,
-		depth_stencil_width,
+		msaa_mode == SCE_GXM_MULTISAMPLE_4X ? depth_stencil_width * 2 : depth_stencil_width,
 		gxm_depth_surface_addr,
 		gxm_stencil_surface_addr);
 	
