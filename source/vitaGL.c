@@ -53,7 +53,6 @@ SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for
 clear_vertex *clear_vertices = NULL; // Memblock starting address for clear screen vertices
 
 // Internal stuffs
-uint8_t drawing = 0;
 SceGxmMultisampleMode msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
 
 static SceGxmBlendInfo* cur_blend_info_ptr = NULL;

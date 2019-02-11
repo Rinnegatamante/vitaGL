@@ -268,7 +268,6 @@ void glClear(GLbitfield mask){
 		change_depth_write((depth_mask_state && orig_depth_test) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
 		sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back);
-		drawing = 1;
 	}
 	if ((mask & GL_DEPTH_BUFFER_BIT) == GL_DEPTH_BUFFER_BIT){
 		invalidate_depth_test();

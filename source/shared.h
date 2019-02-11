@@ -83,7 +83,6 @@ typedef enum SceGxmPrimitiveTypeExtra{
 // Internal stuffs
 extern void* frag_uniforms;
 extern void* vert_uniforms;
-extern uint8_t drawing;
 extern SceGxmMultisampleMode msaa_mode;
 
 // Debugging tool
