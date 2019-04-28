@@ -3,11 +3,28 @@ void main(
 	float2 texcoord,
 	float4 color,
 	column_major uniform float4x4 wvp,
+	uniform int fog_mode,
+	uniform float fog_near,
+	uniform float fog_far,
+	uniform float fog_density,
 	float4 out vPosition : POSITION,
+	float out vFog : FOG,
 	float2 out vTexcoord : TEXCOORD0,
 	float4 out vColor : COLOR)
 {
 	vPosition = mul(float4(position, 1.f), wvp);
+	if (fog_mode > 2){ // Fogging disabled
+		vFog = 1.0f;
+	}else{
+		float dist = distance(vPosition, float4(0.0,0.0,0.0,1.0));
+		if (fog_mode == 0){ // GL_LINEAR
+			vFog = (fog_far - dist) / (fog_far - fog_near);
+		}else if (fog_mode == 1){ // GL_EXP
+			vFog = exp(-fog_density * dist);
+		}else{ // GL_EXP2
+			vFog = exp(-pow(fog_density * dist, 2));
+		}
+	}
 	vTexcoord = texcoord;
 	vColor = color;
 }

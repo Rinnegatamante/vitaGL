@@ -1,10 +1,13 @@
 ﻿float4 main(
 	float2 vTexcoord : TEXCOORD0,
+	float vFog : FOG,
 	uniform sampler2D tex,
 	uniform float alphaCut,
 	uniform int alphaOp,
 	uniform float4 tintColor,
 	uniform int texEnv,
+	uniform int fog_mode,
+	uniform float4 fogColor,
 	uniform float4 texEnvColor
 	)
 {
@@ -55,6 +58,11 @@
 		}else{
 			discard;
 		}
+	}
+	
+	// Fogging
+	if (fog_mode < 3){
+		texColor.rgb = lerp(fogColor.rgb, texColor.rgb, vFog);
 	}
 	
 	return texColor;

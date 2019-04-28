@@ -48,6 +48,14 @@ typedef enum alphaOp{
 	ALWAYS = 7
 } alphaOp;
 
+// Fog modes
+typedef enum fogType{
+	LINEAR = 0,
+	EXP = 1,
+	EXP2 = 2,
+	DISABLED = 3
+} fogType;
+
 // Texture unit struct
 typedef struct texture_unit{
 	GLboolean enabled;
@@ -150,5 +158,14 @@ extern GLenum gl_polygon_mode_back; // Current in use polygon mode for back
 
 // Texture Environment
 extern vector4f texenv_color; // Current in use texture environment color
+
+// Fogging
+extern GLboolean fogging;  // Current fogging processor state
+extern GLint fog_mode; // Current fogging mode (openGL)
+extern fogType internal_fog_mode; // Current fogging mode (sceGxm)
+extern GLfloat fog_density; // Current fogging density
+extern GLfloat fog_near; // Current fogging near distance
+extern GLfloat fog_far; // Current fogging far distance
+extern vector4f fog_color; // Current fogging color
 
 #endif

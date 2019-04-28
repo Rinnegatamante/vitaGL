@@ -64,10 +64,18 @@ extern "C" {
 #define GL_STACK_OVERFLOW                 0x0503
 #define GL_STACK_UNDERFLOW                0x0504
 #define GL_OUT_OF_MEMORY                  0x0505
+#define GL_EXP                            0x0800
+#define GL_EXP2                           0x0801
 #define GL_CW                             0x0900
 #define GL_CCW                            0x0901
 #define GL_POLYGON_MODE                   0x0B40
 #define GL_CULL_FACE                      0x0B44
+#define GL_FOG                            0x0B60
+#define GL_FOG_DENSITY                    0x0B62
+#define GL_FOG_START                      0x0B63
+#define GL_FOG_END                        0x0B64
+#define GL_FOG_MODE                       0x0B65
+#define GL_FOG_COLOR                      0x0B66
 #define GL_DEPTH_TEST                     0x0B71
 #define GL_STENCIL_TEST                   0x0B90
 #define GL_VIEWPORT                       0x0BA2
@@ -258,6 +266,9 @@ void glEnable(GLenum cap);
 void glEnableClientState(GLenum array);
 void glEnd(void);
 void glFinish(void);
+void glFogf(GLenum pname,  GLfloat param);
+void glFogfv(GLenum pname, const GLfloat *params);
+void glFogi(GLenum pname, const GLint param);
 void glFrontFace(GLenum mode);
 void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
 void glGenBuffers(GLsizei n, GLuint* buffers);

@@ -23,6 +23,15 @@ int8_t client_texture_unit = 0;	// Current in use client side texture unit
 glPhase phase = NONE; // Current drawing phase for legacy openGL
 vector4f clear_rgba_val; // Current clear color for glClear
 
+// Fogging
+GLboolean fogging = GL_FALSE; // Current fogging processor state
+GLint fog_mode = GL_EXP; // Current fogging mode (openGL)
+fogType internal_fog_mode = DISABLED; // Current fogging mode (sceGxm)
+GLfloat fog_density = 1.0f; // Current fogging density
+GLfloat fog_near = 0.0f; // Current fogging near distance
+GLfloat fog_far = 1.0f; // Current fogging far distance
+vector4f fog_color = {0.0f, 0.0f, 0.0f, 0.0f}; // Current fogging color
+
 // Cullling
 GLboolean cull_face_state = GL_FALSE; // Current state for GL_CULL_FACE
 GLenum gl_cull_mode = GL_BACK; // Current in use openGL cull mode

@@ -464,6 +464,9 @@ void glEnd(void){
 		sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
 		float tex_env = (float)tex_unit->env_mode;
 		sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &tex_env);
+		float fogmode = (float)internal_fog_mode;
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_mode, 0, 1, &fogmode);
+		sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_color, 0, 4, &fog_color.r);
 		sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env_color, 0, 4, &texenv_color.r);
 		
 	}else{
@@ -484,6 +487,13 @@ void glEnd(void){
 		
 		// Setting wvp matrix
 		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)mvp_matrix);
+		
+		// Setting fogging uniforms
+		float fogmode = (float)internal_fog_mode;
+		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_mode2, 0, 1, (const float*)&fogmode);
+		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_near, 0, 1, (const float*)&fog_near);
+		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_far, 0, 1, (const float*)&fog_far);
+		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_density, 0, 1, (const float*)&fog_density);
 		
 		// Setting in use texture
 		sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);

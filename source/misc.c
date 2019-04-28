@@ -5,6 +5,22 @@
 
  #include "shared.h"
  
+ static void update_fogging_state(){
+	if (fogging){
+		switch (fog_mode){
+		case GL_LINEAR:
+			internal_fog_mode = LINEAR;
+			break;
+		case GL_EXP:
+			internal_fog_mode = EXP;
+			break;
+		default:
+			internal_fog_mode = EXP2;
+			break;
+		}
+	}else internal_fog_mode = DISABLED;
+ }
+ 
  static void update_polygon_offset(){
 	switch (polygon_mode_front){
 	case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
@@ -191,6 +207,10 @@ void glEnable(GLenum cap){
 		alpha_test_state = GL_TRUE;
 		update_alpha_test_settings();
 		break;
+	case GL_FOG:
+		fogging = GL_TRUE;
+		update_fogging_state();
+		break;
 	default:
 		error = GL_INVALID_ENUM;
 		break;
@@ -243,6 +263,10 @@ void glDisable(GLenum cap){
 	case GL_ALPHA_TEST:
 		alpha_test_state = GL_FALSE;
 		update_alpha_test_settings();
+		break;
+	case GL_FOG:
+		fogging = GL_FALSE;
+		update_fogging_state();
 		break;
 	default:
 		error = GL_INVALID_ENUM;
@@ -400,4 +424,70 @@ void glPointSize(GLfloat size){
 	sceGxmSetFrontPointLineWidth(gxm_context, size);
 	sceGxmSetBackPointLineWidth(gxm_context, size);
 	
+}
+
+void glFogf(GLenum pname, GLfloat param){
+	switch (pname){
+	case GL_FOG_MODE:
+		fog_mode = param;
+		update_fogging_state();
+		break;
+	case GL_FOG_DENSITY:
+		fog_density = param;
+		break;
+	case GL_FOG_START:
+		fog_near = param;
+		break;
+	case GL_FOG_END:
+		fog_far = param;
+		break;
+	default:
+			error = GL_INVALID_ENUM;
+			break;
+	}
+}
+
+void glFogfv(GLenum pname, const GLfloat *params){
+	switch (pname){
+	case GL_FOG_MODE:
+		fog_mode = params[0];
+		update_fogging_state();
+		break;
+	case GL_FOG_DENSITY:
+		fog_density = params[0];
+		break;
+	case GL_FOG_START:
+		fog_near = params[0];
+		break;
+	case GL_FOG_END:
+		fog_far = params[0];
+		break;
+	case GL_FOG_COLOR:
+		memcpy(&fog_color.r, params, sizeof(vector4f));
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
+}
+
+void glFogi(GLenum pname, const GLint param){
+	switch (pname){
+	case GL_FOG_MODE:
+		fog_mode = param;
+		update_fogging_state();
+		break;
+	case GL_FOG_DENSITY:
+		fog_density = param;
+		break;
+	case GL_FOG_START:
+		fog_near = param;
+		break;
+	case GL_FOG_END:
+		fog_far = param;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
 }
