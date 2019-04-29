@@ -14,14 +14,17 @@
 	if (fog_mode > 2){ // Fogging disabled
 		vFog = 1.0f;
 	}else{
-		float dist = distance(vPosition, float4(0.0,0.0,0.0,1.0));
+		float dist = length(vPosition.xyz);
 		if (fog_mode == 0){ // GL_LINEAR
 			vFog = (fog_far - dist) / (fog_far - fog_near);
 		}else if (fog_mode == 1){ // GL_EXP
 			vFog = exp(-fog_density * dist);
 		}else{ // GL_EXP2
-			vFog = exp(-pow(fog_density * dist, 2));
+			const float LOG2 = -1.442695;
+			float d = fog_density * dist;
+			vFog = exp(d * d * LOG2);
 		}
+		vFog = clamp(vFog, 0.0, 1.0);
 	}
 	vTexcoord = texcoord;
 }

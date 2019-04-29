@@ -441,7 +441,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	texture2d_fog_color = sceGxmProgramFindParameterByName(
 		texture2d_fragment_program, "fogColor");
 		
-		texture2d_fog_mode2 = sceGxmProgramFindParameterByName(
+	texture2d_fog_mode2 = sceGxmProgramFindParameterByName(
 		texture2d_vertex_program, "fog_mode");
 		
 	texture2d_fog_near = sceGxmProgramFindParameterByName(
@@ -1912,6 +1912,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
 						float alpha_operation = (float)alpha_op;
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_operation);
+						sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
 						float env_mode = (float)tex_unit->env_mode;
 						sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &env_mode);
 						float fogmode = (float)internal_fog_mode;

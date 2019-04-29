@@ -442,8 +442,8 @@ void glFogf(GLenum pname, GLfloat param){
 		fog_far = param;
 		break;
 	default:
-			error = GL_INVALID_ENUM;
-			break;
+		error = GL_INVALID_ENUM;
+		break;
 	}
 }
 
