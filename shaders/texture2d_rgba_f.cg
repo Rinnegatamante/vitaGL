@@ -1,7 +1,7 @@
 ﻿float4 main(
 	float2 vTexcoord : TEXCOORD0,
-	float4 vColor : COLOR,
 	float vFog : FOG,
+	float4 vColor : COLOR,
 	uniform sampler2D tex,
 	uniform float alphaCut,
 	uniform int alphaOp,

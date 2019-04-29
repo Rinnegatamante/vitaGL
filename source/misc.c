@@ -211,6 +211,9 @@ void glEnable(GLenum cap){
 		fogging = GL_TRUE;
 		update_fogging_state();
 		break;
+	case GL_CLIP_PLANE0:
+		use_clip0 = GL_TRUE;
+		break;
 	default:
 		error = GL_INVALID_ENUM;
 		break;
@@ -267,6 +270,9 @@ void glDisable(GLenum cap){
 	case GL_FOG:
 		fogging = GL_FALSE;
 		update_fogging_state();
+		break;
+	case GL_CLIP_PLANE0:
+		use_clip0 = GL_FALSE;
 		break;
 	default:
 		error = GL_INVALID_ENUM;
@@ -485,6 +491,21 @@ void glFogi(GLenum pname, const GLint param){
 		break;
 	case GL_FOG_END:
 		fog_far = param;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
+}
+
+void glClipPlane(GLenum plane,  const GLdouble *equation){
+	int i;
+	switch (plane){
+	case GL_CLIP_PLANE0:
+		clip_plane0.x = equation[0];
+		clip_plane0.y = equation[1];
+		clip_plane0.z = equation[2];
+		clip_plane0.w = equation[3];
 		break;
 	default:
 		error = GL_INVALID_ENUM;

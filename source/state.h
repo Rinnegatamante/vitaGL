@@ -140,6 +140,8 @@ extern glPhase phase; // Current drawing phase for legacy openGL
 extern vector4f current_color; // Current in use color
 extern vector4f clear_rgba_val; // Current clear color for glClear
 extern viewport gl_viewport; // Current viewport state
+extern GLint use_clip0; // Clip Plane 0 usage
+extern vector4f clip_plane0; // Clip Plane 0
 
 // Culling
 extern GLboolean no_polygons_mode; // GL_TRUE when cull mode is set to GL_FRONT_AND_BACK

@@ -22,6 +22,8 @@ int8_t client_texture_unit = 0;	// Current in use client side texture unit
 // Miscellaneous
 glPhase phase = NONE; // Current drawing phase for legacy openGL
 vector4f clear_rgba_val; // Current clear color for glClear
+GLint use_clip0 = GL_FALSE; // Clip Plane 0 usage
+vector4f clip_plane0 = {0.0f, 0.0f, 0.0f, 0.0f}; // Clip Plane 0
 
 // Fogging
 GLboolean fogging = GL_FALSE; // Current fogging processor state

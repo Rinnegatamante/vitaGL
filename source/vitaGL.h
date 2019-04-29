@@ -137,6 +137,7 @@ extern "C" {
 #define GL_POLYGON_OFFSET_UNITS           0x2A00
 #define GL_POLYGON_OFFSET_POINT           0x2A01
 #define GL_POLYGON_OFFSET_LINE            0x2A02
+#define GL_CLIP_PLANE0                    0x3000
 #define GL_FUNC_ADD                       0x8006
 #define GL_MIN                            0x8007
 #define GL_MAX                            0x8008
@@ -236,6 +237,7 @@ void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void glClearDepth(GLdouble depth);
 void glClearStencil(GLint s);
 void glClientActiveTexture(GLenum texture);
+void glClipPlane(GLenum plane,  const GLdouble *equation);
 void glColor3f(GLfloat red, GLfloat green, GLfloat blue);
 void glColor3fv(const GLfloat* v);
 void glColor3ub(GLubyte red, GLubyte green, GLubyte blue);
