@@ -259,10 +259,11 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		msaa,
 		&disable_color_buffer_blend_info, NULL,
 		&disable_color_buffer_fragment_program_patched);
-		
-	depth_vertices = gpu_alloc_mapped(4 * sizeof(struct position_vertex), VGL_MEM_RAM);
+	
+	vglMemType type = VGL_MEM_RAM;
+	depth_vertices = gpu_alloc_mapped(4 * sizeof(struct position_vertex), &type);
 
-	depth_clear_indices = gpu_alloc_mapped(4 * sizeof(unsigned short), VGL_MEM_RAM);
+	depth_clear_indices = gpu_alloc_mapped(4 * sizeof(unsigned short), &type);
 
 	depth_vertices[0].position = (vector3f){-1.0f, -1.0f, 1.0f};
 	depth_vertices[1].position = (vector3f){ 1.0f, -1.0f, 1.0f};
@@ -309,7 +310,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		msaa, NULL, NULL,
 		&clear_fragment_program_patched);
 
-	clear_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), VGL_MEM_RAM);
+	clear_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), &type);
 
 	clear_vertices[0].position = (vector2f){-1.0f, -1.0f};
 	clear_vertices[1].position = (vector2f){ 1.0f, -1.0f};
@@ -584,7 +585,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	// Scissor Test shader register
 	sceGxmShaderPatcherCreateMaskUpdateFragmentProgram(gxm_shader_patcher, &scissor_test_fragment_program);
 	
-	scissor_test_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), VGL_MEM_RAM);
+	scissor_test_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), &type);
 	
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);
@@ -766,7 +767,8 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid* data, GLenum usage)
 			error = GL_INVALID_ENUM;
 			break;
 	}
-	gpu_buffers[idx].ptr = gpu_alloc_mapped(size, VGL_MEM_VRAM);
+	vglMemType type = VGL_MEM_VRAM;
+	gpu_buffers[idx].ptr = gpu_alloc_mapped(size, &type);
 	memcpy(gpu_buffers[idx].ptr, data, size);
 }
 
@@ -1823,23 +1825,23 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid* po
 
 void vglVertexPointerMapped(const GLvoid* pointer){
 	texture_unit* tex_unit = &texture_units[client_texture_unit];
-	tex_unit->vertex_object = pointer;
+	tex_unit->vertex_object = (GLvoid*)pointer;
 }
 
 void vglColorPointerMapped(GLenum type, const GLvoid* pointer){
 	texture_unit* tex_unit = &texture_units[client_texture_unit];
-	tex_unit->color_object = pointer;
+	tex_unit->color_object = (GLvoid*)pointer;
 	tex_unit->color_object_type = type;
 }
 
 void vglTexCoordPointerMapped(const GLvoid* pointer){
 	texture_unit* tex_unit = &texture_units[client_texture_unit];
-	tex_unit->texture_object = pointer;
+	tex_unit->texture_object = (GLvoid*)pointer;
 }
 
 void vglIndexPointerMapped(const GLvoid* pointer){
 	texture_unit* tex_unit = &texture_units[client_texture_unit];
-	tex_unit->index_object = pointer;
+	tex_unit->index_object = (GLvoid*)pointer;
 }
 
 void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){

@@ -13,43 +13,18 @@ static void *pool_addr = NULL;
 static unsigned int pool_index = 0;
 static unsigned int pool_size = 0;
 
-void* gpu_alloc_map(SceKernelMemBlockType type, SceGxmMemoryAttribFlags gpu_attrib, size_t size, SceUID *uid){
-	
-	// Aligning memory size
-	void *addr;
-	if (type == SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW){
-		size = ALIGN(size, 256 * 1024);
-	}else{
-		size = ALIGN(size, 4 * 1024);
-	}
-	if (type == SCE_KERNEL_MEMBLOCK_TYPE_USER_RW){
-		*uid = (SceUID)malloc(size);
-		return (void*)*uid;
-	}
+void *gpu_alloc_mapped(size_t size, vglMemType *type){
 	
 	// Allocating requested memblock
-	*uid = sceKernelAllocMemBlock("gpumem", type, size, NULL);
-	if (*uid < 0) return NULL;
-
-	// Getting memblock starting address
-	if (sceKernelGetMemBlockBase(*uid, &addr) < 0) return NULL;
-
-	// Mapping memblock into sceGxm
-	if (sceGxmMapMemory(addr, size, gpu_attrib) < 0) {
-		sceKernelFreeMemBlock(*uid);
-		return NULL;
+	void *res = mempool_alloc(size, *type);
+	
+	// Requested memory type finished, using other one
+	if (res == NULL) {
+		*type = use_vram ? VGL_MEM_RAM : VGL_MEM_VRAM;
+		res = mempool_alloc(size, *type);
 	}
-
-	// Returning memblock starting address
-	return addr;
 	
-}
-
-void *gpu_alloc_mapped(size_t size, vglMemType type){
-	
-	// Allocating requested memblock
-	return mempool_alloc(size, type);
-	
+	return res;
 }
 
 void gpu_free_mapped(void *ptr, vglMemType type){
@@ -149,7 +124,8 @@ void gpu_pool_init(uint32_t temp_pool_size){
 	
 	// Allocating vitaGL mempool
 	pool_size = temp_pool_size;
-	pool_addr = gpu_alloc_mapped(temp_pool_size, VGL_MEM_RAM);
+	vglMemType type = VGL_MEM_RAM;
+	pool_addr = gpu_alloc_mapped(temp_pool_size, &type);
 	
 }
 
@@ -190,11 +166,7 @@ palette *gpu_alloc_palette(const void* data, uint32_t w, uint32_t bpe){
 	res->type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 	
 	// Allocating palette data buffer
-	void *texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), res->type);
-	if (texture_palette == NULL){ // If alloc fails, use the non-preferred memblock type
-		res->type = use_vram ? VGL_MEM_RAM : VGL_MEM_VRAM;
-		texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), res->type);
-	}
+	void *texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), &res->type);
 	
 	// Initializing palette
 	if (data == NULL) memset(texture_palette, 0, 256 * sizeof(uint32_t));
@@ -227,11 +199,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	// Allocating texture data buffer
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 	const int tex_size = ALIGN(w, 8) * h * bpp;
-	void *texture_data = gpu_alloc_mapped(tex_size, tex->mtype);
-	if (texture_data == NULL){ // If alloc fails, use the non-preferred memblock type
-		tex->mtype = use_vram ? VGL_MEM_RAM : VGL_MEM_VRAM;
-		texture_data = gpu_alloc_mapped(tex_size, tex->mtype);
-	}
+	void *texture_data = gpu_alloc_mapped(tex_size, &tex->mtype);
 	
 	if (texture_data != NULL){
 		
@@ -321,11 +289,7 @@ void gpu_alloc_mipmaps(int level, texture *tex){
 			
 		// Allocating the new texture data buffer
 		tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-		void *texture_data = gpu_alloc_mapped(size, tex->mtype);
-		if (texture_data == NULL){ // If alloc fails, use the non-preferred memblock type
-			tex->mtype = use_vram ? VGL_MEM_RAM : VGL_MEM_VRAM;
-			texture_data = gpu_alloc_mapped(size, tex->mtype);
-		}
+		void *texture_data = gpu_alloc_mapped(size, &tex->mtype);
 		tex->valid = 1;
 		
 		// Moving back old texture data from heap to texture memblock

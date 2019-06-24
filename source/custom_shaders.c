@@ -207,7 +207,7 @@ void glDeleteProgram(GLuint prog){
 	
 	// Releasing both vertex and fragment programs from sceGxmShaderPatcher
 	if (p->valid){
-		uint32_t count, i;
+		unsigned int count, i;
 		sceGxmShaderPatcherGetFragmentProgramRefCount(gxm_shader_patcher, p->fprog, &count);
 		for (i=0;i<count;i++){
 			sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog);

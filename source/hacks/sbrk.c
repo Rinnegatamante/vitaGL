@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <reent.h>
+#include <vitasdk.h>
 
 extern unsigned int _newlib_heap_size_user __attribute__((weak));
 
@@ -9,25 +10,25 @@ static char *_newlib_heap_base, *_newlib_heap_end, *_newlib_heap_cur;
 static char _newlib_sbrk_mutex[32] __attribute__ ((aligned (8)));
 
 void * _sbrk_r(struct _reent *reent, ptrdiff_t incr) {
-	if (sceKernelLockLwMutex(_newlib_sbrk_mutex, 1, 0) < 0)
+	if (sceKernelLockLwMutex((SceKernelLwMutexWork*)_newlib_sbrk_mutex, 1, 0) < 0)
 		goto fail;
 	if (!_newlib_heap_base || _newlib_heap_cur + incr >= _newlib_heap_end) {
-		sceKernelUnlockLwMutex(_newlib_sbrk_mutex, 1);
+		sceKernelUnlockLwMutex((SceKernelLwMutexWork*)_newlib_sbrk_mutex, 1);
 fail:
 		reent->_errno = ENOMEM;
-		return -1;
+		return (void*)-1;
 	}
 
 	char *prev_heap_end = _newlib_heap_cur;
 	_newlib_heap_cur += incr;
 
-	sceKernelUnlockLwMutex(_newlib_sbrk_mutex, 1);
+	sceKernelUnlockLwMutex((SceKernelLwMutexWork*)_newlib_sbrk_mutex, 1);
 	return (void*) prev_heap_end;
 }
 
 void _init_vita_heap(void) {
 	// Create a mutex to use inside _sbrk_r
-	if (sceKernelCreateLwMutex(_newlib_sbrk_mutex, "sbrk mutex", 0, 0, 0) < 0) {
+	if (sceKernelCreateLwMutex((SceKernelLwMutexWork*)_newlib_sbrk_mutex, "sbrk mutex", 0, 0, 0) < 0) {
 		goto failure;
 	}
 	if (&_newlib_heap_size_user != NULL) {
@@ -40,7 +41,7 @@ void _init_vita_heap(void) {
 	if (_newlib_heap_memblock < 0) {
 		goto failure;
 	}
-	if (sceKernelGetMemBlockBase(_newlib_heap_memblock, &_newlib_heap_base) < 0) {
+	if (sceKernelGetMemBlockBase(_newlib_heap_memblock, (void*)&_newlib_heap_base) < 0) {
 		goto failure;
 	}
 	_newlib_heap_end = _newlib_heap_base + _newlib_heap_size;
@@ -55,7 +56,7 @@ failure:
 
 void _free_vita_heap(void) {
 	// Destroy the sbrk mutex
-	sceKernelDeleteLwMutex(_newlib_sbrk_mutex);
+	sceKernelDeleteLwMutex((SceKernelLwMutexWork*)_newlib_sbrk_mutex);
 
 	// Free the heap memblock to avoid memory leakage.
 	sceKernelFreeMemBlock(_newlib_heap_memblock);
