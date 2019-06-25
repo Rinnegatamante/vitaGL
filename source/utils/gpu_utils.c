@@ -24,6 +24,12 @@ void *gpu_alloc_mapped(size_t size, vglMemType *type){
 		res = mempool_alloc(size, *type);
 	}
 	
+	// Even the other one failed, using our last resort
+	if (res == NULL) {
+		*type = VGL_MEM_SLOW;
+		res = mempool_alloc(size, *type);
+	}
+	
 	return res;
 }
 

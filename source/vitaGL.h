@@ -343,9 +343,10 @@ void vglVertexAttribPointer(GLuint index,  GLint size,  GLenum type,  GLboolean 
 void vglVertexAttribPointerMapped(GLuint index, const GLvoid* pointer);
  
 typedef enum {
-	VGL_MEM_ALL = 0,   // any memory type (used to monitor total heap usage)
-	VGL_MEM_VRAM = 1,  // CDRAM
-	VGL_MEM_RAM = 2,   // USER_RW RAM
+	VGL_MEM_ALL  = 0,   // any memory type (used to monitor total heap usage)
+	VGL_MEM_VRAM = 1,   // CDRAM
+	VGL_MEM_RAM  = 2,   // USER_RW RAM
+	VGL_MEM_SLOW = 3,   // PHYCONT_USER_RW RAM
 	VGL_MEM_TYPE_COUNT
 } vglMemType;
 
