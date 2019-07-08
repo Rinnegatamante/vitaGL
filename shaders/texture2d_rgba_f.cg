@@ -24,7 +24,7 @@
 			texColor.rgb = lerp(vColor.rgb, texEnvColor.rgb, texColor.rgb);
 			texColor.a = texColor.a * vColor.a;
 		}else{ // GL_ADD
-			texColor.rgb = texColor.rgb + vColor.rgb;
+			texColor.rgb = clamp(texColor.rgb + vColor.rgb, 0.0, 1.0);
 			texColor.a = texColor.a * vColor.a;
 		}
 	}
