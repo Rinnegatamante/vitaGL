@@ -18,6 +18,7 @@ GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
 typedef struct uniform{
 	GLboolean isVertex;
 	const SceGxmProgramParameter* ptr;
+	void *chain;
 } uniform;
 
 // Generic shader struct
@@ -30,15 +31,17 @@ typedef struct shader{
 
 // Program struct holding vertex/fragment shader info
 typedef struct program{
-	shader* vshader;
-	shader* fshader;
+	shader *vshader;
+	shader *fshader;
 	GLboolean valid;
 	SceGxmVertexAttribute attr[16];
 	SceGxmVertexStream stream[16];
-	SceGxmVertexProgram* vprog;
-	SceGxmFragmentProgram* fprog;
+	SceGxmVertexProgram *vprog;
+	SceGxmFragmentProgram *fprog;
 	GLuint attr_num;
-	const SceGxmProgramParameter* wvp;
+	const SceGxmProgramParameter *wvp;
+	uniform *uniforms;
+	uniform *last_uniform;
 } program;
 
 // Internal shaders array
@@ -192,6 +195,8 @@ GLuint glCreateProgram(void){
 			progs[i-1].valid = GL_TRUE;
 			progs[i-1].attr_num = 0;
 			progs[i-1].wvp = NULL;
+			progs[i-1].uniforms = NULL;
+			progs[i-1].last_uniform = NULL;
 			break;
 		}
 		
@@ -212,6 +217,11 @@ void glDeleteProgram(GLuint prog){
 		for (i=0;i<count;i++){
 			sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog);
 			sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, p->vprog);
+		}
+		while (p->uniforms != NULL) {
+			uniform *old = p->uniforms;
+			p->uniforms = (uniform*)p->uniforms->chain;
+			free(old);
 		}
 	}
 	p->valid = GL_FALSE;
@@ -249,8 +259,10 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name){
 	// Grabbing passed program
 	program *p = &progs[prog-1];
 	
-	// FIXME: This is a memory leak, this must be fixed somehow
 	uniform *res = (uniform*)malloc(sizeof(uniform));
+	res->chain = NULL;
+	if (p->last_uniform != NULL) p->last_uniform->chain = (void*)res;
+	p->last_uniform = res;
 	
 	// Checking if parameter is a vertex or fragment related one
 	res->ptr = sceGxmProgramFindParameterByName(p->vshader->prog, name);
