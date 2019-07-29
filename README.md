@@ -7,7 +7,7 @@ You can find samples in the *samples* folder in this repository.
 
 # Help and Troubleshooting
 
-If you plan to use vitaGL for one of your projects, consider contacting me on Discord on Henkaku server to get help setting it up and working with it: https://discord.gg/m7MwpKA
+If you plan to use vitaGL for one of your projects, you can find an official channel to get help with it on Vita Nuova discord server: https://discord.gg/PyCaBx9
 
 # Projects actually using vitaGL
 
