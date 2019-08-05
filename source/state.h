@@ -7,21 +7,21 @@
 #define _STATE_H_
 
 // Drawing phases constants for legacy openGL
-typedef enum glPhase{
+typedef enum glPhase {
 	NONE = 0,
 	MODEL_CREATION = 1
 } glPhase;
 
 // Vertex array attributes struct
-typedef struct vertexArray{
+typedef struct vertexArray {
 	GLint size;
 	GLint num;
 	GLsizei stride;
-	const GLvoid* pointer;
+	const GLvoid *pointer;
 } vertexArray;
 
 // Scissor test region struct
-typedef struct scissor_region{
+typedef struct scissor_region {
 	int x;
 	int y;
 	int w;
@@ -29,7 +29,7 @@ typedef struct scissor_region{
 } scissor_region;
 
 // Viewport struct
-typedef struct viewport{
+typedef struct viewport {
 	int x;
 	int y;
 	int w;
@@ -37,7 +37,7 @@ typedef struct viewport{
 } viewport;
 
 // Alpha operations for alpha testing
-typedef enum alphaOp{
+typedef enum alphaOp {
 	GREATER_EQUAL = 0,
 	GREATER = 1,
 	NOT_EQUAL = 2,
@@ -49,7 +49,7 @@ typedef enum alphaOp{
 } alphaOp;
 
 // Fog modes
-typedef enum fogType{
+typedef enum fogType {
 	LINEAR = 0,
 	EXP = 1,
 	EXP2 = 2,
@@ -57,7 +57,7 @@ typedef enum fogType{
 } fogType;
 
 // Texture unit struct
-typedef struct texture_unit{
+typedef struct texture_unit {
 	GLboolean enabled;
 	GLboolean vertex_array_state;
 	GLboolean color_array_state;
@@ -68,10 +68,10 @@ typedef struct texture_unit{
 	vertexArray color_array;
 	vertexArray texture_array;
 	GLenum color_object_type;
-	void* vertex_object;
-	void* color_object;
-	void* texture_object;
-	void* index_object;
+	void *vertex_object;
+	void *color_object;
+	void *texture_object;
+	void *index_object;
 	int env_mode;
 	int tex_id;
 	SceGxmTextureFilter min_filter;
@@ -79,6 +79,15 @@ typedef struct texture_unit{
 	SceGxmTextureAddrMode u_mode;
 	SceGxmTextureAddrMode v_mode;
 } texture_unit;
+
+// Framebuffer struct
+typedef struct framebuffer {
+	uint8_t active;
+	SceGxmRenderTarget *target;
+	SceGxmColorSurface *colorbuffer;
+	SceGxmDepthStencilSurface *depthbuffer;
+	SceGxmSyncObject *sync_object;
+} framebuffer;
 
 // Blending
 extern GLboolean blend_state; // Current state for GL_BLEND
@@ -167,5 +176,9 @@ extern GLfloat fog_density; // Current fogging density
 extern GLfloat fog_near; // Current fogging near distance
 extern GLfloat fog_far; // Current fogging far distance
 extern vector4f fog_color; // Current fogging color
+
+// Framebuffers
+extern framebuffer *active_read_fb; // Current readback framebuffer in use
+extern framebuffer *active_write_fb; // Current write framebuffer in use
 
 #endif

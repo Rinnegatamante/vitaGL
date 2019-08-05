@@ -209,6 +209,10 @@ extern "C" {
 #define GL_DYNAMIC_COPY                   0x88EA
 #define GL_FRAGMENT_SHADER                0x8B30
 #define GL_VERTEX_SHADER                  0x8B31
+#define GL_READ_FRAMEBUFFER               0x8CA8
+#define GL_DRAW_FRAMEBUFFER               0x8CA9
+#define GL_COLOR_ATTACHMENT0              0x8CE0
+#define GL_FRAMEBUFFER                    0x8D40
 
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 32
 
@@ -225,6 +229,7 @@ void glArrayElement(GLint i);
 void glAttachShader(GLuint prog, GLuint shad);
 void glBegin(GLenum mode);
 void glBindBuffer(GLenum target, GLuint buffer);
+void glBindFramebuffer(GLenum target, GLuint framebuffer);
 void glBindTexture(GLenum target, GLuint texture);
 void glBlendEquation(GLenum mode);
 void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha);
@@ -250,10 +255,11 @@ void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum fo
 GLuint glCreateProgram(void);
 GLuint glCreateShader(GLenum shaderType);
 void glCullFace(GLenum mode);
-void glDeleteBuffers(GLsizei n, const GLuint* gl_buffers);
+void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers);
+void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers);
 void glDeleteProgram(GLuint prog);
 void glDeleteShader(GLuint shad);
-void glDeleteTextures(GLsizei n, const GLuint* textures);
+void glDeleteTextures(GLsizei n, const GLuint *textures);
 void glDepthFunc(GLenum func);
 void glDepthMask(GLboolean flag);
 void glDepthRange(GLdouble nearVal, GLdouble farVal);
@@ -261,7 +267,7 @@ void glDepthRangef(GLfloat nearVal, GLfloat farVal);
 void glDisable(GLenum cap);
 void glDisableClientState(GLenum array);
 void glDrawArrays(GLenum mode, GLint first, GLsizei count);
-void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid * indices);
+void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices);
 void glEnable(GLenum cap);
 void glEnableClientState(GLenum array);
 void glEnd(void);
@@ -269,17 +275,19 @@ void glFinish(void);
 void glFogf(GLenum pname,  GLfloat param);
 void glFogfv(GLenum pname, const GLfloat *params);
 void glFogi(GLenum pname, const GLint param);
+void glFramebufferTexture(GLenum target, GLenum attachment, GLuint texture, GLint level);
 void glFrontFace(GLenum mode);
 void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
-void glGenBuffers(GLsizei n, GLuint* buffers);
+void glGenBuffers(GLsizei n, GLuint *buffers);
 void glGenerateMipmap(GLenum target);
-void glGenTextures(GLsizei n, GLuint* textures);
-void glGetBooleanv(GLenum pname, GLboolean* params);
-void glGetFloatv(GLenum pname, GLfloat* data);
+void glGenFramebuffers(GLsizei n, GLuint *ids);
+void glGenTextures(GLsizei n, GLuint *textures);
+void glGetBooleanv(GLenum pname, GLboolean *params);
+void glGetFloatv(GLenum pname, GLfloat *data);
 GLenum glGetError(void);
-void glGetIntegerv(GLenum pname, GLint* data);
+void glGetIntegerv(GLenum pname, GLint *data);
 const GLubyte* glGetString(GLenum name);
-GLint glGetUniformLocation(GLuint prog, const GLchar* name);
+GLint glGetUniformLocation(GLuint prog, const GLchar *name);
 GLboolean glIsEnabled(GLenum cap);
 void glLineWidth(GLfloat width);
 void glLinkProgram(GLuint progr);
@@ -297,7 +305,7 @@ void glReadPixels(GLint x,  GLint y,  GLsizei width,  GLsizei height,  GLenum fo
 void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height);
-void glShaderBinary(GLsizei count, const GLuint* handles, GLenum binaryFormat, const void *binary, GLsizei length); // NOTE: Uses GXP shaders
+void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length); // NOTE: Uses GXP shaders
 void glStencilFunc(GLenum func, GLint ref, GLuint mask);
 void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask);
 void glStencilMask(GLuint mask);
@@ -344,9 +352,9 @@ void vglVertexAttribPointerMapped(GLuint index, const GLvoid* pointer);
  
 typedef enum {
 	VGL_MEM_ALL  = 0,   // any memory type (used to monitor total heap usage)
-	VGL_MEM_VRAM = 1,   // CDRAM
-	VGL_MEM_RAM  = 2,   // USER_RW RAM
-	VGL_MEM_SLOW = 3,   // PHYCONT_USER_RW RAM
+	VGL_MEM_VRAM,       // CDRAM
+	VGL_MEM_RAM,        // USER_RW RAM
+	VGL_MEM_SLOW,       // PHYCONT_USER_RW RAM
 	VGL_MEM_TYPE_COUNT
 } vglMemType;
 

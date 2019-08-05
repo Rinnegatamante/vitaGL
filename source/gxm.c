@@ -137,9 +137,9 @@ void initGxmContext(void){
 void termGxmContext(void){
 	
 	// Deallocating ring buffers
-	gpu_free_mapped(vdm_ring_buffer_addr, VGL_MEM_VRAM);
-	gpu_free_mapped(vertex_ring_buffer_addr, VGL_MEM_VRAM);
-	gpu_free_mapped(fragment_ring_buffer_addr, VGL_MEM_VRAM);
+	mempool_free(vdm_ring_buffer_addr, VGL_MEM_VRAM);
+	mempool_free(vertex_ring_buffer_addr, VGL_MEM_VRAM);
+	mempool_free(fragment_ring_buffer_addr, VGL_MEM_VRAM);
 	gpu_fragment_usse_free_mapped(fragment_usse_ring_buffer_addr);
 	
 	// Destroying sceGxm context
@@ -206,7 +206,7 @@ void termDisplayColorSurfaces(void){
 	// Deallocating display's color surfaces and destroying sync objects
 	int i;
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
-		gpu_free_mapped(gxm_color_surfaces_addr[i], VGL_MEM_VRAM);
+		mempool_free(gxm_color_surfaces_addr[i], VGL_MEM_VRAM);
 		sceGxmSyncObjectDestroy(gxm_sync_objects[i]);
 	}
 	
@@ -241,8 +241,8 @@ void initDepthStencilSurfaces(void){
 void termDepthStencilSurfaces(void){
 	
 	// Deallocating depth and stencil surfaces memblocks
-	gpu_free_mapped(gxm_depth_surface_addr, VGL_MEM_VRAM);
-	gpu_free_mapped(gxm_stencil_surface_addr, VGL_MEM_VRAM);
+	mempool_free(gxm_depth_surface_addr, VGL_MEM_VRAM);
+	mempool_free(gxm_stencil_surface_addr, VGL_MEM_VRAM);
 	
 }
 
@@ -300,7 +300,7 @@ void stopShaderPatcher(void){
 	sceGxmShaderPatcherDestroy(gxm_shader_patcher);
 	
 	// Freeing shader patcher buffers
-	gpu_free_mapped(gxm_shader_patcher_buffer_addr, VGL_MEM_VRAM);
+	mempool_free(gxm_shader_patcher_buffer_addr, VGL_MEM_VRAM);
 	gpu_vertex_usse_free_mapped(gxm_shader_patcher_vertex_usse_addr);
 	gpu_fragment_usse_free_mapped(gxm_shader_patcher_fragment_usse_addr);
 
@@ -339,14 +339,23 @@ void vglMapHeapMem(){
 }
  
  void vglStartRendering(){
-	 
+	
 	// Starting drawing scene
-	sceGxmBeginScene(
-		gxm_context, 0, gxm_render_target,
-		NULL, NULL,
-		gxm_sync_objects[gxm_back_buffer_index],
-		&gxm_color_surfaces[gxm_back_buffer_index],
-		&gxm_depth_stencil_surface);
+	if (active_write_fb == NULL) { // Default framebuffer is used
+		sceGxmBeginScene(
+			gxm_context, 0, gxm_render_target,
+			NULL, NULL,
+			gxm_sync_objects[gxm_back_buffer_index],
+			&gxm_color_surfaces[gxm_back_buffer_index],
+			&gxm_depth_stencil_surface);
+	} else {
+		sceGxmBeginScene(
+			gxm_context, 0, active_write_fb->target,
+			NULL, NULL,
+			active_write_fb->sync_object,
+			active_write_fb->colorbuffer,
+			active_write_fb->depthbuffer);
+	}
 		
 	// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
     if (scissor_test_state){
@@ -370,14 +379,17 @@ void vglStopRenderingTerm(){
 	// Waiting GPU to complete its work
 	sceGxmFinish(gxm_context);
 	
-	// Properly requesting a display update
-	sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
-	struct display_queue_callback_data queue_cb_data;
-	queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
-	sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
-		gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
-	gxm_front_buffer_index = gxm_back_buffer_index;
-	gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
+	if (active_write_fb == NULL) { // Default framebuffer is used
+	
+		// Properly requesting a display update
+		struct display_queue_callback_data queue_cb_data;
+		queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
+		sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
+			gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
+		gxm_front_buffer_index = gxm_back_buffer_index;
+		gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
+	
+	}
 	
 	// Resetting vitaGL mempool
 	gpu_pool_reset();
