@@ -33,13 +33,6 @@ void *gpu_alloc_mapped(size_t size, vglMemType *type){
 	return res;
 }
 
-void gpu_free_mapped(void *ptr, vglMemType type){
-	
-	// Deallocating requested memblock
-	mempool_free(ptr, type);
-	
-}
-
 void* gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset){
 
 	// Allocating memblock
@@ -288,19 +281,26 @@ void gpu_alloc_mipmaps(int level, texture *tex){
 		}
 			
 		// Moving texture data to heap and deallocating texture memblock
+		GLboolean has_temp_buffer = GL_TRUE;
 		stride = ALIGN(orig_w, 8);
 		void *temp = (void*)malloc(stride * orig_h * bpp);
-		memcpy(temp, sceGxmTextureGetData(&tex->gxm_tex), stride * orig_h * bpp);
-		gpu_free_texture(tex);
+		if (temp == NULL) { // If we finished newlib heap, we delay texture free
+			has_temp_buffer = GL_FALSE;
+			temp = sceGxmTextureGetData(&tex->gxm_tex);
+		} else {
+			memcpy(temp, sceGxmTextureGetData(&tex->gxm_tex), stride * orig_h * bpp);
+			gpu_free_texture(tex);
+		}
 			
 		// Allocating the new texture data buffer
 		tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 		void *texture_data = gpu_alloc_mapped(size, &tex->mtype);
-		tex->valid = 1;
 		
 		// Moving back old texture data from heap to texture memblock
 		memcpy(texture_data, temp, stride * orig_h * bpp);
-		free(temp);
+		if (has_temp_buffer) free(temp);
+		else gpu_free_texture(tex);
+		tex->valid = 1;
 		
 		// Performing a chain downscale process to generate requested mipmaps
 		uint8_t *curPtr = (uint8_t*)texture_data;

@@ -18,7 +18,7 @@
 #include "shaders/texture2d_rgba_f.h"
 #include "shaders/texture2d_rgba_v.h"
 
-typedef struct gpubuffer{
+typedef struct gpubuffer {
 	void* ptr;
 } gpubuffer;
 
@@ -636,10 +636,10 @@ void vglEnd(void){
 	waitRenderingDone();
 	
 	// Deallocating default vertices buffers
-	gpu_free_mapped(clear_vertices, VGL_MEM_RAM);
-	gpu_free_mapped(depth_vertices, VGL_MEM_RAM);
-	gpu_free_mapped(depth_clear_indices, VGL_MEM_RAM);
-	gpu_free_mapped(scissor_test_vertices, VGL_MEM_RAM);
+	mempool_free(clear_vertices, VGL_MEM_RAM);
+	mempool_free(depth_vertices, VGL_MEM_RAM);
+	mempool_free(depth_clear_indices, VGL_MEM_RAM);
+	mempool_free(scissor_test_vertices, VGL_MEM_RAM);
 	
 	// Releasing shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, scissor_test_fragment_program);
@@ -684,22 +684,21 @@ void vglEnd(void){
 	
 }
 
-void vglWaitVblankStart(GLboolean enable){
+void vglWaitVblankStart(GLboolean enable) {
 	vblank = enable;
 }
 
 // openGL implementation
 
-void glGenBuffers(GLsizei n, GLuint* res){
+void glGenBuffers(GLsizei n, GLuint* res) {
 	int i = 0, j = 0;
 #ifndef SKIP_ERROR_HANDLING
-	if (n < 0){
+	if (n < 0) {
 		error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
-	i = 0;
-	for (i=0; i < BUFFERS_NUM; i++){
+	for (i=0; i < BUFFERS_NUM; i++) {
 		if (buffers[i] != 0x0000){
 			res[j++] = buffers[i];
 			buffers[i] = 0x0000;
@@ -708,14 +707,14 @@ void glGenBuffers(GLsizei n, GLuint* res){
 	}
 }
 
-void glBindBuffer(GLenum target, GLuint buffer){
+void glBindBuffer(GLenum target, GLuint buffer) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((buffer != 0x0000) && ((buffer >= BUFFERS_ADDR + BUFFERS_NUM) || (buffer < BUFFERS_ADDR))){
+	if ((buffer != 0x0000) && ((buffer >= BUFFERS_ADDR + BUFFERS_NUM) || (buffer < BUFFERS_ADDR))) {
 		error = GL_INVALID_VALUE;
 		return;
 	}
 #endif
-	switch (target){
+	switch (target) {
 		case GL_ARRAY_BUFFER:
 			vertex_array_unit = buffer - BUFFERS_ADDR;
 			break;
@@ -741,7 +740,7 @@ void glDeleteBuffers(GLsizei n, const GLuint* gl_buffers){
 			uint8_t idx = gl_buffers[j] - BUFFERS_ADDR;
 			buffers[idx] = gl_buffers[j];
 			if (gpu_buffers[idx].ptr != NULL){
-				gpu_free_mapped(gpu_buffers[idx].ptr, VGL_MEM_VRAM);
+				mempool_free(gpu_buffers[idx].ptr, VGL_MEM_VRAM);
 				gpu_buffers[idx].ptr = NULL;
 			}
 		}

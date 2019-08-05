@@ -33,9 +33,6 @@ typedef struct palette{
 // Alloc a generic memblock into sceGxm mapped memory
 void *gpu_alloc_mapped(size_t size, vglMemType *type);
 
-// Dealloc a generic memblock from sceGxm mapped memory
-void gpu_free_mapped(void *ptr, vglMemType type);
-
 // Alloc into sceGxm mapped memory a vertex USSE memblock
 void *gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset);
 
