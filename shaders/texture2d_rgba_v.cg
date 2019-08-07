@@ -18,12 +18,14 @@ void main(
 {
 	float4 pos4 = float4(position, 1.f);
 	
+	// User clip planes
 	if (clip_plane0 < 1) {
 		vClip = 1.f;
 	} else {
 		float4 modelpos = mul(modelview, pos4);
 		vClip = dot(modelpos, clip_plane0_eq);
 	}
+	
 	vPosition = mul(pos4, wvp);
 	if (fog_mode > 2) { // Fogging disabled
 		vFog = 1.0f;
