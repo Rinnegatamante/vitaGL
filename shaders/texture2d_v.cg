@@ -3,14 +3,26 @@
 	float2 texcoord,
 	column_major uniform float4x4 wvp,
 	uniform int fog_mode,
+	uniform int clip_plane0,       // In the future this can turn into an array to support other planes
+	uniform float4 clip_plane0_eq, // In the future this can turn into an array to support other planes
+	uniform float4x4 modelview,
 	uniform float fog_near,
 	uniform float fog_far,
 	uniform float fog_density,
 	float4 out vPosition : POSITION,
 	float out vFog : FOG,
-	float2 out vTexcoord : TEXCOORD0)
+	float2 out vTexcoord : TEXCOORD0,
+	float out vClip : CLP0)
 {
-	vPosition = mul(float4(position, 1.f), wvp);
+	float4 pos4 = float4(position, 1.f);
+	
+	if (clip_plane0 < 1) {
+		vClip = 1.f;
+	} else {
+		float4 modelpos = mul(pos4, modelview);
+		vClip = dot(modelpos, clip_plane0_eq);
+	}
+	vPosition = mul(pos4, wvp);
 	if (fog_mode > 2){ // Fogging disabled
 		vFog = 1.0f;
 	}else{

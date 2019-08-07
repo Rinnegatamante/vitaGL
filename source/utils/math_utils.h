@@ -63,4 +63,10 @@ void matrix4x4_init_orthographic(matrix4x4 m, float left, float right, float bot
 void matrix4x4_init_frustum(matrix4x4 m, float left, float right, float bottom, float top, float near, float far);
 void matrix4x4_init_perspective(matrix4x4 m, float fov, float aspect, float near, float far);
 
+// Invert a matrix
+int matrix4x4_invert(matrix4x4 out, const matrix4x4 m);
+
+// Perform a matrix per vector moltiplication
+void vector4f_matrix4x4_mult(vector4f *u, const matrix4x4 m, const vector4f *v);
+
 #endif

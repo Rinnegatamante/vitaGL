@@ -177,6 +177,10 @@ extern GLfloat fog_near; // Current fogging near distance
 extern GLfloat fog_far; // Current fogging far distance
 extern vector4f fog_color; // Current fogging color
 
+// Clipping Planes
+extern GLint clip_plane0; // Current status of clip plane 0
+extern vector4f clip_plane0_eq; // Current equation of clip plane 0
+
 // Framebuffers
 extern framebuffer *active_read_fb; // Current readback framebuffer in use
 extern framebuffer *active_write_fb; // Current write framebuffer in use

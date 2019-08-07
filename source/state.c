@@ -32,6 +32,10 @@ GLfloat fog_near = 0.0f; // Current fogging near distance
 GLfloat fog_far = 1.0f; // Current fogging far distance
 vector4f fog_color = {0.0f, 0.0f, 0.0f, 0.0f}; // Current fogging color
 
+// Clipping Planes
+GLint clip_plane0 = GL_FALSE; // Current status of clip plane 0
+vector4f clip_plane0_eq = {0.0f, 0.0f, 0.0f, 0.0f}; // Current equation of clip plane 0
+
 // Cullling
 GLboolean cull_face_state = GL_FALSE; // Current state for GL_CULL_FACE
 GLenum gl_cull_mode = GL_BACK; // Current in use openGL cull mode

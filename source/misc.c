@@ -211,6 +211,9 @@ void glEnable(GLenum cap){
 		fogging = GL_TRUE;
 		update_fogging_state();
 		break;
+	case GL_CLIP_PLANE0:
+		clip_plane0 = GL_TRUE;
+		break;
 	default:
 		error = GL_INVALID_ENUM;
 		break;
@@ -267,6 +270,9 @@ void glDisable(GLenum cap){
 	case GL_FOG:
 		fogging = GL_FALSE;
 		update_fogging_state();
+		break;
+	case GL_CLIP_PLANE0:
+		clip_plane0 = GL_FALSE;
 		break;
 	default:
 		error = GL_INVALID_ENUM;
@@ -471,7 +477,7 @@ void glFogfv(GLenum pname, const GLfloat *params){
 	}
 }
 
-void glFogi(GLenum pname, const GLint param){
+void glFogi(GLenum pname, const GLint param) {
 	switch (pname){
 	case GL_FOG_MODE:
 		fog_mode = param;
@@ -485,6 +491,26 @@ void glFogi(GLenum pname, const GLint param){
 		break;
 	case GL_FOG_END:
 		fog_far = param;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
+}
+
+void glClipPlane(GLenum plane, const GLdouble *equation) {
+	switch (plane){
+	case GL_CLIP_PLANE0:
+		clip_plane0_eq.x = equation[0];
+		clip_plane0_eq.y = equation[1];
+		clip_plane0_eq.z = equation[2];
+		clip_plane0_eq.w = equation[3];
+		matrix4x4 inverted, inverted_transposed;
+		matrix4x4_invert(inverted, modelview_matrix);
+		matrix4x4_transpose(inverted_transposed, inverted);
+		vector4f temp;
+		vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_plane0_eq);
+		memcpy(&clip_plane0_eq.x, &temp.x, sizeof(vector4f));
 		break;
 	default:
 		error = GL_INVALID_ENUM;

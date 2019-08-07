@@ -445,6 +445,15 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	texture2d_fog_mode2 = sceGxmProgramFindParameterByName(
 		texture2d_vertex_program, "fog_mode");
 		
+	texture2d_clip_plane0 = sceGxmProgramFindParameterByName(
+		texture2d_vertex_program, "clip_plane0");
+	
+	texture2d_clip_plane0_eq = sceGxmProgramFindParameterByName(
+		texture2d_vertex_program, "clip_plane0_eq");
+		
+	texture2d_mv = sceGxmProgramFindParameterByName(
+		texture2d_vertex_program, "modelview");
+		
 	texture2d_fog_near = sceGxmProgramFindParameterByName(
 		texture2d_vertex_program, "fog_near");
 		
@@ -519,6 +528,15 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		
 	texture2d_rgba_fog_mode2 = sceGxmProgramFindParameterByName(
 		texture2d_rgba_vertex_program, "fog_mode");
+		
+	texture2d_rgba_clip_plane0 = sceGxmProgramFindParameterByName(
+		texture2d_rgba_vertex_program, "clip_plane0");
+	
+	texture2d_rgba_clip_plane0_eq = sceGxmProgramFindParameterByName(
+		texture2d_rgba_vertex_program, "clip_plane0_eq");
+		
+	texture2d_rgba_mv = sceGxmProgramFindParameterByName(
+		texture2d_rgba_vertex_program, "modelview");
 		
 	texture2d_rgba_fog_near = sceGxmProgramFindParameterByName(
 		texture2d_rgba_vertex_program, "fog_near");
@@ -1938,12 +1956,20 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp){
 					if (tex_unit->color_array_state){
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_wvp, 0, 16, (const float*)mvp_matrix);
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_mode2, 0, 1, (const float*)&fogmode);
+						float clipplane0 = (float)clip_plane0;
+						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_clip_plane0, 0, 1, &clipplane0);
+						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
+						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_mv, 0, 16, (const float*)modelview_matrix);
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_near, 0, 1, (const float*)&fog_near);
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_far, 0, 1, (const float*)&fog_far);
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_rgba_fog_density, 0, 1, (const float*)&fog_density);
 					}else{
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float*)mvp_matrix);
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_mode2, 0, 1, (const float*)&fogmode);
+						float clipplane0 = (float)clip_plane0;
+						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0, 0, 1, &clipplane0);
+						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
+						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_mv, 0, 16, (const float*)modelview_matrix);
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_near, 0, 1, (const float*)&fog_near);
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_far, 0, 1, (const float*)&fog_far);
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_fog_density, 0, 1, (const float*)&fog_density);
