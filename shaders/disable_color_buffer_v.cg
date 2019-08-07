@@ -1,8 +1,0 @@
-float4 main(
-	float3 position) : POSITION
-{
-
-	return float4(position, 1.0f);
-}
-
-

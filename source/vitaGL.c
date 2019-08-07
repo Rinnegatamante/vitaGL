@@ -12,7 +12,6 @@
 #include "shaders/rgba_v.h"
 #include "shaders/rgb_v.h"
 #include "shaders/disable_color_buffer_f.h"
-#include "shaders/disable_color_buffer_v.h"
 #include "shaders/texture2d_f.h"
 #include "shaders/texture2d_v.h"
 #include "shaders/texture2d_rgba_f.h"
@@ -33,7 +32,6 @@ float z_scale = 0.5f;
 uint8_t viewport_mode = 0; // Current setting for viewport mode
 GLboolean vblank = GL_TRUE; // Current setting for VSync
 
-static const SceGxmProgram *const gxm_program_disable_color_buffer_v = (SceGxmProgram*)&disable_color_buffer_v;
 static const SceGxmProgram *const gxm_program_disable_color_buffer_f = (SceGxmProgram*)&disable_color_buffer_f;
 static const SceGxmProgram *const gxm_program_clear_v = (SceGxmProgram*)&clear_v;
 static const SceGxmProgram *const gxm_program_clear_f = (SceGxmProgram*)&clear_f;
