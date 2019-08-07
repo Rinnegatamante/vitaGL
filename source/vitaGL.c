@@ -48,9 +48,10 @@ static const SceGxmProgram *const gxm_program_texture2d_rgba_f = (SceGxmProgram*
 // Disable color buffer shader
 uint16_t *depth_clear_indices = NULL; // Memblock starting address for clear screen indices
 
-// Clear shader
+// Clear shaders
 SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
-clear_vertex *clear_vertices = NULL; // Memblock starting address for clear screen vertices
+vector2f *clear_vertices = NULL; // Memblock starting address for clear screen vertices
+vector3f *depth_vertices = NULL; // Memblock starting address for depth clear screen vertices
 
 // Internal stuffs
 SceGxmMultisampleMode msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
@@ -161,6 +162,18 @@ void disable_blend(){
 	}else change_blend_mask();
 }
 
+void vector2f_convert_to_local_space(vector2f *out, int x, int y, int width, int height)
+{	
+	out[0].x = (float)(2*x)/(float)DISPLAY_WIDTH_FLOAT - 1.0f;
+	out[1].x = (float)(2*(x + width))/(float)DISPLAY_WIDTH_FLOAT - 1.0f;
+	out[2].x = (float)(2*(x + width))/(float)DISPLAY_WIDTH_FLOAT - 1.0f;
+	out[3].x = (float)(2*x)/(float)DISPLAY_WIDTH_FLOAT - 1.0f;
+	out[0].y = 1.0f - (float)(2*y)/(float)DISPLAY_HEIGHT_FLOAT;
+	out[1].y = 1.0f - (float)(2*y)/(float)DISPLAY_HEIGHT_FLOAT;
+	out[2].y = 1.0f - (float)(2*(y + height))/(float)DISPLAY_HEIGHT_FLOAT;
+	out[3].y = 1.0f - (float)(2*(y + height))/(float)DISPLAY_HEIGHT_FLOAT;
+}
+
 // vitaGL specific functions
 
 void vglUseVram(GLboolean usage){
@@ -217,32 +230,14 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	startShaderPatcher();
 	
 	// Disable color buffer shader register
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_disable_color_buffer_v,
-		&disable_color_buffer_vertex_id);
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_disable_color_buffer_f,
 		&disable_color_buffer_fragment_id);
 
-	const SceGxmProgram* disable_color_buffer_vertex_program = sceGxmShaderPatcherGetProgramFromId(disable_color_buffer_vertex_id);
 	const SceGxmProgram* disable_color_buffer_fragment_program = sceGxmShaderPatcherGetProgramFromId(disable_color_buffer_fragment_id);
-
-	disable_color_buffer_position = sceGxmProgramFindParameterByName(
-		disable_color_buffer_vertex_program, "position");
-		
-	SceGxmVertexAttribute disable_color_buffer_attributes;
-	SceGxmVertexStream disable_color_buffer_stream;
-	disable_color_buffer_attributes.streamIndex = 0;
-	disable_color_buffer_attributes.offset = 0;
-	disable_color_buffer_attributes.format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-	disable_color_buffer_attributes.componentCount = 3;
-	disable_color_buffer_attributes.regIndex = sceGxmProgramParameterGetResourceIndex(
-		disable_color_buffer_position);
-	disable_color_buffer_stream.stride = sizeof(struct position_vertex);
-	disable_color_buffer_stream.indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	
-	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
-		disable_color_buffer_vertex_id, &disable_color_buffer_attributes,
-		1, &disable_color_buffer_stream, 1, &disable_color_buffer_vertex_program_patched);
-
+	clear_depth = sceGxmProgramFindParameterByName(
+		disable_color_buffer_fragment_program, "depth_clear");
+	
 	SceGxmBlendInfo disable_color_buffer_blend_info;
 	memset(&disable_color_buffer_blend_info, 0, sizeof(SceGxmBlendInfo));
 	disable_color_buffer_blend_info.colorMask = SCE_GXM_COLOR_MASK_NONE;
@@ -261,14 +256,10 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		&disable_color_buffer_fragment_program_patched);
 	
 	vglMemType type = VGL_MEM_RAM;
-	depth_vertices = gpu_alloc_mapped(4 * sizeof(struct position_vertex), &type);
-
+	clear_vertices = gpu_alloc_mapped(4 * sizeof(vector2f), &type);
 	depth_clear_indices = gpu_alloc_mapped(4 * sizeof(unsigned short), &type);
-
-	depth_vertices[0].position = (vector3f){-1.0f, -1.0f, 1.0f};
-	depth_vertices[1].position = (vector3f){ 1.0f, -1.0f, 1.0f};
-	depth_vertices[2].position = (vector3f){-1.0f,  1.0f, 1.0f};
-	depth_vertices[3].position = (vector3f){ 1.0f,  1.0f, 1.0f};
+	
+	vector2f_convert_to_local_space(clear_vertices, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
 	depth_clear_indices[0] = 0;
 	depth_clear_indices[1] = 1;
@@ -298,7 +289,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	clear_vertex_attribute.componentCount = 2;
 	clear_vertex_attribute.regIndex = sceGxmProgramParameterGetResourceIndex(
 		clear_position);
-	clear_vertex_stream.stride = sizeof(struct clear_vertex);
+	clear_vertex_stream.stride = sizeof(vector2f);
 	clear_vertex_stream.indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 
 	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
@@ -309,13 +300,6 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		msaa, NULL, NULL,
 		&clear_fragment_program_patched);
-
-	clear_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), &type);
-
-	clear_vertices[0].position = (vector2f){-1.0f, -1.0f};
-	clear_vertices[1].position = (vector2f){ 1.0f, -1.0f};
-	clear_vertices[2].position = (vector2f){ 1.0f,  1.0f};
-	clear_vertices[3].position = (vector2f){-1.0f,  1.0f};
 	
 	// Color shader register
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_rgba_v,
@@ -603,7 +587,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	// Scissor Test shader register
 	sceGxmShaderPatcherCreateMaskUpdateFragmentProgram(gxm_shader_patcher, &scissor_test_fragment_program);
 	
-	scissor_test_vertices = gpu_alloc_mapped(4 * sizeof(struct clear_vertex), &type);
+	scissor_test_vertices = gpu_alloc_mapped(4 * sizeof(vector2f), &type);
 	
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);
@@ -661,7 +645,6 @@ void vglEnd(void){
 	
 	// Releasing shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, scissor_test_fragment_program);
-	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, disable_color_buffer_vertex_program_patched);
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, disable_color_buffer_fragment_program_patched);
 	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, clear_vertex_program_patched);
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, clear_fragment_program_patched);
@@ -679,7 +662,6 @@ void vglEnd(void){
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, rgba_fragment_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, texture2d_vertex_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, texture2d_fragment_id);
-	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, disable_color_buffer_vertex_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, disable_color_buffer_fragment_id);
 	
 	// Terminating shader patcher

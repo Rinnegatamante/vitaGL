@@ -302,25 +302,21 @@ void glClear(GLbitfield mask){
 	if ((mask & GL_DEPTH_BUFFER_BIT) == GL_DEPTH_BUFFER_BIT){
 		invalidate_depth_test();
 		change_depth_write(SCE_GXM_DEPTH_WRITE_ENABLED);
-		depth_vertices[0].position.z = depth_value;
-		depth_vertices[1].position.z = depth_value;
-		depth_vertices[2].position.z = depth_value;
-		depth_vertices[3].position.z = depth_value;
-		sceGxmSetVertexProgram(gxm_context, disable_color_buffer_vertex_program_patched);
+		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
-		sceGxmSetVertexStream(gxm_context, 0, depth_vertices);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+		void *depth_buffer;
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &depth_buffer);
+		float temp = depth_value;
+		sceGxmSetUniformDataF(depth_buffer, clear_depth, 0, 1, &temp);
+		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		validate_depth_test();
 		change_depth_write((depth_mask_state && orig_depth_test) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 	}
 	if ((mask & GL_STENCIL_BUFFER_BIT) == GL_STENCIL_BUFFER_BIT){
 		invalidate_depth_test();
 		change_depth_write(SCE_GXM_DEPTH_WRITE_DISABLED);
-		depth_vertices[0].position.z = 1.0f;
-		depth_vertices[1].position.z = 1.0f;
-		depth_vertices[2].position.z = 1.0f;
-		depth_vertices[3].position.z = 1.0f;
-		sceGxmSetVertexProgram(gxm_context, disable_color_buffer_vertex_program_patched);
+		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
 		sceGxmSetFrontStencilFunc(gxm_context,
 			SCE_GXM_STENCIL_FUNC_NEVER,
@@ -334,8 +330,12 @@ void glClear(GLbitfield mask){
 			SCE_GXM_STENCIL_OP_REPLACE,
 			SCE_GXM_STENCIL_OP_REPLACE,
 			0, stencil_value * 0xFF);
+		void *depth_buffer;
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &depth_buffer);
+		float temp = 1.0f;
+		sceGxmSetUniformDataF(depth_buffer, clear_depth, 0, 1, &temp);
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		validate_depth_test();
 		change_depth_write((depth_mask_state && orig_depth_test) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		change_stencil_settings();

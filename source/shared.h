@@ -44,16 +44,6 @@ typedef enum texEnvMode{
 	REPLACE = 4
 } texEnvMode;
 
-// 2D vertex for 2D canvas struct
-typedef struct clear_vertex{
-	vector2f position;
-} clear_vertex;
-
-// 3D vertex for position struct
-typedef struct position_vertex{
-	vector3f position;
-} position_vertex;
-
 // 3D vertex for position + 4D vertex for RGBA color struct
 typedef struct rgba_vertex{
 	vector3f position;
@@ -118,15 +108,16 @@ extern GLboolean vblank; // Current setting for VSync
 
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
 
+// Scissor test shaders
 extern SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program
-extern clear_vertex *scissor_test_vertices; // Scissor test region vertices
+extern vector2f *scissor_test_vertices; // Scissor test region vertices
 extern SceUID scissor_test_vertices_uid; // Scissor test vertices memblock id
 
 extern uint16_t *depth_clear_indices; // Memblock starting address for clear screen indices
 
 // Clear screen shaders
 extern SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
-extern clear_vertex *clear_vertices; // Memblock starting address for clear screen vertices
+extern vector2f *clear_vertices; // Memblock starting address for clear screen vertices
 
 /* gxm.c */
 void initGxm(void); // Inits sceGxm
@@ -163,5 +154,8 @@ void resetCustomShaders(void); // Resets custom shaders
 void changeCustomShadersBlend(SceGxmBlendInfo *blend_info); // Change SceGxmBlendInfo value to all custom shaders
 void reloadCustomShader(void); // Reloads in use custom shader inside sceGxm
 void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
+
+/* misc functions */
+void vector2f_convert_to_local_space(vector2f *out, int x, int y, int width, int height); // Converts screen coords to local space
 
 #endif

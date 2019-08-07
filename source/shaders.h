@@ -7,20 +7,17 @@
 #define _SHADERS_H_
 
 // Disable color buffer shader
-SceGxmShaderPatcherId disable_color_buffer_vertex_id;
 SceGxmShaderPatcherId disable_color_buffer_fragment_id;
 const SceGxmProgramParameter *disable_color_buffer_position;
-const SceGxmProgramParameter *disable_color_buffer_matrix;
-SceGxmVertexProgram *disable_color_buffer_vertex_program_patched;
 SceGxmFragmentProgram *disable_color_buffer_fragment_program_patched;
-position_vertex *depth_vertices;
+const SceGxmProgramParameter *clear_depth;
 
 // Clear shader
 SceGxmShaderPatcherId clear_vertex_id;
 SceGxmShaderPatcherId clear_fragment_id;
 const SceGxmProgramParameter *clear_position;
 const SceGxmProgramParameter *clear_color;
-SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
+SceGxmVertexProgram *clear_vertex_program_patched;
 SceGxmFragmentProgram *clear_fragment_program_patched;
 
 // Color (RGBA/RGB) shader

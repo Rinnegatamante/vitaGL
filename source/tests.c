@@ -16,7 +16,7 @@ GLboolean depth_mask_state = GL_TRUE; // Current state for glDepthMask
 scissor_region region; // Current scissor test region setup
 GLboolean scissor_test_state = GL_FALSE; // Current state for GL_SCISSOR_TEST
 SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program
-clear_vertex *scissor_test_vertices = NULL; // Scissor test region vertices
+vector2f *scissor_test_vertices = NULL; // Scissor test region vertices
 SceUID scissor_test_vertices_uid; // Scissor test vertices memblock id
 
 // Stencil Test
@@ -236,14 +236,7 @@ void update_scissor_test(){
 	
 	// Calculating scissor test region vertices
 	if (scissor_test_state){
-		scissor_test_vertices[0].position.x = ((2.0f * region.x) / DISPLAY_WIDTH_FLOAT) - 1.0f;
-		scissor_test_vertices[0].position.y = 1.0f - (2.0f * (region.y + region.h)) / DISPLAY_HEIGHT_FLOAT;
-		scissor_test_vertices[1].position.x = ((2.0f * (region.x + region.w)) / DISPLAY_WIDTH_FLOAT) - 1.0f;
-		scissor_test_vertices[1].position.y = 1.0f - (2.0f * (region.y + region.h)) / DISPLAY_HEIGHT_FLOAT;
-		scissor_test_vertices[2].position.x = ((2.0f * (region.x + region.w)) / DISPLAY_WIDTH_FLOAT) - 1.0f;
-		scissor_test_vertices[2].position.y = 1.0f - (2.0f * region.y) / DISPLAY_HEIGHT_FLOAT;
-		scissor_test_vertices[3].position.x = ((2.0f * region.x) / DISPLAY_WIDTH_FLOAT) - 1.0f;
-		scissor_test_vertices[3].position.y = 1.0f - (2.0f * region.y) / DISPLAY_HEIGHT_FLOAT;
+		vector2f_convert_to_local_space(scissor_test_vertices, region.x, region.y, region.w, region.h);
 	}
 	
 	// Setting current vertex program to clear screen one and fragment program to scissor test one
