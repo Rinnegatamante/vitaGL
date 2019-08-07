@@ -12,7 +12,7 @@ OBJS     := $(CFILES:.c=.o)
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
 AR      = $(PREFIX)-gcc-ar
-CFLAGS  = -g -Wl,-q -O3 -ffast-math -mtune=cortex-a9 -mfpu=neon -flto -DENABLE_LOG
+CFLAGS  = -g -Wl,-q -O3 -ffast-math -mtune=cortex-a9 -mfpu=neon -flto -DTRANSPOSE_MATRICES
 ASFLAGS = $(CFLAGS)
 
 all: $(TARGET).a
@@ -40,6 +40,7 @@ clean:
 	@make -C samples/sample4 clean
 	@make -C samples/sample5 clean
 	@make -C samples/sample6 clean
+	@make -C samples/sample7 clean
 	
 install: $(TARGET).a
 	@mkdir -p $(VITASDK)/$(PREFIX)/lib/
@@ -60,3 +61,5 @@ samples: $(TARGET).a
 	cp "samples/sample5/vitaGL-Sample005.vpk" .
 	@make -C samples/sample6
 	cp "samples/sample6/vitaGL-Sample006.vpk" .
+	@make -C samples/sample7
+	cp "samples/sample7/vitaGL-Sample007.vpk" .

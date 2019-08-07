@@ -1,4 +1,4 @@
-SAMPLE_NUM	:= 008
+SAMPLE_NUM	:= 007
 TARGET		:= vitaGL-Sample$(SAMPLE_NUM)
 SOURCES		:= .
 			
