@@ -87,7 +87,9 @@ typedef struct framebuffer {
 	SceGxmColorSurface colorbuffer;
 	SceGxmDepthStencilSurface depthbuffer;
 	void *depth_buffer_addr;
+	vglMemType depth_buffer_mem_type;
 	void *stencil_buffer_addr;
+	vglMemType stencil_buffer_mem_type;
 } framebuffer;
 
 // Blending

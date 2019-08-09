@@ -193,7 +193,7 @@ void termDisplayColorSurfaces(void) {
 	}
 }
 
-void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, void **depth_buffer, void **stencil_buffer) {
+void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, void **depth_buffer, void **stencil_buffer, vglMemType *depth_type, vglMemType *stencil_type) {
 	// Calculating sizes for depth and stencil surfaces
 	unsigned int depth_stencil_width = ALIGN(w, SCE_GXM_TILE_SIZEX);
 	unsigned int depth_stencil_height = ALIGN(h, SCE_GXM_TILE_SIZEY);
@@ -202,13 +202,14 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 		depth_stencil_samples = depth_stencil_samples * 2;
 	else if (msaa_mode == SCE_GXM_MULTISAMPLE_4X)
 		depth_stencil_samples = depth_stencil_samples * 4;
-	vglMemType type = VGL_MEM_VRAM;
 
 	// Allocating depth surface
-	*depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, &type);
+	*depth_type = VGL_MEM_VRAM;
+	*depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, depth_type);
 
 	// Allocating stencil surface
-	*stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, &type);
+	*stencil_type = VGL_MEM_VRAM;
+	*stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, stencil_type);
 
 	// Initializing depth and stencil surfaces
 	sceGxmDepthStencilSurfaceInit(surface,
@@ -220,7 +221,8 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 }
 
 void initDepthStencilSurfaces(void) {
-	initDepthStencilBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, &gxm_depth_stencil_surface, &gxm_depth_surface_addr, &gxm_stencil_surface_addr);
+	vglMemType t1, t2;
+	initDepthStencilBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, &gxm_depth_stencil_surface, &gxm_depth_surface_addr, &gxm_stencil_surface_addr, &t1, &t2);
 }
 
 void termDepthStencilSurfaces(void) {

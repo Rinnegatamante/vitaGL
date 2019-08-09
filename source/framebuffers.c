@@ -56,6 +56,8 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 		if (!framebuffers[i].active) {
 			ids[j++] = (GLuint)&framebuffers[i];
 			framebuffers[i].active = 1;
+			framebuffers[i].depth_buffer_addr = NULL;
+			framebuffers[i].stencil_buffer_addr = NULL;
 		}
 		if (j >= n)
 			break;
@@ -72,8 +74,16 @@ void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers) {
 	while (n > 0) {
 		framebuffer *fb = (framebuffer *)framebuffers[n--];
 		fb->active = 0;
-		if (fb->target)
+		if (fb->target) {
 			sceGxmDestroyRenderTarget(fb->target);
+			fb->target = NULL;
+		}
+		if (fb->depth_buffer_addr) {
+			mempool_free(fb->depth_buffer_addr, fb->depth_buffer_mem_type);
+			mempool_free(fb->stencil_buffer_addr, fb->stencil_buffer_mem_type);
+			fb->depth_buffer_addr = NULL;
+			fb->stencil_buffer_addr = NULL;
+		}
 	}
 }
 
@@ -135,7 +145,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 			sceGxmTextureGetData(&tex->gxm_tex));
 
 		// Allocating depth and stencil buffer (FIXME: This probably shouldn't be here)
-		initDepthStencilBuffer(tex_w, tex_h, &fb->depthbuffer, &fb->depth_buffer_addr, &fb->stencil_buffer_addr);
+		initDepthStencilBuffer(tex_w, tex_h, &fb->depthbuffer, &fb->depth_buffer_addr, &fb->stencil_buffer_addr, &fb->depth_buffer_mem_type, &fb->stencil_buffer_mem_type);
 
 		// Creating rendertarget
 		SceGxmRenderTargetParams renderTargetParams;
