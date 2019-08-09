@@ -9,9 +9,10 @@
 #include <math.h>
 
 #ifndef DEG_TO_RAD
-#  define DEG_TO_RAD(x) ((x) * M_PI / 180.0)
+#define DEG_TO_RAD(x) ((x)*M_PI / 180.0)
 #endif
 
+// clang-format off
 // vector of 2 floats struct
 typedef struct {
 	float x, y;
@@ -31,6 +32,7 @@ typedef struct {
 	union { float z; float b; };
 	union { float w; float a; };
 } vector4f;
+// clang-format on
 
 // 4x4 matrix
 typedef float matrix4x4[4][4];

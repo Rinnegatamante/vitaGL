@@ -63,7 +63,7 @@ typedef struct texture_unit {
 	GLboolean color_array_state;
 	GLboolean texture_array_state;
 	matrix4x4 stack[GENERIC_STACK_DEPTH];
-	texture   textures[TEXTURES_NUM];
+	texture textures[TEXTURES_NUM];
 	vertexArray vertex_array;
 	vertexArray color_array;
 	vertexArray texture_array;
@@ -91,13 +91,13 @@ typedef struct framebuffer {
 
 // Blending
 extern GLboolean blend_state; // Current state for GL_BLEND
-extern SceGxmBlendFactor blend_sfactor_rgb;		// Current in use RGB source blend factor
-extern SceGxmBlendFactor blend_dfactor_rgb;		// Current in use RGB dest blend factor
-extern SceGxmBlendFactor blend_sfactor_a;		// Current in use A source blend factor
-extern SceGxmBlendFactor blend_dfactor_a;		// Current in use A dest blend factor
+extern SceGxmBlendFactor blend_sfactor_rgb; // Current in use RGB source blend factor
+extern SceGxmBlendFactor blend_dfactor_rgb; // Current in use RGB dest blend factor
+extern SceGxmBlendFactor blend_sfactor_a; // Current in use A source blend factor
+extern SceGxmBlendFactor blend_dfactor_a; // Current in use A dest blend factor
 
 // Depth Test
-extern GLboolean depth_test_state;	// Current state for GL_DEPTH_TEST
+extern GLboolean depth_test_state; // Current state for GL_DEPTH_TEST
 extern SceGxmDepthFunc gxm_depth; // Current in-use depth test func
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
 extern GLdouble depth_value; // Current depth test clear value
@@ -132,13 +132,13 @@ extern int alpha_op; // Current in use alpha test operation
 extern GLboolean alpha_test_state; // Current state for GL_ALPHA_TEST
 
 // Polygon Mode
-extern GLfloat pol_factor;	// Current factor for glPolygonOffset
-extern GLfloat pol_units;	// Current units for glPolygonOffset
+extern GLfloat pol_factor; // Current factor for glPolygonOffset
+extern GLfloat pol_units; // Current units for glPolygonOffset
 
 // Texture Units
 extern texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
-extern int8_t server_texture_unit;	// Current in use server side texture unit
-extern int8_t client_texture_unit;	// Current in use client side texture unit
+extern int8_t server_texture_unit; // Current in use server side texture unit
+extern int8_t client_texture_unit; // Current in use client side texture unit
 extern palette *color_table; // Current in-use color table
 
 // Matrices
@@ -152,16 +152,16 @@ extern viewport gl_viewport; // Current viewport state
 
 // Culling
 extern GLboolean no_polygons_mode; // GL_TRUE when cull mode is set to GL_FRONT_AND_BACK
-extern GLboolean cull_face_state;  // Current state for GL_CULL_FACE
-extern GLenum gl_cull_mode;  // Current in use openGL cull mode
+extern GLboolean cull_face_state; // Current state for GL_CULL_FACE
+extern GLenum gl_cull_mode; // Current in use openGL cull mode
 extern GLenum gl_front_face; // Current in use openGL setting for front facing primitives
 
 // Polygon Offset
-extern GLboolean pol_offset_fill;  // Current state for GL_POLYGON_OFFSET_FILL
-extern GLboolean pol_offset_line;  // Current state for GL_POLYGON_OFFSET_LINE
+extern GLboolean pol_offset_fill; // Current state for GL_POLYGON_OFFSET_FILL
+extern GLboolean pol_offset_line; // Current state for GL_POLYGON_OFFSET_LINE
 extern GLboolean pol_offset_point; // Current state for GL_POLYGON_OFFSET_POINT
 extern SceGxmPolygonMode polygon_mode_front; // Current in use polygon mode for front
-extern SceGxmPolygonMode polygon_mode_back;  // Current in use polygon mode for back
+extern SceGxmPolygonMode polygon_mode_back; // Current in use polygon mode for back
 extern GLenum gl_polygon_mode_front; // Current in use polygon mode for front
 extern GLenum gl_polygon_mode_back; // Current in use polygon mode for back
 
@@ -169,7 +169,7 @@ extern GLenum gl_polygon_mode_back; // Current in use polygon mode for back
 extern vector4f texenv_color; // Current in use texture environment color
 
 // Fogging
-extern GLboolean fogging;  // Current fogging processor state
+extern GLboolean fogging; // Current fogging processor state
 extern GLint fog_mode; // Current fogging mode (openGL)
 extern fogType internal_fog_mode; // Current fogging mode (sceGxm)
 extern GLfloat fog_density; // Current fogging density

@@ -2,7 +2,7 @@
  * framebuffers.c:
  * Implementation for framebuffers related functions
  */
- 
+
 #include "shared.h"
 
 static framebuffer framebuffers[BUFFERS_NUM]; // Framebuffers array
@@ -15,8 +15,8 @@ framebuffer *active_write_fb = NULL; // Current write framebuffer in use
  * - IMPLEMENTATION STARTS HERE -
  * ------------------------------
  */
- 
- void glGenFramebuffers(GLsizei n, GLuint *ids) {
+
+void glGenFramebuffers(GLsizei n, GLuint *ids) {
 	int i = 0, j = 0;
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
@@ -24,15 +24,16 @@ framebuffer *active_write_fb = NULL; // Current write framebuffer in use
 		return;
 	}
 #endif
-	for (i=0; i < BUFFERS_NUM; i++) {
-		if (!framebuffers[i].active){
+	for (i = 0; i < BUFFERS_NUM; i++) {
+		if (!framebuffers[i].active) {
 			ids[j++] = (GLuint)&framebuffers[i];
 			framebuffers[i].active = 1;
 			framebuffers[i].depthbuffer = NULL;
 			framebuffers[i].colorbuffer = NULL;
 			sceGxmSyncObjectCreate(&framebuffers[i].sync_object);
 		}
-		if (j >= n) break;
+		if (j >= n)
+			break;
 	}
 }
 
@@ -44,10 +45,12 @@ void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers) {
 	}
 #endif
 	while (n > 0) {
-		framebuffer *fb = (framebuffer*)framebuffers[n--];
+		framebuffer *fb = (framebuffer *)framebuffers[n--];
 		fb->active = 0;
-		if (fb->colorbuffer) free(fb->colorbuffer);
-		if (fb->target) sceGxmDestroyRenderTarget(fb->target);
+		if (fb->colorbuffer)
+			free(fb->colorbuffer);
+		if (fb->target)
+			sceGxmDestroyRenderTarget(fb->target);
 		sceGxmSyncObjectDestroy(fb->sync_object);
 	}
 }
@@ -55,13 +58,13 @@ void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers) {
 void glBindFramebuffer(GLenum target, GLuint fb) {
 	switch (target) {
 	case GL_DRAW_FRAMEBUFFER:
-		active_write_fb = (framebuffer*)fb;
+		active_write_fb = (framebuffer *)fb;
 		break;
 	case GL_READ_FRAMEBUFFER:
-		active_read_fb = (framebuffer*)fb;
+		active_read_fb = (framebuffer *)fb;
 		break;
 	case GL_FRAMEBUFFER:
-		active_write_fb = active_read_fb = (framebuffer*)fb;
+		active_write_fb = active_read_fb = (framebuffer *)fb;
 		break;
 	default:
 		error = GL_INVALID_ENUM;
@@ -70,7 +73,6 @@ void glBindFramebuffer(GLenum target, GLuint fb) {
 }
 
 void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint level) {
-	
 	// Detecting requested framebuffer
 	framebuffer *fb = NULL;
 	switch (target) {
@@ -85,15 +87,15 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		error = GL_INVALID_ENUM;
 		break;
 	}
-	
+
 	// Aliasing to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	texture *tex = &tex_unit->textures[tex_id];
-	
+
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
-		fb->colorbuffer = (SceGxmColorSurface*)malloc(sizeof(SceGxmColorSurface));
+		fb->colorbuffer = (SceGxmColorSurface *)malloc(sizeof(SceGxmColorSurface));
 		sceGxmColorSurfaceInit(
 			fb->colorbuffer,
 			SCE_GXM_COLOR_FORMAT_A8B8G8R8,
@@ -103,8 +105,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 			sceGxmTextureGetWidth(&tex->gxm_tex),
 			sceGxmTextureGetHeight(&tex->gxm_tex),
 			sceGxmTextureGetWidth(&tex->gxm_tex),
-			sceGxmTextureGetData(&tex->gxm_tex)
-		);
+			sceGxmTextureGetData(&tex->gxm_tex));
 		SceGxmRenderTargetParams renderTargetParams;
 		memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
 		renderTargetParams.flags = 0;
@@ -118,7 +119,6 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		break;
 	default:
 		error = GL_INVALID_ENUM;
-		break;	
+		break;
 	}
-	
 }

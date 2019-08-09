@@ -9,10 +9,10 @@
 #include "mem_utils.h"
 
 // Align a value to the requested alignment
-#define ALIGN(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
+#define ALIGN(x, a) (((x) + ((a)-1)) & ~((a)-1))
 
 // Texture object struct
-typedef struct texture{
+typedef struct texture {
 	SceGxmTexture gxm_tex;
 	void *data;
 	vglMemType mtype;
@@ -21,11 +21,11 @@ typedef struct texture{
 	uint8_t used;
 	uint8_t valid;
 	uint32_t type;
-	void (*write_cb)(void*, uint32_t);
+	void (*write_cb)(void *, uint32_t);
 } texture;
 
 // Palette object struct
-typedef struct palette{
+typedef struct palette {
 	void *data;
 	vglMemType type;
 } palette;
@@ -64,7 +64,7 @@ void gpu_pool_init(uint32_t temp_pool_size);
 int tex_format_to_bytespp(SceGxmTextureFormat format);
 
 // Alloc a texture
-void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void*),  void (*write_cb)(void*, uint32_t));
+void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t));
 
 // Dealloc a texture
 void gpu_free_texture(texture *tex);

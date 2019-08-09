@@ -3,40 +3,43 @@
  * All functions/definitions that shouldn't be exposed to
  * end users but are used in multiple source files must be here
  */
- 
+
 #ifndef _SHARED_H_
 #define _SHARED_H_
 
 // Internal constants
-#define TEXTURES_NUM          1536 // Available textures per texture unit
-#define MODELVIEW_STACK_DEPTH 32   // Depth of modelview matrix stack
-#define GENERIC_STACK_DEPTH   2    // Depth of generic matrix stack
-#define DISPLAY_WIDTH_DEF     960  // Default display width in pixels
-#define DISPLAY_HEIGHT_DEF    544  // Default display height in pixels
-#define DISPLAY_BUFFER_COUNT  2    // Display buffers to use
-#define GXM_TEX_MAX_SIZE      4096 // Maximum width/height in pixels per texture
-#define BUFFERS_ADDR        0xA000 // Starting address for buffers indexing
-#define BUFFERS_NUM           128  // Maximum number of allocatable buffers
+#define TEXTURES_NUM 1536 // Available textures per texture unit
+#define MODELVIEW_STACK_DEPTH 32 // Depth of modelview matrix stack
+#define GENERIC_STACK_DEPTH 2 // Depth of generic matrix stack
+#define DISPLAY_WIDTH_DEF 960 // Default display width in pixels
+#define DISPLAY_HEIGHT_DEF 544 // Default display height in pixels
+#define DISPLAY_BUFFER_COUNT 2 // Display buffers to use
+#define GXM_TEX_MAX_SIZE 4096 // Maximum width/height in pixels per texture
+#define BUFFERS_ADDR 0xA000 // Starting address for buffers indexing
+#define BUFFERS_NUM 128 // Maximum number of allocatable buffers
 
 // Internal constants set in bootup phase
-extern int DISPLAY_WIDTH;            // Display width in pixels
-extern int DISPLAY_HEIGHT;           // Display height in pixels
-extern int DISPLAY_STRIDE;           // Display stride in pixels
-extern float DISPLAY_WIDTH_FLOAT;   // Display width in pixels (float)
-extern float DISPLAY_HEIGHT_FLOAT;  // Display height in pixels (float)
+extern int DISPLAY_WIDTH; // Display width in pixels
+extern int DISPLAY_HEIGHT; // Display height in pixels
+extern int DISPLAY_STRIDE; // Display stride in pixels
+extern float DISPLAY_WIDTH_FLOAT; // Display width in pixels (float)
+extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
-#include <stdlib.h>
 #include <stdio.h>
-#include <vitasdk.h> 
+#include <stdlib.h>
+#include <vitasdk.h>
+
 #include "vitaGL.h"
-#include "utils/math_utils.h"
+
 #include "utils/gpu_utils.h"
+#include "utils/math_utils.h"
 #include "utils/mem_utils.h"
+
 #include "state.h"
 #include "texture_callbacks.h"
 
 // Texture environment mode
-typedef enum texEnvMode{
+typedef enum texEnvMode {
 	MODULATE = 0,
 	DECAL = 1,
 	BLEND = 2,
@@ -45,25 +48,25 @@ typedef enum texEnvMode{
 } texEnvMode;
 
 // 3D vertex for position + 4D vertex for RGBA color struct
-typedef struct rgba_vertex{
+typedef struct rgba_vertex {
 	vector3f position;
 	vector4f color;
 } rgba_vertex;
 
 // 3D vertex for position + 3D vertex for RGB color struct
-typedef struct rgb_vertex{
+typedef struct rgb_vertex {
 	vector3f position;
 	vector3f color;
 } rgb_vertex;
 
 // 3D vertex for position + 2D vertex for UV map struct
-typedef struct texture2d_vertex{
+typedef struct texture2d_vertex {
 	vector3f position;
 	vector2f texcoord;
 } texture2d_vertex;
 
 // Non native primitives implemented
-typedef enum SceGxmPrimitiveTypeExtra{
+typedef enum SceGxmPrimitiveTypeExtra {
 	SCE_GXM_PRIMITIVE_NONE = 0,
 	SCE_GXM_PRIMITIVE_QUADS = 1
 } SceGxmPrimitiveTypeExtra;
@@ -71,8 +74,8 @@ typedef enum SceGxmPrimitiveTypeExtra{
 #include "shaders.h"
 
 // Internal stuffs
-extern void* frag_uniforms;
-extern void* vert_uniforms;
+extern void *frag_uniforms;
+extern void *vert_uniforms;
 extern SceGxmMultisampleMode msaa_mode;
 
 // Debugging tool
@@ -82,7 +85,7 @@ void LOG(const char *format, ...);
 
 // Depending on SDK, that could be or not defined
 #ifndef max
-#  define max(a,b) ((a) > (b) ? (a) : (b))
+#define max(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
 // sceGxm viewport setup (NOTE: origin is on center screen)
@@ -139,8 +142,8 @@ void change_depth_func(void); // Changes current in use depth test function
 void invalidate_depth_test(void); // Invalidates depth test state
 void validate_depth_test(void); // Resets original depth test state after invalidation
 void change_stencil_settings(void); // Changes current in use stencil test parameters
-GLboolean change_stencil_config(SceGxmStencilOp* cfg, GLenum new); // Changes current in use stencil test operation value
-GLboolean change_stencil_func_config(SceGxmStencilFunc* cfg, GLenum new); // Changes current in use stencil test function value
+GLboolean change_stencil_config(SceGxmStencilOp *cfg, GLenum new); // Changes current in use stencil test operation value
+GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new); // Changes current in use stencil test function value
 void update_alpha_test_settings(void); // Changes current in use alpha test operation value
 void update_scissor_test(void); // Changes current in use scissor test region
 void resetScissorTestRegion(void); // Resets scissor test region to default values

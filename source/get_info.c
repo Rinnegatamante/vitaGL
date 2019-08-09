@@ -4,12 +4,12 @@
  */
 
 #include "shared.h"
- 
+
 // Constants returned by glGetString
-static const GLubyte* vendor = "Rinnegatamante";
-static const GLubyte* renderer = "SGX543MP4+";
-static const GLubyte* version = "VitaGL 1.0";
-static const GLubyte* extensions = "VGL_EXT_gpu_objects_array VGL_EXT_gxp_shaders";
+static const GLubyte *vendor = "Rinnegatamante";
+static const GLubyte *renderer = "SGX543MP4+";
+static const GLubyte *version = "VitaGL 1.0";
+static const GLubyte *extensions = "VGL_EXT_gpu_objects_array VGL_EXT_gxp_shaders";
 
 /*
  * ------------------------------
@@ -17,8 +17,8 @@ static const GLubyte* extensions = "VGL_EXT_gpu_objects_array VGL_EXT_gxp_shader
  * ------------------------------
  */
 
-const GLubyte* glGetString(GLenum name){
-	switch (name){
+const GLubyte *glGetString(GLenum name) {
+	switch (name) {
 	case GL_VENDOR: // Vendor
 		return vendor;
 		break;
@@ -38,8 +38,8 @@ const GLubyte* glGetString(GLenum name){
 	}
 }
 
-void glGetBooleanv(GLenum pname, GLboolean* params){
-	switch (pname){
+void glGetBooleanv(GLenum pname, GLboolean *params) {
+	switch (pname) {
 	case GL_BLEND: // Blending feature state
 		*params = blend_state;
 		break;
@@ -67,8 +67,8 @@ void glGetBooleanv(GLenum pname, GLboolean* params){
 	}
 }
 
-void glGetFloatv(GLenum pname, GLfloat *data){
-	switch (pname){
+void glGetFloatv(GLenum pname, GLfloat *data) {
+	switch (pname) {
 	case GL_POLYGON_OFFSET_FACTOR: // Polygon offset factor
 		*data = pol_factor;
 		break;
@@ -96,12 +96,11 @@ void glGetFloatv(GLenum pname, GLfloat *data){
 	}
 }
 
-void glGetIntegerv(GLenum pname, GLint *data){
-	
+void glGetIntegerv(GLenum pname, GLint *data) {
 	// Aliasing to make code more readable
-	texture_unit* server_tex_unit = &texture_units[server_texture_unit];
-	
-	switch (pname){
+	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
+
+	switch (pname) {
 	case GL_POLYGON_MODE:
 		data[0] = gl_polygon_mode_front;
 		data[1] = gl_polygon_mode_back;
@@ -130,41 +129,41 @@ void glGetIntegerv(GLenum pname, GLint *data){
 	}
 }
 
-GLboolean glIsEnabled(GLenum cap){
+GLboolean glIsEnabled(GLenum cap) {
 	GLboolean ret = GL_FALSE;
-	switch (cap){
-		case GL_DEPTH_TEST:
-			ret = depth_test_state;
-			break;
-		case GL_STENCIL_TEST:
-			ret = stencil_test_state;
-			break;
-		case GL_BLEND:
-			ret = blend_state;
-			break;
-		case GL_SCISSOR_TEST:
-			ret = scissor_test_state;
-			break;
-		case GL_CULL_FACE:
-			ret = cull_face_state;
-			break;
-		case GL_POLYGON_OFFSET_FILL:
-			ret = pol_offset_fill;
-			break;
-		case GL_POLYGON_OFFSET_LINE:
-			ret = pol_offset_line;
-			break;
-		case GL_POLYGON_OFFSET_POINT:
-			ret = pol_offset_point;
-			break;
-		default:
-			error = GL_INVALID_ENUM;
-			break;
+	switch (cap) {
+	case GL_DEPTH_TEST:
+		ret = depth_test_state;
+		break;
+	case GL_STENCIL_TEST:
+		ret = stencil_test_state;
+		break;
+	case GL_BLEND:
+		ret = blend_state;
+		break;
+	case GL_SCISSOR_TEST:
+		ret = scissor_test_state;
+		break;
+	case GL_CULL_FACE:
+		ret = cull_face_state;
+		break;
+	case GL_POLYGON_OFFSET_FILL:
+		ret = pol_offset_fill;
+		break;
+	case GL_POLYGON_OFFSET_LINE:
+		ret = pol_offset_line;
+		break;
+	case GL_POLYGON_OFFSET_POINT:
+		ret = pol_offset_point;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
 	}
 	return ret;
 }
 
-GLenum glGetError(void){
+GLenum glGetError(void) {
 	GLenum ret = error;
 	error = GL_NO_ERROR;
 	return ret;

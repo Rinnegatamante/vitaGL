@@ -7,6 +7,7 @@ extern "C" {
 
 #include <vitasdk.h>
 
+// clang-format off
 #define GLfloat       float
 #define GLint         int32_t
 #define GLdouble      double
@@ -222,6 +223,7 @@ typedef enum GLbitfield{
 	GL_STENCIL_BUFFER_BIT = 0x00000400,
 	GL_COLOR_BUFFER_BIT   = 0x00004000
 } GLbitfield;
+// clang-format on
 
 // gl*
 void glActiveTexture(GLenum texture);
@@ -236,7 +238,7 @@ void glBlendEquation(GLenum mode);
 void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha);
 void glBlendFunc(GLenum sfactor, GLenum dfactor);
 void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha);
-void glBufferData(GLenum target, GLsizei size, const GLvoid* data, GLenum usage);
+void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage);
 void glClear(GLbitfield mask);
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void glClearDepth(GLdouble depth);
@@ -244,16 +246,16 @@ void glClearStencil(GLint s);
 void glClientActiveTexture(GLenum texture);
 void glClipPlane(GLenum plane, const GLdouble *equation);
 void glColor3f(GLfloat red, GLfloat green, GLfloat blue);
-void glColor3fv(const GLfloat* v);
+void glColor3fv(const GLfloat *v);
 void glColor3ub(GLubyte red, GLubyte green, GLubyte blue);
-void glColor3ubv(const GLubyte* v);
+void glColor3ubv(const GLubyte *v);
 void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
-void glColor4fv(const GLfloat* v);
+void glColor4fv(const GLfloat *v);
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
-void glColor4ubv(const GLubyte* v);
+void glColor4ubv(const GLubyte *v);
 void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha);
-void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
-void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid* data);
+void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
+void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid *data);
 GLuint glCreateProgram(void);
 GLuint glCreateShader(GLenum shaderType);
 void glCullFace(GLenum mode);
@@ -274,7 +276,7 @@ void glEnable(GLenum cap);
 void glEnableClientState(GLenum array);
 void glEnd(void);
 void glFinish(void);
-void glFogf(GLenum pname,  GLfloat param);
+void glFogf(GLenum pname, GLfloat param);
 void glFogfv(GLenum pname, const GLfloat *params);
 void glFogi(GLenum pname, const GLint param);
 void glFramebufferTexture(GLenum target, GLenum attachment, GLuint texture, GLint level);
@@ -288,25 +290,25 @@ void glGetBooleanv(GLenum pname, GLboolean *params);
 void glGetFloatv(GLenum pname, GLfloat *data);
 GLenum glGetError(void);
 void glGetIntegerv(GLenum pname, GLint *data);
-const GLubyte* glGetString(GLenum name);
+const GLubyte *glGetString(GLenum name);
 GLint glGetUniformLocation(GLuint prog, const GLchar *name);
 GLboolean glIsEnabled(GLenum cap);
 void glLineWidth(GLfloat width);
 void glLinkProgram(GLuint progr);
 void glLoadIdentity(void);
-void glLoadMatrixf(const GLfloat* m);
+void glLoadMatrixf(const GLfloat *m);
 void glMatrixMode(GLenum mode);
-void glMultMatrixf(const GLfloat* m);
+void glMultMatrixf(const GLfloat *m);
 void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
 void glPointSize(GLfloat size);
 void glPolygonMode(GLenum face, GLenum mode);
 void glPolygonOffset(GLfloat factor, GLfloat units);
 void glPopMatrix(void);
 void glPushMatrix(void);
-void glReadPixels(GLint x,  GLint y,  GLsizei width,  GLsizei height,  GLenum format,  GLenum type,  GLvoid * data);
-void glRotatef(GLfloat angle,  GLfloat x,  GLfloat y,  GLfloat z);
+void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data);
+void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
-void glScissor(GLint x,  GLint y,  GLsizei width,  GLsizei height);
+void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length); // NOTE: Uses GXP shaders
 void glStencilFunc(GLenum func, GLint ref, GLuint mask);
 void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask);
@@ -317,47 +319,47 @@ void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass
 void glTexCoord2f(GLfloat s, GLfloat t);
 void glTexCoord2fv(GLfloat *f);
 void glTexCoord2i(GLint s, GLint t);
-void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
+void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glTexEnvf(GLenum target, GLenum pname, GLfloat param);
-void glTexEnvi(GLenum target,  GLenum pname,  GLint param);
-void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data);
+void glTexEnvi(GLenum target, GLenum pname, GLint param);
+void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *data);
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param);
 void glTexParameteri(GLenum target, GLenum pname, GLint param);
-void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid* pixels);
+void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z);
 void glUniform1f(GLint location, GLfloat v0);
 void glUniform2fv(GLint location, GLsizei count, const GLfloat *value);
-void glUniform4fv(GLint location, GLsizei count, const GLfloat* value);
+void glUniform4fv(GLint location, GLsizei count, const GLfloat *value);
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void glUseProgram(GLuint program);
 void glVertex2f(GLfloat x, GLfloat y);
 void glVertex3f(GLfloat x, GLfloat y, GLfloat z);
-void glVertex3fv(const GLfloat* v);
-void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer);
+void glVertex3fv(const GLfloat *v);
+void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
 // VGL_EXT_gpu_objects_array extension
-void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
-void vglColorPointerMapped(GLenum type, const GLvoid* pointer);
+void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
+void vglColorPointerMapped(GLenum type, const GLvoid *pointer);
 void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp);
-void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
-void vglIndexPointerMapped(const GLvoid* pointer);
-void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
-void vglTexCoordPointerMapped(const GLvoid* pointer);
-void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid* pointer);
-void vglVertexPointerMapped(const GLvoid* pointer);
+void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
+void vglIndexPointerMapped(const GLvoid *pointer);
+void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
+void vglTexCoordPointerMapped(const GLvoid *pointer);
+void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
+void vglVertexPointerMapped(const GLvoid *pointer);
 
 // VGL_EXT_gxp_shaders extension implementation
-void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar* name, const GLuint num, const GLenum type);
-void vglVertexAttribPointer(GLuint index,  GLint size,  GLenum type,  GLboolean normalized,  GLsizei stride, GLuint count, const GLvoid* pointer);
-void vglVertexAttribPointerMapped(GLuint index, const GLvoid* pointer);
- 
+void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type);
+void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLuint count, const GLvoid *pointer);
+void vglVertexAttribPointerMapped(GLuint index, const GLvoid *pointer);
+
 typedef enum {
-	VGL_MEM_ALL  = 0,   // any memory type (used to monitor total heap usage)
-	VGL_MEM_VRAM,       // CDRAM
-	VGL_MEM_RAM,        // USER_RW RAM
-	VGL_MEM_SLOW,       // PHYCONT_USER_RW RAM
-	VGL_MEM_EXTERNAL,   // newlib mem
+	VGL_MEM_ALL = 0, // any memory type (used to monitor total heap usage)
+	VGL_MEM_VRAM, // CDRAM
+	VGL_MEM_RAM, // USER_RW RAM
+	VGL_MEM_SLOW, // PHYCONT_USER_RW RAM
+	VGL_MEM_EXTERNAL, // newlib mem
 	VGL_MEM_TYPE_COUNT
 } vglMemType;
 
