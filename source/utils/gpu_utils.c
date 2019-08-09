@@ -30,6 +30,11 @@ void *gpu_alloc_mapped(size_t size, vglMemType *type){
 		res = mempool_alloc(size, *type);
 	}
 	
+	if (res == NULL) {
+		*type = VGL_MEM_EXTERNAL;
+		res = malloc(size);
+	}
+	
 	return res;
 }
 

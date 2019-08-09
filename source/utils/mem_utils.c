@@ -257,7 +257,7 @@ int mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont){
 	mempool_id[1] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, mempool_size[1], NULL);
 	mempool_id[2] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW, mempool_size[2], NULL);
 	
-	for (int i = 0; i < VGL_MEM_TYPE_COUNT - 1; i++){
+	for (int i = 0; i < VGL_MEM_TYPE_COUNT - 2; i++){
 		sceKernelGetMemBlockBase(mempool_id[i], &mempool_addr[i]);
 		sceGxmMapMemory(mempool_addr[i], mempool_size[i], SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
 	}
@@ -274,7 +274,8 @@ int mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont){
 }
 
 void mempool_free(void* ptr, vglMemType type){
-	heap_free(ptr); // type is already stored in heap for alloc'd blocks
+	if (type == VGL_MEM_EXTERNAL) free(ptr);
+	else heap_free(ptr); // type is already stored in heap for alloc'd blocks
 }
 
 void *mempool_alloc(size_t size, vglMemType type){

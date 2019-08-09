@@ -357,6 +357,7 @@ typedef enum {
 	VGL_MEM_VRAM,       // CDRAM
 	VGL_MEM_RAM,        // USER_RW RAM
 	VGL_MEM_SLOW,       // PHYCONT_USER_RW RAM
+	VGL_MEM_EXTERNAL,   // newlib mem
 	VGL_MEM_TYPE_COUNT
 } vglMemType;
 
@@ -365,7 +366,6 @@ void vglEnd(void);
 void *vglGetTexDataPointer(GLenum target);
 void vglInit(uint32_t gpu_pool_size);
 void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa);
-void vglMapHeapMem(void);
 size_t vglMemFree(vglMemType type);
 void vglStartRendering();
 void vglStopRendering();

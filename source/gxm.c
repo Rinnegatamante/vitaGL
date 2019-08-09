@@ -25,8 +25,6 @@ static void *gxm_depth_surface_addr; // Depth surface memblock starting address
 static void *gxm_stencil_surface_addr; // Stencil surface memblock starting address
 static SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil surfaces setup for sceGxm
 
-static uint8_t heap_mapped = GL_FALSE; // Check for heap memory mapping into sceGxm
-
 SceGxmContext *gxm_context; // sceGxm context instance
 GLenum error = GL_NO_ERROR; // Error returned by glGetError
 SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
@@ -40,9 +38,6 @@ int DISPLAY_HEIGHT;           // Display height in pixels
 int DISPLAY_STRIDE;           // Display stride in pixels
 float DISPLAY_WIDTH_FLOAT;   // Display width in pixels (float)
 float DISPLAY_HEIGHT_FLOAT;  // Display height in pixels (float)
-
-extern int _newlib_heap_memblock;  // Newlib Heap memblock
-extern unsigned _newlib_heap_size; // Newlib Heap size
 
 // sceDisplay callback data
 struct display_queue_callback_data {
@@ -294,7 +289,7 @@ void startShaderPatcher(void){
 	
 }
 
-void stopShaderPatcher(void){
+void stopShaderPatcher(void) {
 	
 	// Destroying shader patcher instance
 	sceGxmShaderPatcherDestroy(gxm_shader_patcher);
@@ -306,7 +301,7 @@ void stopShaderPatcher(void){
 
 }
 
-void waitRenderingDone(void){
+void waitRenderingDone(void) {
 	
 	// Wait for rendering to be finished
 	sceGxmDisplayQueueFinish();
@@ -320,25 +315,9 @@ void waitRenderingDone(void){
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -
  * ------------------------------
- */
- 
-void vglMapHeapMem(){
-	
-	if (!heap_mapped) {
-	
-		// Getting newlib heap memblock starting address
-		void *addr = NULL;
-		sceKernelGetMemBlockBase(_newlib_heap_memblock, &addr);
-	
-		// Mapping newlib heap into sceGxm
-		sceGxmMapMemory(addr, _newlib_heap_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
-		heap_mapped = GL_TRUE;
-	
-	}
-	
-}
- 
- void vglStartRendering(){
+ */ 
+
+void vglStartRendering(void) {
 	
 	// Starting drawing scene
 	if (active_write_fb == NULL) { // Default framebuffer is used
@@ -367,14 +346,14 @@ void vglMapHeapMem(){
 	}
 }
  
- void vglStopRenderingInit(){
+void vglStopRenderingInit(void) {
 	
 	// Ending drawing scene
 	sceGxmEndScene(gxm_context, NULL, NULL);
 	
 }
 
-void vglStopRenderingTerm(){
+void vglStopRenderingTerm(void) {
 	
 	// Waiting GPU to complete its work
 	sceGxmFinish(gxm_context);
