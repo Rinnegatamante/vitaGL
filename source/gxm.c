@@ -307,7 +307,7 @@ void vglStartRendering(void) {
 			gxm_sync_objects[gxm_back_buffer_index],
 			&gxm_color_surfaces[gxm_back_buffer_index],
 			&gxm_depth_stencil_surface);
-		gxm_scene_flags ^= SCE_GXM_SCENE_VERTEX_WAIT_FOR_DEPENDENCY;
+		gxm_scene_flags &= ~SCE_GXM_SCENE_VERTEX_WAIT_FOR_DEPENDENCY;
 	} else {
 		gxm_scene_flags |= SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY;
 		sceGxmBeginScene(gxm_context, gxm_scene_flags, active_write_fb->target,
@@ -315,7 +315,7 @@ void vglStartRendering(void) {
 			&active_write_fb->colorbuffer,
 			&active_write_fb->depthbuffer);
 		gxm_scene_flags |= SCE_GXM_SCENE_VERTEX_WAIT_FOR_DEPENDENCY;
-		gxm_scene_flags ^= SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY;
+		gxm_scene_flags &= ~SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY;
 	}
 
 	// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
