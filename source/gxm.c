@@ -16,6 +16,7 @@ static void *gxm_color_surfaces_addr[DISPLAY_BUFFER_COUNT]; // Display color sur
 static SceGxmSyncObject *gxm_sync_objects[DISPLAY_BUFFER_COUNT]; // Display sync objects
 static unsigned int gxm_front_buffer_index; // Display front buffer id
 static unsigned int gxm_back_buffer_index; // Display back buffer id
+static unsigned int gxm_scene_flags = 0; // Current gxm scene flags
 
 static void *gxm_shader_patcher_buffer_addr; // Shader PAtcher buffer memblock starting address
 static void *gxm_shader_patcher_vertex_usse_addr; // Shader Patcher vertex USSE memblock starting address
@@ -192,10 +193,10 @@ void termDisplayColorSurfaces(void) {
 	}
 }
 
-void initDepthStencilSurfaces(void) {
+void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, void **depth_buffer, void **stencil_buffer) {
 	// Calculating sizes for depth and stencil surfaces
-	unsigned int depth_stencil_width = ALIGN(DISPLAY_WIDTH, SCE_GXM_TILE_SIZEX);
-	unsigned int depth_stencil_height = ALIGN(DISPLAY_HEIGHT, SCE_GXM_TILE_SIZEY);
+	unsigned int depth_stencil_width = ALIGN(w, SCE_GXM_TILE_SIZEX);
+	unsigned int depth_stencil_height = ALIGN(h, SCE_GXM_TILE_SIZEY);
 	unsigned int depth_stencil_samples = depth_stencil_width * depth_stencil_height;
 	if (msaa_mode == SCE_GXM_MULTISAMPLE_2X)
 		depth_stencil_samples = depth_stencil_samples * 2;
@@ -204,18 +205,22 @@ void initDepthStencilSurfaces(void) {
 	vglMemType type = VGL_MEM_VRAM;
 
 	// Allocating depth surface
-	gxm_depth_surface_addr = gpu_alloc_mapped(4 * depth_stencil_samples, &type);
+	*depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, &type);
 
 	// Allocating stencil surface
-	gxm_stencil_surface_addr = gpu_alloc_mapped(1 * depth_stencil_samples, &type);
+	*stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, &type);
 
 	// Initializing depth and stencil surfaces
-	sceGxmDepthStencilSurfaceInit(&gxm_depth_stencil_surface,
+	sceGxmDepthStencilSurfaceInit(surface,
 		SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M_S8,
 		SCE_GXM_DEPTH_STENCIL_SURFACE_TILED,
 		msaa_mode == SCE_GXM_MULTISAMPLE_4X ? depth_stencil_width * 2 : depth_stencil_width,
-		gxm_depth_surface_addr,
-		gxm_stencil_surface_addr);
+		*depth_buffer,
+		*stencil_buffer);
+}
+
+void initDepthStencilSurfaces(void) {
+	initDepthStencilBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, &gxm_depth_stencil_surface, &gxm_depth_surface_addr, &gxm_stencil_surface_addr);
 }
 
 void termDepthStencilSurfaces(void) {
@@ -295,19 +300,20 @@ void waitRenderingDone(void) {
 void vglStartRendering(void) {
 	// Starting drawing scene
 	if (active_write_fb == NULL) { // Default framebuffer is used
-		sceGxmBeginScene(
-			gxm_context, 0, gxm_render_target,
+		sceGxmBeginScene(gxm_context, gxm_scene_flags, gxm_render_target,
 			NULL, NULL,
 			gxm_sync_objects[gxm_back_buffer_index],
 			&gxm_color_surfaces[gxm_back_buffer_index],
 			&gxm_depth_stencil_surface);
+		gxm_scene_flags ^= SCE_GXM_SCENE_VERTEX_WAIT_FOR_DEPENDENCY;
 	} else {
-		sceGxmBeginScene(
-			gxm_context, 0, active_write_fb->target,
-			NULL, NULL,
-			active_write_fb->sync_object,
-			active_write_fb->colorbuffer,
-			active_write_fb->depthbuffer);
+		gxm_scene_flags |= SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY;
+		sceGxmBeginScene(gxm_context, gxm_scene_flags, active_write_fb->target,
+			NULL, NULL, NULL,
+			&active_write_fb->colorbuffer,
+			&active_write_fb->depthbuffer);
+		gxm_scene_flags |= SCE_GXM_SCENE_VERTEX_WAIT_FOR_DEPENDENCY;
+		gxm_scene_flags ^= SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY;
 	}
 
 	// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call

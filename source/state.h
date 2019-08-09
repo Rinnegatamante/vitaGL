@@ -84,9 +84,10 @@ typedef struct texture_unit {
 typedef struct framebuffer {
 	uint8_t active;
 	SceGxmRenderTarget *target;
-	SceGxmColorSurface *colorbuffer;
-	SceGxmDepthStencilSurface *depthbuffer;
-	SceGxmSyncObject *sync_object;
+	SceGxmColorSurface colorbuffer;
+	SceGxmDepthStencilSurface depthbuffer;
+	void *depth_buffer_addr;
+	void *stencil_buffer_addr;
 } framebuffer;
 
 // Blending

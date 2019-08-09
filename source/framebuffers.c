@@ -10,6 +10,34 @@ static framebuffer framebuffers[BUFFERS_NUM]; // Framebuffers array
 framebuffer *active_read_fb = NULL; // Current readback framebuffer in use
 framebuffer *active_write_fb = NULL; // Current write framebuffer in use
 
+uint32_t get_color_from_texture(uint32_t type) {
+	uint32_t res = 0;
+	switch (type) {
+	case GL_RGB:
+		res = SCE_GXM_COLOR_FORMAT_U8U8U8_BGR;
+		break;
+	case GL_RGBA:
+		res = SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR;
+		break;
+	case GL_LUMINANCE:
+		res = SCE_GXM_COLOR_FORMAT_U8_R;
+		break;
+	case GL_LUMINANCE_ALPHA:
+		res = SCE_GXM_COLOR_FORMAT_U8U8_GR;
+		break;
+	case GL_INTENSITY:
+		res = SCE_GXM_COLOR_FORMAT_U8_R;
+		break;
+	case GL_ALPHA:
+		res = SCE_GXM_COLOR_FORMAT_U8_A;
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+		break;
+	}
+	return res;
+}
+
 /*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -
@@ -28,9 +56,6 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 		if (!framebuffers[i].active) {
 			ids[j++] = (GLuint)&framebuffers[i];
 			framebuffers[i].active = 1;
-			framebuffers[i].depthbuffer = NULL;
-			framebuffers[i].colorbuffer = NULL;
-			sceGxmSyncObjectCreate(&framebuffers[i].sync_object);
 		}
 		if (j >= n)
 			break;
@@ -47,11 +72,8 @@ void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers) {
 	while (n > 0) {
 		framebuffer *fb = (framebuffer *)framebuffers[n--];
 		fb->active = 0;
-		if (fb->colorbuffer)
-			free(fb->colorbuffer);
 		if (fb->target)
 			sceGxmDestroyRenderTarget(fb->target);
-		sceGxmSyncObjectDestroy(fb->sync_object);
 	}
 }
 
@@ -92,20 +114,30 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	texture *tex = &tex_unit->textures[tex_id];
 
+	// Extracting texture sizes
+	int tex_w = sceGxmTextureGetWidth(&tex->gxm_tex);
+	int tex_h = sceGxmTextureGetHeight(&tex->gxm_tex);
+
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
-		fb->colorbuffer = (SceGxmColorSurface *)malloc(sizeof(SceGxmColorSurface));
+
+		// Allocating colorbuffer
 		sceGxmColorSurfaceInit(
-			fb->colorbuffer,
-			SCE_GXM_COLOR_FORMAT_A8B8G8R8,
+			&fb->colorbuffer,
+			get_color_from_texture(tex->type),
 			SCE_GXM_COLOR_SURFACE_LINEAR,
 			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
 			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-			sceGxmTextureGetWidth(&tex->gxm_tex),
-			sceGxmTextureGetHeight(&tex->gxm_tex),
-			sceGxmTextureGetWidth(&tex->gxm_tex),
+			tex_w,
+			tex_h,
+			tex_w,
 			sceGxmTextureGetData(&tex->gxm_tex));
+
+		// Allocating depth and stencil buffer (FIXME: This probably shouldn't be here)
+		initDepthStencilBuffer(tex_w, tex_h, &fb->depthbuffer, &fb->depth_buffer_addr, &fb->stencil_buffer_addr);
+
+		// Creating rendertarget
 		SceGxmRenderTargetParams renderTargetParams;
 		memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
 		renderTargetParams.flags = 0;
