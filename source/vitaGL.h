@@ -364,7 +364,9 @@ typedef enum {
 } vglMemType;
 
 // vgl*
+void *vglAlloc(uint32_t size, vglMemType type);
 void vglEnd(void);
+void vglFree(void *addr);
 void *vglGetTexDataPointer(GLenum target);
 void vglInit(uint32_t gpu_pool_size);
 void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa);

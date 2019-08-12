@@ -2098,3 +2098,13 @@ size_t vglMemFree(vglMemType type) {
 		return 0;
 	return mempool_get_free_space(type);
 }
+
+void *vglAlloc(uint32_t size, vglMemType type) {
+	if (type >= VGL_MEM_TYPE_COUNT)
+		return NULL;
+	return mempool_alloc(size, type);
+}
+
+void vglFree(void *addr) {
+	mempool_free(addr, VGL_MEM_RAM); // Type is discarded so we just pass a random one
+}
