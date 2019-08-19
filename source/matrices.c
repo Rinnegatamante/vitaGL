@@ -74,41 +74,43 @@ void glLoadIdentity(void) {
 }
 
 void glMultMatrixf(const GLfloat *m) {
-	// Properly ordering matrix to perform multiplication
 	matrix4x4 res;
+		
+#ifdef TRANSPOSE_MATRICES
+	// Properly ordering matrix to perform multiplication
 	matrix4x4 tmp;
 	int i, j;
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
-#ifdef TRANSPOSE_MATRICES
 			tmp[i][j] = m[j * 4 + i];
-#else
-			tmp[i][j] = m[i * 4 + j];
-#endif
+
 		}
 	}
 
 	// Multiplicating passed matrix with in use one
 	matrix4x4_multiply(res, *matrix, tmp);
-
+#else
+	// Multiplicating passed matrix with in use one
+	matrix4x4_multiply(res, *matrix, m);
+#endif
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
 	mvp_modified = GL_TRUE;
 }
 
 void glLoadMatrixf(const GLfloat *m) {
+#ifdef TRANSPOSE_MATRICES
 	// Properly ordering matrix
 	matrix4x4 tmp;
 	int i, j;
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
-#ifdef TRANSPOSE_MATRICES
 			(*matrix)[i][j] = m[j * 4 + i];
-#else
-			(*matrix)[i][j] = m[i * 4 + j];
-#endif
 		}
 	}
+#else
+	memcpy(*matrix, m, sizeof(matrix4x4));
+#endif
 	mvp_modified = GL_TRUE;
 }
 
