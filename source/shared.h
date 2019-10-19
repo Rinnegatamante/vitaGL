@@ -8,7 +8,7 @@
 #define _SHARED_H_
 
 // Internal constants
-#define TEXTURES_NUM 1536 // Available textures per texture unit
+#define TEXTURES_NUM 4096 // Available textures per texture unit
 #define MODELVIEW_STACK_DEPTH 32 // Depth of modelview matrix stack
 #define GENERIC_STACK_DEPTH 2 // Depth of generic matrix stack
 #define DISPLAY_WIDTH_DEF 960 // Default display width in pixels
