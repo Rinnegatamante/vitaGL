@@ -20,7 +20,7 @@
 	if (clip_plane0 < 1) {
 		vClip = 1.f;
 	} else {
-		float4 modelpos = mul(pos4, modelview);
+		float4 modelpos = mul(modelview, pos4);
 		vClip = dot(modelpos, clip_plane0_eq);
 	}
 	
