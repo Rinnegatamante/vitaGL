@@ -1,8 +1,12 @@
 TARGET          := libvitaGL
-SOURCES         := source source/utils source/hacks
+SOURCES         := source source/utils
 SHADERS         := shaders
 
 LIBS = -lc -lm -lSceGxm_stub -lSceDisplay_stub
+
+ifeq ($(HAVE_SBRK),1)
+SOURCES += source/hacks
+endif
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
 CGFILES  := $(foreach dir,$(SHADERS), $(wildcard $(dir)/*.cg))
@@ -12,7 +16,7 @@ OBJS     := $(CFILES:.c=.o)
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
 AR      = $(PREFIX)-gcc-ar
-CFLAGS  = -g -Wl,-q -O2 -ffast-math -mtune=cortex-a9 -mfpu=neon -flto -ftree-vectorize
+CFLAGS  = -g -Wl,-q -O2 -ffast-math -mtune=cortex-a9 -mfpu=neon -flto -ftree-vectorize -DTRANSPOSE_MATRICES
 ASFLAGS = $(CFLAGS)
 
 all: $(TARGET).a
