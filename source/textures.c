@@ -124,6 +124,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		}
 		break;
 	case GL_RG:
+	case GL_LUMINANCE_ALPHA:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			read_cb = readRG;
@@ -180,7 +181,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
 			break;
 		case GL_LUMINANCE_ALPHA:
-			write_cb = writeRA;
+			write_cb = writeRG;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_A8L8;
 			break;
 		case GL_INTENSITY:
