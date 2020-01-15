@@ -2108,3 +2108,7 @@ void *vglAlloc(uint32_t size, vglMemType type) {
 void vglFree(void *addr) {
 	mempool_free(addr, VGL_MEM_RAM); // Type is discarded so we just pass a random one
 }
+
+void vglUseExtraMem(GLboolean use) {
+	use_extra_mem = use;
+}

@@ -77,6 +77,7 @@ typedef enum SceGxmPrimitiveTypeExtra {
 extern void *frag_uniforms;
 extern void *vert_uniforms;
 extern SceGxmMultisampleMode msaa_mode;
+extern GLboolean use_extra_mem;
 
 // Debugging tool
 #ifdef ENABLE_LOG

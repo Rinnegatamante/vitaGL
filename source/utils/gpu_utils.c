@@ -8,6 +8,9 @@
 // VRAM usage setting
 uint8_t use_vram = 0;
 
+// Newlib mempool usage setting
+GLboolean use_extra_mem = GL_TRUE;
+
 // vitaGL memory pool setup
 static void *pool_addr = NULL;
 static unsigned int pool_index = 0;
@@ -29,7 +32,7 @@ void *gpu_alloc_mapped(size_t size, vglMemType *type) {
 		res = mempool_alloc(size, *type);
 	}
 
-	if (res == NULL) {
+	if (res == NULL && use_extra_mem) {
 		*type = VGL_MEM_EXTERNAL;
 		res = malloc(size);
 	}
