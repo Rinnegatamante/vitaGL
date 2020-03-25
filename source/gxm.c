@@ -335,9 +335,6 @@ void vglStopRenderingInit(void) {
 }
 
 void vglStopRenderingTerm(void) {
-	// Waiting GPU to complete its work
-	sceGxmFinish(gxm_context);
-
 	if (active_write_fb == NULL) { // Default framebuffer is used
 
 		// Properly requesting a display update
