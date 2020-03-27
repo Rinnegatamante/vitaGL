@@ -239,14 +239,40 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	texture *target_texture = &tex_unit->textures[texture2d_idx];
 
 	// Calculating implicit texture stride and start address of requested texture modification
+	uint32_t orig_w = sceGxmTextureGetWidth(&target_texture->gxm_tex);
+	uint32_t orig_h = sceGxmTextureGetHeight(&target_texture->gxm_tex);
 	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&target_texture->gxm_tex);
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
-	uint32_t stride = ALIGN(sceGxmTextureGetWidth(&target_texture->gxm_tex), 8) * bpp;
+	uint32_t stride = ALIGN(orig_w, 8) * bpp;
 	uint8_t *ptr = (uint8_t *)sceGxmTextureGetData(&target_texture->gxm_tex) + xoffset * bpp + yoffset * stride;
 	uint8_t *ptr_line = ptr;
 	uint8_t data_bpp = 0;
 	int i, j;
 
+	if (xoffset + width > orig_w) {
+		error = GL_INVALID_VALUE;
+		return;
+	} else if (yoffset + height > orig_h) {
+		error = GL_INVALID_VALUE;
+		return;
+	}
+	
+	// Support for legacy GL1.0 format
+	switch (format) {
+	case 1:
+		format = GL_RED;
+		break;
+	case 2:
+		format = GL_RG;
+		break;
+	case 3:
+		format = GL_RGB;
+		break;
+	case 4:
+		format = GL_RGBA;
+		break;
+	}
+	
 	/*
 	 * Callbacks are actually used to just perform down/up-sampling
 	 * between U8 texture formats. Reads are expected to give as result
@@ -267,6 +293,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			break;
 		default:
 			error = GL_INVALID_ENUM;
+			return;
 			break;
 		}
 		break;
@@ -278,6 +305,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			break;
 		default:
 			error = GL_INVALID_ENUM;
+			return;
 			break;
 		}
 		break;
@@ -289,6 +317,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			break;
 		default:
 			error = GL_INVALID_ENUM;
+			return;
 			break;
 		}
 		break;
@@ -304,6 +333,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			break;
 		default:
 			error = GL_INVALID_ENUM;
+			return;
 			break;
 		}
 		break;
@@ -324,7 +354,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			write_cb = writeR;
 			break;
 		case GL_LUMINANCE_ALPHA:
-			write_cb = writeRA;
+			write_cb = writeRG;
 			break;
 		case GL_INTENSITY:
 			write_cb = writeR;
