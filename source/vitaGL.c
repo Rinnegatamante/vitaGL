@@ -57,7 +57,6 @@ vector3f *depth_vertices = NULL; // Memblock starting address for depth clear sc
 // Internal stuffs
 SceGxmMultisampleMode msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
 
-static SceGxmBlendInfo *cur_blend_info_ptr = NULL;
 extern uint8_t use_vram;
 
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
@@ -129,7 +128,6 @@ void change_blend_factor() {
 	blend_info.alphaDst = blend_dfactor_a;
 
 	_change_blend_factor(&blend_info);
-	cur_blend_info_ptr = &blend_info;
 	if (cur_program != 0) {
 		reloadCustomShader();
 	}
@@ -138,15 +136,14 @@ void change_blend_factor() {
 void change_blend_mask() {
 	static SceGxmBlendInfo blend_info;
 	blend_info.colorMask = blend_color_mask;
-	blend_info.colorFunc = SCE_GXM_BLEND_FUNC_ADD;
-	blend_info.alphaFunc = SCE_GXM_BLEND_FUNC_ADD;
+	blend_info.colorFunc = SCE_GXM_BLEND_FUNC_NONE;
+	blend_info.alphaFunc = SCE_GXM_BLEND_FUNC_NONE;
 	blend_info.colorSrc = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
 	blend_info.colorDst = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 	blend_info.alphaSrc = SCE_GXM_BLEND_FACTOR_ONE;
 	blend_info.alphaDst = SCE_GXM_BLEND_FACTOR_ZERO;
 
 	_change_blend_factor(&blend_info);
-	cur_blend_info_ptr = &blend_info;
 	if (cur_program != 0) {
 		reloadCustomShader();
 	}
@@ -155,7 +152,6 @@ void change_blend_mask() {
 void disable_blend() {
 	if (blend_color_mask == SCE_GXM_COLOR_MASK_ALL) {
 		_change_blend_factor(NULL);
-		cur_blend_info_ptr = NULL;
 		if (cur_program != 0) {
 			reloadCustomShader();
 		}
