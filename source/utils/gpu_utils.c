@@ -299,6 +299,7 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 			uint32_t *dst = (uint32_t*)tmp;
 			for (i = 0; i < h * w; i++) {
 				dst[i] = read_cb(src);
+				src += src_bpp;
 			}
 			dxt_compress(texture_data, tmp, w, h, alignment == 16);
 			free(tmp);
