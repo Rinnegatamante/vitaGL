@@ -168,6 +168,13 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 
 		// Detecting proper write callback and texture format
 		switch (internalFormat) {
+		case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+			tex_format = SCE_GXM_TEXTURE_BASE_FORMAT_UBC1;
+			break;
+		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+			tex_format = SCE_GXM_TEXTURE_BASE_FORMAT_UBC3;
+			break;
 		case GL_RGB:
 			write_cb = writeRGB;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
@@ -211,7 +218,8 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		tex->type = internalFormat;
 		tex->write_cb = write_cb;
 		if (level == 0)
-			gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb);
+			if (tex->write_cb) gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb);
+			else gpu_alloc_compressed_texture(width, height, tex_format, data, tex, data_bpp, read_cb);
 		else
 			gpu_alloc_mipmaps(level, tex);
 

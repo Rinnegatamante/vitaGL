@@ -4,6 +4,11 @@
  */
 
 #include "../shared.h"
+#include "stb_dxt.h"
+
+#ifndef MIN
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#endif
 
 // VRAM usage setting
 uint8_t use_vram = 0;
@@ -15,6 +20,49 @@ GLboolean use_extra_mem = GL_TRUE;
 static void *pool_addr = NULL;
 static unsigned int pool_index = 0;
 static unsigned int pool_size = 0;
+
+void extract_block_for_dxt(uint32_t *src, int x, int y, int w, int h, uint8_t *block) {
+	int i, j;
+	
+	int bw = MIN(w - x, 4);
+	int bh = MIN(h - y, 4);
+	int bx, by;
+   
+	const int rem[] = {
+		0, 0, 0, 0,
+		0, 1, 0, 1,
+		0, 1, 2, 0,
+		0, 1, 2, 3
+	};
+   
+	for(i = 0; i < 4; ++i) {
+		by = rem[(bh - 1) * 4 + i] + y;
+		for(j = 0; j < 4; ++j) {
+			bx = rem[(bw - 1) * 4 + j] + x;
+			block[(i * 4 * 4) + (j * 4) + 0] =
+				src[(by * (w * 4)) + (bx * 4) + 0];
+			block[(i * 4 * 4) + (j * 4) + 1] =
+				src[(by * (w * 4)) + (bx * 4) + 1];
+			block[(i * 4 * 4) + (j * 4) + 2] =
+				src[(by * (w * 4)) + (bx * 4) + 2];
+			block[(i * 4 * 4) + (j * 4) + 3] =
+				src[(by * (w * 4)) + (bx * 4) + 3];
+		}
+	}
+}
+
+void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
+	uint8_t block[64];
+	int x, y;
+   
+	for(y = 0; y < h; y += 4) {
+		for(x = 0; x < w; x += 4) {
+			extract_block_for_dxt((uint32_t*)src, x, y, w, h, block);
+			stb_compress_dxt_block(dst, block, isdxt5, STB_DXT_NORMAL);
+			dst += isdxt5 ? 16 : 8;
+		}
+	}
+}
 
 void *gpu_alloc_mapped(size_t size, vglMemType *type) {
 	// Allocating requested memblock
@@ -147,6 +195,15 @@ int tex_format_to_bytespp(SceGxmTextureFormat format) {
 	}
 }
 
+int tex_format_to_alignment(SceGxmTextureFormat format) {
+	switch (format & 0x9f000000U) {
+	case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
+		return 16;
+	default:
+		return 8;
+	}
+}
+
 palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 	// Allocating a palette object
 	palette *res = (palette *)malloc(sizeof(palette));
@@ -212,6 +269,45 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 			tex->palette_UID = 1;
 		else
 			tex->palette_UID = 0;
+		tex->valid = 1;
+		tex->data = texture_data;
+	}
+}
+
+void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *)) {
+	// If there's already a texture in passed texture object we first dealloc it
+	if (tex->valid)
+		gpu_free_texture(tex);
+	
+	// Getting texture format bpp and alignment
+	uint8_t bpp = tex_format_to_bytespp(format);
+	uint8_t alignment = tex_format_to_alignment(format);
+	
+	// Allocating texture data buffer
+	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
+	int tex_size = (ALIGN(w, alignment) * h);
+	if (alignment == 8) tex_size /= 2;
+	void *texture_data = gpu_alloc_mapped(tex_size, &tex->mtype);
+	
+	// Initializing texture data buffer
+	if (texture_data != NULL) {
+		// Initializing texture data buffer
+		if (data != NULL) {
+			void *tmp = malloc(w * h * 4);
+			int i, j;
+			uint8_t *src = (uint8_t *)data;
+			uint32_t *dst = (uint32_t*)tmp;
+			for (i = 0; i < h * w; i++) {
+				dst[i] = read_cb(src);
+			}
+			dxt_compress(texture_data, tmp, w, h, alignment == 16);
+			free(tmp);
+		} else
+			memset(texture_data, 0, tex_size);
+
+		// Initializing texture and validating it
+		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, w, h, 0);
+		tex->palette_UID = 0;
 		tex->valid = 1;
 		tex->data = texture_data;
 	}
