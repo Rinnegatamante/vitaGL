@@ -107,7 +107,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean imp
 GLuint glCreateShader(GLenum shaderType) {
 	// Looking for a free shader slot
 	GLuint i, res = 0;
-	for (i = 1; i <= MAX_CUSTOM_SHADERS; i++) {
+	for (i = 1; i < MAX_CUSTOM_SHADERS; i++) {
 		if (!(shaders[i - 1].valid)) {
 			res = i;
 			break;
@@ -182,7 +182,7 @@ void glAttachShader(GLuint prog, GLuint shad) {
 GLuint glCreateProgram(void) {
 	// Looking for a free program slot
 	GLuint i, res = 0;
-	for (i = 1; i <= (MAX_CUSTOM_SHADERS / 2); i++) {
+	for (i = 1; i < (MAX_CUSTOM_SHADERS / 2); i++) {
 		// Program slot found, reserving and initializing it
 		if (!(progs[i - 1].valid)) {
 			res = i;
