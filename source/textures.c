@@ -170,10 +170,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		switch (internalFormat) {
 		case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
 		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
 			break;
 		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
 			break;
 		case GL_RGB:
 			write_cb = writeRGB;

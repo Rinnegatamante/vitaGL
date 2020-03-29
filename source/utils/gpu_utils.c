@@ -21,46 +21,41 @@ static void *pool_addr = NULL;
 static unsigned int pool_index = 0;
 static unsigned int pool_size = 0;
 
-void extract_block_for_dxt(uint32_t *src, int x, int y, int w, int h, uint8_t *block) {
-	int i, j;
-	
-	int bw = MIN(w - x, 4);
-	int bh = MIN(h - y, 4);
-	int bx, by;
-   
-	const int rem[] = {
-		0, 0, 0, 0,
-		0, 1, 0, 1,
-		0, 1, 2, 0,
-		0, 1, 2, 3
-	};
-   
-	for(i = 0; i < 4; ++i) {
-		by = rem[(bh - 1) * 4 + i] + y;
-		for(j = 0; j < 4; ++j) {
-			bx = rem[(bw - 1) * 4 + j] + x;
-			block[(i * 4 * 4) + (j * 4) + 0] =
-				src[(by * (w * 4)) + (bx * 4) + 0];
-			block[(i * 4 * 4) + (j * 4) + 1] =
-				src[(by * (w * 4)) + (bx * 4) + 1];
-			block[(i * 4 * 4) + (j * 4) + 2] =
-				src[(by * (w * 4)) + (bx * 4) + 2];
-			block[(i * 4 * 4) + (j * 4) + 3] =
-				src[(by * (w * 4)) + (bx * 4) + 3];
-		}
-	}
+uint64_t morton_1(uint64_t x)
+{
+    x = x & 0x5555555555555555;
+    x = (x | (x >> 1)) & 0x3333333333333333;
+    x = (x | (x >> 2)) & 0x0F0F0F0F0F0F0F0F;
+    x = (x | (x >> 4)) & 0x00FF00FF00FF00FF;
+    x = (x | (x >> 8)) & 0x0000FFFF0000FFFF;
+    x = (x | (x >> 16)) & 0xFFFFFFFFFFFFFFFF;
+    return x;
+}
+
+void d2xy_morton(uint64_t d, uint64_t *x, uint64_t *y)
+{
+    *x = morton_1(d);
+    *y = morton_1(d >> 1);
+}
+
+void extract_block(const uint8_t *src, int width, uint8_t *block) {
+	int j;
+	for (j = 0; j < 4; j++) {
+		memcpy(&block[j * 4 * 4], src, 16);
+		src += width * 4;
+	} 
 }
 
 void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
 	uint8_t block[64];
-	int x, y;
-   
-	for(y = 0; y < h; y += 4) {
-		for(x = 0; x < w; x += 4) {
-			extract_block_for_dxt((uint32_t*)src, x, y, w, h, block);
-			stb_compress_dxt_block(dst, block, isdxt5, STB_DXT_NORMAL);
-			dst += isdxt5 ? 16 : 8;
-		}
+	uint32_t num_blocks = (w * h) / 16;
+	uint64_t d, offs_x, offs_y;
+	uint8_t *dst_start = dst;
+	for (d = 0; d < num_blocks; d++) {
+		d2xy_morton(d, &offs_x, &offs_y);
+		extract_block(src + offs_y * 16 + offs_x * w * 16, w, block);
+		stb_compress_dxt_block(dst, block, isdxt5, STB_DXT_HIGHQUAL);
+		dst += isdxt5 ? 16 : 8;
 	}
 }
 
@@ -279,35 +274,40 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 	if (tex->valid)
 		gpu_free_texture(tex);
 	
-	// Getting texture format bpp and alignment
-	uint8_t bpp = tex_format_to_bytespp(format);
+	// Getting texture format alignment
 	uint8_t alignment = tex_format_to_alignment(format);
 	
 	// Allocating texture data buffer
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-	int tex_size = (ALIGN(w, alignment) * h);
+	int tex_size = w * h;
 	if (alignment == 8) tex_size /= 2;
 	void *texture_data = gpu_alloc_mapped(tex_size, &tex->mtype);
+	
+	// NOTE: Supports only GL_RGBA source format for now
 	
 	// Initializing texture data buffer
 	if (texture_data != NULL) {
 		// Initializing texture data buffer
 		if (data != NULL) {
-			void *tmp = malloc(w * h * 4);
-			int i, j;
+			//void *tmp = malloc(w * h * 4);
+			//void *tmp2 = malloc(tex_size);
+			/*int i, j;
 			uint8_t *src = (uint8_t *)data;
 			uint32_t *dst = (uint32_t*)tmp;
 			for (i = 0; i < h * w; i++) {
-				dst[i] = read_cb(src);
+				uint32_t clr = read_cb(src);
+				writeRGBA(dst++, src);
 				src += src_bpp;
-			}
-			dxt_compress(texture_data, tmp, w, h, alignment == 16);
-			free(tmp);
+			}*/
+			dxt_compress(texture_data, data, w, h, alignment == 16);
+			//swizzle(texture_data, tmp2, w, h, alignment << 3);
+			//free(tmp);
+			//free(tmp2);
 		} else
 			memset(texture_data, 0, tex_size);
 
 		// Initializing texture and validating it
-		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, w, h, 0);
+		sceGxmTextureInitSwizzled(&tex->gxm_tex, texture_data, format, w, h, 0);
 		tex->palette_UID = 0;
 		tex->valid = 1;
 		tex->data = texture_data;
