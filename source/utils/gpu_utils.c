@@ -282,17 +282,8 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 	
 	// Calculating swizzled compressed texture size on memory
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-	int max_size = MAX(w, h);
-	int tex_size = max_size * max_size;
+	int tex_size = w * h;
 	if (alignment == 8) tex_size /= 2;
-	
-	// Checking if compressing the texture would be worth
-	if (tex_size > w * h * 4) {
-		tex->write_cb = writeRGBA;
-		tex->type = GL_RGBA;
-		gpu_alloc_texture(w, h, SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR, data, tex, src_bpp, read_cb, writeRGBA);
-		return;
-	}
 	
 	// Allocating texture data buffer
 	void *texture_data = gpu_alloc_mapped(tex_size, &tex->mtype);
@@ -302,7 +293,7 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 	// Initializing texture data buffer
 	if (texture_data != NULL) {
 		// Initializing texture data buffer
-		if (data != NULL || w != h) {
+		if (data != NULL) {
 			//void *tmp = malloc(w * h * 4);
 			//void *tmp2 = malloc(tex_size);
 			/*int i, j;
