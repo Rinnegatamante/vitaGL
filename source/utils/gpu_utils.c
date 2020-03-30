@@ -8,6 +8,7 @@
 
 #ifndef MIN
 #define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)<(b))?(b):(a))
 #endif
 
 // VRAM usage setting
@@ -48,11 +49,13 @@ void extract_block(const uint8_t *src, int width, uint8_t *block) {
 
 void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
 	uint8_t block[64];
-	uint32_t num_blocks = (w * h) / 16;
+	int s = MAX(w, h);
+	uint32_t num_blocks = (s * s) / 16;
 	uint64_t d, offs_x, offs_y;
-	uint8_t *dst_start = dst;
 	for (d = 0; d < num_blocks; d++) {
 		d2xy_morton(d, &offs_x, &offs_y);
+		if (offs_x * 4 >= h) continue;
+		if (offs_y * 4 >= w) continue;
 		extract_block(src + offs_y * 16 + offs_x * w * 16, w, block);
 		stb_compress_dxt_block(dst, block, isdxt5, STB_DXT_HIGHQUAL);
 		dst += isdxt5 ? 16 : 8;
@@ -277,10 +280,21 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 	// Getting texture format alignment
 	uint8_t alignment = tex_format_to_alignment(format);
 	
-	// Allocating texture data buffer
+	// Calculating swizzled compressed texture size on memory
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-	int tex_size = w * h;
+	int max_size = MAX(w, h);
+	int tex_size = max_size * max_size;
 	if (alignment == 8) tex_size /= 2;
+	
+	// Checking if compressing the texture would be worth
+	if (tex_size > w * h * 4) {
+		tex->write_cb = writeRGBA;
+		tex->type = GL_RGBA;
+		gpu_alloc_texture(w, h, SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR, data, tex, src_bpp, read_cb, writeRGBA);
+		return;
+	}
+	
+	// Allocating texture data buffer
 	void *texture_data = gpu_alloc_mapped(tex_size, &tex->mtype);
 	
 	// NOTE: Supports only GL_RGBA source format for now
@@ -288,7 +302,7 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 	// Initializing texture data buffer
 	if (texture_data != NULL) {
 		// Initializing texture data buffer
-		if (data != NULL) {
+		if (data != NULL || w != h) {
 			//void *tmp = malloc(w * h * 4);
 			//void *tmp2 = malloc(tex_size);
 			/*int i, j;
@@ -299,7 +313,11 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 				writeRGBA(dst++, src);
 				src += src_bpp;
 			}*/
-			dxt_compress(texture_data, data, w, h, alignment == 16);
+			
+			// Performing swizzling and DXT compression
+			dxt_compress(texture_data, (void*)data, w, h, alignment == 16);
+			
+			
 			//swizzle(texture_data, tmp2, w, h, alignment << 3);
 			//free(tmp);
 			//free(tmp2);
