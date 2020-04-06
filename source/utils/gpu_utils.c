@@ -22,6 +22,10 @@ static void *pool_addr = NULL;
 static unsigned int pool_index = 0;
 static unsigned int pool_size = 0;
 
+// USSE memory settings
+vglMemType frag_usse_type = VGL_MEM_VRAM;
+vglMemType vert_usse_type = VGL_MEM_VRAM;
+
 uint64_t morton_1(uint64_t x)
 {
     x = x & 0x5555555555555555;
@@ -68,7 +72,7 @@ void *gpu_alloc_mapped(size_t size, vglMemType *type) {
 
 	// Requested memory type finished, using other one
 	if (res == NULL) {
-		*type = use_vram ? VGL_MEM_RAM : VGL_MEM_VRAM;
+		*type = *type == VGL_MEM_VRAM ? VGL_MEM_RAM : VGL_MEM_VRAM;
 		res = mempool_alloc(size, *type);
 	}
 
@@ -88,7 +92,7 @@ void *gpu_alloc_mapped(size_t size, vglMemType *type) {
 
 void *gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
-	void *addr = mempool_alloc(size, VGL_MEM_RAM);
+	void *addr = gpu_alloc_mapped(size, &vert_usse_type);
 
 	// Mapping memblock into sceGxm as vertex USSE memory
 	sceGxmMapVertexUsseMemory(addr, size, usse_offset);
@@ -102,12 +106,12 @@ void gpu_vertex_usse_free_mapped(void *addr) {
 	sceGxmUnmapVertexUsseMemory(addr);
 
 	// Deallocating memblock
-	mempool_free(addr, VGL_MEM_RAM);
+	mempool_free(addr, vert_usse_type);
 }
 
 void *gpu_fragment_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
-	void *addr = mempool_alloc(size, VGL_MEM_RAM);
+	void *addr = gpu_alloc_mapped(size, &frag_usse_type);
 
 	// Mapping memblock into sceGxm as fragment USSE memory
 	sceGxmMapFragmentUsseMemory(addr, size, usse_offset);
@@ -121,7 +125,7 @@ void gpu_fragment_usse_free_mapped(void *addr) {
 	sceGxmUnmapFragmentUsseMemory(addr);
 
 	// Deallocating memblock
-	mempool_free(addr, VGL_MEM_RAM);
+	mempool_free(addr, frag_usse_type);
 }
 
 void *gpu_pool_malloc(unsigned int size) {
