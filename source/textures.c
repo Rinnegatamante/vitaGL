@@ -220,8 +220,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		if (level == 0)
 			if (tex->write_cb) gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb);
 			else gpu_alloc_compressed_texture(width, height, tex_format, data, tex, data_bpp, read_cb);
-		else
+		else {
 			gpu_alloc_mipmaps(level, tex);
+			sceGxmTextureSetMipFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_MIP_FILTER_ENABLED);
+		}
 
 		// Setting texture parameters
 		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
@@ -632,6 +634,24 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
 				tex_unit->env_mode = BLEND;
 			else if (param == GL_ADD)
 				tex_unit->env_mode = ADD;
+			break;
+		default:
+			error = GL_INVALID_ENUM;
+			break;
+		}
+		break;
+	default:
+		error = GL_INVALID_ENUM;
+	}
+}
+
+void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
+	// Properly changing texture environment settings as per request
+	switch (target) {
+	case GL_TEXTURE_ENV:
+		switch (pname) {
+		case GL_TEXTURE_ENV_COLOR:
+			memcpy(&texenv_color.r, param, sizeof(GLfloat) * 4);
 			break;
 		default:
 			error = GL_INVALID_ENUM;

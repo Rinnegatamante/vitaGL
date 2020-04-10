@@ -324,6 +324,7 @@ void glTexCoord2fv(GLfloat *f);
 void glTexCoord2i(GLint s, GLint t);
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glTexEnvf(GLenum target, GLenum pname, GLfloat param);
+void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param);
 void glTexEnvi(GLenum target, GLenum pname, GLint param);
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *data);
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param);
