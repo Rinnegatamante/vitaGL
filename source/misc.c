@@ -316,7 +316,7 @@ void glClear(GLbitfield mask) {
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		validate_depth_test();
-		change_depth_write((depth_mask_state && orig_depth_test) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
 		sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back);
 	}
@@ -332,7 +332,7 @@ void glClear(GLbitfield mask) {
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		validate_depth_test();
-		change_depth_write((depth_mask_state && orig_depth_test) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 	}
 	if ((mask & GL_STENCIL_BUFFER_BIT) == GL_STENCIL_BUFFER_BIT) {
 		invalidate_depth_test();
@@ -358,7 +358,7 @@ void glClear(GLbitfield mask) {
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		validate_depth_test();
-		change_depth_write((depth_mask_state && orig_depth_test) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		change_stencil_settings();
 	}
 }
