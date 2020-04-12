@@ -13,6 +13,7 @@
 
 // VRAM usage setting
 uint8_t use_vram = 0;
+uint8_t use_vram_for_usse = 1;
 
 // Newlib mempool usage setting
 GLboolean use_extra_mem = GL_TRUE;
@@ -23,8 +24,8 @@ static unsigned int pool_index = 0;
 static unsigned int pool_size = 0;
 
 // USSE memory settings
-vglMemType frag_usse_type = VGL_MEM_VRAM;
-vglMemType vert_usse_type = VGL_MEM_VRAM;
+vglMemType frag_usse_type;
+vglMemType vert_usse_type;
 
 uint64_t morton_1(uint64_t x)
 {
@@ -92,6 +93,7 @@ void *gpu_alloc_mapped(size_t size, vglMemType *type) {
 
 void *gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
+	vert_usse_type = use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM;
 	void *addr = gpu_alloc_mapped(size, &vert_usse_type);
 
 	// Mapping memblock into sceGxm as vertex USSE memory
@@ -111,6 +113,7 @@ void gpu_vertex_usse_free_mapped(void *addr) {
 
 void *gpu_fragment_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
+	frag_usse_type = use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM;
 	void *addr = gpu_alloc_mapped(size, &frag_usse_type);
 
 	// Mapping memblock into sceGxm as fragment USSE memory

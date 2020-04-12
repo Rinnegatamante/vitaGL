@@ -58,6 +58,7 @@ vector3f *depth_vertices = NULL; // Memblock starting address for depth clear sc
 SceGxmMultisampleMode msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
 
 extern uint8_t use_vram;
+extern uint8_t use_vram_for_usse;
 
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
 static gpubuffer gpu_buffers[BUFFERS_NUM]; // Buffers array
@@ -174,6 +175,10 @@ void vector2f_convert_to_local_space(vector2f *out, int x, int y, int width, int
 
 void vglUseVram(GLboolean usage) {
 	use_vram = usage;
+}
+
+void vglUseVramForUSSE(GLboolean usage) {
+	use_vram_for_usse = usage;
 }
 
 void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {

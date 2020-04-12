@@ -381,6 +381,7 @@ void vglStopRenderingInit();
 void vglStopRenderingTerm();
 void vglUpdateCommonDialog();
 void vglUseVram(GLboolean usage);
+void vglUseVramForUSSE(GLboolean usage);
 void vglUseExtraMem(GLboolean usage);
 void vglWaitVblankStart(GLboolean enable);
 
