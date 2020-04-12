@@ -215,30 +215,30 @@ void update_alpha_test_settings() {
 }
 
 void update_scissor_test() {
-	// Calculating scissor test region vertices
-	if (scissor_test_state) {
-		vector2f_convert_to_local_space(scissor_test_vertices, region.x, region.y, region.w, region.h);
-	}
-
 	// Setting current vertex program to clear screen one and fragment program to scissor test one
 	sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 	sceGxmSetFragmentProgram(gxm_context, scissor_test_fragment_program);
-
-	// Cleaning stencil surface mask update bit on the whole screen
-	sceGxmSetFrontStencilFunc(gxm_context,
-		SCE_GXM_STENCIL_FUNC_NEVER,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		0, 0);
-	sceGxmSetBackStencilFunc(gxm_context,
-		SCE_GXM_STENCIL_FUNC_NEVER,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		0, 0);
-	sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
-	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+	
+	if (scissor_test_state) {
+		// Calculating scissor test region vertices
+		vector2f_convert_to_local_space(scissor_test_vertices, region.x, region.y, region.w, region.h);
+	
+		// Cleaning stencil surface mask update bit on the whole screen
+		sceGxmSetFrontStencilFunc(gxm_context,
+			SCE_GXM_STENCIL_FUNC_NEVER,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			0, 0);
+		sceGxmSetBackStencilFunc(gxm_context,
+			SCE_GXM_STENCIL_FUNC_NEVER,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			0, 0);
+		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
+		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+	}
 
 	// Setting stencil surface mask update bit on the scissor test region
 	sceGxmSetFrontStencilFunc(gxm_context,
@@ -260,9 +260,12 @@ void update_scissor_test() {
 	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 
 	if (scissor_test_state)
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w, region.y + region.h);
+		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
 	else
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, gl_viewport.x, DISPLAY_HEIGHT - gl_viewport.y - gl_viewport.h, gl_viewport.x + gl_viewport.w, gl_viewport.y + gl_viewport.h);
+		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
+	
+	// Restoring original stencil test settings
+	change_stencil_settings();
 }
 
 void resetScissorTestRegion(void) {
