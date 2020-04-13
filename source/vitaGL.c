@@ -1102,7 +1102,7 @@ void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
 
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((stride < 0) || ((size < 2) && (size > 4))) {
+	if ((stride < 0) || (size < 2) || (size > 4)) {
 		error = GL_INVALID_VALUE;
 		return;
 	}
@@ -1127,7 +1127,7 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((stride < 0) || ((size < 3) && (size > 4))) {
+	if ((stride < 0) || (size < 3) || (size > 4)) {
 		error = GL_INVALID_VALUE;
 		return;
 	}
@@ -1152,7 +1152,7 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((stride < 0) || ((size < 2) && (size > 4))) {
+	if ((stride < 0) || (size < 2) || (size > 4)) {
 		error = GL_INVALID_VALUE;
 		return;
 	}
@@ -1179,8 +1179,8 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	SceGxmPrimitiveType gxm_p;
-	GLboolean skip_draw = GL_FALSE;
 	if (tex_unit->vertex_array_state) {
+		GLboolean skip_draw = GL_FALSE;
 		switch (mode) {
 		case GL_POINTS:
 			gxm_p = SCE_GXM_PRIMITIVE_POINTS;
@@ -1321,20 +1321,20 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 					uint8_t vec_set = 0, tex_set = 0, clr_set = 0;
 					if (tex_unit->vertex_array.stride == 0) {
 						ptr = ((uint8_t *)tex_unit->vertex_array.pointer) + (first * (tex_unit->vertex_array.num * tex_unit->vertex_array.size));
-						memcpy(&vertices[n], ptr, count * sizeof(vector3f));
+						memcpy(&vertices[0], ptr, count * sizeof(vector3f));
 						vec_set = 1;
 					} else
 						ptr = ((uint8_t *)tex_unit->vertex_array.pointer) + (first * tex_unit->vertex_array.stride);
 					if (tex_unit->texture_array.stride == 0) {
 						ptr_tex = ((uint8_t *)tex_unit->texture_array.pointer) + (first * (tex_unit->texture_array.num * tex_unit->texture_array.size));
-						memcpy(&uv_map[n], ptr_tex, count * sizeof(vector2f));
+						memcpy(&uv_map[0], ptr_tex, count * sizeof(vector2f));
 						tex_set = 1;
 					} else
 						ptr_tex = ((uint8_t *)tex_unit->texture_array.pointer) + (first * tex_unit->texture_array.stride);
 					if (tex_unit->color_array_state) {
 						if (tex_unit->color_array.stride == 0) {
 							ptr_clr = ((uint8_t *)tex_unit->color_array.pointer) + (first * sizeof(vector4f));
-							memcpy(&colors[n], ptr_clr, count * sizeof(vector4f));
+							memcpy(&colors[0], ptr_clr, count * sizeof(vector4f));
 							clr_set = 1;
 						} else
 							ptr_clr = ((uint8_t *)tex_unit->color_array.pointer) + (first * tex_unit->color_array.stride);
@@ -1470,8 +1470,8 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 	SceGxmPrimitiveTypeExtra gxm_ep = SCE_GXM_PRIMITIVE_NONE;
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	GLboolean skip_draw = GL_FALSE;
 	if (tex_unit->vertex_array_state) {
+		GLboolean skip_draw = GL_FALSE;
 #ifndef SKIP_ERROR_HANDLING
 		if (type != GL_UNSIGNED_SHORT)
 			error = GL_INVALID_ENUM;
@@ -1776,7 +1776,7 @@ void glClientActiveTexture(GLenum texture) {
 
 void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((stride < 0) || ((size < 2) && (size > 4))) {
+	if ((stride < 0) || (size < 2) || (size > 4)) {
 		error = GL_INVALID_VALUE;
 		return;
 	}
@@ -1811,7 +1811,7 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((stride < 0) || ((size < 3) && (size > 4))) {
+	if ((stride < 0) || (size < 3) || (size > 4)) {
 		error = GL_INVALID_VALUE;
 		return;
 	}
@@ -1850,7 +1850,7 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 
 void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((stride < 0) || ((size < 2) && (size > 4))) {
+	if ((stride < 0) || (size < 2) || (size > 4)) {
 		error = GL_INVALID_VALUE;
 		return;
 	}
