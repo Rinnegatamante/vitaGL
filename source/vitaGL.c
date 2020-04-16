@@ -23,13 +23,12 @@ typedef struct gpubuffer {
 
 // sceGxm viewport setup (NOTE: origin is on center screen)
 float x_port = 480.0f;
-float y_port = -272.0f;
+float y_port = 272.0f;
 float z_port = 0.5f;
 float x_scale = 480.0f;
-float y_scale = 272.0f;
+float y_scale = -272.0f;
 float z_scale = 0.5f;
 
-uint8_t viewport_mode = 0; // Current setting for viewport mode
 GLboolean vblank = GL_TRUE; // Current setting for VSync
 
 extern int _newlib_heap_memblock; // Newlib Heap memblock
@@ -202,6 +201,18 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		DISPLAY_STRIDE = 960;
 		break;
 	}
+	
+	// Adjusting default values for internal viewport
+	x_port  = DISPLAY_WIDTH_FLOAT / 2.0f;
+	x_scale = x_port;
+	y_scale = DISPLAY_HEIGHT_FLOAT / 2.0f;
+	y_port  = -y_scale;
+	
+	// Init viewport state
+	gl_viewport.x = 0;
+	gl_viewport.y = 0;
+	gl_viewport.w = DISPLAY_WIDTH;
+	gl_viewport.h = DISPLAY_HEIGHT;
 
 	// Initializing sceGxm
 	initGxm();
@@ -616,15 +627,9 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		buffers[i] = BUFFERS_ADDR + i;
 		gpu_buffers[i].ptr = NULL;
 	}
-
+	
 	// Init scissor test state
 	resetScissorTestRegion();
-
-	// Init viewport state
-	gl_viewport.x = 0;
-	gl_viewport.y = 0;
-	gl_viewport.w = DISPLAY_WIDTH;
-	gl_viewport.h = DISPLAY_HEIGHT;
 
 	// Getting newlib heap memblock starting address
 	void *addr = NULL;
