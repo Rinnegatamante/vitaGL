@@ -162,21 +162,18 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 	gl_viewport.y = y;
 	gl_viewport.w = width;
 	gl_viewport.h = height;
-	viewport_mode = 1;
 }
 
 void glDepthRange(GLdouble nearVal, GLdouble farVal) {
 	z_port = (farVal + nearVal) / 2.0f;
 	z_scale = (farVal - nearVal) / 2.0f;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-	viewport_mode = 1;
 }
 
 void glDepthRangef(GLfloat nearVal, GLfloat farVal) {
 	z_port = (farVal + nearVal) / 2.0f;
 	z_scale = (farVal - nearVal) / 2.0f;
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-	viewport_mode = 1;
 }
 
 void glEnable(GLenum cap) {

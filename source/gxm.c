@@ -319,14 +319,11 @@ void vglStartRendering(void) {
 	}
 
 	// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
-	if (scissor_test_state) {
-		if (viewport_mode)
-			sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w, region.y + region.h);
-	} else if (viewport_mode) {
-		sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, gl_viewport.x, DISPLAY_HEIGHT - gl_viewport.y - gl_viewport.h, gl_viewport.x + gl_viewport.w, gl_viewport.y + gl_viewport.h);
-	}
+	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	if (scissor_test_state)
+		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
+	else
+		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, gl_viewport.x, DISPLAY_HEIGHT - gl_viewport.y - gl_viewport.h, gl_viewport.x + gl_viewport.w - 1, gl_viewport.y + gl_viewport.h - 1);
 }
 
 void vglStopRenderingInit(void) {

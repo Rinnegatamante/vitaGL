@@ -107,7 +107,6 @@ matrix4x4 modelview_matrix; // ModelView Matrix
 extern GLboolean mvp_modified; // Check if ModelViewProjection matrix needs to be recreated
 
 extern GLuint cur_program; // Current in use custom program (0 = No custom program)
-extern uint8_t viewport_mode; // Current setting for viewport mode
 extern GLboolean vblank; // Current setting for VSync
 
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)

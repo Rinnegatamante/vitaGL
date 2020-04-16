@@ -258,11 +258,12 @@ void update_scissor_test() {
 	else
 		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
 	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
-
+	
+	// Reducing GPU workload by performing tile granularity clipping
 	if (scissor_test_state)
 		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
 	else
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
+		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, gl_viewport.x, DISPLAY_HEIGHT - gl_viewport.y - gl_viewport.h, gl_viewport.x + gl_viewport.w - 1, gl_viewport.y + gl_viewport.h - 1);
 	
 	// Restoring original stencil test settings
 	change_stencil_settings();
