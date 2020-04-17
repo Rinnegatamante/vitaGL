@@ -191,21 +191,8 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	DISPLAY_HEIGHT = height;
 	DISPLAY_WIDTH_FLOAT = width * 1.0f;
 	DISPLAY_HEIGHT_FLOAT = height * 1.0f;
-	switch (DISPLAY_WIDTH) {
-	case 480:
-		DISPLAY_STRIDE = 512;
-		break;
-	case 640:
-		DISPLAY_STRIDE = 640;
-		break;
-	case 720:
-		DISPLAY_STRIDE = 768;
-		break;
-	default:
-		DISPLAY_STRIDE = 960;
-		break;
-	}
-	
+	DISPLAY_STRIDE = ALIGN(DISPLAY_WIDTH, 64);
+
 	// Adjusting default values for internal viewport
 	x_port  = DISPLAY_WIDTH_FLOAT / 2.0f;
 	x_scale = x_port;
