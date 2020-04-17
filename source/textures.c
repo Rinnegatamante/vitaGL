@@ -487,6 +487,9 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 			case GL_MIRRORED_REPEAT: // Mirror
 				tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
 				break;
+			case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
+				tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
+				break;
 			default:
 				error = GL_INVALID_ENUM;
 				break;
@@ -503,6 +506,9 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				break;
 			case GL_MIRRORED_REPEAT: // Mirror
 				tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+				break;
+			case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
+				tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
 				break;
 			default:
 				error = GL_INVALID_ENUM;
@@ -551,6 +557,8 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 				tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT; // Repeat
 			else if (param == GL_MIRRORED_REPEAT)
 				tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR; // Mirror
+			else if (param == GL_MIRROR_CLAMP_EXT)
+				tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP; // Mirror Clamp
 			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
 			break;
 		case GL_TEXTURE_WRAP_T: // V Mode
@@ -560,6 +568,8 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 				tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT; // Repeat
 			else if (param == GL_MIRRORED_REPEAT)
 				tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR; // Mirror
+			else if (param == GL_MIRROR_CLAMP_EXT)
+				tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP; // Mirror Clamp
 			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 			break;
 		default:

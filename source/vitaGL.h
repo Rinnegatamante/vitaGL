@@ -200,6 +200,7 @@ extern "C" {
 #define GL_TEXTURE31                      0x84DF
 #define GL_ACTIVE_TEXTURE                 0x84E0
 #define GL_INCR_WRAP                      0x8507
+#define GL_MIRROR_CLAMP_EXT               0x8742
 #define GL_DECR_WRAP                      0x8508
 #define GL_ARRAY_BUFFER                   0x8892
 #define GL_ELEMENT_ARRAY_BUFFER           0x8893
@@ -220,6 +221,9 @@ extern "C" {
 #define GL_FRAMEBUFFER                    0x8D40
 
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 32
+
+// Aliases
+#define GL_CLAMP GL_CLAMP_TO_EDGE
 
 typedef enum GLbitfield{
 	GL_DEPTH_BUFFER_BIT   = 0x00000100,
