@@ -29,6 +29,14 @@ float x_scale = 480.0f;
 float y_scale = -272.0f;
 float z_scale = 0.5f;
 
+// Fullscreen sceGxm viewport (NOTE: origin is on center screen)
+float fullscreen_x_port = 480.0f;
+float fullscreen_y_port = 272.0f;
+float fullscreen_z_port = 0.5f;
+float fullscreen_x_scale = 480.0f;
+float fullscreen_y_scale = -272.0f;
+float fullscreen_z_scale = 0.5f;
+
 GLboolean vblank = GL_TRUE; // Current setting for VSync
 
 extern int _newlib_heap_memblock; // Newlib Heap memblock
@@ -50,7 +58,7 @@ uint16_t *depth_clear_indices = NULL; // Memblock starting address for clear scr
 
 // Clear shaders
 SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
-vector2f *clear_vertices = NULL; // Memblock starting address for clear screen vertices
+vector4f *clear_vertices = NULL; // Memblock starting address for clear screen vertices
 vector3f *depth_vertices = NULL; // Memblock starting address for depth clear screen vertices
 
 // Internal stuffs
@@ -159,15 +167,11 @@ void disable_blend() {
 		change_blend_mask();
 }
 
-void vector2f_convert_to_local_space(vector2f *out, int x, int y, int width, int height) {
-	out[0].x = (float)(2 * x) / (float)DISPLAY_WIDTH_FLOAT - 1.0f;
-	out[1].x = (float)(2 * (x + width)) / (float)DISPLAY_WIDTH_FLOAT - 1.0f;
-	out[2].x = (float)(2 * (x + width)) / (float)DISPLAY_WIDTH_FLOAT - 1.0f;
-	out[3].x = (float)(2 * x) / (float)DISPLAY_WIDTH_FLOAT - 1.0f;
-	out[0].y = 1.0f - (float)(2 * y) / (float)DISPLAY_HEIGHT_FLOAT;
-	out[1].y = 1.0f - (float)(2 * y) / (float)DISPLAY_HEIGHT_FLOAT;
-	out[2].y = 1.0f - (float)(2 * (y + height)) / (float)DISPLAY_HEIGHT_FLOAT;
-	out[3].y = 1.0f - (float)(2 * (y + height)) / (float)DISPLAY_HEIGHT_FLOAT;
+void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height) {
+	out[0].x = (float)(2 * x) / DISPLAY_WIDTH_FLOAT - 1.0f;
+	out[0].y = (float)(2 * (x + width)) / DISPLAY_WIDTH_FLOAT - 1.0f;
+	out[0].z = 1.0f - (float)(2 * y) / DISPLAY_HEIGHT_FLOAT;
+	out[0].w = 1.0f - (float)(2 * (y + height)) / DISPLAY_HEIGHT_FLOAT;
 }
 
 // vitaGL specific functions
@@ -205,8 +209,12 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	// Adjusting default values for internal viewport
 	x_port  = DISPLAY_WIDTH_FLOAT / 2.0f;
 	x_scale = x_port;
-	y_scale = DISPLAY_HEIGHT_FLOAT / 2.0f;
+	y_scale = -(DISPLAY_HEIGHT_FLOAT / 2.0f);
 	y_port  = -y_scale;
+	fullscreen_x_port = x_port;
+	fullscreen_x_scale = x_scale;
+	fullscreen_y_port = y_port;
+	fullscreen_y_scale = y_scale;
 	
 	// Init viewport state
 	gl_viewport.x = 0;
@@ -267,10 +275,10 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		&disable_color_buffer_fragment_program_patched);
 
 	vglMemType type = VGL_MEM_RAM;
-	clear_vertices = gpu_alloc_mapped(4 * sizeof(vector2f), &type);
+	clear_vertices = gpu_alloc_mapped(1 * sizeof(vector4f), &type);
 	depth_clear_indices = gpu_alloc_mapped(4 * sizeof(unsigned short), &type);
 
-	vector2f_convert_to_local_space(clear_vertices, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+	vector4f_convert_to_local_space(clear_vertices, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
 	depth_clear_indices[0] = 0;
 	depth_clear_indices[1] = 1;
@@ -292,20 +300,8 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	clear_color = sceGxmProgramFindParameterByName(
 		clear_fragment_program, "u_clear_color");
 
-	SceGxmVertexAttribute clear_vertex_attribute;
-	SceGxmVertexStream clear_vertex_stream;
-	clear_vertex_attribute.streamIndex = 0;
-	clear_vertex_attribute.offset = 0;
-	clear_vertex_attribute.format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-	clear_vertex_attribute.componentCount = 2;
-	clear_vertex_attribute.regIndex = sceGxmProgramParameterGetResourceIndex(
-		clear_position);
-	clear_vertex_stream.stride = sizeof(vector2f);
-	clear_vertex_stream.indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-
 	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
-		clear_vertex_id, &clear_vertex_attribute,
-		1, &clear_vertex_stream, 1, &clear_vertex_program_patched);
+		clear_vertex_id, NULL, 0, NULL, 0, &clear_vertex_program_patched);
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
@@ -598,7 +594,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	// Scissor Test shader register
 	sceGxmShaderPatcherCreateMaskUpdateFragmentProgram(gxm_shader_patcher, &scissor_test_fragment_program);
 
-	scissor_test_vertices = gpu_alloc_mapped(4 * sizeof(vector2f), &type);
+	scissor_test_vertices = gpu_alloc_mapped(1 * sizeof(vector4f), &type);
 
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);

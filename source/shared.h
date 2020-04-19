@@ -97,6 +97,14 @@ extern float x_scale;
 extern float y_scale;
 extern float z_scale;
 
+// Fullscreen sceGxm viewport (NOTE: origin is on center screen)
+extern float fullscreen_x_port;
+extern float fullscreen_y_port;
+extern float fullscreen_z_port;
+extern float fullscreen_x_scale;
+extern float fullscreen_y_scale;
+extern float fullscreen_z_scale;
+
 extern SceGxmContext *gxm_context; // sceGxm context instance
 extern GLenum error; // Error returned by glGetError
 extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
@@ -113,14 +121,14 @@ extern GLenum orig_depth_test; // Original depth test state (used for depth test
 
 // Scissor test shaders
 extern SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program
-extern vector2f *scissor_test_vertices; // Scissor test region vertices
+extern vector4f *scissor_test_vertices; // Scissor test region vertices
 extern SceUID scissor_test_vertices_uid; // Scissor test vertices memblock id
 
 extern uint16_t *depth_clear_indices; // Memblock starting address for clear screen indices
 
 // Clear screen shaders
 extern SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
-extern vector2f *clear_vertices; // Memblock starting address for clear screen vertices
+extern vector4f *clear_vertices; // Memblock starting address for clear screen vertices
 
 /* gxm.c */
 void initGxm(void); // Inits sceGxm
@@ -160,6 +168,6 @@ void reloadCustomShader(void); // Reloads in use custom shader inside sceGxm
 void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
 
 /* misc functions */
-void vector2f_convert_to_local_space(vector2f *out, int x, int y, int width, int height); // Converts screen coords to local space
+void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height); // Converts screen coords to local space
 
 #endif

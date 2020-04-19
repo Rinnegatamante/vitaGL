@@ -16,7 +16,7 @@ GLboolean depth_mask_state = GL_TRUE; // Current state for glDepthMask
 scissor_region region; // Current scissor test region setup
 GLboolean scissor_test_state = GL_FALSE; // Current state for GL_SCISSOR_TEST
 SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program
-vector2f *scissor_test_vertices = NULL; // Scissor test region vertices
+vector4f *scissor_test_vertices = NULL; // Scissor test region vertices
 SceUID scissor_test_vertices_uid; // Scissor test vertices memblock id
 
 // Stencil Test
@@ -68,11 +68,21 @@ void invalidate_depth_test() {
 }
 
 void validate_depth_test() {
-	// Resetting original depth test state
+	// Restoring original depth test state
 	depth_test_state = orig_depth_test;
 
 	// Invoking a depth function update
 	change_depth_func();
+}
+
+void invalidate_viewport() {
+	// Invalidating current viewport
+	sceGxmSetViewport(gxm_context, fullscreen_x_port, fullscreen_x_scale, fullscreen_y_port, fullscreen_y_scale, fullscreen_z_port, fullscreen_z_scale);
+}
+
+void validate_viewport() {
+	// Restoring original viewport
+	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 }
 
 void change_stencil_settings() {
@@ -219,9 +229,19 @@ void update_scissor_test() {
 	sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 	sceGxmSetFragmentProgram(gxm_context, scissor_test_fragment_program);
 	
+	// Invalidating viewport
+	invalidate_viewport();
+	
+	// Invalidating internal tile based region clip
+	sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
+	
 	if (scissor_test_state) {
 		// Calculating scissor test region vertices
-		vector2f_convert_to_local_space(scissor_test_vertices, region.x, region.y, region.w, region.h);
+		vector4f_convert_to_local_space(scissor_test_vertices, region.x, region.y, region.w, region.h);
+		
+		void *vertex_buffer;
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
+		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
 	
 		// Cleaning stencil surface mask update bit on the whole screen
 		sceGxmSetFrontStencilFunc(gxm_context,
@@ -236,7 +256,6 @@ void update_scissor_test() {
 			SCE_GXM_STENCIL_OP_KEEP,
 			SCE_GXM_STENCIL_OP_KEEP,
 			0, 0);
-		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 	}
 
@@ -253,17 +272,21 @@ void update_scissor_test() {
 		SCE_GXM_STENCIL_OP_KEEP,
 		SCE_GXM_STENCIL_OP_KEEP,
 		0, 0);
+		
+	void *vertex_buffer;
+	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
 	if (scissor_test_state)
-		sceGxmSetVertexStream(gxm_context, 0, scissor_test_vertices);
+		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &scissor_test_vertices->x);
 	else
-		sceGxmSetVertexStream(gxm_context, 0, clear_vertices);
+		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
 	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+	
+	// Restoring viewport
+	validate_viewport();
 	
 	// Reducing GPU workload by performing tile granularity clipping
 	if (scissor_test_state)
 		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
-	else
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, gl_viewport.x, DISPLAY_HEIGHT - gl_viewport.y - gl_viewport.h, gl_viewport.x + gl_viewport.w - 1, gl_viewport.y + gl_viewport.h - 1);
 	
 	// Restoring original stencil test settings
 	change_stencil_settings();
