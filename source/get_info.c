@@ -68,6 +68,7 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 }
 
 void glGetFloatv(GLenum pname, GLfloat *data) {
+	int i, j;
 	switch (pname) {
 	case GL_POLYGON_OFFSET_FACTOR: // Polygon offset factor
 		*data = pol_factor;
@@ -76,7 +77,12 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 		*data = pol_units;
 		break;
 	case GL_MODELVIEW_MATRIX: // Modelview matrix
-		memcpy(data, &modelview_matrix, sizeof(matrix4x4));
+		// Since we use column-major matrices internally, wee need to transpose it before returning it to the application
+		for (i = 0; i < 4; i++) {
+			for (j = 0; j < 4; j++) {
+				data[i*4+j] = modelview_matrix[j][i];
+			}
+		}
 		break;
 	case GL_ACTIVE_TEXTURE: // Active texture
 		*data = (1.0f * (server_texture_unit + GL_TEXTURE0));

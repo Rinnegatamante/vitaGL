@@ -2,7 +2,6 @@
 vitaGL is a wrapper between openGL and sceGxm. It allows to use a subset of openGL functions with fully hardware acceleration by translating the code to sceGxm equivalent.
 
 # Build Instructions
-Due to a [bug with matrices ordering](https://github.com/Rinnegatamante/vitaGL/issues/29), some projects will require `-DTRANSPOSE_MATRICES` to be added in the CFLAGS inside the Makefile or the renderer will be broken.
 In order to build vitaGL use the following command: `make HAVE_SBRK=1 install`.
 If you already have a newlib sbrk replacement in your app (eg. RetroArch), use instead this command: `make install`.
 
