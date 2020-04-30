@@ -100,9 +100,11 @@ void glMultMatrixf(const GLfloat *m) {
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
 			tmp[i][j] = m[j * 4 + i];
-
 		}
 	}
+	
+	// Multiplicating passed matrix with in use one
+	matrix4x4_multiply(res, *matrix, tmp);
 
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
@@ -111,7 +113,6 @@ void glMultMatrixf(const GLfloat *m) {
 
 void glLoadMatrixf(const GLfloat *m) {
 	// Properly ordering matrix
-	matrix4x4 tmp;
 	int i, j;
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {

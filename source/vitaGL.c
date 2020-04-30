@@ -1465,7 +1465,6 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
 	SceGxmPrimitiveType gxm_p;
-	SceGxmPrimitiveTypeExtra gxm_ep = SCE_GXM_PRIMITIVE_NONE;
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	if (tex_unit->vertex_array_state) {

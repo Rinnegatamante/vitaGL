@@ -283,9 +283,8 @@ void glArrayElement(GLint i) {
 	}
 #endif
 
-	// Aliasing client texture unit and client texture id for better code readability
+	// Aliasing client texture unit for better code readability
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	int texture2d_idx = tex_unit->tex_id;
 
 	// Checking if current texture unit has GL_VERTEX_ARRAY enabled
 	if (tex_unit->vertex_array_state) {
