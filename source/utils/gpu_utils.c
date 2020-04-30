@@ -31,7 +31,7 @@
 
 // VRAM usage setting
 uint8_t use_vram = 0;
-uint8_t use_vram_for_usse = 1;
+uint8_t use_vram_for_usse = 0;
 
 // Newlib mempool usage setting
 GLboolean use_extra_mem = GL_TRUE;
