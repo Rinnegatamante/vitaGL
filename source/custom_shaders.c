@@ -279,6 +279,26 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	return (GLint)res;
 }
 
+void glUniform1i(GLint location, GLint v0) {
+	// Grabbing passed uniform
+	uniform *u = (uniform *)location;
+	if (u->ptr == NULL)
+		return;
+
+	// Setting passed value to desired uniform
+	if (u->isVertex) {
+		if (vert_uniforms == NULL)
+			sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
+		float v0_f = (float)v0;
+		sceGxmSetUniformDataF(vert_uniforms, u->ptr, 0, 1, &v0_f);
+	} else {
+		if (frag_uniforms == NULL)
+			sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &frag_uniforms);
+		float v0_f = (float)v0;
+		sceGxmSetUniformDataF(frag_uniforms, u->ptr, 0, 1, &v0_f);
+	}
+}
+
 void glUniform1f(GLint location, GLfloat v0) {
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;

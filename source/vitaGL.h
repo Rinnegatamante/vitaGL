@@ -355,6 +355,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param);
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z);
 void glUniform1f(GLint location, GLfloat v0);
+void glUniform1i(GLint location, GLint v0);
 void glUniform2fv(GLint location, GLsizei count, const GLfloat *value);
 void glUniform4fv(GLint location, GLsizei count, const GLfloat *value);
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
