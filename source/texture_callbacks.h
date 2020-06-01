@@ -31,6 +31,7 @@ uint32_t readRGB(void *data);
 uint32_t readRGB565(void *data);
 uint32_t readRGBA(void *data);
 uint32_t readRGBA5551(void *data);
+uint32_t readRGBA4444(void *data);
 
 // Write callbacks
 void writeR(void *data, uint32_t color);

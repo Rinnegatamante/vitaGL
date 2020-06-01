@@ -181,6 +181,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			data_bpp = 2;
 			read_cb = readRGBA5551;
 			break;
+		case GL_UNSIGNED_SHORT_4_4_4_4:
+			data_bpp = 2;
+			read_cb = readRGBA4444;
+			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
@@ -369,6 +373,10 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 		case GL_UNSIGNED_SHORT_5_5_5_1:
 			data_bpp = 2;
 			read_cb = readRGBA5551;
+			break;
+		case GL_UNSIGNED_SHORT_4_4_4_4:
+			data_bpp = 2;
+			read_cb = readRGBA4444;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
