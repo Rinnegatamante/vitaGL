@@ -45,6 +45,18 @@ uint32_t readRGBA5551(void *data) {
 	return ((a << 24) | (b << 16) | (g << 8) | r);
 }
 
+// Read callback for 16bpp unsigned RGB565 format
+uint32_t readRGB565(void *data) {
+	uint16_t clr;
+	uint32_t r, g, b, a;
+	memcpy(&clr, data, 2);
+	r = (((clr >> 11) & 0x1F) * 0xFF) / 0x1F;
+	g = ((((clr << 5) >> 11) & 0x3F) * 0xFF) / 0x3F;
+	b = ((((clr << 11) >> 11) & 0x1F) * 0xFF) / 0x1F;
+	a = 0xFF;
+	return ((a << 24) | (b << 16) | (g << 8) | r);
+}
+
 // Read callback for 24bpp unsigned RGB format
 uint32_t readRGB(void *data) {
 	uint32_t res = 0xFFFFFFFF;

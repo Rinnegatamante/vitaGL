@@ -161,6 +161,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			if (internalFormat == GL_RGB) fast_store = GL_TRUE;
 			else read_cb = readRGB;
 			break;
+		case GL_UNSIGNED_SHORT_5_6_5:
+			data_bpp = 2;
+			read_cb = readRGB565;
+			break;
 		default:
 			error = GL_INVALID_ENUM;
 			break;
@@ -345,6 +349,10 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 3;
 			read_cb = readRGB;
+			break;
+		case GL_UNSIGNED_SHORT_5_6_5:
+			data_bpp = 2;
+			read_cb = readRGB565;
 			break;
 		default:
 			error = GL_INVALID_ENUM;
