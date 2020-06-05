@@ -89,8 +89,83 @@ typedef enum SceGxmPrimitiveTypeExtra {
 	SCE_GXM_PRIMITIVE_QUADS = 1
 } SceGxmPrimitiveTypeExtra;
 
-#include "shaders.h"
+// Disable color buffer shader
+extern SceGxmShaderPatcherId disable_color_buffer_fragment_id;
+extern const SceGxmProgramParameter *disable_color_buffer_position;
+extern SceGxmFragmentProgram *disable_color_buffer_fragment_program_patched;
+extern const SceGxmProgramParameter *clear_depth;
 
+// Clear shader
+extern SceGxmShaderPatcherId clear_vertex_id;
+extern SceGxmShaderPatcherId clear_fragment_id;
+extern const SceGxmProgramParameter *clear_position;
+extern const SceGxmProgramParameter *clear_color;
+extern SceGxmVertexProgram *clear_vertex_program_patched;
+extern SceGxmFragmentProgram *clear_fragment_program_patched;
+
+// Color (RGBA/RGB) shader
+extern SceGxmShaderPatcherId rgba_vertex_id;
+extern SceGxmShaderPatcherId rgb_vertex_id;
+extern SceGxmShaderPatcherId rgba_fragment_id;
+extern const SceGxmProgramParameter *rgba_position;
+extern const SceGxmProgramParameter *rgba_color;
+extern const SceGxmProgramParameter *rgba_wvp;
+extern const SceGxmProgramParameter *rgb_position;
+extern const SceGxmProgramParameter *rgb_color;
+extern const SceGxmProgramParameter *rgb_wvp;
+extern SceGxmVertexProgram *rgba_vertex_program_patched;
+extern SceGxmVertexProgram *rgba_u8n_vertex_program_patched;
+extern SceGxmVertexProgram *rgb_vertex_program_patched;
+extern SceGxmVertexProgram *rgb_u8n_vertex_program_patched;
+extern SceGxmFragmentProgram *rgba_fragment_program_patched;
+extern const SceGxmProgram *rgba_fragment_program;
+
+// Texture2D shader
+extern SceGxmShaderPatcherId texture2d_vertex_id;
+extern SceGxmShaderPatcherId texture2d_fragment_id;
+extern const SceGxmProgramParameter *texture2d_position;
+extern const SceGxmProgramParameter *texture2d_texcoord;
+extern const SceGxmProgramParameter *texture2d_wvp;
+extern const SceGxmProgramParameter *texture2d_alpha_cut;
+extern const SceGxmProgramParameter *texture2d_alpha_op;
+extern const SceGxmProgramParameter *texture2d_tint_color;
+extern const SceGxmProgramParameter *texture2d_tex_env;
+extern const SceGxmProgramParameter *texture2d_clip_plane0;
+extern const SceGxmProgramParameter *texture2d_clip_plane0_eq;
+extern const SceGxmProgramParameter *texture2d_mv;
+extern const SceGxmProgramParameter *texture2d_fog_mode;
+extern const SceGxmProgramParameter *texture2d_fog_near;
+extern const SceGxmProgramParameter *texture2d_fog_far;
+extern const SceGxmProgramParameter *texture2d_fog_density;
+extern const SceGxmProgramParameter *texture2d_fog_color;
+extern const SceGxmProgramParameter *texture2d_tex_env_color;
+extern SceGxmVertexProgram *texture2d_vertex_program_patched;
+extern SceGxmFragmentProgram *texture2d_fragment_program_patched;
+extern const SceGxmProgram *texture2d_fragment_program;
+
+// Texture2D+RGBA shader
+extern SceGxmShaderPatcherId texture2d_rgba_vertex_id;
+extern SceGxmShaderPatcherId texture2d_rgba_fragment_id;
+extern const SceGxmProgramParameter *texture2d_rgba_position;
+extern const SceGxmProgramParameter *texture2d_rgba_texcoord;
+extern const SceGxmProgramParameter *texture2d_rgba_wvp;
+extern const SceGxmProgramParameter *texture2d_rgba_alpha_cut;
+extern const SceGxmProgramParameter *texture2d_rgba_alpha_op;
+extern const SceGxmProgramParameter *texture2d_rgba_color;
+extern const SceGxmProgramParameter *texture2d_rgba_tex_env;
+extern const SceGxmProgramParameter *texture2d_rgba_clip_plane0;
+extern const SceGxmProgramParameter *texture2d_rgba_clip_plane0_eq;
+extern const SceGxmProgramParameter *texture2d_rgba_mv;
+extern const SceGxmProgramParameter *texture2d_rgba_fog_mode;
+extern const SceGxmProgramParameter *texture2d_rgba_fog_near;
+extern const SceGxmProgramParameter *texture2d_rgba_fog_far;
+extern const SceGxmProgramParameter *texture2d_rgba_fog_density;
+extern const SceGxmProgramParameter *texture2d_rgba_fog_color;
+extern const SceGxmProgramParameter *texture2d_rgba_tex_env_color;
+extern SceGxmVertexProgram *texture2d_rgba_vertex_program_patched;
+extern SceGxmVertexProgram *texture2d_rgba_u8n_vertex_program_patched;
+extern SceGxmFragmentProgram *texture2d_rgba_fragment_program_patched;
+extern const SceGxmProgram *texture2d_rgba_fragment_program;
 // Internal stuffs
 extern void *frag_uniforms;
 extern void *vert_uniforms;
@@ -124,12 +199,12 @@ extern float fullscreen_y_scale;
 extern float fullscreen_z_scale;
 
 extern SceGxmContext *gxm_context; // sceGxm context instance
-extern GLenum error; // Error returned by glGetError
+extern GLenum vgl_error; // Error returned by glGetError
 extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 
-matrix4x4 mvp_matrix; // ModelViewProjection Matrix
-matrix4x4 projection_matrix; // Projection Matrix
-matrix4x4 modelview_matrix; // ModelView Matrix
+extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix
+extern matrix4x4 projection_matrix; // Projection Matrix
+extern matrix4x4 modelview_matrix; // ModelView Matrix
 extern GLboolean mvp_modified; // Check if ModelViewProjection matrix needs to be recreated
 
 extern GLuint cur_program; // Current in use custom program (0 = No custom program)
