@@ -14,7 +14,7 @@ OBJS     := $(CFILES:.c=.o)
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
 AR      = $(PREFIX)-gcc-ar
-CFLAGS  = -g -Wl,-q -O2 -ffast-math -mtune=cortex-a9 -mfpu=neon -flto -ftree-vectorize -DSTB_DXT_IMPLEMENTATION
+CFLAGS  = -g -Wl,-q -O2 -ffast-math -mtune=cortex-a9 -mfpu=neon -ftree-vectorize -DSTB_DXT_IMPLEMENTATION
 ASFLAGS = $(CFLAGS)
 
 ifeq ($(NO_DEBUG),1)
