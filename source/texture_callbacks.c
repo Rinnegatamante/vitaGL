@@ -50,7 +50,7 @@ uint32_t readRGBA4444(void *data) {
 	uint16_t clr;
 	uint32_t r, g, b, a;
 	memcpy(&clr, data, 2);
-	r = (((clr >> 12) & 0x1F) * 0xFF) / 0x0F;
+	r = (((clr >> 12) & 0x0F) * 0xFF) / 0x0F;
 	g = ((((clr << 4) >> 12) & 0x0F) * 0xFF) / 0x0F;
 	b = ((((clr << 8) >> 12) & 0x0F) * 0xFF) / 0x0F;
 	a = ((((clr << 12) >> 12) & 0x0F) * 0xFF) / 0x0F;
