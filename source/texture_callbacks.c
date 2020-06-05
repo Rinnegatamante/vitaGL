@@ -26,6 +26,8 @@
 
 #include "texture_callbacks.h"
 
+#define convert_u16_to_u32_cspace(color, lshift, rshift, mask) ((((color << lshift) >> rshift) & mask) * 0xFF) / mask
+
 // Read callback for 32bpp unsigned RGBA format
 uint32_t readRGBA(void *data) {
 	uint32_t res;
@@ -38,10 +40,10 @@ uint32_t readRGBA5551(void *data) {
 	uint16_t clr;
 	uint32_t r, g, b, a;
 	memcpy(&clr, data, 2);
-	r = (((clr >> 11) & 0x1F) * 0xFF) / 0x1F;
-	g = ((((clr << 5) >> 11) & 0x1F) * 0xFF) / 0x1F;
-	b = ((((clr << 10) >> 11) & 0x1F) * 0xFF) / 0x1F;
-	a = (((clr << 15) >> 15) & 0x1) == 1 ? 0xFF : 0x00;
+	r = convert_u16_to_u32_cspace(clr,  0, 11, 0x1F);
+	g = convert_u16_to_u32_cspace(clr,  5, 11, 0x1F);
+	b = convert_u16_to_u32_cspace(clr, 10, 11, 0x1F);
+	a = convert_u16_to_u32_cspace(clr, 15, 15, 0x01);
 	return ((a << 24) | (b << 16) | (g << 8) | r);
 }
 
@@ -50,23 +52,22 @@ uint32_t readRGBA4444(void *data) {
 	uint16_t clr;
 	uint32_t r, g, b, a;
 	memcpy(&clr, data, 2);
-	r = (((clr >> 12) & 0x0F) * 0xFF) / 0x0F;
-	g = ((((clr << 4) >> 12) & 0x0F) * 0xFF) / 0x0F;
-	b = ((((clr << 8) >> 12) & 0x0F) * 0xFF) / 0x0F;
-	a = ((((clr << 12) >> 12) & 0x0F) * 0xFF) / 0x0F;
+	r = convert_u16_to_u32_cspace(clr,  0, 12, 0x0F);
+	g = convert_u16_to_u32_cspace(clr,  4, 12, 0x0F);
+	b = convert_u16_to_u32_cspace(clr,  8, 12, 0x0F);
+	a = convert_u16_to_u32_cspace(clr, 12, 12, 0x0F);
 	return ((a << 24) | (b << 16) | (g << 8) | r);
 }
 
 // Read callback for 16bpp unsigned RGB565 format
 uint32_t readRGB565(void *data) {
 	uint16_t clr;
-	uint32_t r, g, b, a;
+	uint32_t r, g, b;
 	memcpy(&clr, data, 2);
-	r = (((clr >> 11) & 0x1F) * 0xFF) / 0x1F;
-	g = ((((clr << 5) >> 11) & 0x3F) * 0xFF) / 0x3F;
-	b = ((((clr << 11) >> 11) & 0x1F) * 0xFF) / 0x1F;
-	a = 0xFF;
-	return ((a << 24) | (b << 16) | (g << 8) | r);
+	r = convert_u16_to_u32_cspace(clr,   0, 11, 0x1F);
+	g = convert_u16_to_u32_cspace(clr,   5, 11, 0x3F);
+	b = convert_u16_to_u32_cspace(clr,  11, 11, 0x1F);
+	return ((0xFF << 24) | (b << 16) | (g << 8) | r);
 }
 
 // Read callback for 24bpp unsigned RGB format
