@@ -23,6 +23,8 @@
 
 #include "shared.h"
 
+static uint32_t gxm_param_buf_size = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE; // Param buffer size for sceGxm
+
 static void *vdm_ring_buffer_addr; // VDM ring buffer memblock starting address
 static void *vertex_ring_buffer_addr; // vertex ring buffer memblock starting address
 static void *fragment_ring_buffer_addr; // fragment ring buffer memblock starting address
@@ -102,7 +104,7 @@ void initGxm(void) {
 	gxm_init_params.displayQueueMaxPendingCount = DISPLAY_BUFFER_COUNT - 1;
 	gxm_init_params.displayQueueCallback = display_queue_callback;
 	gxm_init_params.displayQueueCallbackDataSize = sizeof(struct display_queue_callback_data);
-	gxm_init_params.parameterBufferSize = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE;
+	gxm_init_params.parameterBufferSize = gxm_param_buf_size;
 
 	// Initializing sceGxm
 	sceGxmInitialize(&gxm_init_params);
@@ -316,6 +318,10 @@ void waitRenderingDone(void) {
  * - IMPLEMENTATION STARTS HERE -
  * ------------------------------
  */
+
+void vglSetParamBufferSize(uint32_t size) {
+	gxm_param_buf_size = size;
+}
 
 void vglStartRendering(void) {
 	// Starting drawing scene
