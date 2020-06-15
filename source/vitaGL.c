@@ -709,6 +709,9 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 }
 
 void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
+	// Initializing sceGxm
+	initGxm();
+	
 	// Getting max allocatable CDRAM and RAM memory
 	SceKernelFreeMemorySizeInfo info;
 	info.size = sizeof(SceKernelFreeMemorySizeInfo);

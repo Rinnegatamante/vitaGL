@@ -60,6 +60,8 @@ int DISPLAY_STRIDE; // Display stride in pixels
 float DISPLAY_WIDTH_FLOAT; // Display width in pixels (float)
 float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
+static uint8_t gxm_initialized = 0; // Current sceGxm state
+
 // sceDisplay callback data
 struct display_queue_callback_data {
 	void *addr;
@@ -97,6 +99,8 @@ static void display_queue_callback(const void *callbackData) {
 }
 
 void initGxm(void) {
+	if (gxm_initialized) return;
+	
 	// Initializing sceGxm init parameters
 	SceGxmInitializeParams gxm_init_params;
 	memset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
@@ -108,6 +112,7 @@ void initGxm(void) {
 
 	// Initializing sceGxm
 	sceGxmInitialize(&gxm_init_params);
+	gxm_initialized = 1;
 }
 
 void initGxmContext(void) {
