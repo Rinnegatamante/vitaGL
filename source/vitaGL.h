@@ -399,6 +399,7 @@ void vglFree(void *addr);
 void *vglGetTexDataPointer(GLenum target);
 void vglInit(uint32_t gpu_pool_size);
 void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa);
+void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa);
 size_t vglMemFree(vglMemType type);
 void vglSetParamBufferSize(uint32_t size);
 void vglStartRendering();

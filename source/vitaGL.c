@@ -281,7 +281,7 @@ void vglUseVramForUSSE(GLboolean usage) {
 	use_vram_for_usse = usage;
 }
 
-void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
+void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa) {
 	// Setting our display size
 	msaa_mode = msaa;
 	DISPLAY_WIDTH = width;
@@ -309,13 +309,8 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	// Initializing sceGxm
 	initGxm();
 
-	// Getting max allocatable CDRAM and RAM memory
-	SceKernelFreeMemorySizeInfo info;
-	info.size = sizeof(SceKernelFreeMemorySizeInfo);
-	sceKernelGetFreeMemorySize(&info);
-
 	// Initializing memory heap for CDRAM and RAM memory
-	mem_init(info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram - 256 * 1024, info.size_phycont - 1 * 1024 * 1024); // leave some just in case
+	mem_init(ram_pool_size, cdram_pool_size, phycont_pool_size);
 
 	// Initializing sceGxm context
 	initGxmContext();
@@ -711,6 +706,15 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	// Mapping newlib heap into sceGxm
 	sceGxmMapMemory(addr, _newlib_heap_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+}
+
+void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
+	// Getting max allocatable CDRAM and RAM memory
+	SceKernelFreeMemorySizeInfo info;
+	info.size = sizeof(SceKernelFreeMemorySizeInfo);
+	sceKernelGetFreeMemorySize(&info);
+
+	vglInitWithCustomSizes(gpu_pool_size, width, height, info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram - 256 * 1024, info.size_phycont - 1 * 1024 * 1024, msaa);
 }
 
 void vglInit(uint32_t gpu_pool_size) {
