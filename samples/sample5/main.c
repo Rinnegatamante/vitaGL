@@ -3,6 +3,8 @@
 #include <vitaGL.h>
 #include <math.h>
 
+unsigned int _newlib_heap_size_user = 5 * 1024 * 1024;
+
 float colors[] = {1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0}; // Colors for a face
 
 float vertices_front[] = {-0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f}; // Front Face
@@ -31,7 +33,7 @@ void init_perspective(float fov, float aspect, float near, float far){
 int main(){
 	
 	// Initializing graphics device
-	vglInit(0x800000);
+	vglInitForSystem(0x10000, 960, 544, 10 * 1024 * 1024, SCE_GXM_MULTISAMPLE_4X);
 	vglWaitVblankStart(GL_TRUE);
 	
 	// Creating colors array

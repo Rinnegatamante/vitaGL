@@ -150,11 +150,12 @@ extern vector4f *clear_vertices; // Memblock starting address for clear screen v
 
 /* gxm.c */
 void initGxm(void); // Inits sceGxm
+void initGxmForSystem(void); // Inits sceGxm for system apps
 void initGxmContext(void); // Inits sceGxm context
 void termGxmContext(void); // Terms sceGxm context
 void createDisplayRenderTarget(void); // Creates render target for the display
 void destroyDisplayRenderTarget(void); // Destroys render target for the display
-void initDisplayColorSurfaces(void); // Creates color surfaces for the display
+void initDisplayColorSurfaces(uint32_t *buffers); // Creates color surfaces for the display
 void termDisplayColorSurfaces(void); // Destroys color surfaces for the display
 void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, void **depth_buffer, void **stencil_buffer, vglMemType *depth_type, vglMemType *stencil_type); // Creates depth and stencil surfaces
 void initDepthStencilSurfaces(void); // Creates depth and stencil surfaces for the display

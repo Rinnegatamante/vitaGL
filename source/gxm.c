@@ -23,6 +23,10 @@
 
 #include "shared.h"
 
+static uint8_t system_mode = GL_FALSE; // System app mode usage
+static SceUID sys_fb = 0; // Framebuffer for system app mode
+static SceSharedFbInfo sys_fb_info; // Current in-use shared framebuffer settings
+
 static void *vdm_ring_buffer_addr; // VDM ring buffer memblock starting address
 static void *vertex_ring_buffer_addr; // vertex ring buffer memblock starting address
 static void *fragment_ring_buffer_addr; // fragment ring buffer memblock starting address
@@ -108,6 +112,39 @@ void initGxm(void) {
 	sceGxmInitialize(&gxm_init_params);
 }
 
+void initGxmForSystem(void) {
+	// Initializing sceGxm init parameters
+	SceGxmInitializeParams gxm_init_params;
+	memset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
+	gxm_init_params.flags = 0x0A;
+	gxm_init_params.displayQueueMaxPendingCount = DISPLAY_BUFFER_COUNT - 1;
+	gxm_init_params.parameterBufferSize = 2 * 1024 * 1024;
+
+	// Initializing sceGxm
+	sceGxmVshInitialize(&gxm_init_params);
+	system_mode = GL_TRUE;
+
+	// Getting shared framebuffer access
+	SceSharedFbInfo info;
+	do {
+		if (sys_fb) sceSharedFbClose(sys_fb);
+		sys_fb = sceSharedFbOpen(1);
+		LOG("fb: 0x%08X", sys_fb);
+		memset(&info, 0, sizeof(SceSharedFbInfo));
+		sceSharedFbGetInfo(sys_fb, &info);
+	} while(info.index != 1);
+
+	// Mapping shared framebuffer into sceGxm
+	sceGxmMapMemory(info.fb_base, info.fb_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	sceGxmMapMemory(info.fb_base2, info.fb_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	
+	// Creating color surfaces for the display
+	uint32_t surfaces[DISPLAY_BUFFER_COUNT];
+	surfaces[0] = (uint32_t)info.fb_base;
+	surfaces[1] = (uint32_t)info.fb_base2;
+	initDisplayColorSurfaces(surfaces);
+}
+
 void initGxmContext(void) {
 	vglMemType type = VGL_MEM_VRAM;
 
@@ -176,12 +213,12 @@ void destroyDisplayRenderTarget(void) {
 	sceGxmDestroyRenderTarget(gxm_render_target);
 }
 
-void initDisplayColorSurfaces(void) {
+void initDisplayColorSurfaces(uint32_t *buffers) {
 	vglMemType type = VGL_MEM_VRAM;
 	int i;
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
 		// Allocating color surface memblock
-		gxm_color_surfaces_addr[i] = gpu_alloc_mapped(
+		gxm_color_surfaces_addr[i] = buffers[i] ? (void*)buffers[i] : gpu_alloc_mapped(
 			ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024),
 			&type);
 
@@ -318,6 +355,13 @@ void waitRenderingDone(void) {
  */
 
 void vglStartRendering(void) {
+	// Dealing with shared framebuffer if using system app mode
+	if (system_mode) {
+		sceSharedFbBegin(sys_fb, &sys_fb_info);
+		sys_fb_info.vsync = vblank;
+		gxm_back_buffer_index = sys_fb_info.index ? 0 : 1;
+	}
+	
 	// Starting drawing scene
 	if (active_write_fb == NULL) { // Default framebuffer is used
 		sceGxmBeginScene(gxm_context, gxm_scene_flags, gxm_render_target,
@@ -352,14 +396,18 @@ void vglStopRenderingInit(void) {
 
 void vglStopRenderingTerm(void) {
 	if (active_write_fb == NULL) { // Default framebuffer is used
-
-		// Properly requesting a display update
-		struct display_queue_callback_data queue_cb_data;
-		queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
-		sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
-			gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
-		gxm_front_buffer_index = gxm_back_buffer_index;
-		gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
+		if (system_mode) {
+			if (vblank) sceDisplayWaitVblankStart();
+			sceSharedFbEnd(sys_fb);
+		} else {
+			// Properly requesting a display update
+			struct display_queue_callback_data queue_cb_data;
+			queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
+			sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
+				gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
+			gxm_front_buffer_index = gxm_back_buffer_index;
+			gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
+		}
 	}
 
 	// Resetting vitaGL mempool

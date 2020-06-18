@@ -176,7 +176,7 @@ vector4f texenv_color = { 0.0f, 0.0f, 0.0f, 0.0f }; // Current in use texture en
 
 // Internal functions
 
-#ifdef ENABLE_LOG
+//#ifdef ENABLE_LOG
 void LOG(const char *format, ...) {
 	__gnuc_va_list arg;
 	int done;
@@ -192,7 +192,7 @@ void LOG(const char *format, ...) {
 		fclose(log);
 	}
 }
-#endif
+//#endif
 
 static void _change_blend_factor(SceGxmBlendInfo *blend_info) {
 	changeCustomShadersBlend(blend_info);
@@ -271,19 +271,8 @@ void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int
 	out[0].w = 1.0f - (float)(2 * (y + height)) / DISPLAY_HEIGHT_FLOAT;
 }
 
-// vitaGL specific functions
-
-void vglUseVram(GLboolean usage) {
-	use_vram = usage;
-}
-
-void vglUseVramForUSSE(GLboolean usage) {
-	use_vram_for_usse = usage;
-}
-
-void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
+void set_default_display_settings(int width, int height) {
 	// Setting our display size
-	msaa_mode = msaa;
 	DISPLAY_WIDTH = width;
 	DISPLAY_HEIGHT = height;
 	DISPLAY_WIDTH_FLOAT = width * 1.0f;
@@ -305,33 +294,9 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	gl_viewport.y = 0;
 	gl_viewport.w = DISPLAY_WIDTH;
 	gl_viewport.h = DISPLAY_HEIGHT;
+}
 
-	// Initializing sceGxm
-	initGxm();
-
-	// Getting max allocatable CDRAM and RAM memory
-	SceKernelFreeMemorySizeInfo info;
-	info.size = sizeof(SceKernelFreeMemorySizeInfo);
-	sceKernelGetFreeMemorySize(&info);
-
-	// Initializing memory heap for CDRAM and RAM memory
-	mem_init(info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram - 256 * 1024, info.size_phycont - 1 * 1024 * 1024); // leave some just in case
-
-	// Initializing sceGxm context
-	initGxmContext();
-
-	// Creating render target for the display
-	createDisplayRenderTarget();
-
-	// Creating color surfaces for the display
-	initDisplayColorSurfaces();
-
-	// Creating depth and stencil surfaces for the display
-	initDepthStencilSurfaces();
-
-	// Starting a sceGxmShaderPatcher instance
-	startShaderPatcher();
-
+void init_ffp_shaders() {
 	// Disable color buffer shader register
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_disable_color_buffer_f,
 		&disable_color_buffer_fragment_id);
@@ -354,7 +319,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		disable_color_buffer_fragment_id,
 		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa,
+		msaa_mode,
 		&disable_color_buffer_blend_info, NULL,
 		&disable_color_buffer_fragment_program_patched);
 
@@ -389,7 +354,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa, NULL, NULL,
+		msaa_mode, NULL, NULL,
 		&clear_fragment_program_patched);
 
 	// Color shader register
@@ -478,7 +443,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		rgba_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa, NULL, NULL,
+		msaa_mode, NULL, NULL,
 		&rgba_fragment_program_patched);
 
 	rgba_wvp = sceGxmProgramFindParameterByName(rgba_vertex_program, "wvp");
@@ -563,7 +528,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		texture2d_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa, NULL, NULL,
+		msaa_mode, NULL, NULL,
 		&texture2d_fragment_program_patched);
 
 	texture2d_wvp = sceGxmProgramFindParameterByName(texture2d_vertex_program, "wvp");
@@ -662,17 +627,131 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		texture2d_rgba_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa, NULL, NULL,
+		msaa_mode, NULL, NULL,
 		&texture2d_rgba_fragment_program_patched);
 
 	texture2d_rgba_wvp = sceGxmProgramFindParameterByName(texture2d_rgba_vertex_program, "wvp");
-
-	sceGxmSetTwoSidedEnable(gxm_context, SCE_GXM_TWO_SIDED_ENABLED);
-
+	
 	// Scissor Test shader register
 	sceGxmShaderPatcherCreateMaskUpdateFragmentProgram(gxm_shader_patcher, &scissor_test_fragment_program);
 
 	scissor_test_vertices = gpu_alloc_mapped(1 * sizeof(vector4f), &type);
+}
+
+// vitaGL specific functions
+
+void vglUseVram(GLboolean usage) {
+	use_vram = usage;
+}
+
+void vglUseVramForUSSE(GLboolean usage) {
+	use_vram_for_usse = usage;
+}
+
+void vglInitForSystem(uint32_t gpu_pool_size, int width, int height, int ram_pool, SceGxmMultisampleMode msaa) {
+	// Setting default display settings
+	msaa_mode = msaa;
+	set_default_display_settings(width, height);
+	
+	// Initializing sceGxm
+	initGxmForSystem();
+	
+	// Initializing memory heap for RAM memory
+	mem_init(ram_pool, 0, 0);
+	
+	// Initializing sceGxm context
+	initGxmContext();
+
+	// Creating render target for the display
+	createDisplayRenderTarget();
+
+	// Creating depth and stencil surfaces for the display
+	initDepthStencilSurfaces();
+
+	// Starting a sceGxmShaderPatcher instance
+	startShaderPatcher();
+	
+	// Initializng shaders for fixed function pipeline emulation
+	init_ffp_shaders();
+	
+	sceGxmSetTwoSidedEnable(gxm_context, SCE_GXM_TWO_SIDED_ENABLED);
+
+	// Allocate temp pool for non-VBO drawing
+	gpu_pool_init(gpu_pool_size);
+
+	// Init texture units
+	int i, j;
+	for (i = 0; i < GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS; i++) {
+		for (j = 0; j < TEXTURES_NUM; j++) {
+			texture_units[i].textures[j].used = 0;
+			texture_units[i].textures[j].valid = 0;
+		}
+		texture_units[i].env_mode = MODULATE;
+		texture_units[i].tex_id = 0;
+		texture_units[i].enabled = 0;
+		texture_units[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+		texture_units[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+		texture_units[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+		texture_units[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+	}
+
+	// Init custom shaders
+	resetCustomShaders();
+
+	// Init buffers
+	for (i = 0; i < BUFFERS_NUM; i++) {
+		buffers[i] = BUFFERS_ADDR + i;
+		gpu_buffers[i].ptr = NULL;
+	}
+	
+	// Init scissor test state
+	resetScissorTestRegion();
+
+	// Getting newlib heap memblock starting address
+	void *addr = NULL;
+	sceKernelGetMemBlockBase(_newlib_heap_memblock, &addr);
+
+	// Mapping newlib heap into sceGxm
+	sceGxmMapMemory(addr, _newlib_heap_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+}
+
+void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
+	// Setting default display settings
+	msaa_mode = msaa;
+	set_default_display_settings(width, height);
+
+	// Initializing sceGxm
+	initGxm();
+
+	// Getting max allocatable CDRAM and RAM memory
+	SceKernelFreeMemorySizeInfo info;
+	info.size = sizeof(SceKernelFreeMemorySizeInfo);
+	sceKernelGetFreeMemorySize(&info);
+
+	// Initializing memory heap for CDRAM and RAM memory
+	mem_init(info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram - 256 * 1024, info.size_phycont - 1 * 1024 * 1024); // leave some just in case
+
+	// Initializing sceGxm context
+	initGxmContext();
+
+	// Creating render target for the display
+	createDisplayRenderTarget();
+	
+	// Creating color surfaces for the display
+	uint32_t surfaces[DISPLAY_BUFFER_COUNT];
+	memset(surfaces, 0, sizeof(surfaces));
+	initDisplayColorSurfaces(surfaces);
+
+	// Creating depth and stencil surfaces for the display
+	initDepthStencilSurfaces();
+
+	// Starting a sceGxmShaderPatcher instance
+	startShaderPatcher();
+	
+	// Initializng shaders for fixed function pipeline emulation
+	init_ffp_shaders();
+
+	sceGxmSetTwoSidedEnable(gxm_context, SCE_GXM_TWO_SIDED_ENABLED);
 
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);
