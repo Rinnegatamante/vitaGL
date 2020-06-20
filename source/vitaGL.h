@@ -366,6 +366,9 @@ void glVertex3fv(const GLfloat *v);
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
+// glu*
+void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
+	
 // VGL_EXT_gpu_objects_array extension
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
 void vglColorPointerMapped(GLenum type, const GLvoid *pointer);

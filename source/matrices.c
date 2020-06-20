@@ -220,3 +220,17 @@ void glPopMatrix(void) {
 	}
 	mvp_modified = GL_TRUE;
 }
+
+void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION) {
+		vgl_error = GL_INVALID_OPERATION;
+		return;
+	}
+#endif
+
+	// Initializing frustum matrix with requested parameters
+	matrix4x4_init_perspective(*matrix, fovy, aspect, zNear, zFar);
+	mvp_modified = GL_TRUE;
+}
