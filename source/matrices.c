@@ -102,7 +102,7 @@ void glMultMatrixf(const GLfloat *m) {
 			tmp[i][j] = m[j * 4 + i];
 		}
 	}
-	
+
 	// Multiplicating passed matrix with in use one
 	matrix4x4_multiply(res, *matrix, tmp);
 

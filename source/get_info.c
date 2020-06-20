@@ -98,7 +98,7 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 		// Since we use column-major matrices internally, wee need to transpose it before returning it to the application
 		for (i = 0; i < 4; i++) {
 			for (j = 0; j < 4; j++) {
-				data[i*4+j] = modelview_matrix[j][i];
+				data[i * 4 + j] = modelview_matrix[j][i];
 			}
 		}
 		break;
@@ -106,7 +106,7 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 		// Since we use column-major matrices internally, wee need to transpose it before returning it to the application
 		for (i = 0; i < 4; i++) {
 			for (j = 0; j < 4; j++) {
-				data[i*4+j] = projection_matrix[j][i];
+				data[i * 4 + j] = projection_matrix[j][i];
 			}
 		}
 		break;

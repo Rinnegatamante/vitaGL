@@ -158,8 +158,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 3;
-			if (internalFormat == GL_RGB) fast_store = GL_TRUE;
-			else read_cb = readRGB;
+			if (internalFormat == GL_RGB)
+				fast_store = GL_TRUE;
+			else
+				read_cb = readRGB;
 			break;
 		case GL_UNSIGNED_SHORT_5_6_5:
 			data_bpp = 2;
@@ -174,8 +176,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 4;
-			if (internalFormat == GL_RGBA) fast_store = GL_TRUE;
-			else read_cb = readRGBA;
+			if (internalFormat == GL_RGBA)
+				fast_store = GL_TRUE;
+			else
+				read_cb = readRGBA;
 			break;
 		case GL_UNSIGNED_SHORT_5_5_5_1:
 			data_bpp = 2;
@@ -247,8 +251,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		tex->type = internalFormat;
 		tex->write_cb = write_cb;
 		if (level == 0)
-			if (tex->write_cb) gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb, fast_store);
-			else gpu_alloc_compressed_texture(width, height, tex_format, data, tex, data_bpp, read_cb);
+			if (tex->write_cb)
+				gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb, fast_store);
+			else
+				gpu_alloc_compressed_texture(width, height, tex_format, data, tex, data_bpp, read_cb);
 		else {
 			gpu_alloc_mipmaps(level, tex);
 			sceGxmTextureSetMipFilter(&tex->gxm_tex, SCE_GXM_TEXTURE_MIP_FILTER_ENABLED);
@@ -295,7 +301,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 		vgl_error = GL_INVALID_VALUE;
 		return;
 	}
-	
+
 	// Support for legacy GL1.0 format
 	switch (format) {
 	case 1:
@@ -311,7 +317,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 		format = GL_RGBA;
 		break;
 	}
-	
+
 	/*
 	 * Callbacks are actually used to just perform down/up-sampling
 	 * between U8 texture formats. Reads are expected to give as result

@@ -246,21 +246,21 @@ void update_scissor_test() {
 	// Setting current vertex program to clear screen one and fragment program to scissor test one
 	sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 	sceGxmSetFragmentProgram(gxm_context, scissor_test_fragment_program);
-	
+
 	// Invalidating viewport
 	invalidate_viewport();
-	
+
 	// Invalidating internal tile based region clip
 	sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
-	
+
 	if (scissor_test_state) {
 		// Calculating scissor test region vertices
 		vector4f_convert_to_local_space(scissor_test_vertices, region.x, region.y, region.w, region.h);
-		
+
 		void *vertex_buffer;
 		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
 		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
-	
+
 		// Cleaning stencil surface mask update bit on the whole screen
 		sceGxmSetFrontStencilFunc(gxm_context,
 			SCE_GXM_STENCIL_FUNC_NEVER,
@@ -290,7 +290,7 @@ void update_scissor_test() {
 		SCE_GXM_STENCIL_OP_KEEP,
 		SCE_GXM_STENCIL_OP_KEEP,
 		0, 0);
-		
+
 	void *vertex_buffer;
 	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
 	if (scissor_test_state)
@@ -298,14 +298,14 @@ void update_scissor_test() {
 	else
 		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
 	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
-	
+
 	// Restoring viewport
 	validate_viewport();
-	
+
 	// Reducing GPU workload by performing tile granularity clipping
 	if (scissor_test_state)
 		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
-	
+
 	// Restoring original stencil test settings
 	change_stencil_settings();
 }

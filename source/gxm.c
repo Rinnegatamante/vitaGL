@@ -103,12 +103,14 @@ static void display_queue_callback(const void *callbackData) {
 }
 
 void initGxm(void) {
-	if (gxm_initialized) return;
-	
+	if (gxm_initialized)
+		return;
+
 	SceAppMgrBudgetInfo info;
 	info.size = sizeof(SceAppMgrBudgetInfo);
-	if (!sceAppMgrGetBudgetInfo(&info)) system_app_mode = 1;
-	
+	if (!sceAppMgrGetBudgetInfo(&info))
+		system_app_mode = 1;
+
 	// Initializing sceGxm init parameters
 	SceGxmInitializeParams gxm_init_params;
 	memset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
@@ -119,8 +121,10 @@ void initGxm(void) {
 	gxm_init_params.parameterBufferSize = gxm_param_buf_size;
 
 	// Initializing sceGxm
-	if (system_app_mode) sceGxmVshInitialize(&gxm_init_params);
-	else sceGxmInitialize(&gxm_init_params);
+	if (system_app_mode)
+		sceGxmVshInitialize(&gxm_init_params);
+	else
+		sceGxmInitialize(&gxm_init_params);
 	gxm_initialized = 1;
 }
 
@@ -169,7 +173,7 @@ void termGxmContext(void) {
 
 	// Destroying sceGxm context
 	sceGxmDestroyContext(gxm_context);
-		
+
 	if (system_app_mode) {
 		sceSharedFbBegin(shared_fb, &shared_fb_info);
 		sceGxmUnmapMemory(shared_fb_info.fb_base);
@@ -200,13 +204,13 @@ void destroyDisplayRenderTarget(void) {
 }
 
 void initDisplayColorSurfaces(void) {
-	
 	// Getting access to the shared framebuffer on system app mode
 	while (system_app_mode) {
 		shared_fb = sceSharedFbOpen(1);
 		memset(&shared_fb_info, 0, sizeof(SceSharedFbInfo));
 		sceSharedFbGetInfo(shared_fb, &shared_fb_info);
-		if (shared_fb_info.index == 1) sceSharedFbClose(shared_fb);
+		if (shared_fb_info.index == 1)
+			sceSharedFbClose(shared_fb);
 		else {
 			sceGxmMapMemory(shared_fb_info.fb_base, shared_fb_info.fb_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
 			gxm_color_surfaces_addr[0] = shared_fb_info.fb_base;
@@ -215,11 +219,10 @@ void initDisplayColorSurfaces(void) {
 			break;
 		}
 	}
-	
+
 	vglMemType type = VGL_MEM_VRAM;
 	int i;
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
-		
 		// Allocating color surface memblock
 		if (!system_app_mode) {
 			gxm_color_surfaces_addr[i] = gpu_alloc_mapped(
@@ -227,7 +230,7 @@ void initDisplayColorSurfaces(void) {
 				&type);
 			memset(gxm_color_surfaces_addr[i], 0, DISPLAY_STRIDE * DISPLAY_HEIGHT);
 		}
-		
+
 		// Initializing allocated color surface
 		sceGxmColorSurfaceInit(&gxm_color_surfaces[i],
 			SCE_GXM_COLOR_FORMAT_A8B8G8R8,
@@ -248,7 +251,8 @@ void termDisplayColorSurfaces(void) {
 	// Deallocating display's color surfaces and destroying sync objects
 	int i;
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
-		if (!system_app_mode) mempool_free(gxm_color_surfaces_addr[i], VGL_MEM_VRAM);
+		if (!system_app_mode)
+			mempool_free(gxm_color_surfaces_addr[i], VGL_MEM_VRAM);
 		sceGxmSyncObjectDestroy(gxm_sync_objects[i]);
 	}
 }
@@ -389,7 +393,7 @@ void vglStartRendering(void) {
 
 	// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
 	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-	
+
 	if (scissor_test_state)
 		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
 	else
@@ -399,13 +403,15 @@ void vglStartRendering(void) {
 void vglStopRenderingInit(void) {
 	// Ending drawing scene
 	sceGxmEndScene(gxm_context, NULL, NULL);
-	if (system_app_mode && vblank) sceDisplayWaitVblankStart();
+	if (system_app_mode && vblank)
+		sceDisplayWaitVblankStart();
 }
 
 void vglStopRenderingTerm(void) {
 	if (active_write_fb == NULL) { // Default framebuffer is used
 		// Properly requesting a display update
-		if (system_app_mode) sceSharedFbEnd(shared_fb);
+		if (system_app_mode)
+			sceSharedFbEnd(shared_fb);
 		else {
 			struct display_queue_callback_data queue_cb_data;
 			queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];

@@ -292,9 +292,11 @@ int mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
 	heap_init();
 
 	// Add memblocks to heap
-	if (size_cdram) heap_extend(VGL_MEM_VRAM, mempool_addr[0], mempool_size[0]);
+	if (size_cdram)
+		heap_extend(VGL_MEM_VRAM, mempool_addr[0], mempool_size[0]);
 	heap_extend(VGL_MEM_RAM, mempool_addr[1], mempool_size[1]);
-	if (size_phycont) heap_extend(VGL_MEM_SLOW, mempool_addr[2], mempool_size[2]);
+	if (size_phycont)
+		heap_extend(VGL_MEM_SLOW, mempool_addr[2], mempool_size[2]);
 
 	return 1;
 }
