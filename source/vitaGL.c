@@ -713,11 +713,16 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	initGxm();
 	
 	// Getting max allocatable CDRAM and RAM memory
-	SceKernelFreeMemorySizeInfo info;
-	info.size = sizeof(SceKernelFreeMemorySizeInfo);
-	sceKernelGetFreeMemorySize(&info);
-
-	vglInitWithCustomSizes(gpu_pool_size, width, height, info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram - 256 * 1024, info.size_phycont - 1 * 1024 * 1024, msaa);
+	if (system_app_mode) {
+		SceAppMgrBudgetInfo info;
+		info.size = sizeof(SceAppMgrBudgetInfo);
+		vglInitWithCustomSizes(gpu_pool_size, width, height, info.free_user_rw > ram_threshold ? info.free_user_rw - ram_threshold : info.free_user_rw, 0, 0, msaa);
+	} else {
+		SceKernelFreeMemorySizeInfo info;
+		info.size = sizeof(SceKernelFreeMemorySizeInfo);
+		sceKernelGetFreeMemorySize(&info);
+		vglInitWithCustomSizes(gpu_pool_size, width, height, info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram - 256 * 1024, info.size_phycont - 1 * 1024 * 1024, msaa);
+	}
 }
 
 void vglInit(uint32_t gpu_pool_size) {
