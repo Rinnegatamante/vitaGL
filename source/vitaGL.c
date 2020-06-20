@@ -716,6 +716,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 	if (system_app_mode) {
 		SceAppMgrBudgetInfo info;
 		info.size = sizeof(SceAppMgrBudgetInfo);
+		sceAppMgrGetBudgetInfo(&info);
 		vglInitWithCustomSizes(gpu_pool_size, width, height, info.free_user_rw > ram_threshold ? info.free_user_rw - ram_threshold : info.free_user_rw, 0, 0, msaa);
 	} else {
 		SceKernelFreeMemorySizeInfo info;
