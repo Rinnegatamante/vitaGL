@@ -63,7 +63,7 @@ void d2xy_morton(uint64_t d, uint64_t *x, uint64_t *y) {
 void extract_block(const uint8_t *src, int width, uint8_t *block) {
 	int j;
 	for (j = 0; j < 4; j++) {
-		memcpy(&block[j * 4 * 4], src, 16);
+		memcpy_neon(&block[j * 4 * 4], src, 16);
 		src += width * 4;
 	}
 }
@@ -239,7 +239,7 @@ palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 	if (data == NULL)
 		memset(texture_palette, 0, 256 * sizeof(uint32_t));
 	else if (bpe == 4)
-		memcpy(texture_palette, data, w * sizeof(uint32_t));
+		memcpy_neon(texture_palette, data, w * sizeof(uint32_t));
 	res->data = texture_palette;
 
 	// Returning palette
@@ -274,11 +274,11 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 			int i, j;
 			uint8_t *src = (uint8_t *)data;
 			uint8_t *dst;
-			if (fast_store) { // Internal Format and Data Format are the same, we can just use memcpy for better performance
+			if (fast_store) { // Internal Format and Data Format are the same, we can just use memcpy_neon for better performance
 				uint32_t line_size = w * bpp;
 				for (i = 0; i < h; i++) {
 					dst = ((uint8_t *)texture_data) + (ALIGN(w, 8) * bpp) * i;
-					memcpy(dst, src, line_size);
+					memcpy_neon(dst, src, line_size);
 					src += line_size;
 				}
 			} else { // Different internal and data formats, we need to go with slower callbacks system
@@ -418,7 +418,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 			has_temp_buffer = GL_FALSE;
 			temp = sceGxmTextureGetData(&tex->gxm_tex);
 		} else {
-			memcpy(temp, sceGxmTextureGetData(&tex->gxm_tex), stride * orig_h * bpp);
+			memcpy_neon(temp, sceGxmTextureGetData(&tex->gxm_tex), stride * orig_h * bpp);
 			gpu_free_texture(tex);
 		}
 
@@ -427,7 +427,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		void *texture_data = gpu_alloc_mapped(size, &tex->mtype);
 
 		// Moving back old texture data from heap to texture memblock
-		memcpy(texture_data, temp, stride * orig_h * bpp);
+		memcpy_neon(texture_data, temp, stride * orig_h * bpp);
 		if (has_temp_buffer)
 			free(temp);
 		else

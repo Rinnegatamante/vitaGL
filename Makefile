@@ -7,9 +7,10 @@ SOURCES += source/hacks
 endif
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
+ASMFILES := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.S))
 CGFILES  := $(foreach dir,$(SHADERS), $(wildcard $(dir)/*.cg))
 HEADERS  := $(CGFILES:.cg=.h)
-OBJS     := $(CFILES:.c=.o)
+OBJS     := $(CFILES:.c=.o) $(ASMFILES:.S=.o)
 
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc

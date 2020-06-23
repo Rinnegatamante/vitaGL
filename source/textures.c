@@ -704,7 +704,7 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 	case GL_TEXTURE_ENV:
 		switch (pname) {
 		case GL_TEXTURE_ENV_COLOR:
-			memcpy(&texenv_color.r, param, sizeof(GLfloat) * 4);
+			memcpy_neon(&texenv_color.r, param, sizeof(GLfloat) * 4);
 			break;
 		default:
 			vgl_error = GL_INVALID_ENUM;

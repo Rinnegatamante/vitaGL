@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <vitasdk.h>
 
+#include "vitaGL.h"
 #include "texture_callbacks.h"
 
 #define convert_u16_to_u32_cspace(color, lshift, rshift, mask) ((((color << lshift) >> rshift) & mask) * 0xFF) / mask
@@ -31,7 +32,7 @@
 // Read callback for 32bpp unsigned RGBA format
 uint32_t readRGBA(void *data) {
 	uint32_t res;
-	memcpy(&res, data, 4);
+	memcpy_neon(&res, data, 4);
 	return res;
 }
 
@@ -39,7 +40,7 @@ uint32_t readRGBA(void *data) {
 uint32_t readRGBA5551(void *data) {
 	uint16_t clr;
 	uint32_t r, g, b, a;
-	memcpy(&clr, data, 2);
+	memcpy_neon(&clr, data, 2);
 	r = convert_u16_to_u32_cspace(clr,  0, 11, 0x1F);
 	g = convert_u16_to_u32_cspace(clr,  5, 11, 0x1F);
 	b = convert_u16_to_u32_cspace(clr, 10, 11, 0x1F);
@@ -51,7 +52,7 @@ uint32_t readRGBA5551(void *data) {
 uint32_t readRGBA4444(void *data) {
 	uint16_t clr;
 	uint32_t r, g, b, a;
-	memcpy(&clr, data, 2);
+	memcpy_neon(&clr, data, 2);
 	r = convert_u16_to_u32_cspace(clr,  0, 12, 0x0F);
 	g = convert_u16_to_u32_cspace(clr,  4, 12, 0x0F);
 	b = convert_u16_to_u32_cspace(clr,  8, 12, 0x0F);
@@ -63,7 +64,7 @@ uint32_t readRGBA4444(void *data) {
 uint32_t readRGB565(void *data) {
 	uint16_t clr;
 	uint32_t r, g, b;
-	memcpy(&clr, data, 2);
+	memcpy_neon(&clr, data, 2);
 	r = convert_u16_to_u32_cspace(clr,   0, 11, 0x1F);
 	g = convert_u16_to_u32_cspace(clr,   5, 11, 0x3F);
 	b = convert_u16_to_u32_cspace(clr,  11, 11, 0x1F);
@@ -73,37 +74,37 @@ uint32_t readRGB565(void *data) {
 // Read callback for 24bpp unsigned RGB format
 uint32_t readRGB(void *data) {
 	uint32_t res = 0xFFFFFFFF;
-	memcpy(&res, data, 3);
+	memcpy_neon(&res, data, 3);
 	return res;
 }
 
 // Read callback for 16bpp unsigned RG format
 uint32_t readRG(void *data) {
 	uint32_t res = 0xFFFFFFFF;
-	memcpy(&res, data, 2);
+	memcpy_neon(&res, data, 2);
 	return res;
 }
 
 // Read callback for 8bpp unsigned R format
 uint32_t readR(void *data) {
 	uint32_t res = 0xFFFFFFFF;
-	memcpy(&res, data, 1);
+	memcpy_neon(&res, data, 1);
 	return res;
 }
 
 // Write callback for 32bpp unsigned RGBA format
 void writeRGBA(void *data, uint32_t color) {
-	memcpy(data, &color, 4);
+	memcpy_neon(data, &color, 4);
 }
 
 // Write callback for 24bpp unsigned RGB format
 void writeRGB(void *data, uint32_t color) {
-	memcpy(data, &color, 3);
+	memcpy_neon(data, &color, 3);
 }
 
 // Write callback for 16bpp unsigned RG format
 void writeRG(void *data, uint32_t color) {
-	memcpy(data, &color, 2);
+	memcpy_neon(data, &color, 2);
 }
 
 // Write callback for 16bpp unsigned RA format
@@ -116,5 +117,5 @@ void writeRA(void *data, uint32_t color) {
 
 // Write callback for 8bpp unsigned R format
 void writeR(void *data, uint32_t color) {
-	memcpy(data, &color, 1);
+	memcpy_neon(data, &color, 1);
 }

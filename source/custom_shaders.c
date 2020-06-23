@@ -159,7 +159,7 @@ void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, c
 
 	// Allocating compiled shader on RAM and registering it into sceGxmShaderPatcher
 	s->prog = (SceGxmProgram *)malloc(length);
-	memcpy((void *)s->prog, binary, length);
+	memcpy_neon((void *)s->prog, binary, length);
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
 	s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
 }
@@ -449,13 +449,13 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 
 	// Copying passed data to vitaGL mempool
 	if (stride == 0)
-		memcpy(ptr, pointer, count * bpe * size); // Faster if stride == 0
+		memcpy_neon(ptr, pointer, count * bpe * size); // Faster if stride == 0
 	else {
 		int i;
 		uint8_t *dst = (uint8_t *)ptr;
 		uint8_t *src = (uint8_t *)pointer;
 		for (i = 0; i < count; i++) {
-			memcpy(dst, src, bpe * size);
+			memcpy_neon(dst, src, bpe * size);
 			dst += (bpe * size);
 			src += stride;
 		}

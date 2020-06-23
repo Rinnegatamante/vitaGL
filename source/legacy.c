@@ -107,7 +107,7 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 	last_vert->v.x = x;
 	last_vert->v.y = y;
 	last_vert->v.z = z;
-	memcpy(&last_clr->v, &current_color.r, sizeof(vector4f));
+	memcpy_neon(&last_clr->v, &current_color.r, sizeof(vector4f));
 	last_clr->next = last_vert->next = NULL;
 
 	// Increasing vertex counter
@@ -135,8 +135,8 @@ void glVertex3fv(const GLfloat *v) {
 	}
 
 	// Properly populating the new element
-	memcpy(&last_vert->v, v, sizeof(vector3f));
-	memcpy(&last_clr->v, &current_color.r, sizeof(vector4f));
+	memcpy_neon(&last_vert->v, v, sizeof(vector3f));
+	memcpy_neon(&last_clr->v, &current_color.r, sizeof(vector4f));
 	last_clr->next = last_vert->next = NULL;
 
 	// Increasing vertex counter
@@ -157,7 +157,7 @@ void glColor3f(GLfloat red, GLfloat green, GLfloat blue) {
 
 void glColor3fv(const GLfloat *v) {
 	// Setting current color value
-	memcpy(&current_color.r, v, sizeof(vector3f));
+	memcpy_neon(&current_color.r, v, sizeof(vector3f));
 	current_color.a = 1.0f;
 }
 
@@ -187,7 +187,7 @@ void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
 
 void glColor4fv(const GLfloat *v) {
 	// Setting current color value
-	memcpy(&current_color.r, v, sizeof(vector4f));
+	memcpy_neon(&current_color.r, v, sizeof(vector4f));
 }
 
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha) {
@@ -309,7 +309,7 @@ void glArrayElement(GLint i) {
 		last_clr->next = NULL;
 
 		// Populating new vertex element
-		memcpy(&last_vert->v, ptr, tex_unit->vertex_array.size * tex_unit->vertex_array.num);
+		memcpy_neon(&last_vert->v, ptr, tex_unit->vertex_array.size * tex_unit->vertex_array.num);
 
 		// Checking if current texture unit has GL_COLOR_ARRAY enabled
 		if (tex_unit->color_array_state) {
@@ -322,11 +322,11 @@ void glArrayElement(GLint i) {
 
 			// Populating new color element
 			last_clr->v.a = 1.0f;
-			memcpy(&last_clr->v, ptr_clr, tex_unit->color_array.size * tex_unit->color_array.num);
+			memcpy_neon(&last_clr->v, ptr_clr, tex_unit->color_array.size * tex_unit->color_array.num);
 
 		} else {
 			// Populating new color element with current color
-			memcpy(&last_clr->v, &current_color.r, sizeof(vector4f));
+			memcpy_neon(&last_clr->v, &current_color.r, sizeof(vector4f));
 		}
 
 		// Checking if current texture unit has GL_TEXTURE_COORD_ARRAY enabled
@@ -347,7 +347,7 @@ void glArrayElement(GLint i) {
 			}
 
 			// Populating new texcoord element
-			memcpy(&last_uv->v, ptr_tex, tex_unit->vertex_array.size * 2);
+			memcpy_neon(&last_uv->v, ptr_tex, tex_unit->vertex_array.size * 2);
 			last_uv->next = NULL;
 		}
 	}
@@ -498,8 +498,8 @@ void glEnd(void) {
 			memset(vertices, 0, (vertex_count * sizeof(vector3f)));
 			indices = (uint16_t *)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 			for (i = 0; i < vertex_count; i++) {
-				memcpy(&vertices[n], &object->v, sizeof(vector3f));
-				memcpy(&uv_map[n], &object_uv->v, sizeof(vector2f));
+				memcpy_neon(&vertices[n], &object->v, sizeof(vector3f));
+				memcpy_neon(&uv_map[n], &object_uv->v, sizeof(vector2f));
 				indices[n] = n;
 				object = object->next;
 				object_uv = object_uv->next;
@@ -522,8 +522,8 @@ void glEnd(void) {
 				indices[i * 6 + 5] = i * 4 + 3;
 			}
 			for (j = 0; j < vertex_count; j++) {
-				memcpy(&vertices[j], &object->v, sizeof(vector3f));
-				memcpy(&uv_map[j], &object_uv->v, sizeof(vector2f));
+				memcpy_neon(&vertices[j], &object->v, sizeof(vector3f));
+				memcpy_neon(&uv_map[j], &object_uv->v, sizeof(vector2f));
 				object = object->next;
 				object_uv = object_uv->next;
 			}
@@ -554,8 +554,8 @@ void glEnd(void) {
 			memset(vertices, 0, (vertex_count * sizeof(vector3f)));
 			indices = (uint16_t *)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
 			for (i = 0; i < vertex_count; i++) {
-				memcpy(&vertices[n], &object->v, sizeof(vector3f));
-				memcpy(&colors[n], &object_clr->v, sizeof(vector4f));
+				memcpy_neon(&vertices[n], &object->v, sizeof(vector3f));
+				memcpy_neon(&colors[n], &object_clr->v, sizeof(vector4f));
 				indices[n] = n;
 				object = object->next;
 				object_clr = object_clr->next;
@@ -579,8 +579,8 @@ void glEnd(void) {
 				indices[i * 6 + 5] = i * 4 + 3;
 			}
 			for (j = 0; j < vertex_count; j++) {
-				memcpy(&vertices[j], &object->v, sizeof(vector3f));
-				memcpy(&colors[j], &object_clr->v, sizeof(vector4f));
+				memcpy_neon(&vertices[j], &object->v, sizeof(vector3f));
+				memcpy_neon(&colors[j], &object_clr->v, sizeof(vector4f));
 				object = object->next;
 				object_clr = object_clr->next;
 			}
