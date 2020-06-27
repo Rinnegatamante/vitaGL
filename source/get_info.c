@@ -80,7 +80,7 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 		*params = GL_FALSE;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -123,7 +123,7 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 		*data = GENERIC_STACK_DEPTH;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -156,7 +156,7 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[3] = gl_viewport.h;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
@@ -189,7 +189,7 @@ GLboolean glIsEnabled(GLenum cap) {
 		ret = pol_offset_point;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 	return ret;

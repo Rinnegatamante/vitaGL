@@ -56,6 +56,8 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #include "state.h"
 #include "texture_callbacks.h"
 
+#define SET_GL_ERROR(x) vgl_error = x; return;
+
 // Texture environment mode
 typedef enum texEnvMode {
 	MODULATE = 0,
