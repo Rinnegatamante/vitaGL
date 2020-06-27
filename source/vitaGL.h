@@ -26,18 +26,27 @@ extern "C" {
 #include <vitasdk.h>
 
 // clang-format off
-#define GLfloat       float
-#define GLint         int32_t
-#define GLdouble      double
-#define GLshort       int16_t
-#define GLuint        uint32_t
-#define GLsizei       int32_t
-#define GLenum        uint16_t
-#define GLubyte       uint8_t
-#define GLvoid        void
-#define GLbyte        int8_t
 #define GLboolean     uint8_t
+#define GLbyte        int8_t
+#define GLubyte       uint8_t
 #define GLchar        char
+#define GLshort       int16_t
+#define GLushort      uint16_t
+#define GLint         int32_t
+#define GLuint        uint32_t
+#define GLfixed       int32_t
+#define GLint64       int64_t
+#define GLuint64      uint64_t
+#define GLsizei       uint32_t
+#define GLenum        uint32_t
+#define GLintptr      int32_t
+#define GLsizeiptr    uint32_t
+#define GLsync        int32_t
+#define GLfloat       float
+#define GLclampf      float
+#define GLdouble      double
+#define GLclampd      double
+#define GLvoid        void
 
 #define GL_FALSE                          0
 #define GL_TRUE                           1
