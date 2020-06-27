@@ -335,6 +335,24 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	}
 }
 
+void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
+	// Grabbing passed uniform
+	uniform *u = (uniform *)location;
+	if (u->ptr == NULL)
+		return;
+
+	// Setting passed value to desired uniform
+	if (u->isVertex) {
+		if (vert_uniforms == NULL)
+			sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
+		sceGxmSetUniformDataF(vert_uniforms, u->ptr, 0, 3 * count, value);
+	} else {
+		if (frag_uniforms == NULL)
+			sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &frag_uniforms);
+		sceGxmSetUniformDataF(frag_uniforms, u->ptr, 0, 3 * count, value);
+	}
+}
+
 void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
