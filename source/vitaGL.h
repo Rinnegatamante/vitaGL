@@ -24,6 +24,9 @@ extern "C" {
 #endif
 
 #include <vitasdk.h>
+#ifdef HAVE_SHARK
+#include <vitashark.h>
+#endif
 
 // clang-format off
 #define GLboolean     uint8_t
@@ -243,6 +246,8 @@ extern "C" {
 #define GL_DYNAMIC_COPY                   0x88EA
 #define GL_FRAGMENT_SHADER                0x8B30
 #define GL_VERTEX_SHADER                  0x8B31
+#define GL_SHADER_TYPE                    0x8B4F
+#define GL_COMPILE_STATUS                 0x8B81
 #define GL_READ_FRAMEBUFFER               0x8CA8
 #define GL_DRAW_FRAMEBUFFER               0x8CA9
 #define GL_COLOR_ATTACHMENT0              0x8CE0
@@ -291,6 +296,7 @@ void glColor4ubv(const GLubyte *v);
 void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha);
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid *data);
+void glCompileShader(GLuint shader);
 GLuint glCreateProgram(void);
 GLuint glCreateShader(GLenum shaderType);
 void glCullFace(GLenum mode);
@@ -325,6 +331,7 @@ void glGetBooleanv(GLenum pname, GLboolean *params);
 void glGetFloatv(GLenum pname, GLfloat *data);
 GLenum glGetError(void);
 void glGetIntegerv(GLenum pname, GLint *data);
+void glGetShaderiv(GLuint handle, GLenum pname, GLint *params);
 const GLubyte *glGetString(GLenum name);
 GLint glGetUniformLocation(GLuint prog, const GLchar *name);
 GLboolean glIsEnabled(GLenum cap);
@@ -345,6 +352,7 @@ void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length); // NOTE: Uses GXP shaders
+void glShaderSource(GLuint handle, GLsizei count, const GLchar * const *string, const GLint *length); // NOTE: Uses CG shader sources
 void glStencilFunc(GLenum func, GLint ref, GLuint mask);
 void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask);
 void glStencilMask(GLuint mask);
@@ -407,6 +415,7 @@ typedef enum {
 
 // vgl*
 void *vglAlloc(uint32_t size, vglMemType type);
+void vglEnableRuntimeShaderCompiler(GLboolean usage);
 void vglEnd(void);
 void vglFree(void *addr);
 void *vglGetTexDataPointer(GLenum target);

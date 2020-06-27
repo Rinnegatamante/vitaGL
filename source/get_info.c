@@ -189,7 +189,7 @@ GLboolean glIsEnabled(GLenum cap) {
 		ret = pol_offset_point;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	return ret;

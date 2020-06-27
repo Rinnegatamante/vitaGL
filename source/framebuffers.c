@@ -50,7 +50,7 @@ uint32_t get_color_from_texture(uint32_t type) {
 		res = SCE_GXM_COLOR_FORMAT_U8_A;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 	return res;

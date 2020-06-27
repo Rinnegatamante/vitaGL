@@ -29,6 +29,8 @@
 // Internal stuffs
 void *frag_uniforms = NULL;
 void *vert_uniforms = NULL;
+uint8_t use_shark = 1; // Flag to check if vitaShaRK should be initialized at vitaGL boot
+uint8_t is_shark_online = 0; // Current vitaShaRK status
 
 GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
 
@@ -45,6 +47,7 @@ typedef struct shader {
 	GLboolean valid;
 	SceGxmShaderPatcherId id;
 	const SceGxmProgram *prog;
+	uint32_t size;
 } shader;
 
 // Program struct holding vertex/fragment shader info
@@ -121,6 +124,10 @@ void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean imp
  * - IMPLEMENTATION STARTS HERE -
  * ------------------------------
  */
+ 
+void vglEnableRuntimeShaderCompiler(GLboolean usage) {
+	use_shark = usage;
+}
 
 GLuint glCreateShader(GLenum shaderType) {
 	// Looking for a free shader slot
@@ -146,11 +153,47 @@ GLuint glCreateShader(GLenum shaderType) {
 		break;
 	default:
 		vgl_error = GL_INVALID_ENUM;
+		return 0;
 		break;
 	}
 	shaders[res - 1].valid = GL_TRUE;
 
 	return res;
+}
+
+void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
+	// Grabbing passed shader
+	shader *s = &shaders[handle - 1];
+	
+	switch (pname) {
+	case GL_SHADER_TYPE:
+		*params = s->type;
+		break;
+	case GL_COMPILE_STATUS:
+		*params = s->prog ? GL_TRUE : GL_FALSE;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+}
+
+void glShaderSource(GLuint handle, GLsizei count, const GLchar * const *string, const GLint *length) {
+#ifndef SKIP_ERROR_HANDLING
+	if (count < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+    if (!is_shark_online) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+	
+	// Grabbing passed shader
+	shader *s = &shaders[handle - 1];
+	
+	// Temporarily setting prog to point to the shader source
+	s->prog = (SceGxmProgram *)string;
+	s->size = *length;
 }
 
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length) {
@@ -162,6 +205,27 @@ void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, c
 	memcpy_neon((void *)s->prog, binary, length);
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
 	s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
+}
+
+void glCompileShader(GLuint handle) {
+	// If vitaShaRK is not enabled, we just error out
+	if (!is_shark_online) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#ifdef HAVE_SHARK
+	// Grabbing passed shader
+	shader *s = &shaders[handle - 1];
+	
+	s->prog = shark_compile_shader((const char*)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER);
+	if (s->prog) {
+		SceGxmProgram *res = (SceGxmProgram *)malloc(s->size);
+		memcpy_neon((void *)res, (void *)s->prog, s->size);
+		s->prog = res;
+		shark_clear_output();
+		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
+		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
+	}
+#endif
 }
 
 void glDeleteShader(GLuint shad) {
@@ -193,8 +257,9 @@ void glAttachShader(GLuint prog, GLuint shad) {
 		default:
 			break;
 		}
-	} else
-		vgl_error = GL_INVALID_VALUE;
+	} else {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
 }
 
 GLuint glCreateProgram(void) {
@@ -420,7 +485,7 @@ void vglBindPackedAttribLocation(GLuint prog, GLuint index, const GLchar *name, 
 		bpe = sizeof(uint8_t);
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 
@@ -443,8 +508,7 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (stride < 0) {
-		vgl_error = GL_INVALID_VALUE;
-		return;
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 
@@ -458,7 +522,7 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 		bpe = sizeof(GLshort);
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
+		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 

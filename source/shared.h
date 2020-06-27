@@ -109,6 +109,9 @@ void LOG(const char *format, ...);
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
+extern uint8_t use_shark; // Flag to check if vitaShaRK should be initialized at vitaGL boot
+extern uint8_t is_shark_online; // Current vitaShaRK status
+
 // sceGxm viewport setup (NOTE: origin is on center screen)
 extern float x_port;
 extern float y_port;

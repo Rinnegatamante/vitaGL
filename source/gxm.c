@@ -105,7 +105,18 @@ static void display_queue_callback(const void *callbackData) {
 void initGxm(void) {
 	if (gxm_initialized)
 		return;
-
+	
+	// Initializing runtime shader compiler
+	if (use_shark) {
+#ifdef HAVE_SHARK
+		if (shark_init(NULL) >= 0)
+			is_shark_online = 1;
+		else
+#endif
+			is_shark_online = 0;
+	}
+	
+	// Checking if the running application is a system one
 	SceAppMgrBudgetInfo info;
 	info.size = sizeof(SceAppMgrBudgetInfo);
 	if (!sceAppMgrGetBudgetInfo(&info))
@@ -180,6 +191,10 @@ void termGxmContext(void) {
 		sceSharedFbEnd(shared_fb);
 		sceSharedFbClose(shared_fb);
 	}
+#ifdef HAVE_SHARK
+	// Shutting down runtime shader compiler
+	if (is_shark_online) shark_end();
+#endif
 }
 
 void createDisplayRenderTarget(void) {
