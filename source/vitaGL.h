@@ -40,7 +40,7 @@ extern "C" {
 #define GLfixed       int32_t
 #define GLint64       int64_t
 #define GLuint64      uint64_t
-#define GLsizei       uint32_t
+#define GLsizei       int32_t
 #define GLenum        uint32_t
 #define GLintptr      int32_t
 #define GLsizeiptr    uint32_t
@@ -121,7 +121,7 @@ extern "C" {
 #define GL_MAX_PROJECTION_STACK_DEPTH     0x0D38
 #define GL_MAX_TEXTURE_STACK_DEPTH        0x0D39
 #define GL_DEPTH_BITS                     0x0D56
-#define GL_STENCIL_BITS                  0x0D57
+#define GL_STENCIL_BITS                   0x0D57
 #define GL_TEXTURE_2D                     0x0DE1
 #define GL_BYTE                           0x1400
 #define GL_UNSIGNED_BYTE                  0x1401
