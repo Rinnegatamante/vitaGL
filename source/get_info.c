@@ -122,6 +122,12 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 	case GL_MAX_TEXTURE_STACK_DEPTH: // Max texture stack depth
 		*data = GENERIC_STACK_DEPTH;
 		break;
+	case GL_DEPTH_BITS:
+		*data = 32;
+		break;
+	case GL_STENCIL_BITS:
+		*data = 8;
+		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
@@ -154,6 +160,12 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[1] = gl_viewport.y;
 		data[2] = gl_viewport.w;
 		data[3] = gl_viewport.h;
+		break;
+	case GL_DEPTH_BITS:
+		data[0] = 32;
+		break;
+	case GL_STENCIL_BITS:
+		data[0] = 8;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
