@@ -418,7 +418,7 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	}
 }
 
-void glUniform4f(GLint location, GLsizei count, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
+void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
