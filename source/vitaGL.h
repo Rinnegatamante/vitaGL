@@ -234,6 +234,7 @@ extern "C" {
 #define GL_TEXTURE30                      0x84DE
 #define GL_TEXTURE31                      0x84DF
 #define GL_ACTIVE_TEXTURE                 0x84E0
+#define GL_TEXTURE_LOD_BIAS               0x8501
 #define GL_INCR_WRAP                      0x8507
 #define GL_MIRROR_CLAMP_EXT               0x8742
 #define GL_DECR_WRAP                      0x8508
@@ -257,7 +258,8 @@ extern "C" {
 #define GL_COLOR_ATTACHMENT0              0x8CE0
 #define GL_FRAMEBUFFER                    0x8D40
 
-#define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 32
+#define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS   32
+#define GL_MAX_TEXTURE_LOD_BIAS               31
 
 // Aliases
 #define GL_CLAMP GL_CLAMP_TO_EDGE

@@ -262,6 +262,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 		sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
 		sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
+		sceGxmTextureSetLodBias(&tex->gxm_tex, tex_unit->lod_bias);
 
 		// Setting palette if the format requests one
 		if (tex->valid && tex->palette_UID)
@@ -550,6 +551,10 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 			}
 			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 			break;
+		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
+			tex_unit->lod_bias = (uint32_t)(param + GL_MAX_TEXTURE_LOD_BIAS);
+			sceGxmTextureSetLodBias(&tex->gxm_tex, tex_unit->lod_bias);
+			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
 			break;
@@ -605,6 +610,10 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 			else if (param == GL_MIRROR_CLAMP_EXT)
 				tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP; // Mirror Clamp
 			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
+			break;
+		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
+			tex_unit->lod_bias = (uint32_t)(param + GL_MAX_TEXTURE_LOD_BIAS);
+			sceGxmTextureSetLodBias(&tex->gxm_tex, tex_unit->lod_bias);
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
@@ -758,7 +767,7 @@ void *vglGetTexDataPointer(GLenum target) {
 		return tex->data;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		vgl_error = GL_INVALID_ENUM;
 		break;
 	}
 
