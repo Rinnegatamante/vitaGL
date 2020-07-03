@@ -23,8 +23,8 @@
 
 #include "shared.h"
 
-#define MAX_CUSTOM_SHADERS 32 // Maximum number of linkable custom shaders
-#define MAX_SHADER_PARAMS 16 // Maximum number of parameters per custom shader
+#define MAX_CUSTOM_SHADERS 64 // Maximum number of linkable custom shaders
+#define MAX_SHADER_PARAMS 8 // Maximum number of parameters per custom shader
 
 // Internal stuffs
 void *frag_uniforms = NULL;
@@ -55,8 +55,8 @@ typedef struct program {
 	shader *vshader;
 	shader *fshader;
 	GLboolean valid;
-	SceGxmVertexAttribute attr[16];
-	SceGxmVertexStream stream[16];
+	SceGxmVertexAttribute attr[MAX_SHADER_PARAMS];
+	SceGxmVertexStream stream[MAX_SHADER_PARAMS];
 	SceGxmVertexProgram *vprog;
 	SceGxmFragmentProgram *fprog;
 	GLuint attr_num;
@@ -216,15 +216,16 @@ void glCompileShader(GLuint handle) {
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
 	
+	// Compiling shader source
 	s->prog = shark_compile_shader((const char*)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER);
 	if (s->prog) {
 		SceGxmProgram *res = (SceGxmProgram *)malloc(s->size);
 		memcpy_neon((void *)res, (void *)s->prog, s->size);
 		s->prog = res;
-		shark_clear_output();
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
 		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
 	}
+	shark_clear_output();
 #endif
 }
 

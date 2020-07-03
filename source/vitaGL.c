@@ -681,7 +681,7 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 		}
 		texture_units[i].env_mode = MODULATE;
 		texture_units[i].tex_id = 0;
-		texture_units[i].enabled = 0;
+		texture_units[i].enabled = GL_FALSE;
 		texture_units[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 		texture_units[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 		texture_units[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
