@@ -105,8 +105,8 @@ void reloadCustomShader(void) {
 }
 
 void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
-	program *p = &progs[cur_program - 1];
 	if (implicit_wvp) {
+		program *p = &progs[cur_program - 1];
 		if (mvp_modified) {
 			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 			mvp_modified = GL_FALSE;
