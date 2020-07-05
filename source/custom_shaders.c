@@ -234,7 +234,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar * const *string, 
 	
 	// Temporarily setting prog to point to the shader source
 	s->prog = (SceGxmProgram *)string;
-	s->size = *length;
+	s->size = length ? *length : strlen(string);
 }
 
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length) {
