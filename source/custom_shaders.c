@@ -48,6 +48,7 @@ typedef struct shader {
 	SceGxmShaderPatcherId id;
 	const SceGxmProgram *prog;
 	uint32_t size;
+	char *log;
 } shader;
 
 // Program struct holding vertex/fragment shader info
@@ -76,6 +77,7 @@ void resetCustomShaders(void) {
 	int i;
 	for (i = 0; i < MAX_CUSTOM_SHADERS; i++) {
 		shaders[i].valid = 0;
+		shaders[i].log = NULL;
 		progs[i >> 1].valid = 0;
 	}
 }
@@ -118,6 +120,26 @@ void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean imp
 		sceGxmSetUniformDataF(vert_uniforms, p->wvp, 0, 16, (const float *)mvp_matrix);
 	}
 }
+
+#if defined(HAVE_SHARK) && defined(HAVE_SHARK_LOG)
+char *shark_log = NULL;
+void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
+	uint8_t append = shark_log != NULL;
+	uint32_t size = (append ? strlen(shark_log) : 0) + strlen(msg);
+	shark_log = append ? realloc(shark_log, size) : malloc(size);
+	switch (msg_level) {
+	case SHARK_LOG_INFO:
+		sprintf(shark_log, "%s%sI] %s on line %d", append ? shark_log : "", append ? "\n" : "", msg, line);
+		break;
+	case SHARK_LOG_WARNING:
+		sprintf(shark_log, "%s%sW] %s on line %d", append ? shark_log : "", append ? "\n" : "", msg, line);
+		break;
+	case SHARK_LOG_ERROR:
+		sprintf(shark_log, "%s%sE] %s on line %d", append ? shark_log : "", append ? "\n" : "", msg, line);
+		break;
+	}
+}
+#endif
 
 /*
  * ------------------------------
@@ -172,9 +194,28 @@ void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
 	case GL_COMPILE_STATUS:
 		*params = s->prog ? GL_TRUE : GL_FALSE;
 		break;
+	case GL_INFO_LOG_LENGTH:
+		*params = s->log ? strlen(s->log) : 0;
+		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
+	}
+}
+
+void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLchar *infoLog) {
+#ifndef SKIP_ERROR_HANDLING
+	if (maxLength < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+	// Grabbing passed shader
+	shader *s = &shaders[handle - 1];
+	
+	if (s->log) {
+		*length = min(strlen(s->log), maxLength);
+		memcpy_neon(infoLog, s->log, *length);
 	}
 }
 
@@ -225,6 +266,10 @@ void glCompileShader(GLuint handle) {
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
 		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
 	}
+#ifdef HAVE_SHARK_LOG
+	s->log = shark_log;
+	shark_log = NULL;
+#endif
 	shark_clear_output();
 #endif
 }
@@ -237,7 +282,9 @@ void glDeleteShader(GLuint shad) {
 	if (s->valid) {
 		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
 		free((void *)s->prog);
+		if (s->log) free(s->log);
 	}
+	s->log = NULL;
 	s->valid = GL_FALSE;
 }
 

@@ -104,9 +104,17 @@ extern GLboolean use_extra_mem;
 void LOG(const char *format, ...);
 #endif
 
-// Depending on SDK, that could be or not defined
+// Logging callback for vitaShaRK
+#if defined(HAVE_SHARK) && defined(HAVE_SHARK_LOG)
+void shark_log_cb(const char *msg, shark_log_level msg_level, int line);
+#endif
+
+// Depending on SDK, these could be or not defined
 #ifndef max
 #define max(a, b) ((a) > (b) ? (a) : (b))
+#endif
+#ifndef min
+#define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
 extern uint8_t use_shark; // Flag to check if vitaShaRK should be initialized at vitaGL boot

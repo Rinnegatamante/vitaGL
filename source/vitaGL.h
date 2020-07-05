@@ -253,6 +253,7 @@ extern "C" {
 #define GL_VERTEX_SHADER                  0x8B31
 #define GL_SHADER_TYPE                    0x8B4F
 #define GL_COMPILE_STATUS                 0x8B81
+#define GL_INFO_LOG_LENGTH                0x8B84
 #define GL_READ_FRAMEBUFFER               0x8CA8
 #define GL_DRAW_FRAMEBUFFER               0x8CA9
 #define GL_COLOR_ATTACHMENT0              0x8CE0
@@ -337,6 +338,7 @@ void glGetBooleanv(GLenum pname, GLboolean *params);
 void glGetFloatv(GLenum pname, GLfloat *data);
 GLenum glGetError(void);
 void glGetIntegerv(GLenum pname, GLint *data);
+void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 void glGetShaderiv(GLuint handle, GLenum pname, GLint *params);
 const GLubyte *glGetString(GLenum name);
 GLint glGetUniformLocation(GLuint prog, const GLchar *name);

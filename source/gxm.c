@@ -109,9 +109,13 @@ void initGxm(void) {
 	// Initializing runtime shader compiler
 	if (use_shark) {
 #ifdef HAVE_SHARK
-		if (shark_init(NULL) >= 0)
+		if (shark_init(NULL) >= 0) {
 			is_shark_online = 1;
-		else
+#ifdef HAVE_SHARK_LOG
+			shark_install_log_cb(shark_log_cb);
+			shark_set_warnings_level(SHARK_WARN_MAX);
+#endif
+		} else
 #endif
 			is_shark_online = 0;
 	}
