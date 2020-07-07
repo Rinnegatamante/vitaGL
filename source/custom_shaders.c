@@ -379,9 +379,6 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 
 	uniform *res = (uniform *)malloc(sizeof(uniform));
 	res->chain = NULL;
-	if (p->last_uniform != NULL)
-		p->last_uniform->chain = (void *)res;
-	p->last_uniform = res;
 
 	// Checking if parameter is a vertex or fragment related one
 	res->ptr = sceGxmProgramFindParameterByName(p->vshader->prog, name);
@@ -390,6 +387,15 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 		res->ptr = sceGxmProgramFindParameterByName(p->fshader->prog, name);
 		res->isVertex = GL_FALSE;
 	}
+	
+	if (res->ptr == NULL) {
+		free(res);
+		return -1;
+	}
+		
+	if (p->last_uniform != NULL)
+		p->last_uniform->chain = (void *)res;
+	p->last_uniform = res;
 
 	return (GLint)res;
 }
