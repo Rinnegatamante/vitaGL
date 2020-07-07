@@ -2059,8 +2059,6 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 			_vglDrawObjects_CustomShadersIMPL(mode, count, implicit_wvp);
 			sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
-			vert_uniforms = NULL;
-			frag_uniforms = NULL;
 		} else {
 			if (tex_unit->vertex_array_state) {
 				if (mvp_modified) {

@@ -104,6 +104,8 @@ void reloadCustomShader(void) {
 	program *p = &progs[cur_program - 1];
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
+	vert_uniforms = NULL;
+	frag_uniforms = NULL;
 }
 
 void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
@@ -233,8 +235,8 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar * const *string, 
 	shader *s = &shaders[handle - 1];
 	
 	// Temporarily setting prog to point to the shader source
-	s->prog = (SceGxmProgram *)string;
-	s->size = length ? *length : strlen(string);
+	s->prog = (SceGxmProgram *)*string;
+	s->size = length ? *length : strlen(*string);
 }
 
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length) {
