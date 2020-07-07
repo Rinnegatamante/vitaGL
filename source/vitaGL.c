@@ -2058,6 +2058,12 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 		if (cur_program != 0) {
 			_vglDrawObjects_CustomShadersIMPL(mode, count, implicit_wvp);
 			sceGxmSetFragmentTexture(gxm_context, 0, &tex_unit->textures[texture2d_idx].gxm_tex);
+			
+			// TEXUNIT1 support for custom shaders
+			texture_unit *tex_unit2 = &texture_units[client_texture_unit + 1];
+			int texture2d_idx2 = tex_unit2->tex_id;
+			if (tex_unit2->textures[texture2d_idx2].valid) sceGxmSetFragmentTexture(gxm_context, 1, &tex_unit2->textures[texture2d_idx2].gxm_tex);
+			
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 		} else {
 			if (tex_unit->vertex_array_state) {
