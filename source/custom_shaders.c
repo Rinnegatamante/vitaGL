@@ -124,7 +124,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean imp
 }
 
 #if defined(HAVE_SHARK) && defined(HAVE_SHARK_LOG)
-char *shark_log = NULL;
+static char *shark_log = NULL;
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	uint8_t append = shark_log != NULL;
 	uint32_t size = (append ? strlen(shark_log) : 0) + strlen(msg);
@@ -250,6 +250,7 @@ void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, c
 	s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
 }
 
+uint8_t shader_idxs = 0;
 void glCompileShader(GLuint handle) {
 	// If vitaShaRK is not enabled, we just error out
 	if (!is_shark_online) {
@@ -368,7 +369,7 @@ void glLinkProgram(GLuint progr) {
 void glUseProgram(GLuint prog) {
 	// Setting current custom program to passed program
 	cur_program = prog;
-
+			
 	// Setting in-use vertex and fragment program in sceGxm
 	reloadCustomShader();
 }
@@ -539,13 +540,13 @@ void vglBindPackedAttribLocation(GLuint prog, GLuint index, const GLchar *name, 
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 	SceGxmVertexAttribute *attributes = &p->attr[index];
-	SceGxmVertexStream *streams = &p->stream[index];
+	SceGxmVertexStream *streams = &p->stream[0];
 
 	// Looking for desired parameter in requested program
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
 
 	// Setting stream index and offset values
-	attributes->streamIndex = index;
+	attributes->streamIndex = 0;
 	attributes->offset = offset;
 
 	// Detecting attribute format and size
