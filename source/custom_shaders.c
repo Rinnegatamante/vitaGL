@@ -61,6 +61,7 @@ typedef struct program {
 	SceGxmVertexProgram *vprog;
 	SceGxmFragmentProgram *fprog;
 	GLuint attr_num;
+	GLuint stream_num;
 	const SceGxmProgramParameter *wvp;
 	uniform *uniforms;
 	uniform *last_uniform;
@@ -359,7 +360,7 @@ void glLinkProgram(GLuint progr) {
 	// Creating fragment and vertex program via sceGxmShaderPatcher
 	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
 		p->vshader->id, p->attr, p->attr_num,
-		p->stream, p->attr_num, &p->vprog);
+		p->stream, p->stream_num, &p->vprog);
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		p->fshader->id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		msaa_mode, NULL, p->vshader->prog,
@@ -571,8 +572,10 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 	attributes->regIndex = sceGxmProgramParameterGetResourceIndex(param);
 	streams->stride = bpe * num;
 	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-	if (index >= p->attr_num)
+	if (index >= p->attr_num) {
 		p->attr_num = index + 1;
+		p->stream_num = index + 1;
+	}
 }
 
 // Equivalent of glBindAttribLocation but for sceGxm architecture when packed attributes are used
@@ -610,6 +613,7 @@ void vglBindPackedAttribLocation(GLuint prog, GLuint index, const GLchar *name, 
 	attributes->regIndex = sceGxmProgramParameterGetResourceIndex(param);
 	streams->stride = stride ? stride : bpe * num;
 	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+	p->stream_num = 1;
 	if (index >= p->attr_num)
 		p->attr_num = index + 1;
 }
