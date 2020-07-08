@@ -66,7 +66,7 @@ uint32_t readRGB565(void *data) {
 	uint32_t r, g, b;
 	memcpy_neon(&clr, data, 2);
 	r = convert_u16_to_u32_cspace(clr,   0, 11, 0x1F);
-	g = convert_u16_to_u32_cspace(clr,   5, 11, 0x3F);
+	g = convert_u16_to_u32_cspace(clr,   5, 10, 0x3F);
 	b = convert_u16_to_u32_cspace(clr,  11, 11, 0x1F);
 	return ((0xFF << 24) | (b << 16) | (g << 8) | r);
 }
