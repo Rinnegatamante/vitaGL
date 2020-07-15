@@ -546,6 +546,7 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 
 	// Looking for desired parameter in requested program
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
+	if (param == NULL) return;
 
 	// Setting stream index and offset values
 	attributes->streamIndex = index;
@@ -587,6 +588,7 @@ void vglBindPackedAttribLocation(GLuint prog, GLuint index, const GLchar *name, 
 
 	// Looking for desired parameter in requested program
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
+	if (param == NULL) return;
 
 	// Setting stream index and offset values
 	attributes->streamIndex = 0;
