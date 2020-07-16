@@ -580,10 +580,10 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 }
 
 // Equivalent of glBindAttribLocation but for sceGxm architecture when packed attributes are used
-void vglBindPackedAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type, GLuint offset, GLint stride) {
+void vglBindPackedAttribLocation(GLuint prog, const GLchar *name, const GLuint num, const GLenum type, GLuint offset, GLint stride) {
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
-	SceGxmVertexAttribute *attributes = &p->attr[index];
+	SceGxmVertexAttribute *attributes = &p->attr[p->attr_num];
 	SceGxmVertexStream *streams = &p->stream[0];
 
 	// Looking for desired parameter in requested program
@@ -616,8 +616,7 @@ void vglBindPackedAttribLocation(GLuint prog, GLuint index, const GLchar *name, 
 	streams->stride = stride ? stride : bpe * num;
 	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	p->stream_num = 1;
-	if (index >= p->attr_num)
-		p->attr_num = index + 1;
+	p->attr_num++;
 }
 
 // Equivalent of glVertexAttribPointer but for sceGxm architecture
