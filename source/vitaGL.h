@@ -427,6 +427,7 @@ void *vglAlloc(uint32_t size, vglMemType type);
 void vglEnableRuntimeShaderCompiler(GLboolean usage);
 void vglEnd(void);
 void vglFree(void *addr);
+SceGxmTexture *vglGetGxmTexture(GLenum target);
 void *vglGetTexDataPointer(GLenum target);
 void vglInit(uint32_t gpu_pool_size);
 void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa);
