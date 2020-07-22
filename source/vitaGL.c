@@ -684,6 +684,7 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 		texture_units[i].enabled = GL_FALSE;
 		texture_units[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 		texture_units[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+		texture_units[i].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 		texture_units[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 		texture_units[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 		texture_units[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1) 
