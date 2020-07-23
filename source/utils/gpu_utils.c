@@ -316,9 +316,20 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 
 	// Calculating swizzled compressed texture size on memory
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-	int tex_size = w * h;
-	if (alignment == 8)
-		tex_size /= 2;
+
+	int tex_size;
+	switch (format) {
+	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
+		tex_size = (MAX(w, 8) * MAX(h, 8) * 2 + 7) / 8;
+		break;
+	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
+		tex_size = (MAX(w, 8) * MAX(h, 8) * 4 + 7) / 8;
+		break;
+	default:
+		tex_size = w * h;
+		if (alignment == 8)
+			tex_size /= 2;
+	}
 
 	// Allocating texture data buffer
 	void *texture_data = gpu_alloc_mapped(tex_size, &tex->mtype);
@@ -340,8 +351,16 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 				src += src_bpp;
 			}*/
 
-			// Performing swizzling and DXT compression
-			dxt_compress(texture_data, (void *)data, w, h, alignment == 16);
+			switch (format) {
+			case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
+			case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
+				memcpy_neon(texture_data, data, tex_size);
+				break;
+			default:
+				// Performing swizzling and DXT compression
+				dxt_compress(texture_data, (void *)data, w, h, alignment == 16);
+				break;
+			}
 
 			//swizzle(texture_data, tmp2, w, h, alignment << 3);
 			//free(tmp);
