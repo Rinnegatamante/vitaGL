@@ -206,6 +206,14 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
 			break;
+		case GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG:
+		case GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR;
+			break;
+		case GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG:
+		case GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR;
+			break;
 		case GL_RGB:
 			write_cb = writeRGB;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
