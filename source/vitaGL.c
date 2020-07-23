@@ -699,6 +699,11 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 		gpu_buffers[i].ptr = NULL;
 	}
 	
+	// Init command lists
+	for (i = 0; i < COMMAND_LISTS_NUM; i++) {
+		cmd_list[i].valid = 0;
+	}
+	
 	// Init scissor test state
 	resetScissorTestRegion();
 

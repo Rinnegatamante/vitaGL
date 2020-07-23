@@ -35,6 +35,7 @@
 #define GXM_TEX_MAX_SIZE 4096 // Maximum width/height in pixels per texture
 #define BUFFERS_ADDR 0xA000 // Starting address for buffers indexing
 #define BUFFERS_NUM 128 // Maximum number of allocatable buffers
+#define COMMAND_LISTS_NUM 1024 // Maximum number of generable command lists
 
 // Internal constants set in bootup phase
 extern int DISPLAY_WIDTH; // Display width in pixels
@@ -57,6 +58,13 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #include "texture_callbacks.h"
 
 #define SET_GL_ERROR(x) vgl_error = x; return;
+
+// Command list struct
+typedef struct command_list {
+	int valid;
+	int execute;
+	SceGxmCommandList gxm_list;
+} command_list;
 
 // Texture environment mode
 typedef enum texEnvMode {
@@ -136,7 +144,8 @@ extern float fullscreen_x_scale;
 extern float fullscreen_y_scale;
 extern float fullscreen_z_scale;
 
-extern SceGxmContext *gxm_context; // sceGxm context instance
+extern SceGxmContext *gxm_context; // Current in-use sceGxm context instance
+extern SceGxmContext *main_gxm_context; // Immediate sceGxm context instance
 extern GLenum vgl_error; // Error returned by glGetError
 extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 extern uint8_t system_app_mode; // Flag for system app mode usage
@@ -150,6 +159,8 @@ extern GLuint cur_program; // Current in use custom program (0 = No custom progr
 extern GLboolean vblank; // Current setting for VSync
 
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
+
+extern command_list cmd_list[COMMAND_LISTS_NUM]; // Command lists array
 
 // Scissor test shaders
 extern SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program

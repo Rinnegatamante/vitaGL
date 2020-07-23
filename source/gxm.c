@@ -49,7 +49,8 @@ static SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil sur
 static SceUID shared_fb; // In-use hared framebuffer identifier
 static SceSharedFbInfo shared_fb_info; // In-use shared framebuffer info struct
 
-SceGxmContext *gxm_context; // sceGxm context instance
+SceGxmContext *gxm_context; // Current in-use sceGxm context instance
+SceGxmContext *main_gxm_context; // Immediate sceGxm context instance
 GLenum vgl_error = GL_NO_ERROR; // Error returned by glGetError
 SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 
@@ -176,7 +177,8 @@ void initGxmContext(void) {
 	gxm_context_params.fragmentUsseRingBufferOffset = fragment_usse_offset;
 
 	// Initializing sceGxm context
-	sceGxmCreateContext(&gxm_context_params, &gxm_context);
+	sceGxmCreateContext(&gxm_context_params, &main_gxm_context);
+	gxm_context = main_gxm_context;
 }
 
 void termGxmContext(void) {

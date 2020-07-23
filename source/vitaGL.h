@@ -125,10 +125,14 @@ extern "C" {
 #define GL_DEPTH_BITS                     0x0D56
 #define GL_STENCIL_BITS                   0x0D57
 #define GL_TEXTURE_2D                     0x0DE1
+#define GL_COMPILE						  0x1300
+#define GL_COMPILE_AND_EXECUTE			  0x1301
 #define GL_BYTE                           0x1400
 #define GL_UNSIGNED_BYTE                  0x1401
 #define GL_SHORT                          0x1402
 #define GL_UNSIGNED_SHORT                 0x1403
+#define GL_INT                            0x1404
+#define GL_UNSIGNED_INT                   0x1405
 #define GL_FLOAT                          0x1406
 #define GL_FIXED                          0x140C
 #define GL_INVERT                         0x150A
@@ -286,6 +290,7 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha);
 void glBlendFunc(GLenum sfactor, GLenum dfactor);
 void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha);
 void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage);
+void glCallList(GLuint list);
 void glClear(GLbitfield mask);
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void glClearDepth(GLdouble depth);
@@ -323,6 +328,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indic
 void glEnable(GLenum cap);
 void glEnableClientState(GLenum array);
 void glEnd(void);
+void glEndList(void);
 void glFinish(void);
 void glFogf(GLenum pname, GLfloat param);
 void glFogfv(GLenum pname, const GLfloat *params);
@@ -333,6 +339,7 @@ void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLd
 void glGenBuffers(GLsizei n, GLuint *buffers);
 void glGenerateMipmap(GLenum target);
 void glGenFramebuffers(GLsizei n, GLuint *ids);
+GLuint glGenLists(GLsizei range);
 void glGenTextures(GLsizei n, GLuint *textures);
 void glGetBooleanv(GLenum pname, GLboolean *params);
 void glGetFloatv(GLenum pname, GLfloat *data);
@@ -349,6 +356,7 @@ void glLoadIdentity(void);
 void glLoadMatrixf(const GLfloat *m);
 void glMatrixMode(GLenum mode);
 void glMultMatrixf(const GLfloat *m);
+void glNewList(GLuint list, GLenum mode);
 void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
 void glPointSize(GLfloat size);
 void glPolygonMode(GLenum face, GLenum mode);

@@ -353,10 +353,10 @@ void glBegin(GLenum mode) {
 	if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
-#endif
-
+	
 	// Changing current openGL machine state
 	phase = MODEL_CREATION;
+#endif
 
 	// Translating primitive to sceGxm one
 	prim_extra = SCE_GXM_PRIMITIVE_NONE;
@@ -406,10 +406,10 @@ void glEnd(void) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 		return;
 	}
-#endif
-
+	
 	// Changing current openGL machine state
 	phase = NONE;
+#endif
 
 	// Checking if we can totally skip drawing cause of culling mode
 	if (no_polygons_mode && ((prim == SCE_GXM_PRIMITIVE_TRIANGLES) || (prim >= SCE_GXM_PRIMITIVE_TRIANGLE_STRIP))) {

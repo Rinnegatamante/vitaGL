@@ -27,7 +27,8 @@
 // Drawing phases constants for legacy openGL
 typedef enum glPhase {
 	NONE = 0,
-	MODEL_CREATION = 1
+	MODEL_CREATION = 1,
+	CMDLIST_CREATION = 2
 } glPhase;
 
 // Vertex array attributes struct
