@@ -2193,3 +2193,7 @@ void vglFree(void *addr) {
 void vglUseExtraMem(GLboolean use) {
 	use_extra_mem = use;
 }
+
+GLboolean vglHasRuntimeShaderCompiler(void) {
+	return is_shark_online;
+}
