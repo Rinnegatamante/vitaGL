@@ -509,10 +509,10 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 		case GL_TEXTURE_MAG_FILTER: // Mag Filter
 			switch (param) {
 			case GL_NEAREST:
-				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
 				break;
 			case GL_LINEAR:
-				tex_unit->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				tex_unit->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 				break;
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
