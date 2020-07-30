@@ -443,6 +443,7 @@ void vglStartRendering();
 void vglStopRendering();
 void vglStopRenderingInit();
 void vglStopRenderingTerm();
+void vglTexImageDepthBuffer(GLenum target);
 void vglUpdateCommonDialog();
 void vglUseVram(GLboolean usage);
 void vglUseVramForUSSE(GLboolean usage);

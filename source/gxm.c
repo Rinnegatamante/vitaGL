@@ -42,7 +42,7 @@ static void *gxm_shader_patcher_buffer_addr; // Shader PAtcher buffer memblock s
 static void *gxm_shader_patcher_vertex_usse_addr; // Shader Patcher vertex USSE memblock starting address
 static void *gxm_shader_patcher_fragment_usse_addr; // Shader Patcher fragment USSE memblock starting address
 
-static void *gxm_depth_surface_addr; // Depth surface memblock starting address
+void *gxm_depth_surface_addr; // Depth surface memblock starting address
 static void *gxm_stencil_surface_addr; // Stencil surface memblock starting address
 static SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil surfaces setup for sceGxm
 

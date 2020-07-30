@@ -110,6 +110,8 @@ typedef struct framebuffer {
 	vglMemType depth_buffer_mem_type;
 	void *stencil_buffer_addr;
 	vglMemType stencil_buffer_mem_type;
+	int width;
+	int height;
 } framebuffer;
 
 // Blending
