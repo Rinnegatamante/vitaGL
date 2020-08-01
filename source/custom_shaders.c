@@ -403,6 +403,10 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 }
 
 void glUniform1i(GLint location, GLint v0) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+	
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
@@ -423,6 +427,10 @@ void glUniform1i(GLint location, GLint v0) {
 }
 
 void glUniform1f(GLint location, GLfloat v0) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+	
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
@@ -441,6 +449,10 @@ void glUniform1f(GLint location, GLfloat v0) {
 }
 
 void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+	
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
@@ -459,6 +471,10 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 }
 
 void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+	
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
@@ -477,6 +493,10 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 }
 
 void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+	
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
@@ -496,6 +516,10 @@ void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
 }
 
 void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+	
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
@@ -514,6 +538,10 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 }
 
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+	
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
