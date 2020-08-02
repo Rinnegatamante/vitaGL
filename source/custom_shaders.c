@@ -426,6 +426,34 @@ void glUniform1i(GLint location, GLint v0) {
 	}
 }
 
+void glUniform2i(GLint location, GLint v0, GLint v1) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+	
+	// Grabbing passed uniform
+	uniform *u = (uniform *)location;
+	if (u->ptr == NULL)
+		return;
+
+	// Setting passed value to desired uniform
+	if (u->isVertex) {
+		if (vert_uniforms == NULL)
+			sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
+		float v0_f[2];
+		v0_f[0] = (float)v0;
+		v0_f[1] = (float)v1;
+		sceGxmSetUniformDataF(vert_uniforms, u->ptr, 0, 2, v0_f);
+	} else {
+		if (frag_uniforms == NULL)
+			sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &frag_uniforms);
+		float v0_f[2];
+		v0_f[0] = (float)v0;
+		v0_f[1] = (float)v1;
+		sceGxmSetUniformDataF(frag_uniforms, u->ptr, 0, 2, v0_f);
+	}
+}
+
 void glUniform1f(GLint location, GLfloat v0) {
 	// Checking if the uniform does exist
 	if (location == -1)
@@ -445,6 +473,34 @@ void glUniform1f(GLint location, GLfloat v0) {
 		if (frag_uniforms == NULL)
 			sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &frag_uniforms);
 		sceGxmSetUniformDataF(frag_uniforms, u->ptr, 0, 1, &v0);
+	}
+}
+
+void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+	
+	// Grabbing passed uniform
+	uniform *u = (uniform *)location;
+	if (u->ptr == NULL)
+		return;
+
+	// Setting passed value to desired uniform
+	if (u->isVertex) {
+		if (vert_uniforms == NULL)
+			sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
+		float v0_f[2];
+		v0_f[0] = v0;
+		v0_f[1] = v1;
+		sceGxmSetUniformDataF(vert_uniforms, u->ptr, 0, 2, v0_f);
+	} else {
+		if (frag_uniforms == NULL)
+			sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &frag_uniforms);
+		float v0_f[2];
+		v0_f[0] = v0;
+		v0_f[1] = v1;
+		sceGxmSetUniformDataF(frag_uniforms, u->ptr, 0, 2, v0_f);
 	}
 }
 
