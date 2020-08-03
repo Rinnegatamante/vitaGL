@@ -81,7 +81,6 @@ typedef struct texture_unit {
 	GLboolean color_array_state;
 	GLboolean texture_array_state;
 	matrix4x4 stack[GENERIC_STACK_DEPTH];
-	texture textures[TEXTURES_NUM];
 	vertexArray vertex_array;
 	vertexArray color_array;
 	vertexArray texture_array;
@@ -162,6 +161,7 @@ extern GLfloat pol_units; // Current units for glPolygonOffset
 
 // Texture Units
 extern texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
+extern texture textures[TEXTURES_NUM]; // Available texture slots
 extern int8_t server_texture_unit; // Current in use server side texture unit
 extern int8_t client_texture_unit; // Current in use client side texture unit
 extern palette *color_table; // Current in-use color table

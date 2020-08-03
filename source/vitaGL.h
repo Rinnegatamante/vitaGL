@@ -263,7 +263,7 @@ extern "C" {
 #define GL_COLOR_ATTACHMENT0                  0x8CE0
 #define GL_FRAMEBUFFER                        0x8D40
 
-#define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS   32
+#define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS   2
 #define GL_MAX_TEXTURE_LOD_BIAS               31
 
 // Aliases
