@@ -236,6 +236,8 @@ extern "C" {
 #define GL_ACTIVE_TEXTURE                     0x84E0
 #define GL_TEXTURE_LOD_BIAS                   0x8501
 #define GL_INCR_WRAP                          0x8507
+#define GL_NUM_COMPRESSED_TEXTURE_FORMATS     0x86A2
+#define GL_COMPRESSED_TEXTURE_FORMATS         0x86A3
 #define GL_MIRROR_CLAMP_EXT                   0x8742
 #define GL_DECR_WRAP                          0x8508
 #define GL_ARRAY_BUFFER                       0x8892
@@ -262,6 +264,8 @@ extern "C" {
 #define GL_DRAW_FRAMEBUFFER                   0x8CA9
 #define GL_COLOR_ATTACHMENT0                  0x8CE0
 #define GL_FRAMEBUFFER                        0x8D40
+#define GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG   0x9137
+#define GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG   0x9138
 
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS   2
 #define GL_MAX_TEXTURE_LOD_BIAS               31
@@ -308,6 +312,7 @@ void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid *data);
 void glCompileShader(GLuint shader);
+void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data); // Mipmap levels are ignored currently
 GLuint glCreateProgram(void);
 GLuint glCreateShader(GLenum shaderType);
 void glCullFace(GLenum mode);
@@ -364,7 +369,7 @@ void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length); // NOTE: Uses GXP shaders
-void glShaderSource(GLuint handle, GLsizei count, const GLchar * const *string, const GLint *length); // NOTE: Uses CG shader sources
+void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length); // NOTE: Uses CG shader sources
 void glStencilFunc(GLenum func, GLint ref, GLuint mask);
 void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask);
 void glStencilMask(GLuint mask);
@@ -401,7 +406,7 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
 // glu*
 void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
-	
+
 // VGL_EXT_gpu_objects_array extension
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
 void vglColorPointerMapped(GLenum type, const GLvoid *pointer);
