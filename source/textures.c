@@ -23,7 +23,6 @@
 
 #include "shared.h"
 
-
 texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
 texture textures[TEXTURES_NUM]; // Available texture slots
 palette *color_table = NULL; // Current in-use color table
@@ -208,14 +207,6 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
 			break;
-		case GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG:
-		case GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR;
-			break;
-		case GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG:
-		case GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR;
-			break;
 		case GL_RGB:
 			write_cb = writeRGB;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
@@ -261,7 +252,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			if (tex->write_cb)
 				gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb, fast_store);
 			else
-				gpu_alloc_compressed_texture(width, height, tex_format, data, tex, data_bpp, read_cb);
+				gpu_alloc_compressed_texture(width, height, tex_format, 0, data, tex, data_bpp, read_cb);
 		else
 			gpu_alloc_mipmaps(level, tex);
 
@@ -430,6 +421,84 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			ptr = ptr_line + stride;
 			ptr_line = ptr;
 		}
+
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+}
+
+void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data) {
+	// Setting some aliases to make code more readable
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
+	texture *tex = &textures[texture2d_idx];
+
+	SceGxmTextureFormat tex_format;
+
+#ifndef SKIP_ERROR_HANDLING
+	// Checking if texture is too big for sceGxm
+	if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+
+	// Checking if texture dimensions are not a power of two
+	if (((width & (width - 1)) != 0) || ((height & (height - 1)) != 0)) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+
+	// Ensure imageSize isn't zero.
+	if (imageSize == 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+	switch (target) {
+	case GL_TEXTURE_2D:
+		// Detecting proper write callback and texture format
+		switch (internalFormat) {
+		case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
+			break;
+		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
+			break;
+		case GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR;
+			break;
+		case GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR;
+			break;
+		case GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR;
+			break;
+		case GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR;
+			break;
+		case GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR;
+			break;
+		case GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+
+		// Allocating texture/mipmaps depending on user call
+		tex->type = internalFormat;
+		gpu_alloc_compressed_texture(width, height, tex_format, imageSize, data, tex, 0, NULL);
+
+		// Setting texture parameters
+		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex_unit->u_mode);
+		sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
+		sceGxmTextureSetMinFilter(&tex->gxm_tex, tex_unit->min_filter);
+		sceGxmTextureSetMagFilter(&tex->gxm_tex, tex_unit->mag_filter);
+		sceGxmTextureSetMipFilter(&tex->gxm_tex, tex_unit->mip_filter);
+		sceGxmTextureSetLodBias(&tex->gxm_tex, tex_unit->lod_bias);
 
 		break;
 	default:
