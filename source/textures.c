@@ -623,7 +623,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
 				break;
 			case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
-				tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
+				tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
 				break;
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
