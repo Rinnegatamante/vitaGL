@@ -193,6 +193,8 @@ extern "C" {
 #define GL_BLEND_DST_ALPHA                    0x80CA
 #define GL_BLEND_SRC_ALPHA                    0x80CB
 #define GL_COLOR_TABLE                        0x80D0
+#define GL_BGR                                0x80E0
+#define GL_BGRA                               0x80E1
 #define GL_COLOR_INDEX8_EXT                   0x80E5
 #define GL_CLAMP_TO_EDGE                      0x812F
 #define GL_RG                                 0x8227

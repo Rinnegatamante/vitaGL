@@ -153,6 +153,20 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			break;
 		}
 		break;
+	case GL_BGR:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			data_bpp = 3;
+			if (internalFormat == GL_BGR)
+				fast_store = GL_TRUE;
+			else
+				read_cb = readBGR;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+		break;
 	case GL_RGB:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
@@ -165,6 +179,20 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		case GL_UNSIGNED_SHORT_5_6_5:
 			data_bpp = 2;
 			read_cb = readRGB565;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+		break;
+	case GL_BGRA:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			data_bpp = 4;
+			if (internalFormat == GL_BGRA)
+				fast_store = GL_TRUE;
+			else
+				read_cb = readBGRA;
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
@@ -211,9 +239,17 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			write_cb = writeRGB;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
 			break;
+		case GL_BGR:
+			write_cb = writeBGR;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_RGB;
+			break;
 		case GL_RGBA:
 			write_cb = writeRGBA;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
+			break;
+		case GL_BGRA:
+			write_cb = writeBGRA;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
 			break;
 		case GL_LUMINANCE:
 			write_cb = writeR;
@@ -363,6 +399,17 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			break;
 		}
 		break;
+	case GL_BGR:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			data_bpp = 3;
+			read_cb = readBGR;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+		break;
 	case GL_RGBA:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
@@ -382,6 +429,17 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			break;
 		}
 		break;
+	case GL_BGRA:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			data_bpp = 4;
+			read_cb = readBGRA;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+		break;
 	}
 
 	switch (target) {
@@ -392,8 +450,14 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 		case GL_RGB:
 			write_cb = writeRGB;
 			break;
+		case GL_BGR:
+			write_cb = writeBGR;
+			break;
 		case GL_RGBA:
 			write_cb = writeRGBA;
+			break;
+		case GL_BGRA:
+			write_cb = writeBGRA;
 			break;
 		case GL_LUMINANCE:
 			write_cb = writeR;
