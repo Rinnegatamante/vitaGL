@@ -26,6 +26,8 @@ extern "C" {
 #include <vitasdk.h>
 #ifdef HAVE_SHARK
 #include <vitashark.h>
+#else
+#define shark_opt int32_t
 #endif
 
 // clang-format off
@@ -449,6 +451,7 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa);
 size_t vglMemFree(vglMemType type);
 void vglSetParamBufferSize(uint32_t size);
+void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, int32_t use_fastprecision, int32_t use_fastint);
 void vglStartRendering();
 void vglStopRendering();
 void vglStopRenderingInit();

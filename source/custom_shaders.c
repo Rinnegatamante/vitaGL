@@ -23,7 +23,7 @@
 
 #include "shared.h"
 
-#define MAX_CUSTOM_SHADERS 64 // Maximum number of linkable custom shaders
+#define MAX_CUSTOM_SHADERS 128 // Maximum number of linkable custom shaders
 #define MAX_SHADER_PARAMS 8 // Maximum number of parameters per custom shader
 
 // Internal stuffs
@@ -31,6 +31,14 @@ void *frag_uniforms = NULL;
 void *vert_uniforms = NULL;
 uint8_t use_shark = 1; // Flag to check if vitaShaRK should be initialized at vitaGL boot
 uint8_t is_shark_online = 0; // Current vitaShaRK status
+
+#ifdef HAVE_SHARK
+// Internal runtime shader compiler settings
+static int32_t compiler_fastmath = 0;
+static int32_t compiler_fastprecision = 0;
+static int32_t compiler_fastint = 0;
+static shark_opt compiler_opts = SHARK_OPT_DEFAULT;
+#endif
 
 GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
 
@@ -149,6 +157,12 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
  * - IMPLEMENTATION STARTS HERE -
  * ------------------------------
  */
+void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, int32_t use_fastprecision, int32_t use_fastint) {
+	compiler_opts = opt_level;
+	compiler_fastmath = use_fastmath;
+	compiler_fastprecision = use_fastprecision;
+	compiler_fastint = use_fastint;
+}
  
 void vglEnableRuntimeShaderCompiler(GLboolean usage) {
 	use_shark = usage;
@@ -262,7 +276,7 @@ void glCompileShader(GLuint handle) {
 	shader *s = &shaders[handle - 1];
 	
 	// Compiling shader source
-	s->prog = shark_compile_shader((const char*)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER);
+	s->prog = shark_compile_shader_extended((const char*)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 	if (s->prog) {
 		SceGxmProgram *res = (SceGxmProgram *)malloc(s->size);
 		memcpy_neon((void *)res, (void *)s->prog, s->size);
