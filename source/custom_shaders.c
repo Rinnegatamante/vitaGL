@@ -158,10 +158,12 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
  * ------------------------------
  */
 void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, int32_t use_fastprecision, int32_t use_fastint) {
+#ifdef HAVE_SHARK
 	compiler_opts = opt_level;
 	compiler_fastmath = use_fastmath;
 	compiler_fastprecision = use_fastprecision;
 	compiler_fastint = use_fastint;
+#endif
 }
  
 void vglEnableRuntimeShaderCompiler(GLboolean usage) {
