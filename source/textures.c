@@ -773,7 +773,7 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 			else if (param == GL_MIRRORED_REPEAT)
 				tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR; // Mirror
 			else if (param == GL_MIRROR_CLAMP_EXT)
-				tex_unit->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP; // Mirror Clamp
+				tex_unit->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP; // Mirror Clamp
 			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex_unit->v_mode);
 			break;
 		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
