@@ -47,7 +47,7 @@ void glGenTextures(GLsizei n, GLuint *res) {
 
 	// Reserving a texture and returning its id if available
 	int i, j = 0;
-	for (i = 0; i < TEXTURES_NUM; i++) {
+	for (i = 1; i < TEXTURES_NUM; i++) {
 		if (!(textures[i].used)) {
 			res[j++] = i;
 			textures[i].used = 1;
@@ -87,8 +87,11 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 	int j;
 	for (j = 0; j < n; j++) {
 		GLuint i = gl_textures[j];
-		textures[i].used = 0;
-		gpu_free_texture(&textures[i]);
+		if (i > 0) {
+			textures[i].used = 0;
+			gpu_free_texture(&textures[i]);
+			if (i == tex_unit->tex_id) tex_unit->tex_id = 0;
+		}
 	}
 }
 
