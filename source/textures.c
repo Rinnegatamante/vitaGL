@@ -42,12 +42,9 @@ void glGenTextures(GLsizei n, GLuint *res) {
 	}
 #endif
 
-	// Aliasing to make code more readable
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
-
 	// Reserving a texture and returning its id if available
 	int i, j = 0;
-	for (i = 0; i < TEXTURES_NUM; i++) {
+	for (i = 1; i < TEXTURES_NUM; i++) {
 		if (!(textures[i].used)) {
 			res[j++] = i;
 			textures[i].used = 1;
@@ -58,6 +55,13 @@ void glGenTextures(GLsizei n, GLuint *res) {
 }
 
 void glBindTexture(GLenum target, GLuint texture) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (texture == 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
 	// Aliasing to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 
@@ -80,13 +84,12 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 	}
 #endif
 
-	// Aliasing to make code more readable
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
-
 	// Deallocating given textures and invalidating used texture ids
 	int j;
 	for (j = 0; j < n; j++) {
 		GLuint i = gl_textures[j];
+		if (i == 0)
+			continue;
 		textures[i].used = 0;
 		gpu_free_texture(&textures[i]);
 	}
