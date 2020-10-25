@@ -32,10 +32,10 @@ static void *fragment_usse_ring_buffer_addr; // fragment USSE ring buffer memblo
 
 static SceGxmRenderTarget *gxm_render_target; // Display render target
 static SceGxmColorSurface gxm_color_surfaces[DISPLAY_BUFFER_COUNT]; // Display color surfaces
-static void *gxm_color_surfaces_addr[DISPLAY_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
+void *gxm_color_surfaces_addr[DISPLAY_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
 static SceGxmSyncObject *gxm_sync_objects[DISPLAY_BUFFER_COUNT]; // Display sync objects
-static unsigned int gxm_front_buffer_index; // Display front buffer id
-static unsigned int gxm_back_buffer_index; // Display back buffer id
+unsigned int gxm_front_buffer_index; // Display front buffer id
+unsigned int gxm_back_buffer_index; // Display back buffer id
 static unsigned int gxm_scene_flags = 0; // Current gxm scene flags
 
 static void *gxm_shader_patcher_buffer_addr; // Shader PAtcher buffer memblock starting address
