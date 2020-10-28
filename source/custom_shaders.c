@@ -136,19 +136,22 @@ void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean imp
 static char *shark_log = NULL;
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	uint8_t append = shark_log != NULL;
-	uint32_t size = (append ? strlen(shark_log) : 0) + strlen(msg);
-	shark_log = append ? realloc(shark_log, size) : malloc(size);
+	char newline[1024];
 	switch (msg_level) {
 	case SHARK_LOG_INFO:
-		sprintf(shark_log, "%s%sI] %s on line %d", append ? shark_log : "", append ? "\n" : "", msg, line);
+		sprintf(newline, "%sI] %s on line %d", append ? "\n" : "", msg, line);
 		break;
 	case SHARK_LOG_WARNING:
-		sprintf(shark_log, "%s%sW] %s on line %d", append ? shark_log : "", append ? "\n" : "", msg, line);
+		sprintf(newline, "%sW] %s on line %d", append ? "\n" : "", msg, line);
 		break;
 	case SHARK_LOG_ERROR:
-		sprintf(shark_log, "%s%sE] %s on line %d", append ? shark_log : "", append ? "\n" : "", msg, line);
+		sprintf(newline, "%sE] %s on line %d", append ? "\n" : "", msg, line);
 		break;
 	}
+	uint32_t size = (append ? strlen(shark_log) : 0) + strlen(newline);
+	shark_log = realloc(shark_log, size + 1);
+	if (append) sprintf(shark_log, "%s%s", shark_log, newline);
+	else strcpy(shark_log, newline);
 }
 #endif
 
