@@ -369,30 +369,30 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 	// Allocating texture data buffer
 	void *texture_data = gpu_alloc_mapped(tex_size, &tex->mtype);
 
-	// NOTE: Supports only GL_RGBA source format for now
-
 	// Initializing texture data buffer
 	if (texture_data != NULL) {
-		// Initializing texture data buffer
 		if (data != NULL) {
 			if (read_cb != NULL) {
-				//void *tmp = malloc(w * h * 4);
-				//void *tmp2 = malloc(tex_size);
-				/*int i, j;
-				uint8_t *src = (uint8_t *)data;
-				uint32_t *dst = (uint32_t*)tmp;
-				for (i = 0; i < h * w; i++) {
-					uint32_t clr = read_cb(src);
-					writeRGBA(dst++, src);
-					src += src_bpp;
-				}*/
+				void *temp = (void *)data;
+				
+				// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
+				if (read_cb != readRGBA) {
+					temp = malloc(w * h * 4);
+					uint8_t *src = (uint8_t *)data;
+					uint32_t *dst = (uint32_t *)temp;
+					int i;
+					for (i = 0; i < w * h; i++) {
+						uint32_t clr = read_cb(src);
+						writeRGBA(dst++, clr);
+						src += src_bpp;
+					}
+				}
 
 				// Performing swizzling and DXT compression
-				dxt_compress(texture_data, (void *)data, w, h, alignment == 16);
-
-				//swizzle(texture_data, tmp2, w, h, alignment << 3);
-				//free(tmp);
-				//free(tmp2);
+				dxt_compress(texture_data, temp, w, h, alignment == 16);
+				
+				// Freeing temporary data if necessary
+				if (read_cb != readRGBA) free(temp);
 			} else {
 				// Perform swizzling if necessary.
 				switch (format) {
