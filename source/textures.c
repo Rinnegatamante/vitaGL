@@ -51,7 +51,7 @@ void glGenTextures(GLsizei n, GLuint *res) {
 		if (!(textures[i].used)) {
 			res[j++] = i;
 			textures[i].used = 1;
-			
+
 			// Resetting texture parameters to their default values
 			textures[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 			textures[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
@@ -97,7 +97,7 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 		GLuint i = gl_textures[j];
 		if (i > 0) {
 			textures[i].used = 0;
-			
+
 			// Resetting texture parameters to their default values
 			textures[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 			textures[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
@@ -105,9 +105,10 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 			textures[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 			textures[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 			textures[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
-			
+
 			gpu_free_texture(&textures[i]);
-			if (i == tex_unit->tex_id) tex_unit->tex_id = 0;
+			if (i == tex_unit->tex_id)
+				tex_unit->tex_id = 0;
 		}
 	}
 }

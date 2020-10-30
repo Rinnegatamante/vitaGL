@@ -189,7 +189,7 @@ void vglTexImageDepthBuffer(GLenum target) {
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	texture *tex = &textures[texture2d_idx];
-	
+
 	switch (target) {
 	case GL_TEXTURE_2D:
 		{

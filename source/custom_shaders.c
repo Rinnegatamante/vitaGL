@@ -150,8 +150,10 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	}
 	uint32_t size = (append ? strlen(shark_log) : 0) + strlen(newline);
 	shark_log = realloc(shark_log, size + 1);
-	if (append) sprintf(shark_log, "%s%s", shark_log, newline);
-	else strcpy(shark_log, newline);
+	if (append)
+		sprintf(shark_log, "%s%s", shark_log, newline);
+	else
+		strcpy(shark_log, newline);
 }
 #endif
 
@@ -168,7 +170,7 @@ void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, in
 	compiler_fastint = use_fastint;
 #endif
 }
- 
+
 void vglEnableRuntimeShaderCompiler(GLboolean usage) {
 	use_shark = usage;
 }
@@ -208,7 +210,7 @@ GLuint glCreateShader(GLenum shaderType) {
 void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
-	
+
 	switch (pname) {
 	case GL_SHADER_TYPE:
 		*params = s->type;
@@ -234,26 +236,26 @@ void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLcha
 
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
-	
+
 	if (s->log) {
 		*length = min(strlen(s->log), maxLength);
 		memcpy_neon(infoLog, s->log, *length);
 	}
 }
 
-void glShaderSource(GLuint handle, GLsizei count, const GLchar * const *string, const GLint *length) {
+void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length) {
 #ifndef SKIP_ERROR_HANDLING
 	if (count < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-    if (!is_shark_online) {
+	if (!is_shark_online) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
-	
+
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
-	
+
 	// Temporarily setting prog to point to the shader source
 	s->prog = (SceGxmProgram *)*string;
 	s->size = length ? *length : strlen(*string);
@@ -279,9 +281,9 @@ void glCompileShader(GLuint handle) {
 #ifdef HAVE_SHARK
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
-	
+
 	// Compiling shader source
-	s->prog = shark_compile_shader_extended((const char*)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
+	s->prog = shark_compile_shader_extended((const char *)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 	if (s->prog) {
 		SceGxmProgram *res = (SceGxmProgram *)malloc(s->size);
 		memcpy_neon((void *)res, (void *)s->prog, s->size);
@@ -305,7 +307,8 @@ void glDeleteShader(GLuint shad) {
 	if (s->valid) {
 		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
 		free((void *)s->prog);
-		if (s->log) free(s->log);
+		if (s->log)
+			free(s->log);
 	}
 	s->log = NULL;
 	s->valid = GL_FALSE;
@@ -389,7 +392,7 @@ void glLinkProgram(GLuint progr) {
 void glUseProgram(GLuint prog) {
 	// Setting current custom program to passed program
 	cur_program = prog;
-			
+
 	// Setting in-use vertex and fragment program in sceGxm
 	reloadCustomShader();
 }
@@ -408,12 +411,12 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 		res->ptr = sceGxmProgramFindParameterByName(p->fshader->prog, name);
 		res->isVertex = GL_FALSE;
 	}
-	
+
 	if (res->ptr == NULL) {
 		free(res);
 		return -1;
 	}
-		
+
 	if (p->last_uniform != NULL)
 		p->last_uniform->chain = (void *)res;
 	p->last_uniform = res;
@@ -425,7 +428,7 @@ void glUniform1i(GLint location, GLint v0) {
 	// Checking if the uniform does exist
 	if (location == -1)
 		return;
-	
+
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
@@ -449,7 +452,7 @@ void glUniform2i(GLint location, GLint v0, GLint v1) {
 	// Checking if the uniform does exist
 	if (location == -1)
 		return;
-	
+
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
@@ -477,7 +480,7 @@ void glUniform1f(GLint location, GLfloat v0) {
 	// Checking if the uniform does exist
 	if (location == -1)
 		return;
-	
+
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
@@ -499,7 +502,7 @@ void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
 	// Checking if the uniform does exist
 	if (location == -1)
 		return;
-	
+
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
@@ -527,7 +530,7 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1)
 		return;
-	
+
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
@@ -549,7 +552,7 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1)
 		return;
-	
+
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
@@ -571,14 +574,14 @@ void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
 	// Checking if the uniform does exist
 	if (location == -1)
 		return;
-	
+
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
 		return;
 
 	// Setting passed value to desired uniform
-	float v[4] = {v0, v1, v2, v3};
+	float v[4] = { v0, v1, v2, v3 };
 	if (u->isVertex) {
 		if (vert_uniforms == NULL)
 			sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vert_uniforms);
@@ -594,7 +597,7 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1)
 		return;
-	
+
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
@@ -616,7 +619,7 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 	// Checking if the uniform does exist
 	if (location == -1)
 		return;
-	
+
 	// Grabbing passed uniform
 	uniform *u = (uniform *)location;
 	if (u->ptr == NULL)
@@ -649,7 +652,8 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 
 	// Looking for desired parameter in requested program
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
-	if (param == NULL) return;
+	if (param == NULL)
+		return;
 
 	// Setting stream index and offset values
 	attributes->streamIndex = index;
@@ -695,7 +699,8 @@ GLint vglBindPackedAttribLocation(GLuint prog, const GLchar *name, const GLuint 
 
 	// Looking for desired parameter in requested program
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
-	if (param == NULL) return GL_FALSE;
+	if (param == NULL)
+		return GL_FALSE;
 
 	// Setting stream index and offset values
 	attributes->streamIndex = 0;
@@ -729,7 +734,7 @@ GLint vglBindPackedAttribLocation(GLuint prog, const GLchar *name, const GLuint 
 	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	p->stream_num = 1;
 	p->attr_num++;
-	
+
 	return GL_TRUE;
 }
 

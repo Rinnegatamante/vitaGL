@@ -105,7 +105,7 @@ static void display_queue_callback(const void *callbackData) {
 void initGxm(void) {
 	if (gxm_initialized)
 		return;
-	
+
 	// Initializing runtime shader compiler
 	if (use_shark) {
 #ifdef HAVE_SHARK
@@ -119,7 +119,7 @@ void initGxm(void) {
 #endif
 			is_shark_online = 0;
 	}
-	
+
 	// Checking if the running application is a system one
 	SceAppMgrBudgetInfo info;
 	info.size = sizeof(SceAppMgrBudgetInfo);
@@ -197,7 +197,8 @@ void termGxmContext(void) {
 	}
 #ifdef HAVE_SHARK
 	// Shutting down runtime shader compiler
-	if (is_shark_online) shark_end();
+	if (is_shark_online)
+		shark_end();
 #endif
 }
 

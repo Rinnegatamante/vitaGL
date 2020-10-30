@@ -374,7 +374,7 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 		if (data != NULL) {
 			if (read_cb != NULL) {
 				void *temp = (void *)data;
-				
+
 				// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
 				if (read_cb != readRGBA) {
 					temp = malloc(w * h * 4);
@@ -390,9 +390,10 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 
 				// Performing swizzling and DXT compression
 				dxt_compress(texture_data, temp, w, h, alignment == 16);
-				
+
 				// Freeing temporary data if necessary
-				if (read_cb != readRGBA) free(temp);
+				if (read_cb != readRGBA)
+					free(temp);
 			} else {
 				// Perform swizzling if necessary.
 				switch (format) {

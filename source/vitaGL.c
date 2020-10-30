@@ -705,7 +705,7 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 
 	// Mapping newlib heap into sceGxm
 	sceGxmMapMemory(addr, _newlib_heap_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
-	
+
 	// Allocating default texture object
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 }
