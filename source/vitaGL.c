@@ -175,6 +175,9 @@ static int index_array_unit = -1; // Current in-use index array unit
 
 vector4f texenv_color = { 0.0f, 0.0f, 0.0f, 0.0f }; // Current in use texture environment color
 
+void *_newlib_heap_addr_start = NULL;
+void *_newlib_heap_addr_end = NULL;
+
 // Internal functions
 
 #ifdef ENABLE_LOG
@@ -700,11 +703,11 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 	resetScissorTestRegion();
 
 	// Getting newlib heap memblock starting address
-	void *addr = NULL;
-	sceKernelGetMemBlockBase(_newlib_heap_memblock, &addr);
+	sceKernelGetMemBlockBase(_newlib_heap_memblock, &_newlib_heap_addr_start);
+	_newlib_heap_addr_end = _newlib_heap_addr_start + _newlib_heap_size;
 
 	// Mapping newlib heap into sceGxm
-	sceGxmMapMemory(addr, _newlib_heap_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	sceGxmMapMemory(_newlib_heap_addr_start, _newlib_heap_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
 	
 	// Allocating default texture object
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);

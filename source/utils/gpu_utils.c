@@ -30,6 +30,9 @@
 #define CEIL(a) ((a - (int)a) == 0 ? (int)a : (int)a + 1)
 #endif
 
+extern void *_newlib_heap_addr_start;
+extern void *_newlib_heap_addr_end;
+
 // VRAM usage setting
 uint8_t use_vram = 0;
 uint8_t use_vram_for_usse = 0;
@@ -99,7 +102,7 @@ void swizzle_compressed_texture(uint8_t *dst, uint8_t *src, int w, int h, int is
 		if (offs_y * (ispvrt2bpp ? 8 : 4) >= w)
 			continue;
 		memcpy(dst, src + offs_y * blocksize + offs_x * (w / (ispvrt2bpp ? 8 : 4)) * blocksize, blocksize);
-		dst += isdxt5 ? 16 : 8;
+		dst += blocksize;
 	}
 }
 
@@ -245,6 +248,18 @@ int tex_format_to_alignment(SceGxmTextureFormat format) {
 	}
 }
 
+SceGxmTransferFormat tex_format_to_transfer_format(SceGxmTextureFormat format) {
+	// Calculating bpp for the requested texture format
+	switch (format) {
+	case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
+		return SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR;
+	case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
+		return SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR;
+	default:
+		return -1;
+	}
+}
+
 palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 	// Allocating a palette object
 	palette *res = (palette *)malloc(sizeof(palette));
@@ -273,49 +288,76 @@ void gpu_free_texture(texture *tex) {
 	tex->valid = 0;
 }
 
-void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), uint8_t fast_store) {
+int gpu_fast_texture_conv(uint32_t w, uint32_t h, uint32_t stride, const void *src, void *dst, uint8_t src_bpp, SceGxmTransferFormat src_format, SceGxmTransferFormat dst_format) {
+	if (src >= _newlib_heap_addr_start && src < _newlib_heap_addr_end) {
+		sceGxmTransferCopy(w, h, 0, SCE_GXM_COLOR_MASK_NONE,
+			SCE_GXM_TRANSFER_COLORKEY_NONE,
+			src_format,
+			SCE_GXM_TRANSFER_LINEAR,
+			src, 0, 0, w * src_bpp,
+			dst_format,
+			SCE_GXM_TRANSFER_LINEAR,
+			dst, 0, 0, stride,
+			NULL, 0, NULL);
+		return 0;
+	} else {
+		// TODO: Figure out if it's worth an alloc+memcpy+transfer instead of a callbacks conversion
+		// Or else found out a proper way to ensure source is mapped in sceGxm (mapping thread stacks at boot?)
+		return 1;
+	}
+	return 1;
+}
+
+void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTransferFormat src_format, SceGxmTextureFormat dst_format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), uint8_t fast_store) {
 	// If there's already a texture in passed texture object we first dealloc it
 	if (tex->valid)
 		gpu_free_texture(tex);
 
 	// Getting texture format bpp
-	uint8_t bpp = tex_format_to_bytespp(format);
-
+	uint8_t bpp = tex_format_to_bytespp(dst_format);
+	
 	// Allocating texture data buffer
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 	const int tex_size = ALIGN(w, 8) * h * bpp;
 	void *texture_data = gpu_alloc_mapped(tex_size, &tex->mtype);
 
 	if (texture_data != NULL) {
+		SceGxmTransferFormat dst_fmt = tex_format_to_transfer_format(dst_format);
+		
 		// Initializing texture data buffer
 		if (data != NULL) {
-			int i, j;
-			uint8_t *src = (uint8_t *)data;
-			uint8_t *dst;
-			if (fast_store) { // Internal Format and Data Format are the same, we can just use memcpy_neon for better performance
-				uint32_t line_size = w * bpp;
-				for (i = 0; i < h; i++) {
-					dst = ((uint8_t *)texture_data) + (ALIGN(w, 8) * bpp) * i;
-					memcpy_neon(dst, src, line_size);
-					src += line_size;
-				}
-			} else { // Different internal and data formats, we need to go with slower callbacks system
-				for (i = 0; i < h; i++) {
-					dst = ((uint8_t *)texture_data) + (ALIGN(w, 8) * bpp) * i;
-					for (j = 0; j < w; j++) {
-						uint32_t clr = read_cb(src);
-						write_cb(dst, clr);
-						src += src_bpp;
-						dst += bpp;
+			if (dst_fmt < 0 || src_format < 0 || gpu_fast_texture_conv(w, h, ALIGN(w, 8) * bpp, data, texture_data, src_bpp, src_format, dst_fmt)) { // Use sceGxmTransfer if possible for faster csc
+				
+				// Fallback to texture callbacks if sceGxmTransfer is unusable
+				int i, j;
+				uint8_t *src = (uint8_t *)data;
+				uint8_t *dst;
+				if (fast_store) { // Internal Format and Data Format are the same, we can just use memcpy_neon for better performance
+					uint32_t line_size = w * bpp;
+					for (i = 0; i < h; i++) {
+						dst = ((uint8_t *)texture_data) + (ALIGN(w, 8) * bpp) * i;
+						memcpy_neon(dst, src, line_size);
+						src += line_size;
+					}
+				} else { // Different internal and data formats, we need to go with slower callbacks system
+					for (i = 0; i < h; i++) {
+						dst = ((uint8_t *)texture_data) + (ALIGN(w, 8) * bpp) * i;
+						for (j = 0; j < w; j++) {
+							uint32_t clr = read_cb(src);
+							write_cb(dst, clr);
+							src += src_bpp;
+							dst += bpp;
+						}
 					}
 				}
+				
 			}
 		} else
-			memset(texture_data, 0, tex_size);
+			sceGxmTransferFill(0, dst_fmt, texture_data, 0, 0, w, h, ALIGN(w, 8) * bpp, NULL, 0, NULL);
 
 		// Initializing texture and validating it
-		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, w, h, 0);
-		if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8)
+		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, dst_format, w, h, 0);
+		if ((dst_format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8)
 			tex->palette_UID = 1;
 		else
 			tex->palette_UID = 0;
@@ -324,19 +366,19 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	}
 }
 
-void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *)) {
+void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTransferFormat src_format, SceGxmTextureFormat dst_format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *)) {
 	// If there's already a texture in passed texture object we first dealloc it
 	if (tex->valid)
 		gpu_free_texture(tex);
 
 	// Getting texture format alignment
-	uint8_t alignment = tex_format_to_alignment(format);
+	uint8_t alignment = tex_format_to_alignment(dst_format);
 
 	// Calculating swizzled compressed texture size on memory
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 
 	int tex_size = 0;
-	switch (format) {
+	switch (dst_format) {
 	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
 	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
 		tex_size = (MAX(w, 8) * MAX(h, 8) * 2 + 7) / 8;
@@ -378,13 +420,15 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 				// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
 				if (read_cb != readRGBA) {
 					temp = malloc(w * h * 4);
-					uint8_t *src = (uint8_t *)data;
-					uint32_t *dst = (uint32_t *)temp;
-					int i;
-					for (i = 0; i < w * h; i++) {
-						uint32_t clr = read_cb(src);
-						writeRGBA(dst++, clr);
-						src += src_bpp;
+					if (src_format < 0 || gpu_fast_texture_conv(w, h, w * 4, data, temp, src_bpp, src_format, SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR)) {
+						uint8_t *src = (uint8_t *)data;
+						uint32_t *dst = (uint32_t *)temp;
+						int i;
+						for (i = 0; i < w * h; i++) {
+							uint32_t clr = read_cb(src);
+							writeRGBA(dst++, clr);
+							src += src_bpp;
+						}
 					}
 				}
 
@@ -395,7 +439,7 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 				if (read_cb != readRGBA) free(temp);
 			} else {
 				// Perform swizzling if necessary.
-				switch (format) {
+				switch (dst_format) {
 				case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
 				case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
 				case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
@@ -418,7 +462,7 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 			memset(texture_data, 0, tex_size);
 
 		// Initializing texture and validating it
-		sceGxmTextureInitSwizzled(&tex->gxm_tex, texture_data, format, w, h, 0);
+		sceGxmTextureInitSwizzled(&tex->gxm_tex, texture_data, dst_format, w, h, 0);
 		tex->palette_UID = 0;
 		tex->valid = 1;
 		tex->data = texture_data;
@@ -520,7 +564,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 				curSrcStride * bpp,
 				fmt, dstPtr, 0, 0,
 				curDstStride * bpp,
-				NULL, SCE_GXM_TRANSFER_FRAGMENT_SYNC, NULL);
+				NULL, 0, NULL);
 			curPtr = dstPtr;
 			curWidth /= 2;
 			curHeight /= 2;
