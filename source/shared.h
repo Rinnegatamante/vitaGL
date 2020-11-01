@@ -166,6 +166,8 @@ extern uint16_t *depth_clear_indices; // Memblock starting address for clear scr
 extern SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
 extern vector4f *clear_vertices; // Memblock starting address for clear screen vertices
 
+extern GLboolean fast_texture_compression; // Hints for texture compression
+
 /* gxm.c */
 void initGxm(void); // Inits sceGxm
 void initGxmContext(void); // Inits sceGxm context

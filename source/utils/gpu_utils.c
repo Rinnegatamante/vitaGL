@@ -81,7 +81,7 @@ void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
 		if (offs_y * 4 >= w)
 			continue;
 		extract_block(src + offs_y * 16 + offs_x * w * 16, w, block);
-		stb_compress_dxt_block(dst, block, isdxt5, STB_DXT_HIGHQUAL);
+		stb_compress_dxt_block(dst, block, isdxt5, fast_texture_compression ? STB_DXT_NORMAL : STB_DXT_HIGHQUAL);
 		dst += isdxt5 ? 16 : 8;
 	}
 }
