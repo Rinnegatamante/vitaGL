@@ -528,11 +528,6 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 
-	// Checking if texture dimensions are not a power of two
-	if (((width & (width - 1)) != 0) || ((height & (height - 1)) != 0)) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-
 	// Ensure imageSize isn't zero.
 	if (imageSize == 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -541,7 +536,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 
 	switch (target) {
 	case GL_TEXTURE_2D:
-		// Detecting proper write callback and texture format
+		// Detecting proper texture format
 		switch (internalFormat) {
 		case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
 		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
