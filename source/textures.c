@@ -24,7 +24,7 @@
 #include "shared.h"
 
 texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
-texture textures[TEXTURES_NUM]; // Available texture slots
+texture texture_slots[TEXTURES_NUM]; // Available texture slots
 palette *color_table = NULL; // Current in-use color table
 int8_t server_texture_unit = 0; // Current in use server side texture unit
 
@@ -48,17 +48,17 @@ void glGenTextures(GLsizei n, GLuint *res) {
 	// Reserving a texture and returning its id if available
 	int i, j = 0;
 	for (i = 1; i < TEXTURES_NUM; i++) {
-		if (!(textures[i].used)) {
+		if (!(texture_slots[i].used)) {
 			res[j++] = i;
-			textures[i].used = 1;
+			texture_slots[i].used = 1;
 
 			// Resetting texture parameters to their default values
-			textures[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			textures[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			textures[i].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-			textures[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-			textures[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-			textures[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
+			texture_slots[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+			texture_slots[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+			texture_slots[i].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+			texture_slots[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+			texture_slots[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+			texture_slots[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
 		}
 		if (j >= n)
 			break;
@@ -96,17 +96,17 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 	for (j = 0; j < n; j++) {
 		GLuint i = gl_textures[j];
 		if (i > 0) {
-			textures[i].used = 0;
+			texture_slots[i].used = 0;
 
 			// Resetting texture parameters to their default values
-			textures[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			textures[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			textures[i].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-			textures[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-			textures[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-			textures[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
+			texture_slots[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+			texture_slots[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+			texture_slots[i].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+			texture_slots[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+			texture_slots[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+			texture_slots[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
 
-			gpu_free_texture(&textures[i]);
+			gpu_free_texture(&texture_slots[i]);
 			if (i == tex_unit->tex_id)
 				tex_unit->tex_id = 0;
 		}
@@ -117,7 +117,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &texture_slots[texture2d_idx];
 
 	SceGxmTextureFormat tex_format;
 	uint8_t data_bpp = 0;
@@ -336,7 +336,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *target_texture = &textures[texture2d_idx];
+	texture *target_texture = &texture_slots[texture2d_idx];
 
 	// Calculating implicit texture stride and start address of requested texture modification
 	uint32_t orig_w = sceGxmTextureGetWidth(&target_texture->gxm_tex);
@@ -518,7 +518,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &texture_slots[texture2d_idx];
 
 	SceGxmTextureFormat tex_format;
 
@@ -625,7 +625,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
 	case GL_TEXTURE_2D:
@@ -735,7 +735,7 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
 	case GL_TEXTURE_2D:
@@ -826,7 +826,7 @@ void glGenerateMipmap(GLenum target) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &texture_slots[texture2d_idx];
 
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if current texture is valid
@@ -947,7 +947,7 @@ void *vglGetTexDataPointer(GLenum target) {
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
 	case GL_TEXTURE_2D:
@@ -965,7 +965,7 @@ SceGxmTexture *vglGetGxmTexture(GLenum target) {
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
 	case GL_TEXTURE_2D:

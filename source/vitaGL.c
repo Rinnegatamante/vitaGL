@@ -683,8 +683,8 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 
 	// Init texture slots
 	for (j = 0; j < TEXTURES_NUM; j++) {
-		textures[j].used = 0;
-		textures[j].valid = 0;
+		texture_slots[j].used = 0;
+		texture_slots[j].valid = 0;
 	}
 
 	// Init custom shaders
@@ -1351,7 +1351,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 			}
 
 			if (tex_unit->texture_array_state) {
-				if (!(textures[texture2d_idx].valid))
+				if (!(texture_slots[texture2d_idx].valid))
 					return;
 				if (tex_unit->color_array_state) {
 					sceGxmSetVertexProgram(gxm_context, texture2d_rgba_vertex_program_patched);
@@ -1414,7 +1414,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_mv, 0, 16, (const float *)modelview_matrix);
 				}
-				sceGxmSetFragmentTexture(gxm_context, 0, &textures[texture2d_idx].gxm_tex);
+				sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
 				vector3f *vertices = NULL;
 				vector2f *uv_map = NULL;
 				vector4f *colors = NULL;
@@ -1643,7 +1643,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 			}
 
 			if (tex_unit->texture_array_state) {
-				if (!(textures[texture2d_idx].valid))
+				if (!(texture_slots[texture2d_idx].valid))
 					return;
 				if (tex_unit->color_array_state) {
 					sceGxmSetVertexProgram(gxm_context, texture2d_rgba_vertex_program_patched);
@@ -1706,7 +1706,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
 					sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_mv, 0, 16, (const float *)modelview_matrix);
 				}
-				sceGxmSetFragmentTexture(gxm_context, 0, &textures[texture2d_idx].gxm_tex);
+				sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
 				vector3f *vertices = NULL;
 				vector2f *uv_map = NULL;
 				vector4f *colors = NULL;
@@ -2103,13 +2103,13 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	if (!skip_draw) {
 		if (cur_program != 0) {
 			_vglDrawObjects_CustomShadersIMPL(mode, count, implicit_wvp);
-			sceGxmSetFragmentTexture(gxm_context, 0, &textures[texture2d_idx].gxm_tex);
+			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
 
 			// TEXUNIT1 support for custom shaders
 			texture_unit *tex_unit2 = &texture_units[client_texture_unit + 1];
 			int texture2d_idx2 = tex_unit2->tex_id;
-			if (textures[texture2d_idx2].valid)
-				sceGxmSetFragmentTexture(gxm_context, 1, &textures[texture2d_idx2].gxm_tex);
+			if (texture_slots[texture2d_idx2].valid)
+				sceGxmSetFragmentTexture(gxm_context, 1, &texture_slots[texture2d_idx2].gxm_tex);
 
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 		} else {
@@ -2119,7 +2119,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 					mvp_modified = GL_FALSE;
 				}
 				if (tex_unit->texture_array_state) {
-					if (!(textures[texture2d_idx].valid))
+					if (!(texture_slots[texture2d_idx].valid))
 						return;
 					if (tex_unit->color_array_state) {
 						if (tex_unit->color_object_type == GL_FLOAT)
@@ -2190,7 +2190,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
 						sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_mv, 0, 16, (const float *)modelview_matrix);
 					}
-					sceGxmSetFragmentTexture(gxm_context, 0, &textures[texture2d_idx].gxm_tex);
+					sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
 					sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
 					sceGxmSetVertexStream(gxm_context, 1, tex_unit->texture_object);
 					if (tex_unit->color_array_state)

@@ -139,7 +139,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 	}
 
 	// Aliasing to make code more readable
-	texture *tex = &textures[tex_id];
+	texture *tex = &texture_slots[tex_id];
 
 	// Extracting texture sizes
 	fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
@@ -188,7 +188,7 @@ void vglTexImageDepthBuffer(GLenum target) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
-	texture *tex = &textures[texture2d_idx];
+	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
 	case GL_TEXTURE_2D:
