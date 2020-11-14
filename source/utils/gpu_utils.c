@@ -105,6 +105,7 @@ void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int aligned_width, i
 	}
 }
 
+// Swizzles precompressed texture data. Also handles striding of compressed data.
 void swizzle_compressed_texture(uint8_t *dst, uint8_t *src, int w, int h, int aligned_width, int aligned_height, int isdxt5, int ispvrt2bpp) {
 	int blocksize = isdxt5 ? 16 : 8;
 
@@ -113,16 +114,20 @@ void swizzle_compressed_texture(uint8_t *dst, uint8_t *src, int w, int h, int al
 	uint64_t d, offs_x, offs_y;
 	for (d = 0; d < num_blocks; d++) {
 		d2xy_morton(d, &offs_x, &offs_y);
+		// If the block coords exceed input texture dimensions.
 		if (offs_x * 4 >= h) {
+			// If the block coord is smaller than the Po2 aligned dimension, skip forward one block.
 			if (offs_x * 4 < aligned_height)
 				dst += isdxt5 ? 16 : 8;
 			continue;
 		}
+
 		if (offs_y * (ispvrt2bpp ? 8 : 4) >= w) {
 			if (offs_y * (ispvrt2bpp ? 8 : 4) < aligned_width)
 				dst += isdxt5 ? 16 : 8;
 			continue;
 		}
+
 		memcpy(dst, src + offs_y * blocksize + offs_x * (w / (ispvrt2bpp ? 8 : 4)) * blocksize, blocksize);
 		dst += isdxt5 ? 16 : 8;
 	}
@@ -310,6 +315,9 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 	const int tex_size = ALIGN(w, 8) * h * bpp;
 	void *texture_data = gpu_alloc_mapped(tex_size, &tex->mtype);
+	if (texture_data == NULL) {
+		SET_GL_ERROR(GL_OUT_OF_MEMORY)
+	}
 
 	if (texture_data != NULL) {
 		// Initializing texture data buffer
@@ -360,9 +368,7 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 	// Getting texture format alignment
 	uint8_t alignment = tex_format_to_alignment(format);
 
-	// Calculating swizzled compressed texture size on memory
-	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-
+	// Get the closest power of 2 dimensions for the texture.
 	uint32_t aligned_width = nearest_power_of_2(w);
 	uint32_t aligned_height = nearest_power_of_2(h);
 
@@ -391,6 +397,7 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 	}
 
 #ifndef SKIP_ERROR_HANDLING
+	// Calculate and check the expected size of the texture data.
 	int expected_tex_size = 0;
 	switch (format) {
 	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
@@ -407,6 +414,7 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 	case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR:
 		expected_tex_size = CEIL(w / 4.0) * CEIL(h / 4.0) * 8.0;
 		break;
+	case SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
 		expected_tex_size = (w * h) / 2;
 		break;
@@ -418,6 +426,27 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 	// Check the given texture data size.
 	if (image_size != 0 && image_size != expected_tex_size) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+
+	// Ensure the texture's width and height are block aligned.
+	switch (format) {
+	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
+	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
+	case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR:
+	case SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR:
+	case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
+	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
+		if ((w % 4 != 0) || (h % 4 != 0)) {
+			SET_GL_ERROR(GL_INVALID_VALUE)
+		} 
+		break;
+	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
+	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
+	case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
+		if ((w % 8 != 0) || (h % 4 != 0)) {
+			SET_GL_ERROR(GL_INVALID_VALUE)
+		}
+		break;
 	}
 #endif
 

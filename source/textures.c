@@ -123,6 +123,13 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	uint8_t data_bpp = 0;
 	uint8_t fast_store = GL_FALSE;
 
+#ifndef SKIP_ERROR_HANDLING
+	// Checking if texture is too big for sceGxm
+	if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
 	// Support for legacy GL1.0 internalFormat
 	switch (internalFormat) {
 	case 1:
@@ -250,6 +257,8 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		// Detecting proper write callback and texture format
 		switch (internalFormat) {
 		case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR;
+			break;
 		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
 			break;
@@ -295,11 +304,6 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
 			break;
-		}
-
-		// Checking if texture is too big for sceGxm
-		if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE) {
-			SET_GL_ERROR(GL_INVALID_VALUE)
 		}
 
 		// Allocating texture/mipmaps depending on user call
@@ -532,6 +536,11 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 	if (imageSize == 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
+
+	// Ensure border is zero.
+	if (border != 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
 #endif
 
 	switch (target) {
@@ -539,6 +548,8 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		// Detecting proper texture format
 		switch (internalFormat) {
 		case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR;
+			break;
 		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
 			break;
@@ -827,6 +838,23 @@ void glGenerateMipmap(GLenum target) {
 	// Checking if current texture is valid
 	if (!tex->valid)
 		return;
+
+	// Prevent attempts for mipmap generation of compressed textures.
+	switch (tex->type) {
+	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
+	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
+	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
+	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
+	case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
+	case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR:
+	case SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR:
+	case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
+	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+		break;
+	default:
+		break;
+	}
 #endif
 
 	switch (target) {
