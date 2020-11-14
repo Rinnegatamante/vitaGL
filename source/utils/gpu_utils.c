@@ -339,7 +339,10 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 			memset(texture_data, 0, tex_size);
 
 		// Initializing texture and validating it
-		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, w, h, 0);
+		if (sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, w, h, 0) < 0) {
+			SET_GL_ERROR(GL_INVALID_VALUE)
+		}
+
 		if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8)
 			tex->palette_UID = 1;
 		else
@@ -472,7 +475,10 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 			memset(texture_data, 0, tex_size);
 
 		// Initializing texture and validating it
-		sceGxmTextureInitSwizzledArbitrary(&tex->gxm_tex, texture_data, format, w, h, 0);
+		if (sceGxmTextureInitSwizzledArbitrary(&tex->gxm_tex, texture_data, format, w, h, 0) < 0) {
+			SET_GL_ERROR(GL_INVALID_VALUE)
+		}
+		
 		tex->palette_UID = 0;
 		tex->valid = 1;
 		tex->data = texture_data;
