@@ -2064,8 +2064,6 @@ void vglIndexPointerMapped(const GLvoid *pointer) {
 
 void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	SceGxmPrimitiveType gxm_p;
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	int texture2d_idx = tex_unit->tex_id;
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
@@ -2103,16 +2101,10 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	if (!skip_draw) {
 		if (cur_program != 0) {
 			_vglDrawObjects_CustomShadersIMPL(mode, count, implicit_wvp);
-			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
-
-			// TEXUNIT1 support for custom shaders
-			texture_unit *tex_unit2 = &texture_units[client_texture_unit + 1];
-			int texture2d_idx2 = tex_unit2->tex_id;
-			if (texture_slots[texture2d_idx2].valid)
-				sceGxmSetFragmentTexture(gxm_context, 1, &texture_slots[texture2d_idx2].gxm_tex);
-
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, texture_units[client_texture_unit].index_object, count);
 		} else {
+			texture_unit *tex_unit = &texture_units[client_texture_unit];
+			int texture2d_idx = tex_unit->tex_id;
 			if (tex_unit->vertex_array_state) {
 				if (mvp_modified) {
 					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);

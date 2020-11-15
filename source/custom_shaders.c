@@ -25,6 +25,7 @@
 
 #define MAX_CUSTOM_SHADERS 128 // Maximum number of linkable custom shaders
 #define MAX_SHADER_PARAMS 8 // Maximum number of parameters per custom shader
+#define MAX_TEXUNITS_USAGE 3 // Maximum number of texture units per custom shader
 
 // Internal stuffs
 void *frag_uniforms = NULL;
@@ -64,6 +65,7 @@ typedef struct program {
 	shader *vshader;
 	shader *fshader;
 	GLboolean valid;
+	GLboolean texunits[MAX_TEXUNITS_USAGE];
 	SceGxmVertexAttribute attr[MAX_SHADER_PARAMS];
 	SceGxmVertexStream stream[MAX_SHADER_PARAMS];
 	SceGxmVertexProgram *vprog;
@@ -118,6 +120,7 @@ void reloadCustomShader(void) {
 }
 
 void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
+	// Uploading internal GL wvp if implicit wvp is asked
 	if (implicit_wvp) {
 		program *p = &progs[cur_program - 1];
 		if (mvp_modified) {
@@ -129,6 +132,16 @@ void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean imp
 		if (p->wvp == NULL)
 			p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "wvp");
 		sceGxmSetUniformDataF(vert_uniforms, p->wvp, 0, 16, (const float *)mvp_matrix);
+	}
+	
+	// Uploading textures on relative texture units
+	int i;
+	program *p = &progs[cur_program - 1];
+	for (i = 0; i < MAX_TEXUNITS_USAGE; i++) {
+		if (p->texunits[i]) {
+			texture_unit *tex_unit = &texture_units[client_texture_unit + i];
+			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
+		}
 	}
 }
 
@@ -318,6 +331,7 @@ void glAttachShader(GLuint prog, GLuint shad) {
 	// Grabbing passed shader and program
 	shader *s = &shaders[shad - 1];
 	program *p = &progs[prog - 1];
+	uint32_t i, cnt;
 
 	// Attaching shader to desired program
 	if (p->valid && s->valid) {
@@ -327,6 +341,17 @@ void glAttachShader(GLuint prog, GLuint shad) {
 			break;
 		case GL_FRAGMENT_SHADER:
 			p->fshader = s;
+			
+			// Check which texture units are used in this shader
+			for (i = 0; i < MAX_TEXUNITS_USAGE; i++) {
+				p->texunits[i] = GL_FALSE;
+			}
+			cnt = sceGxmProgramGetParameterCount(s->prog);
+			for (i = 0; i < cnt; i++) {
+				SceGxmProgramParameter *param = sceGxmProgramGetParameter(s->prog, i);
+				if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_SAMPLER)
+					p->texunits[sceGxmProgramParameterGetResourceIndex(param)] = GL_TRUE;
+			}
 			break;
 		default:
 			break;
