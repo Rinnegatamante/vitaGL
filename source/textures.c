@@ -309,13 +309,15 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		// Allocating texture/mipmaps depending on user call
 		tex->type = internalFormat;
 		tex->write_cb = write_cb;
-		if (level == 0)
-			if (tex->write_cb)
+
+		if (tex->write_cb) {
+			if (level == 0)
 				gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb, fast_store);
 			else
-				gpu_alloc_compressed_texture(width, height, tex_format, 0, data, tex, data_bpp, read_cb);
-		else
-			gpu_alloc_mipmaps(level, tex);
+				gpu_alloc_mipmaps(level, tex);
+		} else
+			gpu_alloc_compressed_texture(level, width, height, tex_format, 0, data, tex, data_bpp, read_cb);
+
 
 		// Setting texture parameters
 		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
@@ -581,7 +583,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 
 		// Allocating texture/mipmaps depending on user call
 		tex->type = internalFormat;
-		gpu_alloc_compressed_texture(width, height, tex_format, imageSize, data, tex, 0, NULL);
+		gpu_alloc_compressed_texture(level, width, height, tex_format, imageSize, data, tex, 0, NULL);
 
 		// Setting texture parameters
 		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
