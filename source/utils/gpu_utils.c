@@ -47,7 +47,7 @@ vglMemType frag_usse_type;
 vglMemType vert_usse_type;
 
 // Taken from here: https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-uint32_t nearest_power_of_2(uint32_t val) {
+uint32_t nearest_po2(uint32_t val) {
 	val--;
 	val |= val >> 1;
 	val |= val >> 2;
@@ -59,7 +59,7 @@ uint32_t nearest_power_of_2(uint32_t val) {
 	return val;
 }
 
-static int get_mipchain_size(int level, int width, int height, SceGxmTextureFormat format) {
+int gpu_get_mipchain_size(int level, int width, int height, SceGxmTextureFormat format) {
 	int size = 0;
 
 	for (int currentLevel = level; currentLevel >= 0; currentLevel--) {
@@ -93,11 +93,21 @@ static int get_mipchain_size(int level, int width, int height, SceGxmTextureForm
 	return size;
 }
 
-static int get_mip_offset(int level, int width, int height, SceGxmTextureFormat format) {
-	return get_mipchain_size(level - 1, width * 2, height * 2, format);
+int gpu_get_mip_offset(int level, int width, int height, SceGxmTextureFormat format) {
+	return gpu_get_mipchain_size(level - 1, width * 2, height * 2, format);
 }
 
-uint64_t morton_1(uint64_t x) {
+void gpu_get_mip_size(int level, int width, int height, int *mip_width, int *mip_height) {
+	*mip_width = width;
+	*mip_height = height;
+
+	for (int currentLevel = 0; currentLevel < level; currentLevel++) {
+		*mip_width /= 2;
+		*mip_height /= 2;
+	}
+}
+
+static uint64_t morton_1(uint64_t x) {
 	x = x & 0x5555555555555555;
 	x = (x | (x >> 1)) & 0x3333333333333333;
 	x = (x | (x >> 2)) & 0x0F0F0F0F0F0F0F0F;
@@ -107,12 +117,12 @@ uint64_t morton_1(uint64_t x) {
 	return x;
 }
 
-void d2xy_morton(uint64_t d, uint64_t *x, uint64_t *y) {
+static void d2xy_morton(uint64_t d, uint64_t *x, uint64_t *y) {
 	*x = morton_1(d);
 	*y = morton_1(d >> 1);
 }
 
-void extract_block(const uint8_t *src, int width, uint8_t *block) {
+static void extract_block(const uint8_t *src, int width, uint8_t *block) {
 	int j;
 	for (j = 0; j < 4; j++) {
 		memcpy_neon(&block[j * 4 * 4], src, 16);
@@ -122,8 +132,7 @@ void extract_block(const uint8_t *src, int width, uint8_t *block) {
 
 static void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int aligned_width, int aligned_height, int isdxt5) {
 	uint8_t block[64];
-	int s = MAX(w, h);
-	uint32_t num_blocks = (s * s) / 16;
+	uint32_t num_blocks = (aligned_width * aligned_height) / 16;
 	uint64_t d, offs_x, offs_y;
 	for (d = 0; d < num_blocks; d++) {
 		d2xy_morton(d, &offs_x, &offs_y);
@@ -147,8 +156,7 @@ static void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int aligned_w
 static void swizzle_compressed_texture(uint8_t *dst, uint8_t *src, int w, int h, int aligned_width, int aligned_height, int isdxt5, int ispvrt2bpp) {
 	int blocksize = isdxt5 ? 16 : 8;
 
-	int s = MAX(aligned_width, aligned_height);
-	uint32_t num_blocks = (s * s) / 16;
+	uint32_t num_blocks = (aligned_width * aligned_height) / (ispvrt2bpp ? 32 : 16);
 	uint64_t d, offs_x, offs_y;
 	for (d = 0; d < num_blocks; d++) {
 		d2xy_morton(d, &offs_x, &offs_y);
@@ -167,6 +175,33 @@ static void swizzle_compressed_texture(uint8_t *dst, uint8_t *src, int w, int h,
 		}
 
 		memcpy(dst, src + offs_y * blocksize + offs_x * (w / (ispvrt2bpp ? 8 : 4)) * blocksize, blocksize);
+		dst += isdxt5 ? 16 : 8;
+	}
+}
+
+void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width, int tex_height, int region_x, int region_y, int region_width, int region_height, int isdxt5, int ispvrt2bpp) {
+	int blocksize = isdxt5 ? 16 : 8;
+	void *dest;
+
+	uint32_t num_blocks = (tex_width * tex_height) / (ispvrt2bpp ? 32 : 16);
+	uint64_t d, offs_x, offs_y;
+	for (d = 0; d < num_blocks; d++) {
+		d2xy_morton(d, &offs_x, &offs_y);
+		// If the block coords exceed input texture dimensions.
+		if ((offs_x * 4 >= region_height) || (offs_x * 4 < region_y)) {
+			// If the block coord is smaller than the Po2 aligned dimension, skip forward one block.
+			if (offs_x * 4 < tex_height)
+				dst += isdxt5 ? 16 : 8;
+			continue;
+		}
+
+		if ((offs_y * (ispvrt2bpp ? 8 : 4) >= region_width) || (offs_y * (ispvrt2bpp ? 8 : 4) < region_x)) {
+			if (offs_y * (ispvrt2bpp ? 8 : 4) < tex_width)
+				dst += isdxt5 ? 16 : 8;
+			continue;
+		}
+
+		memcpy(dst, src + (offs_y - region_y) * blocksize + (offs_x - region_x) * (region_width / (ispvrt2bpp ? 8 : 4)) * blocksize, blocksize);
 		dst += isdxt5 ? 16 : 8;
 	}
 }
@@ -399,6 +434,9 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 }
 
 void gpu_alloc_compressed_texture(uint32_t mip_level, uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *)) {
+	if (mip_level == 0 && tex->valid) 
+		gpu_free_texture(tex);
+	
 	// Data pointers.
 	void *texture_data; // Texture memory
 	void *mip_data; // Memory for mip_level
@@ -411,13 +449,14 @@ void gpu_alloc_compressed_texture(uint32_t mip_level, uint32_t w, uint32_t h, Sc
 	uint8_t alignment = tex_format_to_alignment(format);
 
 	// Get the closest power of 2 dimensions for the texture.
-	uint32_t aligned_width = nearest_power_of_2(w);
-	uint32_t aligned_height = nearest_power_of_2(h);
+	uint32_t aligned_width = nearest_po2(w);
+	uint32_t aligned_height = nearest_po2(h);
 
 	// Calculating swizzled compressed texture size on memory
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 
-	int tex_size = get_mipchain_size(mip_level, aligned_width, aligned_height, format);
+	int tex_size = gpu_get_mipchain_size(mip_level, aligned_width, aligned_height, format);
+	int mip_size = gpu_get_mip_offset(mip_level + 1, aligned_width / 2, aligned_height / 2, format) - gpu_get_mip_offset(mip_level, aligned_width, aligned_height, format);
 
 #ifndef SKIP_ERROR_HANDLING
 	// Calculate and check the expected size of the texture data.
@@ -484,20 +523,15 @@ void gpu_alloc_compressed_texture(uint32_t mip_level, uint32_t w, uint32_t h, Sc
 		texture_data = gpu_alloc_mapped(tex_size, &tex->mtype);
 		if (texture_data == NULL) {
 			SET_GL_ERROR(GL_OUT_OF_MEMORY)
-		} 
+		}
 
 		memset(texture_data, 0, tex_size);
 	} else {
 		// Set mipMap count.
-		mipCount = sceGxmTextureGetMipmapCount(&tex->gxm_tex) >= mip_level ? sceGxmTextureGetMipmapCount(&tex->gxm_tex) : mip_level;
+		mipCount = sceGxmTextureGetMipmapCount(&tex->gxm_tex);
 
-		if (mip_level == 0) {
-			tex_width = w;
-			tex_height = h;
-		} else {
-			tex_width = sceGxmTextureGetWidth(&tex->gxm_tex);
-			tex_height = sceGxmTextureGetHeight(&tex->gxm_tex);
-		}
+		tex_width = sceGxmTextureGetWidth(&tex->gxm_tex);
+		tex_height = sceGxmTextureGetHeight(&tex->gxm_tex);
 
 		// Handle possible reallocation of texture data.
 		if (mipCount >= mip_level) {
@@ -509,13 +543,20 @@ void gpu_alloc_compressed_texture(uint32_t mip_level, uint32_t w, uint32_t h, Sc
 			}
 			memset(texture_data, 0, tex_size);
 
-			memcpy_neon(texture_data, tex->data, tex_size);
+			int old_mip_w, old_mip_h;
+			gpu_get_mip_size(mipCount, nearest_po2(tex_width), nearest_po2(tex_height), &old_mip_w, &old_mip_h);
+
+			int old_data_size = gpu_get_mipchain_size(mipCount, old_mip_w, old_mip_h, format);
+			memcpy_neon(texture_data, tex->data, old_data_size);
 
 			gpu_free_texture(tex);
+
+			// Set new mip count.
+			mipCount = mip_level;
 		}
 	}
 
-	mip_data = texture_data + get_mip_offset(mip_level, aligned_width, aligned_height, format);
+	mip_data = texture_data + gpu_get_mip_offset(mip_level, aligned_width, aligned_height, format);
 
 	// Initializing texture data buffer
 	if (data != NULL) {
@@ -562,7 +603,7 @@ void gpu_alloc_compressed_texture(uint32_t mip_level, uint32_t w, uint32_t h, Sc
 			}
 		}
 	} else
-		memset(texture_data, 0, tex_size);
+		memset(mip_data, 0, mip_size);
 
 	// Initializing texture and validating it
 	if (sceGxmTextureInitSwizzledArbitrary(&tex->gxm_tex, texture_data, format, tex_width, tex_height, mipCount) < 0) {

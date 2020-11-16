@@ -347,18 +347,23 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	// Calculating implicit texture stride and start address of requested texture modification
 	uint32_t orig_w = sceGxmTextureGetWidth(&target_texture->gxm_tex);
 	uint32_t orig_h = sceGxmTextureGetHeight(&target_texture->gxm_tex);
+	uint32_t w, h; gpu_get_mip_size(level, orig_w, orig_h, &w, &h);
 	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&target_texture->gxm_tex);
+	int mip_offset = gpu_get_mip_offset(level, nearest_po2(w), nearest_po2(h), tex_format);
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
-	uint32_t stride = ALIGN(orig_w, 8) * bpp;
-	uint8_t *ptr = (uint8_t *)sceGxmTextureGetData(&target_texture->gxm_tex) + xoffset * bpp + yoffset * stride;
+	uint32_t stride = ALIGN(w, 8) * bpp;
+	uint8_t *ptr = (uint8_t *)sceGxmTextureGetData(&target_texture->gxm_tex) + mip_offset + xoffset * bpp + yoffset * stride;
 	uint8_t *ptr_line = ptr;
 	uint8_t data_bpp = 0;
 	int i, j;
 
-	if (xoffset + width > orig_w) {
+	if (xoffset + width > w) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
-	} else if (yoffset + height > orig_h) {
+	} else if (yoffset + height > h) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+	if (sceGxmTextureGetMipmapCount(&target_texture->gxm_tex) < level) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 
 	// Support for legacy GL1.0 format
@@ -581,7 +586,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			break;
 		}
 
-		// Allocating texture/mipmaps depending on user call
+		// Allocating texture
 		tex->type = internalFormat;
 		gpu_alloc_compressed_texture(level, width, height, tex_format, imageSize, data, tex, 0, NULL);
 
@@ -598,6 +603,146 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
+}
+
+void glCompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data) {
+	// Setting some aliases to make code more readable
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
+	texture *tex = &texture_slots[texture2d_idx];
+	int ispvrt2bpp = 0;
+	int ispvrtc1 = 0;
+	int isdxt5 = 0;
+
+	SceGxmTextureFormat tex_format;
+
+	if (!tex->valid) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+
+	switch (target) {
+	case GL_TEXTURE_2D:
+		// Detecting proper texture format
+		switch (format) {
+		case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR;
+			break;
+		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
+			break;
+		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
+			isdxt5 = 1;
+			break;
+		case GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR;
+			ispvrt2bpp = 1;
+			ispvrtc1 = 1;
+			break;
+		case GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR;
+			ispvrt2bpp = 1;
+			ispvrtc1 = 1;
+			break;
+		case GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR;
+			ispvrtc1 = 1;
+			break;
+		case GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR;
+			ispvrtc1 = 1;
+			break;
+		case GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR;
+			ispvrt2bpp = 1;
+			break;
+		case GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+
+	int mip_width, mip_height;
+	gpu_get_mip_size(level, sceGxmTextureGetWidth(&tex->gxm_tex), sceGxmTextureGetHeight(&tex->gxm_tex), &mip_width, &mip_height);
+
+	void *mip_data = sceGxmTextureGetData(&tex->gxm_tex) + gpu_get_mip_offset(level, mip_width, mip_height, tex_format);
+
+#ifndef SKIP_ERROR_HANDLING
+	// Checking if texture is too big for sceGxm
+	if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+
+	// No sub textures larger than the mip 
+	if (xoffset + width > mip_width) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	} else if (yoffset + height > mip_height) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+
+	// Ensure pixel dimensions given are block aligned.
+	if ((xoffset % (ispvrt2bpp ? 8 : 4) != 0) || (yoffset % 4 != 0)) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	} else if ((width % (ispvrt2bpp ? 8 : 4) != 0) || (height % 4 != 0)) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+
+	// Ensure imageSize isn't zero.
+	if (imageSize == 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+
+	// Prevent subtexturing of PVRTC1 textures.
+	if (ispvrtc1 && ((xoffset + width != mip_width) || (yoffset + height != mip_height))) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+
+	if (tex->type != tex_format) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+
+	// Calculate and check the expected size of the texture data.
+	int expected_tex_size = 0;
+	switch (tex_format) {
+	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
+	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
+		expected_tex_size = (MAX(width, 8) * MAX(height, 8) * 2 + 7) / 8;
+		break;
+	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
+	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
+		expected_tex_size = (MAX(width, 8) * MAX(height, 8) * 4 + 7) / 8;
+		break;
+	case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
+		expected_tex_size = CEIL(width / 8.0) * CEIL(height / 4.0) * 8.0;
+		break;
+	case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR:
+		expected_tex_size = CEIL(width / 4.0) * CEIL(height / 4.0) * 8.0;
+		break;
+	case SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR:
+	case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
+		expected_tex_size = (width * height) / 2;
+		break;
+	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
+		expected_tex_size = width * height;
+		break;
+	}
+
+	// Check the given texture data size.
+	if (imageSize != expected_tex_size) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+	mip_width = nearest_po2(mip_width);
+	mip_height = nearest_po2(mip_height);
+	swizzle_compressed_texture_region(mip_data, data, mip_width, mip_height, xoffset, yoffset, width, height, isdxt5, ispvrt2bpp);
 }
 
 void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid *data) {

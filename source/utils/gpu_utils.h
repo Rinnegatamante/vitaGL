@@ -54,6 +54,11 @@ typedef struct palette {
 	vglMemType type;
 } palette;
 
+// Utility Function.
+uint32_t nearest_po2(uint32_t val); 
+// Swizzle and copy texture region.
+void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width, int tex_height, int region_x, int region_y, int region_width, int region_height, int isdxt5, int ispvrt2bpp);
+
 // Alloc a generic memblock into sceGxm mapped memory
 void *gpu_alloc_mapped(size_t size, vglMemType *type);
 
@@ -104,5 +109,14 @@ void gpu_free_palette(palette *pal);
 
 // Generate mipmaps for a given texture
 void gpu_alloc_mipmaps(int level, texture *tex);
+
+// Get the size of a mipchain with the last mip width and height
+int gpu_get_mipchain_size(int level, int width, int height, SceGxmTextureFormat format);
+
+// Get the offset of a specified mip level, of a given width and height.
+int gpu_get_mip_offset(int level, int width, int height, SceGxmTextureFormat format);
+
+// Get dimensions of a mip level, given top level dimensions.
+void gpu_get_mip_size(int level, int width, int height, int *mip_width, int *mip_height);
 
 #endif
