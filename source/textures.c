@@ -318,7 +318,6 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		} else
 			gpu_alloc_compressed_texture(level, width, height, tex_format, 0, data, tex, data_bpp, read_cb);
 
-
 		// Setting texture parameters
 		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
 		sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex->v_mode);
@@ -344,19 +343,25 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	int texture2d_idx = tex_unit->tex_id;
 	texture *target_texture = &texture_slots[texture2d_idx];
 
+	if (!target_texture->valid) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+	
 	// Calculating implicit texture stride and start address of requested texture modification
 	uint32_t orig_w = sceGxmTextureGetWidth(&target_texture->gxm_tex);
 	uint32_t orig_h = sceGxmTextureGetHeight(&target_texture->gxm_tex);
-	uint32_t w, h; gpu_get_mip_size(level, orig_w, orig_h, &w, &h);
+	uint32_t w, h;
+	gpu_get_mip_size(level, orig_w, orig_h, &w, &h);
 	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&target_texture->gxm_tex);
 	int mip_offset = gpu_get_mip_offset(level, nearest_po2(w), nearest_po2(h), tex_format);
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
 	uint32_t stride = ALIGN(w, 8) * bpp;
-	uint8_t *ptr = (uint8_t *)sceGxmTextureGetData(&target_texture->gxm_tex) + mip_offset + xoffset * bpp + yoffset * stride;
+	uint8_t *ptr = (uint8_t *)target_texture->data + mip_offset + xoffset * bpp + yoffset * stride;
 	uint8_t *ptr_line = ptr;
 	uint8_t data_bpp = 0;
 	int i, j;
 
+#ifndef SKIP_ERROR_HANDLING
 	if (xoffset + width > w) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	} else if (yoffset + height > h) {
@@ -365,6 +370,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	if (sceGxmTextureGetMipmapCount(&target_texture->gxm_tex) < level) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
+#endif
 
 	// Support for legacy GL1.0 format
 	switch (format) {
@@ -672,7 +678,7 @@ void glCompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint 
 	int mip_width, mip_height;
 	gpu_get_mip_size(level, sceGxmTextureGetWidth(&tex->gxm_tex), sceGxmTextureGetHeight(&tex->gxm_tex), &mip_width, &mip_height);
 
-	void *mip_data = sceGxmTextureGetData(&tex->gxm_tex) + gpu_get_mip_offset(level, mip_width, mip_height, tex_format);
+	void *mip_data = tex->data + gpu_get_mip_offset(level, mip_width, mip_height, tex_format);
 
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if texture is too big for sceGxm
@@ -680,7 +686,7 @@ void glCompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint 
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 
-	// No sub textures larger than the mip 
+	// No sub textures larger than the mip
 	if (xoffset + width > mip_width) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	} else if (yoffset + height > mip_height) {
@@ -704,7 +710,7 @@ void glCompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint 
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 
-	if (tex->type != tex_format) {
+	if (tex->type != format) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 
@@ -727,10 +733,10 @@ void glCompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint 
 		break;
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
-		expected_tex_size = (width * height) / 2;
+		expected_tex_size = CEIL(width / 4) * CEIL(height / 4) * 8;
 		break;
 	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-		expected_tex_size = width * height;
+		expected_tex_size = CEIL(width / 4) * CEIL(height / 4) * 16;
 		break;
 	}
 

@@ -24,12 +24,6 @@
 #include "../shared.h"
 #include "stb_dxt.h"
 
-#ifndef MIN
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#define MAX(a, b) (((a) < (b)) ? (b) : (a))
-#define CEIL(a) ((a - (int)a) == 0 ? (int)a : (int)a + 1)
-#endif
-
 // VRAM usage setting
 uint8_t use_vram = 0;
 uint8_t use_vram_for_usse = 0;
@@ -80,10 +74,10 @@ int gpu_get_mipchain_size(int level, int width, int height, SceGxmTextureFormat 
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR:
 		case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
-			size += (width * height) / 2;
+			size += CEIL(width / 4) * CEIL(height / 4) * 8;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-			size += width * height;
+			size += CEIL(width / 4) * CEIL(height / 4) * 16;
 			break;
 		}
 		width *= 2;
@@ -132,7 +126,9 @@ static void extract_block(const uint8_t *src, int width, uint8_t *block) {
 
 static void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int aligned_width, int aligned_height, int isdxt5) {
 	uint8_t block[64];
-	uint32_t num_blocks = (aligned_width * aligned_height) / 16;
+
+	int s = MAX(aligned_width, aligned_height);
+	uint32_t num_blocks = (s * s) / 16;
 	uint64_t d, offs_x, offs_y;
 	for (d = 0; d < num_blocks; d++) {
 		d2xy_morton(d, &offs_x, &offs_y);
@@ -156,7 +152,8 @@ static void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int aligned_w
 static void swizzle_compressed_texture(uint8_t *dst, uint8_t *src, int w, int h, int aligned_width, int aligned_height, int isdxt5, int ispvrt2bpp) {
 	int blocksize = isdxt5 ? 16 : 8;
 
-	uint32_t num_blocks = (aligned_width * aligned_height) / (ispvrt2bpp ? 32 : 16);
+	int s = MAX(aligned_width, aligned_height);
+	uint32_t num_blocks = (s * s) / (ispvrt2bpp ? 32 : 16);
 	uint64_t d, offs_x, offs_y;
 	for (d = 0; d < num_blocks; d++) {
 		d2xy_morton(d, &offs_x, &offs_y);
@@ -164,45 +161,49 @@ static void swizzle_compressed_texture(uint8_t *dst, uint8_t *src, int w, int h,
 		if (offs_x * 4 >= h) {
 			// If the block coord is smaller than the Po2 aligned dimension, skip forward one block.
 			if (offs_x * 4 < aligned_height)
-				dst += isdxt5 ? 16 : 8;
+				dst += blocksize;
 			continue;
 		}
 
 		if (offs_y * (ispvrt2bpp ? 8 : 4) >= w) {
 			if (offs_y * (ispvrt2bpp ? 8 : 4) < aligned_width)
-				dst += isdxt5 ? 16 : 8;
+				dst += blocksize;
 			continue;
 		}
 
 		memcpy(dst, src + offs_y * blocksize + offs_x * (w / (ispvrt2bpp ? 8 : 4)) * blocksize, blocksize);
-		dst += isdxt5 ? 16 : 8;
+		dst += blocksize;
 	}
 }
 
 void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width, int tex_height, int region_x, int region_y, int region_width, int region_height, int isdxt5, int ispvrt2bpp) {
 	int blocksize = isdxt5 ? 16 : 8;
-	void *dest;
 
-	uint32_t num_blocks = (tex_width * tex_height) / (ispvrt2bpp ? 32 : 16);
+	int s = MAX(tex_width, tex_height);
+	uint32_t num_blocks = (s * s) / (ispvrt2bpp ? 32 : 16);
 	uint64_t d, offs_x, offs_y;
+	uint64_t dst_x, dst_y;
 	for (d = 0; d < num_blocks; d++) {
 		d2xy_morton(d, &offs_x, &offs_y);
 		// If the block coords exceed input texture dimensions.
-		if ((offs_x * 4 >= region_height) || (offs_x * 4 < region_y)) {
+		if ((offs_x * 4 >= region_height + region_y) || (offs_x * 4 < region_y)) {
 			// If the block coord is smaller than the Po2 aligned dimension, skip forward one block.
 			if (offs_x * 4 < tex_height)
-				dst += isdxt5 ? 16 : 8;
+				dst += blocksize;
 			continue;
 		}
 
-		if ((offs_y * (ispvrt2bpp ? 8 : 4) >= region_width) || (offs_y * (ispvrt2bpp ? 8 : 4) < region_x)) {
+		if ((offs_y * (ispvrt2bpp ? 8 : 4) >= region_width + region_x) || (offs_y * (ispvrt2bpp ? 8 : 4) < region_x)) {
 			if (offs_y * (ispvrt2bpp ? 8 : 4) < tex_width)
-				dst += isdxt5 ? 16 : 8;
+				dst += blocksize;
 			continue;
 		}
 
-		memcpy(dst, src + (offs_y - region_y) * blocksize + (offs_x - region_x) * (region_width / (ispvrt2bpp ? 8 : 4)) * blocksize, blocksize);
-		dst += isdxt5 ? 16 : 8;
+		dst_x = offs_x - (region_y / 4);
+		dst_y = offs_y - (region_x / (ispvrt2bpp ? 8 : 4));
+
+		memcpy(dst, src + dst_y * blocksize + dst_x * (region_width / (ispvrt2bpp ? 8 : 4)) * blocksize, blocksize);
+		dst += blocksize;
 	}
 }
 
@@ -478,37 +479,16 @@ void gpu_alloc_compressed_texture(uint32_t mip_level, uint32_t w, uint32_t h, Sc
 		break;
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
-		expected_tex_size = (w * h) / 2;
+		expected_tex_size = CEIL(w / 4) * CEIL(h / 4) * 8;
 		break;
 	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-		expected_tex_size = w * h;
+		expected_tex_size = CEIL(w / 4) * CEIL(h / 4) * 16;
 		break;
 	}
 
 	// Check the given texture data size.
 	if (image_size != 0 && image_size != expected_tex_size) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-
-	// Ensure the texture's width and height are block aligned.
-	switch (format) {
-	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
-	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
-	case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR:
-	case SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR:
-	case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
-	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-		if ((w % 4 != 0) || (h % 4 != 0)) {
-			SET_GL_ERROR(GL_INVALID_VALUE)
-		}
-		break;
-	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
-	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
-	case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
-		if ((w % 8 != 0) || (h % 4 != 0)) {
-			SET_GL_ERROR(GL_INVALID_VALUE)
-		}
-		break;
 	}
 #endif
 
