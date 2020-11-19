@@ -146,7 +146,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean imp
 }
 
 #if defined(HAVE_SHARK) && defined(HAVE_SHARK_LOG)
-char *shark_log = NULL;
+static char *shark_log = NULL;
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	uint8_t append = shark_log != NULL;
 	char newline[1024];
