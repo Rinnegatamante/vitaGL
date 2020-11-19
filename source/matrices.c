@@ -222,7 +222,7 @@ void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFa
 	}
 #endif
 
-	// Initializing frustum matrix with requested parameters
+	// Initializing perspective matrix with requested parameters
 	matrix4x4_init_perspective(*matrix, fovy, aspect, zNear, zFar);
 	mvp_modified = GL_TRUE;
 }
