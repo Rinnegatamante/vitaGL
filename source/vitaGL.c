@@ -310,6 +310,7 @@ static void reload_ffp_shaders() {
 				break;
 			}
 		}
+		ffp_mask.raw = mask.raw;
 	}
 	
 	uint8_t new_shader_flag = ffp_dirty_vert || ffp_dirty_frag;
