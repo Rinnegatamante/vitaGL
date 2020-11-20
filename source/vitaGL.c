@@ -202,6 +202,31 @@ void LOG(const char *format, ...) {
 #endif
 
 #if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
+#define SHADER_CACHE_SIZE 64
+
+typedef union shader_mask {
+	struct {
+		uint32_t texenv_mode : 2;
+		uint32_t alpha_test_mode : 3;
+		uint32_t has_texture : 1;
+		uint32_t has_colors : 1;
+		uint32_t fog_mode : 2;
+		uint32_t UNUSED : 23;
+	};
+	uint32_t raw;
+} shader_mask;
+
+typedef struct {
+	SceGxmProgram *frag;
+	SceGxmProgram *vert;
+	SceGxmShaderPatcherId frag_id;
+	SceGxmShaderPatcherId vert_id;
+	shader_mask mask;
+} cached_shader;
+cached_shader shader_cache[SHADER_CACHE_SIZE];
+uint8_t shader_cache_size = 0;
+int shader_cache_idx = -1;
+
 #define VERTEX_UNIFORMS_NUM 3
 #define FRAGMENT_UNIFORMS_NUM 7
 
@@ -211,7 +236,7 @@ typedef enum {
 	WVP_MATRIX_UNIF
 } vert_uniform_type;
 
-enum {
+typedef enum {
 	ALPHA_CUT_UNIF,
 	FOG_COLOR_UNIF,
 	TEX_ENV_COLOR_UNIF,
@@ -234,6 +259,7 @@ uint8_t ffp_dirty_frag = GL_TRUE;
 uint8_t ffp_dirty_frag_blend = GL_TRUE;
 uint8_t ffp_dirty_vert = GL_TRUE;
 uint8_t ffp_dirty_vert_stream = GL_TRUE;
+shader_mask ffp_mask = {.raw = 0};
 
 static void upload_ffp_uniforms() {
 	void *fbuffer, *vbuffer;
@@ -259,6 +285,35 @@ static void reload_ffp_shaders() {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	
+	// Checking if mask changed
+	shader_mask mask = {.raw = 0};
+	mask.texenv_mode = tex_unit->env_mode;
+	mask.alpha_test_mode = alpha_op;
+	mask.has_texture = tex_unit->texture_array_state;
+	mask.has_colors = tex_unit->color_array_state;
+	mask.fog_mode = internal_fog_mode;
+	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
+		ffp_dirty_vert = GL_FALSE;
+		ffp_dirty_frag = GL_FALSE;
+	} else {
+		int i;
+		for (i = 0; i < shader_cache_size; i++) {
+			if (shader_cache[i].mask.raw == mask.raw) {
+				ffp_vertex_program = shader_cache[i].vert;
+				ffp_fragment_program = shader_cache[i].frag;
+				ffp_vertex_program_id = shader_cache[i].vert_id;
+				ffp_fragment_program_id = shader_cache[i].frag_id;
+				ffp_dirty_vert_stream = GL_TRUE;
+				ffp_dirty_frag_blend = GL_TRUE;
+				ffp_dirty_vert = GL_FALSE;
+				ffp_dirty_frag = GL_FALSE;
+				break;
+			}
+		}
+	}
+	
+	uint8_t new_shader_flag = ffp_dirty_vert || ffp_dirty_frag;
+
 	// Checking if vertex shader requires a recompilation
 	if (ffp_dirty_vert) {
 		
@@ -267,15 +322,6 @@ static void reload_ffp_shaders() {
 		sprintf(vshader, ffp_vert_src, clip_plane0, tex_unit->texture_array_state, tex_unit->color_array_state);
 		uint32_t size = strlen(vshader);
 		SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
-		if (ffp_vertex_program) {
-			unsigned int count, i;
-			sceGxmShaderPatcherGetVertexProgramRefCount(gxm_shader_patcher, ffp_vertex_program_patched, &count);
-			for (i = 0; i < count; i++) {
-				sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, ffp_vertex_program_patched);
-			}
-			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, ffp_vertex_program_id);
-			free(ffp_vertex_program);
-		}
 		ffp_vertex_program = (SceGxmProgram*)malloc(size);
 		memcpy_neon((void *)ffp_vertex_program, (void *)t, size);
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_vertex_program, &ffp_vertex_program_id);
@@ -353,15 +399,6 @@ static void reload_ffp_shaders() {
 		sprintf(fshader, ffp_frag_src, alpha_op, tex_unit->texture_array_state, tex_unit->color_array_state, internal_fog_mode, tex_unit->env_mode);
 		uint32_t size = strlen(fshader);
 		SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
-		if (ffp_fragment_program) {
-			unsigned int count, i;
-			sceGxmShaderPatcherGetFragmentProgramRefCount(gxm_shader_patcher, ffp_fragment_program_patched, &count);
-			for (i = 0; i < count; i++) {
-				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, ffp_fragment_program_patched);
-			}
-			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, ffp_fragment_program_id);
-			free(ffp_fragment_program);
-		}
 		ffp_fragment_program = (SceGxmProgram*)malloc(size);
 		memcpy_neon((void *)ffp_fragment_program, (void *)t, size);
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_fragment_program, &ffp_fragment_program_id);
@@ -393,6 +430,23 @@ static void reload_ffp_shaders() {
 			
 		// Clearing dirty flags
 		ffp_dirty_frag_blend = GL_FALSE;
+	}
+	
+	if (new_shader_flag) {
+		shader_cache_idx = (shader_cache_idx + 1) % SHADER_CACHE_SIZE;
+		if (shader_cache_size < SHADER_CACHE_SIZE)
+			shader_cache_size++;
+		else {
+			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, ffp_vertex_program_id);
+			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, ffp_fragment_program_id);
+			free(shader_cache[shader_cache_idx].frag);
+			free(shader_cache[shader_cache_idx].vert);
+		}
+		shader_cache[shader_cache_idx].mask.raw = mask.raw;
+		shader_cache[shader_cache_idx].frag = ffp_fragment_program;
+		shader_cache[shader_cache_idx].vert = ffp_vertex_program;
+		shader_cache[shader_cache_idx].frag_id = ffp_fragment_program_id;
+		shader_cache[shader_cache_idx].vert_id = ffp_vertex_program_id;
 	}
 	
 	sceGxmSetVertexProgram(gxm_context, ffp_vertex_program_patched);
