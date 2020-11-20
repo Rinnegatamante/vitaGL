@@ -183,7 +183,7 @@ vector4f texenv_color = { 0.0f, 0.0f, 0.0f, 0.0f }; // Current in use texture en
 
 // Internal functions
 
-//#ifdef ENABLE_LOG
+#ifdef ENABLE_LOG
 void LOG(const char *format, ...) {
 	__gnuc_va_list arg;
 	int done;
@@ -199,7 +199,7 @@ void LOG(const char *format, ...) {
 		fclose(log);
 	}
 }
-//#endif
+#endif
 
 #if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
 #define VERTEX_UNIFORMS_NUM 3
@@ -267,8 +267,12 @@ static void reload_ffp_shaders() {
 		sprintf(vshader, ffp_vert_src, clip_plane0, tex_unit->texture_array_state, tex_unit->color_array_state);
 		uint32_t size = strlen(vshader);
 		SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
-		if (!t) LOG(vshader);
 		if (ffp_vertex_program) {
+			unsigned int count, i;
+			sceGxmShaderPatcherGetVertexProgramRefCount(gxm_shader_patcher, ffp_vertex_program_patched, &count);
+			for (i = 0; i < count; i++) {
+				sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, ffp_vertex_program_patched);
+			}
 			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, ffp_vertex_program_id);
 			free(ffp_vertex_program);
 		}
@@ -289,13 +293,14 @@ static void reload_ffp_shaders() {
 	
 	// Checking if vertex shader requires stream info update
 	if (ffp_dirty_vert_stream) {
+
 		// Setting up shader stream info
 		ffp_vertex_num_params = 1;
-		SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(ffp_vertex_program, "position");
 		SceGxmVertexAttribute ffp_vertex_attribute[3];
 		SceGxmVertexStream ffp_vertex_stream[3];
 		
 		// Vertex positions
+		SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(ffp_vertex_program, "position");
 		ffp_vertex_attribute[0].streamIndex = 0;
 		ffp_vertex_attribute[0].offset = 0;
 		ffp_vertex_attribute[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
@@ -323,9 +328,10 @@ static void reload_ffp_shaders() {
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 			ffp_vertex_attribute[ffp_vertex_num_params].offset = 0;
 			ffp_vertex_attribute[ffp_vertex_num_params].format = tex_unit->color_object_type == GL_FLOAT ? SCE_GXM_ATTRIBUTE_FORMAT_F32 : SCE_GXM_ATTRIBUTE_FORMAT_U8N;
-			ffp_vertex_attribute[ffp_vertex_num_params].componentCount = tex_unit->color_array.num;
+			int componentCount = tex_unit->color_array.num > 0 ? tex_unit->color_array.num : 4; // TODO: This is ugly and probably wrong
+			ffp_vertex_attribute[ffp_vertex_num_params].componentCount = componentCount;
 			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			ffp_vertex_stream[ffp_vertex_num_params].stride = tex_unit->color_array.num * (tex_unit->color_object_type == GL_FLOAT ? sizeof(float) : sizeof(uint8_t));
+			ffp_vertex_stream[ffp_vertex_num_params].stride = componentCount * (tex_unit->color_object_type == GL_FLOAT ? sizeof(float) : sizeof(uint8_t));
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 		}
@@ -347,8 +353,12 @@ static void reload_ffp_shaders() {
 		sprintf(fshader, ffp_frag_src, alpha_op, tex_unit->texture_array_state, tex_unit->color_array_state, internal_fog_mode, tex_unit->env_mode);
 		uint32_t size = strlen(fshader);
 		SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
-		if (!t) LOG(fshader);
 		if (ffp_fragment_program) {
+			unsigned int count, i;
+			sceGxmShaderPatcherGetFragmentProgramRefCount(gxm_shader_patcher, ffp_fragment_program_patched, &count);
+			for (i = 0; i < count; i++) {
+				sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, ffp_fragment_program_patched);
+			}
 			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, ffp_fragment_program_id);
 			free(ffp_fragment_program);
 		}

@@ -5,11 +5,13 @@ R"(#define has_clip_plane %d
 
 void main(
 	float3 position,
+#if has_texture == 1
+	float2 texcoord,
+#endif
 #if has_colors == 1
 	float4 color,
 #endif
 #if has_texture == 1
-	float2 texcoord,
 	float2 out vTexcoord : TEXCOORD0,
 #endif
 	float4 out vPosition : POSITION,
