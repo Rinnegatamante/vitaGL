@@ -59,6 +59,7 @@ void glGenTextures(GLsizei n, GLuint *res) {
 			texture_slots[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 			texture_slots[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 			texture_slots[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
+			texture_slots[i].generate_mipmap = GL_FALSE;
 		}
 		if (j >= n)
 			break;
@@ -105,6 +106,7 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 			texture_slots[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 			texture_slots[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 			texture_slots[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
+			texture_slots[i].generate_mipmap = GL_FALSE;
 
 			gpu_free_texture(&texture_slots[i]);
 			if (i == tex_unit->tex_id)
@@ -311,13 +313,19 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		tex->write_cb = write_cb;
 
 		if (tex->write_cb) {
-			if (level == 0)
+			if (level == 0) {
 				gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb, fast_store);
+				if (tex->generate_mipmap)
+					gpu_alloc_mipmaps(level, tex);
+			}
 			else
 				gpu_alloc_mipmaps(level, tex);
-		} else
+		} else {
 			gpu_alloc_compressed_texture(level, width, height, tex_format, 0, data, tex, data_bpp, read_cb);
-
+			if ((level == 0) && tex->generate_mipmap)
+				gpu_alloc_compressed_mipmaps(tex, internalFormat == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, format, (void *)data);
+		}
+			
 		// Setting texture parameters
 		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
 		sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex->v_mode);
@@ -879,6 +887,9 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 			tex->lod_bias = (uint32_t)(param + GL_MAX_TEXTURE_LOD_BIAS);
 			sceGxmTextureSetLodBias(&tex->gxm_tex, tex->lod_bias);
 			break;
+		case GL_GENERATE_MIPMAP: // Distant LOD bias
+			tex->generate_mipmap = (uint8_t)param;
+			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
 			break;
@@ -959,6 +970,9 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
 			tex->lod_bias = (uint32_t)(param + GL_MAX_TEXTURE_LOD_BIAS);
 			sceGxmTextureSetLodBias(&tex->gxm_tex, tex->lod_bias);
+			break;
+		case GL_GENERATE_MIPMAP: // Distant LOD bias
+			tex->generate_mipmap = (uint8_t)param;
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)

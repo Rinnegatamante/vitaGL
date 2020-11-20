@@ -202,6 +202,7 @@ extern "C" {
 #define GL_BGRA                               0x80E1
 #define GL_COLOR_INDEX8_EXT                   0x80E5
 #define GL_CLAMP_TO_EDGE                      0x812F
+#define GL_GENERATE_MIPMAP                    0x8191
 #define GL_RG                                 0x8227
 #define GL_UNSIGNED_SHORT_5_6_5               0x8363
 #define GL_MIRRORED_REPEAT                    0x8370

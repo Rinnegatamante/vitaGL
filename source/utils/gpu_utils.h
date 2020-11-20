@@ -49,6 +49,7 @@ typedef struct texture {
 	SceGxmTextureAddrMode v_mode;
 	SceGxmTextureMipFilter mip_filter;
 	uint32_t lod_bias;
+	uint8_t generate_mipmap;
 } texture;
 
 // Palette object struct
@@ -112,6 +113,9 @@ void gpu_free_palette(palette *pal);
 
 // Generate mipmaps for a given texture
 void gpu_alloc_mipmaps(int level, texture *tex);
+
+// Generate mipmaps for a compressed texture
+void gpu_alloc_compressed_mipmaps(texture *tex, int isdxt5, int gl_format, void *data);
 
 // Get the size of a mipchain with the last mip width and height
 int gpu_get_mipchain_size(int level, int width, int height, SceGxmTextureFormat format);
