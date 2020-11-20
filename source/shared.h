@@ -123,6 +123,20 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line);
 extern uint8_t use_shark; // Flag to check if vitaShaRK should be initialized at vitaGL boot
 extern uint8_t is_shark_online; // Current vitaShaRK status
 
+#if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
+// Internal fixed function pipeline dirty flags
+extern uint8_t ffp_dirty_frag;
+extern uint8_t ffp_dirty_frag_blend;
+extern uint8_t ffp_dirty_vert;
+extern uint8_t ffp_dirty_vert_stream;
+
+// Internal runtime shader compiler settings
+extern int32_t compiler_fastmath;
+extern int32_t compiler_fastprecision;
+extern int32_t compiler_fastint;
+extern shark_opt compiler_opts;
+#endif
+
 // sceGxm viewport setup (NOTE: origin is on center screen)
 extern float x_port;
 extern float y_port;

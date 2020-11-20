@@ -30,6 +30,10 @@ ifeq ($(HAVE_SHARK),2)
 CFLAGS  += -DHAVE_SHARK -DHAVE_SHARK_LOG
 endif
 
+ifeq ($(HAVE_SHARK_FFP),1)
+CFLAGS  += -DHAVE_SHARK_FFP
+endif
+
 all: $(TARGET).a
 
 $(TARGET).a: $(OBJS)

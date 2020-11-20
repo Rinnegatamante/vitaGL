@@ -864,6 +864,9 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
 	case GL_TEXTURE_ENV:
 		switch (pname) {
 		case GL_TEXTURE_ENV_MODE:
+#if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
+			ffp_dirty_frag = GL_TRUE;
+#endif
 			if (param == GL_MODULATE)
 				tex_unit->env_mode = MODULATE;
 			else if (param == GL_DECAL)
@@ -914,6 +917,9 @@ void glTexEnvi(GLenum target, GLenum pname, GLint param) {
 	case GL_TEXTURE_ENV:
 		switch (pname) {
 		case GL_TEXTURE_ENV_MODE:
+#if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
+			ffp_dirty_frag = GL_TRUE;
+#endif
 			switch (param) {
 			case GL_MODULATE:
 				tex_unit->env_mode = MODULATE;

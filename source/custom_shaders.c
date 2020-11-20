@@ -35,10 +35,10 @@ uint8_t is_shark_online = 0; // Current vitaShaRK status
 
 #ifdef HAVE_SHARK
 // Internal runtime shader compiler settings
-static int32_t compiler_fastmath = 0;
-static int32_t compiler_fastprecision = 0;
-static int32_t compiler_fastint = 0;
-static shark_opt compiler_opts = SHARK_OPT_DEFAULT;
+int32_t compiler_fastmath = 0;
+int32_t compiler_fastprecision = 0;
+int32_t compiler_fastint = 0;
+shark_opt compiler_opts = SHARK_OPT_DEFAULT;
 #endif
 
 GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
