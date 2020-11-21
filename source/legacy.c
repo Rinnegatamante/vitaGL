@@ -410,6 +410,7 @@ void glEnd(void) {
 
 	// Changing current openGL machine state
 	phase = NONE;
+	int i, j;
 
 	// Checking if we can totally skip drawing cause of culling mode
 	if (no_polygons_mode && ((prim == SCE_GXM_PRIMITIVE_TRIANGLES) || (prim >= SCE_GXM_PRIMITIVE_TRIANGLE_STRIP))) {
@@ -434,48 +435,12 @@ void glEnd(void) {
 		sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
 
-		// Setting fragment uniforms for alpha test and texture environment
-		void *alpha_buffer;
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &alpha_buffer);
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_cut, 0, 1, &alpha_ref);
-		float alpha_operation = (float)alpha_op;
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_alpha_op, 0, 1, &alpha_operation);
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_tint_color, 0, 4, &current_color.r);
-		float tex_env = (float)tex_unit->env_mode;
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env, 0, 1, &tex_env);
-		float fogmode = (float)internal_fog_mode;
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_mode, 0, 1, &fogmode);
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_color, 0, 4, &fog_color.r);
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_tex_env_color, 0, 4, &texenv_color.r);
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_near, 0, 1, (const float *)&fog_near);
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_far, 0, 1, (const float *)&fog_far);
-		sceGxmSetUniformDataF(alpha_buffer, texture2d_fog_density, 0, 1, (const float *)&fog_density);
-
-	} else {
-		// Setting proper vertex and fragment programs
-		sceGxmSetVertexProgram(gxm_context, rgba_vertex_program_patched);
-		sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
-	}
-
-	// Reserving default uniform buffer for wvp
-	int i, j;
-	void *vertex_wvp_buffer;
-	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_wvp_buffer);
-
-	// Checking  if we have to write a texture
-	if (model_uv != NULL) {
-		// Setting wvp matrix
-		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_wvp, 0, 16, (const float *)mvp_matrix);
-
-		// Setting fogging uniforms
-		float clipplane0 = (float)clip_plane0;
-		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0, 0, 1, &clipplane0);
-		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_clip_plane0_eq, 0, 4, &clip_plane0_eq.x);
-		sceGxmSetUniformDataF(vertex_wvp_buffer, texture2d_mv, 0, 16, (const float *)modelview_matrix);
-
+		// Setting uniforms
+		upload_tex2d_uniforms(texture2d_generic_unifs);
+		
 		// Setting in use texture
 		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
-
+		
 		// Properly generating vertices, uv map and indices buffers
 		vector3f *vertices;
 		vector2f *uv_map;
@@ -527,11 +492,18 @@ void glEnd(void) {
 		sceGxmSetVertexStream(gxm_context, 0, vertices);
 		sceGxmSetVertexStream(gxm_context, 1, uv_map);
 		sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, indices, idx_count);
-
 	} else {
-		// Setting wvp matrix
-		sceGxmSetUniformDataF(vertex_wvp_buffer, rgba_wvp, 0, 16, (const float *)mvp_matrix);
-
+		// Setting proper vertex and fragment programs
+		sceGxmSetVertexProgram(gxm_context, rgba_vertex_program_patched);
+		sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
+		
+		// Reserving default vertex uniform buffer for wvp
+		void *vbuffer;
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
+		
+		// Uploading wvp matrix
+		sceGxmSetUniformDataF(vbuffer, rgba_wvp, 0, 16, (const float *)mvp_matrix);
+		
 		// Properly generating vertices, colors and indices buffers
 		vector3f *vertices;
 		vector4f *colors;
