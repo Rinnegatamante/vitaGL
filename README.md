@@ -4,7 +4,12 @@ vitaGL is a wrapper between openGL and sceGxm. It allows to use a subset of open
 # Build Instructions
 In order to build vitaGL use the following command: `make HAVE_SBRK=1 install`.
 If you already have a newlib sbrk replacement in your app (eg. RetroArch), use instead this command: `make install`.
-
+<br>These are all the available flags usable when compiling the library:<br>
+`HAVE_SBRK=1` Enables internal custom implementation for sbrk.c from newlib.<br>
+`HAVE_SHARK=1` Enables runtime shader compiler support through [vitaShaRK](https://github.com/Rinnegatamante/vitaShaRK) library.<br>
+`HAVE_SHARK=2` Enables runtime shader compiler support through [vitaShaRK](https://github.com/Rinnegatamante/vitaShaRK) library with logging support.<br>
+`HAVE_SHARK_FFP=1` Enables fixed function pipeline implementation through runtime shader compiler.<br>
+`NO_DEBUG=1` Disables most of the error handling features (Faster CPU code execution but code may be non compliant to all OpenGL standards).<br>
 # Samples
 
 You can find samples in the *samples* folder in this repository.
