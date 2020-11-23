@@ -296,6 +296,7 @@ static void reload_ffp_shaders() {
 	int texture2d_idx = tex_unit->tex_id;
 	
 	// Checking if mask changed
+	uint8_t ffp_dirty_frag_blend = GL_FALSE;
 	shader_mask mask = {.raw = 0};
 	mask.texenv_mode = tex_unit->env_mode;
 	mask.alpha_test_mode = alpha_op;
@@ -403,7 +404,6 @@ static void reload_ffp_shaders() {
 	}
 	
 	// Checking if fragment shader requires a recompilation
-	uint8_t ffp_dirty_frag_blend = GL_FALSE;
 	if (ffp_dirty_frag) {
 		
 		// Compiling the new shader
@@ -431,7 +431,7 @@ static void reload_ffp_shaders() {
 	}
 	
 	// Checking if fragment shader requires a blend settings change
-	if (ffp_dirty_frag_blend || (ffp_blend_info.raw != blend_info.raw) {
+	if (ffp_dirty_frag_blend || (ffp_blend_info.raw != blend_info.raw)) {
 		rebuild_frag_shader(ffp_fragment_program_id, &ffp_fragment_program_patched, NULL);
 			
 		// Updating current fixed function pipeline blend config

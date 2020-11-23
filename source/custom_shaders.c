@@ -75,6 +75,8 @@ typedef struct program {
 	GLuint stream_num;
 	const SceGxmProgramParameter *wvp;
 	uniform *uniforms;
+	GLboolean has_vertex_unifs;
+	GLboolean has_fragment_unifs;
 } program;
 
 // Internal shaders array
@@ -108,8 +110,8 @@ void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean imp
 	
 	// Uploading both fragment and vertex uniforms data
 	void *vbuffer, *fbuffer;
-	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
-	sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
+	if (p->has_vertex_unifs || implicit_wvp) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
+	if (p->has_fragment_unifs) sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
 	uniform *u = p->uniforms;
 	while (u != NULL) {
 		if (u->isVertex)
@@ -367,6 +369,8 @@ GLuint glCreateProgram(void) {
 			progs[i - 1].attr_num = 0;
 			progs[i - 1].wvp = NULL;
 			progs[i - 1].uniforms = NULL;
+			progs[i - 1].has_fragment_unifs = GL_FALSE;
+			progs[i - 1].has_vertex_unifs = GL_FALSE;
 			break;
 		}
 	}
@@ -438,7 +442,10 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	}
 	
 	res->size = 0;
-
+	if (res->isVertex)
+		p->has_vertex_unifs = GL_TRUE;
+	else
+		p->has_fragment_unifs = GL_TRUE;
 	p->uniforms = res;
 	return (GLint)res;
 }
