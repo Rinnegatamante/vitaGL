@@ -78,6 +78,7 @@ SceGxmVertexProgram *rgb_vertex_program_patched;
 SceGxmVertexProgram *rgb_u8n_vertex_program_patched;
 SceGxmFragmentProgram *rgba_fragment_program_patched;
 const SceGxmProgram *rgba_fragment_program;
+blend_config rgba_blend_cfg;
 
 // Texture2D shader
 SceGxmShaderPatcherId texture2d_vertex_id;
@@ -87,6 +88,7 @@ const SceGxmProgramParameter *texture2d_tint_color;
 SceGxmVertexProgram *texture2d_vertex_program_patched;
 SceGxmFragmentProgram *texture2d_fragment_program_patched;
 const SceGxmProgram *texture2d_fragment_program;
+blend_config texture2d_blend_cfg;
 
 // Texture2D+RGBA shader
 SceGxmShaderPatcherId texture2d_rgba_vertex_id;
@@ -96,6 +98,7 @@ SceGxmVertexProgram *texture2d_rgba_vertex_program_patched;
 SceGxmVertexProgram *texture2d_rgba_u8n_vertex_program_patched;
 SceGxmFragmentProgram *texture2d_rgba_fragment_program_patched;
 const SceGxmProgram *texture2d_rgba_fragment_program;
+blend_config texture2d_rgba_blend_cfg;
 
 typedef struct gpubuffer {
 	void *ptr;
@@ -142,8 +145,7 @@ vector4f *clear_vertices = NULL; // Memblock starting address for clear screen v
 vector3f *depth_vertices = NULL; // Memblock starting address for depth clear screen vertices
 
 // Internal stuffs
-static SceGxmBlendInfo blend_info; // Current blend info mode for the fixed function pipeline implementation
-static SceGxmBlendInfo *blend_info_ptr;
+blend_config blend_info; // Current blend info mode
 SceGxmMultisampleMode msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
 
 extern uint8_t use_vram;
@@ -264,7 +266,7 @@ SceGxmProgram *ffp_vertex_program = NULL;
 SceGxmVertexProgram *ffp_vertex_program_patched; // Patched vertex program for the fixed function pipeline implementation
 SceGxmFragmentProgram *ffp_fragment_program_patched; // Patched fragment program for the fixed function pipeline implementation
 uint8_t ffp_dirty_frag = GL_TRUE;
-uint8_t ffp_dirty_frag_blend = GL_TRUE;
+blend_config ffp_blend_info;
 uint8_t ffp_dirty_vert = GL_TRUE;
 uint8_t ffp_dirty_vert_stream = GL_TRUE;
 shader_mask ffp_mask = {.raw = 0};
@@ -401,6 +403,7 @@ static void reload_ffp_shaders() {
 	}
 	
 	// Checking if fragment shader requires a recompilation
+	uint8_t ffp_dirty_frag_blend = GL_FALSE;
 	if (ffp_dirty_frag) {
 		
 		// Compiling the new shader
@@ -428,17 +431,11 @@ static void reload_ffp_shaders() {
 	}
 	
 	// Checking if fragment shader requires a blend settings change
-	if (ffp_dirty_frag_blend) {
-		sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-			ffp_fragment_program_id,
-			SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-			msaa_mode,
-			blend_info_ptr,
-			NULL,
-			&ffp_fragment_program_patched);
+	if (ffp_dirty_frag_blend || (ffp_blend_info.raw != blend_info.raw) {
+		rebuild_frag_shader(ffp_fragment_program_id, &ffp_fragment_program_patched, NULL);
 			
-		// Clearing dirty flags
-		ffp_dirty_frag_blend = GL_FALSE;
+		// Updating current fixed function pipeline blend config
+		ffp_blend_info.raw = blend_info.raw;
 	}
 	
 	if (new_shader_flag) {
@@ -463,83 +460,42 @@ static void reload_ffp_shaders() {
 }
 #endif
 
-static void _change_blend_factor() {
-	changeCustomShadersBlend(blend_info_ptr);
+void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, const SceGxmProgram *vert) {
+	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		pid, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+		msaa_mode,
+		&blend_info.info,
+		vert, prog);
+}
 
-#if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
-	if (is_shark_online) {
-		ffp_dirty_frag_blend = GL_TRUE;
-	} else {
-#endif
-		sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-			rgba_fragment_id,
-			SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-			msaa_mode,
-			blend_info_ptr,
-			NULL,
-			&rgba_fragment_program_patched);
-
-		sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-			texture2d_fragment_id,
-			SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-			msaa_mode,
-			blend_info_ptr,
-			NULL,
-			&texture2d_fragment_program_patched);
-
-		sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-			texture2d_rgba_fragment_id,
-			SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-			msaa_mode,
-			blend_info_ptr,
-			NULL,
-			&texture2d_rgba_fragment_program_patched);
-#if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
+void update_precompiled_ffp_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, blend_config *cfg) {
+	// Check if a blend config change happened
+	if (cfg[0].raw != blend_info.raw) {
+		rebuild_frag_shader(pid, prog, NULL);
+		cfg[0].raw = blend_info.raw;
 	}
-#endif
+	
+	sceGxmSetFragmentProgram(gxm_context, *prog);
 }
 
 void change_blend_factor() {
-	blend_info.colorMask = blend_color_mask;
-	blend_info.colorFunc = blend_func_rgb;
-	blend_info.alphaFunc = blend_func_a;
-	blend_info.colorSrc = blend_sfactor_rgb;
-	blend_info.colorDst = blend_dfactor_rgb;
-	blend_info.alphaSrc = blend_sfactor_a;
-	blend_info.alphaDst = blend_dfactor_a;
-	blend_info_ptr = &blend_info;
-
-	_change_blend_factor();
-	if (cur_program != 0) {
-		reloadCustomShader();
-	}
+	blend_info.info.colorMask = blend_color_mask;
+	blend_info.info.colorFunc = blend_func_rgb;
+	blend_info.info.alphaFunc = blend_func_a;
+	blend_info.info.colorSrc = blend_sfactor_rgb;
+	blend_info.info.colorDst = blend_dfactor_rgb;
+	blend_info.info.alphaSrc = blend_sfactor_a;
+	blend_info.info.alphaDst = blend_dfactor_a;
 }
 
 void change_blend_mask() {
-	blend_info.colorMask = blend_color_mask;
-	blend_info.colorFunc = SCE_GXM_BLEND_FUNC_NONE;
-	blend_info.alphaFunc = SCE_GXM_BLEND_FUNC_NONE;
-	blend_info.colorSrc = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
-	blend_info.colorDst = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-	blend_info.alphaSrc = SCE_GXM_BLEND_FACTOR_ONE;
-	blend_info.alphaDst = SCE_GXM_BLEND_FACTOR_ZERO;
-	blend_info_ptr = &blend_info;
-
-	_change_blend_factor();
-	if (cur_program != 0) {
-		reloadCustomShader();
-	}
-}
-
-void disable_blend() {
-	if (blend_color_mask == SCE_GXM_COLOR_MASK_ALL) {
-		blend_info_ptr = NULL;
-		_change_blend_factor();
-		if (cur_program != 0) {
-			reloadCustomShader();
-		}
-	} else
-		change_blend_mask();
+	blend_info.info.colorMask = blend_color_mask;
+	blend_info.info.colorFunc = SCE_GXM_BLEND_FUNC_NONE;
+	blend_info.info.alphaFunc = SCE_GXM_BLEND_FUNC_NONE;
+	blend_info.info.colorSrc = SCE_GXM_BLEND_FACTOR_SRC_ALPHA;
+	blend_info.info.colorDst = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	blend_info.info.alphaSrc = SCE_GXM_BLEND_FACTOR_ONE;
+	blend_info.info.alphaDst = SCE_GXM_BLEND_FACTOR_ZERO;
 }
 
 void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height) {
@@ -604,6 +560,9 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 
 	// Starting a sceGxmShaderPatcher instance
 	startShaderPatcher();
+	
+	// Setting up default blending state
+	change_blend_mask();
 
 	// Disable color buffer shader register
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_disable_color_buffer_f,
@@ -1677,11 +1636,11 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 						return;
 					if (tex_unit->color_array_state) {
 						sceGxmSetVertexProgram(gxm_context, texture2d_rgba_vertex_program_patched);
-						sceGxmSetFragmentProgram(gxm_context, texture2d_rgba_fragment_program_patched);
+						update_precompiled_ffp_frag_shader(texture2d_rgba_fragment_id, &texture2d_rgba_fragment_program_patched, &texture2d_rgba_blend_cfg);
 						upload_tex2d_uniforms(texture2d_rgba_generic_unifs);
 					} else {
 						sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-						sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+						update_precompiled_ffp_frag_shader(texture2d_fragment_id, &texture2d_fragment_program_patched, &texture2d_blend_cfg);
 						upload_tex2d_uniforms(texture2d_generic_unifs);
 					}
 					sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
@@ -1696,13 +1655,11 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 						sceGxmSetVertexStream(gxm_context, 2, colors);
 					sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
 				} else {
-					if (tex_unit->color_array_state && (tex_unit->color_array.num == 3)) {
+					if (tex_unit->color_array_state && (tex_unit->color_array.num == 3))
 						sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
-						sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
-					} else {
+					else
 						sceGxmSetVertexProgram(gxm_context, rgba_vertex_program_patched);
-						sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
-					}
+					update_precompiled_ffp_frag_shader(rgba_fragment_id, &rgba_fragment_program_patched, &rgba_blend_cfg);
 					vector3f *vertices = NULL;
 					uint8_t *colors = NULL;
 					uint16_t *indices;
@@ -1949,11 +1906,11 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 						return;
 					if (tex_unit->color_array_state) {
 						sceGxmSetVertexProgram(gxm_context, texture2d_rgba_vertex_program_patched);
-						sceGxmSetFragmentProgram(gxm_context, texture2d_rgba_fragment_program_patched);
+						update_precompiled_ffp_frag_shader(texture2d_rgba_fragment_id, &texture2d_rgba_fragment_program_patched, &texture2d_rgba_blend_cfg);
 						upload_tex2d_uniforms(texture2d_rgba_generic_unifs);
 					} else {
 						sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-						sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+						update_precompiled_ffp_frag_shader(texture2d_fragment_id, &texture2d_fragment_program_patched, &texture2d_blend_cfg);
 						upload_tex2d_uniforms(texture2d_generic_unifs);
 					}
 					sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
@@ -1967,13 +1924,11 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 						sceGxmSetVertexStream(gxm_context, 2, colors);
 					sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
 				} else {
-					if (tex_unit->color_array_state && (tex_unit->color_array.num == 3)) {
+					if (tex_unit->color_array_state && (tex_unit->color_array.num == 3))
 						sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
-						sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
-					} else {
+					else
 						sceGxmSetVertexProgram(gxm_context, rgba_vertex_program_patched);
-						sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
-					}
+					update_precompiled_ffp_frag_shader(rgba_fragment_id, &rgba_fragment_program_patched, &rgba_blend_cfg);
 					void *vbuffer;
 					sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
 					sceGxmSetUniformDataF(vbuffer, rgba_wvp, 0, 16, (const float *)mvp_matrix);
@@ -2292,7 +2247,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 								sceGxmSetVertexProgram(gxm_context, texture2d_rgba_vertex_program_patched);
 							else
 								sceGxmSetVertexProgram(gxm_context, texture2d_rgba_u8n_vertex_program_patched);
-							sceGxmSetFragmentProgram(gxm_context, texture2d_rgba_fragment_program_patched);
+							update_precompiled_ffp_frag_shader(texture2d_rgba_fragment_id, &texture2d_rgba_fragment_program_patched, &texture2d_rgba_blend_cfg);
 							upload_tex2d_uniforms(texture2d_rgba_generic_unifs);
 							sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
 							sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
@@ -2301,7 +2256,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 							sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 						} else {
 							sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-							sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+							update_precompiled_ffp_frag_shader(texture2d_fragment_id, &texture2d_fragment_program_patched, &texture2d_blend_cfg);
 							upload_tex2d_uniforms(texture2d_generic_unifs);
 							sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
 							sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
@@ -2314,14 +2269,13 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 								sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
 							else
 								sceGxmSetVertexProgram(gxm_context, rgb_u8n_vertex_program_patched);
-							sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
 						} else {
 							if (tex_unit->color_object_type == GL_FLOAT)
 								sceGxmSetVertexProgram(gxm_context, rgba_vertex_program_patched);
 							else
 								sceGxmSetVertexProgram(gxm_context, rgba_u8n_vertex_program_patched);
-							sceGxmSetFragmentProgram(gxm_context, rgba_fragment_program_patched);
 						}
+						update_precompiled_ffp_frag_shader(rgba_fragment_id, &rgba_fragment_program_patched, &rgba_blend_cfg);
 						void *vbuffer;
 						sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
 						sceGxmSetUniformDataF(vbuffer, rgba_wvp, 0, 16, (const float *)mvp_matrix);
