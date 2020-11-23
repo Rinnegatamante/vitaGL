@@ -75,7 +75,6 @@ typedef struct program {
 	GLuint stream_num;
 	const SceGxmProgramParameter *wvp;
 	uniform *uniforms;
-	uniform *last_uniform;
 } program;
 
 // Internal shaders array
@@ -113,11 +112,10 @@ void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean imp
 	sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
 	uniform *u = p->uniforms;
 	while (u != NULL) {
-		if (u->isVertex) {
+		if (u->isVertex)
 			sceGxmSetUniformDataF(vbuffer, u->ptr, 0, u->size, u->data);
-		} else {
+		else
 			sceGxmSetUniformDataF(fbuffer, u->ptr, 0, u->size, u->data);
-		}
 		u = (uniform *)u->chain;
 	}
 	
@@ -369,7 +367,6 @@ GLuint glCreateProgram(void) {
 			progs[i - 1].attr_num = 0;
 			progs[i - 1].wvp = NULL;
 			progs[i - 1].uniforms = NULL;
-			progs[i - 1].last_uniform = NULL;
 			break;
 		}
 	}
@@ -425,7 +422,7 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	program *p = &progs[prog - 1];
 
 	uniform *res = (uniform *)malloc(sizeof(uniform));
-	res->chain = NULL;
+	res->chain = p->uniforms;
 
 	// Checking if parameter is a vertex or fragment related one
 	res->ptr = sceGxmProgramFindParameterByName(p->vshader->prog, name);
@@ -442,10 +439,7 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	
 	res->size = 0;
 
-	if (p->last_uniform != NULL)
-		p->last_uniform->chain = (void *)res;
-	p->last_uniform = res;
-
+	p->uniforms = res;
 	return (GLint)res;
 }
 
@@ -460,7 +454,7 @@ void glUniform1i(GLint location, GLint v0) {
 	// Setting passed value to desired uniform
 	if (u->size == 0) {
 		u->size = 1;
-		u->data = (float*)malloc(u->size);
+		u->data = (float*)malloc(u->size * sizeof(float));
 	}
 	u->data[0] = (float)v0;
 }
@@ -476,7 +470,7 @@ void glUniform2i(GLint location, GLint v0, GLint v1) {
 	// Setting passed value to desired uniform
 	if (u->size == 0) {
 		u->size = 2;
-		u->data = (float*)malloc(u->size);
+		u->data = (float*)malloc(u->size * sizeof(float));
 	}
 	u->data[0] = (float)v0;
 	u->data[1] = (float)v1;
@@ -493,7 +487,7 @@ void glUniform1f(GLint location, GLfloat v0) {
 	// Setting passed value to desired uniform
 	if (u->size == 0) {
 		u->size = 1;
-		u->data = (float*)malloc(u->size);
+		u->data = (float*)malloc(u->size * sizeof(float));
 	}
 	u->data[0] = v0;
 }
@@ -509,7 +503,7 @@ void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
 	// Setting passed value to desired uniform
 	if (u->size == 0) {
 		u->size = 2;
-		u->data = (float*)malloc(u->size);
+		u->data = (float*)malloc(u->size * sizeof(float));
 	}
 	u->data[0] = v0;
 	u->data[1] = v1;
@@ -526,7 +520,7 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 	if (u->size == 0) {
 		u->size = 2 * count;
-		u->data = (float*)malloc(u->size);
+		u->data = (float*)malloc(u->size * sizeof(float));
 	}
 	memcpy_neon(u->data, value, u->size * sizeof(float));
 }
@@ -542,7 +536,7 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 	if (u->size == 0) {
 		u->size = 3 * count;
-		u->data = (float*)malloc(u->size);
+		u->data = (float*)malloc(u->size * sizeof(float));
 	}
 	memcpy_neon(u->data, value, u->size * sizeof(float));
 }
@@ -558,7 +552,7 @@ void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
 	// Setting passed value to desired uniform
 	if (u->size == 0) {
 		u->size = 4;
-		u->data = (float*)malloc(u->size);
+		u->data = (float*)malloc(u->size * sizeof(float));
 	}
 	u->data[0] = v0;
 	u->data[1] = v1;
@@ -577,7 +571,7 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 	if (u->size == 0) {
 		u->size = 4 * count;
-		u->data = (float*)malloc(u->size);
+		u->data = (float*)malloc(u->size * sizeof(float));
 	}
 	memcpy_neon(u->data, value, u->size * sizeof(float));
 }
@@ -593,7 +587,7 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 	// Setting passed value to desired uniform
 	if (u->size == 0) {
 		u->size = 16 * count;
-		u->data = (float*)malloc(u->size);
+		u->data = (float*)malloc(u->size * sizeof(float));
 	}
 	memcpy_neon(u->data, value, u->size * sizeof(float));
 }
