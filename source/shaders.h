@@ -52,6 +52,7 @@ extern SceGxmVertexProgram *rgb_vertex_program_patched;
 extern SceGxmVertexProgram *rgb_u8n_vertex_program_patched;
 extern SceGxmFragmentProgram *rgba_fragment_program_patched;
 extern const SceGxmProgram *rgba_fragment_program;
+extern blend_config rgba_blend_cfg;
 
 // Texture2D shader
 extern SceGxmShaderPatcherId texture2d_vertex_id;
@@ -61,6 +62,7 @@ extern const SceGxmProgramParameter *texture2d_tint_color;
 extern SceGxmVertexProgram *texture2d_vertex_program_patched;
 extern SceGxmFragmentProgram *texture2d_fragment_program_patched;
 extern const SceGxmProgram *texture2d_fragment_program;
+extern blend_config texture2d_blend_cfg;
 
 // Texture2D+RGBA shader
 extern SceGxmShaderPatcherId texture2d_rgba_vertex_id;
@@ -70,5 +72,6 @@ extern SceGxmVertexProgram *texture2d_rgba_vertex_program_patched;
 extern SceGxmVertexProgram *texture2d_rgba_u8n_vertex_program_patched;
 extern SceGxmFragmentProgram *texture2d_rgba_fragment_program_patched;
 extern const SceGxmProgram *texture2d_rgba_fragment_program;
+extern blend_config texture2d_rgba_blend_cfg;
 
 #endif

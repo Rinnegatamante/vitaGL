@@ -277,7 +277,7 @@ void glDisable(GLenum cap) {
 		break;
 	case GL_BLEND:
 		if (blend_state)
-			disable_blend();
+			change_blend_mask();
 		blend_state = GL_FALSE;
 		break;
 	case GL_SCISSOR_TEST:

@@ -94,6 +94,12 @@ typedef enum SceGxmPrimitiveTypeExtra {
 	SCE_GXM_PRIMITIVE_QUADS = 1
 } SceGxmPrimitiveTypeExtra;
 
+// Blend info internal struct
+typedef union {
+	SceGxmBlendInfo info;
+	uint32_t raw;
+} blend_config;
+
 #include "shaders.h"
 
 // Internal stuffs
@@ -101,6 +107,7 @@ extern void *frag_uniforms;
 extern void *vert_uniforms;
 extern SceGxmMultisampleMode msaa_mode;
 extern GLboolean use_extra_mem;
+extern blend_config blend_info;
 
 // Debugging tool
 #ifdef ENABLE_LOG
@@ -209,14 +216,14 @@ void update_alpha_test_settings(void); // Changes current in use alpha test oper
 void update_scissor_test(void); // Changes current in use scissor test region
 void resetScissorTestRegion(void); // Resets scissor test region to default values
 
-/* blending.c */
+/* blending.c (TODO) */
 void change_blend_factor(void); // Changes current blending settings for all used shaders
-void disable_blend(void); // Disables blending for all used shaders
+void change_blend_mask(void); // Changes color mask when blending is disabled for all used shaders
+void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, const SceGxmProgram *vert); // Creates a new patched fragment program with proper blend settings
+void update_precompiled_ffp_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, blend_config *cfg); // Updated current in use fragment program for precompiled ffp implementation
 
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders
-void changeCustomShadersBlend(SceGxmBlendInfo *blend_info); // Change SceGxmBlendInfo value to all custom shaders
-void reloadCustomShader(void); // Reloads in use custom shader inside sceGxm
 void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
 
 /* misc functions */

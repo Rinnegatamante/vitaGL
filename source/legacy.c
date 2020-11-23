@@ -433,7 +433,7 @@ void glEnd(void) {
 	if ((server_texture_unit >= 0) && (tex_unit->enabled) && (model_uv != NULL) && (texture_slots[texture2d_idx].valid)) {
 		// Setting proper vertex and fragment programs
 		sceGxmSetVertexProgram(gxm_context, texture2d_vertex_program_patched);
-		sceGxmSetFragmentProgram(gxm_context, texture2d_fragment_program_patched);
+		update_precompiled_ffp_frag_shader(texture2d_fragment_id, &texture2d_fragment_program_patched, &texture2d_blend_cfg);
 
 		// Setting uniforms
 		upload_tex2d_uniforms(texture2d_generic_unifs);
