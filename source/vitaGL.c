@@ -148,8 +148,8 @@ vector3f *depth_vertices = NULL; // Memblock starting address for depth clear sc
 blend_config blend_info; // Current blend info mode
 SceGxmMultisampleMode msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
 
-extern uint8_t use_vram;
-extern uint8_t use_vram_for_usse;
+extern GLboolean use_vram;
+extern GLboolean use_vram_for_usse;
 
 static GLuint buffers[BUFFERS_NUM]; // Buffers array
 static gpubuffer gpu_buffers[BUFFERS_NUM]; // Buffers array
@@ -265,10 +265,10 @@ SceGxmProgram *ffp_fragment_program = NULL;
 SceGxmProgram *ffp_vertex_program = NULL;
 SceGxmVertexProgram *ffp_vertex_program_patched; // Patched vertex program for the fixed function pipeline implementation
 SceGxmFragmentProgram *ffp_fragment_program_patched; // Patched fragment program for the fixed function pipeline implementation
-uint8_t ffp_dirty_frag = GL_TRUE;
+GLboolean ffp_dirty_frag = GL_TRUE;
+GLboolean ffp_dirty_vert = GL_TRUE;
+GLboolean ffp_dirty_vert_stream = GL_TRUE;
 blend_config ffp_blend_info;
-uint8_t ffp_dirty_vert = GL_TRUE;
-uint8_t ffp_dirty_vert_stream = GL_TRUE;
 shader_mask ffp_mask = {.raw = 0};
 
 static void upload_ffp_uniforms() {

@@ -63,8 +63,8 @@ int DISPLAY_STRIDE; // Display stride in pixels
 float DISPLAY_WIDTH_FLOAT; // Display width in pixels (float)
 float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
-uint8_t system_app_mode = 0; // Flag for system app mode usage
-static uint8_t gxm_initialized = 0; // Current sceGxm state
+GLboolean system_app_mode = GL_FALSE; // Flag for system app mode usage
+static GLboolean gxm_initialized = GL_FALSE; // Current sceGxm state
 
 // sceDisplay callback data
 struct display_queue_callback_data {
@@ -110,21 +110,20 @@ void initGxm(void) {
 	if (use_shark) {
 #ifdef HAVE_SHARK
 		if (shark_init(NULL) >= 0) {
-			is_shark_online = 1;
+			is_shark_online = GL_TRUE;
 #ifdef HAVE_SHARK_LOG
 			shark_install_log_cb(shark_log_cb);
 			shark_set_warnings_level(SHARK_WARN_MAX);
 #endif
-		} else
+		}
 #endif
-			is_shark_online = 0;
 	}
 
 	// Checking if the running application is a system one
 	SceAppMgrBudgetInfo info;
 	info.size = sizeof(SceAppMgrBudgetInfo);
 	if (!sceAppMgrGetBudgetInfo(&info))
-		system_app_mode = 1;
+		system_app_mode = GL_TRUE;
 
 	// Initializing sceGxm init parameters
 	SceGxmInitializeParams gxm_init_params;
@@ -140,7 +139,7 @@ void initGxm(void) {
 		sceGxmVshInitialize(&gxm_init_params);
 	else
 		sceGxmInitialize(&gxm_init_params);
-	gxm_initialized = 1;
+	gxm_initialized = GL_TRUE;
 }
 
 void initGxmContext(void) {

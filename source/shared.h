@@ -127,15 +127,14 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line);
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-extern uint8_t use_shark; // Flag to check if vitaShaRK should be initialized at vitaGL boot
-extern uint8_t is_shark_online; // Current vitaShaRK status
+extern GLboolean use_shark; // Flag to check if vitaShaRK should be initialized at vitaGL boot
+extern GLboolean is_shark_online; // Current vitaShaRK status
 
 #if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
 // Internal fixed function pipeline dirty flags
-extern uint8_t ffp_dirty_frag;
-extern uint8_t ffp_dirty_frag_blend;
-extern uint8_t ffp_dirty_vert;
-extern uint8_t ffp_dirty_vert_stream;
+extern GLboolean ffp_dirty_frag;
+extern GLboolean ffp_dirty_vert;
+extern GLboolean ffp_dirty_vert_stream;
 
 // Internal runtime shader compiler settings
 extern int32_t compiler_fastmath;
@@ -164,7 +163,7 @@ extern SceGxmContext *gxm_context; // sceGxm context instance
 extern GLenum vgl_error; // Error returned by glGetError
 extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 extern void *gxm_depth_surface_addr; // Depth surface memblock starting address
-extern uint8_t system_app_mode; // Flag for system app mode usage
+extern GLboolean system_app_mode; // Flag for system app mode usage
 
 extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 extern matrix4x4 projection_matrix; // Projection Matrix

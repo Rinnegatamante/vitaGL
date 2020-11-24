@@ -28,14 +28,14 @@
 #define MAX_TEXUNITS_USAGE 3 // Maximum number of texture units per custom shader
 
 // Internal stuffs
-uint8_t use_shark = 1; // Flag to check if vitaShaRK should be initialized at vitaGL boot
-uint8_t is_shark_online = 0; // Current vitaShaRK status
+GLboolean use_shark = GL_TRUE; // Flag to check if vitaShaRK should be initialized at vitaGL boot
+GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status
 
 #ifdef HAVE_SHARK
 // Internal runtime shader compiler settings
-int32_t compiler_fastmath = 0;
-int32_t compiler_fastprecision = 0;
-int32_t compiler_fastint = 0;
+int32_t compiler_fastmath = GL_FALSE;
+int32_t compiler_fastprecision = GL_FALSE;
+int32_t compiler_fastint = GL_FALSE;
 shark_opt compiler_opts = SHARK_OPT_DEFAULT;
 #endif
 
