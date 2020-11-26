@@ -273,7 +273,7 @@ void gpu_free_texture(texture *tex) {
 	tex->valid = 0;
 }
 
-void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), uint8_t fast_store) {
+void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), GLboolean fast_store) {
 	// If there's already a texture in passed texture object we first dealloc it
 	if (tex->valid)
 		gpu_free_texture(tex);

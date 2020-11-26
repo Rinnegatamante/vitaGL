@@ -121,7 +121,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 
 	SceGxmTextureFormat tex_format;
 	uint8_t data_bpp = 0;
-	uint8_t fast_store = GL_FALSE;
+	GLboolean fast_store = GL_FALSE;
 
 	// Support for legacy GL1.0 internalFormat
 	switch (internalFormat) {

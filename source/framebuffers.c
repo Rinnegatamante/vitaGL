@@ -23,6 +23,9 @@
 
 #include "shared.h"
 
+extern void *gxm_color_surfaces_addr[DISPLAY_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
+extern unsigned int gxm_back_buffer_index; // Display back buffer id
+
 static framebuffer framebuffers[BUFFERS_NUM]; // Framebuffers array
 
 framebuffer *active_read_fb = NULL; // Current readback framebuffer in use
@@ -141,9 +144,12 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 	// Aliasing to make code more readable
 	texture *tex = &texture_slots[tex_id];
 
-	// Extracting texture sizes
+	// Extracting texture data
 	fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
 	fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
+	fb->stride = ALIGN(fb->width, 8) * tex_format_to_bytespp(sceGxmTextureGetFormat(&tex->gxm_tex));
+	fb->data = sceGxmTextureGetData(&tex->gxm_tex);
+	fb->data_type = tex->type;
 
 	// Detecting requested attachment
 	switch (attachment) {
@@ -156,10 +162,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 			SCE_GXM_COLOR_SURFACE_LINEAR,
 			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
 			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-			fb->width,
-			fb->height,
-			fb->width,
-			sceGxmTextureGetData(&tex->gxm_tex));
+			fb->width, fb->height, fb->stride, fb->data);
 
 		// Allocating depth and stencil buffer (FIXME: This probably shouldn't be here)
 		initDepthStencilBuffer(fb->width, fb->height, &fb->depthbuffer, &fb->depth_buffer_addr, &fb->stencil_buffer_addr, &fb->depth_buffer_mem_type, &fb->stencil_buffer_mem_type);
@@ -168,8 +171,8 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		SceGxmRenderTargetParams renderTargetParams;
 		memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
 		renderTargetParams.flags = 0;
-		renderTargetParams.width = sceGxmTextureGetWidth(&tex->gxm_tex);
-		renderTargetParams.height = sceGxmTextureGetHeight(&tex->gxm_tex);
+		renderTargetParams.width = fb->width;
+		renderTargetParams.height = fb->height;
 		renderTargetParams.scenesPerFrame = 1;
 		renderTargetParams.multisampleMode = msaa_mode;
 		renderTargetParams.multisampleLocations = 0;
@@ -179,6 +182,97 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
+	}
+}
+
+void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data) {
+	/*
+	 * Callbacks are actually used to just perform down/up-sampling
+	 * between U8 texture formats. Reads are expected to give as result
+	 * a RGBA sample that will be wrote depending on texture format
+	 * by the write callback
+	 */
+	void (*write_cb)(void *, uint32_t) = NULL;
+	uint32_t (*read_cb)(void *) = NULL;
+	
+	GLboolean fast_store = GL_FALSE;
+	uint8_t *src;
+	int stride, src_bpp, dst_bpp;
+	if (active_read_fb) {
+		switch (active_read_fb->data_type) {
+		case GL_RGBA:
+			write_cb = writeRGBA;
+			src_bpp = 4;
+			break;
+		case GL_RGB:
+			write_cb = writeRGB;
+			src_bpp = 3;
+			break;
+		default:
+			break;
+		}
+		if (format == active_read_fb->data_type)
+			fast_store = GL_TRUE;
+		src = (uint8_t*)active_read_fb->data;
+		y = active_read_fb->height - (height + y);
+		stride = active_read_fb->stride;
+	} else {
+		src = (uint8_t*)gxm_color_surfaces_addr[gxm_back_buffer_index];
+		y = DISPLAY_HEIGHT - (height + y);
+		stride = DISPLAY_STRIDE * 4;
+		src_bpp = 4;
+		if (format == GL_RGBA)
+			fast_store = GL_TRUE;
+	}
+	y *= stride;
+	
+	if (!fast_store) {
+		switch (format) {
+		case GL_RGBA:
+			switch (type) {
+			case GL_UNSIGNED_BYTE:
+				read_cb = readRGBA;
+				break;
+			default:
+				SET_GL_ERROR(GL_INVALID_ENUM)
+				break;
+			}
+			break;
+		case GL_RGB:
+			switch (type) {
+			case GL_UNSIGNED_BYTE:
+				read_cb = readRGB;
+				break;
+			default:
+				SET_GL_ERROR(GL_INVALID_ENUM)
+				break;
+			}
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+	}
+	
+	int i = 0;
+	if (fast_store) {
+		while (i < height) {
+			memcpy_neon(data, &src[y + x * src_bpp], width * src_bpp);
+			y += stride;
+			i++;
+		}
+	} else {
+		int j;
+		uint8_t *data_u8;
+		for (i = 0; i < height; i++) {
+			src = &src[y + i * stride + x * src_bpp];
+			for (j = 0; j < width; j++) {
+				uint32_t clr = read_cb(src);
+				write_cb(data_u8, clr);
+				src += src_bpp;
+				data_u8 += dst_bpp;
+			}
+		}
 	}
 }
 

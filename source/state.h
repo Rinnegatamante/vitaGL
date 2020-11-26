@@ -105,6 +105,9 @@ typedef struct framebuffer {
 	vglMemType stencil_buffer_mem_type;
 	int width;
 	int height;
+	int stride;
+	void *data;
+	uint32_t data_type;
 } framebuffer;
 
 // Blending

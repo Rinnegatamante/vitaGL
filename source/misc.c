@@ -395,57 +395,6 @@ void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
 	clear_rgba_val.a = alpha;
 }
 
-void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data) {
-	SceDisplayFrameBuf pParam;
-	pParam.size = sizeof(SceDisplayFrameBuf);
-	sceDisplayGetFrameBuf(&pParam, SCE_DISPLAY_SETBUF_NEXTFRAME);
-	y = DISPLAY_HEIGHT - (height + y);
-	int i, j;
-	uint8_t *out8 = (uint8_t *)data;
-	uint8_t *in8 = (uint8_t *)pParam.base;
-	uint32_t *out32 = (uint32_t *)data;
-	uint32_t *in32 = (uint32_t *)pParam.base;
-	switch (format) {
-	case GL_RGBA:
-		switch (type) {
-		case GL_UNSIGNED_BYTE:
-			in32 += (x + y * pParam.pitch);
-			for (i = 0; i < height; i++) {
-				for (j = 0; j < width; j++) {
-					out32[(height - (i + 1)) * width + j] = in32[j];
-				}
-				in32 += pParam.pitch;
-			}
-			break;
-		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
-			break;
-		}
-		break;
-	case GL_RGB:
-		switch (type) {
-		case GL_UNSIGNED_BYTE:
-			in8 += (x * 4 + y * pParam.pitch * 4);
-			for (i = 0; i < height; i++) {
-				for (j = 0; j < width; j++) {
-					out8[((height - (i + 1)) * width + j) * 3] = in8[j * 4];
-					out8[((height - (i + 1)) * width + j) * 3 + 1] = in8[j * 4 + 1];
-					out8[((height - (i + 1)) * width + j) * 3 + 2] = in8[j * 4 + 2];
-				}
-				in8 += pParam.pitch * 4;
-			}
-			break;
-		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
-			break;
-		}
-		break;
-	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
-	}
-}
-
 void glLineWidth(GLfloat width) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
