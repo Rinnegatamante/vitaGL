@@ -110,7 +110,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean imp
 	
 	// Uploading both fragment and vertex uniforms data
 	void *vbuffer, *fbuffer;
-	if (p->has_vertex_unifs || implicit_wvp) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
+	if (p->has_vertex_unifs || (p->wvp && implicit_wvp)) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
 	if (p->has_fragment_unifs) sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
 	uniform *u = p->uniforms;
 	while (u != NULL) {
@@ -122,13 +122,11 @@ void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean imp
 	}
 	
 	// Uploading internal GL wvp if implicit wvp is asked
-	if (implicit_wvp) {
+	if (p->wvp && implicit_wvp) {
 		if (mvp_modified) {
 			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
 			mvp_modified = GL_FALSE;
 		}
-		if (p->wvp == NULL)
-			p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "wvp");
 		sceGxmSetUniformDataF(vbuffer, p->wvp, 0, 16, (const float *)mvp_matrix);
 	}
 	
@@ -335,6 +333,7 @@ void glAttachShader(GLuint prog, GLuint shad) {
 		switch (s->type) {
 		case GL_VERTEX_SHADER:
 			p->vshader = s;
+			p->wvp = sceGxmProgramFindParameterByName(s->prog, "wvp");
 			break;
 		case GL_FRAGMENT_SHADER:
 			p->fshader = s;
