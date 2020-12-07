@@ -53,3 +53,4 @@ sdl12_gl Apps:<br>
 [ZeldaNSQ](https://vitadb.rinnegatamante.it/#/info/350) - Port of Zelda: Navi's Quest<br>
 [vitaWolfen](https://vitadb.rinnegatamante.it/#/info/31) - Port of Wolf4SDL (Wolfenstein 3D)<br>
 [meritous](https://vitadb.rinnegatamante.it/#/info/411) - Port of meritous<br>
+[Dstroy Vita](https://vitadb.rinnegatamante.it/#/info/383) - Port of Dstroy<br>
