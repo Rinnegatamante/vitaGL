@@ -299,11 +299,8 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
 		heap_extend(VGL_MEM_SLOW, mempool_addr[2], mempool_size[2]);
 }
 
-void vgl_mem_free(void *ptr, vglMemType type) {
-	if (type == VGL_MEM_EXTERNAL)
-		free(ptr);
-	else
-		heap_free(ptr); // type is already stored in heap for alloc'd blocks
+void vgl_mem_free(void *ptr) {
+	heap_free(ptr); // type is already stored in heap for alloc'd blocks
 }
 
 void *vgl_mem_alloc(size_t size, vglMemType type) {

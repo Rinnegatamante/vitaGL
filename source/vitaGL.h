@@ -447,6 +447,7 @@ typedef enum {
 void *vglAlloc(uint32_t size, vglMemType type);
 void vglEnableRuntimeShaderCompiler(GLboolean usage);
 void vglEnd(void);
+void *vglForceAlloc(uint32_t size);
 void vglFree(void *addr);
 SceGxmTexture *vglGetGxmTexture(GLenum target);
 void *vglGetTexDataPointer(GLenum target);

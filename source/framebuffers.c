@@ -99,8 +99,8 @@ void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers) {
 				fb->target = NULL;
 			}
 			if (fb->depth_buffer_addr) {
-				vgl_mem_free(fb->depth_buffer_addr, fb->depth_buffer_mem_type);
-				vgl_mem_free(fb->stencil_buffer_addr, fb->stencil_buffer_mem_type);
+				vgl_mem_free(fb->depth_buffer_addr);
+				vgl_mem_free(fb->stencil_buffer_addr);
 				fb->depth_buffer_addr = NULL;
 				fb->stencil_buffer_addr = NULL;
 			}
@@ -165,7 +165,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 			fb->width, fb->height, ALIGN(fb->width, 8), fb->data);
 
 		// Allocating depth and stencil buffer (FIXME: This probably shouldn't be here)
-		initDepthStencilBuffer(fb->width, fb->height, &fb->depthbuffer, &fb->depth_buffer_addr, &fb->stencil_buffer_addr, &fb->depth_buffer_mem_type, &fb->stencil_buffer_mem_type);
+		initDepthStencilBuffer(fb->width, fb->height, &fb->depthbuffer, &fb->depth_buffer_addr, &fb->stencil_buffer_addr);
 
 		// Creating rendertarget
 		SceGxmRenderTargetParams renderTargetParams;

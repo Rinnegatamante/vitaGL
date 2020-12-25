@@ -180,9 +180,9 @@ void initGxmContext(void) {
 
 void termGxmContext(void) {
 	// Deallocating ring buffers
-	vgl_mem_free(vdm_ring_buffer_addr, VGL_MEM_VRAM);
-	vgl_mem_free(vertex_ring_buffer_addr, VGL_MEM_VRAM);
-	vgl_mem_free(fragment_ring_buffer_addr, VGL_MEM_VRAM);
+	vgl_mem_free(vdm_ring_buffer_addr);
+	vgl_mem_free(vertex_ring_buffer_addr);
+	vgl_mem_free(fragment_ring_buffer_addr);
 	gpu_fragment_usse_free_mapped(fragment_usse_ring_buffer_addr);
 
 	// Destroying sceGxm context
@@ -271,12 +271,12 @@ void termDisplayColorSurfaces(void) {
 	int i;
 	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
 		if (!system_app_mode)
-			vgl_mem_free(gxm_color_surfaces_addr[i], VGL_MEM_VRAM);
+			vgl_mem_free(gxm_color_surfaces_addr[i]);
 		sceGxmSyncObjectDestroy(gxm_sync_objects[i]);
 	}
 }
 
-void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, void **depth_buffer, void **stencil_buffer, vglMemType *depth_type, vglMemType *stencil_type) {
+void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, void **depth_buffer, void **stencil_buffer) {
 	// Calculating sizes for depth and stencil surfaces
 	unsigned int depth_stencil_width = ALIGN(w, SCE_GXM_TILE_SIZEX);
 	unsigned int depth_stencil_height = ALIGN(h, SCE_GXM_TILE_SIZEY);
@@ -287,12 +287,12 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 		depth_stencil_samples = depth_stencil_samples * 4;
 
 	// Allocating depth surface
-	*depth_type = VGL_MEM_VRAM;
-	*depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, depth_type);
+	vglMemType depth_type = VGL_MEM_VRAM;
+	*depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, &depth_type);
 
 	// Allocating stencil surface
-	*stencil_type = VGL_MEM_VRAM;
-	*stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, stencil_type);
+	vglMemType stencil_type = VGL_MEM_VRAM;
+	*stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, &stencil_type);
 
 	// Initializing depth and stencil surfaces
 	sceGxmDepthStencilSurfaceInit(surface,
@@ -304,14 +304,13 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 }
 
 void initDepthStencilSurfaces(void) {
-	vglMemType t1, t2;
-	initDepthStencilBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, &gxm_depth_stencil_surface, &gxm_depth_surface_addr, &gxm_stencil_surface_addr, &t1, &t2);
+	initDepthStencilBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, &gxm_depth_stencil_surface, &gxm_depth_surface_addr, &gxm_stencil_surface_addr);
 }
 
 void termDepthStencilSurfaces(void) {
 	// Deallocating depth and stencil surfaces memblocks
-	vgl_mem_free(gxm_depth_surface_addr, VGL_MEM_VRAM);
-	vgl_mem_free(gxm_stencil_surface_addr, VGL_MEM_VRAM);
+	vgl_mem_free(gxm_depth_surface_addr);
+	vgl_mem_free(gxm_stencil_surface_addr);
 }
 
 void startShaderPatcher(void) {
@@ -365,7 +364,7 @@ void stopShaderPatcher(void) {
 	sceGxmShaderPatcherDestroy(gxm_shader_patcher);
 
 	// Freeing shader patcher buffers
-	vgl_mem_free(gxm_shader_patcher_buffer_addr, VGL_MEM_VRAM);
+	vgl_mem_free(gxm_shader_patcher_buffer_addr);
 	gpu_vertex_usse_free_mapped(gxm_shader_patcher_vertex_usse_addr);
 	gpu_fragment_usse_free_mapped(gxm_shader_patcher_fragment_usse_addr);
 }

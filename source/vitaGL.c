@@ -898,10 +898,10 @@ void vglEnd(void) {
 	waitRenderingDone();
 
 	// Deallocating default vertices buffers
-	vgl_mem_free(clear_vertices, VGL_MEM_RAM);
-	vgl_mem_free(depth_vertices, VGL_MEM_RAM);
-	vgl_mem_free(depth_clear_indices, VGL_MEM_RAM);
-	vgl_mem_free(scissor_test_vertices, VGL_MEM_RAM);
+	vgl_mem_free(clear_vertices);
+	vgl_mem_free(depth_vertices);
+	vgl_mem_free(depth_clear_indices);
+	vgl_mem_free(scissor_test_vertices);
 
 	// Releasing shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, scissor_test_fragment_program);
@@ -996,7 +996,7 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 			uint8_t idx = gl_buffers[j] - BUFFERS_ADDR;
 			buffers[idx] = gl_buffers[j];
 			if (gpu_buffers[idx].ptr != NULL) {
-				vgl_mem_free(gpu_buffers[idx].ptr, VGL_MEM_VRAM);
+				vgl_mem_free(gpu_buffers[idx].ptr);
 				gpu_buffers[idx].ptr = NULL;
 				gpu_buffers[idx].size = 0;
 			}
@@ -1030,7 +1030,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 
 	// Free buffer if already existing.
 	if (gpu_buffers[idx].ptr != NULL)
-		vgl_mem_free(gpu_buffers[idx].ptr, type);
+		vgl_mem_free(gpu_buffers[idx].ptr);
 
 	gpu_buffers[idx].ptr = gpu_alloc_mapped(size, &type);
 	gpu_buffers[idx].size = size;
@@ -2301,19 +2301,32 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 }
 
 size_t vglMemFree(vglMemType type) {
+#ifndef SKIP_ERROR_HANDLING
 	if (type >= VGL_MEM_TYPE_COUNT)
 		return 0;
+#endif
 	return vgl_mem_get_free_space(type);
 }
 
 void *vglAlloc(uint32_t size, vglMemType type) {
+#ifndef SKIP_ERROR_HANDLING
 	if (type >= VGL_MEM_TYPE_COUNT)
 		return NULL;
+#endif
 	return vgl_mem_alloc(size, type);
 }
 
+void *vglForceAlloc(uint32_t size) {
+#ifndef SKIP_ERROR_HANDLING
+	if (type >= VGL_MEM_TYPE_COUNT)
+		return NULL;
+#endif
+	vglMemType mem_type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
+	return gpu_alloc_mapped(size, &mem_type);
+}
+
 void vglFree(void *addr) {
-	vgl_mem_free(addr, VGL_MEM_RAM); // Type is discarded so we just pass a random one
+	vgl_mem_free(addr);
 }
 
 void vglUseExtraMem(GLboolean use) {

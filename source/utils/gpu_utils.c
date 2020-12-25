@@ -144,7 +144,7 @@ void gpu_vertex_usse_free_mapped(void *addr) {
 	sceGxmUnmapVertexUsseMemory(addr);
 
 	// Deallocating memblock
-	vgl_mem_free(addr, vert_usse_type);
+	vgl_mem_free(addr);
 }
 
 void *gpu_fragment_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
@@ -164,7 +164,7 @@ void gpu_fragment_usse_free_mapped(void *addr) {
 	sceGxmUnmapFragmentUsseMemory(addr);
 
 	// Deallocating memblock
-	vgl_mem_free(addr, frag_usse_type);
+	vgl_mem_free(addr);
 }
 
 void *gpu_pool_malloc(unsigned int size) {
@@ -267,7 +267,7 @@ palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 void gpu_free_texture(texture *tex) {
 	// Deallocating texture
 	if (tex->data != NULL)
-		vgl_mem_free(tex->data, tex->mtype);
+		vgl_mem_free(tex->data);
 
 	// Invalidating texture object
 	tex->valid = 0;
@@ -537,6 +537,6 @@ void gpu_free_palette(palette *pal) {
 	// Deallocating palette memblock and object
 	if (pal == NULL)
 		return;
-	vgl_mem_free(pal->data, pal->type);
+	vgl_mem_free(pal->data);
 	free(pal);
 }
