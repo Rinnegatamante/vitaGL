@@ -199,7 +199,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			break;
 		case GL_UNSIGNED_SHORT_5_6_5:
 			data_bpp = 2;
-			read_cb = readRGB565;
+			if (internalFormat == GL_RGB)
+				fast_store = GL_TRUE;
+			else
+				read_cb = readRGB565;
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
@@ -231,10 +234,14 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			break;
 		case GL_UNSIGNED_SHORT_5_5_5_1:
 			data_bpp = 2;
+			if (internalFormat == GL_RGBA)
+				fast_store = GL_TRUE;
 			read_cb = readRGBA5551;
 			break;
 		case GL_UNSIGNED_SHORT_4_4_4_4:
 			data_bpp = 2;
+			if (internalFormat == GL_RGBA)
+				fast_store = GL_TRUE;
 			read_cb = readRGBA4444;
 			break;
 		default:
@@ -258,7 +265,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			break;
 		case GL_RGB:
 			write_cb = writeRGB;
-			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
+			if (fast_store && data_bpp == 2)
+				tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB;
+			else
+				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
 			break;
 		case GL_BGR:
 			write_cb = writeBGR;
@@ -266,7 +276,13 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			break;
 		case GL_RGBA:
 			write_cb = writeRGBA;
-			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
+			if (fast_store && data_bpp == 2) {
+				if (read_cb == readRGBA5551)
+					tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
+				else if (read_cb == readRGBA4444)
+					tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA;				
+			} else
+				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
 			break;
 		case GL_BGRA:
 			write_cb = writeBGRA;

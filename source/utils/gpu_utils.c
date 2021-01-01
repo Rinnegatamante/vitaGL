@@ -236,6 +236,23 @@ int tex_format_to_bytespp(SceGxmTextureFormat format) {
 	}
 }
 
+SceGxmTransferFormat tex_format_to_transfer(SceGxmTextureFormat format) {
+	// Calculating transfer format for the requested texture format
+	switch (format & 0x9f000000U) {
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
+		return SCE_GXM_TRANSFER_FORMAT_U1U5U5U5_ABGR;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
+		return SCE_GXM_TRANSFER_FORMAT_U5U6U5_BGR;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
+		return SCE_GXM_TRANSFER_FORMAT_U4U4U4U4_ABGR;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
+		return SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
+	default:
+		return SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR;
+	}
+}
+
 int tex_format_to_alignment(SceGxmTextureFormat format) {
 	switch (format & 0x9f000000U) {
 	case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
@@ -468,16 +485,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		}
 
 		// Calculating needed sceGxmTransfer format for the downscale process
-		SceGxmTransferFormat fmt;
-		switch (tex->type) {
-		case GL_RGBA:
-			fmt = SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR;
-			break;
-		case GL_RGB:
-			fmt = SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR;
-		default:
-			break;
-		}
+		SceGxmTransferFormat fmt = tex_format_to_transfer(format);
 
 		// Moving texture data to heap and deallocating texture memblock
 		GLboolean has_temp_buffer = GL_TRUE;
