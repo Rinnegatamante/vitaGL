@@ -2317,10 +2317,6 @@ void *vglAlloc(uint32_t size, vglMemType type) {
 }
 
 void *vglForceAlloc(uint32_t size) {
-#ifndef SKIP_ERROR_HANDLING
-	if (type >= VGL_MEM_TYPE_COUNT)
-		return NULL;
-#endif
 	vglMemType mem_type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 	return gpu_alloc_mapped(size, &mem_type);
 }
