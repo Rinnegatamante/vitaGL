@@ -51,7 +51,8 @@ typedef enum {
 	TEX2D_FOG_FAR_UNIF,
 	TEX2D_FOG_DENSITY_UNIF,
 	TEX2D_FOG_COLOR_UNIF,
-	TEX2D_TEX_ENV_COLOR_UNIF
+	TEX2D_TEX_ENV_COLOR_UNIF,
+	TEX2D_TEXMAT_UNIF
 } TEX2D_UNIFS;
 
 // Disable color buffer shader
@@ -209,6 +210,7 @@ void upload_tex2d_uniforms(const SceGxmProgramParameter *unifs[]) {
 	sceGxmSetUniformDataF(vbuffer, unifs[TEX2D_CLIP_PLANE0_UNIF], 0, 1, &clipplane0);
 	sceGxmSetUniformDataF(vbuffer, unifs[TEX2D_CLIP_PLANEO_EQUATION_UNIF], 0, 4, &clip_plane0_eq.x);
 	sceGxmSetUniformDataF(vbuffer, unifs[TEX2D_MODELVIEW_UNIF], 0, 16, (const float *)modelview_matrix);
+	sceGxmSetUniformDataF(vbuffer, unifs[TEX2D_TEXMAT_UNIF], 0, 16, (const float *)texture_matrix);
 }
 
 #if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
@@ -726,6 +728,7 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 		texture2d_generic_unifs[TEX2D_FOG_DENSITY_UNIF] = sceGxmProgramFindParameterByName(texture2d_fragment_program, "fog_density");
 		texture2d_generic_unifs[TEX2D_TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(texture2d_fragment_program, "texEnvColor");	
 		texture2d_generic_unifs[TEX2D_WVP_UNIF] = sceGxmProgramFindParameterByName(texture2d_vertex_program, "wvp");
+		texture2d_generic_unifs[TEX2D_TEXMAT_UNIF] = sceGxmProgramFindParameterByName(texture2d_vertex_program, "texmat");
 
 		SceGxmVertexAttribute texture2d_vertex_attribute[2];
 		SceGxmVertexStream texture2d_vertex_stream[2];
@@ -779,6 +782,7 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 		texture2d_rgba_generic_unifs[TEX2D_FOG_DENSITY_UNIF] = sceGxmProgramFindParameterByName(texture2d_rgba_fragment_program, "fog_density");
 		texture2d_rgba_generic_unifs[TEX2D_TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(texture2d_rgba_fragment_program, "texEnvColor");	
 		texture2d_rgba_generic_unifs[TEX2D_WVP_UNIF] = sceGxmProgramFindParameterByName(texture2d_rgba_vertex_program, "wvp");
+		texture2d_rgba_generic_unifs[TEX2D_TEXMAT_UNIF] = sceGxmProgramFindParameterByName(texture2d_rgba_vertex_program, "texmat");
 
 		SceGxmVertexAttribute texture2d_rgba_vertex_attribute[3];
 		SceGxmVertexStream texture2d_rgba_vertex_stream[3];

@@ -116,6 +116,7 @@ extern "C" {
 #define GL_VIEWPORT                           0x0BA2
 #define GL_MODELVIEW_MATRIX                   0x0BA6
 #define GL_PROJECTION_MATRIX                  0x0BA7
+#define GL_TEXTURE_MATRIX                     0x0BA8
 #define GL_ALPHA_TEST                         0x0BC0
 #define GL_BLEND                              0x0BE2
 #define GL_SCISSOR_BOX                        0x0C10
@@ -139,6 +140,7 @@ extern "C" {
 #define GL_INVERT                             0x150A
 #define GL_MODELVIEW                          0x1700
 #define GL_PROJECTION                         0x1701
+#define GL_TEXTURE                            0x1702
 #define GL_COLOR_INDEX                        0x1900
 #define GL_RED                                0x1903
 #define GL_GREEN                              0x1904

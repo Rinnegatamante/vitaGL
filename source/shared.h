@@ -168,6 +168,7 @@ extern GLboolean system_app_mode; // Flag for system app mode usage
 extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 extern matrix4x4 projection_matrix; // Projection Matrix
 extern matrix4x4 modelview_matrix; // ModelView Matrix
+extern matrix4x4 texture_matrix; // Texture Matrix
 extern GLboolean mvp_modified; // Check if ModelViewProjection matrix needs to be recreated
 
 extern GLuint cur_program; // Current in use custom program (0 = No custom program)

@@ -6,6 +6,7 @@ void main(
 	uniform int clip_plane0,       // In the future this can turn into an array to support other planes
 	uniform float4 clip_plane0_eq, // In the future this can turn into an array to support other planes
 	uniform float4x4 modelview,
+	uniform float4x4 texmat,
 	float4 out vPosition : POSITION,
 	float2 out vTexcoord : TEXCOORD0,
 	float4 out vColor : COLOR,
@@ -22,6 +23,6 @@ void main(
 	}
 	
 	vPosition = mul(wvp, pos4);
-	vTexcoord = texcoord;
+	vTexcoord = mul(texmat, float4(texcoord, 0.f, 1.f)).xy;
 	vColor = color;
 }

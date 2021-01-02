@@ -24,7 +24,7 @@
 #ifndef _SHADERS_H_
 #define _SHADERS_H_
 
-#define TEX2D_UNIFS_NUM 13
+#define TEX2D_UNIFS_NUM 14
 
 void upload_tex2d_uniforms(const SceGxmProgramParameter *unifs[]); // Function to upload uniform values for textured draws
 
