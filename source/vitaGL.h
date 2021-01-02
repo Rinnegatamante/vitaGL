@@ -470,6 +470,7 @@ void vglUseVram(GLboolean usage);
 void vglUseVramForUSSE(GLboolean usage);
 void vglUseExtraMem(GLboolean usage);
 void vglWaitVblankStart(GLboolean enable);
+void *vglGetProcAddress(const char *name);
 
 // NEON optimized memcpy
 void *memcpy_neon(void *destination, const void *source, size_t num);
