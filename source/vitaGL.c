@@ -239,13 +239,14 @@ cached_shader shader_cache[SHADER_CACHE_SIZE];
 uint8_t shader_cache_size = 0;
 int shader_cache_idx = -1;
 
-#define VERTEX_UNIFORMS_NUM 3
+#define VERTEX_UNIFORMS_NUM 4
 #define FRAGMENT_UNIFORMS_NUM 7
 
 typedef enum {
 	CLIP_PLANE_EQUATION_UNIF,
 	MODELVIEW_MATRIX_UNIF,
-	WVP_MATRIX_UNIF
+	WVP_MATRIX_UNIF,
+	TEX_MATRIX_UNIF
 } vert_uniform_type;
 
 typedef enum {
@@ -291,6 +292,7 @@ static void upload_ffp_uniforms() {
 	if (ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF]) sceGxmSetUniformDataF(vbuffer, ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF], 0, 4, &clip_plane0_eq.x);
 	if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF]) sceGxmSetUniformDataF(vbuffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
 	if (ffp_vertex_params[WVP_MATRIX_UNIF]) sceGxmSetUniformDataF(vbuffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
+	if (ffp_vertex_params[TEX_MATRIX_UNIF]) sceGxmSetUniformDataF(vbuffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
 }
 
 static void reload_ffp_shaders() {
@@ -345,6 +347,7 @@ static void reload_ffp_shaders() {
 		ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "clip_plane0_eq");
 		ffp_vertex_params[MODELVIEW_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "modelview");
 		ffp_vertex_params[WVP_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "wvp");
+		ffp_vertex_params[TEX_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "texmat");
 		
 		// Clearing dirty flags
 		ffp_dirty_vert = GL_FALSE;
