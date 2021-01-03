@@ -364,7 +364,8 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	uint8_t *ptr_line = ptr;
 	uint8_t data_bpp = 0;
 	int i, j;
-
+	GLboolean fast_store = GL_FALSE;
+	
 	if (xoffset + width > orig_w) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	} else if (yoffset + height > orig_h) {
@@ -483,44 +484,62 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	case GL_TEXTURE_2D:
 
 		// Detecting proper write callback
-		switch (target_texture->type) {
-		case GL_RGB:
-			write_cb = writeRGB;
+		switch (tex_format) {
+		case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
+			if (read_cb == readRGB) fast_store = GL_TRUE;
+			else write_cb = writeRGB;
 			break;
-		case GL_BGR:
-			write_cb = writeBGR;
+		case SCE_GXM_TEXTURE_FORMAT_U8U8U8_RGB:
+			if (read_cb == readBGR) fast_store = GL_TRUE;
+			else write_cb = writeBGR;
 			break;
-		case GL_RGBA:
-			write_cb = writeRGBA;
+		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
+			if (read_cb == readRGBA) fast_store = GL_TRUE;
+			else write_cb = writeRGBA;
 			break;
-		case GL_BGRA:
-			write_cb = writeBGRA;
+		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
+			if (read_cb == readBGRA) fast_store = GL_TRUE;
+			else write_cb = writeBGRA;
 			break;
-		case GL_LUMINANCE:
-			write_cb = writeR;
+		case SCE_GXM_TEXTURE_FORMAT_L8:
+		case SCE_GXM_TEXTURE_FORMAT_U8_RRRR:
+		case SCE_GXM_TEXTURE_FORMAT_A8:
+		case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
+			if (read_cb == readR) fast_store = GL_TRUE;
+			else write_cb = writeR;
 			break;
-		case GL_LUMINANCE_ALPHA:
-			write_cb = writeRG;
+		case SCE_GXM_TEXTURE_FORMAT_A8L8:
+			if (read_cb == readRG) fast_store = GL_TRUE;
+			else write_cb = writeRG;
 			break;
-		case GL_INTENSITY:
-			write_cb = writeR;
-			break;
-		case GL_ALPHA:
-			write_cb = writeR;
+		// From here, we assume we're always in fast_store trunk (Not 100% accurate)
+		case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
+		case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA:
+		case SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA:
+			fast_store = GL_TRUE;
 			break;
 		}
-
-		// Executing texture modification via callbacks
-		uint8_t *data = (uint8_t *)pixels;
-		for (i = 0; i < height; i++) {
-			for (j = 0; j < width; j++) {
-				uint32_t clr = read_cb((uint8_t *)data);
-				write_cb(ptr, clr);
-				data += data_bpp;
-				ptr += bpp;
+		
+		if (fast_store) { // Internal format and input format are the same, we can take advantage of this
+			uint8_t *data = (uint8_t *)pixels;
+			uint32_t line_size = width * data_bpp;
+			for (i = 0; i < height; i++) {
+				memcpy_neon(ptr, data, line_size);
+				data += line_size;
+				ptr += stride;
 			}
-			ptr = ptr_line + stride;
-			ptr_line = ptr;
+		} else { // Executing texture modification via callbacks
+			uint8_t *data = (uint8_t *)pixels;
+			for (i = 0; i < height; i++) {
+				for (j = 0; j < width; j++) {
+					uint32_t clr = read_cb((uint8_t *)data);
+					write_cb(ptr, clr);
+					data += data_bpp;
+					ptr += bpp;
+				}
+				ptr = ptr_line + stride;
+				ptr_line = ptr;
+			}
 		}
 
 		break;
