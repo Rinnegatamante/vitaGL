@@ -76,6 +76,24 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 	case GL_DEPTH_TEST: // Depth test state
 		*params = depth_test_state;
 		break;
+	case GL_STENCIL_TEST:
+		*params = stencil_test_state;
+		break;
+	case GL_SCISSOR_TEST:
+		*params = scissor_test_state;
+		break;
+	case GL_CULL_FACE:
+		*params = cull_face_state;
+		break;
+	case GL_POLYGON_OFFSET_FILL:
+		*params = pol_offset_fill;
+		break;
+	case GL_POLYGON_OFFSET_LINE:
+		*params = pol_offset_line;
+		break;
+	case GL_POLYGON_OFFSET_POINT:
+		*params = pol_offset_point;
+		break;
 	case GL_ACTIVE_TEXTURE: // Active texture
 		*params = GL_FALSE;
 		break;

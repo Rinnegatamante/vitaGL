@@ -526,8 +526,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			for (i = 0; i < height; i++) {
 				memcpy_neon(ptr, data, line_size);
 				data += line_size;
-				ptr = ptr_line + stride;
-				ptr_line = ptr;
+				ptr += stride;
 			}
 		} else { // Executing texture modification via callbacks
 			uint8_t *data = (uint8_t *)pixels;
