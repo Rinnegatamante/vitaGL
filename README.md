@@ -1,5 +1,5 @@
-# vitaGL
-vitaGL is a wrapper between openGL and sceGxm. It allows to use a subset of openGL functions with fully hardware acceleration by translating the code to sceGxm equivalent.
+<p align="center"><img width="50%" height="50%" src="./vitagl.png"></p>
+vitaGL is an opensource openGL driver for PSVITA development. It acts as a wrapper between openGL and sceGxm and allows to use a subset of openGL functions with fully hardware acceleration by translating the code to sceGxm equivalent.
 
 # Build Instructions
 In order to build vitaGL use the following command: `make HAVE_SBRK=1 install`.
