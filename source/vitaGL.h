@@ -464,6 +464,7 @@ void vglStopRenderingInit();
 void vglStopRenderingTerm();
 void vglTexImageDepthBuffer(GLenum target);
 void vglUpdateCommonDialog();
+void vglUseTripleBuffering(GLboolean usage);
 void vglUseVram(GLboolean usage);
 void vglUseVramForUSSE(GLboolean usage);
 void vglUseExtraMem(GLboolean usage);

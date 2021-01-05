@@ -23,7 +23,7 @@
 
 #include "shared.h"
 
-extern void *gxm_color_surfaces_addr[DISPLAY_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
+extern void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
 extern unsigned int gxm_back_buffer_index; // Display back buffer id
 
 static framebuffer framebuffers[BUFFERS_NUM]; // Framebuffers array

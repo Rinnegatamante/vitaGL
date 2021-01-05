@@ -31,9 +31,10 @@ static void *fragment_ring_buffer_addr; // fragment ring buffer memblock startin
 static void *fragment_usse_ring_buffer_addr; // fragment USSE ring buffer memblock starting address
 
 static SceGxmRenderTarget *gxm_render_target; // Display render target
-static SceGxmColorSurface gxm_color_surfaces[DISPLAY_BUFFER_COUNT]; // Display color surfaces
-void *gxm_color_surfaces_addr[DISPLAY_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
-static SceGxmSyncObject *gxm_sync_objects[DISPLAY_BUFFER_COUNT]; // Display sync objects
+static SceGxmColorSurface gxm_color_surfaces[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces
+static uint8_t gxm_display_buffer_count = DISPLAY_MAX_BUFFER_COUNT; // Default display buffer count
+void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
+static SceGxmSyncObject *gxm_sync_objects[DISPLAY_MAX_BUFFER_COUNT]; // Display sync objects
 unsigned int gxm_front_buffer_index; // Display front buffer id
 unsigned int gxm_back_buffer_index; // Display back buffer id
 
@@ -128,7 +129,7 @@ void initGxm(void) {
 	SceGxmInitializeParams gxm_init_params;
 	memset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
 	gxm_init_params.flags = system_app_mode ? 0x0A : 0;
-	gxm_init_params.displayQueueMaxPendingCount = DISPLAY_BUFFER_COUNT - 1;
+	gxm_init_params.displayQueueMaxPendingCount = gxm_display_buffer_count - 1;
 	gxm_init_params.displayQueueCallback = display_queue_callback;
 	gxm_init_params.displayQueueCallbackDataSize = sizeof(struct display_queue_callback_data);
 	gxm_init_params.parameterBufferSize = gxm_param_buf_size;
@@ -236,11 +237,12 @@ void initDisplayColorSurfaces(void) {
 			memset(&shared_fb_info, 0, sizeof(SceSharedFbInfo));
 			break;
 		}
+		gxm_display_buffer_count = 2; // Forcing double buffering in system app mode
 	}
 
 	vglMemType type = VGL_MEM_VRAM;
 	int i;
-	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
+	for (i = 0; i < gxm_display_buffer_count; i++) {
 		// Allocating color surface memblock
 		if (!system_app_mode) {
 			gxm_color_surfaces_addr[i] = gpu_alloc_mapped(
@@ -268,7 +270,7 @@ void initDisplayColorSurfaces(void) {
 void termDisplayColorSurfaces(void) {
 	// Deallocating display's color surfaces and destroying sync objects
 	int i;
-	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
+	for (i = 0; i < gxm_display_buffer_count; i++) {
 		if (!system_app_mode)
 			vgl_mem_free(gxm_color_surfaces_addr[i]);
 		sceGxmSyncObjectDestroy(gxm_sync_objects[i]);
@@ -384,6 +386,10 @@ void vglSetParamBufferSize(uint32_t size) {
 	gxm_param_buf_size = size;
 }
 
+void vglUseTripleBuffering(GLboolean usage) {
+	gxm_display_buffer_count = usage ? 3 : 2;
+}
+
 void vglStartRendering(void) {
 	// Starting drawing scene
 	if (active_write_fb == NULL) { // Default framebuffer is used
@@ -431,7 +437,7 @@ void vglStopRenderingTerm(void) {
 			sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
 				gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
 			gxm_front_buffer_index = gxm_back_buffer_index;
-			gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
+			gxm_back_buffer_index = (gxm_back_buffer_index + 1) % gxm_display_buffer_count;
 		}
 	}
 

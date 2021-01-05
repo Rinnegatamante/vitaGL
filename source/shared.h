@@ -32,7 +32,7 @@
 #define GENERIC_STACK_DEPTH 2 // Depth of generic matrix stack
 #define DISPLAY_WIDTH_DEF 960 // Default display width in pixels
 #define DISPLAY_HEIGHT_DEF 544 // Default display height in pixels
-#define DISPLAY_BUFFER_COUNT 2 // Display buffers to use
+#define DISPLAY_MAX_BUFFER_COUNT 3 // Maximum amount of display buffers to use
 #define GXM_TEX_MAX_SIZE 4096 // Maximum width/height in pixels per texture
 #define BUFFERS_ADDR 0xA000 // Starting address for buffers indexing
 #define BUFFERS_NUM 128 // Maximum number of allocatable buffers
