@@ -122,8 +122,10 @@ void initGxm(void) {
 	// Checking if the running application is a system one
 	SceAppMgrBudgetInfo info;
 	info.size = sizeof(SceAppMgrBudgetInfo);
-	if (!sceAppMgrGetBudgetInfo(&info))
+	if (!sceAppMgrGetBudgetInfo(&info)) {
 		system_app_mode = GL_TRUE;
+		gxm_display_buffer_count = 2; // Forcing double buffering in system app mode
+	}
 
 	// Initializing sceGxm init parameters
 	SceGxmInitializeParams gxm_init_params;
@@ -237,7 +239,6 @@ void initDisplayColorSurfaces(void) {
 			memset(&shared_fb_info, 0, sizeof(SceSharedFbInfo));
 			break;
 		}
-		gxm_display_buffer_count = 2; // Forcing double buffering in system app mode
 	}
 
 	vglMemType type = VGL_MEM_VRAM;
