@@ -214,6 +214,8 @@ GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new); // Cha
 void update_alpha_test_settings(void); // Changes current in use alpha test operation value
 void update_scissor_test(void); // Changes current in use scissor test region
 void resetScissorTestRegion(void); // Resets scissor test region to default values
+void invalidate_viewport(void); // Invalidates currently set viewport
+void validate_viewport(void); // Restores previously invalidated viewport
 
 /* blending.c (TODO) */
 void change_blend_factor(void); // Changes current blending settings for all used shaders
