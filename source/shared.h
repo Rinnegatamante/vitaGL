@@ -44,6 +44,34 @@ extern int DISPLAY_STRIDE; // Display stride in pixels
 extern float DISPLAY_WIDTH_FLOAT; // Display width in pixels (float)
 extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
+// Translates a GL primitive enum to its sceGxm equivalent
+#define gl_primitive_to_gxm(x, p) \
+	switch (x) { \
+	case GL_POINTS: \
+		p = SCE_GXM_PRIMITIVE_POINTS; \
+		break; \
+	case GL_LINES: \
+		p = SCE_GXM_PRIMITIVE_LINES; \
+		break; \
+	case GL_TRIANGLES: \
+		if (no_polygons_mode) \
+			return; \
+		p = SCE_GXM_PRIMITIVE_TRIANGLES; \
+		break; \
+	case GL_TRIANGLE_STRIP: \
+		if (no_polygons_mode) \
+			return; \
+		p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP; \
+		break; \
+	case GL_TRIANGLE_FAN: \
+		if (no_polygons_mode) \
+			return; \
+		p = SCE_GXM_PRIMITIVE_TRIANGLE_FAN; \
+		break; \
+	default: \
+		SET_GL_ERROR(GL_INVALID_ENUM) \
+	}
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <vitasdk.h>
