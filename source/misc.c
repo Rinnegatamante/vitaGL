@@ -324,6 +324,10 @@ void glDisable(GLenum cap) {
 }
 
 void glClear(GLbitfield mask) {
+	
+	// Invalidating viewport
+	invalidate_viewport();
+	
 	GLenum orig_depth_test = depth_test_state;
 	if ((mask & GL_COLOR_BUFFER_BIT) == GL_COLOR_BUFFER_BIT) {
 		invalidate_depth_test();
@@ -386,6 +390,9 @@ void glClear(GLbitfield mask) {
 		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		change_stencil_settings();
 	}
+	
+	// Restoring viewport
+	validate_viewport();
 }
 
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
