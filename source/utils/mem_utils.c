@@ -277,9 +277,9 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
 	mempool_size[VGL_MEM_SLOW - 1] = ALIGN(size_phycont, 256 * 1024);
 	if (size_cdram)
 		mempool_id[VGL_MEM_VRAM - 1] = sceKernelAllocMemBlock("cdram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW, mempool_size[VGL_MEM_VRAM - 1], NULL);
-	mempool_id[VGL_MEM_RAM - 1] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, mempool_size[VGL_MEM_RAM - 1], NULL);
+	mempool_id[VGL_MEM_RAM - 1] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE , mempool_size[VGL_MEM_RAM - 1], NULL);
 	if (size_phycont)
-		mempool_id[VGL_MEM_SLOW - 1] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW, mempool_size[VGL_MEM_SLOW - 1], NULL);
+		mempool_id[VGL_MEM_SLOW - 1] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW, mempool_size[VGL_MEM_SLOW - 1], NULL);
 
 	for (int i = 0; i < VGL_MEM_TYPE_COUNT - 2; i++) {
 		if (mempool_size[i]) {

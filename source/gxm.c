@@ -320,7 +320,7 @@ void startShaderPatcher(void) {
 	static const unsigned int shader_patcher_buffer_size = 1024 * 1024;
 	static const unsigned int shader_patcher_vertex_usse_size = 1024 * 1024;
 	static const unsigned int shader_patcher_fragment_usse_size = 1024 * 1024;
-	vglMemType type = VGL_MEM_VRAM;
+	vglMemType type = VGL_MEM_RAM;
 
 	// Allocating Shader Patcher buffer
 	gxm_shader_patcher_buffer_addr = gpu_alloc_mapped(
