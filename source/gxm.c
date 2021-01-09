@@ -65,6 +65,7 @@ float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 GLboolean system_app_mode = GL_FALSE; // Flag for system app mode usage
 static GLboolean gxm_initialized = GL_FALSE; // Current sceGxm state
+static GLboolean is_rendering_display = GL_FALSE; // Flag for when drawing without fbo is being performed
 
 // sceDisplay callback data
 struct display_queue_callback_data {
@@ -393,7 +394,8 @@ void vglUseTripleBuffering(GLboolean usage) {
 
 void vglStartRendering(void) {
 	// Starting drawing scene
-	if (active_write_fb == NULL) { // Default framebuffer is used
+	is_rendering_display = active_write_fb == NULL;
+	if (is_rendering_display) { // Default framebuffer is used
 		if (system_app_mode) {
 			sceSharedFbBegin(shared_fb, &shared_fb_info);
 			shared_fb_info.vsync = vblank;
@@ -428,7 +430,7 @@ void vglStopRenderingInit(void) {
 }
 
 void vglStopRenderingTerm(void) {
-	if (active_write_fb == NULL) { // Default framebuffer is used
+	if (is_rendering_display) { // Default framebuffer is used
 		// Properly requesting a display update
 		if (system_app_mode)
 			sceSharedFbEnd(shared_fb);
