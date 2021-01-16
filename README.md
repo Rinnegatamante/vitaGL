@@ -37,9 +37,12 @@ Direct OpenGL Usage:<br>
 [flycast](https://github.com/Rinnegatamante/flycast) - Port of flycast (Dreamcast Emulator)<br>
 [AvP Gold](https://github.com/Rinnegatamante/AvP-Gold-Vita) - Port of Aliens versus Predator: Gold Edition<br>
 [re3-vita](https://vitadb.rinnegatamante.it/#/info/589) - Port of Grand Theft Auto III<br>
+[reVC-vita](https://github.com/Rinnegatamante/re3) - Port of Grand Theft Auto: Vice City<br>
 [prboom-plus](https://vitadb.rinnegatamante.it/#/info/591) - Port of PrBoom Plus (Doom engine sourceport)<br>
 [VITAlbum](https://vitadb.rinnegatamante.it/#/info/566) - Filebrowser and image viewer app<br>
 [sm64-vita](https://github.com/bythos14/sm64-vita) - Port of Super Mario 64<br>
+[srb2-vita](https://github.com/Rinnegatamante/srb2-vita) - Port of Sonic Robo Blast 2<br>
+[rvm_soniccd-vitagl](https://github.com/fgsfdsfgs/rvm_soniccd/tree/vitagl) - Port of rvm_soniccd (Sonic CD decompilation)<br>
 
 Libraries:<br>
 [sdl12_gl](https://github.com/Rinnegatamante/SDL-Vita/tree/sdl12_gl/src) - SDL 1.2 Vita port adapted to work with vitaGL as renderer<br>
