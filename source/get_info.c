@@ -128,6 +128,14 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 			}
 		}
 		break;
+	case GL_TEXTURE_MATRIX: // Texture matrix
+		// Since we use column-major matrices internally, wee need to transpose it before returning it to the application
+		for (i = 0; i < 4; i++) {
+			for (j = 0; j < 4; j++) {
+				data[i * 4 + j] = texture_matrix[j][i];
+			}
+		}
+		break;
 	case GL_ACTIVE_TEXTURE: // Active texture
 		*data = (1.0f * (server_texture_unit + GL_TEXTURE0));
 		break;

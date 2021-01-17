@@ -23,7 +23,8 @@ void main(
 #endif
 	uniform float4 clip_plane0_eq,
 	uniform float4x4 modelview,
-	uniform float4x4 wvp
+	uniform float4x4 wvp,
+	uniform float4x4 texmat
 ) {
 	float4 pos4 = float4(position, 1.f);
 
@@ -35,7 +36,7 @@ void main(
 
 	vPosition = mul(wvp, pos4);
 #if has_texture == 1
-	vTexcoord = texcoord;
+	vTexcoord = mul(texmat, float4(texcoord, 0.f, 1.f)).xy;
 #endif
 #if has_colors == 1
 	vColor = color;

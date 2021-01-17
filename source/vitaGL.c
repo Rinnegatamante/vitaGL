@@ -51,7 +51,8 @@ typedef enum {
 	TEX2D_FOG_FAR_UNIF,
 	TEX2D_FOG_DENSITY_UNIF,
 	TEX2D_FOG_COLOR_UNIF,
-	TEX2D_TEX_ENV_COLOR_UNIF
+	TEX2D_TEX_ENV_COLOR_UNIF,
+	TEX2D_TEXMAT_UNIF
 } TEX2D_UNIFS;
 
 // Disable color buffer shader
@@ -209,6 +210,7 @@ void upload_tex2d_uniforms(const SceGxmProgramParameter *unifs[]) {
 	sceGxmSetUniformDataF(vbuffer, unifs[TEX2D_CLIP_PLANE0_UNIF], 0, 1, &clipplane0);
 	sceGxmSetUniformDataF(vbuffer, unifs[TEX2D_CLIP_PLANEO_EQUATION_UNIF], 0, 4, &clip_plane0_eq.x);
 	sceGxmSetUniformDataF(vbuffer, unifs[TEX2D_MODELVIEW_UNIF], 0, 16, (const float *)modelview_matrix);
+	sceGxmSetUniformDataF(vbuffer, unifs[TEX2D_TEXMAT_UNIF], 0, 16, (const float *)texture_matrix);
 }
 
 #if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
@@ -237,13 +239,14 @@ cached_shader shader_cache[SHADER_CACHE_SIZE];
 uint8_t shader_cache_size = 0;
 int shader_cache_idx = -1;
 
-#define VERTEX_UNIFORMS_NUM 3
+#define VERTEX_UNIFORMS_NUM 4
 #define FRAGMENT_UNIFORMS_NUM 7
 
 typedef enum {
 	CLIP_PLANE_EQUATION_UNIF,
 	MODELVIEW_MATRIX_UNIF,
-	WVP_MATRIX_UNIF
+	WVP_MATRIX_UNIF,
+	TEX_MATRIX_UNIF
 } vert_uniform_type;
 
 typedef enum {
@@ -289,6 +292,7 @@ static void upload_ffp_uniforms() {
 	if (ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF]) sceGxmSetUniformDataF(vbuffer, ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF], 0, 4, &clip_plane0_eq.x);
 	if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF]) sceGxmSetUniformDataF(vbuffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
 	if (ffp_vertex_params[WVP_MATRIX_UNIF]) sceGxmSetUniformDataF(vbuffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
+	if (ffp_vertex_params[TEX_MATRIX_UNIF]) sceGxmSetUniformDataF(vbuffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
 }
 
 static void reload_ffp_shaders() {
@@ -343,6 +347,7 @@ static void reload_ffp_shaders() {
 		ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "clip_plane0_eq");
 		ffp_vertex_params[MODELVIEW_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "modelview");
 		ffp_vertex_params[WVP_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "wvp");
+		ffp_vertex_params[TEX_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "texmat");
 		
 		// Clearing dirty flags
 		ffp_dirty_vert = GL_FALSE;
@@ -726,6 +731,7 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 		texture2d_generic_unifs[TEX2D_FOG_DENSITY_UNIF] = sceGxmProgramFindParameterByName(texture2d_fragment_program, "fog_density");
 		texture2d_generic_unifs[TEX2D_TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(texture2d_fragment_program, "texEnvColor");	
 		texture2d_generic_unifs[TEX2D_WVP_UNIF] = sceGxmProgramFindParameterByName(texture2d_vertex_program, "wvp");
+		texture2d_generic_unifs[TEX2D_TEXMAT_UNIF] = sceGxmProgramFindParameterByName(texture2d_vertex_program, "texmat");
 
 		SceGxmVertexAttribute texture2d_vertex_attribute[2];
 		SceGxmVertexStream texture2d_vertex_stream[2];
@@ -779,6 +785,7 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 		texture2d_rgba_generic_unifs[TEX2D_FOG_DENSITY_UNIF] = sceGxmProgramFindParameterByName(texture2d_rgba_fragment_program, "fog_density");
 		texture2d_rgba_generic_unifs[TEX2D_TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(texture2d_rgba_fragment_program, "texEnvColor");	
 		texture2d_rgba_generic_unifs[TEX2D_WVP_UNIF] = sceGxmProgramFindParameterByName(texture2d_rgba_vertex_program, "wvp");
+		texture2d_rgba_generic_unifs[TEX2D_TEXMAT_UNIF] = sceGxmProgramFindParameterByName(texture2d_rgba_vertex_program, "texmat");
 
 		SceGxmVertexAttribute texture2d_rgba_vertex_attribute[3];
 		SceGxmVertexStream texture2d_rgba_vertex_stream[3];
@@ -869,6 +876,9 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 
 	// Allocating default texture object
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+	// Set texture matrix to identity
+	matrix4x4_identity(texture_matrix);
 }
 
 void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
