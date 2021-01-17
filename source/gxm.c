@@ -31,9 +31,10 @@ static void *fragment_ring_buffer_addr; // fragment ring buffer memblock startin
 static void *fragment_usse_ring_buffer_addr; // fragment USSE ring buffer memblock starting address
 
 static SceGxmRenderTarget *gxm_render_target; // Display render target
-static SceGxmColorSurface gxm_color_surfaces[DISPLAY_BUFFER_COUNT]; // Display color surfaces
-void *gxm_color_surfaces_addr[DISPLAY_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
-static SceGxmSyncObject *gxm_sync_objects[DISPLAY_BUFFER_COUNT]; // Display sync objects
+static SceGxmColorSurface gxm_color_surfaces[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces
+static uint8_t gxm_display_buffer_count = DISPLAY_MAX_BUFFER_COUNT; // Default display buffer count
+void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
+static SceGxmSyncObject *gxm_sync_objects[DISPLAY_MAX_BUFFER_COUNT]; // Display sync objects
 unsigned int gxm_front_buffer_index; // Display front buffer id
 unsigned int gxm_back_buffer_index; // Display back buffer id
 static unsigned int gxm_scene_flags = 0; // Current gxm scene flags
@@ -66,6 +67,7 @@ float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 GLboolean system_app_mode = GL_FALSE; // Flag for system app mode usage
 static GLboolean gxm_initialized = GL_FALSE; // Current sceGxm state
+static GLboolean is_rendering_display = GL_FALSE; // Flag for when drawing without fbo is being performed
 
 // sceDisplay callback data
 struct display_queue_callback_data {
@@ -123,14 +125,16 @@ void initGxm(void) {
 	// Checking if the running application is a system one
 	SceAppMgrBudgetInfo info;
 	info.size = sizeof(SceAppMgrBudgetInfo);
-	if (!sceAppMgrGetBudgetInfo(&info))
+	if (!sceAppMgrGetBudgetInfo(&info)) {
 		system_app_mode = GL_TRUE;
+		gxm_display_buffer_count = 2; // Forcing double buffering in system app mode
+	}
 
 	// Initializing sceGxm init parameters
 	SceGxmInitializeParams gxm_init_params;
 	memset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
 	gxm_init_params.flags = system_app_mode ? 0x0A : 0;
-	gxm_init_params.displayQueueMaxPendingCount = DISPLAY_BUFFER_COUNT - 1;
+	gxm_init_params.displayQueueMaxPendingCount = gxm_display_buffer_count - 1;
 	gxm_init_params.displayQueueCallback = display_queue_callback;
 	gxm_init_params.displayQueueCallbackDataSize = sizeof(struct display_queue_callback_data);
 	gxm_init_params.parameterBufferSize = gxm_param_buf_size;
@@ -242,7 +246,7 @@ void initDisplayColorSurfaces(void) {
 
 	vglMemType type = VGL_MEM_VRAM;
 	int i;
-	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
+	for (i = 0; i < gxm_display_buffer_count; i++) {
 		// Allocating color surface memblock
 		if (!system_app_mode) {
 			gxm_color_surfaces_addr[i] = gpu_alloc_mapped(
@@ -270,7 +274,7 @@ void initDisplayColorSurfaces(void) {
 void termDisplayColorSurfaces(void) {
 	// Deallocating display's color surfaces and destroying sync objects
 	int i;
-	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++) {
+	for (i = 0; i < gxm_display_buffer_count; i++) {
 		if (!system_app_mode)
 			vgl_mem_free(gxm_color_surfaces_addr[i]);
 		sceGxmSyncObjectDestroy(gxm_sync_objects[i]);
@@ -319,7 +323,7 @@ void startShaderPatcher(void) {
 	static const unsigned int shader_patcher_buffer_size = 1024 * 1024;
 	static const unsigned int shader_patcher_vertex_usse_size = 1024 * 1024;
 	static const unsigned int shader_patcher_fragment_usse_size = 1024 * 1024;
-	vglMemType type = VGL_MEM_VRAM;
+	vglMemType type = VGL_MEM_RAM;
 
 	// Allocating Shader Patcher buffer
 	gxm_shader_patcher_buffer_addr = gpu_alloc_mapped(
@@ -386,9 +390,14 @@ void vglSetParamBufferSize(uint32_t size) {
 	gxm_param_buf_size = size;
 }
 
+void vglUseTripleBuffering(GLboolean usage) {
+	gxm_display_buffer_count = usage ? 3 : 2;
+}
+
 void vglStartRendering(void) {
 	// Starting drawing scene
-	if (active_write_fb == NULL) { // Default framebuffer is used
+	is_rendering_display = active_write_fb == NULL;
+	if (is_rendering_display) { // Default framebuffer is used
 		if (system_app_mode) {
 			sceSharedFbBegin(shared_fb, &shared_fb_info);
 			shared_fb_info.vsync = vblank;
@@ -402,7 +411,7 @@ void vglStartRendering(void) {
 		gxm_scene_flags &= ~SCE_GXM_SCENE_VERTEX_WAIT_FOR_DEPENDENCY;
 	} else {
 		gxm_scene_flags |= SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY;
-		sceGxmBeginScene(gxm_context, gxm_scene_flags, active_write_fb->target,
+		sceGxmBeginScene(gxm_context, gxm_scene_flags, gxm_render_target,
 			NULL, NULL, NULL,
 			&active_write_fb->colorbuffer,
 			&active_write_fb->depthbuffer);
@@ -427,7 +436,7 @@ void vglStopRenderingInit(void) {
 }
 
 void vglStopRenderingTerm(void) {
-	if (active_write_fb == NULL) { // Default framebuffer is used
+	if (is_rendering_display) { // Default framebuffer is used
 		// Properly requesting a display update
 		if (system_app_mode)
 			sceSharedFbEnd(shared_fb);
@@ -437,7 +446,7 @@ void vglStopRenderingTerm(void) {
 			sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
 				gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
 			gxm_front_buffer_index = gxm_back_buffer_index;
-			gxm_back_buffer_index = (gxm_back_buffer_index + 1) % DISPLAY_BUFFER_COUNT;
+			gxm_back_buffer_index = (gxm_back_buffer_index + 1) % gxm_display_buffer_count;
 		}
 	}
 

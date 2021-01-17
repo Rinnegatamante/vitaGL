@@ -324,6 +324,12 @@ void glDisable(GLenum cap) {
 }
 
 void glClear(GLbitfield mask) {
+	
+	// Invalidating viewport
+	invalidate_viewport();
+	
+	void *fbuffer, *vbuffer;
+	
 	GLenum orig_depth_test = depth_test_state;
 	if ((mask & GL_COLOR_BUFFER_BIT) == GL_COLOR_BUFFER_BIT) {
 		invalidate_depth_test();
@@ -332,11 +338,10 @@ void glClear(GLbitfield mask) {
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
 		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, clear_fragment_program_patched);
-		void *color_buffer, *vertex_buffer;
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &color_buffer);
-		sceGxmSetUniformDataF(color_buffer, clear_color, 0, 4, &clear_rgba_val.r);
-		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
-		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
+		sceGxmSetUniformDataF(fbuffer, clear_color, 0, 4, &clear_rgba_val.r);
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
+		sceGxmSetUniformDataF(vbuffer, clear_position, 0, 4, &clear_vertices->x);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		validate_depth_test();
 		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
@@ -348,12 +353,11 @@ void glClear(GLbitfield mask) {
 		change_depth_write(SCE_GXM_DEPTH_WRITE_ENABLED);
 		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
-		void *depth_buffer, *vertex_buffer;
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &depth_buffer);
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
 		float temp = depth_value;
-		sceGxmSetUniformDataF(depth_buffer, clear_depth, 0, 1, &temp);
-		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
-		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
+		sceGxmSetUniformDataF(fbuffer, clear_depth, 0, 1, &temp);
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
+		sceGxmSetUniformDataF(vbuffer, clear_position, 0, 4, &clear_vertices->x);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		validate_depth_test();
 		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
@@ -375,17 +379,19 @@ void glClear(GLbitfield mask) {
 			SCE_GXM_STENCIL_OP_REPLACE,
 			SCE_GXM_STENCIL_OP_REPLACE,
 			0, stencil_value * 0xFF);
-		void *depth_buffer, *vertex_buffer;
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &depth_buffer);
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
 		float temp = 1.0f;
-		sceGxmSetUniformDataF(depth_buffer, clear_depth, 0, 1, &temp);
-		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
-		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
+		sceGxmSetUniformDataF(fbuffer, clear_depth, 0, 1, &temp);
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
+		sceGxmSetUniformDataF(vbuffer, clear_position, 0, 4, &clear_vertices->x);
 		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 		validate_depth_test();
 		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 		change_stencil_settings();
 	}
+	
+	// Restoring viewport
+	validate_viewport();
 }
 
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {

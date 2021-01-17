@@ -32,7 +32,7 @@
 #define GENERIC_STACK_DEPTH 2 // Depth of generic matrix stack
 #define DISPLAY_WIDTH_DEF 960 // Default display width in pixels
 #define DISPLAY_HEIGHT_DEF 544 // Default display height in pixels
-#define DISPLAY_BUFFER_COUNT 2 // Display buffers to use
+#define DISPLAY_MAX_BUFFER_COUNT 3 // Maximum amount of display buffers to use
 #define GXM_TEX_MAX_SIZE 4096 // Maximum width/height in pixels per texture
 #define BUFFERS_ADDR 0xA000 // Starting address for buffers indexing
 #define BUFFERS_NUM 128 // Maximum number of allocatable buffers
@@ -43,6 +43,34 @@ extern int DISPLAY_HEIGHT; // Display height in pixels
 extern int DISPLAY_STRIDE; // Display stride in pixels
 extern float DISPLAY_WIDTH_FLOAT; // Display width in pixels (float)
 extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
+
+// Translates a GL primitive enum to its sceGxm equivalent
+#define gl_primitive_to_gxm(x, p) \
+	switch (x) { \
+	case GL_POINTS: \
+		p = SCE_GXM_PRIMITIVE_POINTS; \
+		break; \
+	case GL_LINES: \
+		p = SCE_GXM_PRIMITIVE_LINES; \
+		break; \
+	case GL_TRIANGLES: \
+		if (no_polygons_mode) \
+			return; \
+		p = SCE_GXM_PRIMITIVE_TRIANGLES; \
+		break; \
+	case GL_TRIANGLE_STRIP: \
+		if (no_polygons_mode) \
+			return; \
+		p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP; \
+		break; \
+	case GL_TRIANGLE_FAN: \
+		if (no_polygons_mode) \
+			return; \
+		p = SCE_GXM_PRIMITIVE_TRIANGLE_FAN; \
+		break; \
+	default: \
+		SET_GL_ERROR(GL_INVALID_ENUM) \
+	}
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -215,6 +243,8 @@ GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new); // Cha
 void update_alpha_test_settings(void); // Changes current in use alpha test operation value
 void update_scissor_test(void); // Changes current in use scissor test region
 void resetScissorTestRegion(void); // Resets scissor test region to default values
+void invalidate_viewport(void); // Invalidates currently set viewport
+void validate_viewport(void); // Restores previously invalidated viewport
 
 /* blending.c (TODO) */
 void change_blend_factor(void); // Changes current blending settings for all used shaders

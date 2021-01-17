@@ -23,7 +23,7 @@
 
 #include "shared.h"
 
-extern void *gxm_color_surfaces_addr[DISPLAY_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
+extern void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
 extern unsigned int gxm_back_buffer_index; // Display back buffer id
 
 static framebuffer framebuffers[BUFFERS_NUM]; // Framebuffers array
@@ -140,6 +140,12 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
+	
+#ifndef SKIP_ERROR_HANDLING
+	if (!fb) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
 
 	// Aliasing to make code more readable
 	texture *tex = &texture_slots[tex_id];

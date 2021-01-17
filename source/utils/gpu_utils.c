@@ -111,17 +111,18 @@ void *gpu_alloc_mapped(size_t size, vglMemType *type) {
 	if (res == NULL) {
 		*type = *type == VGL_MEM_VRAM ? VGL_MEM_RAM : VGL_MEM_VRAM;
 		res = vgl_mem_alloc(size, *type);
-	}
-
-	// Even the other one failed, using our last resort
-	if (res == NULL) {
-		*type = VGL_MEM_SLOW;
-		res = vgl_mem_alloc(size, *type);
-	}
-
-	if (res == NULL && use_extra_mem) {
-		*type = VGL_MEM_EXTERNAL;
-		res = malloc(size);
+		
+		// Even the other one failed, using our last resort
+		if (res == NULL) {
+			*type = VGL_MEM_SLOW;
+			res = vgl_mem_alloc(size, *type);
+			
+			// If even this failed, using newlib mem
+			if (res == NULL && use_extra_mem) {
+				*type = VGL_MEM_EXTERNAL;
+				res = malloc(size);
+			}
+		}	
 	}
 
 	return res;
