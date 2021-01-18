@@ -258,7 +258,7 @@ void update_precompiled_ffp_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmen
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders
 void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
-void _glDraw_CustomShadersIMPL(void *ptr); // glDrawElements implementation for rendering with custom shaders
+void _glDraw_CustomShadersIMPL(void *ptr); // glDraw* implementation for rendering with custom shaders
 
 /* misc functions */
 void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height); // Converts screen coords to local space

@@ -112,13 +112,31 @@ void resetCustomShaders(void) {
 void _glDraw_CustomShadersIMPL(void *ptr) {
 	program *p = &progs[cur_program - 1];
 	
-	// Check ig a vertex shader rebuild is required
+	// Check if a vertex shader rebuild is required
+	int i;
 	uint8_t attr_mask = ~((~0) << p->attr_num);
 	if ((p->attr_state_mask & attr_mask) != (vertex_attrib_state & attr_mask)) {
+		uint32_t orig_stride[GL_MAX_VERTEX_ATTRIBS];
 		p->attr_state_mask = vertex_attrib_state;
+		
+		// Making disabled vertex attribs to loop
+		for (i = 0; i < p->attr_num; i++) {
+			if (!(vertex_attrib_state & (1 << i))) {
+				orig_stride[i] = vertex_stream_config[i].stride;
+				vertex_stream_config[i].stride = 0;
+			}
+		}
+
 		sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
 			p->vshader->id, vertex_attrib_config, p->attr_num,
 			vertex_stream_config, p->stream_num, &p->vprog);
+			
+		// Restoring stride values to their original settings
+		for (i = 0; i < p->attr_num; i++) {
+			if (!(vertex_attrib_state & (1 << i))) {
+				vertex_stream_config[i].stride = orig_stride[i];
+			}
+		}
 	}
 	
 	// Check if a blend info rebuild is required
@@ -145,7 +163,6 @@ void _glDraw_CustomShadersIMPL(void *ptr) {
 	}
 	
 	// Uploading textures on relative texture units
-	int i;
 	for (i = 0; i < GL_MAX_TEXTURE_IMAGE_UNITS; i++) {
 		if (p->texunits[i]) {
 			texture_unit *tex_unit = &texture_units[client_texture_unit + i];
