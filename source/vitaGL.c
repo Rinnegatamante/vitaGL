@@ -1045,10 +1045,6 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 	if (size < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
-
-	if (idx < 0) {
-		SET_GL_ERROR(GL_INVALID_OPERATION)
-	}
 #endif
 	
 	// Marking previous content for deletion
@@ -1080,10 +1076,6 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 #ifndef SKIP_ERROR_HANDLING
 	if ((size < 0) || (offset < 0) || ((offset + size) > gpu_buf->size)) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-
-	if (idx < 0) {
-		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 	
