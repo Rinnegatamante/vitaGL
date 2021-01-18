@@ -122,10 +122,10 @@ void _glDraw_CustomShadersIMPL(void *ptr) {
 				gpu_buf->vertex_stream_config[i].stride = 0;
 			}
 		}
-
+		
 		sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
 			p->vshader->id, gpu_buf->vertex_attrib_config, p->attr_num,
-			gpu_buf->vertex_stream_config, p->stream_num, &p->vprog);
+			gpu_buf->vertex_stream_config, p->attr_num, &p->vprog);
 			
 		// Restoring stride values to their original settings
 		for (i = 0; i < p->attr_num; i++) {
@@ -697,10 +697,14 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 	gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
 	SceGxmVertexAttribute *attributes = &gpu_buf->vertex_attrib_config[index];
 	SceGxmVertexStream *streams = &gpu_buf->vertex_stream_config[index];
+	program *p = &progs[cur_program - 1];
 	
+	attributes->streamIndex = 0;
 	attributes->offset = (uint32_t)pointer;
 	attributes->componentCount = size;
+	attributes->regIndex = p->attr[index].regIndex;
 	streams->stride = stride;
+	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	
 	// Detecting attribute format and size
 	switch (type) {
@@ -746,16 +750,7 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 	if (param == NULL)
 		return;
 
-	// Setting stream index and offset values
-	attributes->streamIndex = 0;
-	attributes->offset = 0;
-	attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-
-	// Setting various info about the stream
-	attributes->componentCount = 4;
 	attributes->regIndex = sceGxmProgramParameterGetResourceIndex(param);
-	streams->stride = 0;
-	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 }
 
 GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
