@@ -104,6 +104,7 @@ blend_config texture2d_rgba_blend_cfg;
 typedef struct gpubuffer {
 	void *ptr;
 	int32_t size;
+	GLboolean used;
 } gpubuffer;
 
 // sceGxm viewport setup (NOTE: origin is on center screen)
@@ -152,13 +153,12 @@ SceGxmMultisampleMode msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
 extern GLboolean use_vram;
 extern GLboolean use_vram_for_usse;
 
-static GLuint buffers[BUFFERS_NUM]; // Buffers array
 static gpubuffer gpu_buffers[BUFFERS_NUM]; // Buffers array
 static SceGxmColorMask blend_color_mask = SCE_GXM_COLOR_MASK_ALL; // Current in-use color mask (glColorMask)
 static SceGxmBlendFunc blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD; // Current in-use RGB blend func
 static SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use A blend func
-static int vertex_array_unit = -1; // Current in-use vertex array unit
-static int index_array_unit = -1; // Current in-use index array unit
+static uint32_t vertex_array_unit = 0; // Current in-use vertex array unit
+static uint32_t index_array_unit = 0; // Current in-use index array unit
 
 vector4f texenv_color = { 0.0f, 0.0f, 0.0f, 0.0f }; // Current in use texture environment color
 
@@ -860,8 +860,13 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 
 	// Init buffers
 	for (i = 0; i < BUFFERS_NUM; i++) {
-		buffers[i] = BUFFERS_ADDR + i;
+		gpu_buffers[i].used = GL_FALSE;
 		gpu_buffers[i].ptr = NULL;
+	}
+	
+	// Init purge lists
+	for (i = 0; i < DISPLAY_MAX_BUFFER_COUNT; i++) {
+		frame_purge_list[i][0] = NULL;
 	}
 
 	// Init scissor test state
@@ -955,6 +960,17 @@ void vglWaitVblankStart(GLboolean enable) {
 	vblank = enable;
 }
 
+// EGL implementation
+
+EGLBoolean eglSwapInterval(EGLDisplay display, EGLint interval) {
+	vblank = interval;
+}
+
+EGLBoolean eglSwapBuffers(EGLDisplay display, EGLSurface surface) {
+	vglStopRendering();
+	vglStartRendering();
+}
+
 // openGL implementation
 
 void glGenBuffers(GLsizei n, GLuint *res) {
@@ -965,9 +981,9 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 	}
 #endif
 	for (i = 0; i < BUFFERS_NUM; i++) {
-		if (buffers[i] != 0x0000) {
-			res[j++] = buffers[i];
-			buffers[i] = 0x0000;
+		if (!gpu_buffers[i].used) {
+			res[j++] = (GLuint)&gpu_buffers[i];
+			gpu_buffers[i].used = GL_TRUE;
 		}
 		if (j >= n)
 			break;
@@ -975,17 +991,12 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 }
 
 void glBindBuffer(GLenum target, GLuint buffer) {
-#ifndef SKIP_ERROR_HANDLING
-	if ((buffer != 0x0000) && ((buffer >= BUFFERS_ADDR + BUFFERS_NUM) || (buffer < BUFFERS_ADDR))) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-#endif
 	switch (target) {
 	case GL_ARRAY_BUFFER:
-		vertex_array_unit = buffer - BUFFERS_ADDR;
+		vertex_array_unit = buffer;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
-		index_array_unit = buffer - BUFFERS_ADDR;
+		index_array_unit = buffer;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -1002,26 +1013,25 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 #endif
 	int i, j;
 	for (j = 0; j < n; j++) {
-		if (gl_buffers[j] >= BUFFERS_ADDR && gl_buffers[j] < (BUFFERS_ADDR + BUFFERS_NUM)) {
-			uint8_t idx = gl_buffers[j] - BUFFERS_ADDR;
-			buffers[idx] = gl_buffers[j];
-			if (gpu_buffers[idx].ptr != NULL) {
-				vgl_mem_free(gpu_buffers[idx].ptr);
-				gpu_buffers[idx].ptr = NULL;
-				gpu_buffers[idx].size = 0;
+		if (gl_buffers[j]) {
+			gpubuffer *gpu_buf = (gpubuffer*)gl_buffers[j];
+			if (gpu_buf->ptr != NULL) {
+				frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = gpu_buf->ptr;
+				gpu_buf->ptr = NULL;
 			}
+			gpu_buf->used = GL_FALSE;
 		}
 	}
 }
 
 void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage) {
-	int idx = 0;
+	gpubuffer *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
-		idx = vertex_array_unit;
+		gpu_buf = (gpubuffer*)vertex_array_unit;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
-		idx = index_array_unit;
+		gpu_buf = (gpubuffer*)index_array_unit;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -1036,40 +1046,35 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	vglMemType type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-
-	// Free buffer if already existing.
-	if (gpu_buffers[idx].ptr != NULL)
-		vgl_mem_free(gpu_buffers[idx].ptr);
-
-	gpu_buffers[idx].ptr = gpu_alloc_mapped(size, &type);
-	gpu_buffers[idx].size = size;
-
-#ifndef SKIP_ERROR_HANDLING
-	if (gpu_buffers[idx].ptr == NULL) {
-		gpu_buffers[idx].size = 0;
-		SET_GL_ERROR(GL_OUT_OF_MEMORY)
+	
+	// Marking previous content for deletion
+	if (gpu_buf->ptr) {
+		frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = gpu_buf->ptr;
 	}
-#endif
+	
+	// Allocating a new buffer
+	vglMemType type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
+	gpu_buf->ptr = gpu_alloc_mapped(size, &type);
+	gpu_buf->size = size;
 
-	memcpy_neon(gpu_buffers[idx].ptr, data, size);
+	memcpy_neon(gpu_buf->ptr, data, size);
 }
 
 void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void *data) {
-	int idx = 0;
+	gpubuffer *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
-		idx = vertex_array_unit;
+		gpu_buf = (gpubuffer*)vertex_array_unit;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
-		idx = index_array_unit;
+		gpu_buf = (gpubuffer*)index_array_unit;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 #ifndef SKIP_ERROR_HANDLING
-	if ((size < 0) || (offset < 0) || ((offset + size) > gpu_buffers[idx].size)) {
+	if ((size < 0) || (offset < 0) || ((offset + size) > gpu_buf->size)) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 
@@ -1077,8 +1082,22 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-
-	memcpy_neon(gpu_buffers[idx].ptr + offset, data, size);
+	
+	// Marking previous content for deletion
+	frame_purge_list[frame_purge_idx][frame_elem_purge_idx] = gpu_buf->ptr;
+	
+	// Allocating a new buffer
+	vglMemType type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
+	gpu_buf->ptr = gpu_alloc_mapped(size, &type);
+	
+	// Copying up previous data combined to modified data
+	if (offset > 0)
+		memcpy_neon(gpu_buf->ptr, frame_purge_list[frame_purge_idx][frame_elem_purge_idx], offset);
+	memcpy_neon((uint8_t*)gpu_buf->ptr + offset, data, size);
+	if (gpu_buf->size - size - offset > 0)
+		memcpy_neon((uint8_t*)gpu_buf->ptr + offset + size, (uint8_t*)frame_purge_list[frame_purge_idx][frame_elem_purge_idx] + offset + size, gpu_buf->size - size - offset);
+		
+	frame_elem_purge_idx++;
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor) {
@@ -1486,7 +1505,7 @@ void _glDrawArrays_SetupVertices(vector3f **verts, vector2f **texcoords, uint8_t
 	vector3f *vertices;
 	uint8_t *colors;
 	vector2f *uv_map;
-	if (vertex_array_unit >= 0) {
+	if (vertex_array_unit > 0) {
 		if (verts != NULL) {
 			if (tex_unit->vertex_array.stride == 0)
 				vertices = (vector3f *)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer) + (first * (tex_unit->vertex_array.num * tex_unit->vertex_array.size)));
@@ -1579,11 +1598,17 @@ void _glDrawArrays_SetupVertices(vector3f **verts, vector2f **texcoords, uint8_t
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	if (tex_unit->vertex_array_state) {
-		int texture2d_idx = tex_unit->tex_id;
+	
+	SceGxmPrimitiveType gxm_p;
+	gl_primitive_to_gxm(mode, gxm_p);
 		
-		SceGxmPrimitiveType gxm_p;
-		gl_primitive_to_gxm(mode, gxm_p);
+	if (cur_program != 0) {
+		gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
+		_glDraw_CustomShadersIMPL(gpu_buf->ptr);
+		gpu_buf = (gpubuffer*)index_array_unit;
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint8_t*)gpu_buf->ptr + first, count);
+	} else if (tex_unit->vertex_array_state) {
+		int texture2d_idx = tex_unit->tex_id;
 		
 		if (mvp_modified) {
 			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
@@ -1677,7 +1702,7 @@ void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoor
 		case 1: // Position
 			{
 				vector3f *vertices;
-				if (vertex_array_unit >= 0)
+				if (vertex_array_unit > 0)
 					vertices = (vector3f *)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer);
 				else {
 					uint64_t vertex_count_int =  _glDrawElements_CountVertices(count, (uint16_t*)gl_indices);
@@ -1702,7 +1727,7 @@ void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoor
 			{
 				vector3f *vertices;
 				uint8_t *colors;
-				if (vertex_array_unit >= 0) {
+				if (vertex_array_unit > 0) {
 					colors = (uint8_t *)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->color_array.pointer);
 					vertices = (vector3f *)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer);
 				} else {
@@ -1738,7 +1763,7 @@ void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoor
 				vector3f *vertices;
 				uint8_t *colors;
 				vector2f *uv_map;
-				if (vertex_array_unit >= 0) {
+				if (vertex_array_unit > 0) {
 					vertices = (vector3f *)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer);
 					uv_map = (vector2f *)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->texture_array.pointer);
 					if (tex_unit->color_array_state)
@@ -1780,7 +1805,7 @@ void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoor
 				vector3f *vertices;
 				uint8_t *colors;
 				uint64_t vertex_count_int =  _glDrawElements_CountVertices(count, (uint16_t*)gl_indices);
-				if (vertex_array_unit >= 0)
+				if (vertex_array_unit > 0)
 					vertices = (vector3f *)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer);
 				else
 					vertices = (vector3f *)gpu_pool_memalign(vertex_count_int * sizeof(vector3f), sizeof(vector3f));
@@ -1808,21 +1833,26 @@ void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoor
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	if (tex_unit->vertex_array_state) {
-		int texture2d_idx = tex_unit->tex_id;
-
+	
 #ifndef SKIP_ERROR_HANDLING
-		if (type != GL_UNSIGNED_SHORT) {
-			SET_GL_ERROR(GL_INVALID_ENUM)
-		} else if (phase == MODEL_CREATION) {
-			SET_GL_ERROR(GL_INVALID_OPERATION)
-		} else if (count < 0) {
-			SET_GL_ERROR(GL_INVALID_VALUE)
-		}
+	if (type != GL_UNSIGNED_SHORT) {
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	} else if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	} else if (count < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
 #endif
-		SceGxmPrimitiveType gxm_p;
-		gl_primitive_to_gxm(mode, gxm_p);
+	SceGxmPrimitiveType gxm_p;
+	gl_primitive_to_gxm(mode, gxm_p);
 		
+	if (cur_program != 0) {
+		gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
+		_glDraw_CustomShadersIMPL(gpu_buf->ptr);
+		gpu_buf = (gpubuffer*)index_array_unit;
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint8_t*)gpu_buf->ptr + (uint32_t)gl_indices, count);
+	} else if (tex_unit->vertex_array_state) {
+		int texture2d_idx = tex_unit->tex_id;
 		uint16_t *indices;
 		if (index_array_unit >= 0)
 			indices = (uint16_t *)((uint32_t)gpu_buffers[index_array_unit].ptr + (uint32_t)gl_indices);
@@ -2145,7 +2175,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	gl_primitive_to_gxm(mode, gxm_p);
 
 	if (cur_program != 0) {
-		_vglDrawObjects_CustomShadersIMPL(mode, count, implicit_wvp);
+		_vglDrawObjects_CustomShadersIMPL(implicit_wvp);
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, texture_units[client_texture_unit].index_object, count);
 	} else {
 		texture_unit *tex_unit = &texture_units[client_texture_unit];

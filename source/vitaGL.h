@@ -53,6 +53,11 @@ extern "C" {
 #define GLclampd      double
 #define GLvoid        void
 
+#define EGLBoolean    uint8_t
+#define EGLDisplay    void*
+#define EGLSurface    void*
+#define EGLint        int32_t
+
 #define GL_FALSE                              0
 #define GL_TRUE                               1
 
@@ -279,6 +284,8 @@ extern "C" {
 
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS   2
 #define GL_MAX_TEXTURE_LOD_BIAS               31
+#define GL_MAX_VERTEX_ATTRIBS                 8
+#define GL_MAX_TEXTURE_IMAGE_UNITS            3
 
 // Aliases
 #define GL_CLAMP GL_CLAMP_TO_EDGE
@@ -296,6 +303,7 @@ void glAlphaFunc(GLenum func, GLfloat ref);
 void glArrayElement(GLint i);
 void glAttachShader(GLuint prog, GLuint shad);
 void glBegin(GLenum mode);
+void glBindAttribLocation(GLuint program, GLuint index, const GLchar *name);
 void glBindBuffer(GLenum target, GLuint buffer);
 void glBindFramebuffer(GLenum target, GLuint framebuffer);
 void glBindTexture(GLenum target, GLuint texture);
@@ -338,10 +346,12 @@ void glDepthRange(GLdouble nearVal, GLdouble farVal);
 void glDepthRangef(GLfloat nearVal, GLfloat farVal);
 void glDisable(GLenum cap);
 void glDisableClientState(GLenum array);
+void glDisableVertexAttribArray(GLuint index);
 void glDrawArrays(GLenum mode, GLint first, GLsizei count);
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices);
 void glEnable(GLenum cap);
 void glEnableClientState(GLenum array);
+void glEnableVertexAttribArray(GLuint index);
 void glEnd(void);
 void glFinish(void);
 void glFogf(GLenum pname, GLfloat param);
@@ -354,6 +364,7 @@ void glGenBuffers(GLsizei n, GLuint *buffers);
 void glGenerateMipmap(GLenum target);
 void glGenFramebuffers(GLsizei n, GLuint *ids);
 void glGenTextures(GLsizei n, GLuint *textures);
+GLint glGetAttribLocation(GLuint prog, const GLchar *name);
 void glGetBooleanv(GLenum pname, GLboolean *params);
 void glGetFloatv(GLenum pname, GLfloat *data);
 GLenum glGetError(void);
@@ -413,11 +424,20 @@ void glUseProgram(GLuint program);
 void glVertex2f(GLfloat x, GLfloat y);
 void glVertex3f(GLfloat x, GLfloat y, GLfloat z);
 void glVertex3fv(const GLfloat *v);
+void glVertexAttrib1fv(GLuint index, const GLfloat *v);
+void glVertexAttrib2fv(GLuint index, const GLfloat *v);
+void glVertexAttrib3fv(GLuint index, const GLfloat *v);
+void glVertexAttrib4fv(GLuint index, const GLfloat *v);
+void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
 // glu*
 void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
+
+// egl*
+EGLBoolean eglSwapInterval(EGLDisplay display, EGLint interval);
+EGLBoolean eglSwapBuffers(EGLDisplay display, EGLSurface surface);
 
 // VGL_EXT_gpu_objects_array extension
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);

@@ -34,8 +34,8 @@
 #define DISPLAY_HEIGHT_DEF 544 // Default display height in pixels
 #define DISPLAY_MAX_BUFFER_COUNT 3 // Maximum amount of display buffers to use
 #define GXM_TEX_MAX_SIZE 4096 // Maximum width/height in pixels per texture
-#define BUFFERS_ADDR 0xA000 // Starting address for buffers indexing
 #define BUFFERS_NUM 128 // Maximum number of allocatable buffers
+#define FRAME_PURGE_LIST_SIZE 16384 // Number of elements a single frame can hold
 
 // Internal constants set in bootup phase
 extern int DISPLAY_WIDTH; // Display width in pixels
@@ -192,6 +192,9 @@ extern GLenum vgl_error; // Error returned by glGetError
 extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 extern void *gxm_depth_surface_addr; // Depth surface memblock starting address
 extern GLboolean system_app_mode; // Flag for system app mode usage
+extern void *frame_purge_list[DISPLAY_MAX_BUFFER_COUNT][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
+extern int frame_purge_idx; // Index for currently populatable purge list
+extern int frame_elem_purge_idx; // Index for currently populatable purge list element
 
 extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 extern matrix4x4 projection_matrix; // Projection Matrix
@@ -254,7 +257,8 @@ void update_precompiled_ffp_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmen
 
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders
-void _vglDrawObjects_CustomShadersIMPL(GLenum mode, GLsizei count, GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
+void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
+void _glDraw_CustomShadersIMPL(void *ptr); // glDrawElements implementation for rendering with custom shaders
 
 /* misc functions */
 void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height); // Converts screen coords to local space

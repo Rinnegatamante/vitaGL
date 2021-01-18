@@ -69,6 +69,11 @@ GLboolean system_app_mode = GL_FALSE; // Flag for system app mode usage
 static GLboolean gxm_initialized = GL_FALSE; // Current sceGxm state
 static GLboolean is_rendering_display = GL_FALSE; // Flag for when drawing without fbo is being performed
 
+void *frame_purge_list[DISPLAY_MAX_BUFFER_COUNT][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
+int frame_purge_idx = 0; // Index for currently populatable purge list
+int frame_elem_purge_idx = 0; // Index for currently populatable purge list element
+static int frame_purge_clean_idx = DISPLAY_MAX_BUFFER_COUNT;
+
 // sceDisplay callback data
 struct display_queue_callback_data {
 	void *addr;
@@ -449,6 +454,16 @@ void vglStopRenderingTerm(void) {
 			gxm_back_buffer_index = (gxm_back_buffer_index + 1) % gxm_display_buffer_count;
 		}
 	}
+	
+	// Purging all elements marked for deletion
+	int i = 0;
+	while (frame_purge_list[frame_purge_clean_idx][i]) {
+		vgl_mem_free(frame_purge_list[frame_purge_clean_idx][i++]);
+	}
+	frame_purge_list[frame_purge_clean_idx][0] = NULL;
+	frame_purge_clean_idx = (frame_purge_clean_idx + 1) % DISPLAY_MAX_BUFFER_COUNT;
+	frame_purge_idx = (frame_purge_idx + 1) % DISPLAY_MAX_BUFFER_COUNT;
+	frame_elem_purge_idx = 0;
 
 	// Resetting vitaGL mempool
 	gpu_pool_reset();
