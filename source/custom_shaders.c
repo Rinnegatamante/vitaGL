@@ -168,7 +168,7 @@ void _glDraw_CustomShadersIMPL(void *ptr) {
 	
 	// Uploading vertex streams
 	for (i = 0; i < p->attr_num; i++) {
-		sceGxmSetVertexStream(gxm_context, i, (gpu_buf->vertex_attrib_state & (1 << i)) ? ptr : vertex_attrib_value);
+		sceGxmSetVertexStream(gxm_context, i, (gpu_buf->vertex_attrib_state & (1 << i)) ? ptr : vertex_attrib_value[i]);
 	}
 }
 

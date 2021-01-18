@@ -325,8 +325,9 @@ void glDisable(GLenum cap) {
 
 void glClear(GLbitfield mask) {
 	
-	// Invalidating viewport
+	// Invalidating viewport and culling
 	invalidate_viewport();
+	sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_NONE);
 	
 	void *fbuffer, *vbuffer;
 	
@@ -390,8 +391,9 @@ void glClear(GLbitfield mask) {
 		change_stencil_settings();
 	}
 	
-	// Restoring viewport
+	// Restoring viewport and culling
 	validate_viewport();
+	change_cull_mode();
 }
 
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
