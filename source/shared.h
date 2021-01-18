@@ -98,6 +98,16 @@ typedef enum texEnvMode {
 	REPLACE = 4
 } texEnvMode;
 
+// VBO struct
+typedef struct gpubuffer {
+	void *ptr;
+	int32_t size;
+	GLboolean used;
+	SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
+	SceGxmVertexStream vertex_stream_config[GL_MAX_VERTEX_ATTRIBS];
+	uint8_t vertex_attrib_state;
+} gpubuffer;
+
 // 3D vertex for position + 4D vertex for RGBA color struct
 typedef struct rgba_vertex {
 	vector3f position;
@@ -204,6 +214,7 @@ extern GLboolean mvp_modified; // Check if ModelViewProjection matrix needs to b
 
 extern GLuint cur_program; // Current in use custom program (0 = No custom program)
 extern GLboolean vblank; // Current setting for VSync
+extern uint32_t vertex_array_unit; // Current in-use vertex array buffer unit
 
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
 

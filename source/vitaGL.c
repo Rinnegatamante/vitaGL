@@ -38,6 +38,8 @@
 #include "shaders/ffp_f.h"
 #endif
 
+#define MAX_IDX_NUMBER 8096 // Maximum allowed number of indices per draw call
+
 typedef enum {
 	TEX2D_WVP_UNIF,
 	TEX2D_ALPHA_CUT_UNIF,
@@ -101,12 +103,6 @@ SceGxmFragmentProgram *texture2d_rgba_fragment_program_patched;
 const SceGxmProgram *texture2d_rgba_fragment_program;
 blend_config texture2d_rgba_blend_cfg;
 
-typedef struct gpubuffer {
-	void *ptr;
-	int32_t size;
-	GLboolean used;
-} gpubuffer;
-
 // sceGxm viewport setup (NOTE: origin is on center screen)
 float x_port = 480.0f;
 float y_port = 272.0f;
@@ -157,8 +153,9 @@ static gpubuffer gpu_buffers[BUFFERS_NUM]; // Buffers array
 static SceGxmColorMask blend_color_mask = SCE_GXM_COLOR_MASK_ALL; // Current in-use color mask (glColorMask)
 static SceGxmBlendFunc blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD; // Current in-use RGB blend func
 static SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use A blend func
-static uint32_t vertex_array_unit = 0; // Current in-use vertex array unit
-static uint32_t index_array_unit = 0; // Current in-use index array unit
+uint32_t vertex_array_unit = 0; // Current in-use vertex array buffer unit
+static uint32_t index_array_unit = 0; // Current in-use element array buffer unit
+static uint16_t *default_idx_ptr; // sceGxm mapped progressive indices buffer
 
 vector4f texenv_color = { 0.0f, 0.0f, 0.0f, 0.0f }; // Current in use texture environment color
 
@@ -857,6 +854,12 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 
 	// Init custom shaders
 	resetCustomShaders();
+	
+	// Init constant index buffer
+	default_idx_ptr = (uint16_t*)malloc(MAX_IDX_NUMBER * sizeof(uint16_t));
+	for (i = 0; i < MAX_IDX_NUMBER; i++) {
+		default_idx_ptr[i] = i;
+	}
 
 	// Init buffers
 	for (i = 0; i < BUFFERS_NUM; i++) {
@@ -984,6 +987,7 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 		if (!gpu_buffers[i].used) {
 			res[j++] = (GLuint)&gpu_buffers[i];
 			gpu_buffers[i].used = GL_TRUE;
+			gpu_buffers[i].vertex_attrib_state = 0;
 		}
 		if (j >= n)
 			break;
@@ -1606,7 +1610,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 		gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
 		_glDraw_CustomShadersIMPL(gpu_buf->ptr);
 		gpu_buf = (gpubuffer*)index_array_unit;
-		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint8_t*)gpu_buf->ptr + first, count);
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, gpu_buf ? (uint16_t*)gpu_buf->ptr + first : default_idx_ptr + first, count);
 	} else if (tex_unit->vertex_array_state) {
 		int texture2d_idx = tex_unit->tex_id;
 		

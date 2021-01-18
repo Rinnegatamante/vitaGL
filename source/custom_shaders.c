@@ -29,6 +29,7 @@
 // Internal stuffs
 GLboolean use_shark = GL_TRUE; // Flag to check if vitaShaRK should be initialized at vitaGL boot
 GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status
+static float *vertex_attrib_value[GL_MAX_VERTEX_ATTRIBS];
 
 #ifdef HAVE_SHARK
 // Internal runtime shader compiler settings
@@ -80,12 +81,6 @@ typedef struct program {
 	uint8_t attr_state_mask;
 } program;
 
-// Internal generic vertex attribute array state
-static SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
-static SceGxmVertexStream vertex_stream_config[GL_MAX_VERTEX_ATTRIBS];
-static uint8_t vertex_attrib_state;
-float *vertex_attrib_value[GL_MAX_VERTEX_ATTRIBS];
-
 // Internal shaders array
 static shader shaders[MAX_CUSTOM_SHADERS];
 
@@ -113,28 +108,29 @@ void _glDraw_CustomShadersIMPL(void *ptr) {
 	program *p = &progs[cur_program - 1];
 	
 	// Check if a vertex shader rebuild is required
+	gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
 	int i;
 	uint8_t attr_mask = ~((~0) << p->attr_num);
-	if ((p->attr_state_mask & attr_mask) != (vertex_attrib_state & attr_mask)) {
+	if ((p->attr_state_mask & attr_mask) != (gpu_buf->vertex_attrib_state & attr_mask)) {
 		uint32_t orig_stride[GL_MAX_VERTEX_ATTRIBS];
-		p->attr_state_mask = vertex_attrib_state;
+		p->attr_state_mask = gpu_buf->vertex_attrib_state;
 		
 		// Making disabled vertex attribs to loop
 		for (i = 0; i < p->attr_num; i++) {
-			if (!(vertex_attrib_state & (1 << i))) {
-				orig_stride[i] = vertex_stream_config[i].stride;
-				vertex_stream_config[i].stride = 0;
+			if (!(gpu_buf->vertex_attrib_state & (1 << i))) {
+				orig_stride[i] = gpu_buf->vertex_stream_config[i].stride;
+				gpu_buf->vertex_stream_config[i].stride = 0;
 			}
 		}
 
 		sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
-			p->vshader->id, vertex_attrib_config, p->attr_num,
-			vertex_stream_config, p->stream_num, &p->vprog);
+			p->vshader->id, gpu_buf->vertex_attrib_config, p->attr_num,
+			gpu_buf->vertex_stream_config, p->stream_num, &p->vprog);
 			
 		// Restoring stride values to their original settings
 		for (i = 0; i < p->attr_num; i++) {
-			if (!(vertex_attrib_state & (1 << i))) {
-				vertex_stream_config[i].stride = orig_stride[i];
+			if (!(gpu_buf->vertex_attrib_state & (1 << i))) {
+				gpu_buf->vertex_stream_config[i].stride = orig_stride[i];
 			}
 		}
 	}
@@ -142,7 +138,7 @@ void _glDraw_CustomShadersIMPL(void *ptr) {
 	// Check if a blend info rebuild is required
 	if (p->blend_info.raw != blend_info.raw) {
 		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, p->vshader->prog);
+		rebuild_frag_shader(p->fshader->id, &p->fprog, NULL);
 	}
 	
 	// Setting up required shader
@@ -172,7 +168,7 @@ void _glDraw_CustomShadersIMPL(void *ptr) {
 	
 	// Uploading vertex streams
 	for (i = 0; i < p->attr_num; i++) {
-		sceGxmSetVertexStream(gxm_context, i, (vertex_attrib_state & (1 << i)) ? ptr : vertex_attrib_value);
+		sceGxmSetVertexStream(gxm_context, i, (gpu_buf->vertex_attrib_state & (1 << i)) ? ptr : vertex_attrib_value);
 	}
 }
 
@@ -497,7 +493,7 @@ void glLinkProgram(GLuint progr) {
 		p->stream, p->stream_num, &p->vprog);
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		p->fshader->id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa_mode, &blend_info.info, p->vshader->prog,
+		msaa_mode, &blend_info.info, NULL,
 		&p->fprog);
 		
 	// Populating current blend settings
@@ -688,16 +684,19 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 }
 
 void glEnableVertexAttribArray(GLuint index) {
-	vertex_attrib_state |= (1 << index);
+	gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
+	gpu_buf->vertex_attrib_state |= (1 << index);
 }
 
 void glDisableVertexAttribArray(GLuint index) {
-	vertex_attrib_state &= ~(1 << index);
+	gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
+	gpu_buf->vertex_attrib_state &= ~(1 << index);
 }
 
 void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer) {
-	SceGxmVertexAttribute *attributes = &vertex_attrib_config[index];
-	SceGxmVertexStream *streams = &vertex_stream_config[index];
+	gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
+	SceGxmVertexAttribute *attributes = &gpu_buf->vertex_attrib_config[index];
+	SceGxmVertexStream *streams = &gpu_buf->vertex_stream_config[index];
 	
 	attributes->offset = (uint32_t)pointer;
 	attributes->componentCount = size;
@@ -759,6 +758,15 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 }
 
+GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
+	program *p = &progs[prog - 1];
+	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
+	if (param == NULL)
+		return -1;
+	
+	return sceGxmProgramParameterGetResourceIndex(param);
+}
+
 /*
  * ------------------------------
  * -    VGL_EXT_gxp_shaders     -
@@ -807,15 +815,6 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 	streams->stride = bpe * num;
 	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	p->stream_num = p->attr_num;
-}
-
-GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
-	program *p = &progs[prog - 1];
-	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
-	if (param == NULL)
-		return -1;
-	
-	return sceGxmProgramParameterGetResourceIndex(param);
 }
 
 // Equivalent of glBindAttribLocation but for sceGxm architecture when packed attributes are used
