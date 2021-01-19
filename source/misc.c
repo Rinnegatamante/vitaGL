@@ -178,7 +178,7 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 	x_port = x + x_scale;
 	y_scale = -(height >> 1);
 	y_port = DISPLAY_HEIGHT - y + y_scale;
-	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 	gl_viewport.x = x;
 	gl_viewport.y = y;
 	gl_viewport.w = width;
@@ -188,13 +188,13 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 void glDepthRange(GLdouble nearVal, GLdouble farVal) {
 	z_port = (farVal + nearVal) / 2.0f;
 	z_scale = (farVal - nearVal) / 2.0f;
-	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 }
 
 void glDepthRangef(GLfloat nearVal, GLfloat farVal) {
 	z_port = (farVal + nearVal) / 2.0f;
 	z_scale = (farVal - nearVal) / 2.0f;
-	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 }
 
 void glEnable(GLenum cap) {

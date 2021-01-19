@@ -95,12 +95,12 @@ void validate_depth_test() {
 
 void invalidate_viewport() {
 	// Invalidating current viewport
-	sceGxmSetViewport(gxm_context, fullscreen_x_port, fullscreen_x_scale, fullscreen_y_port, fullscreen_y_scale, fullscreen_z_port, fullscreen_z_scale);
+	setViewport(gxm_context, fullscreen_x_port, fullscreen_x_scale, fullscreen_y_port, fullscreen_y_scale, fullscreen_z_port, fullscreen_z_scale);
 }
 
 void validate_viewport() {
 	// Restoring original viewport
-	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 }
 
 void change_stencil_settings() {

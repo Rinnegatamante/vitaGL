@@ -425,7 +425,7 @@ void vglStartRendering(void) {
 	}
 
 	// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
-	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 
 	if (scissor_test_state)
 		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);

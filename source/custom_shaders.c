@@ -192,10 +192,9 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		ptrs[0] = gpu_alloc_mapped(count * gpu_buf->vertex_stream_config[0].stride, &type);
 		memcpy_neon(ptrs[0], (void*)vertex_attrib_offsets[0], count * gpu_buf->vertex_stream_config[0].stride);
 		markAsDirty(ptrs[0]);
-		for (i = 0; i < p->attr_num; i++) {
-			gpu_buf->vertex_attrib_config[i].offset = i ? vertex_attrib_offsets[i] - vertex_attrib_offsets[0] : 0;
-			debugPrintf("offset for %X is: %X\n", i, gpu_buf->vertex_attrib_config[i].offset);
-			debugPrintf("stride for %X is: %X\n", i, gpu_buf->vertex_stream_config[i].stride);
+		gpu_buf->vertex_attrib_config[0].regIndex = p->attr[0].regIndex;
+		for (i = 1; i < p->attr_num; i++) {
+			gpu_buf->vertex_attrib_config[i].offset = vertex_attrib_offsets[i] - vertex_attrib_offsets[0];
 			gpu_buf->vertex_attrib_config[i].regIndex = p->attr[i].regIndex;
 		}
 	} else {

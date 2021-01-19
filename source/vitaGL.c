@@ -40,6 +40,23 @@
 
 #define MAX_IDX_NUMBER 8096 // Maximum allowed number of indices per draw call
 
+#ifdef HAVE_SOFTFP_ABI
+__attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
+  asm volatile (
+    "vmov s0, r1\n"
+    "vmov s1, r2\n"
+    "vmov s2, r3\n"
+    "ldr r1, [sp]\n"
+    "ldr r2, [sp, #4]\n"
+    "ldr r3, [sp, #8]\n"
+    "vmov s3, r1\n"
+    "vmov s4, r2\n"
+    "vmov s5, r2\n"
+    "b sceGxmSetViewport\n"
+  );
+}
+#endif
+
 typedef enum {
 	TEX2D_WVP_UNIF,
 	TEX2D_ALPHA_CUT_UNIF,
@@ -1832,6 +1849,7 @@ void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoor
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
+	return;
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	
 #ifndef SKIP_ERROR_HANDLING

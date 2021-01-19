@@ -18,6 +18,10 @@ AR      = $(PREFIX)-gcc-ar
 CFLAGS  = -g -Wl,-q -O2 -ffast-math -mtune=cortex-a9 -mfpu=neon -ftree-vectorize -DSTB_DXT_IMPLEMENTATION
 ASFLAGS = $(CFLAGS)
 
+ifeq ($(SOFTFP_ABI),1)
+CFLAGS += -mfloat-abi=softfp -DHAVE_SOFTFP_ABI
+endif
+
 ifeq ($(NO_DEBUG),1)
 CFLAGS  += -DSKIP_ERROR_HANDLING
 endif

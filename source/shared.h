@@ -88,6 +88,13 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #define SET_GL_ERROR(x) \
 	vgl_error = x;      \
 	return;
+	
+#ifdef HAVE_SOFTFP_ABI
+extern __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale);
+#define setViewport sceGxmSetViewport_sfp
+#else
+#define setViewport sceGxmSetViewport
+#endif
 
 // Texture environment mode
 typedef enum texEnvMode {
