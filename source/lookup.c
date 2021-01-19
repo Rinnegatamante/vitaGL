@@ -48,6 +48,7 @@ static const struct {
 	{ "glClear", (void *)glClear },
 	{ "glClearColor", (void *)glClearColor },
 	{ "glClearDepth", (void *)glClearDepth },
+	{ "glClearDepthf", (void *)glClearDepthf },
 	{ "glClearStencil", (void *)glClearStencil },
 	{ "glClientActiveTexture", (void *)glClientActiveTexture },
 	{ "glClipPlane", (void *)glClipPlane },

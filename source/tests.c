@@ -383,6 +383,11 @@ void glClearDepth(GLdouble depth) {
 	depth_value = depth;
 }
 
+void glClearDepthf(GLclampf depth) {
+	// Set current in use depth test depth value
+	depth_value = depth;
+}
+
 void glDepthMask(GLboolean flag) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling

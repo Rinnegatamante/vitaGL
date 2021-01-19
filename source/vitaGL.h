@@ -316,6 +316,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 void glClear(GLbitfield mask);
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void glClearDepth(GLdouble depth);
+void glClearDepthf(GLclampf depth);
 void glClearStencil(GLint s);
 void glClientActiveTexture(GLenum texture);
 void glClipPlane(GLenum plane, const GLdouble *equation);
