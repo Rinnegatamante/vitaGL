@@ -600,6 +600,22 @@ void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
 	u->data[1] = v1;
 }
 
+void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+
+	// Grabbing passed uniform
+	uniform *u = (uniform *)location;
+
+	// Setting passed value to desired uniform
+	if (u->size == 0) {
+		u->size = count;
+		u->data = (float*)malloc(u->size * sizeof(float));
+	}
+	memcpy_neon(u->data, value, u->size * sizeof(float));
+}
+
 void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1)
@@ -662,6 +678,22 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 	if (u->size == 0) {
 		u->size = 4 * count;
+		u->data = (float*)malloc(u->size * sizeof(float));
+	}
+	memcpy_neon(u->data, value, u->size * sizeof(float));
+}
+
+void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+
+	// Grabbing passed uniform
+	uniform *u = (uniform *)location;
+
+	// Setting passed value to desired uniform
+	if (u->size == 0) {
+		u->size = 9 * count;
 		u->data = (float*)malloc(u->size * sizeof(float));
 	}
 	memcpy_neon(u->data, value, u->size * sizeof(float));
