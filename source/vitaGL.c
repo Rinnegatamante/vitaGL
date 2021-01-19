@@ -149,7 +149,7 @@ SceGxmMultisampleMode msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
 extern GLboolean use_vram;
 extern GLboolean use_vram_for_usse;
 
-static gpubuffer gpu_buffers[BUFFERS_NUM]; // Buffers array
+gpubuffer gpu_buffers[BUFFERS_NUM]; // VBOs array
 static SceGxmColorMask blend_color_mask = SCE_GXM_COLOR_MASK_ALL; // Current in-use color mask (glColorMask)
 static SceGxmBlendFunc blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD; // Current in-use RGB blend func
 static SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use A blend func
@@ -862,7 +862,8 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 	}
 
 	// Init buffers
-	for (i = 0; i < BUFFERS_NUM; i++) {
+	gpu_buffers[0].used = GL_TRUE;
+	for (i = 1; i < BUFFERS_NUM; i++) {
 		gpu_buffers[i].used = GL_FALSE;
 		gpu_buffers[i].ptr = NULL;
 	}
@@ -983,11 +984,10 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	for (i = 0; i < BUFFERS_NUM; i++) {
+	for (i = 1; i < BUFFERS_NUM; i++) {
 		if (!gpu_buffers[i].used) {
 			res[j++] = (GLuint)&gpu_buffers[i];
 			gpu_buffers[i].used = GL_TRUE;
-			gpu_buffers[i].vertex_attrib_state = 0;
 		}
 		if (j >= n)
 			break;
@@ -995,8 +995,10 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 }
 
 void glBindBuffer(GLenum target, GLuint buffer) {
+	debugPrintf("glBindBuffer(%u, %u);\n", target, buffer);
 	switch (target) {
 	case GL_ARRAY_BUFFER:
+		debugPrintf("glBindBuffer(GL_ARRAY_BUFFER, %u);\n", buffer);
 		vertex_array_unit = buffer;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
@@ -1020,7 +1022,7 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 		if (gl_buffers[j]) {
 			gpubuffer *gpu_buf = (gpubuffer*)gl_buffers[j];
 			if (gpu_buf->ptr != NULL) {
-				frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = gpu_buf->ptr;
+				markAsDirty(gpu_buf->ptr);
 				gpu_buf->ptr = NULL;
 			}
 			gpu_buf->used = GL_FALSE;
@@ -1048,9 +1050,8 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 #endif
 	
 	// Marking previous content for deletion
-	if (gpu_buf->ptr) {
-		frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = gpu_buf->ptr;
-	}
+	if (gpu_buf->ptr)
+		markAsDirty(gpu_buf->ptr);
 	
 	// Allocating a new buffer
 	vglMemType type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
@@ -1600,7 +1601,10 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 		
 	if (cur_program != 0) {
 		gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
-		_glDraw_CustomShadersIMPL(gpu_buf->ptr);
+		if (!gpu_buf) // Drawing without a bound VBO
+			_glDrawArrays_CustomShadersIMPL(first + count);
+		else // Drawing with a bound VBO
+			_glDraw_VBO_CustomShadersIMPL(gpu_buf->ptr);
 		gpu_buf = (gpubuffer*)index_array_unit;
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, gpu_buf ? (uint16_t*)gpu_buf->ptr + first : default_idx_ptr + first, count);
 	} else if (tex_unit->vertex_array_state) {
@@ -1844,9 +1848,21 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		
 	if (cur_program != 0) {
 		gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
-		_glDraw_CustomShadersIMPL(gpu_buf->ptr);
+		if (!gpu_buf) // Drawing without a bound VBO
+			_glDrawElements_CustomShadersIMPL(index_array_unit ? (uint16_t*)gpu_buf->ptr + (uint32_t)gl_indices : (uint16_t*)gl_indices, count);
+		else // Drawing with a bound VBO
+			_glDraw_VBO_CustomShadersIMPL(gpu_buf->ptr);
 		gpu_buf = (gpubuffer*)index_array_unit;
-		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint8_t*)gpu_buf->ptr + (uint32_t)gl_indices, count);
+		if (!gpu_buf) { // Drawing without an index buffer
+			// Allocating a temp buffer for the indices
+			vglMemType type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
+			void *ptr = gpu_alloc_mapped(count * sizeof(uint16_t), &type);
+			memcpy_neon(ptr, gl_indices, count * sizeof(uint16_t));
+			markAsDirty(ptr);
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
+		} else { // Dtawing with an index buffer
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint16_t*)gpu_buf->ptr + (uint32_t)gl_indices, count);
+		}
 	} else if (tex_unit->vertex_array_state) {
 		int texture2d_idx = tex_unit->tex_id;
 		uint16_t *indices;

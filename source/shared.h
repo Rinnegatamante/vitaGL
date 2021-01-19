@@ -105,7 +105,6 @@ typedef struct gpubuffer {
 	GLboolean used;
 	SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
 	SceGxmVertexStream vertex_stream_config[GL_MAX_VERTEX_ATTRIBS];
-	uint8_t vertex_attrib_state;
 } gpubuffer;
 
 // 3D vertex for position + 4D vertex for RGBA color struct
@@ -206,6 +205,9 @@ extern void *frame_purge_list[DISPLAY_MAX_BUFFER_COUNT][FRAME_PURGE_LIST_SIZE]; 
 extern int frame_purge_idx; // Index for currently populatable purge list
 extern int frame_elem_purge_idx; // Index for currently populatable purge list element
 
+// Macro to mark a pointer as dirty for garbage collection
+#define markAsDirty(x) frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x;
+
 extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 extern matrix4x4 projection_matrix; // Projection Matrix
 extern matrix4x4 modelview_matrix; // ModelView Matrix
@@ -215,6 +217,7 @@ extern GLboolean mvp_modified; // Check if ModelViewProjection matrix needs to b
 extern GLuint cur_program; // Current in use custom program (0 = No custom program)
 extern GLboolean vblank; // Current setting for VSync
 extern uint32_t vertex_array_unit; // Current in-use vertex array buffer unit
+extern gpubuffer gpu_buffers[BUFFERS_NUM]; // VBOs array
 
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
 
@@ -269,7 +272,9 @@ void update_precompiled_ffp_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmen
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders
 void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
-void _glDraw_CustomShadersIMPL(void *ptr); // glDraw* implementation for rendering with custom shaders
+void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count); // glDrawElements implementation for rendering with custom shaders
+void _glDrawArrays_CustomShadersIMPL(GLsizei count); // glDrawArrays implementation for rendering with custom shaders
+void _glDraw_VBO_CustomShadersIMPL(void *ptr); // glDraw* implementation for rendering with custom shaders and VBOs usage
 
 /* misc functions */
 void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height); // Converts screen coords to local space
