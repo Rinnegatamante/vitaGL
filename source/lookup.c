@@ -45,6 +45,7 @@ static const struct {
 	{ "glBlendFuncSeparate", (void *)glBlendFuncSeparate },
 	{ "glBufferData", (void *)glBufferData },
 	{ "glBufferSubData", (void *)glBufferSubData },
+	{ "glCheckFramebufferStatus", (void *)glCheckFramebufferStatus },
 	{ "glClear", (void *)glClear },
 	{ "glClearColor", (void *)glClearColor },
 	{ "glClearDepth", (void *)glClearDepth },
