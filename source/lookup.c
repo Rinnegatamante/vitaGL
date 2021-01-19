@@ -91,6 +91,7 @@ static const struct {
 	{ "glFogfv", (void *)glFogfv },
 	{ "glFogi", (void *)glFogi },
 	{ "glFramebufferTexture", (void *)glFramebufferTexture },
+	{ "glFramebufferTexture2D", (void *)glFramebufferTexture2D },
 	{ "glFrontFace", (void *)glFrontFace },
 	{ "glFrustum", (void *)glFrustum },
 	{ "glGenBuffers", (void *)glGenBuffers },

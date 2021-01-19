@@ -191,6 +191,74 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 	}
 }
 
+void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint tex_id, GLint level) {
+	// Detecting requested framebuffer
+	framebuffer *fb = NULL;
+	switch (target) {
+	case GL_DRAW_FRAMEBUFFER:
+	case GL_FRAMEBUFFER:
+		fb = active_write_fb;
+		break;
+	case GL_READ_FRAMEBUFFER:
+		fb = active_read_fb;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+	
+#ifndef SKIP_ERROR_HANDLING
+	if (!fb) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	} else if (textarget != GL_TEXTURE_2D) {
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+#endif
+
+	// Aliasing to make code more readable
+	texture *tex = &texture_slots[tex_id];
+
+	// Extracting texture data
+	fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
+	fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
+	fb->stride = ALIGN(fb->width, 8) * tex_format_to_bytespp(sceGxmTextureGetFormat(&tex->gxm_tex));
+	fb->data = sceGxmTextureGetData(&tex->gxm_tex);
+	fb->data_type = tex->type;
+
+	// Detecting requested attachment
+	switch (attachment) {
+	case GL_COLOR_ATTACHMENT0:
+
+		// Allocating colorbuffer
+		sceGxmColorSurfaceInit(
+			&fb->colorbuffer,
+			get_color_from_texture(tex->type),
+			SCE_GXM_COLOR_SURFACE_LINEAR,
+			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
+			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
+			fb->width, fb->height, ALIGN(fb->width, 8), fb->data);
+
+		// Allocating depth and stencil buffer (FIXME: This probably shouldn't be here)
+		initDepthStencilBuffer(fb->width, fb->height, &fb->depthbuffer, &fb->depth_buffer_addr, &fb->stencil_buffer_addr);
+
+		// Creating rendertarget
+		SceGxmRenderTargetParams renderTargetParams;
+		memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
+		renderTargetParams.flags = 0;
+		renderTargetParams.width = fb->width;
+		renderTargetParams.height = fb->height;
+		renderTargetParams.scenesPerFrame = 1;
+		renderTargetParams.multisampleMode = msaa_mode;
+		renderTargetParams.multisampleLocations = 0;
+		renderTargetParams.driverMemBlock = -1;
+		sceGxmCreateRenderTarget(&renderTargetParams, &fb->target);
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+}
+
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data) {
 	/*
 	 * Callbacks are actually used to just perform down/up-sampling
