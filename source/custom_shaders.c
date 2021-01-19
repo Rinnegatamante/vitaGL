@@ -47,7 +47,6 @@ GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
 
 // Uniform struct
 typedef struct uniform {
-	GLboolean isVertex;
 	const SceGxmProgramParameter *ptr;
 	void *chain;
 	float *data;
@@ -79,9 +78,8 @@ typedef struct program {
 	GLuint attr_idx;
 	GLuint stream_num;
 	const SceGxmProgramParameter *wvp;
-	uniform *uniforms;
-	GLboolean has_vertex_unifs;
-	GLboolean has_fragment_unifs;
+	uniform *vert_uniforms;
+	uniform *frag_uniforms;
 	uint8_t attr_state_mask;
 } program;
 
@@ -151,15 +149,21 @@ void _glDraw_VBO_CustomShadersIMPL(void *ptr) {
 	
 	// Uploading both fragment and vertex uniforms data
 	void *vbuffer, *fbuffer;
-	if (p->has_vertex_unifs) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
-	if (p->has_fragment_unifs) sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
-	uniform *u = p->uniforms;
-	while (u != NULL) {
-		if (u->isVertex)
+	if (p->vert_uniforms) {
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
+		uniform *u = p->vert_uniforms;
+		while (u) {
 			sceGxmSetUniformDataF(vbuffer, u->ptr, 0, u->size, u->data);
-		else
+			u = (uniform *)u->chain;
+		}
+	}
+	if (p->frag_uniforms) {
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
+		uniform *u = p->frag_uniforms;
+		while (u) {
 			sceGxmSetUniformDataF(fbuffer, u->ptr, 0, u->size, u->data);
-		u = (uniform *)u->chain;
+			u = (uniform *)u->chain;
+		}
 	}
 	
 	// Uploading textures on relative texture units
@@ -246,15 +250,21 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	
 	// Uploading both fragment and vertex uniforms data
 	void *vbuffer, *fbuffer;
-	if (p->has_vertex_unifs) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
-	if (p->has_fragment_unifs) sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
-	uniform *u = p->uniforms;
-	while (u != NULL) {
-		if (u->isVertex)
-			sceGxmSetUniformDataF(vbuffer, u->ptr, 0, u->size, u->data);
-		else
-			sceGxmSetUniformDataF(fbuffer, u->ptr, 0, u->size, u->data);
-		u = (uniform *)u->chain;
+	if (p->vert_uniforms) {
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
+		uniform *u = p->vert_uniforms;
+		while (u) {
+			debugPrintf("setUniform: %X\n", sceGxmSetUniformDataF(vbuffer, u->ptr, 0, u->size, u->data));
+			u = (uniform *)u->chain;
+		}
+	}
+	if (p->frag_uniforms) {
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
+		uniform *u = p->frag_uniforms;
+		while (u) {
+			debugPrintf("setUniform: %X\n", sceGxmSetUniformDataF(fbuffer, u->ptr, 0, u->size, u->data));
+			u = (uniform *)u->chain;
+		}
 	}
 	
 	// Uploading textures on relative texture units
@@ -351,15 +361,21 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	
 	// Uploading both fragment and vertex uniforms data
 	void *vbuffer, *fbuffer;
-	if (p->has_vertex_unifs) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
-	if (p->has_fragment_unifs) sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
-	uniform *u = p->uniforms;
-	while (u != NULL) {
-		if (u->isVertex)
+	if (p->vert_uniforms) {
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
+		uniform *u = p->vert_uniforms;
+		while (u) {
 			sceGxmSetUniformDataF(vbuffer, u->ptr, 0, u->size, u->data);
-		else
+			u = (uniform *)u->chain;
+		}
+	}
+	if (p->frag_uniforms) {
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
+		uniform *u = p->frag_uniforms;
+		while (u) {
 			sceGxmSetUniformDataF(fbuffer, u->ptr, 0, u->size, u->data);
-		u = (uniform *)u->chain;
+			u = (uniform *)u->chain;
+		}
 	}
 	
 	// Uploading textures on relative texture units
@@ -395,15 +411,21 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	
 	// Uploading both fragment and vertex uniforms data
 	void *vbuffer, *fbuffer;
-	if (p->has_vertex_unifs || (p->wvp && implicit_wvp)) sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
-	if (p->has_fragment_unifs) sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
-	uniform *u = p->uniforms;
-	while (u != NULL) {
-		if (u->isVertex)
+	if (p->vert_uniforms) {
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
+		uniform *u = p->vert_uniforms;
+		while (u) {
 			sceGxmSetUniformDataF(vbuffer, u->ptr, 0, u->size, u->data);
-		else
+			u = (uniform *)u->chain;
+		}
+	}
+	if (p->frag_uniforms) {
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
+		uniform *u = p->frag_uniforms;
+		while (u) {
 			sceGxmSetUniformDataF(fbuffer, u->ptr, 0, u->size, u->data);
-		u = (uniform *)u->chain;
+			u = (uniform *)u->chain;
+		}
 	}
 	
 	// Uploading internal GL wvp if implicit wvp is asked
@@ -611,34 +633,15 @@ void glAttachShader(GLuint prog, GLuint shad) {
 	// Grabbing passed shader and program
 	shader *s = &shaders[shad - 1];
 	program *p = &progs[prog - 1];
-	uint32_t i, cnt;
 
 	// Attaching shader to desired program
 	if (p->valid && s->valid) {
 		switch (s->type) {
 		case GL_VERTEX_SHADER:
 			p->vshader = s;
-			p->wvp = sceGxmProgramFindParameterByName(s->prog, "wvp");
-			cnt = sceGxmProgramGetParameterCount(s->prog);
-			for (i = 0; i < cnt; i++) {
-				const SceGxmProgramParameter *param = sceGxmProgramGetParameter(s->prog, i);
-				if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE)
-					p->attr_num++;
-			}
 			break;
 		case GL_FRAGMENT_SHADER:
 			p->fshader = s;
-			
-			// Check which texture units are used in this shader
-			for (i = 0; i < GL_MAX_TEXTURE_IMAGE_UNITS; i++) {
-				p->texunits[i] = GL_FALSE;
-			}
-			cnt = sceGxmProgramGetParameterCount(s->prog);
-			for (i = 0; i < cnt; i++) {
-				const SceGxmProgramParameter *param = sceGxmProgramGetParameter(s->prog, i);
-				if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_SAMPLER)
-					p->texunits[sceGxmProgramParameterGetResourceIndex(param)] = GL_TRUE;
-			}
 			break;
 		default:
 			break;
@@ -659,9 +662,8 @@ GLuint glCreateProgram(void) {
 			progs[i - 1].attr_num = 0;
 			progs[i - 1].attr_idx = 0;
 			progs[i - 1].wvp = NULL;
-			progs[i - 1].uniforms = NULL;
-			progs[i - 1].has_fragment_unifs = GL_FALSE;
-			progs[i - 1].has_vertex_unifs = GL_FALSE;
+			progs[i - 1].vert_uniforms = NULL;
+			progs[i - 1].frag_uniforms = NULL;
 			progs[i - 1].attr_state_mask = 0;
 			break;
 		}
@@ -681,10 +683,16 @@ void glDeleteProgram(GLuint prog) {
 			sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog);
 			sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, p->vprog);
 		}
-		while (p->uniforms != NULL) {
-			uniform *old = p->uniforms;
-			p->uniforms = (uniform *)p->uniforms->chain;
-			if (old->size) free(old->data);
+		while (p->vert_uniforms) {
+			uniform *old = p->vert_uniforms;
+			p->vert_uniforms = (uniform *)p->vert_uniforms->chain;
+			free(old->data);
+			free(old);
+		}
+		while (p->frag_uniforms) {
+			uniform *old = p->frag_uniforms;
+			p->frag_uniforms = (uniform *)p->frag_uniforms->chain;
+			free(old->data);
 			free(old);
 		}
 	}
@@ -704,6 +712,47 @@ void glLinkProgram(GLuint progr) {
 		msaa_mode, &blend_info.info, NULL,
 		&p->fprog);
 		
+	// Analyzing vertex shader
+	uint32_t i, cnt;
+	for (i = 0; i < GL_MAX_TEXTURE_IMAGE_UNITS; i++) {
+		p->texunits[i] = GL_FALSE;
+	}
+	cnt = sceGxmProgramGetParameterCount(p->fshader->prog);
+	for (i = 0; i < cnt; i++) {
+		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->fshader->prog, i);
+		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
+		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+			p->texunits[sceGxmProgramParameterGetResourceIndex(param)] = GL_TRUE;
+		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
+			uniform *u = (uniform *)malloc(sizeof(uniform));
+			u->chain = p->frag_uniforms;
+			u->ptr = param;
+			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
+			u->data = (float*)malloc(u->size * sizeof(float));
+			memset(u->data, 0, u->size * sizeof(float));
+			p->frag_uniforms = u;
+		}
+	}
+	
+	// Analyzing fragment shader
+	p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "wvp");
+	cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
+	for (i = 0; i < cnt; i++) {
+		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, i);
+		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
+		if (cat == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
+			p->attr_num++;
+		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
+			uniform *u = (uniform *)malloc(sizeof(uniform));
+			u->chain = p->vert_uniforms;
+			u->ptr = param;
+			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
+			u->data = (float*)malloc(u->size * sizeof(float));
+			memset(u->data, 0, u->size * sizeof(float));
+			p->vert_uniforms = u;
+		}
+	}
+		
 	// Populating current blend settings
 	p->blend_info.raw = blend_info.raw;
 }
@@ -717,29 +766,25 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 
-	uniform *res = (uniform *)malloc(sizeof(uniform));
-	res->chain = p->uniforms;
-
 	// Checking if parameter is a vertex or fragment related one
-	res->ptr = sceGxmProgramFindParameterByName(p->vshader->prog, name);
-	res->isVertex = GL_TRUE;
-	if (res->ptr == NULL) {
-		res->ptr = sceGxmProgramFindParameterByName(p->fshader->prog, name);
-		res->isVertex = GL_FALSE;
-	}
-
-	if (res->ptr == NULL) {
-		free(res);
-		return -1;
+	uniform *j;
+	const SceGxmProgramParameter *u = sceGxmProgramFindParameterByName(p->vshader->prog, name);
+	if (u == NULL) {
+		u = sceGxmProgramFindParameterByName(p->fshader->prog, name);
+		if (u == NULL)
+			return -1;
+		else
+			j = p->frag_uniforms;
+	} else
+		j = p->vert_uniforms;
+	
+	// Getting the desired location
+	while (j) {
+		if (j->ptr == u) return (GLint)j;
+		j = j->chain;
 	}
 	
-	res->size = 0;
-	if (res->isVertex)
-		p->has_vertex_unifs = GL_TRUE;
-	else
-		p->has_fragment_unifs = GL_TRUE;
-	p->uniforms = res;
-	return (GLint)res;
+	return -1;
 }
 
 void glUniform1i(GLint location, GLint v0) {
@@ -751,10 +796,6 @@ void glUniform1i(GLint location, GLint v0) {
 	uniform *u = (uniform *)location;
 
 	// Setting passed value to desired uniform
-	if (u->size == 0) {
-		u->size = 1;
-		u->data = (float*)malloc(u->size * sizeof(float));
-	}
 	u->data[0] = (float)v0;
 }
 
@@ -767,10 +808,6 @@ void glUniform2i(GLint location, GLint v0, GLint v1) {
 	uniform *u = (uniform *)location;
 
 	// Setting passed value to desired uniform
-	if (u->size == 0) {
-		u->size = 2;
-		u->data = (float*)malloc(u->size * sizeof(float));
-	}
 	u->data[0] = (float)v0;
 	u->data[1] = (float)v1;
 }
@@ -784,10 +821,6 @@ void glUniform1f(GLint location, GLfloat v0) {
 	uniform *u = (uniform *)location;
 
 	// Setting passed value to desired uniform
-	if (u->size == 0) {
-		u->size = 1;
-		u->data = (float*)malloc(u->size * sizeof(float));
-	}
 	u->data[0] = v0;
 }
 
@@ -800,10 +833,6 @@ void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
 	uniform *u = (uniform *)location;
 
 	// Setting passed value to desired uniform
-	if (u->size == 0) {
-		u->size = 2;
-		u->data = (float*)malloc(u->size * sizeof(float));
-	}
 	u->data[0] = v0;
 	u->data[1] = v1;
 }
@@ -817,10 +846,6 @@ void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)location;
 
 	// Setting passed value to desired uniform
-	if (u->size == 0) {
-		u->size = count;
-		u->data = (float*)malloc(u->size * sizeof(float));
-	}
 	memcpy_neon(u->data, value, u->size * sizeof(float));
 }
 
@@ -833,10 +858,6 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)location;
 
 	// Setting passed value to desired uniform
-	if (u->size == 0) {
-		u->size = 2 * count;
-		u->data = (float*)malloc(u->size * sizeof(float));
-	}
 	memcpy_neon(u->data, value, u->size * sizeof(float));
 }
 
@@ -849,10 +870,6 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)location;
 
 	// Setting passed value to desired uniform
-	if (u->size == 0) {
-		u->size = 3 * count;
-		u->data = (float*)malloc(u->size * sizeof(float));
-	}
 	memcpy_neon(u->data, value, u->size * sizeof(float));
 }
 
@@ -865,10 +882,6 @@ void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
 	uniform *u = (uniform *)location;
 
 	// Setting passed value to desired uniform
-	if (u->size == 0) {
-		u->size = 4;
-		u->data = (float*)malloc(u->size * sizeof(float));
-	}
 	u->data[0] = v0;
 	u->data[1] = v1;
 	u->data[2] = v2;
@@ -884,10 +897,6 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)location;
 
 	// Setting passed value to desired uniform
-	if (u->size == 0) {
-		u->size = 4 * count;
-		u->data = (float*)malloc(u->size * sizeof(float));
-	}
 	memcpy_neon(u->data, value, u->size * sizeof(float));
 }
 
@@ -900,10 +909,6 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, cons
 	uniform *u = (uniform *)location;
 
 	// Setting passed value to desired uniform
-	if (u->size == 0) {
-		u->size = 9 * count;
-		u->data = (float*)malloc(u->size * sizeof(float));
-	}
 	memcpy_neon(u->data, value, u->size * sizeof(float));
 }
 
@@ -916,10 +921,6 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 	uniform *u = (uniform *)location;
 
 	// Setting passed value to desired uniform
-	if (u->size == 0) {
-		u->size = 16 * count;
-		u->data = (float*)malloc(u->size * sizeof(float));
-	}
 	memcpy_neon(u->data, value, u->size * sizeof(float));
 }
 

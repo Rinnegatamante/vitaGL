@@ -357,7 +357,7 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 	switch (format) {
 	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
 	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
-		tex_size = (MAX(w, 8) * MAX(h, 8) * 2 + 7) / 8;
+		tex_size = (MAX(w, 16) * MAX(h, 16) * 2 + 7) / 8;
 		break;
 	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
 	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
