@@ -93,10 +93,10 @@ static program progs[MAX_CUSTOM_SHADERS / 2];
 void resetCustomShaders(void) {
 	// Init custom shaders
 	int i;
-	for (i = 0; i < MAX_CUSTOM_SHADERS / 2; i++) {
+	for (i = 0; i < MAX_CUSTOM_SHADERS; i++) {
 		shaders[i].valid = 0;
 		shaders[i].log = NULL;
-		progs[i].valid = 0;
+		progs[i >> 1].valid = 0;
 	}
 	
 	// Init generic vertex attrib arrays
@@ -207,6 +207,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 				memcpy_neon(&temp_attributes[j], &gpu_buf->vertex_attrib_config[i], sizeof(SceGxmVertexAttribute));
 				memcpy_neon(&temp_streams[j], &gpu_buf->vertex_stream_config[i], sizeof(SceGxmVertexStream));
 				offsets[j] = vertex_attrib_offsets[i];
+				attributes[j].streamIndex = j;
 				j++;
 			}
 		}
@@ -340,6 +341,7 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 				memcpy_neon(&temp_attributes[j], &gpu_buf->vertex_attrib_config[i], sizeof(SceGxmVertexAttribute));
 				memcpy_neon(&temp_streams[j], &gpu_buf->vertex_stream_config[i], sizeof(SceGxmVertexStream));
 				offsets[j] = vertex_attrib_offsets[i];
+				attributes[j].streamIndex = j;
 				j++;
 			}
 		}
@@ -994,17 +996,17 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 }
 
 void glEnableVertexAttribArray(GLuint index) {
-	debugPrintf("glEnableVertexAttribArray %u\n", index);
+	//debugPrintf("glEnableVertexAttribArray %u\n", index);
 	vertex_attrib_state |= (1 << index);
 }
 
 void glDisableVertexAttribArray(GLuint index) {
-	debugPrintf("glDisableVertexAttribArray %u\n", index);
+	//debugPrintf("glDisableVertexAttribArray %u\n", index);
 	vertex_attrib_state &= ~(1 << index);
 }
 
 void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer) {
-	debugPrintf("glVertexAttribPointer %u\n", index);
+	//debugPrintf("glVertexAttribPointer %u\n", index);
 	gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
 	
 	// Using reserved VBO if no VBO is bound
