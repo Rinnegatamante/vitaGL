@@ -153,16 +153,14 @@ void initGxm(void) {
 }
 
 void initGxmContext(void) {
-	vglMemType type = VGL_MEM_VRAM;
-
 	// Allocating VDM ring buffer
-	vdm_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE, &type);
+	vdm_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE, VGL_MEM_VRAM);
 
 	// Allocating vertex ring buffer
-	vertex_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE, &type);
+	vertex_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE, VGL_MEM_VRAM);
 
 	// Allocating fragment ring buffer
-	fragment_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE, &type);
+	fragment_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE, VGL_MEM_VRAM);
 
 	// Allocating fragment USSE ring buffer
 	unsigned int fragment_usse_offset;
@@ -249,14 +247,11 @@ void initDisplayColorSurfaces(void) {
 		}
 	}
 
-	vglMemType type = VGL_MEM_VRAM;
 	int i;
 	for (i = 0; i < gxm_display_buffer_count; i++) {
 		// Allocating color surface memblock
 		if (!system_app_mode) {
-			gxm_color_surfaces_addr[i] = gpu_alloc_mapped(
-				ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024),
-				&type);
+			gxm_color_surfaces_addr[i] = gpu_alloc_mapped(ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024), VGL_MEM_VRAM);
 			memset(gxm_color_surfaces_addr[i], 0, DISPLAY_STRIDE * DISPLAY_HEIGHT);
 		}
 
@@ -297,12 +292,10 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 		depth_stencil_samples = depth_stencil_samples * 4;
 
 	// Allocating depth surface
-	vglMemType depth_type = VGL_MEM_VRAM;
-	*depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, &depth_type);
+	*depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, VGL_MEM_VRAM);
 
 	// Allocating stencil surface
-	vglMemType stencil_type = VGL_MEM_VRAM;
-	*stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, &stencil_type);
+	*stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, VGL_MEM_VRAM);
 
 	// Initializing depth and stencil surfaces
 	sceGxmDepthStencilSurfaceInit(surface,
@@ -328,21 +321,17 @@ void startShaderPatcher(void) {
 	static const unsigned int shader_patcher_buffer_size = 1024 * 1024;
 	static const unsigned int shader_patcher_vertex_usse_size = 1024 * 1024;
 	static const unsigned int shader_patcher_fragment_usse_size = 1024 * 1024;
-	vglMemType type = VGL_MEM_RAM;
 
 	// Allocating Shader Patcher buffer
-	gxm_shader_patcher_buffer_addr = gpu_alloc_mapped(
-		shader_patcher_buffer_size, &type);
+	gxm_shader_patcher_buffer_addr = gpu_alloc_mapped(shader_patcher_buffer_size, VGL_MEM_VRAM);
 
 	// Allocating Shader Patcher vertex USSE buffer
 	unsigned int shader_patcher_vertex_usse_offset;
-	gxm_shader_patcher_vertex_usse_addr = gpu_vertex_usse_alloc_mapped(
-		shader_patcher_vertex_usse_size, &shader_patcher_vertex_usse_offset);
+	gxm_shader_patcher_vertex_usse_addr = gpu_vertex_usse_alloc_mapped(shader_patcher_vertex_usse_size, &shader_patcher_vertex_usse_offset);
 
 	// Allocating Shader Patcher fragment USSE buffer
 	unsigned int shader_patcher_fragment_usse_offset;
-	gxm_shader_patcher_fragment_usse_addr = gpu_fragment_usse_alloc_mapped(
-		shader_patcher_fragment_usse_size, &shader_patcher_fragment_usse_offset);
+	gxm_shader_patcher_fragment_usse_addr = gpu_fragment_usse_alloc_mapped(shader_patcher_fragment_usse_size, &shader_patcher_fragment_usse_offset);
 
 	// Populating shader patcher parameters
 	SceGxmShaderPatcherParams shader_patcher_params;

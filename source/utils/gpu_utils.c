@@ -103,7 +103,23 @@ void swizzle_compressed_texture(uint8_t *dst, uint8_t *src, int w, int h, int is
 	}
 }
 
-void *gpu_alloc_mapped(size_t size, vglMemType *type) {
+void *gpu_alloc_mapped(size_t size, vglMemType type) {
+	// Allocating requested memblock
+	void *res = vgl_mem_alloc(size, type);
+
+	// Requested memory type finished, using other one
+	if (res == NULL) {
+		res = vgl_mem_alloc(size, type == VGL_MEM_VRAM ? VGL_MEM_RAM : VGL_MEM_VRAM);
+		
+		// Even the other one failed, using our last resort
+		if (res == NULL)
+			res = vgl_mem_alloc(size, VGL_MEM_SLOW);
+	}
+
+	return res;
+}
+
+void *gpu_alloc_mapped_with_external(size_t size, vglMemType *type) {
 	// Allocating requested memblock
 	void *res = vgl_mem_alloc(size, *type);
 
@@ -130,8 +146,7 @@ void *gpu_alloc_mapped(size_t size, vglMemType *type) {
 
 void *gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
-	vert_usse_type = use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM;
-	void *addr = gpu_alloc_mapped(size, &vert_usse_type);
+	void *addr = gpu_alloc_mapped(size, use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
 	// Mapping memblock into sceGxm as vertex USSE memory
 	sceGxmMapVertexUsseMemory(addr, size, usse_offset);
@@ -150,8 +165,7 @@ void gpu_vertex_usse_free_mapped(void *addr) {
 
 void *gpu_fragment_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
-	frag_usse_type = use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM;
-	void *addr = gpu_alloc_mapped(size, &frag_usse_type);
+	void *addr = gpu_alloc_mapped(size, use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
 	// Mapping memblock into sceGxm as fragment USSE memory
 	sceGxmMapFragmentUsseMemory(addr, size, usse_offset);
@@ -205,8 +219,7 @@ void gpu_pool_reset() {
 void gpu_pool_init(uint32_t temp_pool_size) {
 	// Allocating vitaGL mempool
 	pool_size = temp_pool_size;
-	vglMemType type = VGL_MEM_RAM;
-	pool_addr = gpu_alloc_mapped(temp_pool_size, &type);
+	pool_addr = gpu_alloc_mapped(temp_pool_size, VGL_MEM_RAM);
 }
 
 int tex_format_to_bytespp(SceGxmTextureFormat format) {
@@ -266,10 +279,9 @@ int tex_format_to_alignment(SceGxmTextureFormat format) {
 palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 	// Allocating a palette object
 	palette *res = (palette *)malloc(sizeof(palette));
-	res->type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 
 	// Allocating palette data buffer
-	void *texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), &res->type);
+	void *texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
 	// Initializing palette
 	if (data == NULL)
@@ -284,9 +296,13 @@ palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 
 void gpu_free_texture(texture *tex) {
 	// Deallocating texture
-	if (tex->data != NULL)
-		vgl_mem_free(tex->data);
-
+	if (tex->data != NULL) {
+		if (tex->mtype == VGL_MEM_EXTERNAL)
+			free(tex->data);
+		else
+			vgl_mem_free(tex->data);
+	}
+	
 	// Invalidating texture object
 	tex->valid = 0;
 }
@@ -302,7 +318,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	// Allocating texture data buffer
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 	const int tex_size = ALIGN(w, 8) * h * bpp;
-	void *texture_data = gpu_alloc_mapped(tex_size, &tex->mtype);
+	void *texture_data = gpu_alloc_mapped_with_external(tex_size, &tex->mtype);
 
 	if (texture_data != NULL) {
 		// Initializing texture data buffer
@@ -385,7 +401,7 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 #endif
 
 	// Allocating texture data buffer
-	void *texture_data = gpu_alloc_mapped(tex_size, &tex->mtype);
+	void *texture_data = gpu_alloc_mapped_with_external(tex_size, &tex->mtype);
 
 	// Initializing texture data buffer
 	if (texture_data != NULL) {
@@ -502,7 +518,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 
 		// Allocating the new texture data buffer
 		tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-		void *texture_data = gpu_alloc_mapped(size, &tex->mtype);
+		void *texture_data = gpu_alloc_mapped_with_external(size, &tex->mtype);
 
 		// Moving back old texture data from heap to texture memblock
 		memcpy_neon(texture_data, temp, stride * orig_h * bpp);

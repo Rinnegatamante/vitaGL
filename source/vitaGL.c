@@ -609,9 +609,8 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 		&disable_color_buffer_blend_info, NULL,
 		&disable_color_buffer_fragment_program_patched);
 
-	vglMemType type = VGL_MEM_RAM;
-	clear_vertices = gpu_alloc_mapped(1 * sizeof(vector4f), &type);
-	depth_clear_indices = gpu_alloc_mapped(4 * sizeof(unsigned short), &type);
+	clear_vertices = gpu_alloc_mapped(1 * sizeof(vector4f), VGL_MEM_RAM);
+	depth_clear_indices = gpu_alloc_mapped(4 * sizeof(unsigned short), VGL_MEM_RAM);
 
 	vector4f_convert_to_local_space(clear_vertices, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
@@ -850,7 +849,7 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 	// Scissor Test shader register
 	sceGxmShaderPatcherCreateMaskUpdateFragmentProgram(gxm_shader_patcher, &scissor_test_fragment_program);
 
-	scissor_test_vertices = gpu_alloc_mapped(1 * sizeof(vector4f), &type);
+	scissor_test_vertices = gpu_alloc_mapped(1 * sizeof(vector4f), VGL_MEM_RAM);
 
 	// Allocate temp pool for non-VBO drawing
 	gpu_pool_init(gpu_pool_size);
@@ -1071,8 +1070,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		markAsDirty(gpu_buf->ptr);
 	
 	// Allocating a new buffer
-	vglMemType type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-	gpu_buf->ptr = gpu_alloc_mapped(size, &type);
+	gpu_buf->ptr = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 	gpu_buf->size = size;
 
 	memcpy_neon(gpu_buf->ptr, data, size);
@@ -1101,8 +1099,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 	frame_purge_list[frame_purge_idx][frame_elem_purge_idx] = gpu_buf->ptr;
 	
 	// Allocating a new buffer
-	vglMemType type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-	gpu_buf->ptr = gpu_alloc_mapped(size, &type);
+	gpu_buf->ptr = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 	
 	// Copying up previous data combined to modified data
 	if (offset > 0)
@@ -1849,7 +1846,6 @@ void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoor
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
-	return;
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	
 #ifndef SKIP_ERROR_HANDLING
@@ -1873,8 +1869,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		gpu_buf = (gpubuffer*)index_array_unit;
 		if (!gpu_buf) { // Drawing without an index buffer
 			// Allocating a temp buffer for the indices
-			vglMemType type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-			void *ptr = gpu_alloc_mapped(count * sizeof(uint16_t), &type);
+			void *ptr = gpu_alloc_mapped(count * sizeof(uint16_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 			memcpy_neon(ptr, gl_indices, count * sizeof(uint16_t));
 			markAsDirty(ptr);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
@@ -2307,8 +2302,7 @@ void *vglAlloc(uint32_t size, vglMemType type) {
 }
 
 void *vglForceAlloc(uint32_t size) {
-	vglMemType mem_type = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-	return gpu_alloc_mapped(size, &mem_type);
+	return gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 }
 
 void vglFree(void *addr) {

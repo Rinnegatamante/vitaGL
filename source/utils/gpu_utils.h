@@ -51,11 +51,11 @@ typedef struct texture {
 // Palette object struct
 typedef struct palette {
 	void *data;
-	vglMemType type;
 } palette;
 
 // Alloc a generic memblock into sceGxm mapped memory
-void *gpu_alloc_mapped(size_t size, vglMemType *type);
+void *gpu_alloc_mapped(size_t size, vglMemType type);
+void *gpu_alloc_mapped_with_external(size_t size, vglMemType *type);
 
 // Alloc into sceGxm mapped memory a vertex USSE memblock
 void *gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset);

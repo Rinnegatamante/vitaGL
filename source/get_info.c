@@ -24,10 +24,10 @@
 #include "shared.h"
 
 // Constants returned by glGetString
-static const GLubyte *vendor = NULL;
-static const GLubyte *renderer = NULL;
-static const GLubyte *version = NULL;
-static const GLubyte *extensions = NULL;
+static GLubyte *vendor = NULL;
+static GLubyte *renderer = NULL;
+static GLubyte *version = NULL;
+static GLubyte *extensions = NULL;
 
 /*
  * ------------------------------
