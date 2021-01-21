@@ -110,8 +110,6 @@ typedef struct gpubuffer {
 	void *ptr;
 	int32_t size;
 	GLboolean used;
-	SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
-	SceGxmVertexStream vertex_stream_config[GL_MAX_VERTEX_ATTRIBS];
 } gpubuffer;
 
 // 3D vertex for position + 4D vertex for RGBA color struct
@@ -152,6 +150,7 @@ extern void *vert_uniforms;
 extern SceGxmMultisampleMode msaa_mode;
 extern GLboolean use_extra_mem;
 extern blend_config blend_info;
+extern SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
 
 // Debugging tool
 #ifdef ENABLE_LOG

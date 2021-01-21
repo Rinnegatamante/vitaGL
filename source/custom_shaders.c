@@ -31,6 +31,8 @@ GLboolean log_stuffs = GL_FALSE;
 // Internal stuffs
 GLboolean use_shark = GL_TRUE; // Flag to check if vitaShaRK should be initialized at vitaGL boot
 GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status
+SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
+static SceGxmVertexStream vertex_stream_config[GL_MAX_VERTEX_ATTRIBS];
 static float *vertex_attrib_value[GL_MAX_VERTEX_ATTRIBS];
 static uint32_t vertex_attrib_offsets[GL_MAX_VERTEX_ATTRIBS];
 static uint8_t vertex_attrib_state = 0;
@@ -118,36 +120,58 @@ void resetCustomShaders(void) {
 }
 
 void _glDraw_VBO_CustomShadersIMPL(void *ptr) {
-	debugPrintf("drawing with a VBO...\n");
 	program *p = &progs[cur_program - 1];
 	
-	// Check if a vertex shader rebuild is required
 	gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
+	SceGxmVertexAttribute *attributes;
+	SceGxmVertexStream *streams;
+	uint8_t real_i[GL_MAX_VERTEX_ATTRIBS] = {0, 1, 2, 3, 4, 5, 6, 7};
+	if (p->has_unaligned_attrs) {
+		attributes = temp_attributes;
+		streams = temp_streams;
+		int i, j = 0;
+		for (i = 0; i < p->attr_highest_idx; i++) {
+			if (p->attr[i].regIndex != 0xDEAD) {
+				memcpy_neon(&temp_attributes[j], &vertex_attrib_config[i], sizeof(SceGxmVertexAttribute));
+				memcpy_neon(&temp_streams[j], &vertex_stream_config[i], sizeof(SceGxmVertexStream));
+				attributes[j].streamIndex = j;
+				real_i[j] = attributes[j].regIndex;
+				j++;
+			}
+		}
+	} else {
+		attributes = vertex_attrib_config;
+		streams = vertex_stream_config;
+	}
+	
+	// Check if a vertex shader rebuild is required
 	int i;
-	uint8_t attr_mask = ~((~0) << p->attr_num);
+	uint8_t attr_mask = ~((~0) << p->attr_highest_idx);
 	if ((p->attr_state_mask & attr_mask) != (vertex_attrib_state & attr_mask)) {
 		uint32_t orig_stride[GL_MAX_VERTEX_ATTRIBS], orig_offs[GL_MAX_VERTEX_ATTRIBS];
 		p->attr_state_mask = vertex_attrib_state;
 		
 		// Making disabled vertex attribs to loop
 		for (i = 0; i < p->attr_num; i++) {
-			if (!(vertex_attrib_state & (1 << i))) {
-				orig_stride[i] = gpu_buf->vertex_stream_config[i].stride;
-				orig_offs[i] = gpu_buf->vertex_attrib_config[i].offset;
-				gpu_buf->vertex_stream_config[i].stride = 0;
-				gpu_buf->vertex_attrib_config[i].offset = 0;
+			if (!(vertex_attrib_state & (1 << real_i[i]))) {
+				orig_stride[i] = vertex_stream_config[i].stride;
+				orig_offs[i] = vertex_attrib_config[i].offset;
+				vertex_stream_config[i].stride = 0;
+				vertex_attrib_config[i].offset = 0;
 			}
 		}
 		
 		sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
-			p->vshader->id, gpu_buf->vertex_attrib_config, p->attr_num,
-			gpu_buf->vertex_stream_config, p->attr_num, &p->vprog);
+			p->vshader->id, vertex_attrib_config, p->attr_num,
+			vertex_stream_config, p->attr_num, &p->vprog);
 			
 		// Restoring stride values to their original settings
-		for (i = 0; i < p->attr_num; i++) {
-			if (!(vertex_attrib_state & (1 << i))) {
-				gpu_buf->vertex_stream_config[i].stride = orig_stride[i];
-				gpu_buf->vertex_attrib_config[i].offset = orig_offs[i];
+		if (!p->has_unaligned_attrs) {
+			for (i = 0; i < p->attr_num; i++) {
+				if (!(vertex_attrib_state & (1 << real_i[i]))) {
+					vertex_stream_config[i].stride = orig_stride[i];
+					vertex_attrib_config[i].offset = orig_offs[i];
+				}
 			}
 		}
 	}
@@ -191,7 +215,7 @@ void _glDraw_VBO_CustomShadersIMPL(void *ptr) {
 	
 	// Uploading vertex streams
 	for (i = 0; i < p->attr_num; i++) {
-		sceGxmSetVertexStream(gxm_context, i, (vertex_attrib_state & (1 << i)) ? ptr : vertex_attrib_value[i]);
+		sceGxmSetVertexStream(gxm_context, i, (vertex_attrib_state & (1 << real_i[i])) ? ptr : vertex_attrib_value[i]);
 	}
 }
 
@@ -212,8 +236,8 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		int j = 0;
 		for (i = 0; i < p->attr_highest_idx; i++) {
 			if (p->attr[i].regIndex != 0xDEAD) {
-				memcpy_neon(&temp_attributes[j], &gpu_buf->vertex_attrib_config[i], sizeof(SceGxmVertexAttribute));
-				memcpy_neon(&temp_streams[j], &gpu_buf->vertex_stream_config[i], sizeof(SceGxmVertexStream));
+				memcpy_neon(&temp_attributes[j], &vertex_attrib_config[i], sizeof(SceGxmVertexAttribute));
+				memcpy_neon(&temp_streams[j], &vertex_stream_config[i], sizeof(SceGxmVertexStream));
 				offsets[j] = vertex_attrib_offsets[i];
 				attributes[j].streamIndex = j;
 				real_i[j] = attributes[j].regIndex;
@@ -221,8 +245,8 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			}
 		}
 	} else {
-		attributes = gpu_buf->vertex_attrib_config;
-		streams = gpu_buf->vertex_stream_config;
+		attributes = vertex_attrib_config;
+		streams = vertex_stream_config;
 		offsets = vertex_attrib_offsets;
 	}
 	
@@ -356,8 +380,8 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		int j = 0;
 		for (i = 0; i < p->attr_highest_idx; i++) {
 			if (p->attr[i].regIndex != 0xDEAD) {
-				memcpy_neon(&temp_attributes[j], &gpu_buf->vertex_attrib_config[i], sizeof(SceGxmVertexAttribute));
-				memcpy_neon(&temp_streams[j], &gpu_buf->vertex_stream_config[i], sizeof(SceGxmVertexStream));
+				memcpy_neon(&temp_attributes[j], &vertex_attrib_config[i], sizeof(SceGxmVertexAttribute));
+				memcpy_neon(&temp_streams[j], &vertex_stream_config[i], sizeof(SceGxmVertexStream));
 				offsets[j] = vertex_attrib_offsets[i];
 				attributes[j].streamIndex = j;
 				real_i[j] = attributes[j].regIndex;
@@ -365,8 +389,8 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 			}
 		}
 	} else {
-		attributes = gpu_buf->vertex_attrib_config;
-		streams = gpu_buf->vertex_stream_config;
+		attributes = vertex_attrib_config;
+		streams = vertex_stream_config;
 		offsets = vertex_attrib_offsets;
 	}
 
@@ -578,9 +602,6 @@ GLuint glCreateShader(GLenum shaderType) {
 			break;
 		}
 	}
-	
-	if (res == 94) log_stuffs = GL_TRUE;
-	if (log_stuffs) debugPrintf("CreateShader %d\n", res);
 	
 	// All shader slots are busy, exiting call
 	if (res == 0)
@@ -1040,8 +1061,8 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 		pointer = NULL;
 	}
 	
-	SceGxmVertexAttribute *attributes = &gpu_buf->vertex_attrib_config[index];
-	SceGxmVertexStream *streams = &gpu_buf->vertex_stream_config[index];
+	SceGxmVertexAttribute *attributes = &vertex_attrib_config[index];
+	SceGxmVertexStream *streams = &vertex_stream_config[index];
 	
 	attributes->streamIndex = index;
 	attributes->offset = (uint32_t)pointer;
@@ -1055,10 +1076,10 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		break;
 	case GL_SHORT:
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_S16N;
+		attributes->format = normalized ? SCE_GXM_ATTRIBUTE_FORMAT_S16N : SCE_GXM_ATTRIBUTE_FORMAT_S16;
 		break;
 	case GL_UNSIGNED_BYTE:
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_U8N;
+		attributes->format = normalized ? SCE_GXM_ATTRIBUTE_FORMAT_U8N : SCE_GXM_ATTRIBUTE_FORMAT_U8;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)

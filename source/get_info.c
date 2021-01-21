@@ -223,6 +223,12 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[7] = GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG;
 		data[8] = GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG;
 		break;
+	case GL_FRAMEBUFFER_BINDING:
+		data[0] = (GLint)active_write_fb;
+		break;
+	case GL_READ_FRAMEBUFFER_BINDING:
+		data[0] = (GLint)active_read_fb;
+		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;

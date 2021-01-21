@@ -275,8 +275,10 @@ extern "C" {
 #define GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG           0X8C01
 #define GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG          0X8C02
 #define GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG          0X8C03
+#define GL_FRAMEBUFFER_BINDING                       0x8CA6
 #define GL_READ_FRAMEBUFFER                          0X8CA8
 #define GL_DRAW_FRAMEBUFFER                          0X8CA9
+#define GL_READ_FRAMEBUFFER_BINDING                  0x8CAA
 #define GL_COLOR_ATTACHMENT0                         0x8CE0
 #define GL_FRAMEBUFFER_COMPLETE                      0x8CD5
 #define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT 0x8CD7
@@ -291,6 +293,7 @@ extern "C" {
 
 // Aliases
 #define GL_CLAMP GL_CLAMP_TO_EDGE
+#define GL_DRAW_FRAMEBUFFER_BINDING GL_FRAMEBUFFER_BINDING
 
 typedef enum GLbitfield{
 	GL_DEPTH_BUFFER_BIT   = 0x00000100,
