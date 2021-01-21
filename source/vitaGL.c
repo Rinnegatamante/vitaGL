@@ -1619,11 +1619,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	gl_primitive_to_gxm(mode, gxm_p);
 		
 	if (cur_program != 0) {
-		gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
-		if (!gpu_buf) // Drawing without a bound VBO
-			_glDrawArrays_CustomShadersIMPL(first + count);
-		else // Drawing with a bound VBO
-			_glDraw_VBO_CustomShadersIMPL(gpu_buf->ptr);
+		_glDrawArrays_CustomShadersIMPL(first + count);
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
 	} else if (tex_unit->vertex_array_state) {
 		int texture2d_idx = tex_unit->tex_id;
@@ -1865,19 +1861,15 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 	gl_primitive_to_gxm(mode, gxm_p);
 		
 	if (cur_program != 0) {
-		gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
-		if (!gpu_buf) // Drawing without a bound VBO
-			_glDrawElements_CustomShadersIMPL(index_array_unit ? (uint16_t*)gpu_buf->ptr + (uint32_t)gl_indices : (uint16_t*)gl_indices, count);
-		else // Drawing with a bound VBO
-			_glDraw_VBO_CustomShadersIMPL(gpu_buf->ptr);
-		gpu_buf = (gpubuffer*)index_array_unit;
+		gpubuffer *gpu_buf = (gpubuffer*)index_array_unit;
+		_glDrawElements_CustomShadersIMPL(index_array_unit ? (uint16_t*)gpu_buf->ptr + (uint32_t)gl_indices : (uint16_t*)gl_indices, count);
 		if (!gpu_buf) { // Drawing without an index buffer
 			// Allocating a temp buffer for the indices
 			void *ptr = gpu_alloc_mapped(count * sizeof(uint16_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 			memcpy_neon(ptr, gl_indices, count * sizeof(uint16_t));
 			markAsDirty(ptr);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
-		} else { // Dtawing with an index buffer
+		} else { // Drawing with an index buffer
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint16_t*)gpu_buf->ptr + (uint32_t)gl_indices, count);
 		}
 	} else if (tex_unit->vertex_array_state) {
