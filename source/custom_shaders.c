@@ -121,8 +121,7 @@ void resetCustomShaders(void) {
 
 void _glDraw_VBO_CustomShadersIMPL(void *ptr) {
 	program *p = &progs[cur_program - 1];
-	
-	gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
+
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
 	uint8_t real_i[GL_MAX_VERTEX_ATTRIBS] = {0, 1, 2, 3, 4, 5, 6, 7};
@@ -154,23 +153,23 @@ void _glDraw_VBO_CustomShadersIMPL(void *ptr) {
 		// Making disabled vertex attribs to loop
 		for (i = 0; i < p->attr_num; i++) {
 			if (!(vertex_attrib_state & (1 << real_i[i]))) {
-				orig_stride[i] = vertex_stream_config[i].stride;
-				orig_offs[i] = vertex_attrib_config[i].offset;
-				vertex_stream_config[i].stride = 0;
-				vertex_attrib_config[i].offset = 0;
+				orig_stride[i] = streams[i].stride;
+				orig_offs[i] = attributes[i].offset;
+				streams[i].stride = 0;
+				attributes[i].offset = 0;
 			}
 		}
 		
 		sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
-			p->vshader->id, vertex_attrib_config, p->attr_num,
-			vertex_stream_config, p->attr_num, &p->vprog);
+			p->vshader->id, attributes, p->attr_num,
+			streams, p->attr_num, &p->vprog);
 			
 		// Restoring stride values to their original settings
 		if (!p->has_unaligned_attrs) {
 			for (i = 0; i < p->attr_num; i++) {
 				if (!(vertex_attrib_state & (1 << real_i[i]))) {
-					vertex_stream_config[i].stride = orig_stride[i];
-					vertex_attrib_config[i].offset = orig_offs[i];
+					streams[i].stride = orig_stride[i];
+					attributes[i].offset = orig_offs[i];
 				}
 			}
 		}
@@ -224,7 +223,6 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	
 	// Aligning attributes
 	int i;
-	gpubuffer *gpu_buf = &gpu_buffers[0];
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
 	uint32_t *offsets;
@@ -368,7 +366,6 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	top_idx++;
 	
 	// Aligning attributes
-	gpubuffer *gpu_buf = &gpu_buffers[0];
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
 	uint32_t *offsets;
