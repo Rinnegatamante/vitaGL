@@ -879,6 +879,9 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 
 	// Init buffers
 	gpu_buffers[0].used = GL_TRUE;
+	for (i = 0; i < GL_MAX_VERTEX_ATTRIBS; i++) {
+		gpu_buffers[0].vertex_attrib_config[i].regIndex = i;
+	}
 	for (i = 1; i < BUFFERS_NUM; i++) {
 		gpu_buffers[i].used = GL_FALSE;
 		gpu_buffers[i].ptr = NULL;
@@ -1004,6 +1007,10 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 		if (!gpu_buffers[i].used) {
 			res[j++] = (GLuint)&gpu_buffers[i];
 			gpu_buffers[i].used = GL_TRUE;
+			int j;
+			for (j = 0; j < GL_MAX_VERTEX_ATTRIBS; j++) {
+				gpu_buffers[i].vertex_attrib_config[j].regIndex = j;
+			}
 		}
 		if (j >= n)
 			break;
@@ -1846,6 +1853,7 @@ void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoor
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
+	return;
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	
 #ifndef SKIP_ERROR_HANDLING

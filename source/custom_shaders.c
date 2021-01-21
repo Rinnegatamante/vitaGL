@@ -25,6 +25,8 @@
 
 #define MAX_CUSTOM_SHADERS 384 // Maximum number of linkable custom shaders
 
+GLboolean log_stuffs = GL_FALSE;
+
 // Internal stuffs
 GLboolean use_shark = GL_TRUE; // Flag to check if vitaShaRK should be initialized at vitaGL boot
 GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status
@@ -111,6 +113,7 @@ void resetCustomShaders(void) {
 }
 
 void _glDraw_VBO_CustomShadersIMPL(void *ptr) {
+	debugPrintf("drawing with a VBO...\n");
 	program *p = &progs[cur_program - 1];
 	
 	// Check if a vertex shader rebuild is required
@@ -224,16 +227,14 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	if (p->attr_num > 1 && offsets[0] + streams[0].stride > offsets[1] && offsets[1] > offsets[0])
 		is_packed = GL_TRUE;
 		
-	//debugPrintf("glDrawArrays: packed: %d, count: %d, unaligned: %d\n", is_packed, count, p->has_unaligned_attrs);
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped(count * streams[0].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 		memcpy_neon(ptrs[0], (void*)offsets[0], count * streams[0].stride);
 		markAsDirty(ptrs[0]);
 		attributes[0].regIndex = p->attr[real_i[0]].regIndex;
 		attributes[0].offset = 0;
-		for (i = 1; i < p->attr_num; i++) {
+		for (i =1; i < p->attr_num; i++) {
 			attributes[i].offset = offsets[i] - offsets[0];
-			real_i[i] = attributes[i].regIndex;
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
 		}
 	} else {
@@ -259,6 +260,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 				orig_stride[i] = streams[i].stride;
 				streams[i].stride = 0;
 				attributes[i].offset = 0;
+				if (!attributes[i].componentCount) attributes[i].componentCount = 3;
 			}
 		}
 		
@@ -267,7 +269,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		// Restoring stride values to their original settings
 		if (!p->has_unaligned_attrs) {
 			for (i = 0; i < p->attr_num; i++) {
-				if (!(vertex_attrib_state & (1 << i))) {
+				if (!(vertex_attrib_state & (1 << real_i[i]))) {
 					streams[i].stride = orig_stride[i];
 				}
 			}
@@ -368,13 +370,16 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	GLboolean is_packed = GL_FALSE;
 	if (p->attr_num > 1 && offsets[0] + streams[0].stride > offsets[1] && offsets[1] > offsets[0])
 		is_packed = GL_TRUE;
+	if (log_stuffs) debugPrintf("glDrawElements: packed: %d, count: %d, unaligned: %d\n", is_packed, count, p->has_unaligned_attrs);
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped(top_idx * streams[0].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 		memcpy_neon(ptrs[0], (void*)offsets[0], top_idx * streams[0].stride);
 		markAsDirty(ptrs[0]);
 		attributes[0].regIndex = p->attr[real_i[0]].regIndex;
 		attributes[0].offset = 0;
+		if (log_stuffs) debugPrintf("streamIndex for 0: %d\n", attributes[0].streamIndex);
 		for (i =1; i < p->attr_num; i++) {
+			if (log_stuffs) debugPrintf("streamIndex for %d: %d\n", i, attributes[i].streamIndex);
 			attributes[i].offset = offsets[i] - offsets[0];
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
 		}
@@ -382,6 +387,7 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		for (i = 0; i < p->attr_num; i++) {
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
 			if (vertex_attrib_state & (1 << real_i[i])) {
+				if (log_stuffs) debugPrintf("streamIndex for %d: %d\n", i, attributes[i].streamIndex);
 				ptrs[i] = gpu_alloc_mapped(top_idx * streams[i].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 				memcpy_neon(ptrs[i], (void*)offsets[i], top_idx * streams[i].stride);
 				markAsDirty(ptrs[i]);
@@ -572,7 +578,8 @@ GLuint glCreateShader(GLenum shaderType) {
 		}
 	}
 	
-	debugPrintf("glCreateShader -> %u\n", res);
+	if (res == 94) log_stuffs = GL_TRUE;
+	if (log_stuffs) debugPrintf("CreateShader %d\n", res);
 	
 	// All shader slots are busy, exiting call
 	if (res == 0)
@@ -1015,17 +1022,14 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 }
 
 void glEnableVertexAttribArray(GLuint index) {
-	//debugPrintf("glEnableVertexAttribArray %u\n", index);
 	vertex_attrib_state |= (1 << index);
 }
 
 void glDisableVertexAttribArray(GLuint index) {
-	//debugPrintf("glDisableVertexAttribArray %u\n", index);
 	vertex_attrib_state &= ~(1 << index);
 }
 
 void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer) {
-	//debugPrintf("glVertexAttribPointer %u\n", index);
 	gpubuffer *gpu_buf = (gpubuffer*)vertex_array_unit;
 	
 	// Using reserved VBO if no VBO is bound
@@ -1041,7 +1045,6 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 	attributes->streamIndex = index;
 	attributes->offset = (uint32_t)pointer;
 	attributes->componentCount = size;
-	attributes->regIndex = index;
 	streams->stride = stride;
 	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	
