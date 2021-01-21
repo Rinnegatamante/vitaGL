@@ -31,6 +31,9 @@ GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status
 static float *vertex_attrib_value[GL_MAX_VERTEX_ATTRIBS];
 static uint32_t vertex_attrib_offsets[GL_MAX_VERTEX_ATTRIBS];
 static uint8_t vertex_attrib_state = 0;
+static SceGxmVertexAttribute temp_attributes[GL_MAX_VERTEX_ATTRIBS];
+static SceGxmVertexStream temp_streams[GL_MAX_VERTEX_ATTRIBS];
+static uint32_t temp_offsets[GL_MAX_VERTEX_ATTRIBS];
 
 extern GLboolean use_vram;
 
@@ -184,10 +187,6 @@ void _glDraw_VBO_CustomShadersIMPL(void *ptr) {
 	}
 }
 
-static SceGxmVertexAttribute temp_attributes[GL_MAX_VERTEX_ATTRIBS];
-static SceGxmVertexStream temp_streams[GL_MAX_VERTEX_ATTRIBS];
-static uint32_t temp_offsets[GL_MAX_VERTEX_ATTRIBS];
-
 void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	program *p = &progs[cur_program - 1];
 	
@@ -197,6 +196,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
 	uint32_t *offsets;
+	uint8_t real_i[GL_MAX_VERTEX_ATTRIBS] = {0, 1, 2, 3, 4, 5, 6, 7};
 	if (p->has_unaligned_attrs) {
 		attributes = temp_attributes;
 		streams = temp_streams;
@@ -208,6 +208,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 				memcpy_neon(&temp_streams[j], &gpu_buf->vertex_stream_config[i], sizeof(SceGxmVertexStream));
 				offsets[j] = vertex_attrib_offsets[i];
 				attributes[j].streamIndex = j;
+				real_i[j] = attributes[j].regIndex;
 				j++;
 			}
 		}
@@ -219,29 +220,30 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	
 	// Gathering real attribute data pointers
 	void *ptrs[GL_MAX_VERTEX_ATTRIBS];
-	uint8_t real_i[GL_MAX_VERTEX_ATTRIBS];
 	GLboolean is_packed = GL_FALSE;
 	if (p->attr_num > 1 && offsets[0] + streams[0].stride > offsets[1] && offsets[1] > offsets[0])
 		is_packed = GL_TRUE;
+		
+	//debugPrintf("glDrawArrays: packed: %d, count: %d, unaligned: %d\n", is_packed, count, p->has_unaligned_attrs);
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped(count * streams[0].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 		memcpy_neon(ptrs[0], (void*)offsets[0], count * streams[0].stride);
 		markAsDirty(ptrs[0]);
-		real_i[0] = attributes[0].regIndex;
-		attributes[0].regIndex = p->attr[attributes[0].regIndex].regIndex;
+		attributes[0].regIndex = p->attr[real_i[0]].regIndex;
 		attributes[0].offset = 0;
 		for (i = 1; i < p->attr_num; i++) {
 			attributes[i].offset = offsets[i] - offsets[0];
 			real_i[i] = attributes[i].regIndex;
-			attributes[i].regIndex = p->attr[attributes[i].regIndex].regIndex;
+			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
 		}
 	} else {
 		for (i = 0; i < p->attr_num; i++) {
-			ptrs[i] = gpu_alloc_mapped(count * streams[i].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-			memcpy_neon(ptrs[i], (void*)offsets[i], count * streams[i].stride);
-			markAsDirty(ptrs[i]);
-			real_i[i] = attributes[i].regIndex;
-			attributes[i].regIndex = p->attr[attributes[i].regIndex].regIndex;
+			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
+			if (vertex_attrib_state & (1 << real_i[i])) {
+				ptrs[i] = gpu_alloc_mapped(count * streams[i].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+				memcpy_neon(ptrs[i], (void*)offsets[i], count * streams[i].stride);
+				markAsDirty(ptrs[i]);
+			}
 		}
 	}
 	
@@ -317,6 +319,9 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		} else {
 			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[i]);
 		}
+		if (!p->has_unaligned_attrs) {
+			attributes[i].regIndex = real_i[i];
+		}
 	}
 }
 
@@ -336,6 +341,7 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
 	uint32_t *offsets;
+	uint8_t real_i[GL_MAX_VERTEX_ATTRIBS] = {0, 1, 2, 3, 4, 5, 6, 7};
 	if (p->has_unaligned_attrs) {
 		attributes = temp_attributes;
 		streams = temp_streams;
@@ -347,6 +353,7 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 				memcpy_neon(&temp_streams[j], &gpu_buf->vertex_stream_config[i], sizeof(SceGxmVertexStream));
 				offsets[j] = vertex_attrib_offsets[i];
 				attributes[j].streamIndex = j;
+				real_i[j] = attributes[j].regIndex;
 				j++;
 			}
 		}
@@ -358,7 +365,6 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 
 	// Gathering real attribute data pointers
 	void *ptrs[GL_MAX_VERTEX_ATTRIBS];
-	uint8_t real_i[GL_MAX_VERTEX_ATTRIBS];
 	GLboolean is_packed = GL_FALSE;
 	if (p->attr_num > 1 && offsets[0] + streams[0].stride > offsets[1] && offsets[1] > offsets[0])
 		is_packed = GL_TRUE;
@@ -366,21 +372,20 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		ptrs[0] = gpu_alloc_mapped(top_idx * streams[0].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 		memcpy_neon(ptrs[0], (void*)offsets[0], top_idx * streams[0].stride);
 		markAsDirty(ptrs[0]);
-		real_i[0] = attributes[0].regIndex;
-		attributes[0].regIndex = p->attr[attributes[0].regIndex].regIndex;
+		attributes[0].regIndex = p->attr[real_i[0]].regIndex;
 		attributes[0].offset = 0;
 		for (i =1; i < p->attr_num; i++) {
 			attributes[i].offset = offsets[i] - offsets[0];
-			real_i[i] = attributes[i].regIndex;
-			attributes[i].regIndex = p->attr[attributes[i].regIndex].regIndex;
+			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
 		}
 	} else {
 		for (i = 0; i < p->attr_num; i++) {
-			ptrs[i] = gpu_alloc_mapped(top_idx * streams[i].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-			memcpy_neon(ptrs[i], (void*)offsets[i], top_idx * streams[i].stride);
-			markAsDirty(ptrs[i]);
-			real_i[i] = attributes[i].regIndex;
-			attributes[i].regIndex = p->attr[attributes[i].regIndex].regIndex;
+			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
+			if (vertex_attrib_state & (1 << real_i[i])) {
+				ptrs[i] = gpu_alloc_mapped(top_idx * streams[i].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+				memcpy_neon(ptrs[i], (void*)offsets[i], top_idx * streams[i].stride);
+				markAsDirty(ptrs[i]);
+			}
 		}
 	}
 	
@@ -456,6 +461,9 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
 		} else {
 			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[i]);
+		}
+		if (!p->has_unaligned_attrs) {
+			attributes[i].regIndex = real_i[i];
 		}
 	}
 }
@@ -826,14 +834,14 @@ void glLinkProgram(GLuint progr) {
 	
 		// Populating current blend settings
 		p->blend_info.raw = blend_info.raw;
-	}
-	
-	// Checking if bound attributes are aligned
-	p->has_unaligned_attrs = GL_FALSE;
-	for (i = 0; i < p->attr_num; i++) {
-		if (p->attr[i].regIndex == 0xDEAD) {
-			p->has_unaligned_attrs = GL_TRUE;
-			break;
+	} else {
+		// Checking if bound attributes are aligned
+		p->has_unaligned_attrs = GL_FALSE;
+		for (i = 0; i < p->attr_num; i++) {
+			if (p->attr[i].regIndex == 0xDEAD) {
+				p->has_unaligned_attrs = GL_TRUE;
+				break;
+			}
 		}
 	}
 }
