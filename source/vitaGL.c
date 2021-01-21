@@ -1018,10 +1018,8 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 }
 
 void glBindBuffer(GLenum target, GLuint buffer) {
-	debugPrintf("glBindBuffer(%u, %u);\n", target, buffer);
 	switch (target) {
 	case GL_ARRAY_BUFFER:
-		debugPrintf("glBindBuffer(GL_ARRAY_BUFFER, %u);\n", buffer);
 		vertex_array_unit = buffer;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
@@ -1069,6 +1067,8 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 #ifndef SKIP_ERROR_HANDLING
 	if (size < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
+	} else if (!gpu_buf) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 	
@@ -1099,6 +1099,8 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 #ifndef SKIP_ERROR_HANDLING
 	if ((size < 0) || (offset < 0) || ((offset + size) > gpu_buf->size)) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
+	} else if (!gpu_buf) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 	
@@ -1626,8 +1628,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 			_glDrawArrays_CustomShadersIMPL(first + count);
 		else // Drawing with a bound VBO
 			_glDraw_VBO_CustomShadersIMPL(gpu_buf->ptr);
-		gpu_buf = (gpubuffer*)index_array_unit;
-		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, gpu_buf ? (uint16_t*)gpu_buf->ptr + first : default_idx_ptr + first, count);
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
 	} else if (tex_unit->vertex_array_state) {
 		int texture2d_idx = tex_unit->tex_id;
 		
@@ -1853,7 +1854,6 @@ void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoor
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
-	return;
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	
 #ifndef SKIP_ERROR_HANDLING

@@ -23,7 +23,8 @@
 
 #include "shared.h"
 
-#define MAX_CUSTOM_SHADERS 384 // Maximum number of linkable custom shaders
+#define MAX_CUSTOM_SHADERS 128  // Maximum number of linkable custom shaders
+#define MAX_CUSTOM_PROGRAMS 192 // Maximum number of linkable custom programs
 
 GLboolean log_stuffs = GL_FALSE;
 
@@ -93,15 +94,19 @@ typedef struct program {
 static shader shaders[MAX_CUSTOM_SHADERS];
 
 // Internal programs array
-static program progs[MAX_CUSTOM_SHADERS / 2];
+static program progs[MAX_CUSTOM_PROGRAMS];
 
 void resetCustomShaders(void) {
 	// Init custom shaders
 	int i;
 	for (i = 0; i < MAX_CUSTOM_SHADERS; i++) {
-		shaders[i].valid = 0;
+		shaders[i].valid = GL_FALSE;
 		shaders[i].log = NULL;
-		progs[i >> 1].valid = 0;
+	}
+	
+	// Init custom programs
+	for (i = 0; i < MAX_CUSTOM_PROGRAMS; i++) {
+		progs[i].valid = GL_FALSE;
 	}
 	
 	// Init generic vertex attrib arrays
@@ -370,16 +375,13 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	GLboolean is_packed = GL_FALSE;
 	if (p->attr_num > 1 && offsets[0] + streams[0].stride > offsets[1] && offsets[1] > offsets[0])
 		is_packed = GL_TRUE;
-	if (log_stuffs) debugPrintf("glDrawElements: packed: %d, count: %d, unaligned: %d\n", is_packed, count, p->has_unaligned_attrs);
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped(top_idx * streams[0].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 		memcpy_neon(ptrs[0], (void*)offsets[0], top_idx * streams[0].stride);
 		markAsDirty(ptrs[0]);
 		attributes[0].regIndex = p->attr[real_i[0]].regIndex;
 		attributes[0].offset = 0;
-		if (log_stuffs) debugPrintf("streamIndex for 0: %d\n", attributes[0].streamIndex);
 		for (i =1; i < p->attr_num; i++) {
-			if (log_stuffs) debugPrintf("streamIndex for %d: %d\n", i, attributes[i].streamIndex);
 			attributes[i].offset = offsets[i] - offsets[0];
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
 		}
@@ -387,7 +389,6 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		for (i = 0; i < p->attr_num; i++) {
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
 			if (vertex_attrib_state & (1 << real_i[i])) {
-				if (log_stuffs) debugPrintf("streamIndex for %d: %d\n", i, attributes[i].streamIndex);
 				ptrs[i] = gpu_alloc_mapped(top_idx * streams[i].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 				memcpy_neon(ptrs[i], (void*)offsets[i], top_idx * streams[i].stride);
 				markAsDirty(ptrs[i]);
@@ -735,7 +736,7 @@ void glAttachShader(GLuint prog, GLuint shad) {
 GLuint glCreateProgram(void) {
 	// Looking for a free program slot
 	GLuint i, j, res = 0;
-	for (i = 1; i < (MAX_CUSTOM_SHADERS / 2); i++) {
+	for (i = 1; i < (MAX_CUSTOM_PROGRAMS); i++) {
 		// Program slot found, reserving and initializing it
 		if (!(progs[i - 1].valid)) {
 			res = i;
