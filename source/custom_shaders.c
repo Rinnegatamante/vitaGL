@@ -118,6 +118,13 @@ void resetCustomShaders(void) {
 	for (i = 0; i < GL_MAX_VERTEX_ATTRIBS; i++) {
 		vertex_attrib_value[i] = attrib_buf;
 		attrib_buf += 4;
+		vertex_attrib_config[i].componentCount = 4;
+		vertex_attrib_config[i].offset = 0;
+		vertex_attrib_config[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		vertex_attrib_config[i].regIndex = i;
+		vertex_attrib_config[i].streamIndex = i;
+		vertex_stream_config[i].stride = 0;
+		vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	}
 }
 
@@ -175,9 +182,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		ptrs[0] = gpu_alloc_mapped(count * streams[0].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 		memcpy_neon(ptrs[0], (void*)offsets[0], count * streams[0].stride);
 		markAsDirty(ptrs[0]);
-		attributes[0].regIndex = p->attr[real_i[0]].regIndex;
-		attributes[0].offset = 0;
-		for (i =1; i < p->attr_num; i++) {
+		for (i = 0; i < p->attr_num; i++) {
 			attributes[i].offset = offsets[i] - offsets[0];
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
 		}
@@ -193,6 +198,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 					ptrs[i] = gpu_alloc_mapped(count * streams[i].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 					memcpy_neon(ptrs[i], (void*)offsets[i], count * streams[i].stride);
 					markAsDirty(ptrs[i]);
+					attributes[i].offset = 0;
 				}
 			}
 		}
@@ -210,7 +216,6 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 				orig_stride[i] = streams[i].stride;
 				streams[i].stride = 0;
 				attributes[i].offset = 0;
-				if (!attributes[i].componentCount) attributes[i].componentCount = 3;
 			}
 		}
 		
@@ -342,9 +347,7 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		ptrs[0] = gpu_alloc_mapped(top_idx * streams[0].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 		memcpy_neon(ptrs[0], (void*)offsets[0], top_idx * streams[0].stride);
 		markAsDirty(ptrs[0]);
-		attributes[0].regIndex = p->attr[real_i[0]].regIndex;
-		attributes[0].offset = 0;
-		for (i =1; i < p->attr_num; i++) {
+		for (i = 0; i < p->attr_num; i++) {
 			attributes[i].offset = offsets[i] - offsets[0];
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
 		}
@@ -360,6 +363,7 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 					ptrs[i] = gpu_alloc_mapped(top_idx * streams[i].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 					memcpy_neon(ptrs[i], (void*)offsets[i], top_idx * streams[i].stride);
 					markAsDirty(ptrs[i]);
+					attributes[i].offset = 0;
 				}
 			}
 		}
@@ -1005,9 +1009,7 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 	
 	attributes->streamIndex = index;
 	attributes->componentCount = size;
-	attributes->offset = 0;
 	streams->stride = stride;
-	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	
 	// Detecting attribute format and size
 	switch (type) {
