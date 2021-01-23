@@ -1098,12 +1098,10 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 	
 	// Copying up previous data combined to modified data
 	if (offset > 0)
-		memcpy_neon(gpu_buf->ptr, frame_purge_list[frame_purge_idx][frame_elem_purge_idx], offset);
+		memcpy_neon(gpu_buf->ptr, frame_purge_list[frame_purge_idx][frame_elem_purge_idx - 1], offset);
 	memcpy_neon((uint8_t*)gpu_buf->ptr + offset, data, size);
 	if (gpu_buf->size - size - offset > 0)
-		memcpy_neon((uint8_t*)gpu_buf->ptr + offset + size, (uint8_t*)frame_purge_list[frame_purge_idx][frame_elem_purge_idx] + offset + size, gpu_buf->size - size - offset);
-		
-	frame_elem_purge_idx++;
+		memcpy_neon((uint8_t*)gpu_buf->ptr + offset + size, (uint8_t*)frame_purge_list[frame_purge_idx][frame_elem_purge_idx - 1] + offset + size, gpu_buf->size - size - offset);
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor) {

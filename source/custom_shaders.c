@@ -91,7 +91,6 @@ typedef struct program {
 	const SceGxmProgramParameter *wvp;
 	uniform *vert_uniforms;
 	uniform *frag_uniforms;
-	uint8_t attr_state_mask;
 	GLuint attr_highest_idx;
 	GLboolean has_unaligned_attrs;
 } program;
@@ -196,39 +195,32 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			}
 		}
 	}
-	
-	// Check if a vertex shader rebuild is required
-	uint8_t attr_mask = ~((~0) << p->attr_highest_idx);
-	//if ((p->attr_state_mask & attr_mask) != (vertex_attrib_state & attr_mask)) {
 		
-		p->attr_state_mask = vertex_attrib_state;
+	// Making disabled vertex attribs to loop
+	for (i = 0; i < p->attr_num; i++) {
+		if (!(vertex_attrib_state & (1 << real_i[i]))) {
+			orig_stride[i] = streams[i].stride;
+			orig_fmt[i] = attributes[i].format;
+			orig_size[i] = attributes[i].componentCount;
+			streams[i].stride = 0;
+			attributes[i].offset = 0;
+			attributes[i].componentCount = vertex_attrib_size[real_i[i]];
+			attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		}
+	}
 		
-		// Making disabled vertex attribs to loop
+	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
+		
+	// Restoring stride values to their original settings
+	if (!p->has_unaligned_attrs) {
 		for (i = 0; i < p->attr_num; i++) {
-			if (!(vertex_attrib_state & (1 << real_i[i]))) {
-				orig_stride[i] = streams[i].stride;
-				orig_fmt[i] = attributes[i].format;
-				orig_size[i] = attributes[i].componentCount;
-				streams[i].stride = 0;
-				attributes[i].offset = 0;
-				attributes[i].componentCount = vertex_attrib_size[real_i[i]];
-				attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+			if (!(vertex_attrib_state & (1 << i))) {
+				streams[i].stride = orig_stride[i];
+				attributes[i].componentCount = orig_size[i];
+				attributes[i].format = orig_fmt[i];
 			}
 		}
-		
-		sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
-		
-		// Restoring stride values to their original settings
-		if (!p->has_unaligned_attrs) {
-			for (i = 0; i < p->attr_num; i++) {
-				if (!(vertex_attrib_state & (1 << i))) {
-					streams[i].stride = orig_stride[i];
-					attributes[i].componentCount = orig_size[i];
-					attributes[i].format = orig_fmt[i];
-				}
-			}
-		}
-	//}
+	}
 	
 	// Check if a blend info rebuild is required
 	if (p->blend_info.raw != blend_info.raw) {
@@ -355,39 +347,32 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 			}
 		}
 	}
-	
-	// Check if a vertex shader rebuild is required
-	uint8_t attr_mask = ~((~0) << p->attr_highest_idx);
-	//if ((p->attr_state_mask & attr_mask) != (vertex_attrib_state & attr_mask)) {
 		
-		p->attr_state_mask = vertex_attrib_state;
-		
-		// Making disabled vertex attribs to loop
-		for (i = 0; i < p->attr_num; i++) {
-			if (!(vertex_attrib_state & (1 << real_i[i]))) {
-				orig_stride[i] = streams[i].stride;
-				orig_fmt[i] = attributes[i].format;
-				orig_size[i] = attributes[i].componentCount;
-				streams[i].stride = 0;
-				attributes[i].offset = 0;
-				attributes[i].componentCount = vertex_attrib_size[real_i[i]];
-				attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-			}
+	// Making disabled vertex attribs to loop
+	for (i = 0; i < p->attr_num; i++) {
+		if (!(vertex_attrib_state & (1 << real_i[i]))) {
+			orig_stride[i] = streams[i].stride;
+			orig_fmt[i] = attributes[i].format;
+			orig_size[i] = attributes[i].componentCount;
+			streams[i].stride = 0;
+			attributes[i].offset = 0;
+			attributes[i].componentCount = vertex_attrib_size[real_i[i]];
+			attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		}
+	}
 		
-		sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
+	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 			
-		// Restoring stride values to their original settings
-		if (!p->has_unaligned_attrs) {
-			for (i = 0; i < p->attr_num; i++) {
-				if (!(vertex_attrib_state & (1 << i))) {
-					streams[i].stride = orig_stride[i];
-					attributes[i].componentCount = orig_size[i];
-					attributes[i].format = orig_fmt[i];
-				}
+	// Restoring stride values to their original settings
+	if (!p->has_unaligned_attrs) {
+		for (i = 0; i < p->attr_num; i++) {
+			if (!(vertex_attrib_state & (1 << i))) {
+				streams[i].stride = orig_stride[i];
+				attributes[i].componentCount = orig_size[i];
+				attributes[i].format = orig_fmt[i];
 			}
 		}
-	//}
+	}
 	
 	// Check if a blend info rebuild is required
 	if (p->blend_info.raw != blend_info.raw) {
@@ -708,7 +693,6 @@ GLuint glCreateProgram(void) {
 			progs[i - 1].wvp = NULL;
 			progs[i - 1].vert_uniforms = NULL;
 			progs[i - 1].frag_uniforms = NULL;
-			progs[i - 1].attr_state_mask = 0;
 			progs[i - 1].attr_highest_idx = 1;
 			for (j = 0; j < GL_MAX_VERTEX_ATTRIBS; j++) {
 				progs[i - 1].attr[j].regIndex = 0xDEAD;

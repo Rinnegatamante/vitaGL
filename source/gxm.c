@@ -69,10 +69,10 @@ GLboolean system_app_mode = GL_FALSE; // Flag for system app mode usage
 static GLboolean gxm_initialized = GL_FALSE; // Current sceGxm state
 static GLboolean is_rendering_display = GL_FALSE; // Flag for when drawing without fbo is being performed
 
-void *frame_purge_list[DISPLAY_MAX_BUFFER_COUNT][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
+void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
 int frame_purge_idx = 0; // Index for currently populatable purge list
 int frame_elem_purge_idx = 0; // Index for currently populatable purge list element
-static int frame_purge_clean_idx = DISPLAY_MAX_BUFFER_COUNT;
+static int frame_purge_clean_idx = FRAME_PURGE_FREQ - 1;
 
 // sceDisplay callback data
 struct display_queue_callback_data {
@@ -449,13 +449,15 @@ void vglSwapBuffers() {
 	}
 	
 	// Purging all elements marked for deletion
-	int i = 0;
-	while (frame_purge_list[frame_purge_clean_idx][i]) {
-		vgl_mem_free(frame_purge_list[frame_purge_clean_idx][i]);
-		frame_purge_list[frame_purge_clean_idx][i++] =NULL;
+	int i;
+	for (i = 0; i < FRAME_PURGE_LIST_SIZE; i++) {
+		if (frame_purge_list[frame_purge_clean_idx][i]) {
+			vgl_mem_free(frame_purge_list[frame_purge_clean_idx][i]);
+			frame_purge_list[frame_purge_clean_idx][i] = NULL;
+		} else break;
 	}
-	frame_purge_clean_idx = (frame_purge_clean_idx + 1) % DISPLAY_MAX_BUFFER_COUNT;
-	frame_purge_idx = (frame_purge_idx + 1) % DISPLAY_MAX_BUFFER_COUNT;
+	frame_purge_clean_idx = (frame_purge_clean_idx + 1) % FRAME_PURGE_FREQ;
+	frame_purge_idx = (frame_purge_idx + 1) % FRAME_PURGE_FREQ;
 	frame_elem_purge_idx = 0;
 }
 
