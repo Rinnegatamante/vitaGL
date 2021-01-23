@@ -1078,7 +1078,8 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 #endif
 	gpu_buf->size = size;
 
-	memcpy_neon(gpu_buf->ptr, data, size);
+	if (data)
+		memcpy_neon(gpu_buf->ptr, data, size);
 }
 
 void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void *data) {

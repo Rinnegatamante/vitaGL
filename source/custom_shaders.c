@@ -274,7 +274,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		if (vertex_attrib_state & (1 << real_i[i])) {
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
 		} else {
-			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[i]);
+			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[real_i[i]]);
 		}
 		if (!p->has_unaligned_attrs) {
 			attributes[i].regIndex = i;
@@ -435,7 +435,7 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		if (vertex_attrib_state & (1 << real_i[i])) {
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
 		} else {
-			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[i]);
+			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[real_i[i]]);
 		}
 		if (!p->has_unaligned_attrs) {
 			attributes[i].regIndex = i;
