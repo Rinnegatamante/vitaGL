@@ -34,7 +34,7 @@
 #define DISPLAY_HEIGHT_DEF 544 // Default display height in pixels
 #define DISPLAY_MAX_BUFFER_COUNT 3 // Maximum amount of display buffers to use
 #define GXM_TEX_MAX_SIZE 4096 // Maximum width/height in pixels per texture
-#define BUFFERS_NUM 384 // Maximum number of allocatable buffers
+#define BUFFERS_NUM 2048 // Maximum number of allocatable buffers
 #define FRAME_PURGE_LIST_SIZE 16384 // Number of elements a single frame can hold
 
 // Internal constants set in bootup phase
@@ -109,7 +109,6 @@ typedef enum texEnvMode {
 typedef struct gpubuffer {
 	void *ptr;
 	int32_t size;
-	GLboolean used;
 } gpubuffer;
 
 // 3D vertex for position + 4D vertex for RGBA color struct
@@ -223,7 +222,6 @@ extern GLboolean mvp_modified; // Check if ModelViewProjection matrix needs to b
 extern GLuint cur_program; // Current in use custom program (0 = No custom program)
 extern GLboolean vblank; // Current setting for VSync
 extern uint32_t vertex_array_unit; // Current in-use vertex array buffer unit
-extern gpubuffer gpu_buffers[BUFFERS_NUM]; // VBOs array
 
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
 

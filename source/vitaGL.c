@@ -166,7 +166,6 @@ SceGxmMultisampleMode msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
 extern GLboolean use_vram;
 extern GLboolean use_vram_for_usse;
 
-gpubuffer gpu_buffers[BUFFERS_NUM]; // VBOs array
 static SceGxmColorMask blend_color_mask = SCE_GXM_COLOR_MASK_ALL; // Current in-use color mask (glColorMask)
 static SceGxmBlendFunc blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD; // Current in-use RGB blend func
 static SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use A blend func
@@ -875,13 +874,8 @@ void vglInitWithCustomSizes(int width, int height, int ram_pool_size, int cdram_
 	}
 
 	// Init buffers
-	gpu_buffers[0].used = GL_TRUE;
 	for (i = 0; i < GL_MAX_VERTEX_ATTRIBS; i++) {
 		vertex_attrib_config[i].regIndex = i;
-	}
-	for (i = 1; i < BUFFERS_NUM; i++) {
-		gpu_buffers[i].used = GL_FALSE;
-		gpu_buffers[i].ptr = NULL;
 	}
 	
 	// Init purge lists
@@ -1000,13 +994,8 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	for (i = 1; i < BUFFERS_NUM; i++) {
-		if (!gpu_buffers[i].used) {
-			res[j++] = (GLuint)&gpu_buffers[i];
-			gpu_buffers[i].used = GL_TRUE;
-		}
-		if (j >= n)
-			break;
+	for (i = 0; i < n; i++) {
+		res[j++] = (GLuint)(malloc(sizeof(gpubuffer)));
 	}
 }
 
@@ -1035,11 +1024,9 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 	for (j = 0; j < n; j++) {
 		if (gl_buffers[j]) {
 			gpubuffer *gpu_buf = (gpubuffer*)gl_buffers[j];
-			if (gpu_buf->ptr != NULL) {
+			if (gpu_buf->ptr != NULL)
 				markAsDirty(gpu_buf->ptr);
-				gpu_buf->ptr = NULL;
-			}
-			gpu_buf->used = GL_FALSE;
+			free(gpu_buf);
 		}
 	}
 }
@@ -1517,7 +1504,7 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *po
 	tex_unit->texture_array.pointer = pointer;
 }
 
-void _glDrawArrays_SetupVertices(vector3f **verts, vector2f **texcoords, uint8_t **clrs, GLint first, GLsizei count, GLboolean fake_clrs) {
+/*void _glDrawArrays_SetupVertices(vector3f **verts, vector2f **texcoords, uint8_t **clrs, GLint first, GLsizei count, GLboolean fake_clrs) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	uint16_t n;
 	uint16_t *indices;
@@ -1606,7 +1593,7 @@ void _glDrawArrays_SetupVertices(vector3f **verts, vector2f **texcoords, uint8_t
 	*verts = vertices;
 	if (texcoords) *texcoords = uv_map;
 	if (clrs) *clrs = colors;
-}
+}*/
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
@@ -1617,7 +1604,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	if (cur_program != 0) {
 		_glDrawArrays_CustomShadersIMPL(first + count);
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
-	} else if (tex_unit->vertex_array_state) {
+	}/* else if (tex_unit->vertex_array_state) {
 		int texture2d_idx = tex_unit->tex_id;
 		
 		if (mvp_modified) {
@@ -1689,7 +1676,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 #if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
 		}
 #endif
-	}
+	}*/
 }
 
 uint64_t _glDrawElements_CountVertices(GLsizei count, uint16_t *ptr_idx) {
@@ -1703,7 +1690,7 @@ uint64_t _glDrawElements_CountVertices(GLsizei count, uint16_t *ptr_idx) {
 	return vertex_count_int;
 }
 
-void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoords, uint8_t **clrs, GLsizei count, const GLvoid *gl_indices) {
+/*void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoords, uint8_t **clrs, GLsizei count, const GLvoid *gl_indices) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	switch (dim) {
 		case 1: // Position
@@ -1836,7 +1823,7 @@ void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoor
 			}
 			break;
 	}
-}
+}*/
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
@@ -1855,7 +1842,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		
 	if (cur_program != 0) {
 		gpubuffer *gpu_buf = (gpubuffer*)index_array_unit;
-		_glDrawElements_CustomShadersIMPL(index_array_unit ? (uint8_t*)gpu_buf->ptr + (uint32_t)gl_indices : (uint16_t*)gl_indices, count);
+		_glDrawElements_CustomShadersIMPL(index_array_unit ? (uint16_t*)((uint8_t*)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t*)gl_indices, count);
 		if (!gpu_buf) { // Drawing without an index buffer
 			// Allocating a temp buffer for the indices
 			void *ptr = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
@@ -1864,7 +1851,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		} else { // Drawing with an index buffer
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint8_t*)gpu_buf->ptr + (uint32_t)gl_indices, count);
 		}
-	} else if (tex_unit->vertex_array_state) {
+	} /*else if (tex_unit->vertex_array_state) {
 		int texture2d_idx = tex_unit->tex_id;
 		uint16_t *indices;
 		if (index_array_unit >= 0)
@@ -1942,7 +1929,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 #if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
 		}
 #endif
-	}
+	}*/
 }
 
 void glEnableClientState(GLenum array) {
