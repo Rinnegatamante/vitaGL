@@ -162,11 +162,32 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			break;
 		}
 		break;
+	case GL_LUMINANCE:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			read_cb = readL;
+			data_bpp = 1;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+		break;
 	case GL_RG:
-	case GL_LUMINANCE_ALPHA:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			read_cb = readRG;
+			data_bpp = 2;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+		break;
+	case GL_LUMINANCE_ALPHA:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			read_cb = readLA;
 			data_bpp = 2;
 			break;
 		default:
@@ -288,14 +309,6 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			write_cb = writeBGRA;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
 			break;
-		case GL_LUMINANCE:
-			write_cb = writeR;
-			tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
-			break;
-		case GL_LUMINANCE_ALPHA:
-			write_cb = writeRG;
-			tex_format = SCE_GXM_TEXTURE_FORMAT_A8L8;
-			break;
 		case GL_INTENSITY:
 			write_cb = writeR;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8_RRRR;
@@ -309,7 +322,8 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			write_cb = writeRGBA;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
 			break;
 		}
 

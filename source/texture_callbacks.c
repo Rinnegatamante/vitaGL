@@ -114,6 +114,19 @@ uint32_t readR(void *data) {
 	return res;
 }
 
+uint32_t readL(void *data) {
+	uint8_t *d = (uint8_t*)data;
+	uint8_t lum = d[0];
+	return ((0xFF << 24) | (lum << 16) | (lum << 8) | lum);
+}
+
+uint32_t readLA(void *data) {
+	uint8_t *d = (uint8_t*)data;
+	uint8_t lum = d[0];
+	uint8_t a = d[1];
+	return ((a << 24) | (lum << 16) | (lum << 8) | lum);
+}
+
 // Write callback for 32bpp unsigned RGBA format
 void writeRGBA(void *data, uint32_t color) {
 	memcpy_neon(data, &color, 4);
