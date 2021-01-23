@@ -1855,14 +1855,14 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		
 	if (cur_program != 0) {
 		gpubuffer *gpu_buf = (gpubuffer*)index_array_unit;
-		_glDrawElements_CustomShadersIMPL(index_array_unit ? (uint16_t*)gpu_buf->ptr + (uint32_t)gl_indices : (uint16_t*)gl_indices, count);
+		_glDrawElements_CustomShadersIMPL(index_array_unit ? (uint8_t*)gpu_buf->ptr + (uint32_t)gl_indices : (uint16_t*)gl_indices, count);
 		if (!gpu_buf) { // Drawing without an index buffer
 			// Allocating a temp buffer for the indices
 			void *ptr = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
 			memcpy_neon(ptr, gl_indices, count * sizeof(uint16_t));
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		} else { // Drawing with an index buffer
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint16_t*)gpu_buf->ptr + (uint32_t)gl_indices, count);
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint8_t*)gpu_buf->ptr + (uint32_t)gl_indices, count);
 		}
 	} else if (tex_unit->vertex_array_state) {
 		int texture2d_idx = tex_unit->tex_id;

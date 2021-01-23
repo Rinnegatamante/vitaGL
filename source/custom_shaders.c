@@ -138,7 +138,6 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
 	uint8_t real_i[GL_MAX_VERTEX_ATTRIBS] = {0, 1, 2, 3, 4, 5, 6, 7};
-	p->has_unaligned_attrs = GL_TRUE;
 	if (p->has_unaligned_attrs) {
 		attributes = temp_attributes;
 		streams = temp_streams;
@@ -174,7 +173,6 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	}
 
 	// Gathering real attribute data pointers
-	is_packed = GL_FALSE;
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
 		memcpy_neon(ptrs[0], (void*)vertex_attrib_offsets[real_i[0]], count * streams[0].stride);
@@ -243,20 +241,20 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 	
 	// Uploading both fragment and vertex uniforms data
-	void *vbuffer, *fbuffer;
+	void *buffer;
 	if (p->vert_uniforms) {
-		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &buffer);
 		uniform *u = p->vert_uniforms;
 		while (u) {
-			sceGxmSetUniformDataF(vbuffer, u->ptr, 0, u->size, u->data);
+			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
 	}
 	if (p->frag_uniforms) {
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
-			sceGxmSetUniformDataF(fbuffer, u->ptr, 0, u->size, u->data);
+			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
 	}
@@ -290,7 +288,6 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
 	uint8_t real_i[GL_MAX_VERTEX_ATTRIBS] = {0, 1, 2, 3, 4, 5, 6, 7};
-	p->has_unaligned_attrs = GL_TRUE;
 	if (p->has_unaligned_attrs) {
 		attributes = temp_attributes;
 		streams = temp_streams;
@@ -335,7 +332,6 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	}
 	
 	// Gathering real attribute data pointers
-	is_packed = GL_FALSE;
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(top_idx * streams[0].stride);
 		memcpy_neon(ptrs[0], (void*)vertex_attrib_offsets[real_i[0]], top_idx * streams[0].stride);
@@ -404,20 +400,20 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 	
 	// Uploading both fragment and vertex uniforms data
-	void *vbuffer, *fbuffer;
+	void *buffer;
 	if (p->vert_uniforms) {
-		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &buffer);
 		uniform *u = p->vert_uniforms;
 		while (u) {
-			sceGxmSetUniformDataF(vbuffer, u->ptr, 0, u->size, u->data);
+			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
 	}
 	if (p->frag_uniforms) {
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
-			sceGxmSetUniformDataF(fbuffer, u->ptr, 0, u->size, u->data);
+			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
 	}
