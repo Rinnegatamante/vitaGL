@@ -41,7 +41,10 @@ static SceGxmVertexAttribute temp_attributes[GL_MAX_VERTEX_ATTRIBS];
 static SceGxmVertexStream temp_streams[GL_MAX_VERTEX_ATTRIBS];
 static uint32_t temp_offsets[GL_MAX_VERTEX_ATTRIBS];
 static uint32_t temp_vbo[GL_MAX_VERTEX_ATTRIBS];
-
+static unsigned short orig_stride[GL_MAX_VERTEX_ATTRIBS];
+static SceGxmAttributeFormat orig_fmt[GL_MAX_VERTEX_ATTRIBS];
+static unsigned char orig_size[GL_MAX_VERTEX_ATTRIBS];
+		
 extern GLboolean use_vram;
 
 #ifdef HAVE_SHARK
@@ -137,6 +140,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	SceGxmVertexStream *streams;
 	uint32_t *offsets, *vbo;
 	uint8_t real_i[GL_MAX_VERTEX_ATTRIBS] = {0, 1, 2, 3, 4, 5, 6, 7};
+	p->has_unaligned_attrs = GL_TRUE;
 	if (p->has_unaligned_attrs) {
 		attributes = temp_attributes;
 		streams = temp_streams;
@@ -163,8 +167,8 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	
 	
 	void *ptrs[GL_MAX_VERTEX_ATTRIBS];
-	GLboolean is_packed = GL_TRUE;
-	if (p->attr_num > 1) {
+	GLboolean is_packed = p->attr_num > 1;
+	if (is_packed) {
 		for (i = 0; i < p->attr_num; i++) {
 			if (vbo[i]) {
 				is_packed = GL_FALSE;
@@ -176,12 +180,12 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 				is_packed = GL_FALSE;
 		}
 	}
-	
+
 	// Gathering real attribute data pointers
+	is_packed = GL_FALSE;
 	if (is_packed) {
-		ptrs[0] = gpu_alloc_mapped(count * streams[0].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
 		memcpy_neon(ptrs[0], (void*)offsets[0], count * streams[0].stride);
-		markAsDirty(ptrs[0]);
 		for (i = 0; i < p->attr_num; i++) {
 			attributes[i].offset = offsets[i] - offsets[0];
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
@@ -194,10 +198,10 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 					gpubuffer *gpu_buf = (gpubuffer*)vbo[i];
 					ptrs[i] = gpu_buf->ptr;
 					attributes[i].offset = offsets[i];
+					//if (pad.buttons & SCE_CTRL_LEFT) debugPrintf("offset for vbo ATTR %d: 0x%X -> 0x%X", i, offsets[i], attributes[i].offset);
 				} else {
-					ptrs[i] = gpu_alloc_mapped(count * streams[i].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+					ptrs[i] = gpu_alloc_mapped_temp(count * streams[i].stride);
 					memcpy_neon(ptrs[i], (void*)offsets[i], count * streams[i].stride);
-					markAsDirty(ptrs[i]);
 					attributes[i].offset = 0;
 				}
 			}
@@ -206,31 +210,54 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	
 	// Check if a vertex shader rebuild is required
 	uint8_t attr_mask = ~((~0) << p->attr_highest_idx);
-	if ((p->attr_state_mask & attr_mask) != (vertex_attrib_state & attr_mask)) {
-		uint32_t orig_stride[GL_MAX_VERTEX_ATTRIBS];
+	//if ((p->attr_state_mask & attr_mask) != (vertex_attrib_state & attr_mask)) {
+		
 		p->attr_state_mask = vertex_attrib_state;
 		
 		// Making disabled vertex attribs to loop
 		for (i = 0; i < p->attr_num; i++) {
 			if (!(vertex_attrib_state & (1 << real_i[i]))) {
 				orig_stride[i] = streams[i].stride;
+				orig_fmt[i] = attributes[i].format;
+				orig_size[i] = attributes[i].componentCount;
 				streams[i].stride = 0;
 				attributes[i].offset = 0;
+				attributes[i].componentCount = 4;
+				attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 			}
 		}
 		
 		sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
-			
+		
+		/*if (pad.buttons & SCE_CTRL_LEFT) {
+			debugPrintf("glDrawArrays with attrs: %d\n", p->attr_num);
+			for (i = 0; i < p->attr_num; i++) {
+				debugPrintf("ATTR %d\n", i);
+				if (vertex_attrib_state & (1 << real_i[i])) {
+					debugPrintf("ENABLED: stream ptr: 0x%08X\n", is_packed ? ptrs[0] : ptrs[1]);
+				} else {
+					debugPrintf("DISABLED: stream ptr: 0x%08X\n", vertex_attrib_value[i]);
+				}
+				debugPrintf("offset: 0x%X\n", attributes[i].offset);
+				debugPrintf("componentCount: %d\n", attributes[i].componentCount);
+				debugPrintf("format: %X\n", attributes[i].format);
+				debugPrintf("stride: %d\n", streams[i].stride);
+				debugPrintf("idx: %d\n", real_i[i]);
+				debugPrintf("regIndex: %d\n", attributes[i].regIndex);
+			}
+		}*/
+		
 		// Restoring stride values to their original settings
 		if (!p->has_unaligned_attrs) {
 			for (i = 0; i < p->attr_num; i++) {
-				if (!(vertex_attrib_state & (1 << real_i[i]))) {
+				if (!(vertex_attrib_state & (1 << i))) {
 					streams[i].stride = orig_stride[i];
+					attributes[i].componentCount = orig_size[i];
+					attributes[i].format = orig_fmt[i];
 				}
 			}
 		}
-		
-	}
+	//}
 	
 	// Check if a blend info rebuild is required
 	if (p->blend_info.raw != blend_info.raw) {
@@ -291,6 +318,7 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	SceGxmVertexStream *streams;
 	uint32_t *offsets, *vbo;
 	uint8_t real_i[GL_MAX_VERTEX_ATTRIBS] = {0, 1, 2, 3, 4, 5, 6, 7};
+	p->has_unaligned_attrs = GL_TRUE;
 	if (p->has_unaligned_attrs) {
 		attributes = temp_attributes;
 		streams = temp_streams;
@@ -314,12 +342,11 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		offsets = vertex_attrib_offsets;
 		vbo = vertex_attrib_vbo;
 	}
-
 	
 	void *ptrs[GL_MAX_VERTEX_ATTRIBS];
-	GLboolean is_packed = GL_TRUE;
+	GLboolean is_packed = p->attr_num > 1;
 	GLboolean is_full_vbo = GL_TRUE;
-	if (p->attr_num > 1) {
+	if (is_packed) {
 		for (i = 0; i < p->attr_num; i++) {
 			if (vbo[i]) {
 				is_packed = GL_FALSE;
@@ -327,14 +354,13 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 				is_full_vbo = GL_FALSE;
 			}
 		}
-		if (is_packed) {
-			if (!(offsets[0] + streams[0].stride > offsets[1] && offsets[1] > offsets[0]))
-				is_packed = GL_FALSE;
+		if (is_packed && (!(offsets[0] + streams[0].stride > offsets[1] && offsets[1] > offsets[0]))) {
+			is_packed = GL_FALSE;
 		}
-	} else if (!vbo[0]) is_full_vbo = GL_FALSE;;
+	} else if (!vbo[0]) is_full_vbo = GL_FALSE;
 		
 	// Detecting highest index value
-	uint16_t top_idx = 0;
+	uint32_t top_idx = 0;
 	if (!is_full_vbo) {
 		for (i = 0; i < count; i++) {
 			if (idx_buf[i] > top_idx) top_idx = idx_buf[i];
@@ -343,10 +369,10 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	}
 	
 	// Gathering real attribute data pointers
+	is_packed = GL_FALSE;
 	if (is_packed) {
-		ptrs[0] = gpu_alloc_mapped(top_idx * streams[0].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+		ptrs[0] = gpu_alloc_mapped_temp(top_idx * streams[0].stride);
 		memcpy_neon(ptrs[0], (void*)offsets[0], top_idx * streams[0].stride);
-		markAsDirty(ptrs[0]);
 		for (i = 0; i < p->attr_num; i++) {
 			attributes[i].offset = offsets[i] - offsets[0];
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
@@ -360,9 +386,8 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 					ptrs[i] = gpu_buf->ptr;
 					attributes[i].offset = offsets[i];
 				} else {
-					ptrs[i] = gpu_alloc_mapped(top_idx * streams[i].stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+					ptrs[i] = gpu_alloc_mapped_temp(top_idx * streams[i].stride);
 					memcpy_neon(ptrs[i], (void*)offsets[i], top_idx * streams[i].stride);
-					markAsDirty(ptrs[i]);
 					attributes[i].offset = 0;
 				}
 			}
@@ -371,32 +396,54 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	
 	// Check if a vertex shader rebuild is required
 	uint8_t attr_mask = ~((~0) << p->attr_highest_idx);
-	if ((p->attr_state_mask & attr_mask) != (vertex_attrib_state & attr_mask)) {
-		uint32_t orig_stride[GL_MAX_VERTEX_ATTRIBS];
+	//if ((p->attr_state_mask & attr_mask) != (vertex_attrib_state & attr_mask)) {
+		
 		p->attr_state_mask = vertex_attrib_state;
 		
 		// Making disabled vertex attribs to loop
 		for (i = 0; i < p->attr_num; i++) {
 			if (!(vertex_attrib_state & (1 << real_i[i]))) {
 				orig_stride[i] = streams[i].stride;
+				orig_fmt[i] = attributes[i].format;
+				orig_size[i] = attributes[i].componentCount;
 				streams[i].stride = 0;
 				attributes[i].offset = 0;
+				attributes[i].componentCount = 4;
+				attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 			}
 		}
 		
-		sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
-			p->vshader->id, attributes, p->attr_num,
-			streams, p->attr_num, &p->vprog);
+		sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
+			
+		/*if (pad.buttons & SCE_CTRL_LEFT) {
+			debugPrintf("glDrawElements with attrs: %d\n", p->attr_num);
+			for (i = 0; i < p->attr_num; i++) {
+				debugPrintf("ATTR %d\n", i);
+				if (vertex_attrib_state & (1 << real_i[i])) {
+					debugPrintf("ENABLED: stream ptr: 0x%08X\n", is_packed ? ptrs[0] : ptrs[1]);
+				} else {
+					debugPrintf("DISABLED: stream ptr: 0x%08X\n", vertex_attrib_value[i]);
+				}
+				debugPrintf("offset: 0x%X\n", attributes[i].offset);
+				debugPrintf("componentCount: %d\n", attributes[i].componentCount);
+				debugPrintf("format: %X\n", attributes[i].format);
+				debugPrintf("stride: %d\n", streams[i].stride);
+				debugPrintf("idx: %d\n", real_i[i]);
+				debugPrintf("regIndex: %d\n", attributes[i].regIndex);
+			}
+		}*/	
 			
 		// Restoring stride values to their original settings
 		if (!p->has_unaligned_attrs) {
 			for (i = 0; i < p->attr_num; i++) {
 				if (!(vertex_attrib_state & (1 << i))) {
 					streams[i].stride = orig_stride[i];
+					attributes[i].componentCount = orig_size[i];
+					attributes[i].format = orig_fmt[i];
 				}
 			}
 		}
-	}
+	//}
 	
 	// Check if a blend info rebuild is required
 	if (p->blend_info.raw != blend_info.raw) {
@@ -929,6 +976,20 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	memcpy_neon(u->data, value, u->size * sizeof(float));
 }
 
+void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+
+	// Grabbing passed uniform
+	uniform *u = (uniform *)-location;
+
+	// Setting passed value to desired uniform
+	u->data[0] = v0;
+	u->data[1] = v1;
+	u->data[2] = v2;
+}
+
 void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1)
@@ -1001,6 +1062,12 @@ void glDisableVertexAttribArray(GLuint index) {
 }
 
 void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer) {
+#ifndef SKIP_ERROR_HANDLING
+	if (size < 1 || size > 4 || stride < 0 || index >= GL_MAX_VERTEX_ATTRIBS) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+	
 	vertex_attrib_offsets[index] = (uint32_t)pointer;
 	vertex_attrib_vbo[index] = vertex_array_unit;
 	
@@ -1009,23 +1076,41 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 	
 	attributes->streamIndex = index;
 	attributes->componentCount = size;
-	streams->stride = stride;
 	
 	// Detecting attribute format and size
+	unsigned short bpe;
 	switch (type) {
+	case GL_HALF_FLOAT:
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F16;
+		bpe = 2;
+		break;
 	case GL_FLOAT:
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		bpe = 4;
 		break;
 	case GL_SHORT:
 		attributes->format = normalized ? SCE_GXM_ATTRIBUTE_FORMAT_S16N : SCE_GXM_ATTRIBUTE_FORMAT_S16;
+		bpe = 2;
+		break;
+	case GL_UNSIGNED_SHORT:
+		attributes->format = normalized ? SCE_GXM_ATTRIBUTE_FORMAT_U16N : SCE_GXM_ATTRIBUTE_FORMAT_U16;
+		bpe = 2;
+		break;
+	case GL_BYTE:
+		attributes->format = normalized ? SCE_GXM_ATTRIBUTE_FORMAT_S8N : SCE_GXM_ATTRIBUTE_FORMAT_S8;
+		bpe = 1;
 		break;
 	case GL_UNSIGNED_BYTE:
 		attributes->format = normalized ? SCE_GXM_ATTRIBUTE_FORMAT_U8N : SCE_GXM_ATTRIBUTE_FORMAT_U8;
+		bpe = 1;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
+	
+	streams->stride = stride ? stride : bpe * size;
+	
 }
 
 void glVertexAttrib1fv(GLuint index, const GLfloat *v) {
@@ -1064,7 +1149,7 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 	if (param == NULL)
 		return -1;
 	
-	return sceGxmProgramParameterGetResourceIndex(param);
+	return (sceGxmProgramParameterGetResourceIndex(param) / sizeof(uint32_t));
 }
 
 /*
@@ -1189,7 +1274,7 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 	}
 
 	// Allocating enough memory on vitaGL mempool
-	void *ptr = gpu_pool_memalign(count * bpe * size, bpe * size);
+	void *ptr = gpu_alloc_mapped_temp(count * bpe * size);
 
 	// Copying passed data to vitaGL mempool
 	if (stride == 0)

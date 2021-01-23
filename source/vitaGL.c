@@ -534,7 +534,7 @@ void vglUseVramForUSSE(GLboolean usage) {
 	use_vram_for_usse = usage;
 }
 
-void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa) {
+void vglInitWithCustomSizes(int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa) {
 	// Setting our display size
 	msaa_mode = msaa;
 	DISPLAY_WIDTH = width;
@@ -851,9 +851,6 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 
 	scissor_test_vertices = gpu_alloc_mapped(1 * sizeof(vector4f), VGL_MEM_RAM);
 
-	// Allocate temp pool for non-VBO drawing
-	gpu_pool_init(gpu_pool_size);
-
 	// Init texture units
 	int i, j;
 	for (i = 0; i < GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS; i++) {
@@ -909,7 +906,7 @@ void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int r
 	matrix4x4_identity(texture_matrix);
 }
 
-void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
+void vglInitExtended(int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
 	// Initializing sceGxm
 	initGxm();
 
@@ -918,17 +915,17 @@ void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_thre
 		SceAppMgrBudgetInfo info;
 		info.size = sizeof(SceAppMgrBudgetInfo);
 		sceAppMgrGetBudgetInfo(&info);
-		vglInitWithCustomSizes(gpu_pool_size, width, height, info.free_user_rw > ram_threshold ? info.free_user_rw - ram_threshold : info.free_user_rw, 0, 0, msaa);
+		vglInitWithCustomSizes(width, height, info.free_user_rw > ram_threshold ? info.free_user_rw - ram_threshold : info.free_user_rw, 0, 0, msaa);
 	} else {
 		SceKernelFreeMemorySizeInfo info;
 		info.size = sizeof(SceKernelFreeMemorySizeInfo);
 		sceKernelGetFreeMemorySize(&info);
-		vglInitWithCustomSizes(gpu_pool_size, width, height, info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram - 256 * 1024, info.size_phycont - 1 * 1024 * 1024, msaa);
+		vglInitWithCustomSizes(width, height, info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram - 256 * 1024, info.size_phycont - 1 * 1024 * 1024, msaa);
 	}
 }
 
-void vglInit(uint32_t gpu_pool_size) {
-	vglInitExtended(gpu_pool_size, DISPLAY_WIDTH_DEF, DISPLAY_HEIGHT_DEF, 0x1000000, SCE_GXM_MULTISAMPLE_NONE);
+void vglInit(void) {
+	vglInitExtended(DISPLAY_WIDTH_DEF, DISPLAY_HEIGHT_DEF, 0x1000000, SCE_GXM_MULTISAMPLE_4X);
 }
 
 void vglEnd(void) {
@@ -990,7 +987,7 @@ EGLBoolean eglSwapInterval(EGLDisplay display, EGLint interval) {
 }
 
 EGLBoolean eglSwapBuffers(EGLDisplay display, EGLSurface surface) {
-	vglStopRendering();
+	vglStopRendering(GL_TRUE);
 	vglStartRendering();
 }
 
@@ -1067,13 +1064,18 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	
+
 	// Marking previous content for deletion
 	if (gpu_buf->ptr)
 		markAsDirty(gpu_buf->ptr);
 	
 	// Allocating a new buffer
 	gpu_buf->ptr = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+#ifndef SKIP_ERROR_HANDLING
+	if (!gpu_buf->ptr) {
+		SET_GL_ERROR(GL_OUT_OF_MEMORY)
+	}
+#endif
 	gpu_buf->size = size;
 
 	memcpy_neon(gpu_buf->ptr, data, size);
@@ -1101,7 +1103,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 #endif
 	
 	// Marking previous content for deletion
-	frame_purge_list[frame_purge_idx][frame_elem_purge_idx] = gpu_buf->ptr;
+	markAsDirty(gpu_buf->ptr);
 	
 	// Allocating a new buffer
 	gpu_buf->ptr = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
@@ -1514,7 +1516,7 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *po
 	tex_unit->texture_array.pointer = pointer;
 }
 
-void _glDrawArrays_SetupVertices(vector3f **verts, vector2f **texcoords, uint8_t **clrs, uint16_t **idxs, GLint first, GLsizei count, GLboolean fake_clrs) {
+void _glDrawArrays_SetupVertices(vector3f **verts, vector2f **texcoords, uint8_t **clrs, GLint first, GLsizei count, GLboolean fake_clrs) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	uint16_t n;
 	uint16_t *indices;
@@ -1540,10 +1542,6 @@ void _glDrawArrays_SetupVertices(vector3f **verts, vector2f **texcoords, uint8_t
 			else
 				uv_map = (vector2f *)(((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->texture_array.pointer) + (first * tex_unit->texture_array.stride));
 		}
-		indices = (uint16_t *)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
-		for (n = 0; n < count; n++) {
-			indices[n] = n;
-		}
 	} else {
 		uint8_t *ptr;
 		uint8_t *ptr_tex;
@@ -1552,7 +1550,7 @@ void _glDrawArrays_SetupVertices(vector3f **verts, vector2f **texcoords, uint8_t
 		uint8_t tex_set = (texcoords == NULL);
 		uint8_t clr_set = (clrs == NULL);
 		
-		vertices = (vector3f *)gpu_pool_memalign(count * sizeof(vector3f), sizeof(vector3f));
+		vertices = (vector3f *)gpu_alloc_mapped_temp(count * sizeof(vector3f));
 		if (tex_unit->vertex_array.stride == 0) {
 			ptr = ((uint8_t *)tex_unit->vertex_array.pointer) + (first * (tex_unit->vertex_array.num * tex_unit->vertex_array.size));
 			memcpy_neon(&vertices[0], ptr, count * sizeof(vector3f));
@@ -1561,7 +1559,7 @@ void _glDrawArrays_SetupVertices(vector3f **verts, vector2f **texcoords, uint8_t
 			ptr = ((uint8_t *)tex_unit->vertex_array.pointer) + (first * tex_unit->vertex_array.stride);
 			
 		if (!tex_set) {
-			uv_map = (vector2f *)gpu_pool_memalign(count * sizeof(vector2f), sizeof(vector2f));
+			uv_map = (vector2f *)gpu_alloc_mapped_temp(count * sizeof(vector2f));
 			if (tex_unit->texture_array.stride == 0) {
 				ptr_tex = ((uint8_t *)tex_unit->texture_array.pointer) + (first * (tex_unit->texture_array.num * tex_unit->texture_array.size));
 				memcpy_neon(&uv_map[0], ptr_tex, count * sizeof(vector2f));
@@ -1572,7 +1570,7 @@ void _glDrawArrays_SetupVertices(vector3f **verts, vector2f **texcoords, uint8_t
 
 		if (!clr_set) {
 			if (tex_unit->color_array_state || fake_clrs)
-				colors = (uint8_t *)gpu_pool_memalign(count * tex_unit->color_array.num * tex_unit->color_array.size, tex_unit->color_array.num * tex_unit->color_array.size);
+				colors = (uint8_t *)gpu_alloc_mapped_temp(count * tex_unit->color_array.num * tex_unit->color_array.size);
 			if (tex_unit->color_array_state && !fake_clrs) {
 				if (tex_unit->color_array.stride == 0) {
 					ptr_clr = ((uint8_t *)tex_unit->color_array.pointer) + (first * ((tex_unit->color_array.num * tex_unit->color_array.size)));
@@ -1584,7 +1582,6 @@ void _glDrawArrays_SetupVertices(vector3f **verts, vector2f **texcoords, uint8_t
 		}
 		
 		vector4f *colors_float = (vector4f*)colors;
-		indices = (uint16_t *)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
 		for (n = 0; n < count; n++) {
 			if (!vec_set) {
 				memcpy_neon(&vertices[n], ptr, tex_unit->vertex_array.size * tex_unit->vertex_array.num);
@@ -1602,14 +1599,12 @@ void _glDrawArrays_SetupVertices(vector3f **verts, vector2f **texcoords, uint8_t
 					ptr_clr += tex_unit->color_array.stride;
 				}
 			}
-			indices[n] = n;
 		}
 	}
 	
 	*verts = vertices;
 	if (texcoords) *texcoords = uv_map;
 	if (clrs) *clrs = colors;
-	*idxs = indices;
 }
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
@@ -1630,7 +1625,6 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 		}
 #if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
 		if (is_shark_online) {
-			uint16_t *indices;
 			vector3f *vertices = NULL;
 			vector2f *uv_map = NULL;
 			uint8_t *colors = NULL;
@@ -1639,18 +1633,18 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 				if (!(texture_slots[texture2d_idx].valid))
 					return;
 				sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
-				_glDrawArrays_SetupVertices(&vertices, &uv_map, ffp_vertex_num_params > 2 ? &colors : NULL, &indices, first, count, GL_FALSE);
+				_glDrawArrays_SetupVertices(&vertices, &uv_map, ffp_vertex_num_params > 2 ? &colors : NULL, first, count, GL_FALSE);
 				sceGxmSetVertexStream(gxm_context, 1, uv_map);
 				if (ffp_vertex_num_params > 2) sceGxmSetVertexStream(gxm_context, 2, colors);
 			} else if (ffp_vertex_num_params > 1) {
-				_glDrawArrays_SetupVertices(&vertices, NULL, &colors, &indices, first, count, GL_FALSE);
+				_glDrawArrays_SetupVertices(&vertices, NULL, &colors, first, count, GL_FALSE);
 				sceGxmSetVertexStream(gxm_context, 1, colors);
 			} else {
-				_glDrawArrays_SetupVertices(&vertices, NULL, NULL, &indices, first, count, GL_FALSE);
+				_glDrawArrays_SetupVertices(&vertices, NULL, NULL, first, count, GL_FALSE);
 			}
 			sceGxmSetVertexStream(gxm_context, 0, vertices);
 			upload_ffp_uniforms();
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
 		} else {
 #endif
 			if (tex_unit->texture_array_state) {
@@ -1666,16 +1660,15 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 					upload_tex2d_uniforms(texture2d_generic_unifs);
 				}
 				sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
-				uint16_t *indices;
 				vector3f *vertices = NULL;
 				vector2f *uv_map = NULL;
 				uint8_t *colors = NULL;
-				_glDrawArrays_SetupVertices(&vertices, &uv_map, &colors, &indices, first, count, GL_FALSE);
+				_glDrawArrays_SetupVertices(&vertices, &uv_map, &colors, first, count, GL_FALSE);
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, uv_map);
 				if (tex_unit->color_array_state)
 					sceGxmSetVertexStream(gxm_context, 2, colors);
-				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
 			} else {
 				if (tex_unit->color_array_state && (tex_unit->color_array.num == 3))
 					sceGxmSetVertexProgram(gxm_context, rgb_vertex_program_patched);
@@ -1684,14 +1677,13 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 				update_precompiled_ffp_frag_shader(rgba_fragment_id, &rgba_fragment_program_patched, &rgba_blend_cfg);
 				vector3f *vertices = NULL;
 				uint8_t *colors = NULL;
-				uint16_t *indices;
 				void *vbuffer;
 				sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
 				sceGxmSetUniformDataF(vbuffer, rgba_wvp, 0, 16, (const float *)mvp_matrix);
-				_glDrawArrays_SetupVertices(&vertices, NULL, &colors, &indices, first, count, tex_unit->color_array_state ? GL_FALSE : GL_TRUE);
+				_glDrawArrays_SetupVertices(&vertices, NULL, &colors, first, count, tex_unit->color_array_state ? GL_FALSE : GL_TRUE);
 				sceGxmSetVertexStream(gxm_context, 0, vertices);
 				sceGxmSetVertexStream(gxm_context, 1, colors);
-				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, indices, count);
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
 			}
 #if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
 		}
@@ -1720,7 +1712,7 @@ void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoor
 					vertices = (vector3f *)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer);
 				else {
 					uint64_t vertex_count_int =  _glDrawElements_CountVertices(count, (uint16_t*)gl_indices);
-					vertices = (vector3f *)gpu_pool_memalign(vertex_count_int * sizeof(vector3f), sizeof(vector3f));
+					vertices = (vector3f *)gpu_alloc_mapped_temp(vertex_count_int * sizeof(vector3f));
 					if ((!vertex_array_unit) && tex_unit->vertex_array.stride == 0)
 						memcpy_neon(vertices, tex_unit->vertex_array.pointer, vertex_count_int * (tex_unit->vertex_array.size * tex_unit->vertex_array.num));
 					if ((!vertex_array_unit) && tex_unit->vertex_array.stride != 0)
@@ -1746,8 +1738,8 @@ void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoor
 					vertices = (vector3f *)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer);
 				} else {
 					uint64_t vertex_count_int =  _glDrawElements_CountVertices(count, (uint16_t*)gl_indices);
-					vertices = (vector3f *)gpu_pool_memalign(vertex_count_int * sizeof(vector3f), sizeof(vector3f));
-					colors = (uint8_t *)gpu_pool_memalign(vertex_count_int * tex_unit->color_array.num * tex_unit->color_array.size, tex_unit->color_array.num * tex_unit->color_array.size);
+					vertices = (vector3f *)gpu_alloc_mapped_temp(vertex_count_int * sizeof(vector3f));
+					colors = (uint8_t *)gpu_alloc_mapped_temp(vertex_count_int * tex_unit->color_array.num * tex_unit->color_array.size);
 					if (tex_unit->vertex_array.stride == 0)
 						memcpy_neon(vertices, tex_unit->vertex_array.pointer, vertex_count_int * (tex_unit->vertex_array.size * tex_unit->vertex_array.num));
 					if (tex_unit->color_array.stride == 0)
@@ -1784,9 +1776,9 @@ void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoor
 						colors = (uint8_t *)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->color_array.pointer);
 				} else {
 					uint64_t vertex_count_int =  _glDrawElements_CountVertices(count, (uint16_t*)gl_indices);
-					vertices = (vector3f *)gpu_pool_memalign(vertex_count_int * sizeof(vector3f), sizeof(vector3f));
-					uv_map = (vector2f *)gpu_pool_memalign(vertex_count_int * sizeof(vector2f), sizeof(vector2f));
-					colors = (uint8_t *)gpu_pool_memalign(vertex_count_int * sizeof(vector4f), sizeof(vector4f));
+					vertices = (vector3f *)gpu_alloc_mapped_temp(vertex_count_int * sizeof(vector3f));
+					uv_map = (vector2f *)gpu_alloc_mapped_temp(vertex_count_int * sizeof(vector2f));
+					colors = (uint8_t *)gpu_alloc_mapped_temp(vertex_count_int * sizeof(vector4f));
 					if (tex_unit->vertex_array.stride == 0)
 						memcpy_neon(vertices, tex_unit->vertex_array.pointer, vertex_count_int * (tex_unit->vertex_array.size * tex_unit->vertex_array.num));
 					if (tex_unit->texture_array.stride == 0)
@@ -1822,8 +1814,8 @@ void _glDrawElements_SetupVertices(int dim, vector3f **verts, vector2f **texcoor
 				if (vertex_array_unit > 0)
 					vertices = (vector3f *)((uint32_t)gpu_buffers[vertex_array_unit].ptr + (uint32_t)tex_unit->vertex_array.pointer);
 				else
-					vertices = (vector3f *)gpu_pool_memalign(vertex_count_int * sizeof(vector3f), sizeof(vector3f));
-				colors = (uint8_t *)gpu_pool_memalign(vertex_count_int * tex_unit->color_array.num * tex_unit->color_array.size, tex_unit->color_array.num * tex_unit->color_array.size);
+					vertices = (vector3f *)gpu_alloc_mapped_temp(vertex_count_int * sizeof(vector3f));
+				colors = (uint8_t *)gpu_alloc_mapped_temp(vertex_count_int * tex_unit->color_array.num * tex_unit->color_array.size);
 				if ((!vertex_array_unit) && tex_unit->vertex_array.stride == 0)
 					memcpy_neon(vertices, tex_unit->vertex_array.pointer, vertex_count_int * (tex_unit->vertex_array.size * tex_unit->vertex_array.num));
 				if ((!vertex_array_unit) && tex_unit->vertex_array.stride != 0)
@@ -1865,9 +1857,8 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		_glDrawElements_CustomShadersIMPL(index_array_unit ? (uint16_t*)gpu_buf->ptr + (uint32_t)gl_indices : (uint16_t*)gl_indices, count);
 		if (!gpu_buf) { // Drawing without an index buffer
 			// Allocating a temp buffer for the indices
-			void *ptr = gpu_alloc_mapped(count * sizeof(uint16_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+			void *ptr = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
 			memcpy_neon(ptr, gl_indices, count * sizeof(uint16_t));
-			markAsDirty(ptr);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		} else { // Drawing with an index buffer
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint16_t*)gpu_buf->ptr + (uint32_t)gl_indices, count);
@@ -1878,7 +1869,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		if (index_array_unit >= 0)
 			indices = (uint16_t *)((uint32_t)gpu_buffers[index_array_unit].ptr + (uint32_t)gl_indices);
 		else {
-			indices = (uint16_t *)gpu_pool_memalign(count * sizeof(uint16_t), sizeof(uint16_t));
+			indices = (uint16_t *)gpu_alloc_mapped_temp(count * sizeof(uint16_t));
 			memcpy_neon(indices, gl_indices, sizeof(uint16_t) * count);
 		}
 		if (mvp_modified) {
@@ -2035,7 +2026,7 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
-	tex_unit->vertex_object = gpu_pool_memalign(count * bpe * size, bpe * size);
+	tex_unit->vertex_object = gpu_alloc_mapped_temp(count * bpe * size);
 	if (stride == 0)
 		memcpy_neon(tex_unit->vertex_object, pointer, count * bpe * size);
 	else {
@@ -2072,7 +2063,7 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
-	tex_unit->color_object = gpu_pool_memalign(count * bpe * size, bpe * size);
+	tex_unit->color_object = gpu_alloc_mapped_temp(count * bpe * size);
 #if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
 	if (tex_unit->color_object_type != type) ffp_dirty_vert_stream = GL_TRUE;
 #endif
@@ -2110,7 +2101,7 @@ void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, c
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
-	tex_unit->texture_object = gpu_pool_memalign(count * bpe * size, bpe * size);
+	tex_unit->texture_object = gpu_alloc_mapped_temp(count * bpe * size);
 	if (stride == 0)
 		memcpy_neon(tex_unit->texture_object, pointer, count * bpe * size);
 	else {
@@ -2144,7 +2135,7 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *po
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
-	tex_unit->index_object = gpu_pool_memalign(count * bpe, bpe);
+	tex_unit->index_object = gpu_alloc_mapped_temp(count * bpe);
 	if (stride == 0)
 		memcpy_neon(tex_unit->index_object, pointer, count * bpe);
 	else {
@@ -2265,7 +2256,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 					if (tex_unit->color_array_state) {
 						sceGxmSetVertexStream(gxm_context, 1, tex_unit->color_object);
 					} else {
-						vector4f *colors = (vector4f *)gpu_pool_memalign(count * sizeof(vector4f), sizeof(vector4f));
+						vector4f *colors = (vector4f *)gpu_alloc_mapped_temp(count * sizeof(vector4f));
 						int n;
 						for (n = 0; n < count; n++) {
 							memcpy_neon(&colors[n], &current_color.r, sizeof(vector4f));

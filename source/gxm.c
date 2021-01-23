@@ -422,14 +422,18 @@ void vglStartRendering(void) {
 		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
 }
 
-void vglStopRenderingInit(void) {
+void vglStopRendering(GLboolean swap_buffers) {
 	// Ending drawing scene
 	sceGxmEndScene(gxm_context, NULL, NULL);
 	if (system_app_mode && vblank)
 		sceDisplayWaitVblankStart();
+		
+	// Updating display and garbage collecting
+	if (swap_buffers)
+		vglSwapBuffers();
 }
 
-void vglStopRenderingTerm(void) {
+void vglSwapBuffers() {
 	if (is_rendering_display) { // Default framebuffer is used
 		// Properly requesting a display update
 		if (system_app_mode)
@@ -447,23 +451,12 @@ void vglStopRenderingTerm(void) {
 	// Purging all elements marked for deletion
 	int i = 0;
 	while (frame_purge_list[frame_purge_clean_idx][i]) {
-		vgl_mem_free(frame_purge_list[frame_purge_clean_idx][i++]);
+		vgl_mem_free(frame_purge_list[frame_purge_clean_idx][i]);
+		frame_purge_list[frame_purge_clean_idx][i++] =NULL;
 	}
-	frame_purge_list[frame_purge_clean_idx][0] = NULL;
 	frame_purge_clean_idx = (frame_purge_clean_idx + 1) % DISPLAY_MAX_BUFFER_COUNT;
 	frame_purge_idx = (frame_purge_idx + 1) % DISPLAY_MAX_BUFFER_COUNT;
 	frame_elem_purge_idx = 0;
-
-	// Resetting vitaGL mempool
-	gpu_pool_reset();
-}
-
-void vglStopRendering() {
-	// Ending drawing scene
-	vglStopRenderingInit();
-
-	// Updating display and resetting vitaGL mempool
-	vglStopRenderingTerm();
 }
 
 void vglUpdateCommonDialog() {

@@ -60,8 +60,8 @@ const GLubyte *glGetString(GLenum name) {
 		break;
 	case GL_EXTENSIONS: // Supported extensions
 		if (!extensions) {
-			extensions = malloc(321);
-			strcpy(extensions, "VGL_EXT_gpu_objects_array VGL_EXT_gxp_shaders GL_OES_texture_npot GL_OES_rgb8_rgba8 GL_OES_depth_texture GL_EXT_texture_format_BGRA8888 GL_EXT_read_format_bgra GL_EXT_texture_compression_dxt1 GL_EXT_texture_compression_dxt3 GL_EXT_texture_compression_dxt5 GL_EXT_texture_compression_s3tc GL_IMG_texture_compression_pvrtc");
+			extensions = malloc(346);
+			strcpy(extensions, "GL_OES_vertex_half_float VGL_EXT_gpu_objects_array VGL_EXT_gxp_shaders GL_OES_texture_npot GL_OES_rgb8_rgba8 GL_OES_depth_texture GL_EXT_texture_format_BGRA8888 GL_EXT_read_format_bgra GL_EXT_texture_compression_dxt1 GL_EXT_texture_compression_dxt3 GL_EXT_texture_compression_dxt5 GL_EXT_texture_compression_s3tc GL_IMG_texture_compression_pvrtc");
 		}
 		return extensions;
 		break;
@@ -272,5 +272,5 @@ GLboolean glIsEnabled(GLenum cap) {
 GLenum glGetError(void) {
 	GLenum ret = vgl_error;
 	vgl_error = GL_NO_ERROR;
-	return vgl_error;
+	return ret;
 }

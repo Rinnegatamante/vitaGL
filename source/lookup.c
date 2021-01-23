@@ -30,6 +30,7 @@ static const struct {
 	const char *name;
 	void *proc;
 } vgl_proctable[] = {
+	// *gl
 	{ "glActiveTexture", (void *)glActiveTexture },
 	{ "glAlphaFunc", (void *)glAlphaFunc },
 	{ "glArrayElement", (void *)glArrayElement },
@@ -152,6 +153,7 @@ static const struct {
 	{ "glUniform2f", (void *)glUniform2f },
 	{ "glUniform2i", (void *)glUniform2i },
 	{ "glUniform2fv", (void *)glUniform2fv },
+	{ "glUniform3f", (void *)glUniform3f },
 	{ "glUniform3fv", (void *)glUniform3fv },
 	{ "glUniform4f", (void *)glUniform4f },
 	{ "glUniform4fv", (void *)glUniform4fv },
@@ -168,7 +170,9 @@ static const struct {
 	{ "glVertexAttribPointer", (void *)glVertexAttribPointer },
 	{ "glVertexPointer", (void *)glVertexPointer },
 	{ "glViewport", (void *)glViewport },
+	// *glu
 	{ "gluPerspective", (void *)gluPerspective },
+	// *vgl
 	{ "vglColorPointer", (void *)vglColorPointer },
 	{ "vglColorPointerMapped", (void *)vglColorPointerMapped },
 	{ "vglDrawObjects", (void *)vglDrawObjects },
@@ -198,8 +202,7 @@ static const struct {
 	{ "vglSetupRuntimeShaderCompiler", (void *)vglSetupRuntimeShaderCompiler },
 	{ "vglStartRendering", (void *)vglStartRendering },
 	{ "vglStopRendering", (void *)vglStopRendering },
-	{ "vglStopRenderingInit", (void *)vglStopRenderingInit },
-	{ "vglStopRenderingTerm", (void *)vglStopRenderingTerm },
+	{ "vglSwapBuffers", (void *)vglSwapBuffers },
 	{ "vglTexImageDepthBuffer", (void *)vglTexImageDepthBuffer },
 	{ "vglUpdateCommonDialog", (void *)vglUpdateCommonDialog },
 	{ "vglUseTripleBuffering", (void *)vglUseTripleBuffering },
@@ -207,6 +210,7 @@ static const struct {
 	{ "vglUseVramForUSSE", (void *)vglUseVramForUSSE },
 	{ "vglUseExtraMem", (void *)vglUseExtraMem },
 	{ "vglWaitVblankStart", (void *)vglWaitVblankStart },
+	// *egl
 	{ "eglSwapInterval", (void *)eglSwapInterval },
 	{ "eglSwapBuffers", (void *)eglSwapBuffers },
 };

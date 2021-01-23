@@ -56,6 +56,7 @@ typedef struct palette {
 // Alloc a generic memblock into sceGxm mapped memory
 void *gpu_alloc_mapped(size_t size, vglMemType type);
 void *gpu_alloc_mapped_with_external(size_t size, vglMemType *type);
+void *gpu_alloc_mapped_temp(size_t size);
 
 // Alloc into sceGxm mapped memory a vertex USSE memblock
 void *gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset);
@@ -68,21 +69,6 @@ void *gpu_fragment_usse_alloc_mapped(size_t size, unsigned int *usse_offset);
 
 // Dealloc from sceGxm mapped memory a fragment USSE memblock
 void gpu_fragment_usse_free_mapped(void *addr);
-
-// Reserve a memory space from vitaGL mempool
-void *gpu_pool_malloc(unsigned int size);
-
-// Reserve an aligned memory space from vitaGL mempool
-void *gpu_pool_memalign(unsigned int size, unsigned int alignment);
-
-// Returns available free space on vitaGL mempool
-unsigned int gpu_pool_free_space();
-
-// Resets vitaGL mempool
-void gpu_pool_reset();
-
-// Alloc vitaGL mempool
-void gpu_pool_init(uint32_t temp_pool_size);
 
 // Calculate bpp for a requested texture format
 int tex_format_to_bytespp(SceGxmTextureFormat format);

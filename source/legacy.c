@@ -451,10 +451,10 @@ void glEnd(void) {
 		uint64_t idx_count = vertex_count;
 		switch (prim_extra) {
 		case SCE_GXM_PRIMITIVE_NONE:
-			vertices = (vector3f *)gpu_pool_memalign(vertex_count * sizeof(vector3f), sizeof(vector3f));
-			uv_map = (vector2f *)gpu_pool_memalign(vertex_count * sizeof(vector2f), sizeof(vector2f));
+			vertices = (vector3f *)gpu_alloc_mapped_temp(vertex_count * sizeof(vector3f));
+			uv_map = (vector2f *)gpu_alloc_mapped_temp(vertex_count * sizeof(vector2f));
 			memset(vertices, 0, (vertex_count * sizeof(vector3f)));
-			indices = (uint16_t *)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+			indices = (uint16_t *)gpu_alloc_mapped_temp(idx_count * sizeof(uint16_t));
 			for (i = 0; i < vertex_count; i++) {
 				memcpy_neon(&vertices[n], &object->v, sizeof(vector3f));
 				memcpy_neon(&uv_map[n], &object_uv->v, sizeof(vector2f));
@@ -467,10 +467,10 @@ void glEnd(void) {
 		case SCE_GXM_PRIMITIVE_QUADS:
 			quad_n = vertex_count >> 2;
 			idx_count = quad_n * 6;
-			vertices = (vector3f *)gpu_pool_memalign(vertex_count * sizeof(vector3f), sizeof(vector3f));
-			uv_map = (vector2f *)gpu_pool_memalign(vertex_count * sizeof(vector2f), sizeof(vector2f));
+			vertices = (vector3f *)gpu_alloc_mapped_temp(vertex_count * sizeof(vector3f));
+			uv_map = (vector2f *)gpu_alloc_mapped_temp(vertex_count * sizeof(vector2f));
 			memset(vertices, 0, (vertex_count * sizeof(vector3f)));
-			indices = (uint16_t *)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+			indices = (uint16_t *)gpu_alloc_mapped_temp(idx_count * sizeof(uint16_t));
 			for (i = 0; i < quad_n; i++) {
 				indices[i * 6] = i * 4;
 				indices[i * 6 + 1] = i * 4 + 1;
@@ -514,10 +514,10 @@ void glEnd(void) {
 		uint64_t idx_count = vertex_count;
 		switch (prim_extra) {
 		case SCE_GXM_PRIMITIVE_NONE:
-			vertices = (vector3f *)gpu_pool_memalign(vertex_count * sizeof(vector3f), sizeof(vector3f));
-			colors = (vector4f *)gpu_pool_memalign(vertex_count * sizeof(vector4f), sizeof(vector4f));
+			vertices = (vector3f *)gpu_alloc_mapped_temp(vertex_count * sizeof(vector3f));
+			colors = (vector4f *)gpu_alloc_mapped_temp(vertex_count * sizeof(vector4f));
 			memset(vertices, 0, (vertex_count * sizeof(vector3f)));
-			indices = (uint16_t *)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+			indices = (uint16_t *)gpu_alloc_mapped_temp(idx_count * sizeof(uint16_t));
 			for (i = 0; i < vertex_count; i++) {
 				memcpy_neon(&vertices[n], &object->v, sizeof(vector3f));
 				memcpy_neon(&colors[n], &object_clr->v, sizeof(vector4f));
@@ -530,10 +530,10 @@ void glEnd(void) {
 		case SCE_GXM_PRIMITIVE_QUADS:
 			quad_n = vertex_count >> 2;
 			idx_count = quad_n * 6;
-			vertices = (vector3f *)gpu_pool_memalign(vertex_count * sizeof(vector3f), sizeof(vector3f));
-			colors = (vector4f *)gpu_pool_memalign(vertex_count * sizeof(vector4f), sizeof(vector4f));
+			vertices = (vector3f *)gpu_alloc_mapped_temp(vertex_count * sizeof(vector3f));
+			colors = (vector4f *)gpu_alloc_mapped_temp(vertex_count * sizeof(vector4f));
 			memset(vertices, 0, (vertex_count * sizeof(vector3f)));
-			indices = (uint16_t *)gpu_pool_memalign(idx_count * sizeof(uint16_t), sizeof(uint16_t));
+			indices = (uint16_t *)gpu_alloc_mapped_temp(idx_count * sizeof(uint16_t));
 			int i, j;
 			for (i = 0; i < quad_n; i++) {
 				indices[i * 6] = i * 4;

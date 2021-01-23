@@ -22,6 +22,8 @@
  */
 
 #include "../shared.h"
+
+#define STB_DXT_IMPLEMENTATION
 #include "stb_dxt.h"
 
 #ifndef MIN
@@ -115,7 +117,7 @@ void *gpu_alloc_mapped(size_t size, vglMemType type) {
 		if (res == NULL)
 			res = vgl_mem_alloc(size, VGL_MEM_SLOW);
 	}
-
+	
 	return res;
 }
 
@@ -182,44 +184,11 @@ void gpu_fragment_usse_free_mapped(void *addr) {
 	vgl_mem_free(addr);
 }
 
-void *gpu_pool_malloc(unsigned int size) {
-	// Reserving vitaGL mempool space
-	if ((pool_index + size) < pool_size) {
-		void *addr = (void *)((unsigned int)pool_addr + pool_index);
-		pool_index += size;
-		return addr;
-	}
-
-	return NULL;
-}
-
-void *gpu_pool_memalign(unsigned int size, unsigned int alignment) {
-	// Aligning requested memory size
-	unsigned int new_index = ALIGN(pool_index, alignment);
-
-	// Reserving vitaGL mempool space
-	if ((new_index + size) < pool_size) {
-		void *addr = (void *)((unsigned int)pool_addr + new_index);
-		pool_index = new_index + size;
-		return addr;
-	}
-	return NULL;
-}
-
-unsigned int gpu_pool_free_space() {
-	// Returning vitaGL available mempool space
-	return pool_size - pool_index;
-}
-
-void gpu_pool_reset() {
-	// Resetting vitaGL available mempool space
-	pool_index = 0;
-}
-
-void gpu_pool_init(uint32_t temp_pool_size) {
-	// Allocating vitaGL mempool
-	pool_size = temp_pool_size;
-	pool_addr = gpu_alloc_mapped(temp_pool_size, VGL_MEM_RAM);
+void *gpu_alloc_mapped_temp(size_t size) {
+	// Allocating memblock and marking it for garbage collection
+	void *res = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	markAsDirty(res);
+	return res;
 }
 
 int tex_format_to_bytespp(SceGxmTextureFormat format) {

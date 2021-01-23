@@ -141,6 +141,7 @@ extern "C" {
 #define GL_SHORT                                     0X1402
 #define GL_UNSIGNED_SHORT                            0X1403
 #define GL_FLOAT                                     0X1406
+#define GL_HALF_FLOAT                                0x140B
 #define GL_FIXED                                     0X140C
 #define GL_INVERT                                    0X150A
 #define GL_MODELVIEW                                 0X1700
@@ -425,6 +426,7 @@ void glUniform1i(GLint location, GLint v0);
 void glUniform2f(GLint location, GLfloat v0, GLfloat v1);
 void glUniform2i(GLint location, GLint v0, GLint v1);
 void glUniform2fv(GLint location, GLsizei count, const GLfloat *value);
+void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
 void glUniform3fv(GLint location, GLsizei count, const GLfloat *value);
 void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
 void glUniform4fv(GLint location, GLsizei count, const GLfloat *value);
@@ -484,18 +486,17 @@ void vglFree(void *addr);
 SceGxmTexture *vglGetGxmTexture(GLenum target);
 void *vglGetTexDataPointer(GLenum target);
 GLboolean vglHasRuntimeShaderCompiler(void);
-void vglInit(uint32_t gpu_pool_size);
-void vglInitExtended(uint32_t gpu_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa);
-void vglInitWithCustomSizes(uint32_t gpu_pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa);
+void vglInit(void);
+void vglInitExtended(int width, int height, int ram_threshold, SceGxmMultisampleMode msaa);
+void vglInitWithCustomSizes(int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa);
 size_t vglMemFree(vglMemType type);
 void vglSetParamBufferSize(uint32_t size);
 void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, int32_t use_fastprecision, int32_t use_fastint);
-void vglStartRendering();
-void vglStopRendering();
-void vglStopRenderingInit();
-void vglStopRenderingTerm();
+void vglSwapBuffers(void);
+void vglStartRendering(void);
+void vglStopRendering(GLboolean swap_buffers);
 void vglTexImageDepthBuffer(GLenum target);
-void vglUpdateCommonDialog();
+void vglUpdateCommonDialog(void);
 void vglUseTripleBuffering(GLboolean usage);
 void vglUseVram(GLboolean usage);
 void vglUseVramForUSSE(GLboolean usage);
