@@ -229,11 +229,10 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
 #endif
-	
+
 	// Aliasing to make code more readable
 	texture *tex = &texture_slots[tex_id];
 	
-
 	// Extracting texture data
 	fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
 	fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
