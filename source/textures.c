@@ -42,9 +42,6 @@ void glGenTextures(GLsizei n, GLuint *res) {
 	}
 #endif
 
-	// Aliasing to make code more readable
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
-
 	// Reserving a texture and returning its id if available
 	int i, j = 0;
 	for (i = 1; i < TEXTURES_NUM; i++) {

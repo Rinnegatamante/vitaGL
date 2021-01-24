@@ -418,6 +418,8 @@ void glEnd(void) {
 		vertex_count = 0;
 		return;
 	}
+	
+	sceneReset();
 
 	// Aliasing server texture unit and texture id for better code readability
 	texture_unit *tex_unit = &texture_units[server_texture_unit];

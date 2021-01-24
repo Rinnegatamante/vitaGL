@@ -84,14 +84,14 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 	}
 }
 
-void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers) {
+void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 	while (n > 0) {
-		framebuffer *fb = (framebuffer *)framebuffers[n--];
+		framebuffer *fb = (framebuffer *)ids[--n];
 		if (fb) {
 			fb->active = 0;
 			if (fb->target) {
@@ -160,6 +160,21 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
+	
+		// Detaching attached texture if passed texture ID is 0
+		if (tex_id == 0) {
+			if (fb->target) {
+				sceGxmDestroyRenderTarget(fb->target);
+				fb->target = NULL;
+			}
+			if (fb->depth_buffer_addr) { // (FIXME: This probably shouldn't be here)
+				vgl_mem_free(fb->depth_buffer_addr);
+				vgl_mem_free(fb->stencil_buffer_addr);
+				fb->depth_buffer_addr = NULL;
+				fb->stencil_buffer_addr = NULL;
+			}
+			return;
+		}
 
 		// Allocating colorbuffer
 		sceGxmColorSurfaceInit(
@@ -214,9 +229,10 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
 #endif
-
+	
 	// Aliasing to make code more readable
 	texture *tex = &texture_slots[tex_id];
+	
 
 	// Extracting texture data
 	fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
@@ -228,6 +244,21 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
+	
+		// Detaching attached texture if passed texture ID is 0
+		if (tex_id == 0) {
+			if (fb->target) {
+				sceGxmDestroyRenderTarget(fb->target);
+				fb->target = NULL;
+			}
+			if (fb->depth_buffer_addr) { // (FIXME: This probably shouldn't be here)
+				vgl_mem_free(fb->depth_buffer_addr);
+				vgl_mem_free(fb->stencil_buffer_addr);
+				fb->depth_buffer_addr = NULL;
+				fb->stencil_buffer_addr = NULL;
+			}
+			return;
+		}
 
 		// Allocating colorbuffer
 		sceGxmColorSurfaceInit(

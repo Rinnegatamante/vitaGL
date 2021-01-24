@@ -204,8 +204,6 @@ static const struct {
 	{ "vglMemFree", (void *)vglMemFree },
 	{ "vglSetParamBufferSize", (void *)vglSetParamBufferSize },
 	{ "vglSetupRuntimeShaderCompiler", (void *)vglSetupRuntimeShaderCompiler },
-	{ "vglStartRendering", (void *)vglStartRendering },
-	{ "vglStopRendering", (void *)vglStopRendering },
 	{ "vglSwapBuffers", (void *)vglSwapBuffers },
 	{ "vglTexImageDepthBuffer", (void *)vglTexImageDepthBuffer },
 	{ "vglUpdateCommonDialog", (void *)vglUpdateCommonDialog },

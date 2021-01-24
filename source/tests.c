@@ -246,6 +246,8 @@ void update_alpha_test_settings() {
 }
 
 void update_scissor_test() {
+	sceneReset();
+	
 	// Setting current vertex program to clear screen one and fragment program to scissor test one
 	sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 	sceGxmSetFragmentProgram(gxm_context, scissor_test_fragment_program);

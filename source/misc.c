@@ -324,6 +324,7 @@ void glDisable(GLenum cap) {
 }
 
 void glClear(GLbitfield mask) {
+	sceneReset();
 	
 	// Invalidating viewport and culling
 	invalidate_viewport();

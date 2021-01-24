@@ -981,8 +981,7 @@ EGLBoolean eglSwapInterval(EGLDisplay display, EGLint interval) {
 }
 
 EGLBoolean eglSwapBuffers(EGLDisplay display, EGLSurface surface) {
-	vglStopRendering(GL_TRUE);
-	vglStartRendering();
+	vglSwapBuffers();
 }
 
 // openGL implementation
@@ -1598,7 +1597,8 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p);
-		
+	sceneReset();
+	
 	if (cur_program != 0) {
 		_glDrawArrays_CustomShadersIMPL(first + count);
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
@@ -1835,8 +1835,11 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
+
+	
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p);
+	sceneReset();
 		
 	if (cur_program != 0) {
 		gpubuffer *gpu_buf = (gpubuffer*)index_array_unit;
@@ -2171,6 +2174,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p);
+	sceneReset();
 
 	if (cur_program != 0) {
 		_vglDrawObjects_CustomShadersIMPL(implicit_wvp);

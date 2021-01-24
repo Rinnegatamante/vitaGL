@@ -37,7 +37,6 @@ void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfac
 static SceGxmSyncObject *gxm_sync_objects[DISPLAY_MAX_BUFFER_COUNT]; // Display sync objects
 unsigned int gxm_front_buffer_index; // Display front buffer id
 unsigned int gxm_back_buffer_index; // Display back buffer id
-static unsigned int gxm_scene_flags = 0; // Current gxm scene flags
 
 static void *gxm_shader_patcher_buffer_addr; // Shader PAtcher buffer memblock starting address
 static void *gxm_shader_patcher_vertex_usse_addr; // Shader Patcher vertex USSE memblock starting address
@@ -49,6 +48,8 @@ static SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil sur
 
 static SceUID shared_fb; // In-use hared framebuffer identifier
 static SceSharedFbInfo shared_fb_info; // In-use shared framebuffer info struct
+static void *in_use_framebuffer = (void*)0xDEADBEEF; // Currently in use framebuffer
+static GLboolean needs_end_scene = GL_FALSE; // Flag for gxm end scene requirement at scene reset
 
 SceGxmContext *gxm_context; // sceGxm context instance
 GLenum vgl_error = GL_NO_ERROR; // Error returned by glGetError
@@ -388,54 +389,59 @@ void vglUseTripleBuffering(GLboolean usage) {
 	gxm_display_buffer_count = usage ? 3 : 2;
 }
 
-void vglStartRendering(void) {
-	// Starting drawing scene
-	is_rendering_display = active_write_fb == NULL;
-	if (is_rendering_display) { // Default framebuffer is used
-		if (system_app_mode) {
-			sceSharedFbBegin(shared_fb, &shared_fb_info);
-			shared_fb_info.vsync = vblank;
-			gxm_back_buffer_index = (shared_fb_info.index + 1) % 2;
-		}
-		sceGxmBeginScene(gxm_context, gxm_scene_flags, gxm_render_target,
-			NULL, NULL,
-			gxm_sync_objects[gxm_back_buffer_index],
-			&gxm_color_surfaces[gxm_back_buffer_index],
-			&gxm_depth_stencil_surface);
-		gxm_scene_flags &= ~SCE_GXM_SCENE_VERTEX_WAIT_FOR_DEPENDENCY;
-	} else {
-		gxm_scene_flags |= SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY;
-		sceGxmBeginScene(gxm_context, gxm_scene_flags, gxm_render_target,
-			NULL, NULL, NULL,
-			&active_write_fb->colorbuffer,
-			&active_write_fb->depthbuffer);
-		gxm_scene_flags |= SCE_GXM_SCENE_VERTEX_WAIT_FOR_DEPENDENCY;
-		gxm_scene_flags &= ~SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY;
-	}
-
-	// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
-	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-
-	if (scissor_test_state)
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
-	else
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
-}
-
-void vglStopRendering(GLboolean swap_buffers) {
-	// Ending drawing scene
+void sceneEnd(void) {
+	// Ends current gxm scene
 	sceGxmEndScene(gxm_context, NULL, NULL);
 	if (system_app_mode && vblank)
 		sceDisplayWaitVblankStart();
+}
+
+void sceneReset(void) {
+	if (in_use_framebuffer != active_write_fb) {
+		in_use_framebuffer = active_write_fb;
 		
-	// Updating display and garbage collecting
-	if (swap_buffers)
-		vglSwapBuffers();
+		// Ending drawing scene
+		if (needs_end_scene)
+			sceneEnd();
+		else
+			needs_end_scene = GL_TRUE;
+
+		// Starting drawing scene
+		is_rendering_display = (!active_write_fb || !active_write_fb->depth_buffer_addr);
+		if (is_rendering_display) { // Default framebuffer is used
+			if (system_app_mode) {
+				sceSharedFbBegin(shared_fb, &shared_fb_info);
+				shared_fb_info.vsync = vblank;
+				gxm_back_buffer_index = (shared_fb_info.index + 1) % 2;
+			}
+			sceGxmBeginScene(gxm_context, 0, gxm_render_target,
+				NULL, NULL,
+				gxm_sync_objects[gxm_back_buffer_index],
+				&gxm_color_surfaces[gxm_back_buffer_index],
+				&gxm_depth_stencil_surface);
+		} else {
+			sceGxmBeginScene(gxm_context, 0, active_write_fb->target,
+				NULL, NULL, NULL,
+				&active_write_fb->colorbuffer,
+				&active_write_fb->depthbuffer);
+		}
+
+		// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
+		setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+
+		if (scissor_test_state)
+			sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
+		else
+			sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
+	
+	}
 }
 
 void vglSwapBuffers() {
-	if (is_rendering_display) { // Default framebuffer is used
-		// Properly requesting a display update
+	needs_end_scene = GL_FALSE;
+	sceneEnd();
+	
+	if (!in_use_framebuffer){	
 		if (system_app_mode)
 			sceSharedFbEnd(shared_fb);
 		else {
@@ -447,6 +453,7 @@ void vglSwapBuffers() {
 			gxm_back_buffer_index = (gxm_back_buffer_index + 1) % gxm_display_buffer_count;
 		}
 	}
+	in_use_framebuffer = (void*)0xDEADBEEF;
 	
 	// Purging all elements marked for deletion
 	int i;
