@@ -72,7 +72,7 @@ static GLboolean is_rendering_display = GL_FALSE; // Flag for when drawing witho
 void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
 int frame_purge_idx = 0; // Index for currently populatable purge list
 int frame_elem_purge_idx = 0; // Index for currently populatable purge list element
-static int frame_purge_clean_idx = FRAME_PURGE_FREQ - 1;
+static int frame_purge_clean_idx = 1;
 
 // sceDisplay callback data
 struct display_queue_callback_data {

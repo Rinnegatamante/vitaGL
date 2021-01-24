@@ -879,7 +879,7 @@ void vglInitWithCustomSizes(int width, int height, int ram_pool_size, int cdram_
 	}
 	
 	// Init purge lists
-	for (i = 0; i < DISPLAY_MAX_BUFFER_COUNT; i++) {
+	for (i = 0; i < FRAME_PURGE_FREQ; i++) {
 		frame_purge_list[i][0] = NULL;
 	}
 
