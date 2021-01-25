@@ -232,6 +232,7 @@ extern framebuffer *in_use_framebuffer; // Currently in use framebuffer
 extern SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program
 extern vector4f *scissor_test_vertices; // Scissor test region vertices
 extern SceUID scissor_test_vertices_uid; // Scissor test vertices memblock id
+extern GLboolean skip_scene_reset;
 
 extern uint16_t *depth_clear_indices; // Memblock starting address for clear screen indices
 

@@ -44,6 +44,7 @@ typedef struct scissor_region {
 	int y;
 	int w;
 	int h;
+	int gl_h;
 } scissor_region;
 
 // Viewport struct

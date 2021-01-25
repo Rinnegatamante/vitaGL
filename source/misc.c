@@ -234,6 +234,7 @@ void glEnable(GLenum cap) {
 		break;
 	case GL_SCISSOR_TEST:
 		scissor_test_state = GL_TRUE;
+		sceneReset();
 		update_scissor_test();
 		break;
 	case GL_CULL_FACE:
@@ -297,6 +298,7 @@ void glDisable(GLenum cap) {
 		break;
 	case GL_SCISSOR_TEST:
 		scissor_test_state = GL_FALSE;
+		sceneReset();
 		update_scissor_test();
 		break;
 	case GL_CULL_FACE:

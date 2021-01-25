@@ -401,7 +401,7 @@ void sceneEnd(void) {
 
 void sceneReset(void) {
 	if (in_use_framebuffer != active_write_fb) {
-		
+		in_use_framebuffer = active_write_fb;
 		
 		// Ending drawing scene
 		if (needs_end_scene)
@@ -432,20 +432,24 @@ void sceneReset(void) {
 		// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
 #ifndef HAVE_UNFLIPPED_VBOS
 		if (is_rendering_display != old_rendering_display) {
-			y_scale = -y_scale;
-			setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+			glViewport(gl_viewport.x, gl_viewport.y, gl_viewport.w, gl_viewport.h);
 			old_rendering_display = is_rendering_display;
 			change_cull_mode();
+			skip_scene_reset = GL_TRUE;
+			glScissor(region.x, region.y, region.w, region.gl_h);
+			skip_scene_reset = GL_FALSE;
 		} else
 #endif
 			setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 
 		if (scissor_test_state)
 			sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
-		else
-			sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
-		
-		in_use_framebuffer = active_write_fb;
+		else {
+			if (is_rendering_display)
+				sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
+			else
+				sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, in_use_framebuffer->width - 1, in_use_framebuffer->height - 1);
+		}
 	}
 }
 

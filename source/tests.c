@@ -36,6 +36,7 @@ GLboolean scissor_test_state = GL_FALSE; // Current state for GL_SCISSOR_TEST
 SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program
 vector4f *scissor_test_vertices = NULL; // Scissor test region vertices
 SceUID scissor_test_vertices_uid; // Scissor test vertices memblock id
+GLboolean skip_scene_reset = GL_FALSE;
 
 // Stencil Test
 uint8_t stencil_mask_front = 0xFF; // Current in use mask for stencil test on front
@@ -246,7 +247,6 @@ void update_alpha_test_settings() {
 }
 
 void update_scissor_test() {
-	sceneReset();
 	
 	// Setting current vertex program to clear screen one and fragment program to scissor test one
 	sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
@@ -319,7 +319,7 @@ void resetScissorTestRegion(void) {
 	// Setting scissor test region to default values
 	region.x = region.y = 0;
 	region.w = DISPLAY_WIDTH;
-	region.h = DISPLAY_HEIGHT;
+	region.h = region.gl_h = DISPLAY_HEIGHT;
 }
 
 /*
@@ -338,13 +338,19 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 
 	// Converting openGL scissor test region to sceGxm one
 	region.x = x;
-	region.y = DISPLAY_HEIGHT - y - height;
 	region.w = width;
 	region.h = height;
+#ifndef HAVE_UNFLIPPED_VBOS
+	region.y = (is_rendering_display ? DISPLAY_HEIGHT : in_use_framebuffer->height) - y - height;
+#else
+	region.y = is_rendering_display ? (DISPLAY_HEIGHT - y - height) : y;
+#endif
 
 	// Updating in use scissor test parameters if GL_SCISSOR_TEST is enabled
-	if (scissor_test_state)
+	if (scissor_test_state) {
+		if (!skip_scene_reset) sceneReset();
 		update_scissor_test();
+	}
 }
 
 void glDepthFunc(GLenum func) {
