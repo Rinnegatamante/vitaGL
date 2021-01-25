@@ -313,94 +313,97 @@ GLenum glCheckFramebufferStatus(GLenum target) {
 }
 
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data) {
-	/*
-	 * Callbacks are actually used to just perform down/up-sampling
-	 * between U8 texture formats. Reads are expected to give as result
-	 * a RGBA sample that will be wrote depending on texture format
-	 * by the write callback
-	 */
-	void (*write_cb)(void *, uint32_t) = NULL;
-	uint32_t (*read_cb)(void *) = NULL;
-	
-	GLboolean fast_store = GL_FALSE;
-	uint8_t *src;
-	int stride, src_bpp, dst_bpp;
-	if (active_read_fb) {
-		switch (active_read_fb->data_type) {
-		case GL_RGBA:
-			write_cb = writeRGBA;
-			src_bpp = 4;
-			break;
-		case GL_RGB:
-			write_cb = writeRGB;
-			src_bpp = 3;
-			break;
-		default:
-			break;
-		}
-		if (format == active_read_fb->data_type)
-			fast_store = GL_TRUE;
-		src = (uint8_t*)active_read_fb->data;
-		y = active_read_fb->height - (height + y);
-		stride = active_read_fb->stride;
-	} else {
-		src = (uint8_t*)gxm_color_surfaces_addr[gxm_back_buffer_index];
-		y = DISPLAY_HEIGHT - (height + y);
-		stride = DISPLAY_STRIDE * 4;
-		src_bpp = 4;
-		if (format == GL_RGBA)
-			fast_store = GL_TRUE;
-	}
-	y *= stride;
-	
-	if (!fast_store) {
-		switch (format) {
-		case GL_RGBA:
-			switch (type) {
-			case GL_UNSIGNED_BYTE:
-				read_cb = readRGBA;
-				break;
-			default:
-				SET_GL_ERROR(GL_INVALID_ENUM)
-				break;
-			}
-			break;
-		case GL_RGB:
-			switch (type) {
-			case GL_UNSIGNED_BYTE:
-				read_cb = readRGB;
-				break;
-			default:
-				SET_GL_ERROR(GL_INVALID_ENUM)
-				break;
-			}
-			break;
-		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
-			break;
-		}
-	}
-	
-	int i = 0;
-	if (fast_store) {
-		while (i < height) {
-			memcpy_neon(data, &src[y + x * src_bpp], width * src_bpp);
-			y += stride;
-			i++;
-		}
-	} else {
-		int j;
-		uint8_t *data_u8;
-		for (i = 0; i < height; i++) {
-			src = &src[y + i * stride + x * src_bpp];
-			for (j = 0; j < width; j++) {
-				uint32_t clr = read_cb(src);
-				write_cb(data_u8, clr);
-				src += src_bpp;
-				data_u8 += dst_bpp;
-			}
-		}
-	}
+    /*
+     * Callbacks are actually used to just perform down/up-sampling
+     * between U8 texture formats. Reads are expected to give as result
+     * a RGBA sample that will be wrote depending on texture format
+     * by the write callback
+     */
+    void (*write_cb)(void *, uint32_t) = NULL;
+    uint32_t (*read_cb)(void *) = NULL;
+    
+    GLboolean fast_store = GL_FALSE;
+    uint8_t *src;
+    int stride, src_bpp, dst_bpp;
+    if (active_read_fb) {
+        switch (active_read_fb->data_type) {
+        case GL_RGBA:
+            read_cb = readRGBA;
+            src_bpp = 4;
+            break;
+        case GL_RGB:
+            read_cb = readRGB;
+            src_bpp = 3;
+            break;
+        default:
+            break;
+        }
+        if (format == active_read_fb->data_type)
+            fast_store = GL_TRUE;
+        src = (uint8_t*)active_read_fb->data;
+        stride = active_read_fb->stride;
+        y = (active_read_fb->height - (height + y)) * stride;
+    } else {
+        src = (uint8_t*)gxm_color_surfaces_addr[gxm_back_buffer_index];
+        stride = DISPLAY_STRIDE * 4;
+        y = (DISPLAY_HEIGHT - (height + y)) * stride;
+        src_bpp = 4;
+        if (format == GL_RGBA)
+            fast_store = GL_TRUE;
+        else
+            read_cb = readRGBA;
+    }
+    
+    if (!fast_store) {
+        switch (format) {
+        case GL_RGBA:
+            switch (type) {
+            case GL_UNSIGNED_BYTE:
+                write_cb = writeRGBA;
+                break;
+            default:
+                SET_GL_ERROR(GL_INVALID_ENUM)
+                break;
+            }
+            break;
+        case GL_RGB:
+            switch (type) {
+            case GL_UNSIGNED_BYTE:
+                write_cb = writeRGB;
+                break;
+            default:
+                SET_GL_ERROR(GL_INVALID_ENUM)
+                break;
+            }
+            break;
+        default:
+            SET_GL_ERROR(GL_INVALID_ENUM)
+            break;
+        }
+    }
+    
+    uint8_t *data_u8 = data + (width * src_bpp * (height - 1));
+    int i;
+    if (fast_store) {
+        for (i = 0; i < height; i++) {
+            memcpy_neon(data_u8, &src[y + x * src_bpp], width * src_bpp);
+            y += stride;
+            data_u8 -= width * src_bpp;
+        }
+    } else {
+        int j;
+        for (i = 0; i < height; i++) {
+            src = &src[y + i * stride + x * src_bpp];
+			uint8_t *line_u8 = data_u8;
+            for (j = 0; j < width; j++) {
+                uint32_t clr = read_cb(src);
+                write_cb(line_u8, clr);
+                src += src_bpp;
+                line_u8 += dst_bpp;
+            }
+			data_u8 -= width * src_bpp;
+        }
+    }
 }
 
 /* vgl* */
