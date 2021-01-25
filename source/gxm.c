@@ -402,6 +402,7 @@ void sceneEnd(void) {
 
 void sceneReset(void) {
 	if (in_use_framebuffer != active_write_fb || needs_scene_reset) {
+		needs_scene_reset = GL_FALSE;
 		in_use_framebuffer = active_write_fb;
 		
 		// Ending drawing scene
