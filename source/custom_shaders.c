@@ -889,7 +889,7 @@ void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	memcpy_neon(u->data, value, u->size * sizeof(float));
+	memcpy_neon(u->data, value, count * sizeof(float));
 }
 
 void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
@@ -901,7 +901,7 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	memcpy_neon(u->data, value, u->size * sizeof(float));
+	memcpy_neon(u->data, value, count * 2 * sizeof(float));
 }
 
 void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
@@ -927,7 +927,7 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	memcpy_neon(u->data, value, u->size * sizeof(float));
+	memcpy_neon(u->data, value, count * 3 * sizeof(float));
 }
 
 void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
@@ -954,7 +954,7 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	memcpy_neon(u->data, value, u->size * sizeof(float));
+	memcpy_neon(u->data, value, count * 4 * sizeof(float));
 }
 
 void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
@@ -966,7 +966,7 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, cons
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	memcpy_neon(u->data, value, u->size * sizeof(float));
+	memcpy_neon(u->data, value, count * 9 * sizeof(float));
 }
 
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
@@ -978,7 +978,7 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	memcpy_neon(u->data, value, u->size * sizeof(float));
+	memcpy_neon(u->data, value, count * 16 * sizeof(float));
 }
 
 void glEnableVertexAttribArray(GLuint index) {
@@ -1113,7 +1113,11 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 	if (param == NULL)
 		return -1;
 	
-	return (sceGxmProgramParameterGetResourceIndex(param) / sizeof(uint32_t));
+	int i;
+	for (i = 0; i < p->attr_highest_idx; i++) {
+		if (p->attr[i].regIndex == sceGxmProgramParameterGetResourceIndex(param))
+			return i;
+	}
 }
 
 /*

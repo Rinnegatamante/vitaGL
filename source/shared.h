@@ -89,7 +89,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #define SET_GL_ERROR(x) \
 	vgl_error = x;      \
 	return;
-	
+
 #ifdef HAVE_SOFTFP_ABI
 extern __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale);
 #define setViewport sceGxmSetViewport_sfp
@@ -151,6 +151,7 @@ extern SceGxmMultisampleMode msaa_mode;
 extern GLboolean use_extra_mem;
 extern blend_config blend_info;
 extern SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
+extern GLboolean is_rendering_display; // Flag for when we're rendering without a framebuffer object
 
 // Debugging tool
 #ifdef ENABLE_LOG
@@ -225,6 +226,7 @@ extern GLboolean vblank; // Current setting for VSync
 extern uint32_t vertex_array_unit; // Current in-use vertex array buffer unit
 
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
+extern framebuffer *in_use_framebuffer; // Currently in use framebuffer
 
 // Scissor test shaders
 extern SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program
@@ -280,6 +282,9 @@ void resetCustomShaders(void); // Resets custom shaders
 void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
 void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count); // glDrawElements implementation for rendering with custom shaders
 void _glDrawArrays_CustomShadersIMPL(GLsizei count); // glDrawArrays implementation for rendering with custom shaders
+
+/* misc.c */
+void change_cull_mode(void); // Updates current cull mode
 
 /* misc functions */
 void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height); // Converts screen coords to local space

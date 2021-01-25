@@ -38,6 +38,10 @@ ifeq ($(HAVE_SHARK_FFP),1)
 CFLAGS  += -DHAVE_SHARK_FFP
 endif
 
+ifeq ($(HAVE_UNFLIPPED_FBOS),1)
+CFLAGS  += -DHAVE_UNFLIPPED_VBOS
+endif
+
 all: $(TARGET).a
 
 $(TARGET).a: $(OBJS)

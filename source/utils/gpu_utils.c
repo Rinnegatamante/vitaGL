@@ -48,6 +48,19 @@ static unsigned int pool_size = 0;
 vglMemType frag_usse_type;
 vglMemType vert_usse_type;
 
+// Taken from here: https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+uint32_t nearest_po2(uint32_t val) {
+	val--;
+	val |= val >> 1;
+	val |= val >> 2;
+	val |= val >> 4;
+	val |= val >> 8;
+	val |= val >> 16;
+	val++;
+
+	return val;
+}
+
 uint64_t morton_1(uint64_t x) {
 	x = x & 0x5555555555555555;
 	x = (x | (x >> 1)) & 0x3333333333333333;
@@ -315,9 +328,57 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	}
 }
 
-void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *)) {
+int gpu_get_compressed_mipchain_size(int level, int width, int height, SceGxmTextureFormat format) {
+	int size = 0;
+
+	for (int currentLevel = level; currentLevel >= 0; currentLevel--) {
+		switch (format) {
+		case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
+		case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
+			size += (MAX(width, 16) * MAX(height, 16) * 2 + 7) / 8;
+			break;
+		case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
+		case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
+			size += (MAX(width, 8) * MAX(height, 8) * 4 + 7) / 8;
+			break;
+		case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
+			size += CEIL(width / 8.0) * CEIL(height / 4.0) * 8.0;
+			break;
+		case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR:
+			size += CEIL(width / 4.0) * CEIL(height / 4.0) * 8.0;
+			break;
+		case SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR:
+		case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
+			size += CEIL(width / 4) * CEIL(height / 4) * 8;
+			break;
+		case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
+			size += CEIL(width / 4) * CEIL(height / 4) * 16;
+			break;
+		}
+		width *= 2;
+		height *= 2;
+	}
+
+	return size;
+}
+
+int gpu_get_compressed_mip_offset(int level, int width, int height, SceGxmTextureFormat format) {
+	return gpu_get_compressed_mipchain_size(level - 1, width * 2, height * 2, format);
+}
+
+void gpu_get_compressed_mip_size(int level, int width, int height, int *mip_width, int *mip_height) {
+	*mip_width = width;
+	*mip_height = height;
+
+	for (int currentLevel = 0; currentLevel < level; currentLevel++) {
+		*mip_width /= 2;
+		*mip_height /= 2;
+	}
+}
+
+void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *)) {
 	// If there's already a texture in passed texture object we first dealloc it
-	if (tex->valid)
+	if (tex->valid && !mip_level)
 		gpu_free_texture(tex);
 
 	// Getting texture format alignment
@@ -326,39 +387,66 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 	// Calculating swizzled compressed texture size on memory
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 
-	int tex_size = 0;
-	switch (format) {
-	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
-	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
-		tex_size = (MAX(w, 16) * MAX(h, 16) * 2 + 7) / 8;
-		break;
-	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
-	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
-		tex_size = (MAX(w, 8) * MAX(h, 8) * 4 + 7) / 8;
-		break;
-	case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
-		tex_size = CEIL(w / 8.0) * CEIL(h / 4.0) * 8.0;
-		break;
-	case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR:
-		tex_size = CEIL(w / 4.0) * CEIL(h / 4.0) * 8.0;
-		break;
-	case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
-		tex_size = (w * h) / 2;
-		break;
-	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-		tex_size = w * h;
-		break;
+	if (!image_size) {
+		switch (format) {
+		case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
+		case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
+			image_size = (MAX(w, 16) * MAX(h, 16) * 2 + 7) / 8;
+			break;
+		case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
+		case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
+			image_size = (MAX(w, 8) * MAX(h, 8) * 4 + 7) / 8;
+			break;
+		case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
+			image_size = CEIL(w / 8.0) * CEIL(h / 4.0) * 8.0;
+			break;
+		case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR:
+			image_size = CEIL(w / 4.0) * CEIL(h / 4.0) * 8.0;
+			break;
+		case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
+			image_size = (w * h) / 2;
+			break;
+		case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
+			image_size = w * h;
+			break;
+		}
 	}
-
-#ifndef SKIP_ERROR_HANDLING
-	// Check the given texture data size.
-	if (image_size != 0 && image_size != tex_size) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-#endif
 
 	// Allocating texture data buffer
-	void *texture_data = gpu_alloc_mapped_with_external(tex_size, &tex->mtype);
+	int tex_size = gpu_get_compressed_mipchain_size(mip_level, w, h, format);
+	int mip_size = gpu_get_compressed_mip_offset(mip_level + 1, w / 2, h / 2, format) - gpu_get_compressed_mip_offset(mip_level, w, h, format);
+	int mip_count, tex_width, tex_height;
+	void *texture_data;
+	if (mip_level) {
+		mip_count = sceGxmTextureGetMipmapCount(&tex->gxm_tex);
+		tex_width = sceGxmTextureGetWidth(&tex->gxm_tex);
+		tex_height = sceGxmTextureGetHeight(&tex->gxm_tex);
+		
+		if (mip_count >= mip_level)
+			texture_data = tex->data;
+		else {
+			texture_data = gpu_alloc_mapped_with_external(tex_size, &tex->mtype);
+			
+			int old_mip_w, old_mip_h;
+			gpu_get_compressed_mip_size(mip_count, nearest_po2(tex_width), nearest_po2(tex_height), &old_mip_w, &old_mip_h);
+
+			int old_data_size = gpu_get_compressed_mipchain_size(mip_count, old_mip_w, old_mip_h, format);
+			memcpy_neon(texture_data, tex->data, old_data_size);
+
+			gpu_free_texture(tex);
+
+			// Set new mip count.
+			mip_count = mip_level;
+		}
+	} else {
+		mip_count = mip_level;
+		tex_width = w;
+		tex_height = h;
+		
+		texture_data = gpu_alloc_mapped_with_external(tex_size, &tex->mtype);
+	}
+	
+	void *mip_data = texture_data + gpu_get_compressed_mip_offset(mip_level, w, h, format);
 
 	// Initializing texture data buffer
 	if (texture_data != NULL) {
@@ -380,7 +468,7 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 				}
 
 				// Performing swizzling and DXT compression
-				dxt_compress(texture_data, temp, w, h, alignment == 16);
+				dxt_compress(mip_data, temp, w, h, alignment == 16);
 
 				// Freeing temporary data if necessary
 				if (read_cb != readRGBA)
@@ -392,25 +480,25 @@ void gpu_alloc_compressed_texture(uint32_t w, uint32_t h, SceGxmTextureFormat fo
 				case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
 				case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
 				case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
-					memcpy_neon(texture_data, data, tex_size);
+					memcpy_neon(mip_data, data, image_size);
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-					swizzle_compressed_texture(texture_data, (void *)data, w, h, 1, 0);
+					swizzle_compressed_texture(mip_data, (void *)data, w, h, 1, 0);
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
-					swizzle_compressed_texture(texture_data, (void *)data, w, h, 0, 1);
+					swizzle_compressed_texture(mip_data, (void *)data, w, h, 0, 1);
 					break;
 				default:
-					swizzle_compressed_texture(texture_data, (void *)data, w, h, 0, 0);
+					swizzle_compressed_texture(mip_data, (void *)data, w, h, 0, 0);
 					break;
 				}
 			}
 
 		} else
-			memset(texture_data, 0, tex_size);
+			memset(mip_data, 0, mip_size);
 
 		// Initializing texture and validating it
-		sceGxmTextureInitSwizzled(&tex->gxm_tex, texture_data, format, w, h, 0);
+		sceGxmTextureInitSwizzled(&tex->gxm_tex, texture_data, format, tex_width, tex_height, mip_count);
 		tex->palette_UID = 0;
 		tex->valid = 1;
 		tex->data = texture_data;

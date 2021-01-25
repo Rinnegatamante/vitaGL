@@ -87,9 +87,10 @@ static void update_polygon_offset() {
 	}
 }
 
-static void change_cull_mode() {
+void change_cull_mode() {
 	// Setting proper cull mode in sceGxm depending to current openGL machine state
 	if (cull_face_state) {
+#ifdef HAVE_UNFLIPPED_VBOS
 		if ((gl_front_face == GL_CW) && (gl_cull_mode == GL_BACK))
 			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CCW);
 		else if ((gl_front_face == GL_CCW) && (gl_cull_mode == GL_BACK))
@@ -98,6 +99,16 @@ static void change_cull_mode() {
 			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CCW);
 		else if ((gl_front_face == GL_CW) && (gl_cull_mode == GL_FRONT))
 			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CW);
+#else
+		if ((gl_front_face == GL_CW) && (gl_cull_mode == GL_BACK))
+			sceGxmSetCullMode(gxm_context, is_rendering_display ? SCE_GXM_CULL_CCW : SCE_GXM_CULL_CW);
+		else if ((gl_front_face == GL_CCW) && (gl_cull_mode == GL_BACK))
+			sceGxmSetCullMode(gxm_context, is_rendering_display ? SCE_GXM_CULL_CW : SCE_GXM_CULL_CCW);
+		else if ((gl_front_face == GL_CCW) && (gl_cull_mode == GL_FRONT))
+			sceGxmSetCullMode(gxm_context, is_rendering_display ? SCE_GXM_CULL_CCW : SCE_GXM_CULL_CW);
+		else if ((gl_front_face == GL_CW) && (gl_cull_mode == GL_FRONT))
+			sceGxmSetCullMode(gxm_context, is_rendering_display ? SCE_GXM_CULL_CW : SCE_GXM_CULL_CCW);
+#endif
 		else if (gl_cull_mode == GL_FRONT_AND_BACK)
 			no_polygons_mode = GL_TRUE;
 	} else
@@ -174,10 +185,14 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
+	
 	x_scale = width >> 1;
 	x_port = x + x_scale;
 	y_scale = -(height >> 1);
-	y_port = DISPLAY_HEIGHT - y + y_scale;
+	y_port = (is_rendering_display ? DISPLAY_HEIGHT : in_use_framebuffer->height) - y + y_scale;
+#ifndef HAVE_UNFLIPPED_VBOS
+	if (!is_rendering_display) y_scale = -y_scale;
+#endif
 	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 	gl_viewport.x = x;
 	gl_viewport.y = y;
