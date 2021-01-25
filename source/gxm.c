@@ -48,8 +48,9 @@ static SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil sur
 
 static SceUID shared_fb; // In-use hared framebuffer identifier
 static SceSharedFbInfo shared_fb_info; // In-use shared framebuffer info struct
-framebuffer *in_use_framebuffer = (framebuffer*)0xDEADBEEF; // Currently in use framebuffer
+framebuffer *in_use_framebuffer = NULL; // Currently in use framebuffer
 static GLboolean needs_end_scene = GL_FALSE; // Flag for gxm end scene requirement at scene reset
+static GLboolean needs_scene_reset = GL_TRUE; // Flag for when a scene reset is required
 
 SceGxmContext *gxm_context; // sceGxm context instance
 GLenum vgl_error = GL_NO_ERROR; // Error returned by glGetError
@@ -400,7 +401,7 @@ void sceneEnd(void) {
 }
 
 void sceneReset(void) {
-	if (in_use_framebuffer != active_write_fb) {
+	if (in_use_framebuffer != active_write_fb || needs_scene_reset) {
 		in_use_framebuffer = active_write_fb;
 		
 		// Ending drawing scene
@@ -469,7 +470,7 @@ void vglSwapBuffers() {
 			gxm_back_buffer_index = (gxm_back_buffer_index + 1) % gxm_display_buffer_count;
 		}
 	}
-	in_use_framebuffer = (void*)0xDEADBEEF;
+	needs_scene_reset = GL_TRUE;
 	
 	// Purging all elements marked for deletion
 	int i;
