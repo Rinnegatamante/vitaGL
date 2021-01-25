@@ -69,7 +69,7 @@ float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 GLboolean system_app_mode = GL_FALSE; // Flag for system app mode usage
 static GLboolean gxm_initialized = GL_FALSE; // Current sceGxm state
 GLboolean is_rendering_display = GL_TRUE; // Flag for when drawing without fbo is being performed
-#ifndef HAVE_UNFLIPPED_VBOS
+#ifndef HAVE_UNFLIPPED_FBOS
 GLboolean old_rendering_display = GL_TRUE;
 #endif
 
@@ -430,7 +430,7 @@ void sceneReset(void) {
 		}
 
 		// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
-#ifndef HAVE_UNFLIPPED_VBOS
+#ifndef HAVE_UNFLIPPED_FBOS
 		if (is_rendering_display != old_rendering_display) {
 			glViewport(gl_viewport.x, gl_viewport.y, gl_viewport.w, gl_viewport.h);
 			old_rendering_display = is_rendering_display;

@@ -90,7 +90,7 @@ static void update_polygon_offset() {
 void change_cull_mode() {
 	// Setting proper cull mode in sceGxm depending to current openGL machine state
 	if (cull_face_state) {
-#ifdef HAVE_UNFLIPPED_VBOS
+#ifdef HAVE_UNFLIPPED_FBOS
 		if ((gl_front_face == GL_CW) && (gl_cull_mode == GL_BACK))
 			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CCW);
 		else if ((gl_front_face == GL_CCW) && (gl_cull_mode == GL_BACK))
@@ -190,7 +190,7 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 	x_port = x + x_scale;
 	y_scale = -(height >> 1);
 	y_port = (is_rendering_display ? DISPLAY_HEIGHT : in_use_framebuffer->height) - y + y_scale;
-#ifndef HAVE_UNFLIPPED_VBOS
+#ifndef HAVE_UNFLIPPED_FBOS
 	if (!is_rendering_display) y_scale = -y_scale;
 #endif
 	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
