@@ -436,7 +436,7 @@ void sceneReset(void) {
 			old_rendering_display = is_rendering_display;
 			change_cull_mode();
 			skip_scene_reset = GL_TRUE;
-			glScissor(region.x, region.y, region.w, region.gl_h);
+			glScissor(region.x, region.gl_y, region.w, region.h);
 			skip_scene_reset = GL_FALSE;
 		} else
 #endif
