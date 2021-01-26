@@ -110,8 +110,8 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 	case GL_POLYGON_OFFSET_POINT:
 		*params = pol_offset_point;
 		break;
-	case GL_ACTIVE_TEXTURE: // Active texture
-		*params = GL_FALSE;
+	case GL_DEPTH_WRITEMASK:
+		*params = depth_mask_state;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -228,6 +228,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		break;
 	case GL_READ_FRAMEBUFFER_BINDING:
 		data[0] = (GLint)active_read_fb;
+		break;
+	case GL_MAX_VERTEX_UNIFORM_VECTORS:
+		data[0] = 256;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)

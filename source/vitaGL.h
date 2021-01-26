@@ -117,6 +117,7 @@ extern "C" {
 #define GL_FOG_MODE                                  0x0B65
 #define GL_FOG_COLOR                                 0x0B66
 #define GL_DEPTH_TEST                                0x0B71
+#define GL_DEPTH_WRITEMASK                           0x0B72
 #define GL_STENCIL_TEST                              0x0B90
 #define GL_VIEWPORT                                  0x0BA2
 #define GL_MODELVIEW_MATRIX                          0x0BA6
@@ -284,6 +285,7 @@ extern "C" {
 #define GL_FRAMEBUFFER_COMPLETE                      0x8CD5
 #define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT 0x8CD7
 #define GL_FRAMEBUFFER                               0x8D40
+#define GL_MAX_VERTEX_UNIFORM_VECTORS                0x8DFB
 #define GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG          0x9137
 #define GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG          0x9138
 
