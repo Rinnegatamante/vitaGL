@@ -380,10 +380,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 	// If there's already a texture in passed texture object we first dealloc it
 	if (tex->valid && !mip_level)
 		gpu_free_texture(tex);
-
-	// Getting texture format alignment
-	uint8_t alignment = tex_format_to_alignment(format);
-
+	
 	// Calculating swizzled compressed texture size on memory
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 
@@ -411,10 +408,15 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 			break;
 		}
 	}
+	
+	uint32_t aligned_width = nearest_po2(w);
+	uint32_t aligned_height = nearest_po2(h);
+	if (!mip_level)
+		tex->is_npot = (aligned_width != w) || (aligned_height != h);
 
 	// Allocating texture data buffer
-	int tex_size = gpu_get_compressed_mipchain_size(mip_level, w, h, format);
-	int mip_size = gpu_get_compressed_mip_offset(mip_level + 1, w / 2, h / 2, format) - gpu_get_compressed_mip_offset(mip_level, w, h, format);
+	int tex_size = gpu_get_compressed_mipchain_size(mip_level, aligned_width, aligned_height, format);
+	int mip_size = gpu_get_compressed_mip_offset(mip_level + 1, aligned_width / 2, aligned_height / 2, format) - gpu_get_compressed_mip_offset(mip_level, aligned_width, aligned_height, format);
 	int mip_count, tex_width, tex_height;
 	void *texture_data;
 	if (mip_level) {
@@ -468,7 +470,8 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 				}
 
 				// Performing swizzling and DXT compression
-				dxt_compress(mip_data, temp, w, h, alignment == 16);
+				uint8_t alignment = tex_format_to_alignment(format);
+				dxt_compress(mip_data, temp, aligned_width, aligned_height, alignment == 16);
 
 				// Freeing temporary data if necessary
 				if (read_cb != readRGBA)
@@ -483,13 +486,13 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 					memcpy_neon(mip_data, data, image_size);
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-					swizzle_compressed_texture(mip_data, (void *)data, w, h, 1, 0);
+					swizzle_compressed_texture(mip_data, (void *)data, aligned_width, aligned_height, 1, 0);
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
-					swizzle_compressed_texture(mip_data, (void *)data, w, h, 0, 1);
+					swizzle_compressed_texture(mip_data, (void *)data, aligned_width, aligned_height, 0, 1);
 					break;
 				default:
-					swizzle_compressed_texture(mip_data, (void *)data, w, h, 0, 0);
+					swizzle_compressed_texture(mip_data, (void *)data, aligned_width, aligned_height, 0, 0);
 					break;
 				}
 			}
@@ -498,7 +501,8 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 			memset(mip_data, 0, mip_size);
 
 		// Initializing texture and validating it
-		sceGxmTextureInitSwizzled(&tex->gxm_tex, texture_data, format, tex_width, tex_height, mip_count);
+		if (tex->is_npot) sceGxmTextureInitSwizzledArbitrary(&tex->gxm_tex, texture_data, format, tex_width, tex_height, mip_count);
+		else sceGxmTextureInitSwizzled(&tex->gxm_tex, texture_data, format, tex_width, tex_height, mip_count);
 		tex->palette_UID = 0;
 		tex->valid = 1;
 		tex->data = texture_data;

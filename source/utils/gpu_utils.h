@@ -46,6 +46,7 @@ typedef struct texture {
 	SceGxmTextureAddrMode v_mode;
 	SceGxmTextureMipFilter mip_filter;
 	uint32_t lod_bias;
+	GLboolean is_npot;
 } texture;
 
 // Palette object struct
