@@ -49,6 +49,9 @@ static SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil sur
 static SceUID shared_fb; // In-use hared framebuffer identifier
 static SceSharedFbInfo shared_fb_info; // In-use shared framebuffer info struct
 framebuffer *in_use_framebuffer = NULL; // Currently in use framebuffer
+#ifndef HAVE_UNFLIPPED_FBOS
+framebuffer *old_framebuffer = NULL; // Framebuffer used in last scene
+#endif
 static GLboolean needs_end_scene = GL_FALSE; // Flag for gxm end scene requirement at scene reset
 static GLboolean needs_scene_reset = GL_TRUE; // Flag for when a scene reset is required
 
@@ -70,9 +73,6 @@ float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 GLboolean system_app_mode = GL_FALSE; // Flag for system app mode usage
 static GLboolean gxm_initialized = GL_FALSE; // Current sceGxm state
 GLboolean is_rendering_display = GL_TRUE; // Flag for when drawing without fbo is being performed
-#ifndef HAVE_UNFLIPPED_FBOS
-GLboolean old_rendering_display = GL_TRUE;
-#endif
 
 void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
 int frame_purge_idx = 0; // Index for currently populatable purge list
@@ -433,9 +433,9 @@ void sceneReset(void) {
 
 		// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
 #ifndef HAVE_UNFLIPPED_FBOS
-		if (is_rendering_display != old_rendering_display) {
+		if (old_framebuffer != in_use_framebuffer) {
+			old_framebuffer = in_use_framebuffer;
 			glViewport(gl_viewport.x, gl_viewport.y, gl_viewport.w, gl_viewport.h);
-			old_rendering_display = is_rendering_display;
 			change_cull_mode();
 			skip_scene_reset = GL_TRUE;
 			glScissor(region.x, region.gl_y, region.w, region.h);

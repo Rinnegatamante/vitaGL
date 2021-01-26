@@ -340,7 +340,7 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 	region.x = x;
 	region.w = width;
 	region.h = height;
-#ifndef HAVE_UNFLIPPED_FBOS
+#ifdef HAVE_UNFLIPPED_FBOS
 	region.y = (is_rendering_display ? DISPLAY_HEIGHT : in_use_framebuffer->height) - y - height;
 #else
 	region.y = is_rendering_display ? (DISPLAY_HEIGHT - y - height) : y;
