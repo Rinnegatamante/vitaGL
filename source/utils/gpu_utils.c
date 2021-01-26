@@ -101,20 +101,34 @@ void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
 	}
 }
 
-void swizzle_compressed_texture(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5, int ispvrt2bpp) {
+void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width, int tex_height, int region_x, int region_y, int region_width, int region_height, int isdxt5, int ispvrt2bpp) {
 	int blocksize = isdxt5 ? 16 : 8;
 
-	int s = MAX(w, h);
-	uint32_t num_blocks = (s * s) / 16;
+	int s = MAX(tex_width, tex_height);
+	uint32_t num_blocks = (s * s) / (ispvrt2bpp ? 32 : 16);
 	uint64_t d, offs_x, offs_y;
+	uint64_t dst_x, dst_y;
 	for (d = 0; d < num_blocks; d++) {
 		d2xy_morton(d, &offs_x, &offs_y);
-		if (offs_x * 4 >= h)
+		// If the block coords exceed input texture dimensions.
+		if ((offs_x * 4 >= region_height + region_y) || (offs_x * 4 < region_y)) {
+			// If the block coord is smaller than the Po2 aligned dimension, skip forward one block.
+			if (offs_x * 4 < tex_height)
+				dst += blocksize;
 			continue;
-		if (offs_y * (ispvrt2bpp ? 8 : 4) >= w)
+		}
+
+		if ((offs_y * (ispvrt2bpp ? 8 : 4) >= region_width + region_x) || (offs_y * (ispvrt2bpp ? 8 : 4) < region_x)) {
+			if (offs_y * (ispvrt2bpp ? 8 : 4) < tex_width)
+				dst += blocksize;
 			continue;
-		memcpy(dst, src + offs_y * blocksize + offs_x * (w / (ispvrt2bpp ? 8 : 4)) * blocksize, blocksize);
-		dst += isdxt5 ? 16 : 8;
+		}
+
+		dst_x = offs_x - (region_y / 4);
+		dst_y = offs_y - (region_x / (ispvrt2bpp ? 8 : 4));
+
+		memcpy(dst, src + dst_y * blocksize + dst_x * (region_width / (ispvrt2bpp ? 8 : 4)) * blocksize, blocksize);
+		dst += blocksize;
 	}
 }
 
@@ -486,13 +500,13 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 					memcpy_neon(mip_data, data, image_size);
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-					swizzle_compressed_texture(mip_data, (void *)data, aligned_width, aligned_height, 1, 0);
+					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, 1, 0);
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
-					swizzle_compressed_texture(mip_data, (void *)data, aligned_width, aligned_height, 0, 1);
+					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, 0, 1);
 					break;
 				default:
-					swizzle_compressed_texture(mip_data, (void *)data, aligned_width, aligned_height, 0, 0);
+					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, 0, 0);
 					break;
 				}
 			}
