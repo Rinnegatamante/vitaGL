@@ -50,7 +50,7 @@ extern GLboolean use_vram;
 // Internal runtime shader compiler settings
 int32_t compiler_fastmath = GL_TRUE;
 int32_t compiler_fastprecision = GL_FALSE;
-int32_t compiler_fastint = GL_FALSE;
+int32_t compiler_fastint = GL_TRUE;
 shark_opt compiler_opts = SHARK_OPT_DEFAULT;
 #endif
 
