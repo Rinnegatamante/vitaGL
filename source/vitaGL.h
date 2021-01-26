@@ -272,7 +272,10 @@ extern "C" {
 #define GL_VERTEX_SHADER                             0x8B31
 #define GL_SHADER_TYPE                               0x8B4F
 #define GL_COMPILE_STATUS                            0x8B81
+#define GL_LINK_STATUS                               0x8B82
 #define GL_INFO_LOG_LENGTH                           0x8B84
+#define GL_ATTACHED_SHADERS                          0x8B85
+#define GL_ACTIVE_ATTRIBUTES                         0x8B89
 #define GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG           0x8C00
 #define GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG           0x8C01
 #define GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG          0x8C02
@@ -380,6 +383,8 @@ void glGetBooleanv(GLenum pname, GLboolean *params);
 void glGetFloatv(GLenum pname, GLfloat *data);
 GLenum glGetError(void);
 void glGetIntegerv(GLenum pname, GLint *data);
+void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
+void glGetProgramiv(GLuint program, GLenum pname, GLint *params);
 void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 void glGetShaderiv(GLuint handle, GLenum pname, GLint *params);
 const GLubyte *glGetString(GLenum name);

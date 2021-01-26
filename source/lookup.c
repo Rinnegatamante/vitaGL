@@ -105,6 +105,8 @@ static const struct {
 	{ "glGetFloatv", (void *)glGetFloatv },
 	{ "glGetError", (void *)glGetError },
 	{ "glGetIntegerv", (void *)glGetIntegerv },
+	{ "glGetProgramInfoLog", (void *)glGetProgramInfoLog },
+	{ "glGetProgramiv", (void *)glGetProgramiv },
 	{ "glGetShaderInfoLog", (void *)glGetShaderInfoLog },
 	{ "glGetShaderiv", (void *)glGetShaderiv },
 	{ "glGetString", (void *)glGetString },

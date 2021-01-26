@@ -48,7 +48,7 @@ extern GLboolean use_vram;
 
 #ifdef HAVE_SHARK
 // Internal runtime shader compiler settings
-int32_t compiler_fastmath = GL_FALSE;
+int32_t compiler_fastmath = GL_TRUE;
 int32_t compiler_fastprecision = GL_FALSE;
 int32_t compiler_fastint = GL_FALSE;
 shark_opt compiler_opts = SHARK_OPT_DEFAULT;
@@ -74,11 +74,18 @@ typedef struct shader {
 	char *log;
 } shader;
 
+// Program status enum
+typedef enum prog_status {
+	PROG_INVALID,
+	PROG_UNLINKED,
+	PROG_LINKED
+} prog_status;
+
 // Program struct holding vertex/fragment shader info
 typedef struct program {
 	shader *vshader;
 	shader *fshader;
-	GLboolean valid;
+	uint8_t status;
 	GLboolean texunits[GL_MAX_TEXTURE_IMAGE_UNITS];
 	SceGxmVertexAttribute attr[GL_MAX_VERTEX_ATTRIBS];
 	SceGxmVertexStream stream[GL_MAX_VERTEX_ATTRIBS];
@@ -111,7 +118,7 @@ void resetCustomShaders(void) {
 	
 	// Init custom programs
 	for (i = 0; i < MAX_CUSTOM_PROGRAMS; i++) {
-		progs[i].valid = GL_FALSE;
+		progs[i].status = PROG_INVALID;
 	}
 	
 	// Init generic vertex attrib arrays
@@ -580,10 +587,12 @@ void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLcha
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
 
+	GLsizei len = 0;
 	if (s->log) {
-		*length = min(strlen(s->log), maxLength);
-		memcpy_neon(infoLog, s->log, *length);
+		len = min(strlen(s->log), maxLength);
+		memcpy_neon(infoLog, s->log, len);
 	}
+	if (length) *length = len;
 }
 
 void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length) {
@@ -663,7 +672,7 @@ void glAttachShader(GLuint prog, GLuint shad) {
 	program *p = &progs[prog - 1];
 
 	// Attaching shader to desired program
-	if (p->valid && s->valid) {
+	if (p->status == PROG_UNLINKED && s->valid) {
 		switch (s->type) {
 		case GL_VERTEX_SHADER:
 			p->vshader = s;
@@ -684,13 +693,15 @@ GLuint glCreateProgram(void) {
 	GLuint i, j, res = 0;
 	for (i = 1; i < (MAX_CUSTOM_PROGRAMS); i++) {
 		// Program slot found, reserving and initializing it
-		if (!(progs[i - 1].valid)) {
+		if (!(progs[i - 1].status)) {
 			res = i;
-			progs[i - 1].valid = GL_TRUE;
+			progs[i - 1].status = PROG_UNLINKED;
 			progs[i - 1].attr_num = 0;
 			progs[i - 1].stream_num = 0;
 			progs[i - 1].attr_idx = 0;
 			progs[i - 1].wvp = NULL;
+			progs[i - 1].vshader = NULL;
+			progs[i - 1].fshader = NULL;
 			progs[i - 1].vert_uniforms = NULL;
 			progs[i - 1].frag_uniforms = NULL;
 			progs[i - 1].attr_highest_idx = 1;
@@ -708,7 +719,7 @@ void glDeleteProgram(GLuint prog) {
 	program *p = &progs[prog - 1];
 
 	// Releasing both vertex and fragment programs from sceGxmShaderPatcher
-	if (p->valid) {
+	if (p->status) {
 		unsigned int count, i;
 		sceGxmShaderPatcherGetFragmentProgramRefCount(gxm_shader_patcher, p->fprog, &count);
 		for (i = 0; i < count; i++) {
@@ -728,13 +739,48 @@ void glDeleteProgram(GLuint prog) {
 			free(old);
 		}
 	}
-	p->valid = GL_FALSE;
+	p->status = PROG_INVALID;
+}
+
+void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog) {
+	if (length) *length = 0;
+}
+
+void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
+	// Grabbing passed program
+	program *p = &progs[progr - 1];
+	int i;
+	
+	switch (pname) {
+	case GL_LINK_STATUS:
+		*params = p->status == PROG_LINKED;
+		break;
+	case GL_INFO_LOG_LENGTH:
+		*params = 0;
+		break;
+	case GL_ATTACHED_SHADERS:
+		i = 0;
+		if (p->fshader) i++;
+		if (p->vshader) i++;
+		*params = i;
+		break;
+	case GL_ACTIVE_ATTRIBUTES:
+		*params = p->attr_num;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
 }
 
 void glLinkProgram(GLuint progr) {
 	// Grabbing passed program
 	program *p = &progs[progr - 1];
-		
+#ifndef SKIP_ERROR_HANDLING
+	if (!p->fshader->prog || !p->vshader->prog) return;
+#endif
+	p->status = PROG_LINKED;
+	
 	// Analyzing vertex shader
 	uint32_t i, cnt;
 	for (i = 0; i < GL_MAX_TEXTURE_IMAGE_UNITS; i++) {
