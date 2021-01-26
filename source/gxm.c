@@ -49,9 +49,7 @@ static SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil sur
 static SceUID shared_fb; // In-use hared framebuffer identifier
 static SceSharedFbInfo shared_fb_info; // In-use shared framebuffer info struct
 framebuffer *in_use_framebuffer = NULL; // Currently in use framebuffer
-#ifndef HAVE_UNFLIPPED_FBOS
 framebuffer *old_framebuffer = NULL; // Framebuffer used in last scene
-#endif
 static GLboolean needs_end_scene = GL_FALSE; // Flag for gxm end scene requirement at scene reset
 static GLboolean needs_scene_reset = GL_TRUE; // Flag for when a scene reset is required
 
@@ -432,16 +430,16 @@ void sceneReset(void) {
 		}
 
 		// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
-#ifndef HAVE_UNFLIPPED_FBOS
 		if (old_framebuffer != in_use_framebuffer) {
 			old_framebuffer = in_use_framebuffer;
 			glViewport(gl_viewport.x, gl_viewport.y, gl_viewport.w, gl_viewport.h);
-			change_cull_mode();
 			skip_scene_reset = GL_TRUE;
 			glScissor(region.x, region.gl_y, region.w, region.h);
 			skip_scene_reset = GL_FALSE;
-		} else
+#ifndef HAVE_UNFLIPPED_FBOS
+			change_cull_mode();
 #endif
+		} else
 			setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 
 		if (scissor_test_state)
