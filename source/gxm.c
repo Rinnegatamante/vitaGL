@@ -485,6 +485,9 @@ void vglSwapBuffers() {
 }
 
 void vglUpdateCommonDialog() {
+	needs_end_scene = GL_FALSE;
+	sceneEnd();
+
 	// Populating SceCommonDialog parameters
 	SceCommonDialogUpdateParam updateParam;
 	memset(&updateParam, 0, sizeof(updateParam));
@@ -499,6 +502,8 @@ void vglUpdateCommonDialog() {
 
 	// Updating sceCommonDialog
 	sceCommonDialogUpdate(&updateParam);
+
+	needs_scene_reset = GL_TRUE;
 }
 
 void glFinish(void) {
