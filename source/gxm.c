@@ -453,9 +453,26 @@ void sceneReset(void) {
 	}
 }
 
-void vglSwapBuffers() {
+void vglSwapBuffers(GLboolean has_commondialog) {
 	needs_end_scene = GL_FALSE;
 	sceneEnd();
+	
+	if (has_commondialog) {
+		// Populating SceCommonDialog parameters
+		SceCommonDialogUpdateParam updateParam;
+		memset(&updateParam, 0, sizeof(updateParam));
+		updateParam.renderTarget.colorFormat = SCE_GXM_COLOR_FORMAT_A8B8G8R8;
+		updateParam.renderTarget.surfaceType = SCE_GXM_COLOR_SURFACE_LINEAR;
+		updateParam.renderTarget.width = DISPLAY_WIDTH;
+		updateParam.renderTarget.height = DISPLAY_HEIGHT;
+		updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE;
+		updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_back_buffer_index];
+		updateParam.renderTarget.depthSurfaceData = gxm_depth_surface_addr;
+		updateParam.displaySyncObject = gxm_sync_objects[gxm_back_buffer_index];
+
+		// Updating sceCommonDialog
+		sceCommonDialogUpdate(&updateParam);
+	}
 	
 	if (!in_use_framebuffer){
 		if (system_app_mode)
@@ -482,23 +499,6 @@ void vglSwapBuffers() {
 	frame_purge_clean_idx = (frame_purge_clean_idx + 1) % FRAME_PURGE_FREQ;
 	frame_purge_idx = (frame_purge_idx + 1) % FRAME_PURGE_FREQ;
 	frame_elem_purge_idx = 0;
-}
-
-void vglUpdateCommonDialog() {
-	// Populating SceCommonDialog parameters
-	SceCommonDialogUpdateParam updateParam;
-	memset(&updateParam, 0, sizeof(updateParam));
-	updateParam.renderTarget.colorFormat = SCE_GXM_COLOR_FORMAT_A8B8G8R8;
-	updateParam.renderTarget.surfaceType = SCE_GXM_COLOR_SURFACE_LINEAR;
-	updateParam.renderTarget.width = DISPLAY_WIDTH;
-	updateParam.renderTarget.height = DISPLAY_HEIGHT;
-	updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE;
-	updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_back_buffer_index];
-	updateParam.renderTarget.depthSurfaceData = gxm_depth_surface_addr;
-	updateParam.displaySyncObject = gxm_sync_objects[gxm_back_buffer_index];
-
-	// Updating sceCommonDialog
-	sceCommonDialogUpdate(&updateParam);
 }
 
 void glFinish(void) {

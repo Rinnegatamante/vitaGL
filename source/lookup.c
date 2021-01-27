@@ -208,7 +208,6 @@ static const struct {
 	{ "vglSetupRuntimeShaderCompiler", (void *)vglSetupRuntimeShaderCompiler },
 	{ "vglSwapBuffers", (void *)vglSwapBuffers },
 	{ "vglTexImageDepthBuffer", (void *)vglTexImageDepthBuffer },
-	{ "vglUpdateCommonDialog", (void *)vglUpdateCommonDialog },
 	{ "vglUseTripleBuffering", (void *)vglUseTripleBuffering },
 	{ "vglUseVram", (void *)vglUseVram },
 	{ "vglUseVramForUSSE", (void *)vglUseVramForUSSE },

@@ -981,7 +981,7 @@ EGLBoolean eglSwapInterval(EGLDisplay display, EGLint interval) {
 }
 
 EGLBoolean eglSwapBuffers(EGLDisplay display, EGLSurface surface) {
-	vglSwapBuffers();
+	vglSwapBuffers(GL_FALSE);
 }
 
 // openGL implementation

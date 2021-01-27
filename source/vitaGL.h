@@ -503,9 +503,8 @@ void vglInitWithCustomSizes(int width, int height, int ram_pool_size, int cdram_
 size_t vglMemFree(vglMemType type);
 void vglSetParamBufferSize(uint32_t size);
 void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, int32_t use_fastprecision, int32_t use_fastint);
-void vglSwapBuffers(void);
+void vglSwapBuffers(GLboolean has_commondialog);
 void vglTexImageDepthBuffer(GLenum target);
-void vglUpdateCommonDialog(void);
 void vglUseTripleBuffering(GLboolean usage);
 void vglUseVram(GLboolean usage);
 void vglUseVramForUSSE(GLboolean usage);
