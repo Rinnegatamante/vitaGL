@@ -103,8 +103,15 @@ void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
 
 void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width, int tex_height, int region_x, int region_y, int region_width, int region_height, int isdxt5, int ispvrt2bpp) {
 	const int blocksize = isdxt5 ? 16 : 8;
-	const int s = MAX(tex_width, tex_height);
 	const uint32_t blockw = (ispvrt2bpp ? 8 : 4);
+
+	// round sizes up to block size
+	tex_width = ALIGN(tex_width, blockw);
+	tex_height = ALIGN(tex_height, 4);
+	region_width = ALIGN(region_width, blockw);
+	region_height = ALIGN(region_height, 4);
+
+	const int s = MAX(tex_width, tex_height);
 	const uint32_t num_blocks = (s * s) / (blockw * 4);
 
 	uint64_t d, offs_x, offs_y;
@@ -347,7 +354,7 @@ static inline int gpu_get_compressed_mip_size(int level, int width, int height, 
 	switch (format) {
 	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
 	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
-		return (MAX(width, 16) * MAX(height, 16) * 2 + 7) / 8;
+		return (MAX(width, 16) * MAX(height, 8) * 2 + 7) / 8;
 	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
 	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
 		return (MAX(width, 8) * MAX(height, 8) * 4 + 7) / 8;
@@ -471,9 +478,6 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 				// Freeing temporary data if necessary
 				if (read_cb != readRGBA)
 					free(temp);
-			} else if (image_size <= blocksize) {
-				// Just one block, no reason to swizzle
-				memcpy(mip_data, data, blocksize);
 			} else {
 				// Perform swizzling if necessary.
 				switch (format) {
