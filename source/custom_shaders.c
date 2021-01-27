@@ -62,6 +62,7 @@ typedef struct uniform {
 	void *chain;
 	float *data;
 	uint32_t size;
+	GLboolean is_alias;
 } uniform;
 
 // Generic shader struct
@@ -507,6 +508,19 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 }
 #endif
 
+float *getUniformAliasDataPtr(uniform *u, const char *name, uint32_t size) {
+	int i;
+	while (u) {
+		if (size == u->size) {
+			if (!strcmp(name, sceGxmProgramParameterGetName(u->ptr))) {
+				return u->data;
+			}
+		}
+		u = u->chain;
+	}
+	return NULL;
+}
+
 /*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -
@@ -729,7 +743,7 @@ void glDeleteProgram(GLuint prog) {
 		while (p->vert_uniforms) {
 			uniform *old = p->vert_uniforms;
 			p->vert_uniforms = (uniform *)p->vert_uniforms->chain;
-			free(old->data);
+			if (!old->is_alias) free(old->data);
 			free(old);
 		}
 		while (p->frag_uniforms) {
@@ -816,8 +830,14 @@ void glLinkProgram(GLuint progr) {
 			u->chain = p->vert_uniforms;
 			u->ptr = param;
 			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
-			u->data = (float*)malloc(u->size * sizeof(float));
-			memset(u->data, 0, u->size * sizeof(float));
+			u->data = getUniformAliasDataPtr(p->frag_uniforms, sceGxmProgramParameterGetName(param), u->size);
+			if (u->data) {
+				u->is_alias = GL_TRUE;
+			} else {
+				u->is_alias = GL_FALSE;
+				u->data = (float*)malloc(u->size * sizeof(float));
+				memset(u->data, 0, u->size * sizeof(float));
+			}
 			p->vert_uniforms = u;
 		}
 	}
