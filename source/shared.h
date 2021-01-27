@@ -110,6 +110,7 @@ typedef enum texEnvMode {
 typedef struct gpubuffer {
 	void *ptr;
 	int32_t size;
+	GLboolean used;
 } gpubuffer;
 
 // 3D vertex for position + 4D vertex for RGBA color struct
@@ -213,7 +214,7 @@ extern int frame_purge_idx; // Index for currently populatable purge list
 extern int frame_elem_purge_idx; // Index for currently populatable purge list element
 
 // Macro to mark a pointer as dirty for garbage collection
-#define markAsDirty(x) frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x;
+#define markAsDirty(x) frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x
 
 extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 extern matrix4x4 projection_matrix; // Projection Matrix

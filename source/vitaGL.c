@@ -1051,9 +1051,13 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 	}
 #endif
 
-	// Marking previous content for deletion
-	if (gpu_buf->ptr)
-		markAsDirty(gpu_buf->ptr);
+	// Marking previous content for deletion or deleting it straight if unused
+	if (gpu_buf->ptr) {
+		if (gpu_buf->used)
+			markAsDirty(gpu_buf->ptr);
+		else
+			vgl_mem_free(gpu_buf->ptr);
+	}
 	
 	// Allocating a new buffer
 	gpu_buf->ptr = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
@@ -1063,6 +1067,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 	}
 #endif
 	gpu_buf->size = size;
+	gpu_buf->used = GL_FALSE;
 
 	if (data)
 		memcpy_neon(gpu_buf->ptr, data, size);
@@ -1850,6 +1855,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 			memcpy_neon(ptr, gl_indices, count * sizeof(uint16_t));
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		} else { // Drawing with an index buffer
+			gpu_buf->used = GL_TRUE;
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint8_t*)gpu_buf->ptr + (uint32_t)gl_indices, count);
 		}
 	} /*else if (tex_unit->vertex_array_state) {

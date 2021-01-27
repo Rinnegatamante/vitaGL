@@ -194,6 +194,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 				if (vertex_attrib_vbo[real_i[i]]) {
 					gpubuffer *gpu_buf = (gpubuffer*)vertex_attrib_vbo[real_i[i]];
 					ptrs[i] = (uint8_t*)gpu_buf->ptr + vertex_attrib_offsets[real_i[i]];
+					gpu_buf->used = GL_TRUE;
 					attributes[i].offset = 0;
 				} else {
 					ptrs[i] = gpu_alloc_mapped_temp(count * streams[i].stride);
@@ -346,6 +347,7 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 				if (vertex_attrib_vbo[real_i[i]]) {
 					gpubuffer *gpu_buf = (gpubuffer*)vertex_attrib_vbo[real_i[i]];
 					ptrs[i] = (uint8_t*)gpu_buf->ptr + vertex_attrib_offsets[real_i[i]];
+					gpu_buf->used = GL_TRUE;
 					attributes[i].offset = 0;
 				} else {
 					ptrs[i] = gpu_alloc_mapped_temp(top_idx * streams[i].stride);
