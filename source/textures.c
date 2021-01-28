@@ -710,6 +710,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				break;
 			}
 			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex->min_filter);
+			sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
 			break;
 		case GL_TEXTURE_MAG_FILTER: // Mag Filter
 			switch (param) {
