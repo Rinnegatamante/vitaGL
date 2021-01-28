@@ -694,12 +694,12 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT;
 				break;
 			case GL_LINEAR_MIPMAP_NEAREST:
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT;
-				break;
-			case GL_NEAREST_MIPMAP_LINEAR:
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_LINEAR;
+				break;
+			case GL_NEAREST_MIPMAP_LINEAR:
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT;
 				break;
 			case GL_LINEAR_MIPMAP_LINEAR:
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
@@ -804,12 +804,12 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT;
 			}
 			if (param == GL_LINEAR_MIPMAP_NEAREST) {
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT;
-			}
-			if (param == GL_NEAREST_MIPMAP_LINEAR) {
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_LINEAR;
+			}
+			if (param == GL_NEAREST_MIPMAP_LINEAR) {
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT;
 			}
 			if (param == GL_LINEAR_MIPMAP_LINEAR) {
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
