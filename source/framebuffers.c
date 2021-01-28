@@ -84,14 +84,14 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 	}
 }
 
-void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers) {
+void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 	while (n > 0) {
-		framebuffer *fb = (framebuffer *)framebuffers[n--];
+		framebuffer *fb = (framebuffer *)ids[--n];
 		if (fb) {
 			fb->active = 0;
 			if (fb->target) {
@@ -160,6 +160,21 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
+	
+		// Detaching attached texture if passed texture ID is 0
+		if (tex_id == 0) {
+			if (fb->target) {
+				sceGxmDestroyRenderTarget(fb->target);
+				fb->target = NULL;
+			}
+			if (fb->depth_buffer_addr) { // (FIXME: This probably shouldn't be here)
+				vgl_mem_free(fb->depth_buffer_addr);
+				vgl_mem_free(fb->stencil_buffer_addr);
+				fb->depth_buffer_addr = NULL;
+				fb->stencil_buffer_addr = NULL;
+			}
+			return;
+		}
 
 		// Allocating colorbuffer
 		sceGxmColorSurfaceInit(
@@ -217,7 +232,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 
 	// Aliasing to make code more readable
 	texture *tex = &texture_slots[tex_id];
-
+	
 	// Extracting texture data
 	fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
 	fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
@@ -228,6 +243,21 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
+	
+		// Detaching attached texture if passed texture ID is 0
+		if (tex_id == 0) {
+			if (fb->target) {
+				sceGxmDestroyRenderTarget(fb->target);
+				fb->target = NULL;
+			}
+			if (fb->depth_buffer_addr) { // (FIXME: This probably shouldn't be here)
+				vgl_mem_free(fb->depth_buffer_addr);
+				vgl_mem_free(fb->stencil_buffer_addr);
+				fb->depth_buffer_addr = NULL;
+				fb->stencil_buffer_addr = NULL;
+			}
+			return;
+		}
 
 		// Allocating colorbuffer
 		sceGxmColorSurfaceInit(
@@ -298,11 +328,11 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	if (active_read_fb) {
 		switch (active_read_fb->data_type) {
 		case GL_RGBA:
-			write_cb = writeRGBA;
+			read_cb = readRGBA;
 			src_bpp = 4;
 			break;
 		case GL_RGB:
-			write_cb = writeRGB;
+			read_cb = readRGB;
 			src_bpp = 3;
 			break;
 		default:
@@ -311,24 +341,25 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		if (format == active_read_fb->data_type)
 			fast_store = GL_TRUE;
 		src = (uint8_t*)active_read_fb->data;
-		y = active_read_fb->height - (height + y);
 		stride = active_read_fb->stride;
+		y = (active_read_fb->height - (height + y)) * stride;
 	} else {
 		src = (uint8_t*)gxm_color_surfaces_addr[gxm_back_buffer_index];
-		y = DISPLAY_HEIGHT - (height + y);
 		stride = DISPLAY_STRIDE * 4;
+		y = (DISPLAY_HEIGHT - (height + y)) * stride;
 		src_bpp = 4;
 		if (format == GL_RGBA)
 			fast_store = GL_TRUE;
+		else
+			read_cb = readRGBA;
 	}
-	y *= stride;
 	
 	if (!fast_store) {
 		switch (format) {
 		case GL_RGBA:
 			switch (type) {
 			case GL_UNSIGNED_BYTE:
-				read_cb = readRGBA;
+				write_cb = writeRGBA;
 				break;
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
@@ -338,7 +369,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		case GL_RGB:
 			switch (type) {
 			case GL_UNSIGNED_BYTE:
-				read_cb = readRGB;
+				write_cb = writeRGB;
 				break;
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
@@ -351,24 +382,26 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		}
 	}
 	
-	int i = 0;
+	uint8_t *data_u8 = data + (width * src_bpp * (height - 1));
+	int i;
 	if (fast_store) {
-		while (i < height) {
-			memcpy_neon(data, &src[y + x * src_bpp], width * src_bpp);
+		for (i = 0; i < height; i++) {
+			memcpy_neon(data_u8, &src[y + x * src_bpp], width * src_bpp);
 			y += stride;
-			i++;
+			data_u8 -= width * src_bpp;
 		}
 	} else {
 		int j;
-		uint8_t *data_u8;
 		for (i = 0; i < height; i++) {
 			src = &src[y + i * stride + x * src_bpp];
+			uint8_t *line_u8 = data_u8;
 			for (j = 0; j < width; j++) {
 				uint32_t clr = read_cb(src);
-				write_cb(data_u8, clr);
+				write_cb(line_u8, clr);
 				src += src_bpp;
-				data_u8 += dst_bpp;
+				line_u8 += dst_bpp;
 			}
+			data_u8 -= width * src_bpp;
 		}
 	}
 }

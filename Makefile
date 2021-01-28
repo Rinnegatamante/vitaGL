@@ -15,8 +15,12 @@ OBJS     := $(CFILES:.c=.o) $(ASMFILES:.S=.o)
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
 AR      = $(PREFIX)-gcc-ar
-CFLAGS  = -g -Wl,-q -O2 -ffast-math -mtune=cortex-a9 -mfpu=neon -ftree-vectorize -DSTB_DXT_IMPLEMENTATION
+CFLAGS  = -g -Wl,-q -O3 -ffast-math -mtune=cortex-a9 -mfpu=neon
 ASFLAGS = $(CFLAGS)
+
+ifeq ($(SOFTFP_ABI),1)
+CFLAGS += -mfloat-abi=softfp -DHAVE_SOFTFP_ABI
+endif
 
 ifeq ($(NO_DEBUG),1)
 CFLAGS  += -DSKIP_ERROR_HANDLING
@@ -32,6 +36,10 @@ endif
 
 ifeq ($(HAVE_SHARK_FFP),1)
 CFLAGS  += -DHAVE_SHARK_FFP
+endif
+
+ifeq ($(HAVE_UNFLIPPED_FBOS),1)
+CFLAGS  += -DHAVE_UNFLIPPED_FBOS
 endif
 
 all: $(TARGET).a

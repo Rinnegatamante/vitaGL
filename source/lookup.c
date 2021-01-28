@@ -30,6 +30,7 @@ static const struct {
 	const char *name;
 	void *proc;
 } vgl_proctable[] = {
+	// *gl
 	{ "glActiveTexture", (void *)glActiveTexture },
 	{ "glAlphaFunc", (void *)glAlphaFunc },
 	{ "glArrayElement", (void *)glArrayElement },
@@ -104,6 +105,8 @@ static const struct {
 	{ "glGetFloatv", (void *)glGetFloatv },
 	{ "glGetError", (void *)glGetError },
 	{ "glGetIntegerv", (void *)glGetIntegerv },
+	{ "glGetProgramInfoLog", (void *)glGetProgramInfoLog },
+	{ "glGetProgramiv", (void *)glGetProgramiv },
 	{ "glGetShaderInfoLog", (void *)glGetShaderInfoLog },
 	{ "glGetShaderiv", (void *)glGetShaderiv },
 	{ "glGetString", (void *)glGetString },
@@ -152,6 +155,7 @@ static const struct {
 	{ "glUniform2f", (void *)glUniform2f },
 	{ "glUniform2i", (void *)glUniform2i },
 	{ "glUniform2fv", (void *)glUniform2fv },
+	{ "glUniform3f", (void *)glUniform3f },
 	{ "glUniform3fv", (void *)glUniform3fv },
 	{ "glUniform4f", (void *)glUniform4f },
 	{ "glUniform4fv", (void *)glUniform4fv },
@@ -161,14 +165,20 @@ static const struct {
 	{ "glVertex2f", (void *)glVertex2f },
 	{ "glVertex3f", (void *)glVertex3f },
 	{ "glVertex3fv", (void *)glVertex3fv },
+	{ "glVertexAttrib1f", (void *)glVertexAttrib1f },
 	{ "glVertexAttrib1fv", (void *)glVertexAttrib1fv },
+	{ "glVertexAttrib2f", (void *)glVertexAttrib2f },
 	{ "glVertexAttrib2fv", (void *)glVertexAttrib2fv },
+	{ "glVertexAttrib3f", (void *)glVertexAttrib3f },
 	{ "glVertexAttrib3fv", (void *)glVertexAttrib3fv },
+	{ "glVertexAttrib4f", (void *)glVertexAttrib4f },
 	{ "glVertexAttrib4fv", (void *)glVertexAttrib4fv },
 	{ "glVertexAttribPointer", (void *)glVertexAttribPointer },
 	{ "glVertexPointer", (void *)glVertexPointer },
 	{ "glViewport", (void *)glViewport },
+	// *glu
 	{ "gluPerspective", (void *)gluPerspective },
+	// *vgl
 	{ "vglColorPointer", (void *)vglColorPointer },
 	{ "vglColorPointerMapped", (void *)vglColorPointerMapped },
 	{ "vglDrawObjects", (void *)vglDrawObjects },
@@ -196,17 +206,14 @@ static const struct {
 	{ "vglMemFree", (void *)vglMemFree },
 	{ "vglSetParamBufferSize", (void *)vglSetParamBufferSize },
 	{ "vglSetupRuntimeShaderCompiler", (void *)vglSetupRuntimeShaderCompiler },
-	{ "vglStartRendering", (void *)vglStartRendering },
-	{ "vglStopRendering", (void *)vglStopRendering },
-	{ "vglStopRenderingInit", (void *)vglStopRenderingInit },
-	{ "vglStopRenderingTerm", (void *)vglStopRenderingTerm },
+	{ "vglSwapBuffers", (void *)vglSwapBuffers },
 	{ "vglTexImageDepthBuffer", (void *)vglTexImageDepthBuffer },
-	{ "vglUpdateCommonDialog", (void *)vglUpdateCommonDialog },
 	{ "vglUseTripleBuffering", (void *)vglUseTripleBuffering },
 	{ "vglUseVram", (void *)vglUseVram },
 	{ "vglUseVramForUSSE", (void *)vglUseVramForUSSE },
 	{ "vglUseExtraMem", (void *)vglUseExtraMem },
 	{ "vglWaitVblankStart", (void *)vglWaitVblankStart },
+	// *egl
 	{ "eglSwapInterval", (void *)eglSwapInterval },
 	{ "eglSwapBuffers", (void *)eglSwapBuffers },
 };

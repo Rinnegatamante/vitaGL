@@ -27,15 +27,16 @@
 
 // Internal constants
 #define TEXTURES_NUM 16384 // Available textures
-#define COMPRESSED_TEXTURE_FORMATS_NUM 9 // The number of supported texture formats.
+#define COMPRESSED_TEXTURE_FORMATS_NUM 9 // The number of supported texture formats
 #define MODELVIEW_STACK_DEPTH 32 // Depth of modelview matrix stack
 #define GENERIC_STACK_DEPTH 2 // Depth of generic matrix stack
 #define DISPLAY_WIDTH_DEF 960 // Default display width in pixels
 #define DISPLAY_HEIGHT_DEF 544 // Default display height in pixels
 #define DISPLAY_MAX_BUFFER_COUNT 3 // Maximum amount of display buffers to use
 #define GXM_TEX_MAX_SIZE 4096 // Maximum width/height in pixels per texture
-#define BUFFERS_NUM 128 // Maximum number of allocatable buffers
 #define FRAME_PURGE_LIST_SIZE 16384 // Number of elements a single frame can hold
+#define FRAME_PURGE_FREQ 3 // Frequency in frames for garbage collection
+#define BUFFERS_NUM 256 // Maximum amount of framebuffers objects usable
 
 // Internal constants set in bootup phase
 extern int DISPLAY_WIDTH; // Display width in pixels
@@ -89,6 +90,13 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 	vgl_error = x;      \
 	return;
 
+#ifdef HAVE_SOFTFP_ABI
+extern __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale);
+#define setViewport sceGxmSetViewport_sfp
+#else
+#define setViewport sceGxmSetViewport
+#endif
+
 // Texture environment mode
 typedef enum texEnvMode {
 	MODULATE = 0,
@@ -103,9 +111,6 @@ typedef struct gpubuffer {
 	void *ptr;
 	int32_t size;
 	GLboolean used;
-	SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
-	SceGxmVertexStream vertex_stream_config[GL_MAX_VERTEX_ATTRIBS];
-	uint8_t vertex_attrib_state;
 } gpubuffer;
 
 // 3D vertex for position + 4D vertex for RGBA color struct
@@ -146,6 +151,8 @@ extern void *vert_uniforms;
 extern SceGxmMultisampleMode msaa_mode;
 extern GLboolean use_extra_mem;
 extern blend_config blend_info;
+extern SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
+extern GLboolean is_rendering_display; // Flag for when we're rendering without a framebuffer object
 
 // Debugging tool
 #ifdef ENABLE_LOG
@@ -202,9 +209,12 @@ extern GLenum vgl_error; // Error returned by glGetError
 extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 extern void *gxm_depth_surface_addr; // Depth surface memblock starting address
 extern GLboolean system_app_mode; // Flag for system app mode usage
-extern void *frame_purge_list[DISPLAY_MAX_BUFFER_COUNT][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
+extern void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
 extern int frame_purge_idx; // Index for currently populatable purge list
 extern int frame_elem_purge_idx; // Index for currently populatable purge list element
+
+// Macro to mark a pointer as dirty for garbage collection
+#define markAsDirty(x) frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x
 
 extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 extern matrix4x4 projection_matrix; // Projection Matrix
@@ -217,11 +227,13 @@ extern GLboolean vblank; // Current setting for VSync
 extern uint32_t vertex_array_unit; // Current in-use vertex array buffer unit
 
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
+extern framebuffer *in_use_framebuffer; // Currently in use framebuffer
 
 // Scissor test shaders
 extern SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program
 extern vector4f *scissor_test_vertices; // Scissor test region vertices
 extern SceUID scissor_test_vertices_uid; // Scissor test vertices memblock id
+extern GLboolean skip_scene_reset;
 
 extern uint16_t *depth_clear_indices; // Memblock starting address for clear screen indices
 
@@ -245,6 +257,7 @@ void termDepthStencilSurfaces(void); // Destroys depth and stencil surfaces for 
 void startShaderPatcher(void); // Creates a shader patcher instance
 void stopShaderPatcher(void); // Destroys a shader patcher instance
 void waitRenderingDone(void); // Waits for rendering to be finished
+void sceneReset(void); // Resets drawing scene if required
 
 /* tests.c */
 void change_depth_write(SceGxmDepthWriteMode mode); // Changes current in use depth write mode
@@ -269,7 +282,11 @@ void update_precompiled_ffp_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmen
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders
 void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
-void _glDraw_CustomShadersIMPL(void *ptr); // glDraw* implementation for rendering with custom shaders
+void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count); // glDrawElements implementation for rendering with custom shaders
+void _glDrawArrays_CustomShadersIMPL(GLsizei count); // glDrawArrays implementation for rendering with custom shaders
+
+/* misc.c */
+void change_cull_mode(void); // Updates current cull mode
 
 /* misc functions */
 void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height); // Converts screen coords to local space

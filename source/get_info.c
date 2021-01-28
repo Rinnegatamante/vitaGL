@@ -24,10 +24,10 @@
 #include "shared.h"
 
 // Constants returned by glGetString
-static const GLubyte *vendor = "Rinnegatamante";
-static const GLubyte *renderer = "SGX543MP4+";
-static const GLubyte *version = "VitaGL 1.0";
-static const GLubyte *extensions = "VGL_EXT_gpu_objects_array VGL_EXT_gxp_shaders";
+static GLubyte *vendor = NULL;
+static GLubyte *renderer = NULL;
+static GLubyte *version = NULL;
+static GLubyte *extensions = NULL;
 
 /*
  * ------------------------------
@@ -38,15 +38,31 @@ static const GLubyte *extensions = "VGL_EXT_gpu_objects_array VGL_EXT_gxp_shader
 const GLubyte *glGetString(GLenum name) {
 	switch (name) {
 	case GL_VENDOR: // Vendor
+		if (!vendor) {
+			vendor = malloc(15);
+			strcpy(vendor, "Rinnegatamante");
+		}
 		return vendor;
 		break;
 	case GL_RENDERER: // Renderer
+		if (!renderer) {
+			renderer = malloc(11);
+			strcpy(renderer, "SGX543MP4+");
+		}
 		return renderer;
 		break;
 	case GL_VERSION: // openGL Version
+		if (!version) {
+			version = malloc(11);
+			strcpy(version, "VitaGL 1.0");
+		}
 		return version;
 		break;
 	case GL_EXTENSIONS: // Supported extensions
+		if (!extensions) {
+			extensions = malloc(346);
+			strcpy(extensions, "GL_OES_vertex_half_float VGL_EXT_gpu_objects_array VGL_EXT_gxp_shaders GL_OES_texture_npot GL_OES_rgb8_rgba8 GL_OES_depth_texture GL_EXT_texture_format_BGRA8888 GL_EXT_read_format_bgra GL_EXT_texture_compression_dxt1 GL_EXT_texture_compression_dxt3 GL_EXT_texture_compression_dxt5 GL_EXT_texture_compression_s3tc GL_IMG_texture_compression_pvrtc");
+		}
 		return extensions;
 		break;
 	default:
@@ -94,8 +110,8 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 	case GL_POLYGON_OFFSET_POINT:
 		*params = pol_offset_point;
 		break;
-	case GL_ACTIVE_TEXTURE: // Active texture
-		*params = GL_FALSE;
+	case GL_DEPTH_WRITEMASK:
+		*params = depth_mask_state;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -206,6 +222,15 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[6] = GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
 		data[7] = GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG;
 		data[8] = GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG;
+		break;
+	case GL_FRAMEBUFFER_BINDING:
+		data[0] = (GLint)active_write_fb;
+		break;
+	case GL_READ_FRAMEBUFFER_BINDING:
+		data[0] = (GLint)active_read_fb;
+		break;
+	case GL_MAX_VERTEX_UNIFORM_VECTORS:
+		data[0] = 256;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)

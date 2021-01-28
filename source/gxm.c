@@ -37,7 +37,6 @@ void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfac
 static SceGxmSyncObject *gxm_sync_objects[DISPLAY_MAX_BUFFER_COUNT]; // Display sync objects
 unsigned int gxm_front_buffer_index; // Display front buffer id
 unsigned int gxm_back_buffer_index; // Display back buffer id
-static unsigned int gxm_scene_flags = 0; // Current gxm scene flags
 
 static void *gxm_shader_patcher_buffer_addr; // Shader PAtcher buffer memblock starting address
 static void *gxm_shader_patcher_vertex_usse_addr; // Shader Patcher vertex USSE memblock starting address
@@ -49,6 +48,10 @@ static SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil sur
 
 static SceUID shared_fb; // In-use hared framebuffer identifier
 static SceSharedFbInfo shared_fb_info; // In-use shared framebuffer info struct
+framebuffer *in_use_framebuffer = NULL; // Currently in use framebuffer
+framebuffer *old_framebuffer = NULL; // Framebuffer used in last scene
+static GLboolean needs_end_scene = GL_FALSE; // Flag for gxm end scene requirement at scene reset
+static GLboolean needs_scene_reset = GL_TRUE; // Flag for when a scene reset is required
 
 SceGxmContext *gxm_context; // sceGxm context instance
 GLenum vgl_error = GL_NO_ERROR; // Error returned by glGetError
@@ -67,12 +70,12 @@ float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 GLboolean system_app_mode = GL_FALSE; // Flag for system app mode usage
 static GLboolean gxm_initialized = GL_FALSE; // Current sceGxm state
-static GLboolean is_rendering_display = GL_FALSE; // Flag for when drawing without fbo is being performed
+GLboolean is_rendering_display = GL_TRUE; // Flag for when drawing without fbo is being performed
 
-void *frame_purge_list[DISPLAY_MAX_BUFFER_COUNT][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
+void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
 int frame_purge_idx = 0; // Index for currently populatable purge list
 int frame_elem_purge_idx = 0; // Index for currently populatable purge list element
-static int frame_purge_clean_idx = DISPLAY_MAX_BUFFER_COUNT;
+static int frame_purge_clean_idx = 1;
 
 // sceDisplay callback data
 struct display_queue_callback_data {
@@ -153,16 +156,14 @@ void initGxm(void) {
 }
 
 void initGxmContext(void) {
-	vglMemType type = VGL_MEM_VRAM;
-
 	// Allocating VDM ring buffer
-	vdm_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE, &type);
+	vdm_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE, VGL_MEM_VRAM);
 
 	// Allocating vertex ring buffer
-	vertex_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE, &type);
+	vertex_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE, VGL_MEM_VRAM);
 
 	// Allocating fragment ring buffer
-	fragment_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE, &type);
+	fragment_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE, VGL_MEM_VRAM);
 
 	// Allocating fragment USSE ring buffer
 	unsigned int fragment_usse_offset;
@@ -249,14 +250,11 @@ void initDisplayColorSurfaces(void) {
 		}
 	}
 
-	vglMemType type = VGL_MEM_VRAM;
 	int i;
 	for (i = 0; i < gxm_display_buffer_count; i++) {
 		// Allocating color surface memblock
 		if (!system_app_mode) {
-			gxm_color_surfaces_addr[i] = gpu_alloc_mapped(
-				ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024),
-				&type);
+			gxm_color_surfaces_addr[i] = gpu_alloc_mapped(ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024), VGL_MEM_VRAM);
 			memset(gxm_color_surfaces_addr[i], 0, DISPLAY_STRIDE * DISPLAY_HEIGHT);
 		}
 
@@ -297,12 +295,10 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 		depth_stencil_samples = depth_stencil_samples * 4;
 
 	// Allocating depth surface
-	vglMemType depth_type = VGL_MEM_VRAM;
-	*depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, &depth_type);
+	*depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, VGL_MEM_VRAM);
 
 	// Allocating stencil surface
-	vglMemType stencil_type = VGL_MEM_VRAM;
-	*stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, &stencil_type);
+	*stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, VGL_MEM_VRAM);
 
 	// Initializing depth and stencil surfaces
 	sceGxmDepthStencilSurfaceInit(surface,
@@ -328,21 +324,17 @@ void startShaderPatcher(void) {
 	static const unsigned int shader_patcher_buffer_size = 1024 * 1024;
 	static const unsigned int shader_patcher_vertex_usse_size = 1024 * 1024;
 	static const unsigned int shader_patcher_fragment_usse_size = 1024 * 1024;
-	vglMemType type = VGL_MEM_RAM;
 
 	// Allocating Shader Patcher buffer
-	gxm_shader_patcher_buffer_addr = gpu_alloc_mapped(
-		shader_patcher_buffer_size, &type);
+	gxm_shader_patcher_buffer_addr = gpu_alloc_mapped(shader_patcher_buffer_size, VGL_MEM_VRAM);
 
 	// Allocating Shader Patcher vertex USSE buffer
 	unsigned int shader_patcher_vertex_usse_offset;
-	gxm_shader_patcher_vertex_usse_addr = gpu_vertex_usse_alloc_mapped(
-		shader_patcher_vertex_usse_size, &shader_patcher_vertex_usse_offset);
+	gxm_shader_patcher_vertex_usse_addr = gpu_vertex_usse_alloc_mapped(shader_patcher_vertex_usse_size, &shader_patcher_vertex_usse_offset);
 
 	// Allocating Shader Patcher fragment USSE buffer
 	unsigned int shader_patcher_fragment_usse_offset;
-	gxm_shader_patcher_fragment_usse_addr = gpu_fragment_usse_alloc_mapped(
-		shader_patcher_fragment_usse_size, &shader_patcher_fragment_usse_offset);
+	gxm_shader_patcher_fragment_usse_addr = gpu_fragment_usse_alloc_mapped(shader_patcher_fragment_usse_size, &shader_patcher_fragment_usse_offset);
 
 	// Populating shader patcher parameters
 	SceGxmShaderPatcherParams shader_patcher_params;
@@ -399,50 +391,90 @@ void vglUseTripleBuffering(GLboolean usage) {
 	gxm_display_buffer_count = usage ? 3 : 2;
 }
 
-void vglStartRendering(void) {
-	// Starting drawing scene
-	is_rendering_display = active_write_fb == NULL;
-	if (is_rendering_display) { // Default framebuffer is used
-		if (system_app_mode) {
-			sceSharedFbBegin(shared_fb, &shared_fb_info);
-			shared_fb_info.vsync = vblank;
-			gxm_back_buffer_index = (shared_fb_info.index + 1) % 2;
-		}
-		sceGxmBeginScene(gxm_context, gxm_scene_flags, gxm_render_target,
-			NULL, NULL,
-			gxm_sync_objects[gxm_back_buffer_index],
-			&gxm_color_surfaces[gxm_back_buffer_index],
-			&gxm_depth_stencil_surface);
-		gxm_scene_flags &= ~SCE_GXM_SCENE_VERTEX_WAIT_FOR_DEPENDENCY;
-	} else {
-		gxm_scene_flags |= SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY;
-		sceGxmBeginScene(gxm_context, gxm_scene_flags, gxm_render_target,
-			NULL, NULL, NULL,
-			&active_write_fb->colorbuffer,
-			&active_write_fb->depthbuffer);
-		gxm_scene_flags |= SCE_GXM_SCENE_VERTEX_WAIT_FOR_DEPENDENCY;
-		gxm_scene_flags &= ~SCE_GXM_SCENE_FRAGMENT_SET_DEPENDENCY;
-	}
-
-	// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
-	sceGxmSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-
-	if (scissor_test_state)
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
-	else
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
-}
-
-void vglStopRenderingInit(void) {
-	// Ending drawing scene
+void sceneEnd(void) {
+	// Ends current gxm scene
 	sceGxmEndScene(gxm_context, NULL, NULL);
 	if (system_app_mode && vblank)
 		sceDisplayWaitVblankStart();
 }
 
-void vglStopRenderingTerm(void) {
-	if (is_rendering_display) { // Default framebuffer is used
-		// Properly requesting a display update
+void sceneReset(void) {
+	if (in_use_framebuffer != active_write_fb || needs_scene_reset) {
+		needs_scene_reset = GL_FALSE;
+		in_use_framebuffer = active_write_fb;
+		
+		// Ending drawing scene
+		if (needs_end_scene)
+			sceneEnd();
+		else
+			needs_end_scene = GL_TRUE;
+
+		// Starting drawing scene
+		is_rendering_display = !active_write_fb;
+		if (is_rendering_display) { // Default framebuffer is used
+			if (system_app_mode) {
+				sceSharedFbBegin(shared_fb, &shared_fb_info);
+				shared_fb_info.vsync = vblank;
+				gxm_back_buffer_index = (shared_fb_info.index + 1) % 2;
+			}
+			sceGxmBeginScene(gxm_context, 0, gxm_render_target,
+				NULL, NULL,
+				gxm_sync_objects[gxm_back_buffer_index],
+				&gxm_color_surfaces[gxm_back_buffer_index],
+				&gxm_depth_stencil_surface);
+		} else {
+			sceGxmBeginScene(gxm_context, 0, active_write_fb->target,
+				NULL, NULL, NULL,
+				&active_write_fb->colorbuffer,
+				&active_write_fb->depthbuffer);
+		}
+
+		// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
+		if (old_framebuffer != in_use_framebuffer) {
+			old_framebuffer = in_use_framebuffer;
+			glViewport(gl_viewport.x, gl_viewport.y, gl_viewport.w, gl_viewport.h);
+			skip_scene_reset = GL_TRUE;
+			glScissor(region.x, region.gl_y, region.w, region.h);
+			skip_scene_reset = GL_FALSE;
+#ifndef HAVE_UNFLIPPED_FBOS
+			change_cull_mode();
+#endif
+		} else
+			setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+
+		if (scissor_test_state)
+			sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
+		else {
+			if (is_rendering_display)
+				sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
+			else
+				sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, in_use_framebuffer->width - 1, in_use_framebuffer->height - 1);
+		}
+	}
+}
+
+void vglSwapBuffers(GLboolean has_commondialog) {
+	needs_end_scene = GL_FALSE;
+	sceneEnd();
+	
+	if (has_commondialog) {
+		// Populating SceCommonDialog parameters
+		SceCommonDialogUpdateParam updateParam;
+		memset(&updateParam, 0, sizeof(updateParam));
+		updateParam.renderTarget.colorFormat = SCE_GXM_COLOR_FORMAT_A8B8G8R8;
+		updateParam.renderTarget.surfaceType = SCE_GXM_COLOR_SURFACE_LINEAR;
+		updateParam.renderTarget.width = DISPLAY_WIDTH;
+		updateParam.renderTarget.height = DISPLAY_HEIGHT;
+		updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE;
+		updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_back_buffer_index];
+		updateParam.renderTarget.depthSurfaceData = gxm_depth_surface_addr;
+		updateParam.displaySyncObject = gxm_sync_objects[gxm_back_buffer_index];
+
+		// Updating sceCommonDialog
+		sceCommonDialogUpdate(&updateParam);
+	}
+	
+	if (!in_use_framebuffer){
 		if (system_app_mode)
 			sceSharedFbEnd(shared_fb);
 		else {
@@ -454,44 +486,19 @@ void vglStopRenderingTerm(void) {
 			gxm_back_buffer_index = (gxm_back_buffer_index + 1) % gxm_display_buffer_count;
 		}
 	}
+	needs_scene_reset = GL_TRUE;
 	
 	// Purging all elements marked for deletion
-	int i = 0;
-	while (frame_purge_list[frame_purge_clean_idx][i]) {
-		vgl_mem_free(frame_purge_list[frame_purge_clean_idx][i++]);
+	int i;
+	for (i = 0; i < FRAME_PURGE_LIST_SIZE; i++) {
+		if (frame_purge_list[frame_purge_clean_idx][i]) {
+			vgl_mem_free(frame_purge_list[frame_purge_clean_idx][i]);
+			frame_purge_list[frame_purge_clean_idx][i] = NULL;
+		} else break;
 	}
-	frame_purge_list[frame_purge_clean_idx][0] = NULL;
-	frame_purge_clean_idx = (frame_purge_clean_idx + 1) % DISPLAY_MAX_BUFFER_COUNT;
-	frame_purge_idx = (frame_purge_idx + 1) % DISPLAY_MAX_BUFFER_COUNT;
+	frame_purge_clean_idx = (frame_purge_clean_idx + 1) % FRAME_PURGE_FREQ;
+	frame_purge_idx = (frame_purge_idx + 1) % FRAME_PURGE_FREQ;
 	frame_elem_purge_idx = 0;
-
-	// Resetting vitaGL mempool
-	gpu_pool_reset();
-}
-
-void vglStopRendering() {
-	// Ending drawing scene
-	vglStopRenderingInit();
-
-	// Updating display and resetting vitaGL mempool
-	vglStopRenderingTerm();
-}
-
-void vglUpdateCommonDialog() {
-	// Populating SceCommonDialog parameters
-	SceCommonDialogUpdateParam updateParam;
-	memset(&updateParam, 0, sizeof(updateParam));
-	updateParam.renderTarget.colorFormat = SCE_GXM_COLOR_FORMAT_A8B8G8R8;
-	updateParam.renderTarget.surfaceType = SCE_GXM_COLOR_SURFACE_LINEAR;
-	updateParam.renderTarget.width = DISPLAY_WIDTH;
-	updateParam.renderTarget.height = DISPLAY_HEIGHT;
-	updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE;
-	updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_back_buffer_index];
-	updateParam.renderTarget.depthSurfaceData = gxm_depth_surface_addr;
-	updateParam.displaySyncObject = gxm_sync_objects[gxm_back_buffer_index];
-
-	// Updating sceCommonDialog
-	sceCommonDialogUpdate(&updateParam);
 }
 
 void glFinish(void) {

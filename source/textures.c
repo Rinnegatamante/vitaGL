@@ -42,9 +42,6 @@ void glGenTextures(GLsizei n, GLuint *res) {
 	}
 #endif
 
-	// Aliasing to make code more readable
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
-
 	// Reserving a texture and returning its id if available
 	int i, j = 0;
 	for (i = 1; i < TEXTURES_NUM; i++) {
@@ -162,11 +159,32 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			break;
 		}
 		break;
+	case GL_LUMINANCE:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			read_cb = readL;
+			data_bpp = 1;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+		break;
 	case GL_RG:
-	case GL_LUMINANCE_ALPHA:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			read_cb = readRG;
+			data_bpp = 2;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+			break;
+		}
+		break;
+	case GL_LUMINANCE_ALPHA:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			read_cb = readLA;
 			data_bpp = 2;
 			break;
 		default:
@@ -288,14 +306,6 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			write_cb = writeBGRA;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
 			break;
-		case GL_LUMINANCE:
-			write_cb = writeR;
-			tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
-			break;
-		case GL_LUMINANCE_ALPHA:
-			write_cb = writeRG;
-			tex_format = SCE_GXM_TEXTURE_FORMAT_A8L8;
-			break;
 		case GL_INTENSITY:
 			write_cb = writeR;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8_RRRR;
@@ -309,7 +319,8 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			write_cb = writeRGBA;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
 			break;
 		}
 
@@ -325,9 +336,12 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			if (tex->write_cb)
 				gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb, fast_store);
 			else
-				gpu_alloc_compressed_texture(width, height, tex_format, 0, data, tex, data_bpp, read_cb);
+				gpu_alloc_compressed_texture(level, width, height, tex_format, 0, data, tex, data_bpp, read_cb);
 		else
-			gpu_alloc_mipmaps(level, tex);
+			if (tex->write_cb)
+				gpu_alloc_mipmaps(level, tex);
+			else
+				gpu_alloc_compressed_texture(level, width, height, tex_format, 0, data, tex, data_bpp, read_cb);
 
 		// Setting texture parameters
 		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
@@ -610,7 +624,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 
 		// Allocating texture/mipmaps depending on user call
 		tex->type = internalFormat;
-		gpu_alloc_compressed_texture(width, height, tex_format, imageSize, data, tex, 0, NULL);
+		gpu_alloc_compressed_texture(level, width, height, tex_format, imageSize, data, tex, 0, NULL);
 
 		// Setting texture parameters
 		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
