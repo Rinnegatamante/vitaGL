@@ -386,7 +386,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	int i;
 	if (fast_store) {
 		for (i = 0; i < height; i++) {
-			memcpy_neon(data_u8, &src[y + x * src_bpp], width * src_bpp);
+			sceClibMemcpy(data_u8, &src[y + x * src_bpp], width * src_bpp);
 			y += stride;
 			data_u8 -= width * src_bpp;
 		}

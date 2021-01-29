@@ -538,7 +538,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			uint8_t *data = (uint8_t *)pixels;
 			uint32_t line_size = width * data_bpp;
 			for (i = 0; i < height; i++) {
-				memcpy_neon(ptr, data, line_size);
+				sceClibMemcpy(ptr, data, line_size);
 				data += line_size;
 				ptr += stride;
 			}
@@ -945,7 +945,7 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 	case GL_TEXTURE_ENV:
 		switch (pname) {
 		case GL_TEXTURE_ENV_COLOR:
-			memcpy_neon(&texenv_color.r, param, sizeof(GLfloat) * 4);
+			sceClibMemcpy(&texenv_color.r, param, sizeof(GLfloat) * 4);
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)

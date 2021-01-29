@@ -484,7 +484,7 @@ void glFogfv(GLenum pname, const GLfloat *params) {
 		fog_far = params[0];
 		break;
 	case GL_FOG_COLOR:
-		memcpy_neon(&fog_color.r, params, sizeof(vector4f));
+		sceClibMemcpy(&fog_color.r, params, sizeof(vector4f));
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -525,7 +525,7 @@ void glClipPlane(GLenum plane, const GLdouble *equation) {
 		matrix4x4_transpose(inverted_transposed, inverted);
 		vector4f temp;
 		vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_plane0_eq);
-		memcpy_neon(&clip_plane0_eq.x, &temp.x, sizeof(vector4f));
+		sceClibMemcpy(&clip_plane0_eq.x, &temp.x, sizeof(vector4f));
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)

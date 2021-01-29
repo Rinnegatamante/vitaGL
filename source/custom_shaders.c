@@ -103,10 +103,8 @@ typedef struct program {
 	GLboolean has_unaligned_attrs;
 } program;
 
-// Internal shaders array
+// Internal shaders and array
 static shader shaders[MAX_CUSTOM_SHADERS];
-
-// Internal programs array
 static program progs[MAX_CUSTOM_PROGRAMS];
 
 void resetCustomShaders(void) {
@@ -151,8 +149,8 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		int j = 0;
 		for (i = 0; i < p->attr_highest_idx; i++) {
 			if (p->attr[i].regIndex != 0xDEAD) {
-				memcpy_neon(&temp_attributes[j], &vertex_attrib_config[i], sizeof(SceGxmVertexAttribute));
-				memcpy_neon(&temp_streams[j], &vertex_stream_config[i], sizeof(SceGxmVertexStream));
+				sceClibMemcpy(&temp_attributes[j], &vertex_attrib_config[i], sizeof(SceGxmVertexAttribute));
+				sceClibMemcpy(&temp_streams[j], &vertex_stream_config[i], sizeof(SceGxmVertexStream));
 				attributes[j].streamIndex = j;
 				real_i[j] = attributes[j].regIndex;
 				j++;
@@ -182,7 +180,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	// Gathering real attribute data pointers
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
-		memcpy_neon(ptrs[0], (void*)vertex_attrib_offsets[real_i[0]], count * streams[0].stride);
+		sceClibMemcpy(ptrs[0], (void*)vertex_attrib_offsets[real_i[0]], count * streams[0].stride);
 		for (i = 0; i < p->attr_num; i++) {
 			attributes[i].offset = vertex_attrib_offsets[real_i[i]] - vertex_attrib_offsets[real_i[0]];
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
@@ -198,7 +196,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 					attributes[i].offset = 0;
 				} else {
 					ptrs[i] = gpu_alloc_mapped_temp(count * streams[i].stride);
-					memcpy_neon(ptrs[i], (void*)vertex_attrib_offsets[real_i[i]], count * streams[i].stride);
+					sceClibMemcpy(ptrs[i], (void*)vertex_attrib_offsets[real_i[i]], count * streams[i].stride);
 					attributes[i].offset = 0;
 				}
 			}
@@ -295,8 +293,8 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		int j = 0;
 		for (i = 0; i < p->attr_highest_idx; i++) {
 			if (p->attr[i].regIndex != 0xDEAD) {
-				memcpy_neon(&temp_attributes[j], &vertex_attrib_config[i], sizeof(SceGxmVertexAttribute));
-				memcpy_neon(&temp_streams[j], &vertex_stream_config[i], sizeof(SceGxmVertexStream));
+				sceClibMemcpy(&temp_attributes[j], &vertex_attrib_config[i], sizeof(SceGxmVertexAttribute));
+				sceClibMemcpy(&temp_streams[j], &vertex_stream_config[i], sizeof(SceGxmVertexStream));
 				attributes[j].streamIndex = j;
 				real_i[j] = attributes[j].regIndex;
 				j++;
@@ -335,7 +333,7 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	// Gathering real attribute data pointers
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(top_idx * streams[0].stride);
-		memcpy_neon(ptrs[0], (void*)vertex_attrib_offsets[real_i[0]], top_idx * streams[0].stride);
+		sceClibMemcpy(ptrs[0], (void*)vertex_attrib_offsets[real_i[0]], top_idx * streams[0].stride);
 		for (i = 0; i < p->attr_num; i++) {
 			attributes[i].offset = vertex_attrib_offsets[real_i[i]] - vertex_attrib_offsets[real_i[0]];
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
@@ -351,7 +349,7 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 					attributes[i].offset = 0;
 				} else {
 					ptrs[i] = gpu_alloc_mapped_temp(top_idx * streams[i].stride);
-					memcpy_neon(ptrs[i], (void*)vertex_attrib_offsets[real_i[i]], top_idx * streams[i].stride);
+					sceClibMemcpy(ptrs[i], (void*)vertex_attrib_offsets[real_i[i]], top_idx * streams[i].stride);
 					attributes[i].offset = 0;
 				}
 			}
@@ -453,7 +451,14 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
 		uniform *u = p->vert_uniforms;
 		while (u) {
-			sceGxmSetUniformDataF(vbuffer, u->ptr, 0, u->size, u->data);
+			if (u->ptr == p->wvp && implicit_wvp) {
+				if (mvp_modified) {
+					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+					mvp_modified = GL_FALSE;
+				}
+				sceGxmSetUniformDataF(vbuffer, p->wvp, 0, 16, (const float *)mvp_matrix);
+			} else
+				sceGxmSetUniformDataF(vbuffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
 	}
@@ -464,15 +469,6 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 			sceGxmSetUniformDataF(fbuffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
-	}
-	
-	// Uploading internal GL wvp if implicit wvp is asked
-	if (p->wvp && implicit_wvp) {
-		if (mvp_modified) {
-			matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-			mvp_modified = GL_FALSE;
-		}
-		sceGxmSetUniformDataF(vbuffer, p->wvp, 0, 16, (const float *)mvp_matrix);
 	}
 	
 	// Uploading textures on relative texture units
@@ -544,7 +540,7 @@ void vglEnableRuntimeShaderCompiler(GLboolean usage) {
 GLuint glCreateShader(GLenum shaderType) {
 	// Looking for a free shader slot
 	GLuint i, res = 0;
-	for (i = 1; i < MAX_CUSTOM_SHADERS; i++) {
+	for (i = 1; i <= MAX_CUSTOM_SHADERS; i++) {
 		if (!(shaders[i - 1].valid)) {
 			res = i;
 			break;
@@ -606,7 +602,7 @@ void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLcha
 	GLsizei len = 0;
 	if (s->log) {
 		len = min(strlen(s->log), maxLength);
-		memcpy_neon(infoLog, s->log, len);
+		sceClibMemcpy(infoLog, s->log, len);
 	}
 	if (length) *length = len;
 }
@@ -635,7 +631,7 @@ void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, c
 
 	// Allocating compiled shader on RAM and registering it into sceGxmShaderPatcher
 	s->prog = (SceGxmProgram *)malloc(length);
-	memcpy_neon((void *)s->prog, binary, length);
+	sceClibMemcpy((void *)s->prog, binary, length);
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
 	s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
 }
@@ -654,9 +650,8 @@ void glCompileShader(GLuint handle) {
 	s->prog = shark_compile_shader_extended((const char *)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 	if (s->prog) {
 		SceGxmProgram *res = (SceGxmProgram *)malloc(s->size);
-		memcpy_neon((void *)res, (void *)s->prog, s->size);
-		s->prog = res;
-		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
+		sceClibMemcpy((void *)res, (void *)s->prog, s->size);
+		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
 		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
 	}
 #ifdef HAVE_SHARK_LOG
@@ -707,7 +702,7 @@ void glAttachShader(GLuint prog, GLuint shad) {
 GLuint glCreateProgram(void) {
 	// Looking for a free program slot
 	GLuint i, j, res = 0;
-	for (i = 1; i < (MAX_CUSTOM_PROGRAMS); i++) {
+	for (i = 1; i <= MAX_CUSTOM_PROGRAMS; i++) {
 		// Program slot found, reserving and initializing it
 		if (!(progs[i - 1].status)) {
 			res = i;
@@ -957,7 +952,7 @@ void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	memcpy_neon(u->data, value, count * sizeof(float));
+	sceClibMemcpy(u->data, value, count * sizeof(float));
 }
 
 void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
@@ -969,7 +964,7 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	memcpy_neon(u->data, value, count * 2 * sizeof(float));
+	sceClibMemcpy(u->data, value, count * 2 * sizeof(float));
 }
 
 void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
@@ -995,7 +990,7 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	memcpy_neon(u->data, value, count * 3 * sizeof(float));
+	sceClibMemcpy(u->data, value, count * 3 * sizeof(float));
 }
 
 void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
@@ -1022,7 +1017,7 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	memcpy_neon(u->data, value, count * 4 * sizeof(float));
+	sceClibMemcpy(u->data, value, count * 4 * sizeof(float));
 }
 
 void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
@@ -1034,7 +1029,7 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, cons
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	memcpy_neon(u->data, value, count * 9 * sizeof(float));
+	sceClibMemcpy(u->data, value, count * 9 * sizeof(float));
 }
 
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
@@ -1046,7 +1041,7 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	memcpy_neon(u->data, value, count * 16 * sizeof(float));
+	sceClibMemcpy(u->data, value, count * 16 * sizeof(float));
 }
 
 void glEnableVertexAttribArray(GLuint index) {
@@ -1143,22 +1138,22 @@ void glVertexAttrib4f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat 
 
 void glVertexAttrib1fv(GLuint index, const GLfloat *v) {
 	vertex_attrib_size[index] = 1;
-	memcpy_neon(vertex_attrib_value[index], v, sizeof(float));
+	sceClibMemcpy(vertex_attrib_value[index], v, sizeof(float));
 }
 
 void glVertexAttrib2fv(GLuint index, const GLfloat *v) {
 	vertex_attrib_size[index] = 2;
-	memcpy_neon(vertex_attrib_value[index], v, 2 * sizeof(float));
+	sceClibMemcpy(vertex_attrib_value[index], v, 2 * sizeof(float));
 }
 
 void glVertexAttrib3fv(GLuint index, const GLfloat *v) {
 	vertex_attrib_size[index] = 3;
-	memcpy_neon(vertex_attrib_value[index], v, 3 * sizeof(float));
+	sceClibMemcpy(vertex_attrib_value[index], v, 3 * sizeof(float));
 }
 
 void glVertexAttrib4fv(GLuint index, const GLfloat *v) {
 	vertex_attrib_size[index] = 4;
-	memcpy_neon(vertex_attrib_value[index], v, 4 * sizeof(float));
+	sceClibMemcpy(vertex_attrib_value[index], v, 4 * sizeof(float));
 }
 
 void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
@@ -1314,13 +1309,13 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 
 	// Copying passed data to vitaGL mempool
 	if (stride == 0)
-		memcpy_neon(ptr, pointer, count * bpe * size); // Faster if stride == 0
+		sceClibMemcpy(ptr, pointer, count * bpe * size); // Faster if stride == 0
 	else {
 		int i;
 		uint8_t *dst = (uint8_t *)ptr;
 		uint8_t *src = (uint8_t *)pointer;
 		for (i = 0; i < count; i++) {
-			memcpy_neon(dst, src, bpe * size);
+			sceClibMemcpy(dst, src, bpe * size);
 			dst += (bpe * size);
 			src += stride;
 		}

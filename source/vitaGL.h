@@ -512,9 +512,6 @@ void vglUseExtraMem(GLboolean usage);
 void vglWaitVblankStart(GLboolean enable);
 void *vglGetProcAddress(const char *name);
 
-// NEON optimized memcpy
-void *memcpy_neon(void *destination, const void *source, size_t num);
-
 #ifdef __cplusplus
 }
 #endif
