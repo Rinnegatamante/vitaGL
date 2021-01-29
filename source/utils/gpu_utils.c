@@ -277,7 +277,7 @@ palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 
 	// Initializing palette
 	if (data == NULL)
-		memset(texture_palette, 0, 256 * sizeof(uint32_t));
+		sceClibMemset(texture_palette, 0, 256 * sizeof(uint32_t));
 	else if (bpe == 4)
 		sceClibMemcpy(texture_palette, data, w * sizeof(uint32_t));
 	res->data = texture_palette;
@@ -337,7 +337,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 				}
 			}
 		} else
-			memset(texture_data, 0, tex_size);
+			sceClibMemset(texture_data, 0, tex_size);
 
 		// Initializing texture and validating it
 		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, w, h, 0);
@@ -500,7 +500,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 			}
 
 		} else
-			memset(mip_data, 0, mip_size);
+			sceClibMemset(mip_data, 0, mip_size);
 
 		// Initializing texture and validating it
 		if (tex->is_npot) sceGxmTextureInitSwizzledArbitrary(&tex->gxm_tex, texture_data, format, tex_width, tex_height, mip_count);

@@ -214,7 +214,7 @@ static void stb__DitherBlock(unsigned char *dest, unsigned char *block)
   for (ch=0; ch<3; ++ch) {
       unsigned char *bp = block+ch, *dp = dest+ch;
       unsigned char *quant = (ch == 1) ? stb__QuantGTab+8 : stb__QuantRBTab+8;
-      STBD_MEMSET(err, 0, sizeof(err));
+      sceClibMemset(err, 0, sizeof(err));
       for(y=0; y<4; ++y) {
          dp[ 0] = quant[bp[ 0] + ((3*ep2[1] + 5*ep2[0]) >> 4)];
          ep1[0] = bp[ 0] - dp[ 0];

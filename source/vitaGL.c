@@ -592,7 +592,7 @@ void vglInitWithCustomSizes(int width, int height, int ram_pool_size, int cdram_
 		disable_color_buffer_fragment_program, "depth_clear");
 
 	SceGxmBlendInfo disable_color_buffer_blend_info;
-	memset(&disable_color_buffer_blend_info, 0, sizeof(SceGxmBlendInfo));
+	sceClibMemset(&disable_color_buffer_blend_info, 0, sizeof(SceGxmBlendInfo));
 	disable_color_buffer_blend_info.colorMask = SCE_GXM_COLOR_MASK_NONE;
 	disable_color_buffer_blend_info.colorFunc = SCE_GXM_BLEND_FUNC_NONE;
 	disable_color_buffer_blend_info.alphaFunc = SCE_GXM_BLEND_FUNC_NONE;
@@ -1707,7 +1707,7 @@ uint64_t _glDrawElements_CountVertices(GLsizei count, uint16_t *ptr_idx) {
 					if ((!vertex_array_unit) && tex_unit->vertex_array.stride == 0)
 						sceClibMemcpy(vertices, tex_unit->vertex_array.pointer, vertex_count_int * (tex_unit->vertex_array.size * tex_unit->vertex_array.num));
 					if ((!vertex_array_unit) && tex_unit->vertex_array.stride != 0)
-						memset(vertices, 0, (vertex_count_int * sizeof(texture2d_vertex)));
+						sceClibMemset(vertices, 0, (vertex_count_int * sizeof(texture2d_vertex)));
 					uint8_t *ptr = ((uint8_t *)tex_unit->vertex_array.pointer);
 					int n = 0;
 					for (n = 0; n < vertex_count_int; n++) {
@@ -1737,7 +1737,7 @@ uint64_t _glDrawElements_CountVertices(GLsizei count, uint16_t *ptr_idx) {
 						sceClibMemcpy(colors, tex_unit->color_array.pointer, vertex_count_int * (tex_unit->color_array.size * tex_unit->color_array.num));
 					if ((tex_unit->vertex_array.stride != 0) || (tex_unit->color_array.stride != 0)) {
 						if (tex_unit->vertex_array.stride != 0)
-							memset(vertices, 0, (vertex_count_int * sizeof(texture2d_vertex)));
+							sceClibMemset(vertices, 0, (vertex_count_int * sizeof(texture2d_vertex)));
 						uint8_t *ptr = ((uint8_t *)tex_unit->vertex_array.pointer);
 						uint8_t *ptr_clr = ((uint8_t *)tex_unit->color_array.pointer);
 						int n;
@@ -1778,7 +1778,7 @@ uint64_t _glDrawElements_CountVertices(GLsizei count, uint16_t *ptr_idx) {
 						sceClibMemcpy(colors, tex_unit->color_array.pointer, vertex_count_int * (tex_unit->color_array.size * tex_unit->color_array.num));
 					if ((tex_unit->vertex_array.stride != 0) || (tex_unit->texture_array.stride != 0)) {
 						if (tex_unit->vertex_array.stride != 0)
-							memset(vertices, 0, (vertex_count_int * sizeof(texture2d_vertex)));
+							sceClibMemset(vertices, 0, (vertex_count_int * sizeof(texture2d_vertex)));
 						uint8_t *ptr = ((uint8_t *)tex_unit->vertex_array.pointer);
 						uint8_t *ptr_tex = ((uint8_t *)tex_unit->texture_array.pointer);
 						int n = 0;
@@ -1810,7 +1810,7 @@ uint64_t _glDrawElements_CountVertices(GLsizei count, uint16_t *ptr_idx) {
 				if ((!vertex_array_unit) && tex_unit->vertex_array.stride == 0)
 					sceClibMemcpy(vertices, tex_unit->vertex_array.pointer, vertex_count_int * (tex_unit->vertex_array.size * tex_unit->vertex_array.num));
 				if ((!vertex_array_unit) && tex_unit->vertex_array.stride != 0)
-					memset(vertices, 0, (vertex_count_int * sizeof(texture2d_vertex)));
+					sceClibMemset(vertices, 0, (vertex_count_int * sizeof(texture2d_vertex)));
 				uint8_t *ptr = ((uint8_t *)tex_unit->vertex_array.pointer);
 				int n = 0;
 				vector4f *colors_float = (vector4f*)colors;

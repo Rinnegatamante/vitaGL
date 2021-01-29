@@ -190,7 +190,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 
 		// Creating rendertarget
 		SceGxmRenderTargetParams renderTargetParams;
-		memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
+		sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
 		renderTargetParams.flags = 0;
 		renderTargetParams.width = fb->width;
 		renderTargetParams.height = fb->height;
@@ -273,7 +273,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 
 		// Creating rendertarget
 		SceGxmRenderTargetParams renderTargetParams;
-		memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
+		sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
 		renderTargetParams.flags = 0;
 		renderTargetParams.width = fb->width;
 		renderTargetParams.height = fb->height;

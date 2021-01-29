@@ -97,7 +97,7 @@ static void display_queue_callback(const void *callbackData) {
 	// Populating sceDisplay framebuffer parameters
 	SceDisplayFrameBuf display_fb;
 	const struct display_queue_callback_data *cb_data = callbackData;
-	memset(&display_fb, 0, sizeof(SceDisplayFrameBuf));
+	sceClibMemset(&display_fb, 0, sizeof(SceDisplayFrameBuf));
 	display_fb.size = sizeof(SceDisplayFrameBuf);
 	display_fb.base = cb_data->addr;
 	display_fb.pitch = DISPLAY_STRIDE;
@@ -140,7 +140,7 @@ void initGxm(void) {
 
 	// Initializing sceGxm init parameters
 	SceGxmInitializeParams gxm_init_params;
-	memset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
+	sceClibMemset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
 	gxm_init_params.flags = system_app_mode ? 0x0A : 0;
 	gxm_init_params.displayQueueMaxPendingCount = gxm_display_buffer_count - 1;
 	gxm_init_params.displayQueueCallback = display_queue_callback;
@@ -172,7 +172,7 @@ void initGxmContext(void) {
 
 	// Setting sceGxm context parameters
 	SceGxmContextParams gxm_context_params;
-	memset(&gxm_context_params, 0, sizeof(SceGxmContextParams));
+	sceClibMemset(&gxm_context_params, 0, sizeof(SceGxmContextParams));
 	gxm_context_params.hostMem = malloc(SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
 	gxm_context_params.hostMemSize = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
 	gxm_context_params.vdmRingBufferMem = vdm_ring_buffer_addr;
@@ -215,7 +215,7 @@ void termGxmContext(void) {
 void createDisplayRenderTarget(void) {
 	// Populating sceGxmRenderTarget parameters
 	SceGxmRenderTargetParams render_target_params;
-	memset(&render_target_params, 0, sizeof(SceGxmRenderTargetParams));
+	sceClibMemset(&render_target_params, 0, sizeof(SceGxmRenderTargetParams));
 	render_target_params.flags = 0;
 	render_target_params.width = DISPLAY_WIDTH;
 	render_target_params.height = DISPLAY_HEIGHT;
@@ -237,7 +237,7 @@ void initDisplayColorSurfaces(void) {
 	// Getting access to the shared framebuffer on system app mode
 	while (system_app_mode) {
 		shared_fb = sceSharedFbOpen(1);
-		memset(&shared_fb_info, 0, sizeof(SceSharedFbInfo));
+		sceClibMemset(&shared_fb_info, 0, sizeof(SceSharedFbInfo));
 		sceSharedFbGetInfo(shared_fb, &shared_fb_info);
 		if (shared_fb_info.index == 1)
 			sceSharedFbClose(shared_fb);
@@ -245,7 +245,7 @@ void initDisplayColorSurfaces(void) {
 			sceGxmMapMemory(shared_fb_info.fb_base, shared_fb_info.fb_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
 			gxm_color_surfaces_addr[0] = shared_fb_info.fb_base;
 			gxm_color_surfaces_addr[1] = shared_fb_info.fb_base2;
-			memset(&shared_fb_info, 0, sizeof(SceSharedFbInfo));
+			sceClibMemset(&shared_fb_info, 0, sizeof(SceSharedFbInfo));
 			break;
 		}
 	}
@@ -255,7 +255,7 @@ void initDisplayColorSurfaces(void) {
 		// Allocating color surface memblock
 		if (!system_app_mode) {
 			gxm_color_surfaces_addr[i] = gpu_alloc_mapped(ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024), VGL_MEM_VRAM);
-			memset(gxm_color_surfaces_addr[i], 0, DISPLAY_STRIDE * DISPLAY_HEIGHT);
+			sceClibMemset(gxm_color_surfaces_addr[i], 0, DISPLAY_STRIDE * DISPLAY_HEIGHT);
 		}
 
 		// Initializing allocated color surface
@@ -338,7 +338,7 @@ void startShaderPatcher(void) {
 
 	// Populating shader patcher parameters
 	SceGxmShaderPatcherParams shader_patcher_params;
-	memset(&shader_patcher_params, 0, sizeof(SceGxmShaderPatcherParams));
+	sceClibMemset(&shader_patcher_params, 0, sizeof(SceGxmShaderPatcherParams));
 	shader_patcher_params.userData = NULL;
 	shader_patcher_params.hostAllocCallback = shader_patcher_host_alloc_cb;
 	shader_patcher_params.hostFreeCallback = shader_patcher_host_free_cb;
@@ -460,7 +460,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 	if (has_commondialog) {
 		// Populating SceCommonDialog parameters
 		SceCommonDialogUpdateParam updateParam;
-		memset(&updateParam, 0, sizeof(updateParam));
+		sceClibMemset(&updateParam, 0, sizeof(updateParam));
 		updateParam.renderTarget.colorFormat = SCE_GXM_COLOR_FORMAT_A8B8G8R8;
 		updateParam.renderTarget.surfaceType = SCE_GXM_COLOR_SURFACE_LINEAR;
 		updateParam.renderTarget.width = DISPLAY_WIDTH;
