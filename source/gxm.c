@@ -73,8 +73,10 @@ static GLboolean gxm_initialized = GL_FALSE; // Current sceGxm state
 GLboolean is_rendering_display = GL_TRUE; // Flag for when drawing without fbo is being performed
 
 void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
+void *frame_rt_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_RENDERTARGETS_LIST_SIZE]; // Purge list for rendertargets
 int frame_purge_idx = 0; // Index for currently populatable purge list
 int frame_elem_purge_idx = 0; // Index for currently populatable purge list element
+int frame_rt_purge_idx = 0; // Index for currently populatable purge list rendetarget
 static int frame_purge_clean_idx = 1;
 
 // sceDisplay callback data
@@ -494,11 +496,19 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		if (frame_purge_list[frame_purge_clean_idx][i]) {
 			vgl_mem_free(frame_purge_list[frame_purge_clean_idx][i]);
 			frame_purge_list[frame_purge_clean_idx][i] = NULL;
-		} else break;
+		} else
+			break;
+	}
+	for (i = 0; i < FRAME_PURGE_RENDERTARGETS_LIST_SIZE; i++) {
+		if (frame_rt_purge_list[frame_purge_clean_idx][i]) {
+			sceGxmDestroyRenderTarget(frame_rt_purge_list[frame_purge_clean_idx][i]);
+		} else
+			break;
 	}
 	frame_purge_clean_idx = (frame_purge_clean_idx + 1) % FRAME_PURGE_FREQ;
 	frame_purge_idx = (frame_purge_idx + 1) % FRAME_PURGE_FREQ;
 	frame_elem_purge_idx = 0;
+	frame_rt_purge_idx = 0;
 }
 
 void glFinish(void) {

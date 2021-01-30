@@ -35,6 +35,7 @@
 #define DISPLAY_MAX_BUFFER_COUNT 3 // Maximum amount of display buffers to use
 #define GXM_TEX_MAX_SIZE 4096 // Maximum width/height in pixels per texture
 #define FRAME_PURGE_LIST_SIZE 16384 // Number of elements a single frame can hold
+#define FRAME_PURGE_RENDERTARGETS_LIST_SIZE 128 // Number of rendertargets a single frame can hold
 #define FRAME_PURGE_FREQ 3 // Frequency in frames for garbage collection
 #define BUFFERS_NUM 256 // Maximum amount of framebuffers objects usable
 
@@ -210,11 +211,14 @@ extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader pa
 extern void *gxm_depth_surface_addr; // Depth surface memblock starting address
 extern GLboolean system_app_mode; // Flag for system app mode usage
 extern void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
+extern void *frame_rt_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_RENDERTARGETS_LIST_SIZE]; // Purge list for rendertargets
 extern int frame_purge_idx; // Index for currently populatable purge list
 extern int frame_elem_purge_idx; // Index for currently populatable purge list element
+extern int frame_rt_purge_idx; // Index for currently populatable purge list rendertarget
 
-// Macro to mark a pointer as dirty for garbage collection
+// Macro to mark a pointer or a rendertarget as dirty for garbage collection
 #define markAsDirty(x) frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x
+#define markRtAsDirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
 
 extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 extern matrix4x4 projection_matrix; // Projection Matrix

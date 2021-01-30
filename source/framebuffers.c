@@ -95,12 +95,12 @@ void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
 		if (fb) {
 			fb->active = 0;
 			if (fb->target) {
-				sceGxmDestroyRenderTarget(fb->target);
+				markRtAsDirty(fb->target);
 				fb->target = NULL;
 			}
 			if (fb->depth_buffer_addr) {
-				vgl_mem_free(fb->depth_buffer_addr);
-				vgl_mem_free(fb->stencil_buffer_addr);
+				markAsDirty(fb->depth_buffer_addr);
+				markAsDirty(fb->stencil_buffer_addr);
 				fb->depth_buffer_addr = NULL;
 				fb->stencil_buffer_addr = NULL;
 			}
@@ -164,12 +164,12 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		// Detaching attached texture if passed texture ID is 0
 		if (tex_id == 0) {
 			if (fb->target) {
-				sceGxmDestroyRenderTarget(fb->target);
+				markRtAsDirty(fb->target);
 				fb->target = NULL;
 			}
 			if (fb->depth_buffer_addr) { // (FIXME: This probably shouldn't be here)
-				vgl_mem_free(fb->depth_buffer_addr);
-				vgl_mem_free(fb->stencil_buffer_addr);
+				markAsDirty(fb->depth_buffer_addr);
+				markAsDirty(fb->stencil_buffer_addr);
 				fb->depth_buffer_addr = NULL;
 				fb->stencil_buffer_addr = NULL;
 			}
@@ -247,12 +247,12 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 		// Detaching attached texture if passed texture ID is 0
 		if (tex_id == 0) {
 			if (fb->target) {
-				sceGxmDestroyRenderTarget(fb->target);
+				markRtAsDirty(fb->target);
 				fb->target = NULL;
 			}
 			if (fb->depth_buffer_addr) { // (FIXME: This probably shouldn't be here)
-				vgl_mem_free(fb->depth_buffer_addr);
-				vgl_mem_free(fb->stencil_buffer_addr);
+				markAsDirty(fb->depth_buffer_addr);
+				markAsDirty(fb->stencil_buffer_addr);
 				fb->depth_buffer_addr = NULL;
 				fb->stencil_buffer_addr = NULL;
 			}
