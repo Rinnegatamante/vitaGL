@@ -293,6 +293,7 @@ void gpu_free_texture(texture *tex) {
 			free(tex->data);
 		else
 			vgl_mem_free(tex->data);
+		tex->data = NULL;
 	}
 	
 	// Invalidating texture object
@@ -404,7 +405,6 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 	const uint32_t aligned_height = nearest_po2(h);
 	uint32_t max_width, max_height, aligned_max_width, aligned_max_height;
 	if (!mip_level) {
-		tex->is_npot = (aligned_width != w) || (aligned_height != h);
 		max_width = w;
 		max_height = h;
 		aligned_max_width = aligned_width;
@@ -503,8 +503,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 			sceClibMemset(mip_data, 0, mip_size);
 
 		// Initializing texture and validating it
-		if (tex->is_npot) sceGxmTextureInitSwizzledArbitrary(&tex->gxm_tex, texture_data, format, tex_width, tex_height, mip_count);
-		else sceGxmTextureInitSwizzled(&tex->gxm_tex, texture_data, format, tex_width, tex_height, mip_count);
+		sceGxmTextureInitSwizzledArbitrary(&tex->gxm_tex, texture_data, format, tex_width, tex_height, mip_count);
 		tex->palette_UID = 0;
 		tex->valid = 1;
 		tex->data = texture_data;
