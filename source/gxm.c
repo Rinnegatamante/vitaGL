@@ -80,13 +80,14 @@ int frame_rt_purge_idx = 0; // Index for currently populatable purge list rendet
 static int frame_purge_clean_idx = 1;
 
 #ifdef HAVE_SHARED_RENDERTARGETS
+#define MAX_RENDER_TARGETS_NUM 47  // Maximum amount of dedicated render targets usable for fbos
 #define MAX_SHARED_RT_SIZE 256 // Maximum  width value in pixels for sharred rendertargets usage
 #define MAX_SCENES_PER_FRAME 8 // Maximum amount of scenes per frame allowed by sceGxm per render target
-render_target rt_list[47];
+render_target rt_list[MAX_RENDER_TARGETS_NUM];
 
 render_target *getFreeRenderTarget(int w, int h) {
 	int i;
-	for (i = 0; i < 47; i++) {
+	for (i = 0; i < MAX_RENDER_TARGETS_NUM; i++) {
 		if (rt_list[i].rt != NULL) {
 			if (w == rt_list[i].w && h == rt_list[i].h && rt_list[i].ref_count < rt_list[i].max_refs) {
 				rt_list[i].ref_count++;
@@ -103,7 +104,7 @@ render_target *getFreeRenderTarget(int w, int h) {
 			renderTargetParams.multisampleMode = msaa_mode;
 			renderTargetParams.multisampleLocations = 0;
 			renderTargetParams.driverMemBlock = -1;
-			debugPrintf("sceGxmCreateRenderTarget: %X\n", sceGxmCreateRenderTarget(&renderTargetParams, &rt_list[i].rt));
+			sceGxmCreateRenderTarget(&renderTargetParams, &rt_list[i].rt);
 			rt_list[i].w = w;
 			rt_list[i].h = h;
 			rt_list[i].ref_count = 1;

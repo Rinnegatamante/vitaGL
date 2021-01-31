@@ -23,8 +23,8 @@
 
 #include "shared.h"
 
-#define MAX_CUSTOM_SHADERS 1024  // Maximum number of linkable custom shaders
-#define MAX_CUSTOM_PROGRAMS 512 // Maximum number of linkable custom programs
+#define MAX_CUSTOM_SHADERS 2048  // Maximum number of linkable custom shaders
+#define MAX_CUSTOM_PROGRAMS 1024 // Maximum number of linkable custom programs
 
 GLboolean log_stuffs = GL_FALSE;
 
