@@ -79,6 +79,49 @@ int frame_elem_purge_idx = 0; // Index for currently populatable purge list elem
 int frame_rt_purge_idx = 0; // Index for currently populatable purge list rendetarget
 static int frame_purge_clean_idx = 1;
 
+#ifdef HAVE_SHARED_RENDERTARGETS
+#define MAX_SHARED_RT_SIZE 256 // Maximum  width value in pixels for sharred rendertargets usage
+#define MAX_SCENES_PER_FRAME 8 // Maximum amount of scenes per frame allowed by sceGxm per render target
+render_target rt_list[47];
+
+render_target *getFreeRenderTarget(int w, int h) {
+	int i;
+	for (i = 0; i < 47; i++) {
+		if (rt_list[i].rt != NULL) {
+			if (w == rt_list[i].w && h == rt_list[i].h && rt_list[i].ref_count < rt_list[i].max_refs) {
+				rt_list[i].ref_count++;
+				return &rt_list[i];
+			}
+		} else {
+			rt_list[i].max_refs = w > MAX_SHARED_RT_SIZE ? 1 : MAX_SCENES_PER_FRAME;
+			SceGxmRenderTargetParams renderTargetParams;
+			sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
+			renderTargetParams.flags = 0;
+			renderTargetParams.width = w;
+			renderTargetParams.height = h;
+			renderTargetParams.scenesPerFrame = rt_list[i].max_refs;
+			renderTargetParams.multisampleMode = msaa_mode;
+			renderTargetParams.multisampleLocations = 0;
+			renderTargetParams.driverMemBlock = -1;
+			debugPrintf("sceGxmCreateRenderTarget: %X\n", sceGxmCreateRenderTarget(&renderTargetParams, &rt_list[i].rt));
+			rt_list[i].w = w;
+			rt_list[i].h = h;
+			rt_list[i].ref_count = 1;
+			return &rt_list[i];
+		}
+	}
+	return NULL;
+}
+
+void markRtAsDirty(render_target *rt) {
+	rt->ref_count--;
+	if (!rt->ref_count) {
+		_markRtAsDirty(rt->rt);
+		rt->rt = NULL;
+	}
+}
+#endif
+
 // sceDisplay callback data
 struct display_queue_callback_data {
 	void *addr;
@@ -425,7 +468,30 @@ void sceneReset(void) {
 				&gxm_color_surfaces[gxm_back_buffer_index],
 				&gxm_depth_stencil_surface);
 		} else {
+			
+			// If a rendertarget is not bound to the in use framebuffer, we get one for it
+			if (!active_write_fb->target) {
+#ifdef HAVE_SHARED_RENDERTARGETS
+				active_write_fb->target = getFreeRenderTarget(active_write_fb->width, active_write_fb->height);
+#else
+				SceGxmRenderTargetParams renderTargetParams;
+				sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
+				renderTargetParams.flags = 0;
+				renderTargetParams.width = active_write_fb->width;
+				renderTargetParams.height = active_write_fb->height;
+				renderTargetParams.scenesPerFrame = 1;
+				renderTargetParams.multisampleMode = msaa_mode;
+				renderTargetParams.multisampleLocations = 0;
+				renderTargetParams.driverMemBlock = -1;
+				sceGxmCreateRenderTarget(&renderTargetParams, &active_write_fb->target);
+#endif
+			}
+#ifdef HAVE_SHARED_RENDERTARGETS
+			render_target *fbo_rt = (render_target*)active_write_fb->target;
+			sceGxmBeginScene(gxm_context, 0, fbo_rt->rt,
+#else
 			sceGxmBeginScene(gxm_context, 0, active_write_fb->target,
+#endif
 				NULL, NULL, NULL,
 				&active_write_fb->colorbuffer,
 				&active_write_fb->depthbuffer);

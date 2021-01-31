@@ -218,7 +218,19 @@ extern int frame_rt_purge_idx; // Index for currently populatable purge list ren
 
 // Macro to mark a pointer or a rendertarget as dirty for garbage collection
 #define markAsDirty(x) frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x
+#ifdef HAVE_SHARED_RENDERTARGETS
+typedef struct {
+	SceGxmRenderTarget *rt;
+	int w;
+	int h;
+	int ref_count;
+	int max_refs;
+} render_target;
+void markRtAsDirty(render_target *rt);
+#define _markRtAsDirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
+#else
 #define markRtAsDirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
+#endif
 
 extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 extern matrix4x4 projection_matrix; // Projection Matrix

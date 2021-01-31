@@ -75,9 +75,10 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 	for (i = 0; i < BUFFERS_NUM; i++) {
 		if (!framebuffers[i].active) {
 			ids[j++] = (GLuint)&framebuffers[i];
-			framebuffers[i].active = 1;
+			framebuffers[i].active = GL_TRUE;
 			framebuffers[i].depth_buffer_addr = NULL;
 			framebuffers[i].stencil_buffer_addr = NULL;
+			framebuffers[i].target = NULL;
 		}
 		if (j >= n)
 			break;
@@ -93,7 +94,7 @@ void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
 	while (n > 0) {
 		framebuffer *fb = (framebuffer *)ids[--n];
 		if (fb) {
-			fb->active = 0;
+			fb->active = GL_FALSE;
 			if (fb->target) {
 				markRtAsDirty(fb->target);
 				fb->target = NULL;
@@ -188,17 +189,6 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		// Allocating depth and stencil buffer (FIXME: This probably shouldn't be here)
 		initDepthStencilBuffer(fb->width, fb->height, &fb->depthbuffer, &fb->depth_buffer_addr, &fb->stencil_buffer_addr);
 
-		// Creating rendertarget
-		SceGxmRenderTargetParams renderTargetParams;
-		sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
-		renderTargetParams.flags = 0;
-		renderTargetParams.width = fb->width;
-		renderTargetParams.height = fb->height;
-		renderTargetParams.scenesPerFrame = 1;
-		renderTargetParams.multisampleMode = msaa_mode;
-		renderTargetParams.multisampleLocations = 0;
-		renderTargetParams.driverMemBlock = -1;
-		sceGxmCreateRenderTarget(&renderTargetParams, &fb->target);
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -271,17 +261,6 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 		// Allocating depth and stencil buffer (FIXME: This probably shouldn't be here)
 		initDepthStencilBuffer(fb->width, fb->height, &fb->depthbuffer, &fb->depth_buffer_addr, &fb->stencil_buffer_addr);
 
-		// Creating rendertarget
-		SceGxmRenderTargetParams renderTargetParams;
-		sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
-		renderTargetParams.flags = 0;
-		renderTargetParams.width = fb->width;
-		renderTargetParams.height = fb->height;
-		renderTargetParams.scenesPerFrame = 1;
-		renderTargetParams.multisampleMode = msaa_mode;
-		renderTargetParams.multisampleLocations = 0;
-		renderTargetParams.driverMemBlock = -1;
-		sceGxmCreateRenderTarget(&renderTargetParams, &fb->target);
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
