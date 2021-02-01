@@ -211,9 +211,8 @@ GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new) {
 }
 
 void update_alpha_test_settings() {
-#if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
 	ffp_dirty_frag = GL_TRUE;
-#endif
+
 	// Translating openGL alpha test operation to internal one
 	if (alpha_test_state) {
 		switch (alpha_func) {

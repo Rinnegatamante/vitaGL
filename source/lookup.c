@@ -33,7 +33,6 @@ static const struct {
 	// *gl
 	{ "glActiveTexture", (void *)glActiveTexture },
 	{ "glAlphaFunc", (void *)glAlphaFunc },
-	{ "glArrayElement", (void *)glArrayElement },
 	{ "glAttachShader", (void *)glAttachShader },
 	{ "glBegin", (void *)glBegin },
 	{ "glBindAttribLocation", (void *)glBindAttribLocation },

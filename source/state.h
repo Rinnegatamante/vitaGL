@@ -78,14 +78,7 @@ typedef enum fogType {
 // Texture unit struct
 typedef struct texture_unit {
 	GLboolean enabled;
-	GLboolean vertex_array_state;
-	GLboolean color_array_state;
-	GLboolean texture_array_state;
 	matrix4x4 stack[GENERIC_STACK_DEPTH];
-	vertexArray vertex_array;
-	vertexArray color_array;
-	vertexArray texture_array;
-	GLenum color_object_type;
 	void *vertex_object;
 	void *color_object;
 	void *texture_object;

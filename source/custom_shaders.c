@@ -46,13 +46,11 @@ static unsigned char orig_size[GL_MAX_VERTEX_ATTRIBS];
 		
 extern GLboolean use_vram;
 
-#ifdef HAVE_SHARK
 // Internal runtime shader compiler settings
 int32_t compiler_fastmath = GL_TRUE;
 int32_t compiler_fastprecision = GL_FALSE;
 int32_t compiler_fastint = GL_TRUE;
 shark_opt compiler_opts = SHARK_OPT_DEFAULT;
-#endif
 
 GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
 
@@ -481,7 +479,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	}
 }
 
-#if defined(HAVE_SHARK) && defined(HAVE_SHARK_LOG)
+#ifdef HAVE_SHARK_LOG
 static char *shark_log = NULL;
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	uint8_t append = shark_log != NULL;
@@ -525,12 +523,10 @@ float *getUniformAliasDataPtr(uniform *u, const char *name, uint32_t size) {
  * ------------------------------
  */
 void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, int32_t use_fastprecision, int32_t use_fastint) {
-#ifdef HAVE_SHARK
 	compiler_opts = opt_level;
 	compiler_fastmath = use_fastmath;
 	compiler_fastprecision = use_fastprecision;
 	compiler_fastint = use_fastint;
-#endif
 }
 
 void vglEnableRuntimeShaderCompiler(GLboolean usage) {
@@ -642,7 +638,7 @@ void glCompileShader(GLuint handle) {
 	if (!is_shark_online) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
-#ifdef HAVE_SHARK
+
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
 
@@ -659,7 +655,6 @@ void glCompileShader(GLuint handle) {
 	shark_log = NULL;
 #endif
 	shark_clear_output();
-#endif
 }
 
 void glDeleteShader(GLuint shad) {

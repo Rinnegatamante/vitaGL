@@ -72,6 +72,8 @@ GLboolean system_app_mode = GL_FALSE; // Flag for system app mode usage
 static GLboolean gxm_initialized = GL_FALSE; // Current sceGxm state
 GLboolean is_rendering_display = GL_TRUE; // Flag for when drawing without fbo is being performed
 
+float *legacy_pool = NULL; // Mempool for GL1 immediate draw pipeline
+
 void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
 void *frame_rt_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_RENDERTARGETS_LIST_SIZE]; // Purge list for rendertargets
 int frame_purge_idx = 0; // Index for currently populatable purge list
@@ -165,7 +167,6 @@ void initGxm(void) {
 
 	// Initializing runtime shader compiler
 	if (use_shark) {
-#ifdef HAVE_SHARK
 		if (shark_init(NULL) >= 0) {
 			is_shark_online = GL_TRUE;
 #ifdef HAVE_SHARK_LOG
@@ -173,7 +174,6 @@ void initGxm(void) {
 			shark_set_warnings_level(SHARK_WARN_MAX);
 #endif
 		}
-#endif
 	}
 
 	// Checking if the running application is a system one
@@ -251,11 +251,10 @@ void termGxmContext(void) {
 		sceSharedFbEnd(shared_fb);
 		sceSharedFbClose(shared_fb);
 	}
-#ifdef HAVE_SHARK
+
 	// Shutting down runtime shader compiler
 	if (is_shark_online)
 		shark_end();
-#endif
 }
 
 void createDisplayRenderTarget(void) {
@@ -452,8 +451,11 @@ void sceneReset(void) {
 		// Ending drawing scene
 		if (needs_end_scene)
 			sceneEnd();
-		else
+		else {
+			if (legacy_pool_size)
+				legacy_pool = (float*)gpu_alloc_mapped_temp(legacy_pool_size);
 			needs_end_scene = GL_TRUE;
+		}
 
 		// Starting drawing scene
 		is_rendering_display = !active_write_fb;
