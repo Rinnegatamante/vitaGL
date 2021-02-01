@@ -157,6 +157,26 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 				ffp_vertex_program_id = shader_cache[i].vert_id;
 				ffp_fragment_program_id = shader_cache[i].frag_id;
 				ffp_dirty_frag_blend = GL_TRUE;
+				
+				// Checking for existing uniforms in the shader
+				if (ffp_dirty_vert) {
+					ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "clip_plane0_eq");
+					ffp_vertex_params[MODELVIEW_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "modelview");
+					ffp_vertex_params[WVP_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "wvp");
+					ffp_vertex_params[TEX_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "texmat");
+				}
+				
+				// Checking for existing uniforms in the shader
+				if (ffp_dirty_frag) {
+					ffp_fragment_params[ALPHA_CUT_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "alphaCut");
+					ffp_fragment_params[FOG_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fogColor");
+					ffp_fragment_params[TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "texEnvColor");
+					ffp_fragment_params[TINT_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tintColor");
+					ffp_fragment_params[FOG_NEAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_near");
+					ffp_fragment_params[FOG_FAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_far");
+					ffp_fragment_params[FOG_DENSITY_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_density");
+				}
+				
 				ffp_dirty_vert = GL_FALSE;
 				ffp_dirty_frag = GL_FALSE;
 				break;

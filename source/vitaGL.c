@@ -1185,22 +1185,21 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	if (cur_program != 0) {
 		_vglDrawObjects_CustomShadersIMPL(implicit_wvp);
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, texture_units[client_texture_unit].index_object, count);
-	} else {
+	} else if (ffp_vertex_attrib_state & (1 << 0)) {
 		texture_unit *tex_unit = &texture_units[client_texture_unit];
 		int texture2d_idx = tex_unit->tex_id;
-		if (ffp_vertex_attrib_state & (1 << 0)) {
-			reload_ffp_shaders(NULL, NULL, 0);
-			if (ffp_vertex_attrib_state & (1 << 1)) {
-				if (!(texture_slots[texture2d_idx].valid))
-					return;
-				sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
-				sceGxmSetVertexStream(gxm_context, 1, tex_unit->texture_object);
-				if (ffp_vertex_num_params > 2) sceGxmSetVertexStream(gxm_context, 2, tex_unit->color_object);
-			} else if (ffp_vertex_num_params > 1) sceGxmSetVertexStream(gxm_context, 1, tex_unit->color_object);
-			sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
-			upload_ffp_uniforms();
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
-		}
+		
+		reload_ffp_shaders(NULL, NULL, 0);
+		if (ffp_vertex_attrib_state & (1 << 1)) {
+			if (!(texture_slots[texture2d_idx].valid))
+				return;
+			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
+			sceGxmSetVertexStream(gxm_context, 1, tex_unit->texture_object);
+			if (ffp_vertex_num_params > 2) sceGxmSetVertexStream(gxm_context, 2, tex_unit->color_object);
+		} else if (ffp_vertex_num_params > 1) sceGxmSetVertexStream(gxm_context, 1, tex_unit->color_object);
+		sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
+		upload_ffp_uniforms();
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 	}
 }
 
