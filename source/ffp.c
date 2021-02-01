@@ -25,7 +25,7 @@
 #include "shaders/ffp_v.h"
 #include "shaders/ffp_f.h"
 
-#define SHADER_CACHE_SIZE 64
+#define SHADER_CACHE_SIZE 256
 #define LEGACY_VERTEX_STRIDE 9
 
 #define VERTEX_UNIFORMS_NUM 4
@@ -39,7 +39,7 @@ typedef struct {
 	vector2f uv;
 	vector4f clr;
 } legacy_vtx_attachment;
-legacy_vtx_attachment current_vtx;
+legacy_vtx_attachment current_vtx = {.uv = {0.0f, 0.0f}, .clr = {1.0f, 1.0f, 1.0f, 1.0f}};
 
 SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
@@ -142,8 +142,8 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	shader_mask mask = {.raw = 0};
 	mask.texenv_mode = tex_unit->env_mode;
 	mask.alpha_test_mode = alpha_op;
-	mask.has_texture = ffp_vertex_attrib_state & (1 << 1) ? GL_TRUE : GL_FALSE;
-	mask.has_colors = ffp_vertex_attrib_state & (1 << 2) ? GL_TRUE : GL_FALSE;
+	mask.has_texture = (ffp_vertex_attrib_state & (1 << 1)) ? GL_TRUE : GL_FALSE;
+	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
 	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
 		ffp_dirty_vert = GL_FALSE;
@@ -209,23 +209,26 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 		}
 	}
 	
+	SceGxmVertexAttribute ffp_vertex_attribute[FFP_VERTEX_ATTRIBS_NUM];
+	SceGxmVertexStream ffp_vertex_stream[FFP_VERTEX_ATTRIBS_NUM];
+	
 	if (attrs) {
-		int n = 1;
+		ffp_vertex_num_params = 1;
 		const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(ffp_vertex_program, "position");
 		attrs[0].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 		param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord");
 		if (param) {
 			attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			n++;
+			ffp_vertex_num_params++;
 		}
 		param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
-		if (param)
-			attrs[n].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+		if (param) {
+			attrs[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			ffp_vertex_num_params++;
+		}
 	} else {
 		// Setting up shader stream info
 		ffp_vertex_num_params = 1;
-		SceGxmVertexAttribute ffp_vertex_attribute[FFP_VERTEX_ATTRIBS_NUM];
-		SceGxmVertexStream ffp_vertex_stream[FFP_VERTEX_ATTRIBS_NUM];
 	
 		// Vertex positions
 		const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(ffp_vertex_program, "position");
@@ -305,8 +308,8 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 		if (shader_cache_size < SHADER_CACHE_SIZE)
 			shader_cache_size++;
 		else {
-			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, ffp_vertex_program_id);
-			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, ffp_fragment_program_id);
+			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, shader_cache[shader_cache_idx].vert_id);
+			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, shader_cache[shader_cache_idx].frag_id);
 			free(shader_cache[shader_cache_idx].frag);
 			free(shader_cache[shader_cache_idx].vert);
 		}

@@ -1158,7 +1158,7 @@ void vglTexCoordPointerMapped(const GLvoid *pointer) {
 	
 	attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 	attributes->componentCount = 2;
-	streams->stride = 4;
+	streams->stride = 8;
 	
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	tex_unit->texture_object = (GLvoid *)pointer;
