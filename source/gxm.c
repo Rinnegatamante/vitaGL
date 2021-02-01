@@ -80,7 +80,7 @@ int frame_rt_purge_idx = 0; // Index for currently populatable purge list rendet
 static int frame_purge_clean_idx = 1;
 
 #ifdef HAVE_SHARED_RENDERTARGETS
-#define MAX_RENDER_TARGETS_NUM 47  // Maximum amount of dedicated render targets usable for fbos
+#define MAX_RENDER_TARGETS_NUM 47 // Maximum amount of dedicated render targets usable for fbos
 #define MAX_SHARED_RT_SIZE 256 // Maximum  width value in pixels for sharred rendertargets usage
 #define MAX_SCENES_PER_FRAME 8 // Maximum amount of scenes per frame allowed by sceGxm per render target
 render_target rt_list[MAX_RENDER_TARGETS_NUM];

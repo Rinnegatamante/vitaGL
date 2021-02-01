@@ -841,6 +841,7 @@ void glLinkProgram(GLuint progr) {
 	
 	// Creating fragment and vertex program via sceGxmShaderPatcher if using vgl* draw pipeline
 	if (p->stream_num) {
+		if (p->stream_num > 1) p->stream_num = p->attr_num;
 		sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
 			p->vshader->id, p->attr, p->attr_num,
 			p->stream, p->stream_num, &p->vprog);
@@ -1230,7 +1231,7 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 	attributes->regIndex = sceGxmProgramParameterGetResourceIndex(param);
 	streams->stride = bpe * num;
 	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-	p->stream_num = p->attr_num;
+	p->stream_num = 2;
 }
 
 // Equivalent of glBindAttribLocation but for sceGxm architecture when packed attributes are used
