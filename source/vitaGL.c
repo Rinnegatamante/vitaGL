@@ -970,7 +970,7 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
 	
-	tex_unit->texture_object = gpu_alloc_mapped_temp(count * streams->stride);
+	tex_unit->vertex_object = gpu_alloc_mapped_temp(count * streams->stride);
 	sceClibMemcpy(tex_unit->vertex_object, pointer, count * streams->stride);
 }
 
@@ -1015,7 +1015,7 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
 	
-	tex_unit->texture_object = gpu_alloc_mapped_temp(count * streams->stride);
+	tex_unit->color_object = gpu_alloc_mapped_temp(count * streams->stride);
 	sceClibMemcpy(tex_unit->color_object, pointer, count * streams->stride);
 }
 

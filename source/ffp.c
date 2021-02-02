@@ -59,7 +59,8 @@ typedef union shader_mask {
 		uint32_t has_texture : 1;
 		uint32_t has_colors : 1;
 		uint32_t fog_mode : 2;
-		uint32_t UNUSED : 22;
+		uint32_t has_clip_plane0 : 1;
+		uint32_t UNUSED : 21;
 	};
 	uint32_t raw;
 } shader_mask;
@@ -106,18 +107,20 @@ GLboolean ffp_dirty_vert = GL_TRUE;
 blend_config ffp_blend_info;
 shader_mask ffp_mask = {.raw = 0};
 
+SceGxmVertexAttribute ffp_vertex_attribute[FFP_VERTEX_ATTRIBS_NUM];
+SceGxmVertexStream ffp_vertex_stream[FFP_VERTEX_ATTRIBS_NUM];
+
 void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * streams) {
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	int texture2d_idx = tex_unit->tex_id;
-	
 	// Checking if mask changed
-	GLboolean ffp_dirty_frag_blend = GL_FALSE;
+	texture_unit *tex_unit = &texture_units[client_texture_unit];
+	GLboolean ffp_dirty_frag_blend = ffp_blend_info.raw != blend_info.raw;
 	shader_mask mask = {.raw = 0};
 	mask.texenv_mode = tex_unit->env_mode;
 	mask.alpha_test_mode = alpha_op;
 	mask.has_texture = (ffp_vertex_attrib_state & (1 << 1)) ? GL_TRUE : GL_FALSE;
 	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
+	mask.has_clip_plane0 = clip_plane0;
 	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
 		ffp_dirty_vert = GL_FALSE;
 		ffp_dirty_frag = GL_FALSE;
@@ -163,7 +166,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 		
 		// Compiling the new shader
 		char vshader[8192];
-		sprintf(vshader, ffp_vert_src, clip_plane0, mask.has_texture, mask.has_colors);
+		sprintf(vshader, ffp_vert_src, mask.has_clip_plane0, mask.has_texture, mask.has_colors);
 		uint32_t size = strlen(vshader);
 		SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 		ffp_vertex_program = (SceGxmProgram*)malloc(size);
@@ -187,32 +190,26 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 		streams = ffp_vertex_stream_config;
 	}
 	
-	SceGxmVertexAttribute ffp_vertex_attribute[FFP_VERTEX_ATTRIBS_NUM];
-	SceGxmVertexStream ffp_vertex_stream[FFP_VERTEX_ATTRIBS_NUM];
-	
-	/*if (attrs) {
-		ffp_vertex_num_params = 1;
-		
+	ffp_vertex_num_params = 1;
+	if (attrs) {
 		// Vertex positions
 		const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(ffp_vertex_program, "position");
 		attrs[0].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 		
 		// Vertex texture coordinates
-		param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord");
-		if (param) {
+		if (mask.has_texture) {
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord");
 			attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 			ffp_vertex_num_params++;
 		}
 		
 		// Vertex colors
-		param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
-		if (param) {
+		if (mask.has_colors) {
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
 			attrs[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 			ffp_vertex_num_params++;
 		}
-	} else {*/
-		ffp_vertex_num_params = 1;
-	
+	} else {
 		// Vertex positions
 		const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(ffp_vertex_program, "position");
 		sceClibMemcpy(&ffp_vertex_attribute[0], &ffp_vertex_attrib_config[0], sizeof(SceGxmVertexAttribute));
@@ -222,8 +219,8 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 		ffp_vertex_stream[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 		
 		// Vertex texture coordinates
-		param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord");
-		if (param) {
+		if (mask.has_texture) {
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord");
 			sceClibMemcpy(&ffp_vertex_attribute[1], &ffp_vertex_attrib_config[1], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[1].streamIndex = 1;
 			ffp_vertex_attribute[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
@@ -233,8 +230,8 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 		}
 		
 		// Vertex colors
-		param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
-		if (param) {
+		if (mask.has_colors) {
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
 			sceClibMemcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[2], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
@@ -245,7 +242,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 		
 		streams = ffp_vertex_stream;
 		attrs = ffp_vertex_attribute;
-	//}
+	}
 		
 	// Creating patched vertex shader
 	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, ffp_vertex_program_id, attrs, ffp_vertex_num_params, streams, ffp_vertex_num_params, &ffp_vertex_program_patched);
@@ -255,7 +252,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 		
 		// Compiling the new shader
 		char fshader[8192];
-		sprintf(fshader, ffp_frag_src, alpha_op, mask.has_texture, mask.has_colors, internal_fog_mode, tex_unit->env_mode);
+		sprintf(fshader, ffp_frag_src, alpha_op, mask.has_texture, mask.has_colors, mask.fog_mode, mask.texenv_mode);
 		uint32_t size = strlen(fshader);
 		SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 		ffp_fragment_program = (SceGxmProgram*)malloc(size);
@@ -278,12 +275,12 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	}
 	
 	// Checking if fragment shader requires a blend settings change
-	//if (ffp_dirty_frag_blend || (ffp_blend_info.raw != blend_info.raw)) {
+	if (ffp_dirty_frag_blend) {
 		rebuild_frag_shader(ffp_fragment_program_id, &ffp_fragment_program_patched);
 			
 		// Updating current fixed function pipeline blend config
 		ffp_blend_info.raw = blend_info.raw;
-	//}
+	}
 	
 	if (new_shader_flag) {
 		shader_cache_idx = (shader_cache_idx + 1) % SHADER_CACHE_SIZE;
@@ -397,6 +394,8 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
  
 void glEnableClientState(GLenum array) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
+	ffp_dirty_vert = GL_TRUE;
+	ffp_dirty_frag = GL_TRUE;
 	switch (array) {
 	case GL_VERTEX_ARRAY:
 		ffp_vertex_attrib_state |= (1 << 0);
@@ -415,6 +414,8 @@ void glEnableClientState(GLenum array) {
 
 void glDisableClientState(GLenum array) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
+	ffp_dirty_vert = GL_TRUE;
+	ffp_dirty_frag = GL_TRUE;
 	switch (array) {
 	case GL_VERTEX_ARRAY:
 		ffp_vertex_attrib_state &= ~(1 << 0);

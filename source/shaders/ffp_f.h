@@ -13,7 +13,7 @@ float4 main(
 	float4 vColor : COLOR,
 #endif
 #if fog_mode < 3
-	float4 coords: WPOS,
+	float4 coords : WPOS,
 #endif
 	uniform sampler2D tex,
 	uniform float alphaCut,
