@@ -49,7 +49,6 @@ int main(){
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0);
 	
 	// Drawing on texture
-	vglStartRendering();	
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);
 	glVertexPointer(3, GL_FLOAT, 0, vertices);
@@ -57,14 +56,13 @@ int main(){
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);	
-	vglStopRendering();
+	vglSwapBuffers(GL_FALSE);
 	glFinish();
 	glLoadIdentity();
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
 	for (;;){
-		vglStartRendering();
 		glClear(GL_COLOR_BUFFER_BIT);
 		glBindTexture(GL_TEXTURE_2D, texture);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -82,7 +80,7 @@ int main(){
 		glVertex3f(0, 544, 0);
 		
 		glEnd();
-		vglStopRendering();
+		vglSwapBuffers(GL_FALSE);
 		glLoadIdentity();
 	}
 	

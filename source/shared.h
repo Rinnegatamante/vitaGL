@@ -159,6 +159,7 @@ extern blend_config blend_info;
 extern SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
 extern GLboolean is_rendering_display; // Flag for when we're rendering without a framebuffer object
 extern uint16_t *default_idx_ptr; // sceGxm mapped progressive indices buffer
+extern uint16_t *default_quads_idx_ptr; // sceGxm mapped progressive indices buffer for quads
 
 extern int legacy_pool_size; // Mempool size for GL1 immediate draw pipeline
 extern float *legacy_pool; // Mempool for GL1 immediate draw pipeline

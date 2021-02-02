@@ -15,7 +15,6 @@ int main(){
 	glLoadIdentity();
 	
 	for (;;){
-		vglStartRendering();
 		glClear(GL_COLOR_BUFFER_BIT);
 		glBegin(GL_QUADS);
 		glColor3f(1.0, 0.0, 0.0);
@@ -27,7 +26,7 @@ int main(){
 		glColor3f(1.0, 0.0, 1.0);
 		glVertex3f(400, 400, 0);
 		glEnd();
-		vglStopRendering();
+		vglSwapBuffers(GL_FALSE);
 		glLoadIdentity();
 	}
 	

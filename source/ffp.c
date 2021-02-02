@@ -680,6 +680,8 @@ void glEnd(void) {
 	// Invalidating current attributes state settings
 	uint32_t orig_state = ffp_vertex_attrib_state;
 	ffp_vertex_attrib_state = 0xFF;
+	ffp_dirty_frag = GL_TRUE;
+	ffp_dirty_vert = GL_TRUE;
 	reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
 
 	// Uploading texture to use
@@ -694,7 +696,11 @@ void glEnd(void) {
 	sceGxmSetVertexStream(gxm_context, 0, legacy_pool);
 	sceGxmSetVertexStream(gxm_context, 1, legacy_pool);
 	sceGxmSetVertexStream(gxm_context, 2, legacy_pool);
-	sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr, vertex_count);
+	
+	if (prim_is_quad)
+		sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_quads_idx_ptr, (vertex_count / 2) * 3);
+	else
+		sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr, vertex_count);
 	
 	// Moving legacy pool address offset
 	legacy_pool += vertex_count * LEGACY_VERTEX_STRIDE;

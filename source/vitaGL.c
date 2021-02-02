@@ -28,7 +28,7 @@
 #include "shaders/clear_v.h"
 #include "shaders/disable_color_buffer_f.h"
 
-#define MAX_IDX_NUMBER 8096 // Maximum allowed number of indices per draw call
+#define MAX_IDX_NUMBER 12288 // Maximum allowed number of indices per draw call
 
 #ifdef HAVE_SOFTFP_ABI
 __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
@@ -108,6 +108,7 @@ static SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use 
 uint32_t vertex_array_unit = 0; // Current in-use vertex array buffer unit
 static uint32_t index_array_unit = 0; // Current in-use element array buffer unit
 uint16_t *default_idx_ptr; // sceGxm mapped progressive indices buffer
+uint16_t *default_quads_idx_ptr; // sceGxm mapped progressive indices buffer for quads
 
 vector4f texenv_color = { 0.0f, 0.0f, 0.0f, 0.0f }; // Current in use texture environment color
 
@@ -303,10 +304,19 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	// Init custom shaders
 	resetCustomShaders();
 	
-	// Init constant index buffer
+	// Init constant index buffers
 	default_idx_ptr = (uint16_t*)malloc(MAX_IDX_NUMBER * sizeof(uint16_t));
+	default_quads_idx_ptr = (uint16_t*)malloc(MAX_IDX_NUMBER * sizeof(uint16_t));
 	for (i = 0; i < MAX_IDX_NUMBER; i++) {
 		default_idx_ptr[i] = i;
+	}
+	for (i = 0; i < MAX_IDX_NUMBER / 6; i++) {
+		default_quads_idx_ptr[i * 6] = i * 4;
+		default_quads_idx_ptr[i * 6 + 1] = i * 4 + 1;
+		default_quads_idx_ptr[i * 6 + 2] = i * 4 + 3;
+		default_quads_idx_ptr[i * 6 + 3] = i * 4 + 1;
+		default_quads_idx_ptr[i * 6 + 4] = i * 4 + 2;
+		default_quads_idx_ptr[i * 6 + 5] = i * 4 + 3;
 	}
 
 	// Init buffers
@@ -891,7 +901,11 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 		if (!(ffp_vertex_attrib_state & (1 << 0))) return;
 		_glDrawArrays_FixedFunctionIMPL(first + count);
 	}
-	sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
+	
+	if (prim_is_quad)
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_quads_idx_ptr + (first / 2) * 3, (count / 2) * 3);
+	else
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {

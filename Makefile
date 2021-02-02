@@ -37,6 +37,10 @@ ifeq ($(SHARED_RENDERTARGETS),1)
 CFLAGS  += -DHAVE_SHARED_RENDERTARGETS
 endif
 
+ifeq ($(HAVE_LOG),1)
+CFLAGS  += -DENABLE_LOG
+endif
+
 all: $(TARGET).a
 
 $(TARGET).a: $(OBJS)

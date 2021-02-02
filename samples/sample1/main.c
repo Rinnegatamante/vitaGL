@@ -10,7 +10,7 @@ GLuint texture = 0;
 int main(){
 	
 	// Initializing graphics device
-	vglInit(0x800000);
+	vglInit(0x100000);
 	
 	// Loading BMP image to use as texture
 	SceUID fd = sceIoOpen("app0:texture.bmp", SCE_O_RDONLY, 0777);

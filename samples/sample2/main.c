@@ -18,7 +18,6 @@ int main(){
 	glLoadIdentity();
 	
 	for (;;){
-		vglStartRendering();
 		glClear(GL_COLOR_BUFFER_BIT);
 		
 		glEnableClientState(GL_VERTEX_ARRAY);
@@ -29,8 +28,7 @@ int main(){
 		glDisableClientState(GL_VERTEX_ARRAY);
 		glDisableClientState(GL_COLOR_ARRAY);
 		
-		vglStopRendering();
-		
+		vglSwapBuffers(GL_FALSE);
 		glLoadIdentity();
 	}
 	
