@@ -47,23 +47,6 @@ __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float 
 }
 #endif
 
-typedef enum {
-	TEX2D_WVP_UNIF,
-	TEX2D_ALPHA_CUT_UNIF,
-	TEX2D_ALPHA_MODE_UNIF,
-	TEX2D_TEX_ENV_MODE_UNIF,
-	TEX2D_CLIP_PLANE0_UNIF,
-	TEX2D_CLIP_PLANEO_EQUATION_UNIF,
-	TEX2D_MODELVIEW_UNIF,
-	TEX2D_FOG_MODE_UNIF,
-	TEX2D_FOG_NEAR_UNIF,
-	TEX2D_FOG_FAR_UNIF,
-	TEX2D_FOG_DENSITY_UNIF,
-	TEX2D_FOG_COLOR_UNIF,
-	TEX2D_TEX_ENV_COLOR_UNIF,
-	TEX2D_TEXMAT_UNIF
-} TEX2D_UNIFS;
-
 // Disable color buffer shader
 SceGxmShaderPatcherId disable_color_buffer_fragment_id;
 const SceGxmProgramParameter *disable_color_buffer_position;
@@ -1179,24 +1162,21 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p);
 	sceneReset();
-
+	
+	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	if (cur_program != 0) {
 		_vglDrawObjects_CustomShadersIMPL(implicit_wvp);
-		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, texture_units[client_texture_unit].index_object, count);
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 	} else if (ffp_vertex_attrib_state & (1 << 0)) {
-		texture_unit *tex_unit = &texture_units[client_texture_unit];
-		int texture2d_idx = tex_unit->tex_id;
-		
 		reload_ffp_shaders(NULL, NULL);
 		if (ffp_vertex_attrib_state & (1 << 1)) {
-			if (!(texture_slots[texture2d_idx].valid))
+			if (!(texture_slots[tex_unit->tex_id].valid))
 				return;
-			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
+			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[tex_unit->tex_id].gxm_tex);
 			sceGxmSetVertexStream(gxm_context, 1, tex_unit->texture_object);
 			if (ffp_vertex_num_params > 2) sceGxmSetVertexStream(gxm_context, 2, tex_unit->color_object);
 		} else if (ffp_vertex_num_params > 1) sceGxmSetVertexStream(gxm_context, 1, tex_unit->color_object);
 		sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
-		upload_ffp_uniforms();
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 	}
 }

@@ -54,12 +54,12 @@ static unsigned char orig_size[GL_MAX_VERTEX_ATTRIBS];
 
 typedef union shader_mask {
 	struct {
-		uint32_t texenv_mode : 2;
+		uint32_t texenv_mode : 3;
 		uint32_t alpha_test_mode : 3;
 		uint32_t has_texture : 1;
 		uint32_t has_colors : 1;
 		uint32_t fog_mode : 2;
-		uint32_t UNUSED : 23;
+		uint32_t UNUSED : 22;
 	};
 	uint32_t raw;
 } shader_mask;
@@ -105,33 +105,6 @@ GLboolean ffp_dirty_frag = GL_TRUE;
 GLboolean ffp_dirty_vert = GL_TRUE;
 blend_config ffp_blend_info;
 shader_mask ffp_mask = {.raw = 0};
-
-void upload_ffp_uniforms() {
-	void *fbuffer, *vbuffer;
-	
-	// Recalculating MVP matrix if necessary
-	if (mvp_modified) {
-		matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-		mvp_modified = GL_FALSE;
-	}
-	
-	// Uploading fragment shader uniforms
-	sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
-	if (ffp_fragment_params[ALPHA_CUT_UNIF]) sceGxmSetUniformDataF(fbuffer, ffp_fragment_params[ALPHA_CUT_UNIF], 0, 1, &alpha_ref);
-	if (ffp_fragment_params[FOG_COLOR_UNIF]) sceGxmSetUniformDataF(fbuffer, ffp_fragment_params[FOG_COLOR_UNIF], 0, 4, &fog_color.r);
-	if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) sceGxmSetUniformDataF(fbuffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 0, 4, &texenv_color.r);
-	if (ffp_fragment_params[TINT_COLOR_UNIF]) sceGxmSetUniformDataF(fbuffer, ffp_fragment_params[TINT_COLOR_UNIF], 0, 4, &current_vtx.clr.r);
-	if (ffp_fragment_params[FOG_NEAR_UNIF]) sceGxmSetUniformDataF(fbuffer, ffp_fragment_params[FOG_NEAR_UNIF], 0, 1, (const float *)&fog_near);
-	if (ffp_fragment_params[FOG_FAR_UNIF]) sceGxmSetUniformDataF(fbuffer, ffp_fragment_params[FOG_FAR_UNIF], 0, 1, (const float *)&fog_far);
-	if (ffp_fragment_params[FOG_DENSITY_UNIF]) sceGxmSetUniformDataF(fbuffer, ffp_fragment_params[FOG_DENSITY_UNIF], 0, 1, (const float *)&fog_density);
-	
-	// Uploading vertex shader uniforms
-	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
-	if (ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF]) sceGxmSetUniformDataF(vbuffer, ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF], 0, 4, &clip_plane0_eq.x);
-	if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF]) sceGxmSetUniformDataF(vbuffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
-	if (ffp_vertex_params[WVP_MATRIX_UNIF]) sceGxmSetUniformDataF(vbuffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
-	if (ffp_vertex_params[TEX_MATRIX_UNIF]) sceGxmSetUniformDataF(vbuffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
-}
 
 void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * streams) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
@@ -331,11 +304,34 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	
 	sceGxmSetVertexProgram(gxm_context, ffp_vertex_program_patched);
 	sceGxmSetFragmentProgram(gxm_context, ffp_fragment_program_patched);
+	
+	// Recalculating MVP matrix if necessary
+	if (mvp_modified) {
+		matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+		mvp_modified = GL_FALSE;
+	}
+	
+	// Uploading fragment shader uniforms
+	void *buffer;
+	sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
+	if (ffp_fragment_params[ALPHA_CUT_UNIF]) sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_CUT_UNIF], 0, 1, &alpha_ref);
+	if (ffp_fragment_params[FOG_COLOR_UNIF]) sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_COLOR_UNIF], 0, 4, &fog_color.r);
+	if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 0, 4, &texenv_color.r);
+	if (ffp_fragment_params[TINT_COLOR_UNIF]) sceGxmSetUniformDataF(buffer, ffp_fragment_params[TINT_COLOR_UNIF], 0, 4, &current_vtx.clr.r);
+	if (ffp_fragment_params[FOG_NEAR_UNIF]) sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_NEAR_UNIF], 0, 1, (const float *)&fog_near);
+	if (ffp_fragment_params[FOG_FAR_UNIF]) sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_FAR_UNIF], 0, 1, (const float *)&fog_far);
+	if (ffp_fragment_params[FOG_DENSITY_UNIF]) sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_DENSITY_UNIF], 0, 1, (const float *)&fog_density);
+	
+	// Uploading vertex shader uniforms
+	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &buffer);
+	if (ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF], 0, 4, &clip_plane0_eq.x);
+	if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
+	if (ffp_vertex_params[WVP_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
+	if (ffp_vertex_params[TEX_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
 }
 
 void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 	reload_ffp_shaders(NULL, NULL);
-	upload_ffp_uniforms();
 	
 	// Uploading textures on relative texture units
 	if (ffp_vertex_attrib_state & (1 << 1)) {
@@ -362,7 +358,6 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 
 void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
 	reload_ffp_shaders(NULL, NULL);
-	upload_ffp_uniforms();
 	
 	uint32_t top_idx = 0;
 	int i;
@@ -685,7 +680,6 @@ void glEnd(void) {
 	uint32_t orig_state = ffp_vertex_attrib_state;
 	ffp_vertex_attrib_state = 0xFF;
 	reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
-	upload_ffp_uniforms();
 
 	// Uploading texture to use
 	texture_unit *tex_unit = &texture_units[server_texture_unit];

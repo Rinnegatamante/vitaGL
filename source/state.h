@@ -26,8 +26,8 @@
 
 // Drawing phases constants for legacy openGL
 typedef enum glPhase {
-	NONE = 0,
-	MODEL_CREATION = 1
+	NONE,
+	MODEL_CREATION
 } glPhase;
 
 // Vertex array attributes struct
@@ -57,22 +57,22 @@ typedef struct viewport {
 
 // Alpha operations for alpha testing
 typedef enum alphaOp {
-	GREATER_EQUAL = 0,
-	GREATER = 1,
-	NOT_EQUAL = 2,
-	EQUAL = 3,
-	LESS_EQUAL = 4,
-	LESS = 5,
-	NEVER = 6,
-	ALWAYS = 7
+	GREATER_EQUAL,
+	GREATER,
+	NOT_EQUAL,
+	EQUAL,
+	LESS_EQUAL,
+	LESS,
+	NEVER,
+	ALWAYS
 } alphaOp;
 
 // Fog modes
 typedef enum fogType {
-	LINEAR = 0,
-	EXP = 1,
-	EXP2 = 2,
-	DISABLED = 3
+	LINEAR,
+	EXP,
+	EXP2,
+	DISABLED
 } fogType;
 
 // Texture unit struct

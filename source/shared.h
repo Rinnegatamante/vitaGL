@@ -110,11 +110,11 @@ extern __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context,
 
 // Texture environment mode
 typedef enum texEnvMode {
-	MODULATE = 0,
-	DECAL = 1,
-	BLEND = 2,
-	ADD = 3,
-	REPLACE = 4
+	MODULATE,
+	DECAL,
+	BLEND,
+	ADD,
+	REPLACE
 } texEnvMode;
 
 // VBO struct
