@@ -148,12 +148,10 @@ void LOG(const char *format, ...) {
 }
 #endif
 
-void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, const SceGxmProgram *vert) {
+void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog) {
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		pid, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa_mode,
-		&blend_info.info,
-		vert, prog);
+		msaa_mode, &blend_info.info, NULL, prog);
 }
 
 void change_blend_factor() {
@@ -1189,7 +1187,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 		texture_unit *tex_unit = &texture_units[client_texture_unit];
 		int texture2d_idx = tex_unit->tex_id;
 		
-		reload_ffp_shaders(NULL, NULL, 0);
+		reload_ffp_shaders(NULL, NULL);
 		if (ffp_vertex_attrib_state & (1 << 1)) {
 			if (!(texture_slots[texture2d_idx].valid))
 				return;

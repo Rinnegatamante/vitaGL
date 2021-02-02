@@ -303,7 +303,7 @@ void validate_viewport(void); // Restores previously invalidated viewport
 /* blending.c (TODO) */
 void change_blend_factor(void); // Changes current blending settings for all used shaders
 void change_blend_mask(void); // Changes color mask when blending is disabled for all used shaders
-void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, const SceGxmProgram *vert); // Creates a new patched fragment program with proper blend settings
+void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog); // Creates a new patched fragment program with proper blend settings
 
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders
@@ -314,7 +314,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count); // glDrawArrays implementat
 /* ffp.c */
 void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count); // glDrawElements implementation for rendering with ffp
 void _glDrawArrays_FixedFunctionIMPL(GLsizei count); // glDrawArrays implementation for rendering with ffp
-void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * streams, int num_params); // Reloads current in use ffp shaders
+void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * streams); // Reloads current in use ffp shaders
 void upload_ffp_uniforms(); // Uploads required uniforms for the in use ffp shaders
 
 /* misc.c */

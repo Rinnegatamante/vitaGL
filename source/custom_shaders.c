@@ -230,7 +230,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	// Check if a blend info rebuild is required
 	if (p->blend_info.raw != blend_info.raw) {
 		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, NULL);
+		rebuild_frag_shader(p->fshader->id, &p->fprog);
 	}
 	
 	// Setting up required shader
@@ -383,7 +383,7 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	// Check if a blend info rebuild is required
 	if (p->blend_info.raw != blend_info.raw) {
 		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, NULL);
+		rebuild_frag_shader(p->fshader->id, &p->fprog);
 	}
 	
 	// Setting up required shader
@@ -436,7 +436,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	// Check if a blend info rebuild is required
 	if (p->blend_info.raw != blend_info.raw) {
 		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, NULL);
+		rebuild_frag_shader(p->fshader->id, &p->fprog);
 	}
 	
 	// Setting up required shader

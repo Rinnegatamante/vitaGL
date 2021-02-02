@@ -133,12 +133,12 @@ void upload_ffp_uniforms() {
 	if (ffp_vertex_params[TEX_MATRIX_UNIF]) sceGxmSetUniformDataF(vbuffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
 }
 
-void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * streams, int num_params) {
+void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * streams) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	
 	// Checking if mask changed
-	uint8_t ffp_dirty_frag_blend = GL_FALSE;
+	GLboolean ffp_dirty_frag_blend = GL_FALSE;
 	shader_mask mask = {.raw = 0};
 	mask.texenv_mode = tex_unit->env_mode;
 	mask.alpha_test_mode = alpha_op;
@@ -158,7 +158,6 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 				ffp_fragment_program_id = shader_cache[i].frag_id;
 				ffp_dirty_frag_blend = GL_TRUE;
 				
-				// Checking for existing uniforms in the shader
 				if (ffp_dirty_vert) {
 					ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "clip_plane0_eq");
 					ffp_vertex_params[MODELVIEW_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "modelview");
@@ -166,7 +165,6 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 					ffp_vertex_params[TEX_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "texmat");
 				}
 				
-				// Checking for existing uniforms in the shader
 				if (ffp_dirty_frag) {
 					ffp_fragment_params[ALPHA_CUT_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "alphaCut");
 					ffp_fragment_params[FOG_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fogColor");
@@ -185,7 +183,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 		ffp_mask.raw = mask.raw;
 	}
 	
-	uint8_t new_shader_flag = ffp_dirty_vert || ffp_dirty_frag;
+	GLboolean new_shader_flag = ffp_dirty_vert || ffp_dirty_frag;
 
 	// Checking if vertex shader requires a recompilation
 	if (ffp_dirty_vert) {
@@ -214,40 +212,32 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	if (!attrs && ffp_vertex_attrib_state != 0x05){
 		attrs = ffp_vertex_attrib_config;
 		streams = ffp_vertex_stream_config;
-		switch (ffp_vertex_attrib_state) {
-		case 0x01: // Pos
-			num_params = 1;
-			break;
-		case 0x03: // Pos+Texcoord
-			num_params = 2;
-			break;
-		case 0x07: // Pos+Texcoord+Color
-			num_params = 3;
-			break;
-		default:
-			break;
-		}
 	}
 	
 	SceGxmVertexAttribute ffp_vertex_attribute[FFP_VERTEX_ATTRIBS_NUM];
 	SceGxmVertexStream ffp_vertex_stream[FFP_VERTEX_ATTRIBS_NUM];
 	
-	if (attrs) {
+	/*if (attrs) {
 		ffp_vertex_num_params = 1;
+		
+		// Vertex positions
 		const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(ffp_vertex_program, "position");
 		attrs[0].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+		
+		// Vertex texture coordinates
 		param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord");
 		if (param) {
 			attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 			ffp_vertex_num_params++;
 		}
+		
+		// Vertex colors
 		param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
 		if (param) {
 			attrs[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 			ffp_vertex_num_params++;
 		}
-	} else {
-		// Setting up shader stream info
+	} else {*/
 		ffp_vertex_num_params = 1;
 	
 		// Vertex positions
@@ -282,11 +272,10 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 		
 		streams = ffp_vertex_stream;
 		attrs = ffp_vertex_attribute;
-		num_params = ffp_vertex_num_params;
-	}
+	//}
 		
 	// Creating patched vertex shader
-	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, ffp_vertex_program_id, attrs, num_params, streams, num_params, &ffp_vertex_program_patched);
+	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, ffp_vertex_program_id, attrs, ffp_vertex_num_params, streams, ffp_vertex_num_params, &ffp_vertex_program_patched);
 
 	// Checking if fragment shader requires a recompilation
 	if (ffp_dirty_frag) {
@@ -316,12 +305,12 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	}
 	
 	// Checking if fragment shader requires a blend settings change
-	if (ffp_dirty_frag_blend || (ffp_blend_info.raw != blend_info.raw)) {
-		rebuild_frag_shader(ffp_fragment_program_id, &ffp_fragment_program_patched, NULL);
+	//if (ffp_dirty_frag_blend || (ffp_blend_info.raw != blend_info.raw)) {
+		rebuild_frag_shader(ffp_fragment_program_id, &ffp_fragment_program_patched);
 			
 		// Updating current fixed function pipeline blend config
 		ffp_blend_info.raw = blend_info.raw;
-	}
+	//}
 	
 	if (new_shader_flag) {
 		shader_cache_idx = (shader_cache_idx + 1) % SHADER_CACHE_SIZE;
@@ -345,7 +334,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 }
 
 void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
-	reload_ffp_shaders(NULL, NULL, 0);
+	reload_ffp_shaders(NULL, NULL);
 	upload_ffp_uniforms();
 	
 	// Uploading textures on relative texture units
@@ -372,7 +361,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 }
 
 void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
-	reload_ffp_shaders(NULL, NULL, 0);
+	reload_ffp_shaders(NULL, NULL);
 	upload_ffp_uniforms();
 	
 	uint32_t top_idx = 0;
@@ -695,7 +684,7 @@ void glEnd(void) {
 	// Invalidating current attributes state settings
 	uint32_t orig_state = ffp_vertex_attrib_state;
 	ffp_vertex_attrib_state = 0xFF;
-	reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config, 3);
+	reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
 	upload_ffp_uniforms();
 
 	// Uploading texture to use
