@@ -545,10 +545,11 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 	}
 #endif
 	
-	legacy_pool[0] = x;
-	legacy_pool[1] = y;
-	legacy_pool[2] = z;
-	sceClibMemcpy(legacy_pool + LEGACY_VERTEX_STRIDE * vertex_count + 3, &current_vtx.uv.x, sizeof(float) * 6);
+	legacy_pool_ptr[0] = x;
+	legacy_pool_ptr[1] = y;
+	legacy_pool_ptr[2] = z;
+	sceClibMemcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 6);
+	legacy_pool_ptr += LEGACY_VERTEX_STRIDE;
 
 	// Increasing vertex counter
 	vertex_count++;
@@ -678,7 +679,7 @@ void glEnd(void) {
 	sceneReset();
 	
 	// Invalidating current attributes state settings
-	uint32_t orig_state = ffp_vertex_attrib_state;
+	uint8_t orig_state = ffp_vertex_attrib_state;
 	ffp_vertex_attrib_state = 0xFF;
 	ffp_dirty_frag = GL_TRUE;
 	ffp_dirty_vert = GL_TRUE;

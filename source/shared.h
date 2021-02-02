@@ -98,7 +98,7 @@ extern GLboolean prim_is_quad; // Flag for when GL_QUADS primitive is used
 	}
 
 #define SET_GL_ERROR(x) \
-	vgl_error = x;      \
+	vgl_error = x; \
 	return;
 
 #ifdef HAVE_SOFTFP_ABI
@@ -163,6 +163,7 @@ extern uint16_t *default_quads_idx_ptr; // sceGxm mapped progressive indices buf
 
 extern int legacy_pool_size; // Mempool size for GL1 immediate draw pipeline
 extern float *legacy_pool; // Mempool for GL1 immediate draw pipeline
+extern float *legacy_pool_ptr; // Current address for vertices population for GL1 immediate draw pipeline
 extern SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 extern SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 extern SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
