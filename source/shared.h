@@ -38,6 +38,7 @@
 #define FRAME_PURGE_RENDERTARGETS_LIST_SIZE 128 // Number of rendertargets a single frame can hold
 #define FRAME_PURGE_FREQ 3 // Frequency in frames for garbage collection
 #define BUFFERS_NUM 256 // Maximum amount of framebuffers objects usable
+#define FFP_VERTEX_ATTRIBS_NUM 3 // Number of attributes used in ffp shaders
 
 // Internal constants set in bootup phase
 extern int DISPLAY_WIDTH; // Display width in pixels
@@ -46,8 +47,24 @@ extern int DISPLAY_STRIDE; // Display stride in pixels
 extern float DISPLAY_WIDTH_FLOAT; // Display width in pixels (float)
 extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <vitasdk.h>
+
+#include "vitaGL.h"
+
+#include "utils/gpu_utils.h"
+#include "utils/math_utils.h"
+#include "utils/mem_utils.h"
+
+#include "state.h"
+#include "texture_callbacks.h"
+
+extern GLboolean prim_is_quad; // Flag for when GL_QUADS primitive is used
+
 // Translates a GL primitive enum to its sceGxm equivalent
 #define gl_primitive_to_gxm(x, p) \
+	prim_is_quad = GL_FALSE; \
 	switch (x) { \
 	case GL_POINTS: \
 		p = SCE_GXM_PRIMITIVE_POINTS; \
@@ -70,25 +87,18 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 			return; \
 		p = SCE_GXM_PRIMITIVE_TRIANGLE_FAN; \
 		break; \
+	case GL_QUADS: \
+		if (no_polygons_mode) \
+			return; \
+		p = SCE_GXM_PRIMITIVE_TRIANGLES; \
+		prim_is_quad = GL_TRUE; \
+		break; \
 	default: \
 		SET_GL_ERROR(GL_INVALID_ENUM) \
 	}
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <vitasdk.h>
-
-#include "vitaGL.h"
-
-#include "utils/gpu_utils.h"
-#include "utils/math_utils.h"
-#include "utils/mem_utils.h"
-
-#include "state.h"
-#include "texture_callbacks.h"
-
 #define SET_GL_ERROR(x) \
-	vgl_error = x;      \
+	vgl_error = x; \
 	return;
 
 #ifdef HAVE_SOFTFP_ABI
@@ -100,11 +110,11 @@ extern __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context,
 
 // Texture environment mode
 typedef enum texEnvMode {
-	MODULATE = 0,
-	DECAL = 1,
-	BLEND = 2,
-	ADD = 3,
-	REPLACE = 4
+	MODULATE,
+	DECAL,
+	BLEND,
+	ADD,
+	REPLACE
 } texEnvMode;
 
 // VBO struct
@@ -132,12 +142,6 @@ typedef struct texture2d_vertex {
 	vector2f texcoord;
 } texture2d_vertex;
 
-// Non native primitives implemented
-typedef enum SceGxmPrimitiveTypeExtra {
-	SCE_GXM_PRIMITIVE_NONE = 0,
-	SCE_GXM_PRIMITIVE_QUADS = 1
-} SceGxmPrimitiveTypeExtra;
-
 // Blend info internal struct
 typedef union {
 	SceGxmBlendInfo info;
@@ -154,6 +158,16 @@ extern GLboolean use_extra_mem;
 extern blend_config blend_info;
 extern SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
 extern GLboolean is_rendering_display; // Flag for when we're rendering without a framebuffer object
+extern uint16_t *default_idx_ptr; // sceGxm mapped progressive indices buffer
+extern uint16_t *default_quads_idx_ptr; // sceGxm mapped progressive indices buffer for quads
+
+extern int legacy_pool_size; // Mempool size for GL1 immediate draw pipeline
+extern float *legacy_pool; // Mempool for GL1 immediate draw pipeline
+extern float *legacy_pool_ptr; // Current address for vertices population for GL1 immediate draw pipeline
+extern SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
+extern SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
+extern SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
+extern SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 
 // Debugging tool
 #ifdef ENABLE_LOG
@@ -161,7 +175,7 @@ void LOG(const char *format, ...);
 #endif
 
 // Logging callback for vitaShaRK
-#if defined(HAVE_SHARK) && defined(HAVE_SHARK_LOG)
+#ifdef HAVE_SHARK_LOG
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line);
 #endif
 
@@ -176,18 +190,17 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line);
 extern GLboolean use_shark; // Flag to check if vitaShaRK should be initialized at vitaGL boot
 extern GLboolean is_shark_online; // Current vitaShaRK status
 
-#if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
-// Internal fixed function pipeline dirty flags
+// Internal fixed function pipeline dirty flags and variables
 extern GLboolean ffp_dirty_frag;
 extern GLboolean ffp_dirty_vert;
-extern GLboolean ffp_dirty_vert_stream;
+extern uint8_t ffp_vertex_attrib_state;
+extern uint8_t ffp_vertex_num_params;
 
 // Internal runtime shader compiler settings
 extern int32_t compiler_fastmath;
 extern int32_t compiler_fastprecision;
 extern int32_t compiler_fastint;
 extern shark_opt compiler_opts;
-#endif
 
 // sceGxm viewport setup (NOTE: origin is on center screen)
 extern float x_port;
@@ -292,14 +305,19 @@ void validate_viewport(void); // Restores previously invalidated viewport
 /* blending.c (TODO) */
 void change_blend_factor(void); // Changes current blending settings for all used shaders
 void change_blend_mask(void); // Changes color mask when blending is disabled for all used shaders
-void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, const SceGxmProgram *vert); // Creates a new patched fragment program with proper blend settings
-void update_precompiled_ffp_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, blend_config *cfg); // Updated current in use fragment program for precompiled ffp implementation
+void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog); // Creates a new patched fragment program with proper blend settings
 
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders
 void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
 void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count); // glDrawElements implementation for rendering with custom shaders
 void _glDrawArrays_CustomShadersIMPL(GLsizei count); // glDrawArrays implementation for rendering with custom shaders
+
+/* ffp.c */
+void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count); // glDrawElements implementation for rendering with ffp
+void _glDrawArrays_FixedFunctionIMPL(GLsizei count); // glDrawArrays implementation for rendering with ffp
+void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * streams); // Reloads current in use ffp shaders
+void upload_ffp_uniforms(); // Uploads required uniforms for the in use ffp shaders
 
 /* misc.c */
 void change_cull_mode(void); // Updates current cull mode

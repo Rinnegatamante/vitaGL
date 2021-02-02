@@ -24,11 +24,7 @@ extern "C" {
 #endif
 
 #include <vitasdk.h>
-#ifdef HAVE_SHARK
 #include <vitashark.h>
-#else
-#define shark_opt int32_t
-#endif
 
 // clang-format off
 #define GLboolean     uint8_t
@@ -311,7 +307,6 @@ typedef enum GLbitfield{
 // gl*
 void glActiveTexture(GLenum texture);
 void glAlphaFunc(GLenum func, GLfloat ref);
-void glArrayElement(GLint i);
 void glAttachShader(GLuint prog, GLuint shad);
 void glBegin(GLenum mode);
 void glBindAttribLocation(GLuint program, GLuint index, const GLchar *name);
@@ -497,9 +492,9 @@ void vglFree(void *addr);
 SceGxmTexture *vglGetGxmTexture(GLenum target);
 void *vglGetTexDataPointer(GLenum target);
 GLboolean vglHasRuntimeShaderCompiler(void);
-void vglInit(void);
-void vglInitExtended(int width, int height, int ram_threshold, SceGxmMultisampleMode msaa);
-void vglInitWithCustomSizes(int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa);
+void vglInit(int legacy_pool_size);
+void vglInitExtended(int legacy_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa);
+void vglInitWithCustomSizes(int legacy_pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa);
 size_t vglMemFree(vglMemType type);
 void vglSetParamBufferSize(uint32_t size);
 void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, int32_t use_fastprecision, int32_t use_fastint);

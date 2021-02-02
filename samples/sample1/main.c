@@ -10,7 +10,7 @@ GLuint texture = 0;
 int main(){
 	
 	// Initializing graphics device
-	vglInit(0x800000);
+	vglInit(0x100000);
 	
 	// Loading BMP image to use as texture
 	SceUID fd = sceIoOpen("app0:texture.bmp", SCE_O_RDONLY, 0777);
@@ -40,7 +40,6 @@ int main(){
 	glEnable(GL_TEXTURE_2D);
 	
 	for (;;){
-		vglStartRendering();
 		glClear(GL_COLOR_BUFFER_BIT);
 		glBindTexture(GL_TEXTURE_2D, texture);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -58,7 +57,7 @@ int main(){
 		glVertex3f(0, 544, 0);
 		
 		glEnd();
-		vglStopRendering();
+		vglSwapBuffers(GL_FALSE);
 		glLoadIdentity();
 	}
 	

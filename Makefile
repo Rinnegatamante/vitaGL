@@ -25,16 +25,8 @@ ifeq ($(NO_DEBUG),1)
 CFLAGS  += -DSKIP_ERROR_HANDLING
 endif
 
-ifeq ($(HAVE_SHARK),1)
-CFLAGS  += -DHAVE_SHARK
-endif
-
-ifeq ($(HAVE_SHARK),2)
-CFLAGS  += -DHAVE_SHARK -DHAVE_SHARK_LOG
-endif
-
-ifeq ($(HAVE_SHARK_FFP),1)
-CFLAGS  += -DHAVE_SHARK_FFP
+ifeq ($(HAVE_SHARK_LOG),1)
+CFLAGS  += -DHAVE_SHARK_LOG
 endif
 
 ifeq ($(HAVE_UNFLIPPED_FBOS),1)
@@ -43,6 +35,10 @@ endif
 
 ifeq ($(SHARED_RENDERTARGETS),1)
 CFLAGS  += -DHAVE_SHARED_RENDERTARGETS
+endif
+
+ifeq ($(HAVE_LOG),1)
+CFLAGS  += -DENABLE_LOG
 endif
 
 all: $(TARGET).a

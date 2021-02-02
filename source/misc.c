@@ -25,9 +25,7 @@
 GLboolean fast_texture_compression = GL_FALSE; // Hints for texture compression
 
 static void update_fogging_state() {
-#if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
 	ffp_dirty_frag = GL_TRUE;
-#endif
 	if (fogging) {
 		switch (fog_mode) {
 		case GL_LINEAR:
@@ -265,9 +263,7 @@ void glEnable(GLenum cap) {
 		update_fogging_state();
 		break;
 	case GL_CLIP_PLANE0:
-#if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
 		ffp_dirty_vert = GL_TRUE;
-#endif
 		clip_plane0 = GL_TRUE;
 		break;
 	default:
@@ -329,9 +325,7 @@ void glDisable(GLenum cap) {
 		update_fogging_state();
 		break;
 	case GL_CLIP_PLANE0:
-#if defined(HAVE_SHARK) && defined(HAVE_SHARK_FFP)
 		ffp_dirty_vert = GL_TRUE;
-#endif
 		clip_plane0 = GL_FALSE;
 		break;
 	default:
