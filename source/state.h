@@ -25,15 +25,28 @@
 #define _STATE_H_
 
 #define MAX_CLIP_PLANES_NUM 7 // Maximum number of allowed user defined clip planes
+#define LEGACY_VERTEX_STRIDE 24 // Vertex stride for GL1 immediate draw pipeline
+#define MAX_LIGHTS_NUM 8 // Maximum number of allowed light sources
+
+// Light params struct for fixed function pipeline
+typedef struct {
+	vector4f ambient;
+	vector4f diffuse;
+	vector4f specular;
+	vector4f position;
+	float const_attenuation;
+	float linear_attenuation;
+	float quad_attenuation;
+} light_params;
 
 // Drawing phases constants for legacy openGL
-typedef enum glPhase {
+typedef enum {
 	NONE,
 	MODEL_CREATION
 } glPhase;
 
 // Vertex array attributes struct
-typedef struct vertexArray {
+typedef struct {
 	GLint size;
 	GLint num;
 	GLsizei stride;
@@ -41,7 +54,7 @@ typedef struct vertexArray {
 } vertexArray;
 
 // Scissor test region struct
-typedef struct scissor_region {
+typedef struct {
 	int x;
 	int y;
 	int w;
@@ -50,7 +63,7 @@ typedef struct scissor_region {
 } scissor_region;
 
 // Viewport struct
-typedef struct viewport {
+typedef struct {
 	int x;
 	int y;
 	int w;
@@ -58,7 +71,7 @@ typedef struct viewport {
 } viewport;
 
 // Alpha operations for alpha testing
-typedef enum alphaOp {
+typedef enum {
 	GREATER_EQUAL,
 	GREATER,
 	NOT_EQUAL,
@@ -70,7 +83,7 @@ typedef enum alphaOp {
 } alphaOp;
 
 // Fog modes
-typedef enum fogType {
+typedef enum {
 	LINEAR,
 	EXP,
 	EXP2,
@@ -78,7 +91,7 @@ typedef enum fogType {
 } fogType;
 
 // Texture unit struct
-typedef struct texture_unit {
+typedef struct {
 	GLboolean enabled;
 	matrix4x4 stack[GENERIC_STACK_DEPTH];
 	void *vertex_object;
@@ -90,7 +103,7 @@ typedef struct texture_unit {
 } texture_unit;
 
 // Framebuffer struct
-typedef struct framebuffer {
+typedef struct {
 	uint8_t active;
 	SceGxmRenderTarget *target;
 	SceGxmColorSurface colorbuffer;
@@ -183,6 +196,11 @@ extern GLenum gl_polygon_mode_back; // Current in use polygon mode for back
 
 // Texture Environment
 extern vector4f texenv_color; // Current in use texture environment color
+
+// Lighting
+extern GLboolean lighting_state; // Current lighting processor state
+extern uint8_t lights_num; // Current number of enabled light spots
+extern light_params lights_config[MAX_LIGHTS_NUM];
 
 // Fogging
 extern GLboolean fogging; // Current fogging processor state

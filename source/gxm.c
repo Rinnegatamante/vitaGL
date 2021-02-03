@@ -60,6 +60,7 @@ SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher i
 matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 matrix4x4 projection_matrix; // Projection Matrix
 matrix4x4 modelview_matrix; // ModelView Matrix
+matrix4x4 normal_matrix; // Normal Matrix
 matrix4x4 texture_matrix; // Texture Matrix
 
 int DISPLAY_WIDTH; // Display width in pixels

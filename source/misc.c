@@ -217,6 +217,10 @@ void glEnable(GLenum cap) {
 	}
 #endif
 	switch (cap) {
+	case GL_LIGHTING:
+		ffp_dirty_vert = GL_TRUE;
+		lighting_state = GL_TRUE;
+		break;
 	case GL_DEPTH_TEST:
 		depth_test_state = GL_TRUE;
 		change_depth_func();
@@ -292,6 +296,46 @@ void glEnable(GLenum cap) {
 		if (clip_planes_num < 6)
 			clip_planes_num = 6;
 		break;
+	case GL_LIGHT0:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num < 1)
+			lights_num = 1;
+		break;
+	case GL_LIGHT1:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num < 2)
+			lights_num = 2;
+		break;
+	case GL_LIGHT2:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num < 3)
+			lights_num = 3;
+		break;
+	case GL_LIGHT3:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num < 4)
+			lights_num = 4;
+		break;
+	case GL_LIGHT4:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num < 5)
+			lights_num = 5;
+		break;
+	case GL_LIGHT5:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num < 6)
+			lights_num = 6;
+		break;
+	case GL_LIGHT6:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num < 7)
+			lights_num = 7;
+		break;
+	case GL_LIGHT7:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num < 8)
+			lights_num = 8;
+		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
@@ -305,6 +349,10 @@ void glDisable(GLenum cap) {
 	}
 #endif
 	switch (cap) {
+	case GL_LIGHTING:
+		ffp_dirty_vert = GL_TRUE;
+		lighting_state = GL_FALSE;
+		break;
 	case GL_DEPTH_TEST:
 		depth_test_state = GL_FALSE;
 		change_depth_func();
@@ -380,12 +428,87 @@ void glDisable(GLenum cap) {
 		if (clip_planes_num > 5)
 			clip_planes_num = 5;
 		break;
+	case GL_LIGHT0:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num > 0)
+			lights_num = 0;
+		break;
+	case GL_LIGHT1:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num > 1)
+			lights_num = 1;
+		break;
+	case GL_LIGHT2:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num > 2)
+			lights_num = 2;
+		break;
+	case GL_LIGHT3:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num > 3)
+			lights_num = 3;
+		break;
+	case GL_LIGHT4:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num > 4)
+			lights_num = 4;
+		break;
+	case GL_LIGHT5:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num > 5)
+			lights_num = 5;
+		break;
+	case GL_LIGHT6:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num > 6)
+			lights_num = 6;
+		break;
+	case GL_LIGHT7:
+		ffp_dirty_vert = GL_TRUE;
+		if (lights_num > 7)
+			lights_num = 7;
+		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
 }
 
+void glLightfv(GLenum light, GLenum pname, const GLfloat * params) {
+#ifndef SKIP_ERROR_HANDLING
+	if (light < GL_LIGHT0 && light > GL_LIGHT7) {
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+#endif
+	
+	switch (pname) {
+	case GL_AMBIENT:
+		sceClibMemcpy(&lights_config[light - GL_LIGHT0].ambient.r, params, sizeof(float) * 4);
+		break;
+	case GL_DIFFUSE:
+		sceClibMemcpy(&lights_config[light - GL_LIGHT0].diffuse.r, params, sizeof(float) * 4);
+		break;
+	case GL_SPECULAR:
+		sceClibMemcpy(&lights_config[light - GL_LIGHT0].specular.r, params, sizeof(float) * 4);
+		break;
+	case GL_POSITION:
+		sceClibMemcpy(&lights_config[light - GL_LIGHT0].position.r, params, sizeof(float) * 4);
+		break;
+	case GL_CONSTANT_ATTENUATION:
+		lights_config[light - GL_LIGHT0].const_attenuation = params[0];
+		break;
+	case GL_LINEAR_ATTENUATION:
+		lights_config[light - GL_LIGHT0].linear_attenuation = params[0];
+		break;
+	case GL_QUADRATIC_ATTENUATION:
+		lights_config[light - GL_LIGHT0].quad_attenuation = params[0];
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+}
+	
 void glClear(GLbitfield mask) {
 	sceneReset();
 	
