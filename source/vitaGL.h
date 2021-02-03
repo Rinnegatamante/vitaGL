@@ -123,6 +123,7 @@ extern "C" {
 #define GL_BLEND                                     0x0BE2
 #define GL_SCISSOR_BOX                               0x0C10
 #define GL_SCISSOR_TEST                              0x0C11
+#define GL_MAX_CLIP_PLANES                           0x0D32
 #define GL_MAX_TEXTURE_SIZE                          0x0D33
 #define GL_MAX_MODELVIEW_STACK_DEPTH                 0x0D36
 #define GL_MAX_PROJECTION_STACK_DEPTH                0x0D38
@@ -184,6 +185,12 @@ extern "C" {
 #define GL_POLYGON_OFFSET_POINT                      0x2A01
 #define GL_POLYGON_OFFSET_LINE                       0x2A02
 #define GL_CLIP_PLANE0                               0x3000
+#define GL_CLIP_PLANE1                               0x3001
+#define GL_CLIP_PLANE2                               0x3002
+#define GL_CLIP_PLANE3                               0x3003
+#define GL_CLIP_PLANE4                               0x3004
+#define GL_CLIP_PLANE5                               0x3005
+#define GL_CLIP_PLANE6                               0x3006
 #define GL_FUNC_ADD                                  0x8006
 #define GL_MIN                                       0x8007
 #define GL_MAX                                       0x8008

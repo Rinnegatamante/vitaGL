@@ -197,6 +197,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	case GL_MAX_TEXTURE_SIZE:
 		*data = 1024;
 		break;
+	case GL_MAX_CLIP_PLANES:
+		*data = MAX_CLIP_PLANES_NUM;
+		break;
 	case GL_VIEWPORT:
 		data[0] = gl_viewport.x;
 		data[1] = gl_viewport.y;

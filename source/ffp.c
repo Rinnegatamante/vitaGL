@@ -59,8 +59,8 @@ typedef union shader_mask {
 		uint32_t has_texture : 1;
 		uint32_t has_colors : 1;
 		uint32_t fog_mode : 2;
-		uint32_t has_clip_plane0 : 1;
-		uint32_t UNUSED : 21;
+		uint32_t clip_planes_num : 3;
+		uint32_t UNUSED : 19;
 	};
 	uint32_t raw;
 } shader_mask;
@@ -77,7 +77,7 @@ uint8_t shader_cache_size = 0;
 int shader_cache_idx = -1;
 
 typedef enum {
-	CLIP_PLANE_EQUATION_UNIF,
+	CLIP_PLANES_EQUATION_UNIF,
 	MODELVIEW_MATRIX_UNIF,
 	WVP_MATRIX_UNIF,
 	TEX_MATRIX_UNIF
@@ -120,7 +120,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	mask.has_texture = (ffp_vertex_attrib_state & (1 << 1)) ? GL_TRUE : GL_FALSE;
 	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
-	mask.has_clip_plane0 = clip_plane0;
+	mask.clip_planes_num = clip_planes_num;
 	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
 		ffp_dirty_vert = GL_FALSE;
 		ffp_dirty_frag = GL_FALSE;
@@ -135,7 +135,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 				ffp_dirty_frag_blend = GL_TRUE;
 				
 				if (ffp_dirty_vert) {
-					ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "clip_plane0_eq");
+					ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "clip_planes_eq");
 					ffp_vertex_params[MODELVIEW_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "modelview");
 					ffp_vertex_params[WVP_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "wvp");
 					ffp_vertex_params[TEX_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "texmat");
@@ -166,7 +166,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 		
 		// Compiling the new shader
 		char vshader[8192];
-		sprintf(vshader, ffp_vert_src, mask.has_clip_plane0, mask.has_texture, mask.has_colors);
+		sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.has_texture, mask.has_colors);
 		uint32_t size = strlen(vshader);
 		SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 		ffp_vertex_program = (SceGxmProgram*)malloc(size);
@@ -175,7 +175,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 		shark_clear_output();
 		
 		// Checking for existing uniforms in the shader
-		ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "clip_plane0_eq");
+		ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "clip_planes_eq");
 		ffp_vertex_params[MODELVIEW_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "modelview");
 		ffp_vertex_params[WVP_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "wvp");
 		ffp_vertex_params[TEX_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "texmat");
@@ -321,7 +321,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	
 	// Uploading vertex shader uniforms
 	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &buffer);
-	if (ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[CLIP_PLANE_EQUATION_UNIF], 0, 4, &clip_plane0_eq.x);
+	if (ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF], 0, 4 * mask.clip_planes_num, &clip_planes_eq[0].x);
 	if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
 	if (ffp_vertex_params[WVP_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
 	if (ffp_vertex_params[TEX_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);

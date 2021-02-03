@@ -24,6 +24,8 @@
 #ifndef _STATE_H_
 #define _STATE_H_
 
+#define MAX_CLIP_PLANES_NUM 7 // Maximum number of allowed user defined clip planes
+
 // Drawing phases constants for legacy openGL
 typedef enum glPhase {
 	NONE,
@@ -192,8 +194,8 @@ extern GLfloat fog_far; // Current fogging far distance
 extern vector4f fog_color; // Current fogging color
 
 // Clipping Planes
-extern GLint clip_plane0; // Current status of clip plane 0
-extern vector4f clip_plane0_eq; // Current equation of clip plane 0
+extern uint8_t clip_planes_num; // Current number of enabled user clip planes
+extern vector4f clip_planes_eq[MAX_CLIP_PLANES_NUM]; // Current equation for user clip planes
 
 // Framebuffers
 extern framebuffer *active_read_fb; // Current readback framebuffer in use
