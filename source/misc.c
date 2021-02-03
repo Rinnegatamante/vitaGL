@@ -264,7 +264,33 @@ void glEnable(GLenum cap) {
 		break;
 	case GL_CLIP_PLANE0:
 		ffp_dirty_vert = GL_TRUE;
-		clip_plane0 = GL_TRUE;
+		if (clip_planes_num < 1)
+			clip_planes_num = 1;
+		break;
+	case GL_CLIP_PLANE1:
+		ffp_dirty_vert = GL_TRUE;
+		if (clip_planes_num < 2)
+			clip_planes_num = 2;
+		break;
+	case GL_CLIP_PLANE2:
+		ffp_dirty_vert = GL_TRUE;
+		if (clip_planes_num < 3)
+			clip_planes_num = 3;
+		break;
+	case GL_CLIP_PLANE3:
+		ffp_dirty_vert = GL_TRUE;
+		if (clip_planes_num < 4)
+			clip_planes_num = 4;
+		break;
+	case GL_CLIP_PLANE4:
+		ffp_dirty_vert = GL_TRUE;
+		if (clip_planes_num < 5)
+			clip_planes_num = 5;
+		break;
+	case GL_CLIP_PLANE5:
+		ffp_dirty_vert = GL_TRUE;
+		if (clip_planes_num < 6)
+			clip_planes_num = 6;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -326,7 +352,33 @@ void glDisable(GLenum cap) {
 		break;
 	case GL_CLIP_PLANE0:
 		ffp_dirty_vert = GL_TRUE;
-		clip_plane0 = GL_FALSE;
+		if (clip_planes_num > 0)
+			clip_planes_num = 0;
+		break;
+	case GL_CLIP_PLANE1:
+		ffp_dirty_vert = GL_TRUE;
+		if (clip_planes_num > 1)
+			clip_planes_num = 1;
+		break;
+	case GL_CLIP_PLANE2:
+		ffp_dirty_vert = GL_TRUE;
+		if (clip_planes_num > 2)
+			clip_planes_num = 2;
+		break;
+	case GL_CLIP_PLANE3:
+		ffp_dirty_vert = GL_TRUE;
+		if (clip_planes_num > 3)
+			clip_planes_num = 3;
+		break;
+	case GL_CLIP_PLANE4:
+		ffp_dirty_vert = GL_TRUE;
+		if (clip_planes_num > 4)
+			clip_planes_num = 4;
+		break;
+	case GL_CLIP_PLANE5:
+		ffp_dirty_vert = GL_TRUE;
+		if (clip_planes_num > 5)
+			clip_planes_num = 5;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -508,23 +560,22 @@ void glFogi(GLenum pname, const GLint param) {
 }
 
 void glClipPlane(GLenum plane, const GLdouble *equation) {
-	switch (plane) {
-	case GL_CLIP_PLANE0:
-		clip_plane0_eq.x = equation[0];
-		clip_plane0_eq.y = equation[1];
-		clip_plane0_eq.z = equation[2];
-		clip_plane0_eq.w = equation[3];
-		matrix4x4 inverted, inverted_transposed;
-		matrix4x4_invert(inverted, modelview_matrix);
-		matrix4x4_transpose(inverted_transposed, inverted);
-		vector4f temp;
-		vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_plane0_eq);
-		sceClibMemcpy(&clip_plane0_eq.x, &temp.x, sizeof(vector4f));
-		break;
-	default:
+#ifndef SKIP_ERROR_HANDLING
+	if (plane < GL_CLIP_PLANE0 || plane > GL_CLIP_PLANE5) {
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
+#endif
+	int idx = plane - GL_CLIP_PLANE0;
+	clip_planes_eq[idx].x = equation[0];
+	clip_planes_eq[idx].y = equation[1];
+	clip_planes_eq[idx].z = equation[2];
+	clip_planes_eq[idx].w = equation[3];
+	matrix4x4 inverted, inverted_transposed;
+	matrix4x4_invert(inverted, modelview_matrix);
+	matrix4x4_transpose(inverted_transposed, inverted);
+	vector4f temp;
+	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
+	sceClibMemcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
 }
 
 void glHint(GLenum target, GLenum mode) {
