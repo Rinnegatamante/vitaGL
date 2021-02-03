@@ -298,17 +298,45 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 		ffp_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 		legacy_vertex_attrib_config[i].streamIndex = i;
 		legacy_vertex_attrib_config[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		legacy_vertex_stream_config[i].stride = sizeof(float) * 9;
+		legacy_vertex_stream_config[i].stride = sizeof(float) * LEGACY_VERTEX_STRIDE;
 		legacy_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	}
 	legacy_vertex_attrib_config[0].offset = 0;
 	legacy_vertex_attrib_config[1].offset = sizeof(float) * 3;
 	legacy_vertex_attrib_config[2].offset = sizeof(float) * 5;
+	legacy_vertex_attrib_config[3].offset = sizeof(float) * 9;
+	legacy_vertex_attrib_config[4].offset = sizeof(float) * 13;
+	legacy_vertex_attrib_config[5].offset = sizeof(float) * 17;
+	legacy_vertex_attrib_config[6].offset = sizeof(float) * 21;
 	legacy_vertex_attrib_config[0].componentCount = 3;
 	legacy_vertex_attrib_config[1].componentCount = 2;
 	legacy_vertex_attrib_config[2].componentCount = 4;
+	legacy_vertex_attrib_config[3].componentCount = 4;
+	legacy_vertex_attrib_config[4].componentCount = 4;
+	legacy_vertex_attrib_config[5].componentCount = 4;
+	legacy_vertex_attrib_config[6].componentCount = 3;
 	legacy_pool_size = pool_size;
-
+	
+	// Initializing lights configs
+	for (i = 0; i < MAX_LIGHTS_NUM; i++) {
+		float data[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+		sceClibMemcpy(&lights_config[i].ambient.r, &data[0], sizeof(float) * 4);
+		data[3] = 1.0f;
+		data[4] = 0.0f;
+		sceClibMemcpy(&lights_config[i].position.r, &data[0], sizeof(float) * 4);
+		lights_config[i].const_attenuation = 1.0f;
+		lights_config[i].linear_attenuation = 0.0f;
+		lights_config[i].quad_attenuation = 0.0f;
+		if (i == 0) {
+			float data2[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+			sceClibMemcpy(&lights_config[i].diffuse.r, &data2[0], sizeof(float) * 4);
+			sceClibMemcpy(&lights_config[i].specular.r, &data2[0], sizeof(float) * 4);
+		} else {
+			sceClibMemset(&lights_config[i].diffuse.r, 0, sizeof(float) * 4);
+			sceClibMemset(&lights_config[i].specular.r, 0, sizeof(float) * 4);
+		}
+	}
+	
 	// Init purge lists
 	for (i = 0; i < FRAME_PURGE_FREQ; i++) {
 		frame_purge_list[i][0] = NULL;

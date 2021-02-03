@@ -41,6 +41,11 @@ int8_t client_texture_unit = 0; // Current in use client side texture unit
 glPhase phase = NONE; // Current drawing phase for legacy openGL
 vector4f clear_rgba_val; // Current clear color for glClear
 
+// Lighting
+GLboolean lighting_state = GL_FALSE; // Current lighting processor state
+uint8_t lights_num = 0; // Current number of enabled light spots
+light_params lights_config[MAX_LIGHTS_NUM];
+
 // Fogging
 GLboolean fogging = GL_FALSE; // Current fogging processor state
 GLint fog_mode = GL_EXP; // Current fogging mode (openGL)

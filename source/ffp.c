@@ -26,9 +26,8 @@
 #include "shared.h"
 
 #define SHADER_CACHE_SIZE 256
-#define LEGACY_VERTEX_STRIDE 9
 
-#define VERTEX_UNIFORMS_NUM 4
+#define VERTEX_UNIFORMS_NUM 6
 #define FRAGMENT_UNIFORMS_NUM 7
 
 static uint32_t vertex_count = 0; // Vertex counter for vertex list
@@ -38,14 +37,19 @@ GLboolean prim_is_quad = GL_FALSE; // Flag for when GL_QUADS primitive is used
 typedef struct {
 	vector2f uv;
 	vector4f clr;
+	vector4f amb;
+	vector4f diff;
+	vector4f spec;
+	vector4f emiss;
+	vector3f nor;
 } legacy_vtx_attachment;
-legacy_vtx_attachment current_vtx = {.uv = {0.0f, 0.0f}, .clr = {1.0f, 1.0f, 1.0f, 1.0f}};
+legacy_vtx_attachment current_vtx = {.uv = {0.0f, 0.0f}, .clr = {1.0f, 1.0f, 1.0f, 1.0f}, .nor = {0.0f, 0.0f, 1.0f}};
 
 SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
-static uint32_t ffp_vertex_attrib_offsets[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0};
+static uint32_t ffp_vertex_attrib_offsets[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0};
 static uint32_t ffp_vertex_attrib_vbo[GL_MAX_VERTEX_ATTRIBS] = {0, 0, 0};
 uint8_t ffp_vertex_attrib_state = 0;
 static unsigned short orig_stride[GL_MAX_VERTEX_ATTRIBS];
@@ -60,7 +64,8 @@ typedef union shader_mask {
 		uint32_t has_colors : 1;
 		uint32_t fog_mode : 2;
 		uint32_t clip_planes_num : 3;
-		uint32_t UNUSED : 19;
+		uint32_t lights_num : 4;
+		uint32_t UNUSED : 15;
 	};
 	uint32_t raw;
 } shader_mask;
@@ -80,7 +85,9 @@ typedef enum {
 	CLIP_PLANES_EQUATION_UNIF,
 	MODELVIEW_MATRIX_UNIF,
 	WVP_MATRIX_UNIF,
-	TEX_MATRIX_UNIF
+	TEX_MATRIX_UNIF,
+	LIGHTS_CONFIG_UNIF,
+	NORMAL_MATRIX_UNIF
 } vert_uniform_type;
 
 typedef enum {
@@ -110,7 +117,26 @@ shader_mask ffp_mask = {.raw = 0};
 SceGxmVertexAttribute ffp_vertex_attribute[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream ffp_vertex_stream[FFP_VERTEX_ATTRIBS_NUM];
 
-void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams) {
+void reload_vertex_uniforms() {
+	ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "clip_planes_eq");
+	ffp_vertex_params[MODELVIEW_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "modelview");
+	ffp_vertex_params[WVP_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "wvp");
+	ffp_vertex_params[TEX_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "texmat");
+	ffp_vertex_params[LIGHTS_CONFIG_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_config");
+	ffp_vertex_params[NORMAL_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "normal_mat");
+}
+
+void reload_fragment_uniforms() {
+	ffp_fragment_params[ALPHA_CUT_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "alphaCut");
+	ffp_fragment_params[FOG_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fogColor");
+	ffp_fragment_params[TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "texEnvColor");
+	ffp_fragment_params[TINT_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tintColor");
+	ffp_fragment_params[FOG_NEAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_near");
+	ffp_fragment_params[FOG_FAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_far");
+	ffp_fragment_params[FOG_DENSITY_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_density");
+}
+
+void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * streams) {
 	// Checking if mask changed
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	GLboolean ffp_dirty_frag_blend = ffp_blend_info.raw != blend_info.raw;
@@ -120,6 +146,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	mask.has_texture = (ffp_vertex_attrib_state & (1 << 1)) ? GL_TRUE : GL_FALSE;
 	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
+	mask.lights_num = lighting_state ? lights_num : 0;
 
 	vector4f *clip_planes;
 	vector4f temp_clip_planes[MAX_CLIP_PLANES_NUM];
@@ -148,24 +175,13 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 				ffp_vertex_program_id = shader_cache[i].vert_id;
 				ffp_fragment_program_id = shader_cache[i].frag_id;
 				ffp_dirty_frag_blend = GL_TRUE;
-
-				if (ffp_dirty_vert) {
-					ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "clip_planes_eq");
-					ffp_vertex_params[MODELVIEW_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "modelview");
-					ffp_vertex_params[WVP_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "wvp");
-					ffp_vertex_params[TEX_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "texmat");
-				}
-
-				if (ffp_dirty_frag) {
-					ffp_fragment_params[ALPHA_CUT_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "alphaCut");
-					ffp_fragment_params[FOG_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fogColor");
-					ffp_fragment_params[TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "texEnvColor");
-					ffp_fragment_params[TINT_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tintColor");
-					ffp_fragment_params[FOG_NEAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_near");
-					ffp_fragment_params[FOG_FAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_far");
-					ffp_fragment_params[FOG_DENSITY_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_density");
-				}
-
+				
+				if (ffp_dirty_vert)
+					reload_vertex_uniforms();
+				
+				if (ffp_dirty_frag)
+					reload_fragment_uniforms();
+				
 				ffp_dirty_vert = GL_FALSE;
 				ffp_dirty_frag = GL_FALSE;
 				break;
@@ -180,7 +196,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	if (ffp_dirty_vert) {
 		// Compiling the new shader
 		char vshader[8192];
-		sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.has_texture, mask.has_colors);
+		sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.has_texture, mask.has_colors, mask.lights_num);
 		uint32_t size = strlen(vshader);
 		SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 		ffp_vertex_program = (SceGxmProgram *)malloc(size);
@@ -189,11 +205,8 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		shark_clear_output();
 
 		// Checking for existing uniforms in the shader
-		ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "clip_planes_eq");
-		ffp_vertex_params[MODELVIEW_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "modelview");
-		ffp_vertex_params[WVP_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "wvp");
-		ffp_vertex_params[TEX_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "texmat");
-
+		reload_vertex_uniforms();
+		
 		// Clearing dirty flags
 		ffp_dirty_vert = GL_FALSE;
 	}
@@ -222,6 +235,18 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
 			attrs[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 			ffp_vertex_num_params++;
+		}
+		
+		// Lighting data
+		if (mask.lights_num > 0) {
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "diff");
+			attrs[ffp_vertex_num_params++].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "spec");
+			attrs[ffp_vertex_num_params++].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "emission");
+			attrs[ffp_vertex_num_params++].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "normals");
+			attrs[ffp_vertex_num_params++].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 		}
 	} else {
 		// Vertex positions
@@ -274,13 +299,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		shark_clear_output();
 
 		// Checking for existing uniforms in the shader
-		ffp_fragment_params[ALPHA_CUT_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "alphaCut");
-		ffp_fragment_params[FOG_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fogColor");
-		ffp_fragment_params[TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "texEnvColor");
-		ffp_fragment_params[TINT_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tintColor");
-		ffp_fragment_params[FOG_NEAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_near");
-		ffp_fragment_params[FOG_FAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_far");
-		ffp_fragment_params[FOG_DENSITY_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_density");
+		reload_fragment_uniforms();
 
 		// Clearing dirty flags
 		ffp_dirty_frag = GL_FALSE;
@@ -318,6 +337,14 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	// Recalculating MVP matrix if necessary
 	if (mvp_modified) {
 		matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+		
+		// Recalculating normal matrix if necessary (TODO: This should be recalculated only when MV changes)
+		if (mask.lights_num > 0) {
+			matrix4x4 inverted;
+			matrix4x4_invert(inverted, modelview_matrix);
+			matrix4x4_transpose(normal_matrix, inverted);
+		}
+		
 		mvp_modified = GL_FALSE;
 	}
 
@@ -341,14 +368,12 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 
 	// Uploading vertex shader uniforms
 	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &buffer);
-	if (ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF], 0, 4 * mask.clip_planes_num, &clip_planes[0].x);
-	if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
-	if (ffp_vertex_params[WVP_MATRIX_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
-	if (ffp_vertex_params[TEX_MATRIX_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
+	if (ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF], 0, 4 * mask.clip_planes_num, &clip_planes[0].x);
+	if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
+	if (ffp_vertex_params[WVP_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
+	if (ffp_vertex_params[TEX_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
+	if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[NORMAL_MATRIX_UNIF], 0, 9, (const float *)normal_matrix);
+	if (ffp_vertex_params[LIGHTS_CONFIG_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_CONFIG_UNIF], 0, 19 * mask.lights_num, (const float *)&lights_config[0].ambient.x);
 }
 
 void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
@@ -573,9 +598,13 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 	legacy_pool_ptr[0] = x;
 	legacy_pool_ptr[1] = y;
 	legacy_pool_ptr[2] = z;
-	sceClibMemcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 6);
+	if (lighting_state) {
+		sceClibMemcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 2);
+		sceClibMemcpy(legacy_pool_ptr + 5, &current_vtx.amb.x, sizeof(float) * 19);
+	} else
+		sceClibMemcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 6);
 	legacy_pool_ptr += LEGACY_VERTEX_STRIDE;
-
+	
 	// Increasing vertex counter
 	vertex_count++;
 }
@@ -586,6 +615,30 @@ void glVertex3fv(const GLfloat *v) {
 
 void glVertex2f(GLfloat x, GLfloat y) {
 	glVertex3f(x, y, 0.0f);
+}
+
+void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
+	switch (pname) {
+	case GL_AMBIENT:
+		sceClibMemcpy(&current_vtx.amb.x, params, sizeof(float) *4);
+		break;
+	case GL_DIFFUSE:
+		sceClibMemcpy(&current_vtx.diff.x, params, sizeof(float) *4);
+		break;
+	case GL_SPECULAR:
+		sceClibMemcpy(&current_vtx.spec.x, params, sizeof(float) *4);
+		break;
+	case GL_EMISSION:
+		sceClibMemcpy(&current_vtx.emiss.x, params, sizeof(float) *4);
+		break;
+	case GL_AMBIENT_AND_DIFFUSE:
+		sceClibMemcpy(&current_vtx.amb.x, params, sizeof(float) *4);
+		sceClibMemcpy(&current_vtx.diff.x, params, sizeof(float) *4);
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
 }
 
 void glColor3f(GLfloat red, GLfloat green, GLfloat blue) {
@@ -647,11 +700,44 @@ void glColor4ubv(const GLubyte *c) {
 }
 
 void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase != MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
 	// Setting current color value
 	current_vtx.clr.r = (1.0f * red) / 65536.0f;
 	current_vtx.clr.g = (1.0f * green) / 65536.0f;
 	current_vtx.clr.b = (1.0f * blue) / 65536.0f;
 	current_vtx.clr.a = (1.0f * alpha) / 65536.0f;
+}
+
+void glNormal3f(GLfloat x, GLfloat y, GLfloat z) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase != MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
+	current_vtx.nor.x = x;
+	current_vtx.nor.y = y;
+	current_vtx.nor.z = z;
+}
+
+void glNormal3fv(const GLfloat * v) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase != MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
+	current_vtx.nor.x = v[0];
+	current_vtx.nor.y = v[1];
+	current_vtx.nor.z = v[2];
 }
 
 void glTexCoord2f(GLfloat s, GLfloat t) {
@@ -713,7 +799,7 @@ void glEnd(void) {
 
 	// Invalidating current attributes state settings
 	uint8_t orig_state = ffp_vertex_attrib_state;
-	ffp_vertex_attrib_state = 0xFF;
+	ffp_vertex_attrib_state = lighting_state ? 0xFF : 0x07;
 	ffp_dirty_frag = GL_TRUE;
 	ffp_dirty_vert = GL_TRUE;
 	reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
@@ -726,11 +812,22 @@ void glEnd(void) {
 	// Restoring original attributes state settings
 	ffp_vertex_attrib_state = orig_state;
 
+	
 	// Uploading vertex streams and performing the draw
 	sceGxmSetVertexStream(gxm_context, 0, legacy_pool);
 	sceGxmSetVertexStream(gxm_context, 1, legacy_pool);
 	sceGxmSetVertexStream(gxm_context, 2, legacy_pool);
 
+	if (ffp_vertex_num_params > 3) { // Lighting is on
+		sceGxmSetVertexStream(gxm_context, 3, legacy_pool);
+		sceGxmSetVertexStream(gxm_context, 4, legacy_pool);
+		sceGxmSetVertexStream(gxm_context, 5, legacy_pool);
+		sceGxmSetVertexStream(gxm_context, 6, legacy_pool);
+	}
+		
+	// Restoring original attributes state settings
+	ffp_vertex_attrib_state = orig_state;
+	
 	if (prim_is_quad)
 		sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_quads_idx_ptr, (vertex_count / 2) * 3);
 	else
