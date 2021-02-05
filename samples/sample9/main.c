@@ -544,8 +544,7 @@ gears_draw(void)
    draw_gear(gear2, transform, 3.1, -2.0, -2 * angle - 9.0, green);
    draw_gear(gear3, transform, -3.1, 4.2, -2 * angle - 25.0, blue);
 
-   vglStopRendering();
-   vglStartRendering();
+   vglSwapBuffers(GL_FALSE);
 }
 
 /** 
@@ -693,8 +692,7 @@ int
 main(int argc, char *argv[])
 {
    /* Initialize the window */
-   vglInitExtended(0x10000, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0x800000, SCE_GXM_MULTISAMPLE_4X);
-   vglStartRendering();
+   vglInitExtended(0, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0x800000, SCE_GXM_MULTISAMPLE_4X);
 
    gears_init();
    for (;;) { gears_idle(); }
