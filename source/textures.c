@@ -119,7 +119,8 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	SceGxmTextureFormat tex_format;
 	uint8_t data_bpp = 0;
 	GLboolean fast_store = GL_FALSE;
-
+	GLboolean gamma_correction = GL_FALSE;
+	
 	// Support for legacy GL1.0 internalFormat
 	switch (internalFormat) {
 	case 1:
@@ -164,6 +165,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		case GL_UNSIGNED_BYTE:
 			read_cb = readL;
 			data_bpp = 1;
+			if (internalFormat == GL_LUMINANCE || internalFormat == GL_SLUMINANCE || internalFormat == GL_SLUMINANCE8)
+				fast_store = GL_TRUE;
+			else
+				internalFormat = GL_RGBA; // Falling back to RGBA as internal if fast store is not available
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
@@ -186,6 +191,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		case GL_UNSIGNED_BYTE:
 			read_cb = readLA;
 			data_bpp = 2;
+			if (internalFormat == GL_LUMINANCE_ALPHA || internalFormat == GL_SLUMINANCE_ALPHA || internalFormat == GL_SLUMINANCE8_ALPHA8)
+				fast_store = GL_TRUE;
+			else
+				internalFormat = GL_RGBA; // Falling back to RGBA as internal if fast store is not available
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
@@ -274,13 +283,23 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 
 		// Detecting proper write callback and texture format
 		switch (internalFormat) {
+		case GL_COMPRESSED_SRGB_S3TC_DXT1:
+		case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1:
+		case GL_COMPRESSED_SRGB:
+			gamma_correction = GL_TRUE;
 		case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
 		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
 			break;
+		case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5:
+		case GL_COMPRESSED_SRGB_ALPHA:
+			gamma_correction = GL_TRUE;
 		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
 			break;
+		case GL_SRGB:
+		case GL_SRGB8:
+			gamma_correction = GL_TRUE;
 		case GL_RGB:
 			write_cb = writeRGB;
 			if (fast_store && data_bpp == 2)
@@ -292,6 +311,9 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			write_cb = writeBGR;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_RGB;
 			break;
+		case GL_SRGB_ALPHA:
+		case GL_SRGB8_ALPHA8:
+			gamma_correction = GL_TRUE;
 		case GL_RGBA:
 			write_cb = writeRGBA;
 			if (fast_store && data_bpp == 2) {
@@ -317,6 +339,18 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		case GL_COLOR_INDEX8_EXT:
 			write_cb = writeR; // TODO: This is a hack
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
+			break;
+		case GL_SLUMINANCE:
+		case GL_SLUMINANCE8:
+			gamma_correction = GL_TRUE;
+		case GL_LUMINANCE:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
+			break;
+		case GL_SLUMINANCE_ALPHA:
+		case GL_SLUMINANCE8_ALPHA8:
+			gamma_correction = GL_TRUE;
+		case GL_LUMINANCE_ALPHA:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_L8A8;
 			break;
 		default:
 			write_cb = writeRGBA;
@@ -350,6 +384,8 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		sceGxmTextureSetMagFilter(&tex->gxm_tex, tex->mag_filter);
 		sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
 		sceGxmTextureSetLodBias(&tex->gxm_tex, tex->lod_bias);
+		if (gamma_correction)
+			sceGxmTextureSetGammaMode(&tex->gxm_tex, SCE_GXM_TEXTURE_GAMMA_BGR);
 
 		// Setting palette if the format requests one
 		if (tex->valid && tex->palette_UID)
@@ -570,6 +606,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 	texture *tex = &texture_slots[texture2d_idx];
 
 	SceGxmTextureFormat tex_format;
+	GLboolean gamma_correction = GL_FALSE;
 
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if texture is too big for sceGxm
@@ -592,10 +629,15 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 	case GL_TEXTURE_2D:
 		// Detecting proper write callback and texture format
 		switch (internalFormat) {
+		case GL_COMPRESSED_SRGB_S3TC_DXT1:
+		case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1:
+			gamma_correction = GL_TRUE;
 		case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
 		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
 			break;
+		case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5:
+			gamma_correction = GL_TRUE;
 		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
 			break;
@@ -633,6 +675,8 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		sceGxmTextureSetMagFilter(&tex->gxm_tex, tex->mag_filter);
 		sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
 		sceGxmTextureSetLodBias(&tex->gxm_tex, tex->lod_bias);
+		if (gamma_correction)
+			sceGxmTextureSetGammaMode(&tex->gxm_tex, SCE_GXM_TEXTURE_GAMMA_BGR);
 
 		break;
 	default:
