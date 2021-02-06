@@ -67,7 +67,7 @@ void main(
 #if has_texture == 1
 	float2 texcoord,
 #endif
-#if has_colors == 1 || lights_num > 0
+#if has_colors == 1
 	float4 color, // We re-use this for ambient values when lighting is on
 #endif
 #if lights_num > 0
@@ -80,7 +80,7 @@ void main(
 	float2 out vTexcoord : TEXCOORD0,
 #endif
 	float4 out vPosition : POSITION,
-#if has_colors == 1 || lights_num > 0
+#if has_colors == 1
 	float4 out vColor : COLOR,
 #endif
 #if clip_planes_num > 0
@@ -147,7 +147,7 @@ void main(
 	
 	// Lighting
 #if lights_num > 0
-	float3 normal = mul(float3x3(normal_mat), normals);
+	float3 normal = normalize(mul(float3x3(modelview), normals));
 	calculate_light(lights_config[0], modelpos, normal);
 #if lights_num > 1
 	calculate_light(lights_config[1], modelpos, normal);
@@ -175,7 +175,7 @@ void main(
 #if has_texture == 1
 	vTexcoord = mul(texmat, float4(texcoord, 0.f, 1.f)).xy;
 #endif
-#if has_colors == 1 || lights_num > 0
+#if has_colors == 1
 #if lights_num > 0
 	vColor = emission + color * float4(0.2f, 0.2f, 0.2f, 1.0f); // TODO: glLightAmbient impl
 	vColor += Ambient * color + Diffuse * diff + Specular * spec;

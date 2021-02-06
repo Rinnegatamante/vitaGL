@@ -43,7 +43,14 @@ typedef struct {
 	vector4f emiss;
 	vector3f nor;
 } legacy_vtx_attachment;
-legacy_vtx_attachment current_vtx = {.uv = {0.0f, 0.0f}, .clr = {1.0f, 1.0f, 1.0f, 1.0f}, .nor = {0.0f, 0.0f, 1.0f}};
+legacy_vtx_attachment current_vtx = {
+	.uv = {0.0f, 0.0f},
+	.clr = {1.0f, 1.0f, 1.0f, 1.0f},
+	.amb = {0.2f, 0.2f, 0.2f, 1.0f},
+	.diff = {0.8f, 0.8f, 0.8f, 1.0f},
+	.spec = {0.0f, 0.0f, 0.0f, 1.0f},
+	.emiss = {0.0f, 0.0f, 0.0f, 1.0f},
+	.nor = {0.0f, 0.0f, 1.0f}};
 
 SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
@@ -352,8 +359,8 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
 	if (ffp_vertex_params[WVP_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
 	if (ffp_vertex_params[TEX_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
-	if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[NORMAL_MATRIX_UNIF], 0, 9, (const float *)normal_matrix);
-	if (ffp_vertex_params[LIGHTS_CONFIG_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_CONFIG_UNIF], 0, 19 * mask.lights_num, (const float *)&lights_config[0].ambient.x);
+	if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[NORMAL_MATRIX_UNIF], 0, 16, (const float *)normal_matrix);
+	if (ffp_vertex_params[LIGHTS_CONFIG_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_CONFIG_UNIF], 0, 19 * mask.lights_num, &lights_config[0].ambient.x);
 }
 
 void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
@@ -599,20 +606,20 @@ void glVertex2f(GLfloat x, GLfloat y) {
 void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
 	switch (pname) {
 	case GL_AMBIENT:
-		sceClibMemcpy(&current_vtx.amb.x, params, sizeof(float) *4);
+		sceClibMemcpy(&current_vtx.amb.x, params, sizeof(float) * 4);
 		break;
 	case GL_DIFFUSE:
-		sceClibMemcpy(&current_vtx.diff.x, params, sizeof(float) *4);
+		sceClibMemcpy(&current_vtx.diff.x, params, sizeof(float) * 4);
 		break;
 	case GL_SPECULAR:
-		sceClibMemcpy(&current_vtx.spec.x, params, sizeof(float) *4);
+		sceClibMemcpy(&current_vtx.spec.x, params, sizeof(float) * 4);
 		break;
 	case GL_EMISSION:
-		sceClibMemcpy(&current_vtx.emiss.x, params, sizeof(float) *4);
+		sceClibMemcpy(&current_vtx.emiss.x, params, sizeof(float) * 4);
 		break;
 	case GL_AMBIENT_AND_DIFFUSE:
-		sceClibMemcpy(&current_vtx.amb.x, params, sizeof(float) *4);
-		sceClibMemcpy(&current_vtx.diff.x, params, sizeof(float) *4);
+		sceClibMemcpy(&current_vtx.amb.x, params, sizeof(float) * 4);
+		sceClibMemcpy(&current_vtx.diff.x, params, sizeof(float) * 4);
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -761,7 +768,7 @@ void glEnd(void) {
 
 	// Invalidating current attributes state settings
 	uint8_t orig_state = ffp_vertex_attrib_state;
-	ffp_vertex_attrib_state = lighting_state ? 0xFF : 0x07;
+	ffp_vertex_attrib_state = 0xFF;
 	ffp_dirty_frag = GL_TRUE;
 	ffp_dirty_vert = GL_TRUE;
 	reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
@@ -772,14 +779,9 @@ void glEnd(void) {
 	sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
 	
 	// Uploading vertex streams and performing the draw
-	sceGxmSetVertexStream(gxm_context, 0, legacy_pool);
-	sceGxmSetVertexStream(gxm_context, 1, legacy_pool);
-	sceGxmSetVertexStream(gxm_context, 2, legacy_pool);
-	if (ffp_vertex_num_params > 3) { // Lighting is on
-		sceGxmSetVertexStream(gxm_context, 3, legacy_pool);
-		sceGxmSetVertexStream(gxm_context, 4, legacy_pool);
-		sceGxmSetVertexStream(gxm_context, 5, legacy_pool);
-		sceGxmSetVertexStream(gxm_context, 6, legacy_pool);
+	int i;
+	for (i = 0; i < ffp_vertex_num_params; i++) {
+		sceGxmSetVertexStream(gxm_context, i, legacy_pool);
 	}
 		
 	// Restoring original attributes state settings
