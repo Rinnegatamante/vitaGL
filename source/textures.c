@@ -163,12 +163,11 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	case GL_LUMINANCE:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
-			read_cb = readL;
 			data_bpp = 1;
 			if (internalFormat == GL_LUMINANCE || internalFormat == GL_SLUMINANCE || internalFormat == GL_SLUMINANCE8)
 				fast_store = GL_TRUE;
 			else
-				internalFormat = GL_RGBA; // Falling back to RGBA as internal if fast store is not available
+				read_cb = readL;
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
@@ -189,12 +188,11 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	case GL_LUMINANCE_ALPHA:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
-			read_cb = readLA;
 			data_bpp = 2;
 			if (internalFormat == GL_LUMINANCE_ALPHA || internalFormat == GL_SLUMINANCE_ALPHA || internalFormat == GL_SLUMINANCE8_ALPHA8)
 				fast_store = GL_TRUE;
 			else
-				internalFormat = GL_RGBA; // Falling back to RGBA as internal if fast store is not available
+				read_cb = readLA;
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
@@ -344,13 +342,15 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		case GL_SLUMINANCE8:
 			gamma_correction = GL_TRUE;
 		case GL_LUMINANCE:
+			write_cb = writeR;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
 			break;
 		case GL_SLUMINANCE_ALPHA:
 		case GL_SLUMINANCE8_ALPHA8:
 			gamma_correction = GL_TRUE;
 		case GL_LUMINANCE_ALPHA:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_L8A8;
+			write_cb = writeRA;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_A8L8;
 			break;
 		default:
 			write_cb = writeRGBA;
