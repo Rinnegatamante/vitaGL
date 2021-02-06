@@ -246,7 +246,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		disable_color_buffer_fragment_id,
 		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa,
+		msaa_mode,
 		&disable_color_buffer_blend_info, NULL,
 		&disable_color_buffer_fragment_program_patched);
 
@@ -277,7 +277,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa, NULL, NULL,
+		msaa_mode, NULL, NULL,
 		&clear_fragment_program_patched);
 
 	sceGxmSetTwoSidedEnable(gxm_context, SCE_GXM_TWO_SIDED_ENABLED);
