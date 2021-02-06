@@ -41,17 +41,21 @@ int main(){
 	// Initializing graphics device
 	vglInit(0x100000);
 	
-	glClearColor(1.0f, 1.0f, 0.0f, 1.f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.f);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_LIGHTING);
 	glDepthFunc(GL_LEQUAL);
 	
-	glLightfv(GL_LIGHT0, GL_AMBIENT, li_ambient);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, li_diffuse);
-	glLightfv(GL_LIGHT0, GL_POSITION, li_position);
 	glEnable(GL_LIGHT0);
+	glLightfv(GL_LIGHT1, GL_AMBIENT, li_ambient);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, li_diffuse);
+	glLightfv(GL_LIGHT1, GL_POSITION, li_position);
+	glEnable(GL_LIGHT1);
+	
+	glFogi(GL_FOG_MODE, GL_EXP2);
+	glFogf(GL_FOG_DENSITY, 0.8f);
 	
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -70,7 +74,7 @@ int main(){
 	
 	uint32_t old_buttons = 0;
 	GLboolean light = GL_TRUE;
-	GLboolean blend = GL_FALSE;
+	GLboolean fog = GL_FALSE;
 	
 	for (;;){
 		SceCtrlData pad;
@@ -84,12 +88,20 @@ int main(){
 			light = !light;
 		}
 		
-		if (CHECK_BTN(SCE_CTRL_CIRCLE)) {
-			if (blend)
-				glDisable(GL_BLEND);
+		if (CHECK_BTN(SCE_CTRL_SQUARE)) {
+			if (fog)
+				glDisable(GL_FOG);
 			else
-				glEnable(GL_BLEND);
-			blend = !blend;
+				glEnable(GL_FOG);
+			fog = !fog;
+		}
+		
+		if (pad.buttons & SCE_CTRL_UP) {
+			z -= 0.1f;
+		}
+		
+		if (pad.buttons & SCE_CTRL_DOWN) {
+			z += 0.1f;
 		}
 		
 		old_buttons = pad.buttons;
