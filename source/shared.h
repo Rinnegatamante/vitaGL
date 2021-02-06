@@ -109,7 +109,7 @@ extern __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context,
 #endif
 
 // Texture environment mode
-typedef enum texEnvMode {
+typedef enum {
 	MODULATE,
 	DECAL,
 	BLEND,
@@ -118,26 +118,26 @@ typedef enum texEnvMode {
 } texEnvMode;
 
 // VBO struct
-typedef struct gpubuffer {
+typedef struct {
 	void *ptr;
 	int32_t size;
 	GLboolean used;
 } gpubuffer;
 
 // 3D vertex for position + 4D vertex for RGBA color struct
-typedef struct rgba_vertex {
+typedef struct {
 	vector3f position;
 	vector4f color;
 } rgba_vertex;
 
 // 3D vertex for position + 3D vertex for RGB color struct
-typedef struct rgb_vertex {
+typedef struct {
 	vector3f position;
 	vector3f color;
 } rgb_vertex;
 
 // 3D vertex for position + 2D vertex for UV map struct
-typedef struct texture2d_vertex {
+typedef struct {
 	vector3f position;
 	vector2f texcoord;
 } texture2d_vertex;

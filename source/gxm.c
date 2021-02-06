@@ -183,6 +183,8 @@ void initGxm(void) {
 	if (!sceAppMgrGetBudgetInfo(&info)) {
 		system_app_mode = GL_TRUE;
 		gxm_display_buffer_count = 2; // Forcing double buffering in system app mode
+		if (msaa_mode == SCE_GXM_MULTISAMPLE_NONE) // FIXME: For some reasons, disabling MSAA makes the shader patcher not able to compile fragment programs in system mode...
+			msaa_mode = SCE_GXM_MULTISAMPLE_2X;
 	}
 
 	// Initializing sceGxm init parameters
@@ -291,7 +293,6 @@ void initDisplayColorSurfaces(void) {
 			sceGxmMapMemory(shared_fb_info.fb_base, shared_fb_info.fb_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
 			gxm_color_surfaces_addr[0] = shared_fb_info.fb_base;
 			gxm_color_surfaces_addr[1] = shared_fb_info.fb_base2;
-			sceClibMemset(&shared_fb_info, 0, sizeof(SceSharedFbInfo));
 			break;
 		}
 	}
@@ -336,9 +337,9 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 	unsigned int depth_stencil_height = ALIGN(h, SCE_GXM_TILE_SIZEY);
 	unsigned int depth_stencil_samples = depth_stencil_width * depth_stencil_height;
 	if (msaa_mode == SCE_GXM_MULTISAMPLE_2X)
-		depth_stencil_samples = depth_stencil_samples * 2;
+		depth_stencil_samples *= 2;
 	else if (msaa_mode == SCE_GXM_MULTISAMPLE_4X)
-		depth_stencil_samples = depth_stencil_samples * 4;
+		depth_stencil_samples *= 4;
 
 	// Allocating depth surface
 	*depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, VGL_MEM_VRAM);
