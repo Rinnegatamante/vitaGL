@@ -53,8 +53,8 @@ const GLubyte *glGetString(GLenum name) {
 		break;
 	case GL_VERSION: // openGL Version
 		if (!version) {
-			version = malloc(11);
-			strcpy(version, "VitaGL 1.0");
+			version = malloc(19);
+			strcpy(version, "OpenGL ES 2 VitaGL");
 		}
 		return version;
 		break;
