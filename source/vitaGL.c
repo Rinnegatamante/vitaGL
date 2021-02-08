@@ -26,7 +26,6 @@
 // Shaders
 #include "shaders/clear_f.h"
 #include "shaders/clear_v.h"
-#include "shaders/disable_color_buffer_f.h"
 
 #define MAX_IDX_NUMBER 12288 // Maximum allowed number of indices per draw call
 
@@ -47,16 +46,11 @@ __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float 
 }
 #endif
 
-// Disable color buffer shader
-SceGxmShaderPatcherId disable_color_buffer_fragment_id;
-const SceGxmProgramParameter *disable_color_buffer_position;
-SceGxmFragmentProgram *disable_color_buffer_fragment_program_patched;
-const SceGxmProgramParameter *clear_depth;
-
 // Clear shader
 SceGxmShaderPatcherId clear_vertex_id;
 SceGxmShaderPatcherId clear_fragment_id;
 const SceGxmProgramParameter *clear_position;
+const SceGxmProgramParameter *clear_depth;
 const SceGxmProgramParameter *clear_color;
 SceGxmVertexProgram *clear_vertex_program_patched;
 SceGxmFragmentProgram *clear_fragment_program_patched;
@@ -82,7 +76,6 @@ GLboolean vblank = GL_TRUE; // Current setting for VSync
 extern int _newlib_heap_memblock; // Newlib Heap memblock
 extern unsigned _newlib_heap_size; // Newlib Heap size
 
-static const SceGxmProgram *const gxm_program_disable_color_buffer_f = (SceGxmProgram *)&disable_color_buffer_f;
 static const SceGxmProgram *const gxm_program_clear_v = (SceGxmProgram *)&clear_v;
 static const SceGxmProgram *const gxm_program_clear_f = (SceGxmProgram *)&clear_f;
 
@@ -224,32 +217,6 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	// Setting up default blending state
 	change_blend_mask();
 
-	// Disable color buffer shader register
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_disable_color_buffer_f,
-		&disable_color_buffer_fragment_id);
-
-	const SceGxmProgram *disable_color_buffer_fragment_program = sceGxmShaderPatcherGetProgramFromId(disable_color_buffer_fragment_id);
-
-	clear_depth = sceGxmProgramFindParameterByName(
-		disable_color_buffer_fragment_program, "depth_clear");
-
-	SceGxmBlendInfo disable_color_buffer_blend_info;
-	sceClibMemset(&disable_color_buffer_blend_info, 0, sizeof(SceGxmBlendInfo));
-	disable_color_buffer_blend_info.colorMask = SCE_GXM_COLOR_MASK_NONE;
-	disable_color_buffer_blend_info.colorFunc = SCE_GXM_BLEND_FUNC_NONE;
-	disable_color_buffer_blend_info.alphaFunc = SCE_GXM_BLEND_FUNC_NONE;
-	disable_color_buffer_blend_info.colorSrc = SCE_GXM_BLEND_FACTOR_ZERO;
-	disable_color_buffer_blend_info.colorDst = SCE_GXM_BLEND_FACTOR_ZERO;
-	disable_color_buffer_blend_info.alphaSrc = SCE_GXM_BLEND_FACTOR_ZERO;
-	disable_color_buffer_blend_info.alphaDst = SCE_GXM_BLEND_FACTOR_ZERO;
-
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
-		disable_color_buffer_fragment_id,
-		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa_mode,
-		&disable_color_buffer_blend_info, NULL,
-		&disable_color_buffer_fragment_program_patched);
-
 	clear_vertices = gpu_alloc_mapped(1 * sizeof(vector4f), VGL_MEM_RAM);
 	depth_clear_indices = gpu_alloc_mapped(4 * sizeof(unsigned short), VGL_MEM_RAM);
 
@@ -270,6 +237,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	const SceGxmProgram *clear_fragment_program = sceGxmShaderPatcherGetProgramFromId(clear_fragment_id);
 
 	clear_position = sceGxmProgramFindParameterByName(clear_vertex_program, "position");
+	clear_depth = sceGxmProgramFindParameterByName(clear_vertex_program, "u_clear_depth");
 	clear_color = sceGxmProgramFindParameterByName(clear_fragment_program, "u_clear_color");
 
 	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
@@ -398,14 +366,12 @@ void vglEnd(void) {
 
 	// Releasing shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, scissor_test_fragment_program);
-	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, disable_color_buffer_fragment_program_patched);
 	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, clear_vertex_program_patched);
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, clear_fragment_program_patched);
 
 	// Unregistering shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, clear_vertex_id);
 	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, clear_fragment_id);
-	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, disable_color_buffer_fragment_id);
 
 	// Terminating shader patcher
 	stopShaderPatcher();

@@ -246,7 +246,8 @@ void update_alpha_test_settings() {
 }
 
 void update_scissor_test() {
-	
+	const float scissor_depth = 1.0f;
+
 	// Setting current vertex program to clear screen one and fragment program to scissor test one
 	sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 	sceGxmSetFragmentProgram(gxm_context, scissor_test_fragment_program);
@@ -264,6 +265,7 @@ void update_scissor_test() {
 		void *vertex_buffer;
 		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
 		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
+		sceGxmSetUniformDataF(vertex_buffer, clear_depth, 0, 1, &scissor_depth);
 
 		// Cleaning stencil surface mask update bit on the whole screen
 		sceGxmSetFrontStencilFunc(gxm_context,
@@ -301,6 +303,8 @@ void update_scissor_test() {
 		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &scissor_test_vertices->x);
 	else
 		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
+	sceGxmSetUniformDataF(vertex_buffer, clear_depth, 0, 1, &scissor_depth);
+	
 	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 
 	// Restoring viewport
