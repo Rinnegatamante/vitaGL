@@ -387,74 +387,97 @@ void glDisable(GLenum cap) {
 }
 
 void glClear(GLbitfield mask) {
+#ifndef SKIP_ERROR_HANDLING
+	if (mask & ~(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)) {
+		SET_GL_ERROR(GL_INVALID_VALUE);
+	}
+#endif
+
 	sceneReset();
-	
+
 	// Invalidating viewport and culling
 	invalidate_viewport();
 	sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_NONE);
-	
+
 	void *fbuffer, *vbuffer;
-	
+
 	GLenum orig_depth_test = depth_test_state;
-	if ((mask & GL_COLOR_BUFFER_BIT) == GL_COLOR_BUFFER_BIT) {
-		invalidate_depth_test();
-		change_depth_write(SCE_GXM_DEPTH_WRITE_DISABLED);
-		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
-		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
-		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
-		sceGxmSetFragmentProgram(gxm_context, clear_fragment_program_patched);
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
-		sceGxmSetUniformDataF(fbuffer, clear_color, 0, 4, &clear_rgba_val.r);
-		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
-		sceGxmSetUniformDataF(vbuffer, clear_position, 0, 4, &clear_vertices->x);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
-		validate_depth_test();
-		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
-		sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back);
+
+	const GLfloat clear_depth_value = depth_value * 2 - 1;
+
+	invalidate_depth_test();
+	// Enable disable depth write if both depth mask is true and the depth buffer bit is active.
+	change_depth_write(depth_mask_state && (mask & GL_DEPTH_BUFFER_BIT) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+
+	sceGxmSetFrontDepthBias(gxm_context, 0, 0);
+	sceGxmSetBackDepthBias(gxm_context, 0, 0);
+
+	sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
+	sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
+
+	sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
+	sceGxmSetFragmentProgram(gxm_context, clear_fragment_program_patched);
+
+	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
+	sceGxmSetUniformDataF(vbuffer, clear_position, 0, 4, &clear_vertices->x);
+	sceGxmSetUniformDataF(vbuffer, clear_depth, 0, 1, &clear_depth_value);
+
+	sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
+	sceGxmSetUniformDataF(fbuffer, clear_color, 0, 4, &clear_rgba_val.r);
+
+	sceGxmSetFrontStencilFunc(gxm_context,
+		SCE_GXM_STENCIL_FUNC_ALWAYS,
+		SCE_GXM_STENCIL_OP_REPLACE,
+		SCE_GXM_STENCIL_OP_REPLACE,
+		SCE_GXM_STENCIL_OP_REPLACE,
+		0XFF, stencil_mask_front_write & 0xFF);
+	sceGxmSetFrontStencilRef(gxm_context, stencil_value & 0xFF);
+
+	sceGxmSetBackStencilFunc(gxm_context,
+		SCE_GXM_STENCIL_FUNC_ALWAYS,
+		SCE_GXM_STENCIL_OP_REPLACE,
+		SCE_GXM_STENCIL_OP_REPLACE,
+		SCE_GXM_STENCIL_OP_REPLACE,
+		0xFF, stencil_mask_back_write & 0xFF);
+	sceGxmSetBackStencilRef(gxm_context, stencil_value & 0xFF);
+
+	if ((mask & GL_COLOR_BUFFER_BIT) == 0) {
+		// Disable fragment program if not clearing color buffer. Depth and stencil clears are unaffected.
+		sceGxmSetFrontFragmentProgramEnable(gxm_context, SCE_GXM_FRAGMENT_PROGRAM_DISABLED);
+		sceGxmSetBackFragmentProgramEnable(gxm_context, SCE_GXM_FRAGMENT_PROGRAM_DISABLED);
 	}
-	if ((mask & GL_DEPTH_BUFFER_BIT) == GL_DEPTH_BUFFER_BIT) {
-		invalidate_depth_test();
-		change_depth_write(SCE_GXM_DEPTH_WRITE_ENABLED);
-		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
-		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
-		float temp = depth_value;
-		sceGxmSetUniformDataF(fbuffer, clear_depth, 0, 1, &temp);
-		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
-		sceGxmSetUniformDataF(vbuffer, clear_position, 0, 4, &clear_vertices->x);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
-		validate_depth_test();
-		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-	}
-	if ((mask & GL_STENCIL_BUFFER_BIT) == GL_STENCIL_BUFFER_BIT) {
-		invalidate_depth_test();
-		change_depth_write(SCE_GXM_DEPTH_WRITE_DISABLED);
-		sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
-		sceGxmSetFragmentProgram(gxm_context, disable_color_buffer_fragment_program_patched);
+
+	if ((mask & GL_STENCIL_BUFFER_BIT) == 0) {
+		// Set stencil functions to KEEP if not clearing stencil buffer.
 		sceGxmSetFrontStencilFunc(gxm_context,
-			SCE_GXM_STENCIL_FUNC_NEVER,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			0, stencil_value * 0xFF);
+			SCE_GXM_STENCIL_FUNC_ALWAYS,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			0XFF, 0xFF);
 		sceGxmSetBackStencilFunc(gxm_context,
-			SCE_GXM_STENCIL_FUNC_NEVER,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			0, stencil_value * 0xFF);
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
-		float temp = 1.0f;
-		sceGxmSetUniformDataF(fbuffer, clear_depth, 0, 1, &temp);
-		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
-		sceGxmSetUniformDataF(vbuffer, clear_position, 0, 4, &clear_vertices->x);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
-		validate_depth_test();
-		change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-		change_stencil_settings();
+			SCE_GXM_STENCIL_FUNC_ALWAYS,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			SCE_GXM_STENCIL_OP_KEEP,
+			0xFF, 0xFF);
 	}
-	
+
+	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+
+	validate_depth_test();
+	change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+
+	change_stencil_settings();
+
+	sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
+	sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back);
+
+	sceGxmSetFrontFragmentProgramEnable(gxm_context, SCE_GXM_FRAGMENT_PROGRAM_ENABLED);
+	sceGxmSetBackFragmentProgramEnable(gxm_context, SCE_GXM_FRAGMENT_PROGRAM_ENABLED);
+
+	update_polygon_offset();
+
 	// Restoring viewport and culling
 	validate_viewport();
 	change_cull_mode();

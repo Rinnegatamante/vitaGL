@@ -24,16 +24,11 @@
 #ifndef _SHADERS_H_
 #define _SHADERS_H_
 
-// Disable color buffer shader
-extern SceGxmShaderPatcherId disable_color_buffer_fragment_id;
-extern const SceGxmProgramParameter *disable_color_buffer_position;
-extern SceGxmFragmentProgram *disable_color_buffer_fragment_program_patched;
-extern const SceGxmProgramParameter *clear_depth;
-
 // Clear shader
 extern SceGxmShaderPatcherId clear_vertex_id;
 extern SceGxmShaderPatcherId clear_fragment_id;
 extern const SceGxmProgramParameter *clear_position;
+extern const SceGxmProgramParameter *clear_depth;
 extern const SceGxmProgramParameter *clear_color;
 extern SceGxmVertexProgram *clear_vertex_program_patched;
 extern SceGxmFragmentProgram *clear_fragment_program_patched;
