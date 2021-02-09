@@ -854,9 +854,7 @@ void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
 		change_blend_mask();
 }
 
-void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	
+void glDrawArrays(GLenum mode, GLint first, GLsizei count) {	
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p);
 	sceneReset();
@@ -874,9 +872,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
 }
 
-void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	
+void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {	
 #ifndef SKIP_ERROR_HANDLING
 	if (type != GL_UNSIGNED_SHORT) {
 		SET_GL_ERROR(GL_INVALID_ENUM)
