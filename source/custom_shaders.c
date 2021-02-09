@@ -119,10 +119,8 @@ void resetCustomShaders(void) {
 	}
 	
 	// Init generic vertex attrib arrays
-	float *attrib_buf = (float*)gpu_alloc_mapped(GL_MAX_VERTEX_ATTRIBS * 4 * sizeof(float), VGL_MEM_RAM);
 	for (i = 0; i < GL_MAX_VERTEX_ATTRIBS; i++) {
-		vertex_attrib_value[i] = attrib_buf;
-		attrib_buf += 4;
+		vertex_attrib_value[i] = (float*)gpu_alloc_mapped(4 * sizeof(float), VGL_MEM_RAM);
 		vertex_attrib_config[i].componentCount = 4;
 		vertex_attrib_config[i].offset = 0;
 		vertex_attrib_config[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
@@ -269,9 +267,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		if (vertex_attrib_state & (1 << real_i[i])) {
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
 		} else {
-			void *p = gpu_alloc_mapped_temp(vertex_attrib_size[real_i[i]] * 4);
-			sceClibMemcpy(p, vertex_attrib_value[real_i[i]], vertex_attrib_size[real_i[i]] * 4);
-			sceGxmSetVertexStream(gxm_context, i, p);
+			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[real_i[i]]);
 		}
 		if (!p->has_unaligned_attrs) {
 			attributes[i].regIndex = i;
@@ -424,9 +420,7 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		if (vertex_attrib_state & (1 << real_i[i])) {
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
 		} else {
-			void *p = gpu_alloc_mapped_temp(vertex_attrib_size[real_i[i]] * 4);
-			sceClibMemcpy(p, vertex_attrib_value[real_i[i]], vertex_attrib_size[real_i[i]] * 4);
-			sceGxmSetVertexStream(gxm_context, i, p);
+			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[real_i[i]]);
 		}
 		if (!p->has_unaligned_attrs) {
 			attributes[i].regIndex = i;
@@ -1110,18 +1104,25 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 	streams->stride = stride ? stride : bpe * size;
 }
 
+#define resetAttrib(s) \
+	markAsDirty(vertex_attrib_value[index]); \
+	vertex_attrib_value[index] = (float*)gpu_alloc_mapped(s * 4, VGL_MEM_RAM);
+
 void glVertexAttrib1f(GLuint index, GLfloat v0) {
+	resetAttrib(1);
 	vertex_attrib_size[index] = 1;
 	vertex_attrib_value[index][0] = v0;
 }
 
 void glVertexAttrib2f(GLuint index, GLfloat v0, GLfloat v1) {
+	resetAttrib(2);
 	vertex_attrib_size[index] = 2;
 	vertex_attrib_value[index][0] = v0;
 	vertex_attrib_value[index][1] = v1;
 }
 
 void glVertexAttrib3f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2) {
+	resetAttrib(3);
 	vertex_attrib_size[index] = 3;
 	vertex_attrib_value[index][0] = v0;
 	vertex_attrib_value[index][1] = v1;
@@ -1129,6 +1130,7 @@ void glVertexAttrib3f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2) {
 }
 
 void glVertexAttrib4f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
+	resetAttrib(4);
 	vertex_attrib_size[index] = 4;
 	vertex_attrib_value[index][0] = v0;
 	vertex_attrib_value[index][1] = v1;
@@ -1137,21 +1139,25 @@ void glVertexAttrib4f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat 
 }
 
 void glVertexAttrib1fv(GLuint index, const GLfloat *v) {
+	resetAttrib(1);
 	vertex_attrib_size[index] = 1;
 	sceClibMemcpy(vertex_attrib_value[index], v, sizeof(float));
 }
 
 void glVertexAttrib2fv(GLuint index, const GLfloat *v) {
+	resetAttrib(2);
 	vertex_attrib_size[index] = 2;
 	sceClibMemcpy(vertex_attrib_value[index], v, 2 * sizeof(float));
 }
 
 void glVertexAttrib3fv(GLuint index, const GLfloat *v) {
+	resetAttrib(3);
 	vertex_attrib_size[index] = 3;
 	sceClibMemcpy(vertex_attrib_value[index], v, 3 * sizeof(float));
 }
 
 void glVertexAttrib4fv(GLuint index, const GLfloat *v) {
+	resetAttrib(4);
 	vertex_attrib_size[index] = 4;
 	sceClibMemcpy(vertex_attrib_value[index], v, 4 * sizeof(float));
 }
