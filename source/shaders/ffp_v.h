@@ -100,7 +100,7 @@ void main(
 	
 	// Lighting
 #if lights_num > 0
-	float3 normal = normalize(mul(float3x3(modelview), normals));
+	float3 normal = normalize(mul(float3x3(normal_mat), normals));
 	for (int i = 0; i < lights_num; i++) {
 		calculate_light(i, modelpos, normal);
 	}
