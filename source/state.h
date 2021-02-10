@@ -28,17 +28,6 @@
 #define LEGACY_VERTEX_STRIDE 24 // Vertex stride for GL1 immediate draw pipeline
 #define MAX_LIGHTS_NUM 8 // Maximum number of allowed light sources
 
-// Light params struct for fixed function pipeline
-typedef struct {
-	vector4f ambient;
-	vector4f diffuse;
-	vector4f specular;
-	vector4f position;
-	float const_attenuation;
-	float linear_attenuation;
-	float quad_attenuation;
-} light_params;
-
 // Drawing phases constants for legacy openGL
 typedef enum {
 	NONE,
@@ -200,7 +189,11 @@ extern vector4f texenv_color; // Current in use texture environment color
 // Lighting
 extern GLboolean lighting_state; // Current lighting processor state
 extern uint8_t lights_num; // Current number of enabled light spots
-extern light_params lights_config[MAX_LIGHTS_NUM];
+extern vector4f lights_ambients[MAX_LIGHTS_NUM];
+extern vector4f lights_diffuses[MAX_LIGHTS_NUM];
+extern vector4f lights_speculars[MAX_LIGHTS_NUM];
+extern vector4f lights_positions[MAX_LIGHTS_NUM];
+extern vector3f lights_attenuations[MAX_LIGHTS_NUM];
 
 // Fogging
 extern GLboolean fogging; // Current fogging processor state

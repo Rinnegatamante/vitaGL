@@ -7,59 +7,57 @@ R"(#define clip_planes_num %d
 #define CLIP_PLANE_INPUT(n) float out vClip##n : CLP##n
 #define CLIP_PLANE_OUTPUT(n) vClip##n
 
-struct light_params {
-	float4 ambient;
-	float4 diffuse;
-	float4 specular;
-	float4 position;
-	float const_attenuation;
-	float linear_attenuation;
-	float quad_attenuation;
-};
-
 static float4 Ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
 static float4 Diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
 static float4 Specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
-void point_light(light_params src, float3 normal, float3 eye, float3 position) {
-	float3 VP = src.position.xyz - position;
+#if lights_num > 0
+uniform float4 lights_ambients[lights_num];
+uniform float4 lights_diffuses[lights_num];
+uniform float4 lights_speculars[lights_num];
+uniform float4 lights_positions[lights_num];
+uniform float4 lights_attenuations[lights_num];
+#endif
+
+void point_light(int i, float3 normal, float3 eye, float3 position) {
+	float3 VP = lights_positions[i].xyz - position;
 	float d = length(VP);
 	VP = normalize(VP);
-	float attenuation = 1.0f / (src.const_attenuation +
-		src.linear_attenuation * d +
-		src.quad_attenuation * d * d);
+	float attenuation = 1.0f / (lights_attenuations[i].x +
+		lights_attenuations[i].y * d +
+		lights_attenuations[i].z * d * d);
 	float3 halfVector = normalize(VP + eye);
 	float nDotVP = max(0.0f, dot(normal, VP));
 	float nDotHV = max(0.0f, dot(normal, halfVector));
 	float pf = 0.0f;
 	if (nDotVP != 0.0f)
 		pf = 1.0f;
-	Ambient += src.ambient * attenuation;
-	Diffuse += src.diffuse * nDotVP * attenuation;
-	Specular += src.specular * pf * attenuation;
+	Ambient += lights_ambients[i] * attenuation;
+	Diffuse += lights_diffuses[i] * nDotVP * attenuation;
+	Specular += lights_speculars[i] * pf * attenuation;
 }
 
-void directional_light(light_params src, float3 normal) {
-	float nDotVP = max(0.0f, dot(normal, normalize(src.position.xyz)));
-	float nDotHV = max(0.0f, dot(normal, normalize(normalize(src.position.xyz) + float3(0.0f, 0.0f, 1.0f))));
+void directional_light(int i, float3 normal) {
+	float nDotVP = max(0.0f, dot(normal, normalize(lights_positions[i].xyz)));
+	float nDotHV = max(0.0f, dot(normal, normalize(normalize(lights_positions[i].xyz) + float3(0.0f, 0.0f, 1.0f))));
 	
 	float pf = 0.0f;
 	if (nDotVP != 0.0f)
 		pf = 1.0f;
 		
-	Ambient += src.ambient;
-	Diffuse += src.diffuse * nDotVP;
-	Specular += src.specular * pf;
+	Ambient += lights_ambients[i];
+	Diffuse += lights_diffuses[i] * nDotVP;
+	Specular += lights_speculars[i] * pf;
 }
 
-void calculate_light(light_params src, float4 ecPosition, float3 N) {
+void calculate_light(int i, float4 ecPosition, float3 N) {
 	float3 ecPosition3 = ecPosition.xyz / ecPosition.w;
 	float3 eye = float3(0.0f, 0.0f, 1.0f);
 	
-	if (src.position.w == 1.0f)
-		point_light(src, N, eye, ecPosition3);
+	if (lights_positions[i].w == 1.0f)
+		point_light(i, N, eye, ecPosition3);
 	else
-		directional_light(src, N);
+		directional_light(i, N);
 }
 
 void main(
@@ -105,9 +103,6 @@ void main(
 #endif
 	uniform float4 clip_planes_eq[clip_planes_num],
 #endif
-#if lights_num > 0
-	uniform light_params lights_config[lights_num],
-#endif
 	uniform float4x4 modelview,
 	uniform float4x4 wvp,
 	uniform float4x4 texmat,
@@ -148,28 +143,9 @@ void main(
 	// Lighting
 #if lights_num > 0
 	float3 normal = normalize(mul(float3x3(modelview), normals));
-	calculate_light(lights_config[0], modelpos, normal);
-#if lights_num > 1
-	calculate_light(lights_config[1], modelpos, normal);
-#if lights_num > 2
-	calculate_light(lights_config[2], modelpos, normal);
-#if lights_num > 3
-	calculate_light(lights_config[3], modelpos, normal);
-#if lights_num > 4
-	calculate_light(lights_config[4], modelpos, normal);
-#if lights_num > 5
-	calculate_light(lights_config[5], modelpos, normal);
-#if lights_num > 6
-	calculate_light(lights_config[6], modelpos, normal);
-#if lights_num > 7
-	calculate_light(lights_config[7], modelpos, normal);
-#endif
-#endif
-#endif
-#endif
-#endif
-#endif
-#endif
+	for (int i = 0; i < lights_num; i++) {
+		calculate_light(i, modelpos, normal);
+	}
 #endif
 
 #if has_texture == 1

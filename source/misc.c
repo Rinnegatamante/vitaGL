@@ -483,25 +483,25 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat * params) {
 	
 	switch (pname) {
 	case GL_AMBIENT:
-		sceClibMemcpy(&lights_config[light - GL_LIGHT0].ambient.r, params, sizeof(float) * 4);
+		sceClibMemcpy(&lights_ambients[light - GL_LIGHT0].r, params, sizeof(float) * 4);
 		break;
 	case GL_DIFFUSE:
-		sceClibMemcpy(&lights_config[light - GL_LIGHT0].diffuse.r, params, sizeof(float) * 4);
+		sceClibMemcpy(&lights_diffuses[light - GL_LIGHT0].r, params, sizeof(float) * 4);
 		break;
 	case GL_SPECULAR:
-		sceClibMemcpy(&lights_config[light - GL_LIGHT0].specular.r, params, sizeof(float) * 4);
+		sceClibMemcpy(&lights_speculars[light - GL_LIGHT0].r, params, sizeof(float) * 4);
 		break;
 	case GL_POSITION:
-		sceClibMemcpy(&lights_config[light - GL_LIGHT0].position.r, params, sizeof(float) * 4);
+		sceClibMemcpy(&lights_positions[light - GL_LIGHT0].r, params, sizeof(float) * 4);
 		break;
 	case GL_CONSTANT_ATTENUATION:
-		lights_config[light - GL_LIGHT0].const_attenuation = params[0];
+		lights_attenuations[light - GL_LIGHT0].r = params[0];
 		break;
 	case GL_LINEAR_ATTENUATION:
-		lights_config[light - GL_LIGHT0].linear_attenuation = params[0];
+		lights_attenuations[light - GL_LIGHT0].g = params[0];
 		break;
 	case GL_QUADRATIC_ATTENUATION:
-		lights_config[light - GL_LIGHT0].quad_attenuation = params[0];
+		lights_attenuations[light - GL_LIGHT0].b = params[0];
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
