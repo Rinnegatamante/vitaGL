@@ -172,7 +172,7 @@ void initGxm(void) {
 			is_shark_online = GL_TRUE;
 #ifdef HAVE_SHARK_LOG
 			shark_install_log_cb(shark_log_cb);
-			shark_set_warnings_level(SHARK_WARN_MAX);
+			shark_set_warnings_level(SHARK_WARN_HIGH);
 #endif
 		}
 	}

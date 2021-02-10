@@ -357,12 +357,12 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
 			break;
 		}
-
+#ifndef SKIP_ERROR_HANDLING
 		// Checking if texture is too big for sceGxm
 		if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE) {
 			SET_GL_ERROR(GL_INVALID_VALUE)
 		}
-
+#endif
 		// Allocating texture/mipmaps depending on user call
 		tex->type = internalFormat;
 		tex->write_cb = write_cb;

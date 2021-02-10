@@ -26,6 +26,10 @@
 #define MAX_CUSTOM_SHADERS 2048  // Maximum number of linkable custom shaders
 #define MAX_CUSTOM_PROGRAMS 1024 // Maximum number of linkable custom programs
 
+#define resetAttrib(s) \
+	markAsDirty(vertex_attrib_value[index]); \
+	vertex_attrib_value[index] = (float *)gpu_alloc_mapped(s * 4, VGL_MEM_RAM);
+
 GLboolean log_stuffs = GL_FALSE;
 
 // Internal stuffs
@@ -50,7 +54,7 @@ extern GLboolean use_vram;
 int32_t compiler_fastmath = GL_TRUE;
 int32_t compiler_fastprecision = GL_FALSE;
 int32_t compiler_fastint = GL_TRUE;
-shark_opt compiler_opts = SHARK_OPT_DEFAULT;
+shark_opt compiler_opts = SHARK_OPT_FAST;
 
 GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
 
@@ -1103,10 +1107,6 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
 }
-
-#define resetAttrib(s) \
-	markAsDirty(vertex_attrib_value[index]); \
-	vertex_attrib_value[index] = (float*)gpu_alloc_mapped(s * 4, VGL_MEM_RAM);
 
 void glVertexAttrib1f(GLuint index, GLfloat v0) {
 	resetAttrib(1);
