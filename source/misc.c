@@ -263,34 +263,14 @@ void glEnable(GLenum cap) {
 		update_fogging_state();
 		break;
 	case GL_CLIP_PLANE0:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num < 1)
-			clip_planes_num = 1;
-		break;
 	case GL_CLIP_PLANE1:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num < 2)
-			clip_planes_num = 2;
-		break;
 	case GL_CLIP_PLANE2:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num < 3)
-			clip_planes_num = 3;
-		break;
 	case GL_CLIP_PLANE3:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num < 4)
-			clip_planes_num = 4;
-		break;
 	case GL_CLIP_PLANE4:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num < 5)
-			clip_planes_num = 5;
-		break;
 	case GL_CLIP_PLANE5:
+	case GL_CLIP_PLANE6:
 		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num < 6)
-			clip_planes_num = 6;
+		clip_planes_mask |= (1 << cap - GL_CLIP_PLANE0);
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -351,34 +331,14 @@ void glDisable(GLenum cap) {
 		update_fogging_state();
 		break;
 	case GL_CLIP_PLANE0:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num > 0)
-			clip_planes_num = 0;
-		break;
 	case GL_CLIP_PLANE1:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num > 1)
-			clip_planes_num = 1;
-		break;
 	case GL_CLIP_PLANE2:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num > 2)
-			clip_planes_num = 2;
-		break;
 	case GL_CLIP_PLANE3:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num > 3)
-			clip_planes_num = 3;
-		break;
 	case GL_CLIP_PLANE4:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num > 4)
-			clip_planes_num = 4;
-		break;
 	case GL_CLIP_PLANE5:
+	case GL_CLIP_PLANE6:
 		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num > 5)
-			clip_planes_num = 5;
+		clip_planes_mask &= ~(1 << (cap - GL_CLIP_PLANE0));
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)

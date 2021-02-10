@@ -51,7 +51,7 @@ GLfloat fog_far = 1.0f; // Current fogging far distance
 vector4f fog_color = { 0.0f, 0.0f, 0.0f, 0.0f }; // Current fogging color
 
 // Clipping Planes
-uint8_t clip_planes_num = 0; // Current number of enabled user clip planes
+uint8_t clip_planes_mask = 0; // Bitmask of enabled clip planes
 vector4f clip_planes_eq[MAX_CLIP_PLANES_NUM]; // Current equation for user clip planes
 
 // Cullling

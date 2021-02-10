@@ -268,6 +268,15 @@ GLboolean glIsEnabled(GLenum cap) {
 	case GL_POLYGON_OFFSET_POINT:
 		ret = pol_offset_point;
 		break;
+	case GL_CLIP_PLANE0:
+	case GL_CLIP_PLANE1:
+	case GL_CLIP_PLANE2:
+	case GL_CLIP_PLANE3:
+	case GL_CLIP_PLANE4:
+	case GL_CLIP_PLANE5:
+	case GL_CLIP_PLANE6:
+		 ret = clip_planes_mask & (1 << (cap - GL_CLIP_PLANE0)) ? GL_TRUE : GL_FALSE;
+		break;
 	default:
 		vgl_error = GL_INVALID_ENUM;
 		break;

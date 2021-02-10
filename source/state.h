@@ -194,7 +194,7 @@ extern GLfloat fog_far; // Current fogging far distance
 extern vector4f fog_color; // Current fogging color
 
 // Clipping Planes
-extern uint8_t clip_planes_num; // Current number of enabled user clip planes
+extern uint8_t clip_planes_mask; // Bitmask of enabled clip planes
 extern vector4f clip_planes_eq[MAX_CLIP_PLANES_NUM]; // Current equation for user clip planes
 
 // Framebuffers
