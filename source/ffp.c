@@ -114,17 +114,25 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	// Checking if mask changed
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	GLboolean ffp_dirty_frag_blend = ffp_blend_info.raw != blend_info.raw;
-	vector4f clip_planes[MAX_CLIP_PLANES_NUM] = {0.0f};
 	shader_mask mask = {.raw = 0};
 	mask.texenv_mode = tex_unit->env_mode;
 	mask.alpha_test_mode = alpha_op;
 	mask.has_texture = (ffp_vertex_attrib_state & (1 << 1)) ? GL_TRUE : GL_FALSE;
 	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
-	for (int i = 0; i < MAX_CLIP_PLANES_NUM; i++) {
-		if (clip_planes_mask & (1 << i)) {
-			sceClibMemcpy(&clip_planes[mask.clip_planes_num], &clip_planes_eq[i], sizeof(vector4f));
-			mask.clip_planes_num++;
+
+	vector4f *clip_planes;
+	vector4f temp_clip_planes[MAX_CLIP_PLANES_NUM];
+	if (clip_planes_aligned) {
+		clip_planes = &clip_planes_eq[clip_plane_range[0]];
+		mask.clip_planes_num = clip_plane_range[1] - clip_plane_range[0];
+	} else {
+		clip_planes = &temp_clip_planes[0];
+		for (int i = clip_plane_range[0]; i < clip_plane_range[1]; i++) {
+			if (clip_planes_mask & (1 << i)) {
+				sceClibMemcpy(&clip_planes[mask.clip_planes_num], &clip_planes_eq[i], sizeof(vector4f));
+				mask.clip_planes_num++;
+			}
 		}
 	}
 

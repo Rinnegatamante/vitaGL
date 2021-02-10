@@ -51,6 +51,8 @@ GLfloat fog_far = 1.0f; // Current fogging far distance
 vector4f fog_color = { 0.0f, 0.0f, 0.0f, 0.0f }; // Current fogging color
 
 // Clipping Planes
+GLboolean clip_planes_aligned = GL_TRUE; // Are clip planes in a contiguous range?
+uint8_t clip_plane_range[2] = {0}; // The hightest enabled clip plane
 uint8_t clip_planes_mask = 0; // Bitmask of enabled clip planes
 vector4f clip_planes_eq[MAX_CLIP_PLANES_NUM]; // Current equation for user clip planes
 
