@@ -263,34 +263,24 @@ void glEnable(GLenum cap) {
 		update_fogging_state();
 		break;
 	case GL_CLIP_PLANE0:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num < 1)
-			clip_planes_num = 1;
-		break;
 	case GL_CLIP_PLANE1:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num < 2)
-			clip_planes_num = 2;
-		break;
 	case GL_CLIP_PLANE2:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num < 3)
-			clip_planes_num = 3;
-		break;
 	case GL_CLIP_PLANE3:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num < 4)
-			clip_planes_num = 4;
-		break;
 	case GL_CLIP_PLANE4:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num < 5)
-			clip_planes_num = 5;
-		break;
 	case GL_CLIP_PLANE5:
+	case GL_CLIP_PLANE6:
 		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num < 6)
-			clip_planes_num = 6;
+		clip_planes_mask |= (1 << cap - GL_CLIP_PLANE0);
+
+		clip_plane_range[0] = clip_planes_mask ? __builtin_ctz(clip_planes_mask) : 0; // Get the lowest enabled clip plane
+		clip_plane_range[1] = clip_planes_mask ? 8 - (__builtin_clz(clip_planes_mask) - 24) : 0; // Get the highest enabled clip plane
+		clip_planes_aligned = GL_TRUE;
+		for (int i = clip_plane_range[0]; i < clip_plane_range[1]; i++) {
+			if (!(clip_planes_mask & (1 << i)) && clip_planes_aligned) {
+				clip_planes_aligned = GL_FALSE;
+				break;
+			}
+		}
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -351,34 +341,24 @@ void glDisable(GLenum cap) {
 		update_fogging_state();
 		break;
 	case GL_CLIP_PLANE0:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num > 0)
-			clip_planes_num = 0;
-		break;
 	case GL_CLIP_PLANE1:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num > 1)
-			clip_planes_num = 1;
-		break;
 	case GL_CLIP_PLANE2:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num > 2)
-			clip_planes_num = 2;
-		break;
 	case GL_CLIP_PLANE3:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num > 3)
-			clip_planes_num = 3;
-		break;
 	case GL_CLIP_PLANE4:
-		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num > 4)
-			clip_planes_num = 4;
-		break;
 	case GL_CLIP_PLANE5:
+	case GL_CLIP_PLANE6:
 		ffp_dirty_vert = GL_TRUE;
-		if (clip_planes_num > 5)
-			clip_planes_num = 5;
+		clip_planes_mask &= ~(1 << (cap - GL_CLIP_PLANE0));
+
+		clip_plane_range[0] = clip_planes_mask ? __builtin_ctz(clip_planes_mask) : 0; // Get the lowest enabled clip plane
+		clip_plane_range[1] = clip_planes_mask ? 8 - (__builtin_clz(clip_planes_mask) - 24) : 0; // Get the highest enabled clip plane
+		clip_planes_aligned = GL_TRUE;
+		for (int i = clip_plane_range[0]; i < clip_plane_range[1]; i++) {
+			if (!(clip_planes_mask & (1 << i)) && clip_planes_aligned) {
+				clip_planes_aligned = GL_FALSE;
+				break;
+			}
+		}
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -584,7 +564,7 @@ void glFogi(GLenum pname, const GLint param) {
 
 void glClipPlane(GLenum plane, const GLdouble *equation) {
 #ifndef SKIP_ERROR_HANDLING
-	if (plane < GL_CLIP_PLANE0 || plane > GL_CLIP_PLANE5) {
+	if (plane < GL_CLIP_PLANE0 || plane > GL_CLIP_PLANE6) {
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
 #endif

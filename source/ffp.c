@@ -120,7 +120,22 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	mask.has_texture = (ffp_vertex_attrib_state & (1 << 1)) ? GL_TRUE : GL_FALSE;
 	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
-	mask.clip_planes_num = clip_planes_num;
+
+	vector4f *clip_planes;
+	vector4f temp_clip_planes[MAX_CLIP_PLANES_NUM];
+	if (clip_planes_aligned) {
+		clip_planes = &clip_planes_eq[clip_plane_range[0]];
+		mask.clip_planes_num = clip_plane_range[1] - clip_plane_range[0];
+	} else {
+		clip_planes = &temp_clip_planes[0];
+		for (int i = clip_plane_range[0]; i < clip_plane_range[1]; i++) {
+			if (clip_planes_mask & (1 << i)) {
+				sceClibMemcpy(&clip_planes[mask.clip_planes_num], &clip_planes_eq[i], sizeof(vector4f));
+				mask.clip_planes_num++;
+			}
+		}
+	}
+
 	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
 		ffp_dirty_vert = GL_FALSE;
 		ffp_dirty_frag = GL_FALSE;
@@ -321,7 +336,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	
 	// Uploading vertex shader uniforms
 	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &buffer);
-	if (ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF], 0, 4 * mask.clip_planes_num, &clip_planes_eq[0].x);
+	if (ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF], 0, 4 * mask.clip_planes_num, &clip_planes[0].x);
 	if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
 	if (ffp_vertex_params[WVP_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
 	if (ffp_vertex_params[TEX_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
