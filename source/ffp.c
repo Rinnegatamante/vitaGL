@@ -27,7 +27,7 @@
 
 #define SHADER_CACHE_SIZE 256
 
-#define VERTEX_UNIFORMS_NUM 6
+#define VERTEX_UNIFORMS_NUM 10
 #define FRAGMENT_UNIFORMS_NUM 7
 
 static uint32_t vertex_count = 0; // Vertex counter for vertex list
@@ -93,7 +93,11 @@ typedef enum {
 	MODELVIEW_MATRIX_UNIF,
 	WVP_MATRIX_UNIF,
 	TEX_MATRIX_UNIF,
-	LIGHTS_CONFIG_UNIF,
+	LIGHTS_AMBIENTS_UNIF,
+	LIGHTS_DIFFUSES_UNIF,
+	LIGHTS_SPECULARS_UNIF,
+	LIGHTS_POSITIONS_UNIF,
+	LIGHTS_ATTENUATIONS_UNIF,
 	NORMAL_MATRIX_UNIF
 } vert_uniform_type;
 
@@ -129,8 +133,14 @@ void reload_vertex_uniforms() {
 	ffp_vertex_params[MODELVIEW_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "modelview");
 	ffp_vertex_params[WVP_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "wvp");
 	ffp_vertex_params[TEX_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "texmat");
-	ffp_vertex_params[LIGHTS_CONFIG_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_config");
 	ffp_vertex_params[NORMAL_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "normal_mat");
+	ffp_vertex_params[LIGHTS_AMBIENTS_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_ambients");
+	if (ffp_vertex_params[LIGHTS_AMBIENTS_UNIF]) {
+		ffp_vertex_params[LIGHTS_DIFFUSES_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_diffuses");
+		ffp_vertex_params[LIGHTS_SPECULARS_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_speculars");
+		ffp_vertex_params[LIGHTS_POSITIONS_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_positions");
+		ffp_vertex_params[LIGHTS_ATTENUATIONS_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_attenuations");
+	}
 }
 
 void reload_fragment_uniforms() {
@@ -380,7 +390,13 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	if (ffp_vertex_params[WVP_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
 	if (ffp_vertex_params[TEX_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
 	if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[NORMAL_MATRIX_UNIF], 0, 16, (const float *)normal_matrix);
-	if (ffp_vertex_params[LIGHTS_CONFIG_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_CONFIG_UNIF], 0, 19 * mask.lights_num, &lights_config[0].ambient.x);
+	if (ffp_vertex_params[LIGHTS_AMBIENTS_UNIF]) {
+		sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_AMBIENTS_UNIF], 0, 4 * mask.lights_num, (const float *)lights_ambients);
+		sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_DIFFUSES_UNIF], 0, 4 * mask.lights_num, (const float *)lights_diffuses);
+		sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_SPECULARS_UNIF], 0, 4 * mask.lights_num, (const float *)lights_speculars);
+		sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_POSITIONS_UNIF], 0, 4 * mask.lights_num, (const float *)lights_positions);
+		sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_ATTENUATIONS_UNIF], 0, 3 * mask.lights_num, (const float *)lights_attenuations);
+	}
 }
 
 void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {

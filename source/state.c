@@ -44,7 +44,11 @@ vector4f clear_rgba_val; // Current clear color for glClear
 // Lighting
 GLboolean lighting_state = GL_FALSE; // Current lighting processor state
 uint8_t lights_num = 0; // Current number of enabled light spots
-light_params lights_config[MAX_LIGHTS_NUM];
+vector4f lights_ambients[MAX_LIGHTS_NUM];
+vector4f lights_diffuses[MAX_LIGHTS_NUM];
+vector4f lights_speculars[MAX_LIGHTS_NUM];
+vector4f lights_positions[MAX_LIGHTS_NUM];
+vector3f lights_attenuations[MAX_LIGHTS_NUM];
 
 // Fogging
 GLboolean fogging = GL_FALSE; // Current fogging processor state
