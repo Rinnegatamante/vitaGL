@@ -141,7 +141,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
-	
+
 #ifndef SKIP_ERROR_HANDLING
 	if (!fb) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
@@ -161,7 +161,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
-	
+
 		// Detaching attached texture if passed texture ID is 0
 		if (tex_id == 0) {
 			if (fb->target) {
@@ -211,7 +211,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
-	
+
 #ifndef SKIP_ERROR_HANDLING
 	if (!fb) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
@@ -222,7 +222,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 
 	// Aliasing to make code more readable
 	texture *tex = &texture_slots[tex_id];
-	
+
 	// Extracting texture data
 	fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
 	fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
@@ -233,7 +233,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
-	
+
 		// Detaching attached texture if passed texture ID is 0
 		if (tex_id == 0) {
 			if (fb->target) {
@@ -284,8 +284,8 @@ GLenum glCheckFramebufferStatus(GLenum target) {
 		return GL_FRAMEBUFFER_COMPLETE;
 		break;
 	}
-	
-	if (!fb) 
+
+	if (!fb)
 		return GL_FRAMEBUFFER_COMPLETE;
 	else
 		return fb->depth_buffer_addr ? GL_FRAMEBUFFER_COMPLETE : GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT;
@@ -300,7 +300,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	 */
 	void (*write_cb)(void *, uint32_t) = NULL;
 	uint32_t (*read_cb)(void *) = NULL;
-	
+
 	GLboolean fast_store = GL_FALSE;
 	uint8_t *src;
 	int stride, src_bpp, dst_bpp;
@@ -319,11 +319,11 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		}
 		if (format == active_read_fb->data_type)
 			fast_store = GL_TRUE;
-		src = (uint8_t*)active_read_fb->data;
+		src = (uint8_t *)active_read_fb->data;
 		stride = active_read_fb->stride;
 		y = (active_read_fb->height - (height + y)) * stride;
 	} else {
-		src = (uint8_t*)gxm_color_surfaces_addr[gxm_back_buffer_index];
+		src = (uint8_t *)gxm_color_surfaces_addr[gxm_back_buffer_index];
 		stride = DISPLAY_STRIDE * 4;
 		y = (DISPLAY_HEIGHT - (height + y)) * stride;
 		src_bpp = 4;
@@ -332,7 +332,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		else
 			read_cb = readRGBA;
 	}
-	
+
 	if (!fast_store) {
 		switch (format) {
 		case GL_RGBA:
@@ -360,7 +360,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			break;
 		}
 	}
-	
+
 	uint8_t *data_u8 = data + (width * src_bpp * (height - 1));
 	int i;
 	if (fast_store) {
@@ -394,15 +394,13 @@ void vglTexImageDepthBuffer(GLenum target) {
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
-	case GL_TEXTURE_2D:
-		{
-			if (active_read_fb)
-				sceGxmTextureInitLinear(&tex->gxm_tex, active_read_fb->depth_buffer_addr, SCE_GXM_TEXTURE_FORMAT_DF32M, active_read_fb->width, active_read_fb->height, 0);
-			else
-				sceGxmTextureInitLinear(&tex->gxm_tex, gxm_depth_surface_addr, SCE_GXM_TEXTURE_FORMAT_DF32M, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0);
-			tex->valid = 1;
-		}
-		break;
+	case GL_TEXTURE_2D: {
+		if (active_read_fb)
+			sceGxmTextureInitLinear(&tex->gxm_tex, active_read_fb->depth_buffer_addr, SCE_GXM_TEXTURE_FORMAT_DF32M, active_read_fb->width, active_read_fb->height, 0);
+		else
+			sceGxmTextureInitLinear(&tex->gxm_tex, gxm_depth_surface_addr, SCE_GXM_TEXTURE_FORMAT_DF32M, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0);
+		tex->valid = 1;
+	} break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;

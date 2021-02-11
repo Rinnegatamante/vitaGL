@@ -275,7 +275,7 @@ GLboolean glIsEnabled(GLenum cap) {
 	case GL_CLIP_PLANE4:
 	case GL_CLIP_PLANE5:
 	case GL_CLIP_PLANE6:
-		 ret = clip_planes_mask & (1 << (cap - GL_CLIP_PLANE0)) ? GL_TRUE : GL_FALSE;
+		ret = clip_planes_mask & (1 << (cap - GL_CLIP_PLANE0)) ? GL_TRUE : GL_FALSE;
 		break;
 	default:
 		vgl_error = GL_INVALID_ENUM;

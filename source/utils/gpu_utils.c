@@ -147,12 +147,12 @@ void *gpu_alloc_mapped(size_t size, vglMemType type) {
 	// Requested memory type finished, using other one
 	if (res == NULL) {
 		res = vgl_mem_alloc(size, type == VGL_MEM_VRAM ? VGL_MEM_RAM : VGL_MEM_VRAM);
-		
+
 		// Even the other one failed, using our last resort
 		if (res == NULL)
 			res = vgl_mem_alloc(size, VGL_MEM_SLOW);
 	}
-	
+
 	return res;
 }
 
@@ -295,7 +295,7 @@ void gpu_free_texture(texture *tex) {
 			vgl_mem_free(tex->data);
 		tex->data = NULL;
 	}
-	
+
 	// Invalidating texture object
 	tex->valid = 0;
 }
@@ -378,8 +378,10 @@ int gpu_get_compressed_mipchain_size(int level, int width, int height, SceGxmTex
 
 	for (int currentLevel = 0; currentLevel <= level; currentLevel++) {
 		size += gpu_get_compressed_mip_size(currentLevel, width, height, format);
-		if (width > 1) width /= 2;
-		if (height > 1) height /= 2;
+		if (width > 1)
+			width /= 2;
+		if (height > 1)
+			height /= 2;
 	}
 
 	return size;
@@ -393,13 +395,13 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 	// If there's already a texture in passed texture object we first dealloc it
 	if (tex->valid && !mip_level)
 		gpu_free_texture(tex);
-	
+
 	// Calculating swizzled compressed texture size on memory
 	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-	
+
 	if (!image_size)
 		image_size = gpu_get_compressed_mip_size(mip_level, w, h, format);
-	
+
 	const uint32_t blocksize = (format == SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR) ? 16 : 8;
 	const uint32_t aligned_width = nearest_po2(w);
 	const uint32_t aligned_height = nearest_po2(h);
@@ -415,19 +417,19 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		aligned_max_width = nearest_po2(max_width);
 		aligned_max_height = nearest_po2(max_height);
 	}
-	
+
 	// Allocating texture data buffer
 	const int mip_offset = gpu_get_compressed_mip_offset(mip_level, aligned_max_width, aligned_max_height, format);
 	const int tex_size = gpu_get_compressed_mipchain_size(mip_level, aligned_max_width, aligned_max_height, format);
 	const int mip_size = tex_size - mip_offset;
-	
+
 	int mip_count, tex_width, tex_height;
 	void *texture_data;
 	if (mip_level) {
 		mip_count = sceGxmTextureGetMipmapCount(&tex->gxm_tex);
 		tex_width = max_width;
 		tex_height = max_height;
-		
+
 		if (mip_count >= mip_level)
 			texture_data = tex->data;
 		else {
@@ -446,7 +448,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		mip_count = mip_level;
 		tex_width = w;
 		tex_height = h;
-		
+
 		texture_data = gpu_alloc_mapped_with_external(tex_size, &tex->mtype);
 	}
 

@@ -120,7 +120,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	uint8_t data_bpp = 0;
 	GLboolean fast_store = GL_FALSE;
 	GLboolean gamma_correction = GL_FALSE;
-	
+
 	// Support for legacy GL1.0 internalFormat
 	switch (internalFormat) {
 	case 1:
@@ -318,7 +318,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 				if (read_cb == readRGBA5551)
 					tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
 				else if (read_cb == readRGBA4444)
-					tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA;				
+					tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA;
 			} else
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
 			break;
@@ -371,11 +371,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 				gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb, fast_store);
 			else
 				gpu_alloc_compressed_texture(level, width, height, tex_format, 0, data, tex, data_bpp, read_cb);
+		else if (tex->write_cb)
+			gpu_alloc_mipmaps(level, tex);
 		else
-			if (tex->write_cb)
-				gpu_alloc_mipmaps(level, tex);
-			else
-				gpu_alloc_compressed_texture(level, width, height, tex_format, 0, data, tex, data_bpp, read_cb);
+			gpu_alloc_compressed_texture(level, width, height, tex_format, 0, data, tex, data_bpp, read_cb);
 
 		// Setting texture parameters
 		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
@@ -415,7 +414,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	uint8_t data_bpp = 0;
 	int i, j;
 	GLboolean fast_store = GL_FALSE;
-	
+
 	if (xoffset + width > orig_w) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	} else if (yoffset + height > orig_h) {
@@ -536,31 +535,43 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 		// Detecting proper write callback
 		switch (tex_format) {
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
-			if (read_cb == readRGB) fast_store = GL_TRUE;
-			else write_cb = writeRGB;
+			if (read_cb == readRGB)
+				fast_store = GL_TRUE;
+			else
+				write_cb = writeRGB;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8_RGB:
-			if (read_cb == readBGR) fast_store = GL_TRUE;
-			else write_cb = writeBGR;
+			if (read_cb == readBGR)
+				fast_store = GL_TRUE;
+			else
+				write_cb = writeBGR;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-			if (read_cb == readRGBA) fast_store = GL_TRUE;
-			else write_cb = writeRGBA;
+			if (read_cb == readRGBA)
+				fast_store = GL_TRUE;
+			else
+				write_cb = writeRGBA;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
-			if (read_cb == readBGRA) fast_store = GL_TRUE;
-			else write_cb = writeBGRA;
+			if (read_cb == readBGRA)
+				fast_store = GL_TRUE;
+			else
+				write_cb = writeBGRA;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_L8:
 		case SCE_GXM_TEXTURE_FORMAT_U8_RRRR:
 		case SCE_GXM_TEXTURE_FORMAT_A8:
 		case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
-			if (read_cb == readR) fast_store = GL_TRUE;
-			else write_cb = writeR;
+			if (read_cb == readR)
+				fast_store = GL_TRUE;
+			else
+				write_cb = writeR;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_A8L8:
-			if (read_cb == readRG) fast_store = GL_TRUE;
-			else write_cb = writeRG;
+			if (read_cb == readRG)
+				fast_store = GL_TRUE;
+			else
+				write_cb = writeRG;
 			break;
 		// From here, we assume we're always in fast_store trunk (Not 100% accurate)
 		case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
@@ -569,7 +580,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			fast_store = GL_TRUE;
 			break;
 		}
-		
+
 		if (fast_store) { // Internal format and input format are the same, we can take advantage of this
 			uint8_t *data = (uint8_t *)pixels;
 			uint32_t line_size = width * data_bpp;

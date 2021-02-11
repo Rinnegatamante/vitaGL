@@ -48,7 +48,7 @@ fogType internal_fog_mode = DISABLED; // Current fogging mode (sceGxm)
 GLfloat fog_density = 1.0f; // Current fogging density
 GLfloat fog_near = 0.0f; // Current fogging near distance
 GLfloat fog_far = 1.0f; // Current fogging far distance
-vector4f fog_color = { 0.0f, 0.0f, 0.0f, 0.0f }; // Current fogging color
+vector4f fog_color = {0.0f, 0.0f, 0.0f, 0.0f}; // Current fogging color
 
 // Clipping Planes
 GLboolean clip_planes_aligned = GL_TRUE; // Are clip planes in a contiguous range?

@@ -24,8 +24,8 @@
 #include <stdlib.h>
 #include <vitasdk.h>
 
-#include "vitaGL.h"
 #include "texture_callbacks.h"
+#include "vitaGL.h"
 
 #define convert_u16_to_u32_cspace(color, lshift, rshift, mask) ((((color << lshift) >> rshift) & mask) * 0xFF) / mask
 
@@ -52,8 +52,8 @@ uint32_t readRGBA5551(void *data) {
 	uint16_t clr;
 	uint32_t r, g, b, a;
 	sceClibMemcpy(&clr, data, 2);
-	r = convert_u16_to_u32_cspace(clr,  0, 11, 0x1F);
-	g = convert_u16_to_u32_cspace(clr,  5, 11, 0x1F);
+	r = convert_u16_to_u32_cspace(clr, 0, 11, 0x1F);
+	g = convert_u16_to_u32_cspace(clr, 5, 11, 0x1F);
 	b = convert_u16_to_u32_cspace(clr, 10, 11, 0x1F);
 	a = convert_u16_to_u32_cspace(clr, 15, 15, 0x01);
 	return ((a << 24) | (b << 16) | (g << 8) | r);
@@ -64,9 +64,9 @@ uint32_t readRGBA4444(void *data) {
 	uint16_t clr;
 	uint32_t r, g, b, a;
 	sceClibMemcpy(&clr, data, 2);
-	r = convert_u16_to_u32_cspace(clr,  0, 12, 0x0F);
-	g = convert_u16_to_u32_cspace(clr,  4, 12, 0x0F);
-	b = convert_u16_to_u32_cspace(clr,  8, 12, 0x0F);
+	r = convert_u16_to_u32_cspace(clr, 0, 12, 0x0F);
+	g = convert_u16_to_u32_cspace(clr, 4, 12, 0x0F);
+	b = convert_u16_to_u32_cspace(clr, 8, 12, 0x0F);
 	a = convert_u16_to_u32_cspace(clr, 12, 12, 0x0F);
 	return ((a << 24) | (b << 16) | (g << 8) | r);
 }
@@ -76,9 +76,9 @@ uint32_t readRGB565(void *data) {
 	uint16_t clr;
 	uint32_t r, g, b;
 	sceClibMemcpy(&clr, data, 2);
-	r = convert_u16_to_u32_cspace(clr,   0, 11, 0x1F);
-	g = convert_u16_to_u32_cspace(clr,   5, 10, 0x3F);
-	b = convert_u16_to_u32_cspace(clr,  11, 11, 0x1F);
+	r = convert_u16_to_u32_cspace(clr, 0, 11, 0x1F);
+	g = convert_u16_to_u32_cspace(clr, 5, 10, 0x3F);
+	b = convert_u16_to_u32_cspace(clr, 11, 11, 0x1F);
 	return ((0xFF << 24) | (b << 16) | (g << 8) | r);
 }
 
@@ -115,13 +115,13 @@ uint32_t readR(void *data) {
 }
 
 uint32_t readL(void *data) {
-	uint8_t *d = (uint8_t*)data;
+	uint8_t *d = (uint8_t *)data;
 	uint8_t lum = d[0];
 	return ((0xFF << 24) | (lum << 16) | (lum << 8) | lum);
 }
 
 uint32_t readLA(void *data) {
-	uint8_t *d = (uint8_t*)data;
+	uint8_t *d = (uint8_t *)data;
 	uint8_t lum = d[0];
 	uint8_t a = d[1];
 	return ((a << 24) | (lum << 16) | (lum << 8) | lum);

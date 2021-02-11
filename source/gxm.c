@@ -449,13 +449,13 @@ void sceneReset(void) {
 	if (in_use_framebuffer != active_write_fb || needs_scene_reset) {
 		needs_scene_reset = GL_FALSE;
 		in_use_framebuffer = active_write_fb;
-		
+
 		// Ending drawing scene
 		if (needs_end_scene)
 			sceneEnd();
 		else {
 			if (legacy_pool_size) {
-				legacy_pool = (float*)gpu_alloc_mapped_temp(legacy_pool_size);
+				legacy_pool = (float *)gpu_alloc_mapped_temp(legacy_pool_size);
 				legacy_pool_ptr = legacy_pool;
 			}
 			needs_end_scene = GL_TRUE;
@@ -475,7 +475,6 @@ void sceneReset(void) {
 				&gxm_color_surfaces[gxm_back_buffer_index],
 				&gxm_depth_stencil_surface);
 		} else {
-			
 			// If a rendertarget is not bound to the in use framebuffer, we get one for it
 			if (!active_write_fb->target) {
 #ifdef HAVE_SHARED_RENDERTARGETS
@@ -494,7 +493,7 @@ void sceneReset(void) {
 #endif
 			}
 #ifdef HAVE_SHARED_RENDERTARGETS
-			render_target *fbo_rt = (render_target*)active_write_fb->target;
+			render_target *fbo_rt = (render_target *)active_write_fb->target;
 			sceGxmBeginScene(gxm_context, 0, fbo_rt->rt,
 #else
 			sceGxmBeginScene(gxm_context, 0, active_write_fb->target,
@@ -531,7 +530,7 @@ void sceneReset(void) {
 void vglSwapBuffers(GLboolean has_commondialog) {
 	needs_end_scene = GL_FALSE;
 	sceneEnd();
-	
+
 	if (has_commondialog) {
 		// Populating SceCommonDialog parameters
 		SceCommonDialogUpdateParam updateParam;
@@ -548,8 +547,8 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		// Updating sceCommonDialog
 		sceCommonDialogUpdate(&updateParam);
 	}
-	
-	if (!in_use_framebuffer){
+
+	if (!in_use_framebuffer) {
 		if (system_app_mode)
 			sceSharedFbEnd(shared_fb);
 		else {
@@ -562,7 +561,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		}
 	}
 	needs_scene_reset = GL_TRUE;
-	
+
 	// Purging all elements marked for deletion
 	int i;
 	for (i = 0; i < FRAME_PURGE_LIST_SIZE; i++) {
@@ -575,6 +574,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 	for (i = 0; i < FRAME_PURGE_RENDERTARGETS_LIST_SIZE; i++) {
 		if (frame_rt_purge_list[frame_purge_clean_idx][i]) {
 			sceGxmDestroyRenderTarget(frame_rt_purge_list[frame_purge_clean_idx][i]);
+			frame_rt_purge_list[frame_purge_clean_idx][i] = NULL;
 		} else
 			break;
 	}

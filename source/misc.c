@@ -183,13 +183,14 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	
+
 	x_scale = width >> 1;
 	x_port = x + x_scale;
 	y_scale = -(height >> 1);
 	y_port = (is_rendering_display ? DISPLAY_HEIGHT : in_use_framebuffer->height) - y + y_scale;
 #ifndef HAVE_UNFLIPPED_FBOS
-	if (!is_rendering_display) y_scale = -y_scale;
+	if (!is_rendering_display)
+		y_scale = -y_scale;
 #endif
 	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 	gl_viewport.x = x;

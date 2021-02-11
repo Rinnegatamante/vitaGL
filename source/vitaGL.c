@@ -31,18 +31,17 @@
 
 #ifdef HAVE_SOFTFP_ABI
 __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
-  asm volatile (
-    "vmov s0, r1\n"
-    "vmov s1, r2\n"
-    "vmov s2, r3\n"
-    "ldr r1, [sp]\n"
-    "ldr r2, [sp, #4]\n"
-    "ldr r3, [sp, #8]\n"
-    "vmov s3, r1\n"
-    "vmov s4, r2\n"
-    "vmov s5, r2\n"
-    "b sceGxmSetViewport\n"
-  );
+	asm volatile(
+		"vmov s0, r1\n"
+		"vmov s1, r2\n"
+		"vmov s2, r3\n"
+		"ldr r1, [sp]\n"
+		"ldr r2, [sp, #4]\n"
+		"ldr r3, [sp, #8]\n"
+		"vmov s3, r1\n"
+		"vmov s4, r2\n"
+		"vmov s5, r2\n"
+		"b sceGxmSetViewport\n");
 }
 #endif
 
@@ -103,7 +102,7 @@ static uint32_t index_array_unit = 0; // Current in-use element array buffer uni
 uint16_t *default_idx_ptr; // sceGxm mapped progressive indices buffer
 uint16_t *default_quads_idx_ptr; // sceGxm mapped progressive indices buffer for quads
 
-vector4f texenv_color = { 0.0f, 0.0f, 0.0f, 0.0f }; // Current in use texture environment color
+vector4f texenv_color = {0.0f, 0.0f, 0.0f, 0.0f}; // Current in use texture environment color
 
 // Internal functions
 
@@ -213,7 +212,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 
 	// Starting a sceGxmShaderPatcher instance
 	startShaderPatcher();
-	
+
 	// Setting up default blending state
 	change_blend_mask();
 
@@ -271,10 +270,10 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 
 	// Init custom shaders
 	resetCustomShaders();
-	
+
 	// Init constant index buffers
-	default_idx_ptr = (uint16_t*)malloc(MAX_IDX_NUMBER * sizeof(uint16_t));
-	default_quads_idx_ptr = (uint16_t*)malloc(MAX_IDX_NUMBER * sizeof(uint16_t));
+	default_idx_ptr = (uint16_t *)malloc(MAX_IDX_NUMBER * sizeof(uint16_t));
+	default_quads_idx_ptr = (uint16_t *)malloc(MAX_IDX_NUMBER * sizeof(uint16_t));
 	for (i = 0; i < MAX_IDX_NUMBER; i++) {
 		default_idx_ptr[i] = i;
 	}
@@ -291,7 +290,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	for (i = 0; i < GL_MAX_VERTEX_ATTRIBS; i++) {
 		vertex_attrib_config[i].regIndex = i;
 	}
-	
+
 	// Init default vertex attributes configurations
 	for (i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
 		ffp_vertex_attrib_config[i].streamIndex = i;
@@ -309,7 +308,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	legacy_vertex_attrib_config[1].componentCount = 2;
 	legacy_vertex_attrib_config[2].componentCount = 4;
 	legacy_pool_size = pool_size;
-	
+
 	// Init purge lists
 	for (i = 0; i < FRAME_PURGE_FREQ; i++) {
 		frame_purge_list[i][0] = NULL;
@@ -444,7 +443,7 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 	int i, j;
 	for (j = 0; j < n; j++) {
 		if (gl_buffers[j]) {
-			gpubuffer *gpu_buf = (gpubuffer*)gl_buffers[j];
+			gpubuffer *gpu_buf = (gpubuffer *)gl_buffers[j];
 			if (gpu_buf->ptr != NULL)
 				markAsDirty(gpu_buf->ptr);
 			free(gpu_buf);
@@ -456,10 +455,10 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 	gpubuffer *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer*)vertex_array_unit;
+		gpu_buf = (gpubuffer *)vertex_array_unit;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer*)index_array_unit;
+		gpu_buf = (gpubuffer *)index_array_unit;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -480,7 +479,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		else
 			vgl_mem_free(gpu_buf->ptr);
 	}
-	
+
 	// Allocating a new buffer
 	gpu_buf->ptr = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 #ifndef SKIP_ERROR_HANDLING
@@ -499,10 +498,10 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 	gpubuffer *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer*)vertex_array_unit;
+		gpu_buf = (gpubuffer *)vertex_array_unit;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer*)index_array_unit;
+		gpu_buf = (gpubuffer *)index_array_unit;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -515,19 +514,19 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	
+
 	// Marking previous content for deletion
 	markAsDirty(gpu_buf->ptr);
-	
+
 	// Allocating a new buffer
 	gpu_buf->ptr = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-	
+
 	// Copying up previous data combined to modified data
 	if (offset > 0)
 		sceClibMemcpy(gpu_buf->ptr, frame_purge_list[frame_purge_idx][frame_elem_purge_idx - 1], offset);
-	sceClibMemcpy((uint8_t*)gpu_buf->ptr + offset, data, size);
+	sceClibMemcpy((uint8_t *)gpu_buf->ptr + offset, data, size);
 	if (gpu_buf->size - size - offset > 0)
-		sceClibMemcpy((uint8_t*)gpu_buf->ptr + offset + size, (uint8_t*)frame_purge_list[frame_purge_idx][frame_elem_purge_idx - 1] + offset + size, gpu_buf->size - size - offset);
+		sceClibMemcpy((uint8_t *)gpu_buf->ptr + offset + size, (uint8_t *)frame_purge_list[frame_purge_idx][frame_elem_purge_idx - 1] + offset + size, gpu_buf->size - size - offset);
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor) {
@@ -854,25 +853,26 @@ void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
 		change_blend_mask();
 }
 
-void glDrawArrays(GLenum mode, GLint first, GLsizei count) {	
+void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p);
 	sceneReset();
-	
+
 	if (cur_program != 0)
 		_glDrawArrays_CustomShadersIMPL(first + count);
 	else {
-		if (!(ffp_vertex_attrib_state & (1 << 0))) return;
+		if (!(ffp_vertex_attrib_state & (1 << 0)))
+			return;
 		_glDrawArrays_FixedFunctionIMPL(first + count);
 	}
-	
+
 	if (prim_is_quad)
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_quads_idx_ptr + (first / 2) * 3, (count / 2) * 3);
 	else
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
 }
 
-void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {	
+void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
 #ifndef SKIP_ERROR_HANDLING
 	if (type != GL_UNSIGNED_SHORT) {
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -882,19 +882,20 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	
+
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p);
 	sceneReset();
-		
-	gpubuffer *gpu_buf = (gpubuffer*)index_array_unit;
+
+	gpubuffer *gpu_buf = (gpubuffer *)index_array_unit;
 	if (cur_program != 0)
-		_glDrawElements_CustomShadersIMPL(index_array_unit ? (uint16_t*)((uint8_t*)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t*)gl_indices, count);
+		_glDrawElements_CustomShadersIMPL(index_array_unit ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices, count);
 	else {
-		if (!(ffp_vertex_attrib_state & (1 << 0))) return;
-		_glDrawElements_FixedFunctionIMPL(index_array_unit ? (uint16_t*)((uint8_t*)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t*)gl_indices, count);
+		if (!(ffp_vertex_attrib_state & (1 << 0)))
+			return;
+		_glDrawElements_FixedFunctionIMPL(index_array_unit ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices, count);
 	}
-	
+
 	if (!gpu_buf) { // Drawing without an index buffer
 		// Allocating a temp buffer for the indices
 		void *ptr = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
@@ -902,7 +903,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 	} else { // Drawing with an index buffer
 		gpu_buf->used = GL_TRUE;
-		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint8_t*)gpu_buf->ptr + (uint32_t)gl_indices, count);
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices, count);
 	}
 }
 
@@ -924,10 +925,10 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 	}
 #endif
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	
+
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[0];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[0];
-	
+
 	unsigned short bpe;
 	switch (type) {
 	case GL_FLOAT:
@@ -942,10 +943,10 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
-	
+
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
-	
+
 	tex_unit->vertex_object = gpu_alloc_mapped_temp(count * streams->stride);
 	sceClibMemcpy(tex_unit->vertex_object, pointer, count * streams->stride);
 }
@@ -957,10 +958,10 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 	}
 #endif
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	
+
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[2];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[2];
-	
+
 	unsigned short bpe;
 	switch (type) {
 	case GL_FLOAT:
@@ -987,10 +988,10 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
-	
+
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
-	
+
 	tex_unit->color_object = gpu_alloc_mapped_temp(count * streams->stride);
 	sceClibMemcpy(tex_unit->color_object, pointer, count * streams->stride);
 }
@@ -1002,10 +1003,10 @@ void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, c
 	}
 #endif
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	
+
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[1];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[1];
-	
+
 	unsigned short bpe;
 	switch (type) {
 	case GL_FLOAT:
@@ -1020,10 +1021,10 @@ void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, c
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
-	
+
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
-	
+
 	tex_unit->texture_object = gpu_alloc_mapped_temp(count * streams->stride);
 	sceClibMemcpy(tex_unit->texture_object, pointer, count * streams->stride);
 }
@@ -1062,11 +1063,11 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *po
 void vglVertexPointerMapped(const GLvoid *pointer) {
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[0];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[0];
-	
+
 	attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 	attributes->componentCount = 3;
 	streams->stride = 12;
-	
+
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	tex_unit->vertex_object = (GLvoid *)pointer;
 }
@@ -1074,7 +1075,7 @@ void vglVertexPointerMapped(const GLvoid *pointer) {
 void vglColorPointerMapped(GLenum type, const GLvoid *pointer) {
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[2];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[2];
-	
+
 	unsigned short bpe;
 	switch (type) {
 	case GL_FLOAT:
@@ -1101,10 +1102,10 @@ void vglColorPointerMapped(GLenum type, const GLvoid *pointer) {
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
-	
+
 	attributes->componentCount = 4;
 	streams->stride = 4 * bpe;
-	
+
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	tex_unit->color_object = (GLvoid *)pointer;
 }
@@ -1112,11 +1113,11 @@ void vglColorPointerMapped(GLenum type, const GLvoid *pointer) {
 void vglTexCoordPointerMapped(const GLvoid *pointer) {
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[1];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[1];
-	
+
 	attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 	attributes->componentCount = 2;
 	streams->stride = 8;
-	
+
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	tex_unit->texture_object = (GLvoid *)pointer;
 }
@@ -1138,7 +1139,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p);
 	sceneReset();
-	
+
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	if (cur_program != 0) {
 		_vglDrawObjects_CustomShadersIMPL(implicit_wvp);
@@ -1150,8 +1151,10 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 				return;
 			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[tex_unit->tex_id].gxm_tex);
 			sceGxmSetVertexStream(gxm_context, 1, tex_unit->texture_object);
-			if (ffp_vertex_num_params > 2) sceGxmSetVertexStream(gxm_context, 2, tex_unit->color_object);
-		} else if (ffp_vertex_num_params > 1) sceGxmSetVertexStream(gxm_context, 1, tex_unit->color_object);
+			if (ffp_vertex_num_params > 2)
+				sceGxmSetVertexStream(gxm_context, 2, tex_unit->color_object);
+		} else if (ffp_vertex_num_params > 1)
+			sceGxmSetVertexStream(gxm_context, 1, tex_unit->color_object);
 		sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 	}

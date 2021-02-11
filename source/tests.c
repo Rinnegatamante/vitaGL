@@ -304,7 +304,7 @@ void update_scissor_test() {
 	else
 		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
 	sceGxmSetUniformDataF(vertex_buffer, clear_depth, 0, 1, &scissor_depth);
-	
+
 	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 
 	// Restoring viewport
@@ -352,7 +352,8 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 
 	// Updating in use scissor test parameters if GL_SCISSOR_TEST is enabled
 	if (scissor_test_state) {
-		if (!skip_scene_reset) sceneReset();
+		if (!skip_scene_reset)
+			sceneReset();
 		update_scissor_test();
 	}
 }

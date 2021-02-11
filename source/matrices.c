@@ -89,9 +89,8 @@ void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLd
 void glLoadIdentity(void) {
 	// Set current in use matrix to identity one
 	matrix4x4_identity(*matrix);
-	if (matrix != &texture_matrix) {
+	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
-	}
 }
 
 void glMultMatrixf(const GLfloat *m) {
@@ -112,9 +111,8 @@ void glMultMatrixf(const GLfloat *m) {
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
 
-	if (matrix != &texture_matrix) {
+	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
-	}
 }
 
 void glLoadMatrixf(const GLfloat *m) {
@@ -126,25 +124,22 @@ void glLoadMatrixf(const GLfloat *m) {
 		}
 	}
 
-	if (matrix != &texture_matrix) {
+	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
-	}
 }
 
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
 	// Translating in use matrix
 	matrix4x4_translate(*matrix, x, y, z);
-	if (matrix != &texture_matrix) {
+	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
-	}
 }
 
 void glScalef(GLfloat x, GLfloat y, GLfloat z) {
 	// Scaling in use matrix
 	matrix4x4_scale(*matrix, x, y, z);
-	if (matrix != &texture_matrix) {
+	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
-	}
 }
 
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
@@ -167,9 +162,8 @@ void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 		matrix4x4_rotate_z(*matrix, rad);
 	}
 
-	if (matrix != &texture_matrix) {
+	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
-	}
 }
 
 void glPushMatrix(void) {
@@ -224,32 +218,36 @@ void glPopMatrix(void) {
 		// Error handling
 		if (modelview_stack_counter == 0) {
 			SET_GL_ERROR(GL_STACK_UNDERFLOW)
-		} else
+		}
 #endif
-			// Copying last matrix on stack into current matrix and decreasing stack counter
-			matrix4x4_copy(*matrix, modelview_matrix_stack[--modelview_stack_counter]);
-			// MVP matrix will have to be updated
-			mvp_modified = GL_TRUE;
+		// Copying last matrix on stack into current matrix and decreasing stack counter
+		matrix4x4_copy(*matrix, modelview_matrix_stack[--modelview_stack_counter]);
+
+		// MVP matrix will have to be updated
+		mvp_modified = GL_TRUE;
+
 	} else if (matrix == &projection_matrix) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
 		if (projection_stack_counter == 0) {
 			SET_GL_ERROR(GL_STACK_UNDERFLOW)
-		} else
+		}
 #endif
-			// Copying last matrix on stack into current matrix and decreasing stack counter
-			matrix4x4_copy(*matrix, projection_matrix_stack[--projection_stack_counter]);
-			// MVP matrix will have to be updated
-			mvp_modified = GL_TRUE;
+		// Copying last matrix on stack into current matrix and decreasing stack counter
+		matrix4x4_copy(*matrix, projection_matrix_stack[--projection_stack_counter]);
+
+		// MVP matrix will have to be updated
+		mvp_modified = GL_TRUE;
+
 	} else if (matrix == &texture_matrix) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
 		if (texture_stack_counter == 0) {
 			SET_GL_ERROR(GL_STACK_UNDERFLOW)
-		} else
+		}
 #endif
-			// Copying last matrix on stack into current matrix and decreasing stack counter
-			matrix4x4_copy(*matrix, texture_matrix_stack[--texture_stack_counter]);
+		// Copying last matrix on stack into current matrix and decreasing stack counter
+		matrix4x4_copy(*matrix, texture_matrix_stack[--texture_stack_counter]);
 	}
 }
 

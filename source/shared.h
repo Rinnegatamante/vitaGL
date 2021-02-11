@@ -316,7 +316,7 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count); // glDrawArrays implementat
 /* ffp.c */
 void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count); // glDrawElements implementation for rendering with ffp
 void _glDrawArrays_FixedFunctionIMPL(GLsizei count); // glDrawArrays implementation for rendering with ffp
-void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * streams); // Reloads current in use ffp shaders
+void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams); // Reloads current in use ffp shaders
 void upload_ffp_uniforms(); // Uploads required uniforms for the in use ffp shaders
 
 /* misc.c */
