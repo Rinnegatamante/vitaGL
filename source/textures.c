@@ -47,7 +47,7 @@ void glGenTextures(GLsizei n, GLuint *res) {
 	for (i = 1; i < TEXTURES_NUM; i++) {
 		if (!(texture_slots[i].used)) {
 			res[j++] = i;
-			texture_slots[i].used = 1;
+			texture_slots[i].used = GL_TRUE;
 
 			// Resetting texture parameters to their default values
 			texture_slots[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;

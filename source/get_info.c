@@ -289,3 +289,14 @@ GLenum glGetError(void) {
 	vgl_error = GL_NO_ERROR;
 	return ret;
 }
+
+GLboolean glIsTexture(GLuint i) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
+	return texture_slots[i].used;
+}

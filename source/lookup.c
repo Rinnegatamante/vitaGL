@@ -112,6 +112,7 @@ static const struct {
 	{"glGetString", (void *)glGetString},
 	{"glGetUniformLocation", (void *)glGetUniformLocation},
 	{"glIsEnabled", (void *)glIsEnabled},
+	{"glIsTexture", (void *)glIsTexture},
 	{"glLineWidth", (void *)glLineWidth},
 	{"glLinkProgram", (void *)glLinkProgram},
 	{"glLoadIdentity", (void *)glLoadIdentity},

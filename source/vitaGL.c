@@ -901,6 +901,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		// Allocating a temp buffer for the indices
 		void *ptr;
 		if (prim_is_quad) {
+			int i;
 			ptr = gpu_alloc_mapped_temp(count * 3);
 			uint16_t *dst = (uint16_t*)ptr;
 			uint16_t *src = (uint16_t*)gl_indices;
@@ -923,7 +924,8 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		
 		// If primitive is GL_QUAD, we need a temporary buffer still
 		if (prim_is_quad) {
-			ptr = gpu_alloc_mapped_temp(count * 3);
+			int i;
+			void *ptr = gpu_alloc_mapped_temp(count * 3);
 			uint16_t *dst = (uint16_t*)ptr;
 			uint16_t *src = (uint16_t*)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices);
 			for (i = 0; i < count / 4; i++) {
