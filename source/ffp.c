@@ -163,7 +163,6 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	mask.has_texture = (ffp_vertex_attrib_state & (1 << 1)) ? GL_TRUE : GL_FALSE;
 	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
-	mask.lights_num = lighting_state ? lights_num : 0;
 
 	vector4f *clip_planes;
 	vector4f temp_clip_planes[MAX_CLIP_PLANES_NUM];
@@ -176,6 +175,31 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 			if (clip_planes_mask & (1 << i)) {
 				sceClibMemcpy(&clip_planes[mask.clip_planes_num], &clip_planes_eq[i], sizeof(vector4f));
 				mask.clip_planes_num++;
+			}
+		}
+	}
+
+	float *light_vars[MAX_LIGHTS_NUM][5];
+	if (!lighting_state)
+		mask.lights_num = 0;
+	else {
+		if (lights_aligned) {
+			light_vars[0][0] = &lights_ambients[light_range[0]].x;
+			light_vars[0][1] = &lights_diffuses[light_range[0]].x;
+			light_vars[0][2] = &lights_speculars[light_range[0]].x;
+			light_vars[0][3] = &lights_positions[light_range[0]].x;
+			light_vars[0][4] = &lights_attenuations[light_range[0]].x;
+			mask.lights_num = light_range[1] - light_range[0];
+		} else {
+			for (int i = light_range[0]; i < light_range[1]; i++) {
+				if (light_mask & (1 << i)) {
+					light_vars[mask.lights_num][0] = &lights_ambients[i].x;
+					light_vars[mask.lights_num][1] = &lights_diffuses[i].x;
+					light_vars[mask.lights_num][2] = &lights_speculars[i].x;
+					light_vars[mask.lights_num][3] = &lights_positions[i].x;
+					light_vars[mask.lights_num][4] = &lights_attenuations[i].x;
+					mask.lights_num++;
+				}
 			}
 		}
 	}
@@ -391,11 +415,22 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	if (ffp_vertex_params[TEX_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
 	if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[NORMAL_MATRIX_UNIF], 0, 16, (const float *)normal_matrix);
 	if (ffp_vertex_params[LIGHTS_AMBIENTS_UNIF]) {
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_AMBIENTS_UNIF], 0, 4 * mask.lights_num, (const float *)lights_ambients);
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_DIFFUSES_UNIF], 0, 4 * mask.lights_num, (const float *)lights_diffuses);
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_SPECULARS_UNIF], 0, 4 * mask.lights_num, (const float *)lights_speculars);
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_POSITIONS_UNIF], 0, 4 * mask.lights_num, (const float *)lights_positions);
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_ATTENUATIONS_UNIF], 0, 3 * mask.lights_num, (const float *)lights_attenuations);
+		if (lights_aligned) {
+			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_AMBIENTS_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][0]);
+			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_DIFFUSES_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][1]);
+			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_SPECULARS_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][2]);
+			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_POSITIONS_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][3]);
+			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_ATTENUATIONS_UNIF], 0, 3 * mask.lights_num, (const float *)light_vars[0][4]);
+		}
+		else {
+			for (int i = 0; i < mask.lights_num; i++) {
+				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_AMBIENTS_UNIF], 4 * i, 4, (const float *)light_vars[i][0]);
+				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_DIFFUSES_UNIF], 4 * i, 4, (const float *)light_vars[i][1]);
+				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_SPECULARS_UNIF], 4 * i, 4, (const float *)light_vars[i][2]);
+				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_POSITIONS_UNIF], 4 * i, 4, (const float *)light_vars[i][3]);
+				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_ATTENUATIONS_UNIF], 3 * i, 3, (const float *)light_vars[i][4]);
+			}
+		}
 	}
 }
 

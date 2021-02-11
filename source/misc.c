@@ -288,44 +288,25 @@ void glEnable(GLenum cap) {
 		}
 		break;
 	case GL_LIGHT0:
-		ffp_dirty_vert = GL_TRUE;
-		if (lights_num < 1)
-			lights_num = 1;
-		break;
 	case GL_LIGHT1:
-		ffp_dirty_vert = GL_TRUE;
-		if (lights_num < 2)
-			lights_num = 2;
-		break;
 	case GL_LIGHT2:
-		ffp_dirty_vert = GL_TRUE;
-		if (lights_num < 3)
-			lights_num = 3;
-		break;
 	case GL_LIGHT3:
-		ffp_dirty_vert = GL_TRUE;
-		if (lights_num < 4)
-			lights_num = 4;
-		break;
 	case GL_LIGHT4:
-		ffp_dirty_vert = GL_TRUE;
-		if (lights_num < 5)
-			lights_num = 5;
-		break;
 	case GL_LIGHT5:
-		ffp_dirty_vert = GL_TRUE;
-		if (lights_num < 6)
-			lights_num = 6;
-		break;
 	case GL_LIGHT6:
-		ffp_dirty_vert = GL_TRUE;
-		if (lights_num < 7)
-			lights_num = 7;
-		break;
 	case GL_LIGHT7:
 		ffp_dirty_vert = GL_TRUE;
-		if (lights_num < 8)
-			lights_num = 8;
+		light_mask |= (1 << cap - GL_LIGHT0);
+
+		light_range[0] = light_mask ? __builtin_ctz(light_mask) : 0; // Get the lowest enabled light
+		light_range[1] = light_mask ? 8 - (__builtin_clz(light_mask) - 24) : 0; // Get the highest enabled light
+		lights_aligned = GL_TRUE;
+		for (int i = light_range[0]; i < light_range[1]; i++) {
+			if (!(light_mask & (1 << i)) && lights_aligned) {
+				lights_aligned = GL_FALSE;
+				break;
+			}
+		}
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -410,44 +391,25 @@ void glDisable(GLenum cap) {
 		}
 		break;
 	case GL_LIGHT0:
-		ffp_dirty_vert = GL_TRUE;
-		if (lights_num > 0)
-			lights_num = 0;
-		break;
 	case GL_LIGHT1:
-		ffp_dirty_vert = GL_TRUE;
-		if (lights_num > 1)
-			lights_num = 1;
-		break;
 	case GL_LIGHT2:
-		ffp_dirty_vert = GL_TRUE;
-		if (lights_num > 2)
-			lights_num = 2;
-		break;
 	case GL_LIGHT3:
-		ffp_dirty_vert = GL_TRUE;
-		if (lights_num > 3)
-			lights_num = 3;
-		break;
 	case GL_LIGHT4:
-		ffp_dirty_vert = GL_TRUE;
-		if (lights_num > 4)
-			lights_num = 4;
-		break;
 	case GL_LIGHT5:
-		ffp_dirty_vert = GL_TRUE;
-		if (lights_num > 5)
-			lights_num = 5;
-		break;
 	case GL_LIGHT6:
-		ffp_dirty_vert = GL_TRUE;
-		if (lights_num > 6)
-			lights_num = 6;
-		break;
 	case GL_LIGHT7:
 		ffp_dirty_vert = GL_TRUE;
-		if (lights_num > 7)
-			lights_num = 7;
+		light_mask &= ~(1 << (cap - GL_LIGHT0));
+
+		light_range[0] = light_mask ? __builtin_ctz(light_mask) : 0; // Get the lowest enabled clip plane
+		light_range[1] = light_mask ? 8 - (__builtin_clz(light_mask) - 24) : 0; // Get the highest enabled clip plane
+		lights_aligned = GL_TRUE;
+		for (int i = light_range[0]; i < light_range[1]; i++) {
+			if (!(light_mask & (1 << i)) && lights_aligned) {
+				lights_aligned = GL_FALSE;
+				break;
+			}
+		}
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)

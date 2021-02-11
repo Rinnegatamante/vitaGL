@@ -43,7 +43,9 @@ vector4f clear_rgba_val; // Current clear color for glClear
 
 // Lighting
 GLboolean lighting_state = GL_FALSE; // Current lighting processor state
-uint8_t lights_num = 0; // Current number of enabled light spots
+GLboolean lights_aligned; // Are clip planes in a contiguous range
+uint8_t light_range[2]; // The highest and lowest enabled lights
+uint8_t light_mask; // Bitmask of enabled lights
 vector4f lights_ambients[MAX_LIGHTS_NUM];
 vector4f lights_diffuses[MAX_LIGHTS_NUM];
 vector4f lights_speculars[MAX_LIGHTS_NUM];

@@ -188,7 +188,9 @@ extern vector4f texenv_color; // Current in use texture environment color
 
 // Lighting
 extern GLboolean lighting_state; // Current lighting processor state
-extern uint8_t lights_num; // Current number of enabled light spots
+extern GLboolean lights_aligned; // Are clip planes in a contiguous range
+extern uint8_t light_range[2]; // The highest and lowest enabled lights
+extern uint8_t light_mask; // Bitmask of enabled lights
 extern vector4f lights_ambients[MAX_LIGHTS_NUM];
 extern vector4f lights_diffuses[MAX_LIGHTS_NUM];
 extern vector4f lights_speculars[MAX_LIGHTS_NUM];
@@ -206,7 +208,7 @@ extern vector4f fog_color; // Current fogging color
 
 // Clipping Planes
 extern GLboolean clip_planes_aligned; // Are clip planes in a contiguous range
-extern uint8_t clip_plane_range[2]; // The hightest enabled clip plane
+extern uint8_t clip_plane_range[2]; // The highest and lowest enabled clip planes
 extern uint8_t clip_planes_mask; // Bitmask of enabled clip planes
 extern vector4f clip_planes_eq[MAX_CLIP_PLANES_NUM]; // Current equation for user clip planes
 
