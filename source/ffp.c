@@ -646,6 +646,14 @@ void glColor4ubv(const GLubyte *c) {
 	current_vtx.clr.a = (1.0f * c[3]) / 255.0f;
 }
 
+void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha) {
+	// Setting current color value
+	current_vtx.clr.r = (1.0f * red) / 65536.0f;
+	current_vtx.clr.g = (1.0f * green) / 65536.0f;
+	current_vtx.clr.b = (1.0f * blue) / 65536.0f;
+	current_vtx.clr.a = (1.0f * alpha) / 65536.0f;
+}
+
 void glTexCoord2f(GLfloat s, GLfloat t) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
