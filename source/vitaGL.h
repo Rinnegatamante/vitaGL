@@ -406,6 +406,7 @@ const GLubyte *glGetString(GLenum name);
 GLint glGetUniformLocation(GLuint prog, const GLchar *name);
 void glHint(GLenum target, GLenum mode);
 GLboolean glIsEnabled(GLenum cap);
+GLboolean glIsFramebuffer(GLuint fb);
 GLboolean glIsTexture(GLuint texture);
 void glLineWidth(GLfloat width);
 void glLinkProgram(GLuint progr);

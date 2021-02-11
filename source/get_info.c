@@ -297,6 +297,11 @@ GLboolean glIsTexture(GLuint i) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
+	
+	return (i < TEXTURES_NUM && texture_slots[i].used);
+}
 
-	return texture_slots[i].used;
+GLboolean glIsFramebuffer(GLuint fb) {
+	framebuffer *p = (framebuffer*)fb;
+	return p->active;
 }
