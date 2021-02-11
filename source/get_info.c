@@ -315,5 +315,5 @@ GLboolean glIsTexture(GLuint i) {
 
 GLboolean glIsFramebuffer(GLuint fb) {
 	framebuffer *p = (framebuffer *)fb;
-	return p->active;
+	return (p && p->active);
 }

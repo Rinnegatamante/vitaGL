@@ -134,8 +134,8 @@ void reload_vertex_uniforms() {
 	ffp_vertex_params[WVP_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "wvp");
 	ffp_vertex_params[TEX_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "texmat");
 	ffp_vertex_params[NORMAL_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "normal_mat");
-	ffp_vertex_params[LIGHTS_AMBIENTS_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_ambients");
-	if (ffp_vertex_params[LIGHTS_AMBIENTS_UNIF]) {
+	if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) {
+		ffp_vertex_params[LIGHTS_AMBIENTS_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_ambients");
 		ffp_vertex_params[LIGHTS_DIFFUSES_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_diffuses");
 		ffp_vertex_params[LIGHTS_SPECULARS_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_speculars");
 		ffp_vertex_params[LIGHTS_POSITIONS_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_positions");
@@ -417,9 +417,8 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
 	if (ffp_vertex_params[TEX_MATRIX_UNIF])
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
-	if (ffp_vertex_params[NORMAL_MATRIX_UNIF])
+	if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) {
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[NORMAL_MATRIX_UNIF], 0, 16, (const float *)normal_matrix);
-	if (ffp_vertex_params[LIGHTS_AMBIENTS_UNIF]) {
 		if (lights_aligned) {
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_AMBIENTS_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][0]);
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_DIFFUSES_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][1]);
