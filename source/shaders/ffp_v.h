@@ -14,7 +14,6 @@ uniform float4 lights_diffuses[lights_num];
 uniform float4 lights_speculars[lights_num];
 uniform float4 lights_positions[lights_num];
 uniform float4 lights_attenuations[lights_num];
-#endif
 
 void point_light(int i, float3 normal, float3 eye, float3 position) {
 	float3 VP = lights_positions[i].xyz - position;
@@ -56,6 +55,7 @@ void calculate_light(int i, float4 ecPosition, float3 N) {
 	else
 		directional_light(i, N);
 }
+#endif
 
 void main(
 	float3 position,
