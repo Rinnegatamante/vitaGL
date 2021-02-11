@@ -96,17 +96,8 @@ void glLoadIdentity(void) {
 void glMultMatrixf(const GLfloat *m) {
 	matrix4x4 res;
 
-	// Properly ordering matrix to perform multiplication
-	matrix4x4 tmp;
-	int i, j;
-	for (i = 0; i < 4; i++) {
-		for (j = 0; j < 4; j++) {
-			tmp[i][j] = m[j * 4 + i];
-		}
-	}
-
 	// Multiplicating passed matrix with in use one
-	matrix4x4_multiply(res, *matrix, tmp);
+	matrix4x4_multiply(res, m, *matrix);
 
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);

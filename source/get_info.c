@@ -195,7 +195,7 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		*data = server_tex_unit->tex_id;
 		break;
 	case GL_MAX_TEXTURE_SIZE:
-		*data = 1024;
+		*data = GXM_TEX_MAX_SIZE;
 		break;
 	case GL_MAX_CLIP_PLANES:
 		*data = MAX_CLIP_PLANES_NUM;
