@@ -897,13 +897,48 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 	}
 
 	if (!gpu_buf) { // Drawing without an index buffer
+	
 		// Allocating a temp buffer for the indices
-		void *ptr = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
-		sceClibMemcpy(ptr, gl_indices, count * sizeof(uint16_t));
+		void *ptr;
+		if (prim_is_quad) {
+			ptr = gpu_alloc_mapped_temp(count * 3);
+			uint16_t *dst = (uint16_t*)ptr;
+			uint16_t *src = (uint16_t*)gl_indices;
+			for (i = 0; i < count / 4; i++) {
+				dst[i * 6] = src[i * 4];
+				dst[i * 6 + 1] = src[i * 4 + 1];
+				dst[i * 6 + 2] = src[i * 4 + 3];
+				dst[i * 6 + 3] = src[i * 4 + 1];
+				dst[i * 6 + 4] = src[i * 4 + 2];
+				dst[i * 6 + 5] = src[i * 4 + 3];
+			}
+			count = (count / 2) * 3;
+		} else {
+			ptr = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
+			sceClibMemcpy(ptr, gl_indices, count * sizeof(uint16_t));
+		}
+		
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 	} else { // Drawing with an index buffer
-		gpu_buf->used = GL_TRUE;
-		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices, count);
+		
+		// If primitive is GL_QUAD, we need a temporary buffer still
+		if (prim_is_quad) {
+			ptr = gpu_alloc_mapped_temp(count * 3);
+			uint16_t *dst = (uint16_t*)ptr;
+			uint16_t *src = (uint16_t*)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices);
+			for (i = 0; i < count / 4; i++) {
+				dst[i * 6] = src[i * 4];
+				dst[i * 6 + 1] = src[i * 4 + 1];
+				dst[i * 6 + 2] = src[i * 4 + 3];
+				dst[i * 6 + 3] = src[i * 4 + 1];
+				dst[i * 6 + 4] = src[i * 4 + 2];
+				dst[i * 6 + 5] = src[i * 4 + 3];
+			}
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, (count / 2) * 3);
+		} else {
+			gpu_buf->used = GL_TRUE;
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices, count);
+		}
 	}
 }
 
