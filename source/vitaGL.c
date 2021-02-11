@@ -298,16 +298,44 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 		ffp_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 		legacy_vertex_attrib_config[i].streamIndex = i;
 		legacy_vertex_attrib_config[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		legacy_vertex_stream_config[i].stride = sizeof(float) * 9;
+		legacy_vertex_stream_config[i].stride = sizeof(float) * LEGACY_VERTEX_STRIDE;
 		legacy_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	}
 	legacy_vertex_attrib_config[0].offset = 0;
 	legacy_vertex_attrib_config[1].offset = sizeof(float) * 3;
 	legacy_vertex_attrib_config[2].offset = sizeof(float) * 5;
+	legacy_vertex_attrib_config[3].offset = sizeof(float) * 9;
+	legacy_vertex_attrib_config[4].offset = sizeof(float) * 13;
+	legacy_vertex_attrib_config[5].offset = sizeof(float) * 17;
+	legacy_vertex_attrib_config[6].offset = sizeof(float) * 21;
 	legacy_vertex_attrib_config[0].componentCount = 3;
 	legacy_vertex_attrib_config[1].componentCount = 2;
 	legacy_vertex_attrib_config[2].componentCount = 4;
+	legacy_vertex_attrib_config[3].componentCount = 4;
+	legacy_vertex_attrib_config[4].componentCount = 4;
+	legacy_vertex_attrib_config[5].componentCount = 4;
+	legacy_vertex_attrib_config[6].componentCount = 3;
 	legacy_pool_size = pool_size;
+
+	// Initializing lights configs
+	for (i = 0; i < MAX_LIGHTS_NUM; i++) {
+		float data[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+		sceClibMemcpy(&lights_ambients[i].r, &data[0], sizeof(float) * 4);
+		data[3] = 1.0f;
+		data[4] = 0.0f;
+		sceClibMemcpy(&lights_positions[i].r, &data[0], sizeof(float) * 4);
+		lights_attenuations[i].r = 1.0f;
+		lights_attenuations[i].g = 0.0f;
+		lights_attenuations[i].b = 0.0f;
+		if (i == 0) {
+			float data2[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+			sceClibMemcpy(&lights_diffuses[i].r, &data2[0], sizeof(float) * 4);
+			sceClibMemcpy(&lights_speculars[i].r, &data2[0], sizeof(float) * 4);
+		} else {
+			sceClibMemset(&lights_diffuses[i].r, 0, sizeof(float) * 4);
+			sceClibMemset(&lights_speculars[i].r, 0, sizeof(float) * 4);
+		}
+	}
 
 	// Init purge lists
 	for (i = 0; i < FRAME_PURGE_FREQ; i++) {
@@ -897,14 +925,14 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 	}
 
 	if (!gpu_buf) { // Drawing without an index buffer
-	
+
 		// Allocating a temp buffer for the indices
 		void *ptr;
 		if (prim_is_quad) {
 			int i;
 			ptr = gpu_alloc_mapped_temp(count * 3);
-			uint16_t *dst = (uint16_t*)ptr;
-			uint16_t *src = (uint16_t*)gl_indices;
+			uint16_t *dst = (uint16_t *)ptr;
+			uint16_t *src = (uint16_t *)gl_indices;
 			for (i = 0; i < count / 4; i++) {
 				dst[i * 6] = src[i * 4];
 				dst[i * 6 + 1] = src[i * 4 + 1];
@@ -918,16 +946,16 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 			ptr = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
 			sceClibMemcpy(ptr, gl_indices, count * sizeof(uint16_t));
 		}
-		
+
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 	} else { // Drawing with an index buffer
-		
+
 		// If primitive is GL_QUAD, we need a temporary buffer still
 		if (prim_is_quad) {
 			int i;
 			void *ptr = gpu_alloc_mapped_temp(count * 3);
-			uint16_t *dst = (uint16_t*)ptr;
-			uint16_t *src = (uint16_t*)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices);
+			uint16_t *dst = (uint16_t *)ptr;
+			uint16_t *src = (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices);
 			for (i = 0; i < count / 4; i++) {
 				dst[i * 6] = src[i * 4];
 				dst[i * 6 + 1] = src[i * 4 + 1];

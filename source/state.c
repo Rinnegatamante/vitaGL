@@ -41,6 +41,17 @@ int8_t client_texture_unit = 0; // Current in use client side texture unit
 glPhase phase = NONE; // Current drawing phase for legacy openGL
 vector4f clear_rgba_val; // Current clear color for glClear
 
+// Lighting
+GLboolean lighting_state = GL_FALSE; // Current lighting processor state
+GLboolean lights_aligned; // Are clip planes in a contiguous range
+uint8_t light_range[2]; // The highest and lowest enabled lights
+uint8_t light_mask; // Bitmask of enabled lights
+vector4f lights_ambients[MAX_LIGHTS_NUM];
+vector4f lights_diffuses[MAX_LIGHTS_NUM];
+vector4f lights_speculars[MAX_LIGHTS_NUM];
+vector4f lights_positions[MAX_LIGHTS_NUM];
+vector3f lights_attenuations[MAX_LIGHTS_NUM];
+
 // Fogging
 GLboolean fogging = GL_FALSE; // Current fogging processor state
 GLint fog_mode = GL_EXP; // Current fogging mode (openGL)

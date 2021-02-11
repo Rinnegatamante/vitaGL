@@ -244,6 +244,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 GLboolean glIsEnabled(GLenum cap) {
 	GLboolean ret = GL_FALSE;
 	switch (cap) {
+	case GL_LIGHTING:
+		ret = lighting_state;
+		break;
 	case GL_DEPTH_TEST:
 		ret = depth_test_state;
 		break;
@@ -277,6 +280,15 @@ GLboolean glIsEnabled(GLenum cap) {
 	case GL_CLIP_PLANE6:
 		ret = clip_planes_mask & (1 << (cap - GL_CLIP_PLANE0)) ? GL_TRUE : GL_FALSE;
 		break;
+	case GL_LIGHT0:
+	case GL_LIGHT1:
+	case GL_LIGHT2:
+	case GL_LIGHT3:
+	case GL_LIGHT4:
+	case GL_LIGHT5:
+	case GL_LIGHT6:
+		ret = light_mask & (1 << (cap - GL_LIGHT0)) ? GL_TRUE : GL_FALSE;
+		break;
 	default:
 		vgl_error = GL_INVALID_ENUM;
 		break;
@@ -297,11 +309,11 @@ GLboolean glIsTexture(GLuint i) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	
+
 	return (i < TEXTURES_NUM && texture_slots[i].used);
 }
 
 GLboolean glIsFramebuffer(GLuint fb) {
-	framebuffer *p = (framebuffer*)fb;
+	framebuffer *p = (framebuffer *)fb;
 	return p->active;
 }

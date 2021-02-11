@@ -218,6 +218,10 @@ void glEnable(GLenum cap) {
 	}
 #endif
 	switch (cap) {
+	case GL_LIGHTING:
+		ffp_dirty_vert = GL_TRUE;
+		lighting_state = GL_TRUE;
+		break;
 	case GL_DEPTH_TEST:
 		depth_test_state = GL_TRUE;
 		change_depth_func();
@@ -283,6 +287,27 @@ void glEnable(GLenum cap) {
 			}
 		}
 		break;
+	case GL_LIGHT0:
+	case GL_LIGHT1:
+	case GL_LIGHT2:
+	case GL_LIGHT3:
+	case GL_LIGHT4:
+	case GL_LIGHT5:
+	case GL_LIGHT6:
+	case GL_LIGHT7:
+		ffp_dirty_vert = GL_TRUE;
+		light_mask |= (1 << cap - GL_LIGHT0);
+
+		light_range[0] = light_mask ? __builtin_ctz(light_mask) : 0; // Get the lowest enabled light
+		light_range[1] = light_mask ? 8 - (__builtin_clz(light_mask) - 24) : 0; // Get the highest enabled light
+		lights_aligned = GL_TRUE;
+		for (int i = light_range[0]; i < light_range[1]; i++) {
+			if (!(light_mask & (1 << i)) && lights_aligned) {
+				lights_aligned = GL_FALSE;
+				break;
+			}
+		}
+		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
@@ -296,6 +321,10 @@ void glDisable(GLenum cap) {
 	}
 #endif
 	switch (cap) {
+	case GL_LIGHTING:
+		ffp_dirty_vert = GL_TRUE;
+		lighting_state = GL_FALSE;
+		break;
 	case GL_DEPTH_TEST:
 		depth_test_state = GL_FALSE;
 		change_depth_func();
@@ -360,6 +389,62 @@ void glDisable(GLenum cap) {
 				break;
 			}
 		}
+		break;
+	case GL_LIGHT0:
+	case GL_LIGHT1:
+	case GL_LIGHT2:
+	case GL_LIGHT3:
+	case GL_LIGHT4:
+	case GL_LIGHT5:
+	case GL_LIGHT6:
+	case GL_LIGHT7:
+		ffp_dirty_vert = GL_TRUE;
+		light_mask &= ~(1 << (cap - GL_LIGHT0));
+
+		light_range[0] = light_mask ? __builtin_ctz(light_mask) : 0; // Get the lowest enabled clip plane
+		light_range[1] = light_mask ? 8 - (__builtin_clz(light_mask) - 24) : 0; // Get the highest enabled clip plane
+		lights_aligned = GL_TRUE;
+		for (int i = light_range[0]; i < light_range[1]; i++) {
+			if (!(light_mask & (1 << i)) && lights_aligned) {
+				lights_aligned = GL_FALSE;
+				break;
+			}
+		}
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+}
+
+void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
+#ifndef SKIP_ERROR_HANDLING
+	if (light < GL_LIGHT0 && light > GL_LIGHT7) {
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+#endif
+
+	switch (pname) {
+	case GL_AMBIENT:
+		sceClibMemcpy(&lights_ambients[light - GL_LIGHT0].r, params, sizeof(float) * 4);
+		break;
+	case GL_DIFFUSE:
+		sceClibMemcpy(&lights_diffuses[light - GL_LIGHT0].r, params, sizeof(float) * 4);
+		break;
+	case GL_SPECULAR:
+		sceClibMemcpy(&lights_speculars[light - GL_LIGHT0].r, params, sizeof(float) * 4);
+		break;
+	case GL_POSITION:
+		sceClibMemcpy(&lights_positions[light - GL_LIGHT0].r, params, sizeof(float) * 4);
+		break;
+	case GL_CONSTANT_ATTENUATION:
+		lights_attenuations[light - GL_LIGHT0].r = params[0];
+		break;
+	case GL_LINEAR_ATTENUATION:
+		lights_attenuations[light - GL_LIGHT0].g = params[0];
+		break;
+	case GL_QUADRATIC_ATTENUATION:
+		lights_attenuations[light - GL_LIGHT0].b = params[0];
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)

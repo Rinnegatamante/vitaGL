@@ -25,15 +25,17 @@
 #define _STATE_H_
 
 #define MAX_CLIP_PLANES_NUM 7 // Maximum number of allowed user defined clip planes
+#define LEGACY_VERTEX_STRIDE 24 // Vertex stride for GL1 immediate draw pipeline
+#define MAX_LIGHTS_NUM 8 // Maximum number of allowed light sources
 
 // Drawing phases constants for legacy openGL
-typedef enum glPhase {
+typedef enum {
 	NONE,
 	MODEL_CREATION
 } glPhase;
 
 // Vertex array attributes struct
-typedef struct vertexArray {
+typedef struct {
 	GLint size;
 	GLint num;
 	GLsizei stride;
@@ -41,7 +43,7 @@ typedef struct vertexArray {
 } vertexArray;
 
 // Scissor test region struct
-typedef struct scissor_region {
+typedef struct {
 	int x;
 	int y;
 	int w;
@@ -50,7 +52,7 @@ typedef struct scissor_region {
 } scissor_region;
 
 // Viewport struct
-typedef struct viewport {
+typedef struct {
 	int x;
 	int y;
 	int w;
@@ -58,7 +60,7 @@ typedef struct viewport {
 } viewport;
 
 // Alpha operations for alpha testing
-typedef enum alphaOp {
+typedef enum {
 	GREATER_EQUAL,
 	GREATER,
 	NOT_EQUAL,
@@ -70,7 +72,7 @@ typedef enum alphaOp {
 } alphaOp;
 
 // Fog modes
-typedef enum fogType {
+typedef enum {
 	LINEAR,
 	EXP,
 	EXP2,
@@ -78,7 +80,7 @@ typedef enum fogType {
 } fogType;
 
 // Texture unit struct
-typedef struct texture_unit {
+typedef struct {
 	GLboolean enabled;
 	matrix4x4 stack[GENERIC_STACK_DEPTH];
 	void *vertex_object;
@@ -90,7 +92,7 @@ typedef struct texture_unit {
 } texture_unit;
 
 // Framebuffer struct
-typedef struct framebuffer {
+typedef struct {
 	uint8_t active;
 	SceGxmRenderTarget *target;
 	SceGxmColorSurface colorbuffer;
@@ -184,6 +186,17 @@ extern GLenum gl_polygon_mode_back; // Current in use polygon mode for back
 // Texture Environment
 extern vector4f texenv_color; // Current in use texture environment color
 
+// Lighting
+extern GLboolean lighting_state; // Current lighting processor state
+extern GLboolean lights_aligned; // Are clip planes in a contiguous range
+extern uint8_t light_range[2]; // The highest and lowest enabled lights
+extern uint8_t light_mask; // Bitmask of enabled lights
+extern vector4f lights_ambients[MAX_LIGHTS_NUM];
+extern vector4f lights_diffuses[MAX_LIGHTS_NUM];
+extern vector4f lights_speculars[MAX_LIGHTS_NUM];
+extern vector4f lights_positions[MAX_LIGHTS_NUM];
+extern vector3f lights_attenuations[MAX_LIGHTS_NUM];
+
 // Fogging
 extern GLboolean fogging; // Current fogging processor state
 extern GLint fog_mode; // Current fogging mode (openGL)
@@ -195,7 +208,7 @@ extern vector4f fog_color; // Current fogging color
 
 // Clipping Planes
 extern GLboolean clip_planes_aligned; // Are clip planes in a contiguous range
-extern uint8_t clip_plane_range[2]; // The hightest enabled clip plane
+extern uint8_t clip_plane_range[2]; // The highest and lowest enabled clip planes
 extern uint8_t clip_planes_mask; // Bitmask of enabled clip planes
 extern vector4f clip_planes_eq[MAX_CLIP_PLANES_NUM]; // Current equation for user clip planes
 

@@ -38,7 +38,7 @@
 #define FRAME_PURGE_RENDERTARGETS_LIST_SIZE 128 // Number of rendertargets a single frame can hold
 #define FRAME_PURGE_FREQ 3 // Frequency in frames for garbage collection
 #define BUFFERS_NUM 256 // Maximum amount of framebuffers objects usable
-#define FFP_VERTEX_ATTRIBS_NUM 3 // Number of attributes used in ffp shaders
+#define FFP_VERTEX_ATTRIBS_NUM 7 // Number of attributes used in ffp shaders
 
 // Internal constants set in bootup phase
 extern int DISPLAY_WIDTH; // Display width in pixels
@@ -249,6 +249,7 @@ extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 extern matrix4x4 projection_matrix; // Projection Matrix
 extern matrix4x4 modelview_matrix; // ModelView Matrix
 extern matrix4x4 texture_matrix; // Texture Matrix
+extern matrix4x4 normal_matrix; // Normal Matrix
 extern GLboolean mvp_modified; // Check if ModelViewProjection matrix needs to be recreated
 
 extern GLuint cur_program; // Current in use custom program (0 = No custom program)
