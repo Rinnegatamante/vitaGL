@@ -287,7 +287,7 @@ GLboolean glIsEnabled(GLenum cap) {
 	case GL_LIGHT4:
 	case GL_LIGHT5:
 	case GL_LIGHT6:
-		 ret = light_mask & (1 << (cap - GL_LIGHT0)) ? GL_TRUE : GL_FALSE;
+		ret = light_mask & (1 << (cap - GL_LIGHT0)) ? GL_TRUE : GL_FALSE;
 		break;
 	default:
 		vgl_error = GL_INVALID_ENUM;
@@ -309,11 +309,11 @@ GLboolean glIsTexture(GLuint i) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	
+
 	return (i < TEXTURES_NUM && texture_slots[i].used);
 }
 
 GLboolean glIsFramebuffer(GLuint fb) {
-	framebuffer *p = (framebuffer*)fb;
+	framebuffer *p = (framebuffer *)fb;
 	return p->active;
 }

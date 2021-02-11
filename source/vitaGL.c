@@ -316,7 +316,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	legacy_vertex_attrib_config[5].componentCount = 4;
 	legacy_vertex_attrib_config[6].componentCount = 3;
 	legacy_pool_size = pool_size;
-	
+
 	// Initializing lights configs
 	for (i = 0; i < MAX_LIGHTS_NUM; i++) {
 		float data[4] = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -336,7 +336,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 			sceClibMemset(&lights_speculars[i].r, 0, sizeof(float) * 4);
 		}
 	}
-	
+
 	// Init purge lists
 	for (i = 0; i < FRAME_PURGE_FREQ; i++) {
 		frame_purge_list[i][0] = NULL;
@@ -925,14 +925,14 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 	}
 
 	if (!gpu_buf) { // Drawing without an index buffer
-	
+
 		// Allocating a temp buffer for the indices
 		void *ptr;
 		if (prim_is_quad) {
 			int i;
 			ptr = gpu_alloc_mapped_temp(count * 3);
-			uint16_t *dst = (uint16_t*)ptr;
-			uint16_t *src = (uint16_t*)gl_indices;
+			uint16_t *dst = (uint16_t *)ptr;
+			uint16_t *src = (uint16_t *)gl_indices;
 			for (i = 0; i < count / 4; i++) {
 				dst[i * 6] = src[i * 4];
 				dst[i * 6 + 1] = src[i * 4 + 1];
@@ -946,16 +946,16 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 			ptr = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
 			sceClibMemcpy(ptr, gl_indices, count * sizeof(uint16_t));
 		}
-		
+
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 	} else { // Drawing with an index buffer
-		
+
 		// If primitive is GL_QUAD, we need a temporary buffer still
 		if (prim_is_quad) {
 			int i;
 			void *ptr = gpu_alloc_mapped_temp(count * 3);
-			uint16_t *dst = (uint16_t*)ptr;
-			uint16_t *src = (uint16_t*)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices);
+			uint16_t *dst = (uint16_t *)ptr;
+			uint16_t *src = (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices);
 			for (i = 0; i < count / 4; i++) {
 				dst[i * 6] = src[i * 4];
 				dst[i * 6 + 1] = src[i * 4 + 1];

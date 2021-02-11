@@ -153,7 +153,7 @@ void reload_fragment_uniforms() {
 	ffp_fragment_params[FOG_DENSITY_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_density");
 }
 
-void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * streams) {
+void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams) {
 	// Checking if mask changed
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	GLboolean ffp_dirty_frag_blend = ffp_blend_info.raw != blend_info.raw;
@@ -216,13 +216,13 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 				ffp_vertex_program_id = shader_cache[i].vert_id;
 				ffp_fragment_program_id = shader_cache[i].frag_id;
 				ffp_dirty_frag_blend = GL_TRUE;
-				
+
 				if (ffp_dirty_vert)
 					reload_vertex_uniforms();
-				
+
 				if (ffp_dirty_frag)
 					reload_fragment_uniforms();
-				
+
 				ffp_dirty_vert = GL_FALSE;
 				ffp_dirty_frag = GL_FALSE;
 				break;
@@ -247,7 +247,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 
 		// Checking for existing uniforms in the shader
 		reload_vertex_uniforms();
-		
+
 		// Clearing dirty flags
 		ffp_dirty_vert = GL_FALSE;
 	}
@@ -277,7 +277,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 			attrs[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 			ffp_vertex_num_params++;
 		}
-		
+
 		// Lighting data
 		if (mask.lights_num > 0) {
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "diff");
@@ -378,14 +378,14 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 	// Recalculating MVP matrix if necessary
 	if (mvp_modified) {
 		matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-		
+
 		// Recalculating normal matrix if necessary (TODO: This should be recalculated only when MV changes)
 		if (mask.lights_num > 0) {
 			matrix4x4 inverted;
 			matrix4x4_invert(inverted, modelview_matrix);
 			matrix4x4_transpose(normal_matrix, inverted);
 		}
-		
+
 		mvp_modified = GL_FALSE;
 	}
 
@@ -409,11 +409,16 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 
 	// Uploading vertex shader uniforms
 	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &buffer);
-	if (ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF], 0, 4 * mask.clip_planes_num, &clip_planes[0].x);
-	if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
-	if (ffp_vertex_params[WVP_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
-	if (ffp_vertex_params[TEX_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
-	if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) sceGxmSetUniformDataF(buffer, ffp_vertex_params[NORMAL_MATRIX_UNIF], 0, 16, (const float *)normal_matrix);
+	if (ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF])
+		sceGxmSetUniformDataF(buffer, ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF], 0, 4 * mask.clip_planes_num, &clip_planes[0].x);
+	if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF])
+		sceGxmSetUniformDataF(buffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
+	if (ffp_vertex_params[WVP_MATRIX_UNIF])
+		sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
+	if (ffp_vertex_params[TEX_MATRIX_UNIF])
+		sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
+	if (ffp_vertex_params[NORMAL_MATRIX_UNIF])
+		sceGxmSetUniformDataF(buffer, ffp_vertex_params[NORMAL_MATRIX_UNIF], 0, 16, (const float *)normal_matrix);
 	if (ffp_vertex_params[LIGHTS_AMBIENTS_UNIF]) {
 		if (lights_aligned) {
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_AMBIENTS_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][0]);
@@ -421,8 +426,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream * strea
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_SPECULARS_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][2]);
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_POSITIONS_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][3]);
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_ATTENUATIONS_UNIF], 0, 3 * mask.lights_num, (const float *)light_vars[0][4]);
-		}
-		else {
+		} else {
 			for (int i = 0; i < mask.lights_num; i++) {
 				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_AMBIENTS_UNIF], 4 * i, 4, (const float *)light_vars[i][0]);
 				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_DIFFUSES_UNIF], 4 * i, 4, (const float *)light_vars[i][1]);
@@ -662,7 +666,7 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 	} else
 		sceClibMemcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 6);
 	legacy_pool_ptr += LEGACY_VERTEX_STRIDE;
-	
+
 	// Increasing vertex counter
 	vertex_count++;
 }
@@ -785,7 +789,7 @@ void glNormal3f(GLfloat x, GLfloat y, GLfloat z) {
 	current_vtx.nor.z = z;
 }
 
-void glNormal3fv(const GLfloat * v) {
+void glNormal3fv(const GLfloat *v) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase != MODEL_CREATION) {
@@ -869,16 +873,15 @@ void glEnd(void) {
 	// Restoring original attributes state settings
 	ffp_vertex_attrib_state = orig_state;
 
-	
 	// Uploading vertex streams and performing the draw
 	int i;
 	for (i = 0; i < ffp_vertex_num_params; i++) {
 		sceGxmSetVertexStream(gxm_context, i, legacy_pool);
 	}
-		
+
 	// Restoring original attributes state settings
 	ffp_vertex_attrib_state = orig_state;
-	
+
 	if (prim_is_quad)
 		sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_quads_idx_ptr, (vertex_count / 2) * 3);
 	else

@@ -417,13 +417,13 @@ void glDisable(GLenum cap) {
 	}
 }
 
-void glLightfv(GLenum light, GLenum pname, const GLfloat * params) {
+void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 #ifndef SKIP_ERROR_HANDLING
 	if (light < GL_LIGHT0 && light > GL_LIGHT7) {
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
 #endif
-	
+
 	switch (pname) {
 	case GL_AMBIENT:
 		sceClibMemcpy(&lights_ambients[light - GL_LIGHT0].r, params, sizeof(float) * 4);
@@ -451,7 +451,7 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat * params) {
 		break;
 	}
 }
-	
+
 void glClear(GLbitfield mask) {
 #ifndef SKIP_ERROR_HANDLING
 	if (mask & ~(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)) {
