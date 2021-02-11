@@ -287,6 +287,7 @@ GLboolean glIsEnabled(GLenum cap) {
 	case GL_LIGHT4:
 	case GL_LIGHT5:
 	case GL_LIGHT6:
+	case GL_LIGHT7:
 		ret = light_mask & (1 << (cap - GL_LIGHT0)) ? GL_TRUE : GL_FALSE;
 		break;
 	default:
