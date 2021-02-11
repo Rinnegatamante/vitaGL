@@ -851,7 +851,6 @@ void glEnd(void) {
 
 	// Changing current openGL machine state
 	phase = NONE;
-	int i, j;
 
 	sceneReset();
 

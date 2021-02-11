@@ -46,12 +46,11 @@ void directional_light(int i, float3 normal) {
 	Specular += lights_speculars[i] * pf;
 }
 
-void calculate_light(int i, float4 ecPosition, float3 N) {
-	float3 ecPosition3 = ecPosition.xyz / ecPosition.w;
+void calculate_light(int i, float3 ecPosition, float3 N) {
 	float3 eye = float3(0.0f, 0.0f, 1.0f);
 	
 	if (lights_positions[i].w == 1.0f)
-		point_light(i, N, eye, ecPosition3);
+		point_light(i, N, eye, ecPosition);
 	else
 		directional_light(i, N);
 }
@@ -101,8 +100,10 @@ void main(
 	// Lighting
 #if lights_num > 0
 	float3 normal = normalize(mul(float3x3(normal_mat), normals));
+	float3 ecPosition = modelpos.xyz / modelpos.w;
+	
 	for (int i = 0; i < lights_num; i++) {
-		calculate_light(i, modelpos, normal);
+		calculate_light(i, ecPosition, normal);
 	}
 #endif
 
