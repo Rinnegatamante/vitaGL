@@ -574,6 +574,188 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 	streams->stride = stride ? stride : bpe * size;
 }
 
+void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
+	SceGxmVertexAttribute *attributes;
+	SceGxmVertexStream *streams;
+	
+	switch (format) {
+	case GL_V2F:
+		// Vertex2f
+		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer;
+		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[0];
+		streams = &ffp_vertex_stream_config[0];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 2;
+		streams->stride = stride ? stride : 8;
+		break;
+	case GL_V3F:
+		// Vertex3f
+		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer;
+		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[0];
+		streams = &ffp_vertex_stream_config[0];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 3;
+		streams->stride = stride ? stride : 12;
+		break;
+	case GL_C4UB_V2F:
+		// Color4Ub
+		ffp_vertex_attrib_offsets[2] = (uint32_t)pointer;
+		ffp_vertex_attrib_vbo[2] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[2];
+		streams = &ffp_vertex_stream_config[2];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_U8N;
+		attributes->componentCount = 4;
+		streams->stride = stride ? stride : 12;
+		
+		// Vertex2f
+		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 4;
+		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[0];
+		streams = &ffp_vertex_stream_config[0];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 2;
+		streams->stride = stride ? stride : 12;
+		break;
+	case GL_C4UB_V3F:
+		// Color4Ub
+		ffp_vertex_attrib_offsets[2] = (uint32_t)pointer;
+		ffp_vertex_attrib_vbo[2] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[2];
+		streams = &ffp_vertex_stream_config[2];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_U8N;
+		attributes->componentCount = 4;
+		streams->stride = stride ? stride : 16;
+		
+		// Vertex3f
+		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 4;
+		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[0];
+		streams = &ffp_vertex_stream_config[0];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 3;
+		streams->stride = stride ? stride : 16;
+		break;
+	case GL_C3F_V3F:
+		// Color3f
+		ffp_vertex_attrib_offsets[2] = (uint32_t)pointer;
+		ffp_vertex_attrib_vbo[2] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[2];
+		streams = &ffp_vertex_stream_config[2];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 3;
+		streams->stride = stride ? stride : 24;
+		
+		// Vertex3f
+		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 12;
+		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[0];
+		streams = &ffp_vertex_stream_config[0];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 3;
+		streams->stride = stride ? stride : 24;
+		break;
+	case GL_T2F_V3F:
+		// Texcoord2f
+		ffp_vertex_attrib_offsets[1] = (uint32_t)pointer;
+		ffp_vertex_attrib_vbo[1] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[1];
+		streams = &ffp_vertex_stream_config[1];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 2;
+		streams->stride = stride ? stride : 20;
+		
+		// Vertex3f
+		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 8;
+		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[0];
+		streams = &ffp_vertex_stream_config[0];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 3;
+		streams->stride = stride ? stride : 20;
+		break;
+	case GL_T4F_V4F:
+		// Texcoord4f
+		ffp_vertex_attrib_offsets[1] = (uint32_t)pointer;
+		ffp_vertex_attrib_vbo[1] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[1];
+		streams = &ffp_vertex_stream_config[1];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 4;
+		streams->stride = stride ? stride : 32;
+		
+		// Vertex4f
+		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 16;
+		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[0];
+		streams = &ffp_vertex_stream_config[0];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 4;
+		streams->stride = stride ? stride : 32;
+		break;
+	case GL_T2F_C4UB_V3F:
+		// Texcoord2f
+		ffp_vertex_attrib_offsets[1] = (uint32_t)pointer;
+		ffp_vertex_attrib_vbo[1] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[1];
+		streams = &ffp_vertex_stream_config[1];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 2;
+		streams->stride = stride ? stride : 24;
+		
+		// Color4ub
+		ffp_vertex_attrib_offsets[2] = (uint32_t)pointer + 8;
+		ffp_vertex_attrib_vbo[2] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[2];
+		streams = &ffp_vertex_stream_config[2];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_U8N;
+		attributes->componentCount = 4;
+		streams->stride = stride ? stride : 24;
+		
+		// Vertex3f
+		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 12;
+		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[0];
+		streams = &ffp_vertex_stream_config[0];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 3;
+		streams->stride = stride ? stride : 24;
+		break;
+	case GL_T2F_C3F_V3F:
+		// Texcoord2f
+		ffp_vertex_attrib_offsets[1] = (uint32_t)pointer;
+		ffp_vertex_attrib_vbo[1] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[1];
+		streams = &ffp_vertex_stream_config[1];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 2;
+		streams->stride = stride ? stride : 32;
+		
+		// Color4ub
+		ffp_vertex_attrib_offsets[2] = (uint32_t)pointer + 8;
+		ffp_vertex_attrib_vbo[2] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[2];
+		streams = &ffp_vertex_stream_config[2];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 3;
+		streams->stride = stride ? stride : 32;
+		
+		// Vertex3f
+		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 20;
+		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
+		attributes = &ffp_vertex_attrib_config[0];
+		streams = &ffp_vertex_stream_config[0];
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		attributes->componentCount = 3;
+		streams->stride = stride ? stride : 32;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+}
+
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((stride < 0) || (size < 3) || (size > 4)) {
@@ -827,10 +1009,10 @@ void glBegin(GLenum mode) {
 	if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
-#endif
 
 	// Changing current openGL machine state
 	phase = MODEL_CREATION;
+#endif
 
 	// Translating primitive to sceGxm one
 	gl_primitive_to_gxm(mode, prim);
@@ -850,10 +1032,10 @@ void glEnd(void) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 		return;
 	}
-#endif
 
 	// Changing current openGL machine state
 	phase = NONE;
+#endif
 
 	sceneReset();
 

@@ -192,6 +192,15 @@ extern "C" {
 #define GL_POLYGON_OFFSET_UNITS                      0x2A00
 #define GL_POLYGON_OFFSET_POINT                      0x2A01
 #define GL_POLYGON_OFFSET_LINE                       0x2A02
+#define GL_V2F                                       0x2A20
+#define GL_V3F                                       0x2A21
+#define GL_C4UB_V2F                                  0x2A22
+#define GL_C4UB_V3F                                  0x2A23
+#define GL_C3F_V3F                                   0x2A24
+#define GL_T2F_V3F                                   0x2A27
+#define GL_T4F_V4F                                   0x2A28
+#define GL_T2F_C4UB_V3F                              0x2A29
+#define GL_T2F_C3F_V3F                               0x2A2A
 #define GL_CLIP_PLANE0                               0x3000
 #define GL_CLIP_PLANE1                               0x3001
 #define GL_CLIP_PLANE2                               0x3002
@@ -423,6 +432,7 @@ void glGetShaderiv(GLuint handle, GLenum pname, GLint *params);
 const GLubyte *glGetString(GLenum name);
 GLint glGetUniformLocation(GLuint prog, const GLchar *name);
 void glHint(GLenum target, GLenum mode);
+void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer);
 GLboolean glIsEnabled(GLenum cap);
 GLboolean glIsFramebuffer(GLuint fb);
 GLboolean glIsTexture(GLuint texture);

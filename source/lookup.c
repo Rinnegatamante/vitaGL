@@ -111,6 +111,7 @@ static const struct {
 	{"glGetShaderiv", (void *)glGetShaderiv},
 	{"glGetString", (void *)glGetString},
 	{"glGetUniformLocation", (void *)glGetUniformLocation},
+	{"glInterleavedArrays", (void *)glInterleavedArrays},
 	{"glIsEnabled", (void *)glIsEnabled},
 	{"glIsFramebuffer", (void *)glIsFramebuffer},
 	{"glIsTexture", (void *)glIsTexture},
