@@ -575,6 +575,11 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 }
 
 void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
+#ifndef SKIP_ERROR_HANDLING
+	if (stride < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
 	
@@ -732,7 +737,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 		attributes->componentCount = 2;
 		streams->stride = stride ? stride : 32;
 		
-		// Color4ub
+		// Color3f
 		ffp_vertex_attrib_offsets[2] = (uint32_t)pointer + 8;
 		ffp_vertex_attrib_vbo[2] = vertex_array_unit;
 		attributes = &ffp_vertex_attrib_config[2];
