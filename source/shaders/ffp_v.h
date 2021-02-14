@@ -13,7 +13,7 @@ uniform float4 lights_ambients[lights_num];
 uniform float4 lights_diffuses[lights_num];
 uniform float4 lights_speculars[lights_num];
 uniform float4 lights_positions[lights_num];
-uniform float4 lights_attenuations[lights_num];
+uniform float3 lights_attenuations[lights_num];
 
 void point_light(int i, float3 normal, float3 eye, float3 position) {
 	float3 VP = lights_positions[i].xyz - position;

@@ -425,20 +425,6 @@ void waitRenderingDone(void) {
 	sceGxmFinish(gxm_context);
 }
 
-/*
- * ------------------------------
- * - IMPLEMENTATION STARTS HERE -
- * ------------------------------
- */
-
-void vglSetParamBufferSize(uint32_t size) {
-	gxm_param_buf_size = size;
-}
-
-void vglUseTripleBuffering(GLboolean usage) {
-	gxm_display_buffer_count = usage ? 3 : 2;
-}
-
 void sceneEnd(void) {
 	// Ends current gxm scene
 	sceGxmEndScene(gxm_context, NULL, NULL);
@@ -528,9 +514,24 @@ void sceneReset(void) {
 	}
 }
 
+/*
+ * ------------------------------
+ * - IMPLEMENTATION STARTS HERE -
+ * ------------------------------
+ */
+
+void vglSetParamBufferSize(uint32_t size) {
+	gxm_param_buf_size = size;
+}
+
+void vglUseTripleBuffering(GLboolean usage) {
+	gxm_display_buffer_count = usage ? 3 : 2;
+}
+
 void vglSwapBuffers(GLboolean has_commondialog) {
 	needs_end_scene = GL_FALSE;
-	sceneEnd();
+	if (!needs_scene_reset)
+		sceneEnd();
 
 	if (has_commondialog) {
 		// Populating SceCommonDialog parameters
