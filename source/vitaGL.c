@@ -264,8 +264,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 
 	// Init texture slots
 	for (j = 0; j < TEXTURES_NUM; j++) {
-		texture_slots[j].used = 0;
-		texture_slots[j].valid = 0;
+		texture_slots[j].status = TEX_UNUSED;
 	}
 
 	// Init custom shaders
@@ -1212,7 +1211,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	} else if (ffp_vertex_attrib_state & (1 << 0)) {
 		reload_ffp_shaders(NULL, NULL);
 		if (ffp_vertex_attrib_state & (1 << 1)) {
-			if (!(texture_slots[tex_unit->tex_id].valid))
+			if (texture_slots[tex_unit->tex_id].status != TEX_VALID)
 				return;
 			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[tex_unit->tex_id].gxm_tex);
 			sceGxmSetVertexStream(gxm_context, 1, tex_unit->texture_object);

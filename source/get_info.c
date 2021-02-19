@@ -311,7 +311,7 @@ GLboolean glIsTexture(GLuint i) {
 	}
 #endif
 
-	return (i < TEXTURES_NUM && texture_slots[i].used);
+	return (i < TEXTURES_NUM && texture_slots[i].status != TEX_UNUSED);
 }
 
 GLboolean glIsFramebuffer(GLuint fb) {

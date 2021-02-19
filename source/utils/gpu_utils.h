@@ -29,6 +29,13 @@
 // Align a value to the requested alignment
 #define ALIGN(x, a) (((x) + ((a)-1)) & ~((a)-1))
 
+// Texture object status enum
+enum {
+	TEX_UNUSED,
+	TEX_UNINITIALIZED,
+	TEX_VALID
+};
+
 // Texture object struct
 typedef struct texture {
 	SceGxmTexture gxm_tex;
@@ -36,8 +43,7 @@ typedef struct texture {
 	vglMemType mtype;
 	SceUID palette_UID;
 	SceUID depth_UID;
-	uint8_t used;
-	uint8_t valid;
+	uint8_t status;
 	uint32_t type;
 	void (*write_cb)(void *, uint32_t);
 	SceGxmTextureFilter min_filter;
@@ -46,6 +52,8 @@ typedef struct texture {
 	SceGxmTextureAddrMode v_mode;
 	SceGxmTextureMipFilter mip_filter;
 	uint32_t lod_bias;
+	uint8_t mip_count;
+	GLboolean use_mips;
 } texture;
 
 // Palette object struct

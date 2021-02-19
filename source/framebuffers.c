@@ -399,7 +399,7 @@ void vglTexImageDepthBuffer(GLenum target) {
 			sceGxmTextureInitLinear(&tex->gxm_tex, active_read_fb->depth_buffer_addr, SCE_GXM_TEXTURE_FORMAT_DF32M, active_read_fb->width, active_read_fb->height, 0);
 		else
 			sceGxmTextureInitLinear(&tex->gxm_tex, gxm_depth_surface_addr, SCE_GXM_TEXTURE_FORMAT_DF32M, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0);
-		tex->valid = 1;
+		tex->status = TEX_VALID;
 	} break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)

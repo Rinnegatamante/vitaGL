@@ -45,9 +45,9 @@ void glGenTextures(GLsizei n, GLuint *res) {
 	// Reserving a texture and returning its id if available
 	int i, j = 0;
 	for (i = 1; i < TEXTURES_NUM; i++) {
-		if (!(texture_slots[i].used)) {
+		if (texture_slots[i].status == TEX_UNUSED) {
 			res[j++] = i;
-			texture_slots[i].used = GL_TRUE;
+			texture_slots[i].status = TEX_UNINITIALIZED;
 
 			// Resetting texture parameters to their default values
 			texture_slots[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
@@ -93,7 +93,7 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 	for (j = 0; j < n; j++) {
 		GLuint i = gl_textures[j];
 		if (i > 0) {
-			texture_slots[i].used = 0;
+			texture_slots[i].status = TEX_UNUSED;
 
 			// Resetting texture parameters to their default values
 			texture_slots[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
@@ -387,7 +387,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			sceGxmTextureSetGammaMode(&tex->gxm_tex, SCE_GXM_TEXTURE_GAMMA_BGR);
 
 		// Setting palette if the format requests one
-		if (tex->valid && tex->palette_UID)
+		if (tex->palette_UID)
 			sceGxmTextureSetPalette(&tex->gxm_tex, color_table->data);
 
 		break;
@@ -415,11 +415,13 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	int i, j;
 	GLboolean fast_store = GL_FALSE;
 
+#ifndef SKIP_ERROR_HANDLING
 	if (xoffset + width > orig_w) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	} else if (yoffset + height > orig_h) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
+#endif
 
 	// Support for legacy GL1.0 format
 	switch (format) {
@@ -737,28 +739,34 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 		case GL_TEXTURE_MIN_FILTER: // Min filter
 			switch (param) {
 			case GL_NEAREST: // Point
+				tex->use_mips = GL_FALSE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
 				break;
 			case GL_LINEAR: // Linear
+				tex->use_mips = GL_FALSE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 				break;
 			case GL_NEAREST_MIPMAP_NEAREST:
+				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
 				break;
 			case GL_LINEAR_MIPMAP_NEAREST:
+				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_LINEAR;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 				break;
 			case GL_NEAREST_MIPMAP_LINEAR:
+				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
 				break;
 			case GL_LINEAR_MIPMAP_LINEAR:
+				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_LINEAR;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 				break;
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
@@ -766,6 +774,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 			}
 			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex->min_filter);
 			sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
+			sceGxmTextureSetMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
 			break;
 		case GL_TEXTURE_MAG_FILTER: // Mag Filter
 			switch (param) {
@@ -847,31 +856,38 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 		switch (pname) {
 		case GL_TEXTURE_MIN_FILTER: // Min Filter
 			if (param == GL_NEAREST) {
+				tex->use_mips = GL_FALSE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
 			}
 			if (param == GL_LINEAR) {
+				tex->use_mips = GL_FALSE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 			}
 			if (param == GL_NEAREST_MIPMAP_NEAREST) {
+				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
 			}
 			if (param == GL_LINEAR_MIPMAP_NEAREST) {
+				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_LINEAR;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 			}
 			if (param == GL_NEAREST_MIPMAP_LINEAR) {
+				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
 			}
 			if (param == GL_LINEAR_MIPMAP_LINEAR) {
+				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_MIPMAP_LINEAR;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 			}
 			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex->min_filter);
 			sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
+			sceGxmTextureSetMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
 			break;
 		case GL_TEXTURE_MAG_FILTER: // Mag filter
 			if (param == GL_NEAREST)

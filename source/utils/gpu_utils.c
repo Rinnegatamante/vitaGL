@@ -297,12 +297,12 @@ void gpu_free_texture(texture *tex) {
 	}
 
 	// Invalidating texture object
-	tex->valid = 0;
+	tex->status = TEX_UNINITIALIZED;
 }
 
 void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), GLboolean fast_store) {
 	// If there's already a texture in passed texture object we first dealloc it
-	if (tex->valid)
+	if (tex->status == TEX_VALID)
 		gpu_free_texture(tex);
 
 	// Getting texture format bpp
@@ -341,12 +341,13 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 			sceClibMemset(texture_data, 0, tex_size);
 
 		// Initializing texture and validating it
-		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, w, h, 0);
+		tex->mip_count = 1;
+		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, w, h, tex->mip_count);
 		if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8)
 			tex->palette_UID = 1;
 		else
 			tex->palette_UID = 0;
-		tex->valid = 1;
+		tex->status = TEX_VALID;
 		tex->data = texture_data;
 	}
 }
@@ -393,7 +394,7 @@ int gpu_get_compressed_mip_offset(int level, int width, int height, SceGxmTextur
 
 void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *)) {
 	// If there's already a texture in passed texture object we first dealloc it
-	if (tex->valid && !mip_level)
+	if (tex->status == TEX_VALID && !mip_level)
 		gpu_free_texture(tex);
 
 	// Calculating swizzled compressed texture size on memory
@@ -426,7 +427,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 	int mip_count, tex_width, tex_height;
 	void *texture_data;
 	if (mip_level) {
-		mip_count = sceGxmTextureGetMipmapCount(&tex->gxm_tex);
+		mip_count = tex->mip_count - 1;
 		tex_width = max_width;
 		tex_height = max_height;
 
@@ -505,16 +506,17 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 			sceClibMemset(mip_data, 0, mip_size);
 
 		// Initializing texture and validating it
-		sceGxmTextureInitSwizzledArbitrary(&tex->gxm_tex, texture_data, format, tex_width, tex_height, mip_count);
+		tex->mip_count = mip_count + 1;
+		sceGxmTextureInitSwizzledArbitrary(&tex->gxm_tex, texture_data, format, tex_width, tex_height, tex->use_mips ? tex->mip_count : 0);
 		tex->palette_UID = 0;
-		tex->valid = 1;
+		tex->status = TEX_VALID;
 		tex->data = texture_data;
 	}
 }
 
 void gpu_alloc_mipmaps(int level, texture *tex) {
 	// Getting current mipmap count in passed texture
-	uint32_t count = sceGxmTextureGetMipmapCount(&tex->gxm_tex);
+	uint32_t count = tex->mip_count - 1;
 
 	// Getting textures info and calculating bpp
 	uint32_t w, h, stride;
@@ -578,7 +580,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 			free(temp);
 		else
 			gpu_free_texture(tex);
-		tex->valid = 1;
+		tex->status = TEX_VALID;
 
 		// Performing a chain downscale process to generate requested mipmaps
 		uint8_t *curPtr = (uint8_t *)texture_data;
@@ -605,7 +607,8 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		}
 
 		// Initializing texture in sceGxm
-		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, level);
+		tex->mip_count = level + 1;
+		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, tex->use_mips ? tex->mip_count : 0);
 		tex->data = texture_data;
 	}
 }
