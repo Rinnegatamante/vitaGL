@@ -262,11 +262,6 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 		texture_units[i].enabled = GL_FALSE;
 	}
 
-	// Init texture slots
-	for (j = 0; j < TEXTURES_NUM; j++) {
-		texture_slots[j].status = TEX_UNUSED;
-	}
-
 	// Init custom shaders
 	resetCustomShaders();
 
@@ -353,6 +348,12 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 
 	// Allocating default texture object
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	
+	// Defaulting textures into using texture on ID 0
+	for (i = 1; i < TEXTURES_NUM; i++) {
+		texture_slots[i].status = TEX_UNUSED;
+		texture_slots[i].gxm_tex = texture_slots[0].gxm_tex;
+	}
 
 	// Set texture matrix to identity
 	matrix4x4_identity(texture_matrix);
