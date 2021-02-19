@@ -27,7 +27,7 @@
 
 #define SHADER_CACHE_SIZE 256
 
-#define VERTEX_UNIFORMS_NUM 10
+#define VERTEX_UNIFORMS_NUM 11
 #define FRAGMENT_UNIFORMS_NUM 7
 
 static uint32_t vertex_count = 0; // Vertex counter for vertex list
@@ -98,7 +98,8 @@ typedef enum {
 	LIGHTS_SPECULARS_UNIF,
 	LIGHTS_POSITIONS_UNIF,
 	LIGHTS_ATTENUATIONS_UNIF,
-	NORMAL_MATRIX_UNIF
+	NORMAL_MATRIX_UNIF,
+	POINT_SIZE_UNIF
 } vert_uniform_type;
 
 typedef enum {
@@ -133,6 +134,7 @@ void reload_vertex_uniforms() {
 	ffp_vertex_params[MODELVIEW_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "modelview");
 	ffp_vertex_params[WVP_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "wvp");
 	ffp_vertex_params[TEX_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "texmat");
+	ffp_vertex_params[POINT_SIZE_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "point_size");
 	ffp_vertex_params[NORMAL_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "normal_mat");
 	if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) {
 		ffp_vertex_params[LIGHTS_AMBIENTS_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_ambients");
@@ -413,10 +415,10 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF], 0, 4 * mask.clip_planes_num, &clip_planes[0].x);
 	if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF])
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
-	if (ffp_vertex_params[WVP_MATRIX_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
+	sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
 	if (ffp_vertex_params[TEX_MATRIX_UNIF])
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
+	sceGxmSetUniformDataF(buffer, ffp_vertex_params[POINT_SIZE_UNIF], 0, 1, &point_size);
 	if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) {
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[NORMAL_MATRIX_UNIF], 0, 16, (const float *)normal_matrix);
 		if (lights_aligned) {
@@ -1075,4 +1077,7 @@ void glEnd(void) {
 
 	// Moving legacy pool address offset
 	legacy_pool += vertex_count * LEGACY_VERTEX_STRIDE;
+	
+	// Restore polygon mode if a GL_LINES/GL_POINTS has been rendered
+	restore_polygon_mode(prim);
 }

@@ -68,9 +68,14 @@ extern GLboolean prim_is_quad; // Flag for when GL_QUADS primitive is used
 	switch (x) { \
 	case GL_POINTS: \
 		p = SCE_GXM_PRIMITIVE_POINTS; \
+		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_POINT_01UV); \
+		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_POINT_01UV); \
+		\
 		break; \
 	case GL_LINES: \
 		p = SCE_GXM_PRIMITIVE_LINES; \
+		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
+		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
 		break; \
 	case GL_TRIANGLES: \
 		if (no_polygons_mode) \
@@ -95,6 +100,13 @@ extern GLboolean prim_is_quad; // Flag for when GL_QUADS primitive is used
 		break; \
 	default: \
 		SET_GL_ERROR(GL_INVALID_ENUM) \
+	}
+	
+// Restore Polygon mode after a draw call
+#define restore_polygon_mode(p) \
+	if (p == SCE_GXM_PRIMITIVE_LINES || p == SCE_GXM_PRIMITIVE_POINTS) { \
+		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front); \
+		sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back); \
 	}
 
 #define SET_GL_ERROR(x) \
@@ -272,6 +284,7 @@ extern SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex prog
 extern vector4f *clear_vertices; // Memblock starting address for clear screen vertices
 
 extern GLboolean fast_texture_compression; // Hints for texture compression
+extern GLfloat point_size; // Size of points for fixed function pipeline
 
 /* gxm.c */
 void initGxm(void); // Inits sceGxm

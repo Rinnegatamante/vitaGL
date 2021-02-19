@@ -334,6 +334,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	// Init purge lists
 	for (i = 0; i < FRAME_PURGE_FREQ; i++) {
 		frame_purge_list[i][0] = NULL;
+		frame_rt_purge_list[i][0] = NULL;
 	}
 
 	// Init scissor test state
@@ -898,6 +899,8 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_quads_idx_ptr + (first / 2) * 3, (count / 2) * 3);
 	else
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
+		
+	restore_polygon_mode(gxm_p);
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
@@ -970,6 +973,8 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices, count);
 		}
 	}
+	
+	restore_polygon_mode(gxm_p);
 }
 
 void glClientActiveTexture(GLenum texture) {
@@ -1223,6 +1228,8 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 		sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 	}
+	
+	restore_polygon_mode(gxm_p);
 }
 
 size_t vglMemFree(vglMemType type) {

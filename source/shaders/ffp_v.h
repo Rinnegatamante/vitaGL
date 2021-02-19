@@ -77,6 +77,7 @@ void main(
 #if has_colors == 1
 	float4 out vColor : COLOR,
 #endif
+	float out psize : PSIZE,
 #if clip_planes_num > 0
 	float out vClip[clip_planes_num] : CLP0,
 	uniform float4 clip_planes_eq[clip_planes_num],
@@ -84,6 +85,7 @@ void main(
 	uniform float4x4 modelview,
 	uniform float4x4 wvp,
 	uniform float4x4 texmat,
+	uniform float point_size,
 	uniform float4x4 normal_mat
 ) {
 	float4 pos4 = float4(position, 1.f);
@@ -119,5 +121,6 @@ void main(
 	vColor = color;
 #endif
 #endif
+	psize = point_size;
 }
 )";

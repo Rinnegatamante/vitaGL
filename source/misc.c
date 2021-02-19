@@ -22,6 +22,7 @@
  */
 
 #include "shared.h"
+GLfloat point_size = 1.0f;
 GLboolean fast_texture_compression = GL_FALSE; // Hints for texture compression
 
 static void update_fogging_state() {
@@ -564,7 +565,7 @@ void glLineWidth(GLfloat width) {
 	}
 #endif
 
-	// Changing line and point width as requested
+	// Changing line width as requested
 	sceGxmSetFrontPointLineWidth(gxm_context, width);
 	sceGxmSetBackPointLineWidth(gxm_context, width);
 }
@@ -578,8 +579,7 @@ void glPointSize(GLfloat size) {
 #endif
 
 	// Changing line and point width as requested
-	sceGxmSetFrontPointLineWidth(gxm_context, size);
-	sceGxmSetBackPointLineWidth(gxm_context, size);
+	point_size = size;
 }
 
 void glFogf(GLenum pname, GLfloat param) {
