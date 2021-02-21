@@ -70,7 +70,6 @@ extern GLboolean prim_is_quad; // Flag for when GL_QUADS primitive is used
 		p = SCE_GXM_PRIMITIVE_POINTS; \
 		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_POINT_01UV); \
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_POINT_01UV); \
-		\
 		break; \
 	case GL_LINES: \
 		p = SCE_GXM_PRIMITIVE_LINES; \

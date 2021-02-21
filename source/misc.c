@@ -578,7 +578,7 @@ void glPointSize(GLfloat size) {
 	}
 #endif
 
-	// Changing line and point width as requested
+	// Changing point size as requested
 	point_size = size;
 }
 
