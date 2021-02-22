@@ -945,7 +945,7 @@ void glGenerateMipmap(GLenum target) {
 
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if current texture is valid
-	if (!tex->valid)
+	if (tex->status != TEX_VALID)
 		return;
 #endif
 
