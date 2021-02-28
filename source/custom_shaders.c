@@ -859,7 +859,7 @@ void glLinkProgram(GLuint progr) {
 	} else {
 		// Checking if bound attributes are aligned
 		p->has_unaligned_attrs = GL_FALSE;
-		for (i = 0; i < p->attr_num; i++) {
+		for (i = 0; i < p->attr_highest_idx; i++) {
 			if (p->attr[i].regIndex == 0xDEAD) {
 				p->has_unaligned_attrs = GL_TRUE;
 				break;
