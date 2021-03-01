@@ -25,6 +25,9 @@
 
 texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
 texture texture_slots[TEXTURES_NUM]; // Available texture slots
+uint16_t free_texture_slots[TEXTURES_NUM - 1]; // Available free texture slots
+uint32_t free_tex_idx = TEXTURES_NUM - 2;
+
 palette *color_table = NULL; // Current in-use color table
 int8_t server_texture_unit = 0; // Current in use server side texture unit
 
@@ -43,23 +46,21 @@ void glGenTextures(GLsizei n, GLuint *res) {
 #endif
 
 	// Reserving a texture and returning its id if available
-	int i, j = 0;
-	for (i = 1; i < TEXTURES_NUM; i++) {
-		if (texture_slots[i].status == TEX_UNUSED) {
-			res[j++] = i;
-			texture_slots[i].status = TEX_UNINITIALIZED;
+	int i;
+	while (n > 0) {
+		n--;
+		i = free_texture_slots[free_tex_idx--];
+		res[n] = i;
+		texture_slots[i].status = TEX_UNINITIALIZED;
 
-			// Resetting texture parameters to their default values
-			texture_slots[i].mip_count = 1;
-			texture_slots[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			texture_slots[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			texture_slots[i].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-			texture_slots[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-			texture_slots[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-			texture_slots[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
-		}
-		if (j >= n)
-			break;
+		// Resetting texture parameters to their default values
+		texture_slots[i].mip_count = 1;
+		texture_slots[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+		texture_slots[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+		texture_slots[i].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+		texture_slots[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+		texture_slots[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+		texture_slots[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
 	}
 }
 
@@ -100,6 +101,9 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 				tex_unit->tex_id = 0;
 				
 			texture_slots[i].status = TEX_UNUSED;
+			
+			free_tex_idx++;
+			free_texture_slots[free_tex_idx] = i;
 		}
 	}
 }

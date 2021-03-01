@@ -350,10 +350,11 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	// Allocating default texture object
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	
-	// Defaulting textures into using texture on ID 0
+	// Defaulting textures into using texture on ID 0 and resetting free textures queue
 	for (i = 1; i < TEXTURES_NUM; i++) {
 		texture_slots[i].status = TEX_UNUSED;
 		texture_slots[i].gxm_tex = texture_slots[0].gxm_tex;
+		free_texture_slots[i - 1] = i;
 	}
 
 	// Set texture matrix to identity
