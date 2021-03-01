@@ -24,6 +24,10 @@
 #include "shared.h"
 
 static uint32_t gxm_param_buf_size = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE; // Param buffer size for sceGxm
+static uint32_t gxm_vdm_buf_size = SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE; // VDM ring buffer size for sceGxm
+static uint32_t gxm_vertex_buf_size = SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE; // Vertex ring buffer size for sceGxm
+static uint32_t gxm_fragment_buf_size = SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE; // Fragment ring buffer size for sceGxm
+static uint32_t gxm_usse_buf_size = SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE; // Fragment ring buffer size for sceGxm
 
 static void *vdm_ring_buffer_addr; // VDM ring buffer memblock starting address
 static void *vertex_ring_buffer_addr; // vertex ring buffer memblock starting address
@@ -85,7 +89,7 @@ static int frame_purge_clean_idx = 1;
 
 #ifdef HAVE_SHARED_RENDERTARGETS
 #define MAX_RENDER_TARGETS_NUM 47 // Maximum amount of dedicated render targets usable for fbos
-#define MAX_SHARED_RT_SIZE 256 // Maximum  width value in pixels for sharred rendertargets usage
+#define MAX_SHARED_RT_SIZE 256 // Maximum  width value in pixels for shared rendertargets usage
 #define MAX_SCENES_PER_FRAME 8 // Maximum amount of scenes per frame allowed by sceGxm per render target
 render_target rt_list[MAX_RENDER_TARGETS_NUM];
 
@@ -101,12 +105,10 @@ render_target *getFreeRenderTarget(int w, int h) {
 			rt_list[i].max_refs = w > MAX_SHARED_RT_SIZE ? 1 : MAX_SCENES_PER_FRAME;
 			SceGxmRenderTargetParams renderTargetParams;
 			sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
-			renderTargetParams.flags = 0;
 			renderTargetParams.width = w;
 			renderTargetParams.height = h;
 			renderTargetParams.scenesPerFrame = rt_list[i].max_refs;
 			renderTargetParams.multisampleMode = msaa_mode;
-			renderTargetParams.multisampleLocations = 0;
 			renderTargetParams.driverMemBlock = -1;
 			sceGxmCreateRenderTarget(&renderTargetParams, &rt_list[i].rt);
 			rt_list[i].w = w;
@@ -207,18 +209,17 @@ void initGxm(void) {
 
 void initGxmContext(void) {
 	// Allocating VDM ring buffer
-	vdm_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE, VGL_MEM_VRAM);
+	vdm_ring_buffer_addr = gpu_alloc_mapped(gxm_vdm_buf_size, VGL_MEM_VRAM);
 
 	// Allocating vertex ring buffer
-	vertex_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE, VGL_MEM_VRAM);
+	vertex_ring_buffer_addr = gpu_alloc_mapped(gxm_vertex_buf_size, VGL_MEM_VRAM);
 
 	// Allocating fragment ring buffer
-	fragment_ring_buffer_addr = gpu_alloc_mapped(SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE, VGL_MEM_VRAM);
+	fragment_ring_buffer_addr = gpu_alloc_mapped(gxm_fragment_buf_size, VGL_MEM_VRAM);
 
 	// Allocating fragment USSE ring buffer
 	unsigned int fragment_usse_offset;
-	fragment_usse_ring_buffer_addr = gpu_fragment_usse_alloc_mapped(
-		SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE, &fragment_usse_offset);
+	fragment_usse_ring_buffer_addr = gpu_fragment_usse_alloc_mapped(gxm_usse_buf_size, &fragment_usse_offset);
 
 	// Setting sceGxm context parameters
 	SceGxmContextParams gxm_context_params;
@@ -226,13 +227,13 @@ void initGxmContext(void) {
 	gxm_context_params.hostMem = malloc(SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
 	gxm_context_params.hostMemSize = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
 	gxm_context_params.vdmRingBufferMem = vdm_ring_buffer_addr;
-	gxm_context_params.vdmRingBufferMemSize = SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE;
+	gxm_context_params.vdmRingBufferMemSize = gxm_vdm_buf_size;
 	gxm_context_params.vertexRingBufferMem = vertex_ring_buffer_addr;
-	gxm_context_params.vertexRingBufferMemSize = SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE;
+	gxm_context_params.vertexRingBufferMemSize = gxm_vertex_buf_size;
 	gxm_context_params.fragmentRingBufferMem = fragment_ring_buffer_addr;
-	gxm_context_params.fragmentRingBufferMemSize = SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE;
+	gxm_context_params.fragmentRingBufferMemSize = gxm_fragment_buf_size;
 	gxm_context_params.fragmentUsseRingBufferMem = fragment_usse_ring_buffer_addr;
-	gxm_context_params.fragmentUsseRingBufferMemSize = SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE;
+	gxm_context_params.fragmentUsseRingBufferMemSize = gxm_usse_buf_size;
 	gxm_context_params.fragmentUsseRingBufferOffset = fragment_usse_offset;
 
 	// Initializing sceGxm context
@@ -522,6 +523,22 @@ void sceneReset(void) {
 
 void vglSetParamBufferSize(uint32_t size) {
 	gxm_param_buf_size = size;
+}
+
+void vglSetVDMBufferSize(uint32_t size) {
+	gxm_vdm_buf_size = size;
+}
+
+void vglSetVertexBufferSize(uint32_t size) {
+	gxm_vertex_buf_size = size;
+}
+
+void vglSetFragmentBufferSize(uint32_t size) {
+	gxm_fragment_buf_size = size;
+}
+
+void vglSetUSSEBufferSize(uint32_t size) {
+	gxm_usse_buf_size = size;
 }
 
 void vglUseTripleBuffering(GLboolean usage) {

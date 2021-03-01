@@ -796,7 +796,7 @@ void glLinkProgram(GLuint progr) {
 #endif
 	p->status = PROG_LINKED;
 
-	// Analyzing vertex shader
+	// Analyzing fragment shader
 	uint32_t i, cnt;
 	for (i = 0; i < GL_MAX_TEXTURE_IMAGE_UNITS; i++) {
 		p->texunits[i] = GL_FALSE;
@@ -818,7 +818,7 @@ void glLinkProgram(GLuint progr) {
 		}
 	}
 
-	// Analyzing fragment shader
+	// Analyzing vertex shader
 	p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "wvp");
 	cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
 	for (i = 0; i < cnt; i++) {
