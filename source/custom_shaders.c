@@ -26,9 +26,7 @@
 #define MAX_CUSTOM_SHADERS 2048 // Maximum number of linkable custom shaders
 #define MAX_CUSTOM_PROGRAMS 1024 // Maximum number of linkable custom programs
 
-#define resetAttrib(s) \
-	markAsDirty(vertex_attrib_value[index]); \
-	vertex_attrib_value[index] = (float *)gpu_alloc_mapped(s * 4, VGL_MEM_RAM);
+#define DISABLED_ATTRIBS_POOL_SIZE (256 * 1024) // Disable attributes circular pool size in bytes
 
 GLboolean log_stuffs = GL_FALSE;
 
@@ -38,6 +36,9 @@ GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status
 SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
 static SceGxmVertexStream vertex_stream_config[GL_MAX_VERTEX_ATTRIBS];
 static float *vertex_attrib_value[GL_MAX_VERTEX_ATTRIBS];
+static float *vertex_attrib_pool;
+static float *vertex_attrib_pool_ptr;
+static float *vertex_attrib_pool_limit;
 static uint8_t vertex_attrib_size[GL_MAX_VERTEX_ATTRIBS] = {4, 4, 4, 4, 4, 4, 4, 4};
 static uint32_t vertex_attrib_offsets[GL_MAX_VERTEX_ATTRIBS] = {0, 0, 0, 0, 0, 0, 0, 0};
 static uint32_t vertex_attrib_vbo[GL_MAX_VERTEX_ATTRIBS] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -109,6 +110,16 @@ typedef struct program {
 static shader shaders[MAX_CUSTOM_SHADERS];
 static program progs[MAX_CUSTOM_PROGRAMS];
 
+float *reserve_attrib_pool(uint8_t count) {
+	float *res = vertex_attrib_pool_ptr;
+	vertex_attrib_pool_ptr += count;
+	if (vertex_attrib_pool_ptr > vertex_attrib_pool_limit) {
+		vertex_attrib_pool_ptr = vertex_attrib_pool;
+		return vertex_attrib_pool_ptr;
+	}
+	return res;
+}
+
 void resetCustomShaders(void) {
 	// Init custom shaders
 	int i;
@@ -121,10 +132,14 @@ void resetCustomShaders(void) {
 	for (i = 0; i < MAX_CUSTOM_PROGRAMS; i++) {
 		progs[i].status = PROG_INVALID;
 	}
+	
+	vertex_attrib_pool = (float *)gpu_alloc_mapped(DISABLED_ATTRIBS_POOL_SIZE, VGL_MEM_RAM);
+	vertex_attrib_pool_ptr = vertex_attrib_pool;
+	vertex_attrib_pool_limit = (float *)((uint8_t *)vertex_attrib_pool + DISABLED_ATTRIBS_POOL_SIZE);
 
 	// Init generic vertex attrib arrays
 	for (i = 0; i < GL_MAX_VERTEX_ATTRIBS; i++) {
-		vertex_attrib_value[i] = (float *)gpu_alloc_mapped(4 * sizeof(float), VGL_MEM_RAM);
+		vertex_attrib_value[i] = reserve_attrib_pool(4);
 		vertex_attrib_config[i].componentCount = 4;
 		vertex_attrib_config[i].offset = 0;
 		vertex_attrib_config[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
@@ -1114,20 +1129,20 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 }
 
 void glVertexAttrib1f(GLuint index, GLfloat v0) {
-	resetAttrib(1);
+	vertex_attrib_value[index] = reserve_attrib_pool(1);
 	vertex_attrib_size[index] = 1;
 	vertex_attrib_value[index][0] = v0;
 }
 
 void glVertexAttrib2f(GLuint index, GLfloat v0, GLfloat v1) {
-	resetAttrib(2);
+	vertex_attrib_value[index] = reserve_attrib_pool(2);
 	vertex_attrib_size[index] = 2;
 	vertex_attrib_value[index][0] = v0;
 	vertex_attrib_value[index][1] = v1;
 }
 
 void glVertexAttrib3f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2) {
-	resetAttrib(3);
+	vertex_attrib_value[index] = reserve_attrib_pool(3);
 	vertex_attrib_size[index] = 3;
 	vertex_attrib_value[index][0] = v0;
 	vertex_attrib_value[index][1] = v1;
@@ -1135,7 +1150,7 @@ void glVertexAttrib3f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2) {
 }
 
 void glVertexAttrib4f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
-	resetAttrib(4);
+	vertex_attrib_value[index] = reserve_attrib_pool(4);
 	vertex_attrib_size[index] = 4;
 	vertex_attrib_value[index][0] = v0;
 	vertex_attrib_value[index][1] = v1;
@@ -1144,25 +1159,25 @@ void glVertexAttrib4f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat 
 }
 
 void glVertexAttrib1fv(GLuint index, const GLfloat *v) {
-	resetAttrib(1);
+	vertex_attrib_value[index] = reserve_attrib_pool(1);
 	vertex_attrib_size[index] = 1;
 	sceClibMemcpy(vertex_attrib_value[index], v, sizeof(float));
 }
 
 void glVertexAttrib2fv(GLuint index, const GLfloat *v) {
-	resetAttrib(2);
+	vertex_attrib_value[index] = reserve_attrib_pool(2);
 	vertex_attrib_size[index] = 2;
 	sceClibMemcpy(vertex_attrib_value[index], v, 2 * sizeof(float));
 }
 
 void glVertexAttrib3fv(GLuint index, const GLfloat *v) {
-	resetAttrib(3);
+	vertex_attrib_value[index] = reserve_attrib_pool(3);
 	vertex_attrib_size[index] = 3;
 	sceClibMemcpy(vertex_attrib_value[index], v, 3 * sizeof(float));
 }
 
 void glVertexAttrib4fv(GLuint index, const GLfloat *v) {
-	resetAttrib(4);
+	vertex_attrib_value[index] = reserve_attrib_pool(4);
 	vertex_attrib_size[index] = 4;
 	sceClibMemcpy(vertex_attrib_value[index], v, 4 * sizeof(float));
 }
