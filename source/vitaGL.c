@@ -348,6 +348,13 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	sceGxmMapMemory(addr, _newlib_heap_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
 
 	// Allocating default texture object
+	texture_slots[0].mip_count = 1;
+	texture_slots[0].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+	texture_slots[0].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+	texture_slots[0].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+	texture_slots[0].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+	texture_slots[0].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+	texture_slots[0].lod_bias = GL_MAX_TEXTURE_LOD_BIAS;
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	
 	// Defaulting textures into using texture on ID 0 and resetting free textures queue

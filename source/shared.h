@@ -80,26 +80,22 @@ extern GLboolean prim_is_quad; // Flag for when GL_QUADS primitive is used
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
 		break; \
 	case GL_TRIANGLES: \
-		if (c % 3) return; \
-		if (no_polygons_mode) \
+		if (c % 3 || no_polygons_mode) \
 			return; \
 		p = SCE_GXM_PRIMITIVE_TRIANGLES; \
 		break; \
 	case GL_TRIANGLE_STRIP: \
-		if (c < 3) return; \
-		if (no_polygons_mode) \
+		if (c < 3 || no_polygons_mode) \
 			return; \
 		p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP; \
 		break; \
 	case GL_TRIANGLE_FAN: \
-		if (c < 3) return; \
-		if (no_polygons_mode) \
+		if (c < 3 || no_polygons_mode) \
 			return; \
 		p = SCE_GXM_PRIMITIVE_TRIANGLE_FAN; \
 		break; \
 	case GL_QUADS: \
-		if (c % 4) return; \
-		if (no_polygons_mode) \
+		if (c % 4 || no_polygons_mode) \
 			return; \
 		p = SCE_GXM_PRIMITIVE_TRIANGLES; \
 		prim_is_quad = GL_TRUE; \
@@ -122,23 +118,15 @@ extern GLboolean prim_is_quad; // Flag for when GL_QUADS primitive is used
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
 		break; \
 	case GL_TRIANGLES: \
-		if (no_polygons_mode) \
-			return; \
 		p = SCE_GXM_PRIMITIVE_TRIANGLES; \
 		break; \
 	case GL_TRIANGLE_STRIP: \
-		if (no_polygons_mode) \
-			return; \
 		p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP; \
 		break; \
 	case GL_TRIANGLE_FAN: \
-		if (no_polygons_mode) \
-			return; \
 		p = SCE_GXM_PRIMITIVE_TRIANGLE_FAN; \
 		break; \
 	case GL_QUADS: \
-		if (no_polygons_mode) \
-			return; \
 		p = SCE_GXM_PRIMITIVE_TRIANGLES; \
 		prim_is_quad = GL_TRUE; \
 		break; \
