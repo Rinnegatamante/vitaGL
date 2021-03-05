@@ -63,7 +63,52 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 extern GLboolean prim_is_quad; // Flag for when GL_QUADS primitive is used
 
 // Translates a GL primitive enum to its sceGxm equivalent
-#define gl_primitive_to_gxm(x, p) \
+#ifndef SKIP_ERROR_HANDLING
+#define gl_primitive_to_gxm(x, p, c) \
+	if (c <= 0) return; \
+	prim_is_quad = GL_FALSE; \
+	switch (x) { \
+	case GL_POINTS: \
+		p = SCE_GXM_PRIMITIVE_POINTS; \
+		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_POINT_01UV); \
+		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_POINT_01UV); \
+		break; \
+	case GL_LINES: \
+		if (c % 2) return; \
+		p = SCE_GXM_PRIMITIVE_LINES; \
+		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
+		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
+		break; \
+	case GL_TRIANGLES: \
+		if (c % 3) return; \
+		if (no_polygons_mode) \
+			return; \
+		p = SCE_GXM_PRIMITIVE_TRIANGLES; \
+		break; \
+	case GL_TRIANGLE_STRIP: \
+		if (c < 3) return; \
+		if (no_polygons_mode) \
+			return; \
+		p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP; \
+		break; \
+	case GL_TRIANGLE_FAN: \
+		if (c < 3) return; \
+		if (no_polygons_mode) \
+			return; \
+		p = SCE_GXM_PRIMITIVE_TRIANGLE_FAN; \
+		break; \
+	case GL_QUADS: \
+		if (c % 4) return; \
+		if (no_polygons_mode) \
+			return; \
+		p = SCE_GXM_PRIMITIVE_TRIANGLES; \
+		prim_is_quad = GL_TRUE; \
+		break; \
+	default: \
+		SET_GL_ERROR(GL_INVALID_ENUM) \
+	}
+#else
+#define gl_primitive_to_gxm(x, p, c) \
 	prim_is_quad = GL_FALSE; \
 	switch (x) { \
 	case GL_POINTS: \
@@ -100,7 +145,8 @@ extern GLboolean prim_is_quad; // Flag for when GL_QUADS primitive is used
 	default: \
 		SET_GL_ERROR(GL_INVALID_ENUM) \
 	}
-	
+#endif
+
 // Restore Polygon mode after a draw call
 #define restore_polygon_mode(p) \
 	if (p == SCE_GXM_PRIMITIVE_LINES || p == SCE_GXM_PRIMITIVE_POINTS) { \

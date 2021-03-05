@@ -170,10 +170,8 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 				break;
 			}
 		}
-		if (is_packed) {
-			if (!(vertex_attrib_offsets[real_i[0]] + streams[0].stride > vertex_attrib_offsets[real_i[1]] && vertex_attrib_offsets[real_i[1]] > vertex_attrib_offsets[real_i[0]]))
-				is_packed = GL_FALSE;
-		}
+		if (is_packed && (!(vertex_attrib_offsets[real_i[0]] + streams[0].stride > vertex_attrib_offsets[real_i[1]] && vertex_attrib_offsets[real_i[1]] > vertex_attrib_offsets[real_i[0]])))
+			is_packed = GL_FALSE;
 	}
 
 	// Gathering real attribute data pointers
@@ -315,9 +313,8 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 				is_full_vbo = GL_FALSE;
 			}
 		}
-		if (is_packed && (!(vertex_attrib_offsets[real_i[0]] + streams[0].stride > vertex_attrib_offsets[real_i[1]] && vertex_attrib_offsets[real_i[1]] > vertex_attrib_offsets[real_i[0]]))) {
+		if (is_packed && (!(vertex_attrib_offsets[real_i[0]] + streams[0].stride > vertex_attrib_offsets[real_i[1]] && vertex_attrib_offsets[real_i[1]] > vertex_attrib_offsets[real_i[0]])))
 			is_packed = GL_FALSE;
-		}
 	} else if (!vertex_attrib_vbo[real_i[0]])
 		is_full_vbo = GL_FALSE;
 

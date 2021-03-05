@@ -307,7 +307,8 @@ GLboolean glIsTexture(GLuint i) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		SET_GL_ERROR(GL_INVALID_OPERATION)
+		vgl_error = GL_INVALID_ENUM;
+		return GL_FALSE;
 	}
 #endif
 

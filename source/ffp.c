@@ -62,6 +62,7 @@ uint8_t ffp_vertex_attrib_state = 0;
 static unsigned short orig_stride[GL_MAX_VERTEX_ATTRIBS];
 static SceGxmAttributeFormat orig_fmt[GL_MAX_VERTEX_ATTRIBS];
 static unsigned char orig_size[GL_MAX_VERTEX_ATTRIBS];
+static GLenum ffp_mode;
 
 typedef union shader_mask {
 	struct {
@@ -1021,8 +1022,8 @@ void glBegin(GLenum mode) {
 	phase = MODEL_CREATION;
 #endif
 
-	// Translating primitive to sceGxm one
-	gl_primitive_to_gxm(mode, prim);
+	// Tracking desired primitive
+	ffp_mode = mode;
 
 	// Resetting vertex count
 	vertex_count = 0;
@@ -1030,10 +1031,6 @@ void glBegin(GLenum mode) {
 
 void glEnd(void) {
 #ifndef SKIP_ERROR_HANDLING
-	// Integrity checks
-	if (vertex_count == 0)
-		return;
-
 	// Error handling
 	if (phase != MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
@@ -1043,6 +1040,9 @@ void glEnd(void) {
 	// Changing current openGL machine state
 	phase = NONE;
 #endif
+
+	// Translating primitive to sceGxm one
+	gl_primitive_to_gxm(ffp_mode, prim, vertex_count);
 
 	sceneReset();
 

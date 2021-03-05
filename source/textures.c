@@ -46,10 +46,9 @@ void glGenTextures(GLsizei n, GLuint *res) {
 #endif
 
 	// Reserving a texture and returning its id if available
-	int i;
 	while (n > 0) {
 		n--;
-		i = free_texture_slots[free_tex_idx--];
+		uint16_t i = free_texture_slots[free_tex_idx--];
 		res[n] = i;
 		texture_slots[i].status = TEX_UNINITIALIZED;
 

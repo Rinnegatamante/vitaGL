@@ -885,7 +885,7 @@ void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	SceGxmPrimitiveType gxm_p;
-	gl_primitive_to_gxm(mode, gxm_p);
+	gl_primitive_to_gxm(mode, gxm_p, count);
 	sceneReset();
 
 	if (cur_program != 0)
@@ -916,7 +916,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 #endif
 
 	SceGxmPrimitiveType gxm_p;
-	gl_primitive_to_gxm(mode, gxm_p);
+	gl_primitive_to_gxm(mode, gxm_p, count);
 	sceneReset();
 
 	gpubuffer *gpu_buf = (gpubuffer *)index_array_unit;
@@ -1208,7 +1208,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 #endif
 
 	SceGxmPrimitiveType gxm_p;
-	gl_primitive_to_gxm(mode, gxm_p);
+	gl_primitive_to_gxm(mode, gxm_p, count);
 	sceneReset();
 
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
