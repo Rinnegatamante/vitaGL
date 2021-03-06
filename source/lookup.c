@@ -216,6 +216,7 @@ static const struct {
 	{"vglSetUSSEBufferSize", (void *)vglSetUSSEBufferSize},
 	{"vglSetVDMBufferSize", (void *)vglSetVDMBufferSize},
 	{"vglSetVertexBufferSize", (void *)vglSetVertexBufferSize},
+	{"vglSetVertexPoolSize", (void *)vglSetVertexPoolSize},
 	{"vglSetupRuntimeShaderCompiler", (void *)vglSetupRuntimeShaderCompiler},
 	{"vglSwapBuffers", (void *)vglSwapBuffers},
 	{"vglTexImageDepthBuffer", (void *)vglTexImageDepthBuffer},

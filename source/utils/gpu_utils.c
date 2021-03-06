@@ -208,10 +208,14 @@ void gpu_fragment_usse_free_mapped(void *addr) {
 }
 
 void *gpu_alloc_mapped_temp(size_t size) {
+#ifndef HAVE_CIRCULAR_VERTEX_POOL
 	// Allocating memblock and marking it for garbage collection
 	void *res = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 	markAsDirty(res);
 	return res;
+#else
+	return reserve_data_pool(size);
+#endif
 }
 
 int tex_format_to_bytespp(SceGxmTextureFormat format) {

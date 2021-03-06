@@ -26,7 +26,7 @@
 #define MAX_CUSTOM_SHADERS 2048 // Maximum number of linkable custom shaders
 #define MAX_CUSTOM_PROGRAMS 1024 // Maximum number of linkable custom programs
 
-#define DISABLED_ATTRIBS_POOL_SIZE (256 * 1024) // Disable attributes circular pool size in bytes
+#define DISABLED_ATTRIBS_POOL_SIZE (256 * 1024) // Disabled attributes circular pool size in bytes
 
 GLboolean log_stuffs = GL_FALSE;
 
