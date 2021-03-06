@@ -124,6 +124,23 @@ void LOG(const char *format, ...) {
 }
 #endif
 
+#ifdef HAVE_CIRCULAR_VERTEX_POOL
+#define CIRCULAR_VERTEX_POOL_SIZE_DEF (32 * 1024 * 1024) // Default size in bytes for the circular vertex pool
+static uint8_t *vertex_data_pool;
+static uint8_t *vertex_data_pool_ptr;
+static uint8_t *vertex_data_pool_limit;
+static uint32_t vertex_data_pool_size = CIRCULAR_VERTEX_POOL_SIZE_DEF;
+uint8_t *reserve_data_pool(uint32_t size) {
+	uint8_t *res = vertex_data_pool_ptr;
+	vertex_data_pool_ptr += size;
+	if (vertex_data_pool_ptr > vertex_data_pool_limit) {
+		vertex_data_pool_ptr = vertex_data_pool;
+		return vertex_data_pool_ptr;
+	}
+	return res;
+}
+#endif
+
 void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog) {
 	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
 		pid, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
@@ -264,6 +281,12 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 
 	// Init custom shaders
 	resetCustomShaders();
+
+#ifdef HAVE_CIRCULAR_VERTEX_POOL
+	vertex_data_pool = (float *)gpu_alloc_mapped(vertex_data_pool_size, VGL_MEM_RAM);
+	vertex_data_pool_ptr = vertex_data_pool;
+	vertex_data_pool_limit = (float *)((uint8_t *)vertex_data_pool + vertex_data_pool_size);
+#endif
 
 	// Init constant index buffers
 	default_idx_ptr = (uint16_t *)malloc(MAX_IDX_NUMBER * sizeof(uint16_t));
@@ -519,11 +542,13 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 
 	// Allocating a new buffer
 	gpu_buf->ptr = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf->ptr) {
 		SET_GL_ERROR(GL_OUT_OF_MEMORY)
 	}
 #endif
+
 	gpu_buf->size = size;
 	gpu_buf->used = GL_FALSE;
 
@@ -1270,4 +1295,10 @@ void vglUseExtraMem(GLboolean use) {
 
 GLboolean vglHasRuntimeShaderCompiler(void) {
 	return is_shark_online;
+}
+
+void vglSetVertexPoolSize(uint32_t size) {
+#ifdef HAVE_CIRCULAR_VERTEX_POOL
+	vertex_data_pool_size = size;
+#endif
 }

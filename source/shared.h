@@ -373,4 +373,7 @@ void change_cull_mode(void); // Updates current cull mode
 /* misc functions */
 void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height); // Converts screen coords to local space
 
+/* vitaGL.c */
+uint8_t *reserve_data_pool(uint32_t size);
+
 #endif

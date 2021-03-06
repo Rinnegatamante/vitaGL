@@ -41,6 +41,10 @@ ifeq ($(HAVE_LOG),1)
 CFLAGS  += -DENABLE_LOG
 endif
 
+ifeq ($(CIRCULAR_VERTEX_POOL),1)
+CFLAGS += -DHAVE_CIRCULAR_VERTEX_POOL
+endif
+
 all: $(TARGET).a
 
 $(TARGET).a: $(OBJS)

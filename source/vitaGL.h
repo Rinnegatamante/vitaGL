@@ -555,6 +555,7 @@ void vglSetParamBufferSize(uint32_t size);
 void vglSetUSSEBufferSize(uint32_t size);
 void vglSetVDMBufferSize(uint32_t size);
 void vglSetVertexBufferSize(uint32_t size);
+void vglSetVertexPoolSize(uint32_t size);
 void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, int32_t use_fastprecision, int32_t use_fastint);
 void vglSwapBuffers(GLboolean has_commondialog);
 void vglTexImageDepthBuffer(GLenum target);
