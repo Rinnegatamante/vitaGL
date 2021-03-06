@@ -504,10 +504,8 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 	for (j = 0; j < n; j++) {
 		if (gl_buffers[j]) {
 			gpubuffer *gpu_buf = (gpubuffer *)gl_buffers[j];
-#ifndef HAVE_CIRCULAR_VERTEX_POOL
 			if (gpu_buf->ptr != NULL)
 				markAsDirty(gpu_buf->ptr);
-#endif
 			free(gpu_buf);
 		}
 	}
@@ -534,7 +532,6 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 	}
 #endif
 
-#ifndef HAVE_CIRCULAR_VERTEX_POOL
 	// Marking previous content for deletion or deleting it straight if unused
 	if (gpu_buf->ptr) {
 		if (gpu_buf->used)
@@ -551,10 +548,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		SET_GL_ERROR(GL_OUT_OF_MEMORY)
 	}
 #endif
-#else
-	// Reserving a new buffer
-	gpu_buf->ptr = reserve_data_pool(size);
-#endif
+
 	gpu_buf->size = size;
 	gpu_buf->used = GL_FALSE;
 
@@ -582,23 +576,19 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	void *old_data = gpu_buf->ptr;
-#ifndef HAVE_CIRCULAR_VERTEX_POOL
+
 	// Marking previous content for deletion
 	markAsDirty(gpu_buf->ptr);
 
 	// Allocating a new buffer
 	gpu_buf->ptr = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-#else
-	// Reserving a new buffer
-	gpu_buf->ptr = reserve_data_pool(size);
-#endif
+
 	// Copying up previous data combined to modified data
 	if (offset > 0)
-		sceClibMemcpy(gpu_buf->ptr, old_data, offset);
+		sceClibMemcpy(gpu_buf->ptr, frame_purge_list[frame_purge_idx][frame_elem_purge_idx - 1], offset);
 	sceClibMemcpy((uint8_t *)gpu_buf->ptr + offset, data, size);
 	if (gpu_buf->size - size - offset > 0)
-		sceClibMemcpy((uint8_t *)gpu_buf->ptr + offset + size, (uint8_t *)old_data + offset + size, gpu_buf->size - size - offset);
+		sceClibMemcpy((uint8_t *)gpu_buf->ptr + offset + size, (uint8_t *)frame_purge_list[frame_purge_idx][frame_elem_purge_idx - 1] + offset + size, gpu_buf->size - size - offset);
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor) {
