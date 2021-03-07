@@ -32,7 +32,7 @@
 
 static uint32_t vertex_count = 0; // Vertex counter for vertex list
 static SceGxmPrimitiveType prim; // Current in use primitive for rendering
-GLboolean prim_is_quad = GL_FALSE; // Flag for when GL_QUADS primitive is used
+GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not supported natively by sceGxm is used
 
 typedef struct {
 	vector2f uv;
@@ -1070,8 +1070,11 @@ void glEnd(void) {
 	// Restoring original attributes state settings
 	ffp_vertex_attrib_state = orig_state;
 
-	if (prim_is_quad)
-		sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_quads_idx_ptr, (vertex_count / 2) * 3);
+	if (prim_is_non_native)
+		if (prim == SCE_GXM_PRIMITIVE_TRIANGLES) // GL_QUADS
+			sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_quads_idx_ptr, (vertex_count / 2) * 3);
+		else // GL_LINE_STRIP
+			sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_line_strips_idx_ptr, (vertex_count - 1) * 2);
 	else
 		sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr, vertex_count);
 

@@ -49,7 +49,15 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#include <psp2/appmgr.h>
+#include <psp2/common_dialog.h>
+#include <psp2/display.h>
 #include <psp2/gxm.h>
+#include <psp2/kernel/clib.h>
+#include <psp2/kernel/sysmem.h>
+#include <psp2/sharedfb.h>
 
 #include "vitaGL.h"
 
@@ -60,13 +68,13 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #include "state.h"
 #include "texture_callbacks.h"
 
-extern GLboolean prim_is_quad; // Flag for when GL_QUADS primitive is used
+extern GLboolean prim_is_non_native; // Flag for when a primitive not supported natively by sceGxm is used
 
 // Translates a GL primitive enum to its sceGxm equivalent
 #ifndef SKIP_ERROR_HANDLING
 #define gl_primitive_to_gxm(x, p, c) \
 	if (c <= 0) return; \
-	prim_is_quad = GL_FALSE; \
+	prim_is_non_native = GL_FALSE; \
 	switch (x) { \
 	case GL_POINTS: \
 		p = SCE_GXM_PRIMITIVE_POINTS; \
@@ -78,6 +86,13 @@ extern GLboolean prim_is_quad; // Flag for when GL_QUADS primitive is used
 		p = SCE_GXM_PRIMITIVE_LINES; \
 		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
+		break; \
+	case GL_LINE_STRIP: \
+		if (c < 2) return; \
+		p = SCE_GXM_PRIMITIVE_LINES; \
+		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
+		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
+		prim_is_non_native = GL_TRUE; \
 		break; \
 	case GL_TRIANGLES: \
 		if (c % 3 || no_polygons_mode) \
@@ -98,14 +113,14 @@ extern GLboolean prim_is_quad; // Flag for when GL_QUADS primitive is used
 		if (c % 4 || no_polygons_mode) \
 			return; \
 		p = SCE_GXM_PRIMITIVE_TRIANGLES; \
-		prim_is_quad = GL_TRUE; \
+		prim_is_non_native = GL_TRUE; \
 		break; \
 	default: \
 		SET_GL_ERROR(GL_INVALID_ENUM) \
 	}
 #else
 #define gl_primitive_to_gxm(x, p, c) \
-	prim_is_quad = GL_FALSE; \
+	prim_is_non_native = GL_FALSE; \
 	switch (x) { \
 	case GL_POINTS: \
 		p = SCE_GXM_PRIMITIVE_POINTS; \
@@ -116,6 +131,12 @@ extern GLboolean prim_is_quad; // Flag for when GL_QUADS primitive is used
 		p = SCE_GXM_PRIMITIVE_LINES; \
 		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
+		break; \
+	case GL_LINE_STRIP: \
+		p = SCE_GXM_PRIMITIVE_LINES; \
+		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
+		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
+		prim_is_non_native = GL_TRUE; \
 		break; \
 	case GL_TRIANGLES: \
 		p = SCE_GXM_PRIMITIVE_TRIANGLES; \
@@ -128,7 +149,7 @@ extern GLboolean prim_is_quad; // Flag for when GL_QUADS primitive is used
 		break; \
 	case GL_QUADS: \
 		p = SCE_GXM_PRIMITIVE_TRIANGLES; \
-		prim_is_quad = GL_TRUE; \
+		prim_is_non_native = GL_TRUE; \
 		break; \
 	default: \
 		SET_GL_ERROR(GL_INVALID_ENUM) \
@@ -205,6 +226,7 @@ extern SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
 extern GLboolean is_rendering_display; // Flag for when we're rendering without a framebuffer object
 extern uint16_t *default_idx_ptr; // sceGxm mapped progressive indices buffer
 extern uint16_t *default_quads_idx_ptr; // sceGxm mapped progressive indices buffer for quads
+extern uint16_t *default_line_strips_idx_ptr; // sceGxm mapped progressive indices buffer for line strips
 extern uint16_t free_texture_slots[TEXTURES_NUM - 1]; // Available free texture slots
 
 extern int legacy_pool_size; // Mempool size for GL1 immediate draw pipeline
