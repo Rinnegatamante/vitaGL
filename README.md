@@ -11,6 +11,7 @@ If you already have a newlib sbrk replacement in your app (eg. RetroArch), use i
 `SOFTFP_ABI=1` Compiles the library in soft floating point compatibility mode.<br>
 `HAVE_UNFLIPPED_FBOS=1` Framebuffers objects won't be internally flipped to match OpenGL standards.<br>
 `SHARED_RENDERTARGETS=1` Makes small framebuffers objects use shared rendertargets instead of dedicated ones.<br>
+`CIRCULAR_VERTEX_POOL=1` Makes temporary data buffers being handled with a circular pool.<br>
 # Samples
 
 You can find samples in the *samples* folder in this repository.

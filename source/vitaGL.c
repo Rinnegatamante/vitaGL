@@ -283,9 +283,9 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	resetCustomShaders();
 
 #ifdef HAVE_CIRCULAR_VERTEX_POOL
-	vertex_data_pool = (float *)gpu_alloc_mapped(vertex_data_pool_size, VGL_MEM_RAM);
+	vertex_data_pool = gpu_alloc_mapped(vertex_data_pool_size, VGL_MEM_RAM);
 	vertex_data_pool_ptr = vertex_data_pool;
-	vertex_data_pool_limit = (float *)((uint8_t *)vertex_data_pool + vertex_data_pool_size);
+	vertex_data_pool_limit = (uint8_t *)vertex_data_pool + vertex_data_pool_size;
 #endif
 
 	// Init constant index buffers

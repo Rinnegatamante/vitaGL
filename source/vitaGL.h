@@ -239,6 +239,8 @@ extern "C" {
 #define GL_BGRA                                      0x80E1
 #define GL_COLOR_INDEX8_EXT                          0x80E5
 #define GL_CLAMP_TO_EDGE                             0x812F
+#define GL_MAJOR_VERSION                             0x821B
+#define GL_MINOR_VERSION                             0x821C
 #define GL_RG                                        0x8227
 #define GL_UNSIGNED_SHORT_5_6_5                      0x8363
 #define GL_MIRRORED_REPEAT                           0x8370
@@ -304,6 +306,7 @@ extern "C" {
 #define GL_INFO_LOG_LENGTH                           0x8B84
 #define GL_ATTACHED_SHADERS                          0x8B85
 #define GL_ACTIVE_ATTRIBUTES                         0x8B89
+#define GL_SHADING_LANGUAGE_VERSION                  0x8B8C
 #define GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG           0x8C00
 #define GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG           0x8C01
 #define GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG          0x8C02
