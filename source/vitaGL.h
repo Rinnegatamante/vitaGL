@@ -240,6 +240,7 @@ extern "C" {
 #define GL_CLAMP_TO_EDGE                             0x812F
 #define GL_MAJOR_VERSION                             0x821B
 #define GL_MINOR_VERSION                             0x821C
+#define GL_NUM_EXTENSIONS                            0x821D
 #define GL_RG                                        0x8227
 #define GL_UNSIGNED_SHORT_5_6_5                      0x8363
 #define GL_MIRRORED_REPEAT                           0x8370
@@ -432,6 +433,7 @@ void glGetProgramiv(GLuint program, GLenum pname, GLint *params);
 void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 void glGetShaderiv(GLuint handle, GLenum pname, GLint *params);
 const GLubyte *glGetString(GLenum name);
+const GLubyte *glGetStringi(GLenum name, GLuint index);
 GLint glGetUniformLocation(GLuint prog, const GLchar *name);
 void glHint(GLenum target, GLenum mode);
 void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer);

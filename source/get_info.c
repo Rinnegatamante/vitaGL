@@ -21,14 +21,32 @@
  * Implementation for functions returning info to end user
  */
 
+#include <string.h>
+
 #include "shared.h"
+
+#define NUM_EXTENSIONS 11 // Number of supported extensions
 
 // Constants returned by glGetString
 static GLubyte *vendor = "Rinnegatamante";
 static GLubyte *renderer = "SGX543MP4+";
 static GLubyte *version = "OpenGL ES 2 VitaGL";
 static GLubyte *glsl_version = "2.00 NVIDIA via Cg compiler";
-static GLubyte *extensions = "GL_OES_vertex_half_float VGL_EXT_gpu_objects_array VGL_EXT_gxp_shaders GL_OES_texture_npot GL_OES_rgb8_rgba8 GL_OES_depth_texture GL_EXT_texture_format_BGRA8888 GL_EXT_read_format_bgra GL_EXT_texture_compression_dxt1 GL_EXT_texture_compression_dxt3 GL_EXT_texture_compression_dxt5 GL_EXT_texture_compression_s3tc GL_IMG_texture_compression_pvrtc";
+
+static GLubyte *extensions[NUM_EXTENSIONS] = {
+	"GL_OES_vertex_half_float",
+	"GL_OES_texture_npot",
+	"GL_OES_rgb8_rgba8",
+	"GL_OES_depth_texture",
+	"GL_EXT_texture_format_BGRA8888",
+	"GL_EXT_read_format_bgra",
+	"GL_EXT_texture_compression_dxt1",
+	"GL_EXT_texture_compression_dxt3",
+	"GL_EXT_texture_compression_dxt5",
+	"GL_EXT_texture_compression_s3tc",
+	"GL_IMG_texture_compression_pvrtc"
+};
+static GLubyte *extension = NULL;
 
 /*
  * ------------------------------
@@ -45,9 +63,31 @@ const GLubyte *glGetString(GLenum name) {
 	case GL_VERSION: // openGL Version
 		return version;
 	case GL_EXTENSIONS: // Supported extensions
-		return extensions;
+		if (!extension) {
+			int i, size = 0;
+			for (i = 0; i < NUM_EXTENSIONS; i++) {
+				size += strlen(extensions[i]) + 1;
+			}
+			extension = malloc(size);
+			extension[0] = 0;
+			for (i = 0; i < NUM_EXTENSIONS; i++) {
+				sprintf(extension, "%s%s ", extension, extensions[i]);
+			}
+			extension[size] = 0;
+		}
+		return extension;
 	case GL_SHADING_LANGUAGE_VERSION: // Supported shading language version
 		return glsl_version;
+	default:
+		vgl_error = GL_INVALID_ENUM;
+		return NULL;
+	}
+}
+
+const GLubyte *glGetStringi(GLenum name, GLuint index) {
+	switch (name) {
+	case GL_EXTENSIONS:
+		return extensions[index];
 	default:
 		vgl_error = GL_INVALID_ENUM;
 		return NULL;
@@ -222,6 +262,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		break;
 	case GL_MINOR_VERSION:
 		data[0] = 0;
+		break;
+	case GL_NUM_EXTENSIONS:
+		data[0] = NUM_EXTENSIONS;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
