@@ -23,7 +23,6 @@
 extern "C" {
 #endif
 
-#include <vitasdk.h>
 #include <vitashark.h>
 
 // clang-format off

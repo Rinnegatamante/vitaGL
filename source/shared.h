@@ -49,7 +49,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <vitasdk.h>
+#include <psp2/gxm.h>
 
 #include "vitaGL.h"
 
