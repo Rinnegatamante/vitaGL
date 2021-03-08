@@ -165,13 +165,6 @@ static void display_queue_callback(const void *callbackData) {
 		sceDisplayWaitVblankStart();
 }
 
-void releaseShaderCompiler(void) {
-	if (is_shark_online) {
-		shark_end();
-		is_shark_online = GL_FALSE;
-	}
-}
-
 GLboolean startShaderCompiler(void) {
 	is_shark_online = shark_init(NULL) >= 0;
 	return is_shark_online;
@@ -269,7 +262,7 @@ void termGxmContext(void) {
 	}
 
 	// Shutting down runtime shader compiler
-	releaseShaderCompiler();
+	glReleaseShaderCompiler();
 }
 
 void createDisplayRenderTarget(void) {
@@ -619,5 +612,8 @@ void glFinish(void) {
 }
 
 void glReleaseShaderCompiler(void) {
-	releaseShaderCompiler();
+	if (is_shark_online) {
+		shark_end();
+		is_shark_online = GL_FALSE;
+	}
 }

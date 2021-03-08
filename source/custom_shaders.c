@@ -120,6 +120,29 @@ float *reserve_attrib_pool(uint8_t count) {
 	return res;
 }
 
+GLenum gxm_vd_fmt_to_gl(SceGxmAttributeFormat fmt) {
+	switch (fmt) {
+	case SCE_GXM_ATTRIBUTE_FORMAT_F16:
+		return GL_HALF_FLOAT;
+	case SCE_GXM_ATTRIBUTE_FORMAT_F32:
+		return GL_FLOAT;
+	case SCE_GXM_ATTRIBUTE_FORMAT_S16:
+	case SCE_GXM_ATTRIBUTE_FORMAT_S16N:
+		return GL_SHORT;
+	case SCE_GXM_ATTRIBUTE_FORMAT_U16:
+	case SCE_GXM_ATTRIBUTE_FORMAT_U16N:
+		return GL_UNSIGNED_SHORT;
+	case SCE_GXM_ATTRIBUTE_FORMAT_S8:
+	case SCE_GXM_ATTRIBUTE_FORMAT_S8N:
+		return GL_BYTE;
+	case SCE_GXM_ATTRIBUTE_FORMAT_U8:
+	case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
+		return GL_UNSIGNED_BYTE;
+	default:
+		break;
+	}
+}
+
 void resetCustomShaders(void) {
 	// Init custom shaders
 	int i;
@@ -1224,6 +1247,70 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 	}
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
+}
+
+void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {
+	switch(pname) {
+	case GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING:
+		params[0] = (vertex_attrib_state & (1 << index)) ? vertex_attrib_vbo[index] : 0;
+		break;
+	case GL_VERTEX_ATTRIB_ARRAY_ENABLED:
+		params[0] = (vertex_attrib_state & (1 << index)) ? GL_TRUE : GL_FALSE;
+		break;
+	case GL_VERTEX_ATTRIB_ARRAY_SIZE:
+		params[0] = (vertex_attrib_state & (1 << index)) ? vertex_attrib_config[index].componentCount : vertex_attrib_size[index];
+		break;
+	case GL_VERTEX_ATTRIB_ARRAY_STRIDE:
+		params[0] = (vertex_attrib_state & (1 << index)) ? vertex_stream_config[index].stride : 0;
+		break;
+	case GL_VERTEX_ATTRIB_ARRAY_TYPE:
+		params[0] = (vertex_attrib_state & (1 << index)) ? gxm_vd_fmt_to_gl(vertex_attrib_config[index].format) : GL_FLOAT;
+		break;
+	case GL_VERTEX_ATTRIB_ARRAY_NORMALIZED:
+		params[0] = (vertex_attrib_state & (1 << index)) ? (vertex_attrib_config[index].format >= SCE_GXM_ATTRIBUTE_FORMAT_U8N && vertex_attrib_config[index].format <= SCE_GXM_ATTRIBUTE_FORMAT_S16N): GL_FALSE;
+		break;
+	case GL_CURRENT_VERTEX_ATTRIB:
+		params[0] = vertex_attrib_value[index][0];
+		params[1] = vertex_attrib_size[index] > 1 ? vertex_attrib_value[index][1] : 0;
+		params[2] = vertex_attrib_size[index] > 2 ? vertex_attrib_value[index][2] : 0;
+		params[3] = vertex_attrib_size[index] > 3 ? vertex_attrib_value[index][3] : 1;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+}
+
+void glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params) {
+	switch(pname) {
+	case GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING:
+		params[0] = (vertex_attrib_state & (1 << index)) ? vertex_attrib_vbo[index] : 0;
+		break;
+	case GL_VERTEX_ATTRIB_ARRAY_ENABLED:
+		params[0] = (vertex_attrib_state & (1 << index)) ? GL_TRUE : GL_FALSE;
+		break;
+	case GL_VERTEX_ATTRIB_ARRAY_SIZE:
+		params[0] = (vertex_attrib_state & (1 << index)) ? vertex_attrib_config[index].componentCount : vertex_attrib_size[index];
+		break;
+	case GL_VERTEX_ATTRIB_ARRAY_STRIDE:
+		params[0] = (vertex_attrib_state & (1 << index)) ? vertex_stream_config[index].stride : 0;
+		break;
+	case GL_VERTEX_ATTRIB_ARRAY_TYPE:
+		params[0] = (vertex_attrib_state & (1 << index)) ? gxm_vd_fmt_to_gl(vertex_attrib_config[index].format) : GL_FLOAT;
+		break;
+	case GL_VERTEX_ATTRIB_ARRAY_NORMALIZED:
+		params[0] = (vertex_attrib_state & (1 << index)) ? (vertex_attrib_config[index].format >= SCE_GXM_ATTRIBUTE_FORMAT_U8N && vertex_attrib_config[index].format <= SCE_GXM_ATTRIBUTE_FORMAT_S16N): GL_FALSE;
+		break;
+	case GL_CURRENT_VERTEX_ATTRIB:
+		params[0] = vertex_attrib_value[index][0];
+		params[1] = vertex_attrib_size[index] > 1 ? vertex_attrib_value[index][1] : 0;
+		params[2] = vertex_attrib_size[index] > 2 ? vertex_attrib_value[index][2] : 0;
+		params[3] = vertex_attrib_size[index] > 3 ? vertex_attrib_value[index][3] : 1;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
 }
 
 void glVertexAttrib1f(GLuint index, GLfloat v0) {
