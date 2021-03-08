@@ -1201,6 +1201,17 @@ void glDisableVertexAttribArray(GLuint index) {
 	vertex_attrib_state &= ~(1 << index);
 }
 
+void glGetVertexAttribPointerv(GLuint index, GLenum pname, void **pointer) {
+#ifndef SKIP_ERROR_HANDLING
+	if (pname != GL_VERTEX_ATTRIB_ARRAY_POINTER) {
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	} else if (index >= GL_MAX_VERTEX_ATTRIBS) {
+		SET_GL_ERROR(GL_INVALID_VALUE);
+	}
+#endif
+	pointer[0] = (void *)vertex_attrib_offsets[index];
+}
+
 void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer) {
 #ifndef SKIP_ERROR_HANDLING
 	if (size < 1 || size > 4 || stride < 0 || index >= GL_MAX_VERTEX_ATTRIBS) {
@@ -1250,6 +1261,11 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 }
 
 void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {
+#ifndef SKIP_ERROR_HANDLING
+	if (index >= GL_MAX_VERTEX_ATTRIBS) {
+		SET_GL_ERROR(GL_INVALID_VALUE);
+	}
+#endif
 	switch(pname) {
 	case GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING:
 		params[0] = (vertex_attrib_state & (1 << index)) ? vertex_attrib_vbo[index] : 0;
@@ -1267,9 +1283,14 @@ void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {
 		params[0] = (vertex_attrib_state & (1 << index)) ? gxm_vd_fmt_to_gl(vertex_attrib_config[index].format) : GL_FLOAT;
 		break;
 	case GL_VERTEX_ATTRIB_ARRAY_NORMALIZED:
-		params[0] = (vertex_attrib_state & (1 << index)) ? (vertex_attrib_config[index].format >= SCE_GXM_ATTRIBUTE_FORMAT_U8N && vertex_attrib_config[index].format <= SCE_GXM_ATTRIBUTE_FORMAT_S16N): GL_FALSE;
+		params[0] = (vertex_attrib_state & (1 << index)) ? (vertex_attrib_config[index].format >= SCE_GXM_ATTRIBUTE_FORMAT_U8N && vertex_attrib_config[index].format <= SCE_GXM_ATTRIBUTE_FORMAT_S16N) : GL_FALSE;
 		break;
 	case GL_CURRENT_VERTEX_ATTRIB:
+#ifndef SKIP_ERROR_HANDLING
+		if (index == 0) {
+			SET_GL_ERROR(GL_INVALID_OPERATION);
+		}
+#endif
 		params[0] = vertex_attrib_value[index][0];
 		params[1] = vertex_attrib_size[index] > 1 ? vertex_attrib_value[index][1] : 0;
 		params[2] = vertex_attrib_size[index] > 2 ? vertex_attrib_value[index][2] : 0;

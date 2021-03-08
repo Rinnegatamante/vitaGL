@@ -114,6 +114,7 @@ static const struct {
 	{"glGetUniformLocation", (void *)glGetUniformLocation},
 	{"glGetVertexAttribfv", (void *)glGetVertexAttribfv},
 	{"glGetVertexAttribiv", (void *)glGetVertexAttribiv},
+	{"glGetVertexAttribPointerv", (void *)glGetVertexAttribPointerv},
 	{"glInterleavedArrays", (void *)glInterleavedArrays},
 	{"glIsEnabled", (void *)glIsEnabled},
 	{"glIsFramebuffer", (void *)glIsFramebuffer},

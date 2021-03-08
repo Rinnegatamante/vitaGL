@@ -445,6 +445,7 @@ const GLubyte *glGetStringi(GLenum name, GLuint index);
 GLint glGetUniformLocation(GLuint prog, const GLchar *name);
 void glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params);
 void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params);
+void glGetVertexAttribPointerv(GLuint index, GLenum pname, void **pointer);
 void glHint(GLenum target, GLenum mode);
 void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer);
 GLboolean glIsEnabled(GLenum cap);
