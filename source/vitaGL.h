@@ -144,6 +144,7 @@ extern "C" {
 #define GL_UNSIGNED_BYTE                             0x1401
 #define GL_SHORT                                     0x1402
 #define GL_UNSIGNED_SHORT                            0x1403
+#define GL_INT                                       0x1404
 #define GL_FLOAT                                     0x1406
 #define GL_HALF_FLOAT                                0x140B
 #define GL_FIXED                                     0x140C
@@ -313,6 +314,9 @@ extern "C" {
 #define GL_FLOAT_VEC2                                0x8B50
 #define GL_FLOAT_VEC3                                0x8B51
 #define GL_FLOAT_VEC4                                0x8B52
+#define GL_INT_VEC2                                  0x8B53
+#define GL_INT_VEC3                                  0x8B54
+#define GL_INT_VEC4                                  0x8B55
 #define GL_FLOAT_MAT2                                0x8B5A
 #define GL_FLOAT_MAT3                                0x8B5B
 #define GL_FLOAT_MAT4                                0x8B5C
@@ -320,6 +324,7 @@ extern "C" {
 #define GL_LINK_STATUS                               0x8B82
 #define GL_INFO_LOG_LENGTH                           0x8B84
 #define GL_ATTACHED_SHADERS                          0x8B85
+#define GL_ACTIVE_UNIFORMS                           0x8B86
 #define GL_ACTIVE_ATTRIBUTES                         0x8B89
 #define GL_SHADING_LANGUAGE_VERSION                  0x8B8C
 #define GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG           0x8C00
@@ -439,6 +444,7 @@ void glGenerateMipmap(GLenum target);
 void glGenFramebuffers(GLsizei n, GLuint *ids);
 void glGenTextures(GLsizei n, GLuint *textures);
 void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
+void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
 GLint glGetAttribLocation(GLuint prog, const GLchar *name);
 void glGetBooleanv(GLenum pname, GLboolean *params);
 void glGetFloatv(GLenum pname, GLfloat *data);

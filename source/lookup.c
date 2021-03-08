@@ -101,6 +101,7 @@ static const struct {
 	{"glGenFramebuffers", (void *)glGenFramebuffers},
 	{"glGenTextures", (void *)glGenTextures},
 	{"glGetActiveAttrib", (void *)glGetActiveAttrib},
+	{"glGetActiveUniform", (void *)glGetActiveUniform},
 	{"glGetAttribLocation", (void *)glGetAttribLocation},
 	{"glGetBooleanv", (void *)glGetBooleanv},
 	{"glGetFloatv", (void *)glGetFloatv},

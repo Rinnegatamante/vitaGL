@@ -139,7 +139,7 @@ GLenum gxm_vd_fmt_to_gl(SceGxmAttributeFormat fmt) {
 	}
 }
 
-GLenum gxm_attr_type_to_gl(uint32_t size, uint32_t num) {
+GLenum gxm_attr_type_to_gl(uint8_t size, uint8_t num) {
 	switch (size * num) {
 	case 1:
 		return GL_FLOAT;
@@ -153,6 +153,42 @@ GLenum gxm_attr_type_to_gl(uint32_t size, uint32_t num) {
 		return GL_FLOAT_MAT3;
 	case 16:
 		return GL_FLOAT_MAT4;
+	default:
+		break;
+	}
+}
+
+GLenum gxm_unif_type_to_gl(SceGxmParameterType type, uint8_t count) {
+	switch (type) {
+	case SCE_GXM_PARAMETER_TYPE_F32:
+	case SCE_GXM_PARAMETER_TYPE_F16:
+	case SCE_GXM_PARAMETER_TYPE_C10:
+		switch (count) {
+		case 1:
+			return GL_FLOAT;
+		case 2:
+			return GL_FLOAT_VEC2;
+		case 3:
+			return GL_FLOAT_VEC3;
+		case 4:
+			return GL_FLOAT_VEC4;
+		default:
+			break;
+		}
+	case SCE_GXM_PARAMETER_TYPE_U32:
+	case SCE_GXM_PARAMETER_TYPE_S32:
+		switch (count) {
+		case 1:
+			return GL_INT;
+		case 2:
+			return GL_INT_VEC2;
+		case 3:
+			return GL_INT_VEC3;
+		case 4:
+			return GL_INT_VEC4;
+		default:
+			break;
+		}
 	default:
 		break;
 	}
@@ -828,6 +864,20 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 	case GL_ACTIVE_ATTRIBUTES:
 		*params = p->attr_num;
 		break;
+	case GL_ACTIVE_UNIFORMS:
+		i = 0;
+		uniform *u = p->vert_uniforms;
+		while (u) {
+			i++;
+			u = u->chain;
+		}
+		u = p->frag_uniforms;
+		while (u) {
+			i++;
+			u = u->chain;
+		}
+		*params = i;
+		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
@@ -1456,13 +1506,41 @@ void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *leng
 	
 	// Copying attribute name
 	const char *pname = sceGxmProgramParameterGetName(param);
-	bufSize = strlen(name) + 1 < bufSize ? strlen(name) : (bufSize - 1);
+	bufSize = strlen(pname) + 1 < bufSize ? strlen(pname) : (bufSize - 1);
 	if (length) *length = bufSize;
 	strncpy(name, pname, bufSize);
 	name[bufSize + 1] = 0;
 	
 	*type = gxm_attr_type_to_gl(sceGxmProgramParameterGetComponentCount(param), sceGxmProgramParameterGetArraySize(param));
 	*size = 1;
+}
+
+void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name) {
+	// Grabbing passed program
+	program *p = &progs[prog - 1];
+	
+	uniform *u = p->vert_uniforms;
+	while (index && u) {
+		u = u->chain;
+		index--;
+	}
+	if (index) {
+		u = p->frag_uniforms;
+		while (index && u) {
+			u = u->chain;
+			index--;
+		}
+	}
+	
+	// Copying attribute name
+	const char *pname = sceGxmProgramParameterGetName(u->ptr);
+	bufSize = strlen(pname) + 1 < bufSize ? strlen(pname) : (bufSize - 1);
+	if (length) *length = bufSize;
+	strncpy(name, pname, bufSize);
+	name[bufSize + 1] = 0;
+	
+	*type = gxm_unif_type_to_gl(sceGxmProgramParameterGetType(u->ptr), sceGxmProgramParameterGetComponentCount(u->ptr));
+	*size = sceGxmProgramParameterGetArraySize(u->ptr);
 }
 
 /*
