@@ -736,19 +736,19 @@ GLuint glCreateProgram(void) {
 	for (i = 1; i <= MAX_CUSTOM_PROGRAMS; i++) {
 		// Program slot found, reserving and initializing it
 		if (!(progs[i - 1].status)) {
-			res = i;
-			progs[i - 1].status = PROG_UNLINKED;
-			progs[i - 1].attr_num = 0;
-			progs[i - 1].stream_num = 0;
-			progs[i - 1].attr_idx = 0;
-			progs[i - 1].wvp = NULL;
-			progs[i - 1].vshader = NULL;
-			progs[i - 1].fshader = NULL;
-			progs[i - 1].vert_uniforms = NULL;
-			progs[i - 1].frag_uniforms = NULL;
-			progs[i - 1].attr_highest_idx = 1;
+			res = i--;
+			progs[i].status = PROG_UNLINKED;
+			progs[i].attr_num = 0;
+			progs[i].stream_num = 0;
+			progs[i].attr_idx = 0;
+			progs[i].wvp = NULL;
+			progs[i].vshader = NULL;
+			progs[i].fshader = NULL;
+			progs[i].vert_uniforms = NULL;
+			progs[i].frag_uniforms = NULL;
+			progs[i].attr_highest_idx = 1;
 			for (j = 0; j < GL_MAX_VERTEX_ATTRIBS; j++) {
-				progs[i - 1].attr[j].regIndex = 0xDEAD;
+				progs[i].attr[j].regIndex = 0xDEAD;
 			}
 			break;
 		}
@@ -1263,7 +1263,7 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {
 #ifndef SKIP_ERROR_HANDLING
 	if (index >= GL_MAX_VERTEX_ATTRIBS) {
-		SET_GL_ERROR(GL_INVALID_VALUE);
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 	switch(pname) {
@@ -1288,7 +1288,7 @@ void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {
 	case GL_CURRENT_VERTEX_ATTRIB:
 #ifndef SKIP_ERROR_HANDLING
 		if (index == 0) {
-			SET_GL_ERROR(GL_INVALID_OPERATION);
+			SET_GL_ERROR(GL_INVALID_OPERATION)
 		}
 #endif
 		params[0] = vertex_attrib_value[index][0];
@@ -1303,6 +1303,11 @@ void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {
 }
 
 void glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params) {
+#ifndef SKIP_ERROR_HANDLING
+	if (index >= GL_MAX_VERTEX_ATTRIBS) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
 	switch(pname) {
 	case GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING:
 		params[0] = (vertex_attrib_state & (1 << index)) ? vertex_attrib_vbo[index] : 0;
@@ -1323,6 +1328,11 @@ void glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params) {
 		params[0] = (vertex_attrib_state & (1 << index)) ? (vertex_attrib_config[index].format >= SCE_GXM_ATTRIBUTE_FORMAT_U8N && vertex_attrib_config[index].format <= SCE_GXM_ATTRIBUTE_FORMAT_S16N): GL_FALSE;
 		break;
 	case GL_CURRENT_VERTEX_ATTRIB:
+#ifndef SKIP_ERROR_HANDLING
+		if (index == 0) {
+			SET_GL_ERROR(GL_INVALID_OPERATION)
+		}
+#endif
 		params[0] = vertex_attrib_value[index][0];
 		params[1] = vertex_attrib_size[index] > 1 ? vertex_attrib_value[index][1] : 0;
 		params[2] = vertex_attrib_size[index] > 2 ? vertex_attrib_value[index][2] : 0;
