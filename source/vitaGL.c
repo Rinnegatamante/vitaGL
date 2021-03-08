@@ -91,7 +91,6 @@ blend_config blend_info; // Current blend info mode
 SceGxmMultisampleMode msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
 int legacy_pool_size = 0; // Mempool size for GL1 immediate draw pipeline
 
-extern GLboolean use_vram;
 extern GLboolean use_vram_for_usse;
 
 static SceGxmColorMask blend_color_mask = SCE_GXM_COLOR_MASK_ALL; // Current in-use color mask (glColorMask)

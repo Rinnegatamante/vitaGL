@@ -296,6 +296,7 @@ extern void *frame_rt_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_RENDERTARGETS_LIS
 extern int frame_purge_idx; // Index for currently populatable purge list
 extern int frame_elem_purge_idx; // Index for currently populatable purge list element
 extern int frame_rt_purge_idx; // Index for currently populatable purge list rendertarget
+extern GLboolean use_vram; // Flag for VRAM usage for allocations
 
 // Macro to mark a pointer or a rendertarget as dirty for garbage collection
 #define markAsDirty(x) frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x

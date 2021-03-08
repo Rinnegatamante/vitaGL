@@ -28,8 +28,6 @@
 
 #define DISABLED_ATTRIBS_POOL_SIZE (256 * 1024) // Disabled attributes circular pool size in bytes
 
-GLboolean log_stuffs = GL_FALSE;
-
 // Internal stuffs
 GLboolean use_shark = GL_TRUE; // Flag to check if vitaShaRK should be initialized at vitaGL boot
 GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status
@@ -48,8 +46,6 @@ static SceGxmVertexStream temp_streams[GL_MAX_VERTEX_ATTRIBS];
 static unsigned short orig_stride[GL_MAX_VERTEX_ATTRIBS];
 static SceGxmAttributeFormat orig_fmt[GL_MAX_VERTEX_ATTRIBS];
 static unsigned char orig_size[GL_MAX_VERTEX_ATTRIBS];
-
-extern GLboolean use_vram;
 
 // Internal runtime shader compiler settings
 int32_t compiler_fastmath = GL_TRUE;

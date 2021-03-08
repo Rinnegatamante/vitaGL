@@ -33,20 +33,11 @@
 #endif
 
 // VRAM usage setting
-uint8_t use_vram = 0;
-uint8_t use_vram_for_usse = 0;
+uint8_t use_vram = GL_FALSE;
+uint8_t use_vram_for_usse = GL_FALSE;
 
 // Newlib mempool usage setting
 GLboolean use_extra_mem = GL_TRUE;
-
-// vitaGL memory pool setup
-static void *pool_addr = NULL;
-static unsigned int pool_index = 0;
-static unsigned int pool_size = 0;
-
-// USSE memory settings
-vglMemType frag_usse_type;
-vglMemType vert_usse_type;
 
 // Taken from here: https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
 uint32_t nearest_po2(uint32_t val) {
