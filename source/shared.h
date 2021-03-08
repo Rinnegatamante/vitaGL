@@ -357,6 +357,7 @@ void startShaderPatcher(void); // Creates a shader patcher instance
 void stopShaderPatcher(void); // Destroys a shader patcher instance
 void waitRenderingDone(void); // Waits for rendering to be finished
 void sceneReset(void); // Resets drawing scene if required
+GLboolean startShaderCompiler(void); // Starts a shader compiler instance
 
 /* tests.c */
 void change_depth_write(SceGxmDepthWriteMode mode); // Changes current in use depth write mode

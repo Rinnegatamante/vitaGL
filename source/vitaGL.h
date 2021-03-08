@@ -458,6 +458,7 @@ void glPolygonOffset(GLfloat factor, GLfloat units);
 void glPopMatrix(void);
 void glPushMatrix(void);
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data);
+void glReleaseShaderCompiler(void);
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);

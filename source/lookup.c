@@ -133,6 +133,7 @@ static const struct {
 	{"glPopMatrix", (void *)glPopMatrix},
 	{"glPushMatrix", (void *)glPushMatrix},
 	{"glReadPixels", (void *)glReadPixels},
+	{"glReleaseShaderCompiler", (void *)glReleaseShaderCompiler},
 	{"glRotatef", (void *)glRotatef},
 	{"glScalef", (void *)glScalef},
 	{"glScissor", (void *)glScissor},

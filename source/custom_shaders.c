@@ -625,9 +625,6 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	if (!is_shark_online) {
-		SET_GL_ERROR(GL_INVALID_OPERATION)
-	}
 
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
@@ -650,8 +647,8 @@ void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, c
 
 uint8_t shader_idxs = 0;
 void glCompileShader(GLuint handle) {
-	// If vitaShaRK is not enabled, we just error out
-	if (!is_shark_online) {
+	// If vitaShaRK is not enabled, we try to initialize it
+	if (!is_shark_online && !startShaderCompiler()) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 

@@ -238,6 +238,10 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 
 	// Checking if vertex shader requires a recompilation
 	if (ffp_dirty_vert) {
+		// Restarting vitaShaRK if we released it before
+		if (!is_shark_online)
+			startShaderCompiler();
+			
 		// Compiling the new shader
 		char vshader[8192];
 		sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.has_texture, mask.has_colors, mask.lights_num);
@@ -332,6 +336,10 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 
 	// Checking if fragment shader requires a recompilation
 	if (ffp_dirty_frag) {
+		// Restarting vitaShaRK if we released it before
+		if (!is_shark_online)
+			startShaderCompiler();
+		
 		// Compiling the new shader
 		char fshader[8192];
 		sprintf(fshader, ffp_frag_src, alpha_op, mask.has_texture, mask.has_colors, mask.fog_mode, mask.texenv_mode);

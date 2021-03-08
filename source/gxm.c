@@ -165,14 +165,25 @@ static void display_queue_callback(const void *callbackData) {
 		sceDisplayWaitVblankStart();
 }
 
+void releaseShaderCompiler(void) {
+	if (is_shark_online) {
+		shark_end();
+		is_shark_online = GL_FALSE;
+	}
+}
+
+GLboolean startShaderCompiler(void) {
+	is_shark_online = shark_init(NULL) >= 0;
+	return is_shark_online;
+}
+
 void initGxm(void) {
 	if (gxm_initialized)
 		return;
 
 	// Initializing runtime shader compiler
 	if (use_shark) {
-		if (shark_init(NULL) >= 0) {
-			is_shark_online = GL_TRUE;
+		if (startShaderCompiler()) {
 #ifdef HAVE_SHARK_LOG
 			shark_install_log_cb(shark_log_cb);
 			shark_set_warnings_level(SHARK_WARN_HIGH);
@@ -258,8 +269,7 @@ void termGxmContext(void) {
 	}
 
 	// Shutting down runtime shader compiler
-	if (is_shark_online)
-		shark_end();
+	releaseShaderCompiler();
 }
 
 void createDisplayRenderTarget(void) {
@@ -606,4 +616,8 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 void glFinish(void) {
 	// Waiting for GPU to finish drawing jobs
 	sceGxmFinish(gxm_context);
+}
+
+void glReleaseShaderCompiler(void) {
+	releaseShaderCompiler();
 }
