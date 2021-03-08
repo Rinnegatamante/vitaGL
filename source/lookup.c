@@ -100,6 +100,7 @@ static const struct {
 	{"glGenerateMipmap", (void *)glGenerateMipmap},
 	{"glGenFramebuffers", (void *)glGenFramebuffers},
 	{"glGenTextures", (void *)glGenTextures},
+	{"glGetActiveAttrib", (void *)glGetActiveAttrib},
 	{"glGetAttribLocation", (void *)glGetAttribLocation},
 	{"glGetBooleanv", (void *)glGetBooleanv},
 	{"glGetFloatv", (void *)glGetFloatv},

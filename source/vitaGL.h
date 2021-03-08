@@ -289,6 +289,7 @@ extern "C" {
 #define GL_VERTEX_ATTRIB_ARRAY_STRIDE                0x8624
 #define GL_VERTEX_ATTRIB_ARRAY_TYPE                  0x8625
 #define GL_CURRENT_VERTEX_ATTRIB                     0x8626
+#define GL_VERTEX_ATTRIB_ARRAY_POINTER               0x8645
 #define GL_NUM_COMPRESSED_TEXTURE_FORMATS            0x86A2
 #define GL_COMPRESSED_TEXTURE_FORMATS                0x86A3
 #define GL_MIRROR_CLAMP_EXT                          0x8742
@@ -309,6 +310,12 @@ extern "C" {
 #define GL_FRAGMENT_SHADER                           0x8B30
 #define GL_VERTEX_SHADER                             0x8B31
 #define GL_SHADER_TYPE                               0x8B4F
+#define GL_FLOAT_VEC2                                0x8B50
+#define GL_FLOAT_VEC3                                0x8B51
+#define GL_FLOAT_VEC4                                0x8B52
+#define GL_FLOAT_MAT2                                0x8B5A
+#define GL_FLOAT_MAT3                                0x8B5B
+#define GL_FLOAT_MAT4                                0x8B5C
 #define GL_COMPILE_STATUS                            0x8B81
 #define GL_LINK_STATUS                               0x8B82
 #define GL_INFO_LOG_LENGTH                           0x8B84
@@ -431,6 +438,7 @@ void glGenBuffers(GLsizei n, GLuint *buffers);
 void glGenerateMipmap(GLenum target);
 void glGenFramebuffers(GLsizei n, GLuint *ids);
 void glGenTextures(GLsizei n, GLuint *textures);
+void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
 GLint glGetAttribLocation(GLuint prog, const GLchar *name);
 void glGetBooleanv(GLenum pname, GLboolean *params);
 void glGetFloatv(GLenum pname, GLfloat *data);

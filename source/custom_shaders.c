@@ -139,6 +139,25 @@ GLenum gxm_vd_fmt_to_gl(SceGxmAttributeFormat fmt) {
 	}
 }
 
+GLenum gxm_attr_type_to_gl(uint32_t size, uint32_t num) {
+	switch (size * num) {
+	case 1:
+		return GL_FLOAT;
+	case 2:
+		return GL_FLOAT_VEC2;
+	case 3:
+		return GL_FLOAT_VEC3;
+	case 4:
+		return num == 1 ? GL_FLOAT_VEC4 : GL_FLOAT_MAT2;
+	case 9:
+		return GL_FLOAT_MAT3;
+	case 16:
+		return GL_FLOAT_MAT4;
+	default:
+		break;
+	}
+}
+
 void resetCustomShaders(void) {
 	// Init custom shaders
 	int i;
@@ -1420,6 +1439,30 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 		if (p->attr[i].regIndex == sceGxmProgramParameterGetResourceIndex(param))
 			return i;
 	}
+}
+
+void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name) {
+	// Grabbing passed program
+	program *p = &progs[prog - 1];
+	SceGxmVertexAttribute *attributes = &p->attr[index];
+
+	int i, cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
+	const SceGxmProgramParameter *param;
+	for (i = 0; i < cnt; i++) {
+		param = sceGxmProgramGetParameter(p->vshader->prog, i);
+		if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE && sceGxmProgramParameterGetResourceIndex(param) == attributes->regIndex)
+			break;
+	}
+	
+	// Copying attribute name
+	const char *pname = sceGxmProgramParameterGetName(param);
+	bufSize = strlen(name) + 1 < bufSize ? strlen(name) : (bufSize - 1);
+	if (length) *length = bufSize;
+	strncpy(name, pname, bufSize);
+	name[bufSize + 1] = 0;
+	
+	*type = gxm_attr_type_to_gl(sceGxmProgramParameterGetComponentCount(param), sceGxmProgramParameterGetArraySize(param));
+	*size = 1;
 }
 
 /*
