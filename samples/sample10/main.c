@@ -1,5 +1,4 @@
-// Drawing a fullscreen image on screen with glBegin/glEnd
-
+#include <vitasdk.h>
 #include <vitaGL.h>
 #include <vita2d.h>
 #include <stdlib.h>
