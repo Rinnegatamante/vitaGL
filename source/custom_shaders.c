@@ -923,6 +923,45 @@ void glUniform1i(GLint location, GLint v0) {
 	u->data[0] = (float)v0;
 }
 
+void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+
+	// Grabbing passed uniform
+	uniform *u = (uniform *)-location;
+
+	// Setting passed value to desired uniform
+	int i;
+	for (i = 0; i < count; i++) {
+		u->data[i] = (float)value[i];
+	}
+}
+
+void glUniform1f(GLint location, GLfloat v0) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+
+	// Grabbing passed uniform
+	uniform *u = (uniform *)-location;
+
+	// Setting passed value to desired uniform
+	u->data[0] = v0;
+}
+
+void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+
+	// Grabbing passed uniform
+	uniform *u = (uniform *)-location;
+
+	// Setting passed value to desired uniform
+	sceClibMemcpy(u->data, value, count * sizeof(float));
+}
+
 void glUniform2i(GLint location, GLint v0, GLint v1) {
 	// Checking if the uniform does exist
 	if (location == -1)
@@ -936,7 +975,7 @@ void glUniform2i(GLint location, GLint v0, GLint v1) {
 	u->data[1] = (float)v1;
 }
 
-void glUniform1f(GLint location, GLfloat v0) {
+void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 	// Checking if the uniform does exist
 	if (location == -1)
 		return;
@@ -945,7 +984,10 @@ void glUniform1f(GLint location, GLfloat v0) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	u->data[0] = v0;
+	int i;
+	for (i = 0; i < count * 2; i++) {
+		u->data[i] = (float)value[i];
+	}
 }
 
 void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
@@ -961,18 +1003,6 @@ void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
 	u->data[1] = v1;
 }
 
-void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
-	// Checking if the uniform does exist
-	if (location == -1)
-		return;
-
-	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
-
-	// Setting passed value to desired uniform
-	sceClibMemcpy(u->data, value, count * sizeof(float));
-}
-
 void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1)
@@ -983,6 +1013,35 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * 2 * sizeof(float));
+}
+
+void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+
+	// Grabbing passed uniform
+	uniform *u = (uniform *)-location;
+
+	// Setting passed value to desired uniform
+	u->data[0] = (float)v0;
+	u->data[1] = (float)v1;
+	u->data[2] = (float)v2;
+}
+
+void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+
+	// Grabbing passed uniform
+	uniform *u = (uniform *)-location;
+
+	// Setting passed value to desired uniform
+	int i;
+	for (i = 0; i < count * 3; i++) {
+		u->data[i] = (float)value[i];
+	}
 }
 
 void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
@@ -1011,6 +1070,36 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	sceClibMemcpy(u->data, value, count * 3 * sizeof(float));
 }
 
+void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+
+	// Grabbing passed uniform
+	uniform *u = (uniform *)-location;
+
+	// Setting passed value to desired uniform
+	u->data[0] = (float)v0;
+	u->data[1] = (float)v1;
+	u->data[2] = (float)v2;
+	u->data[3] = (float)v3;
+}
+
+void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+
+	// Grabbing passed uniform
+	uniform *u = (uniform *)-location;
+
+	// Setting passed value to desired uniform
+	int i;
+	for (i = 0; i < count * 4; i++) {
+		u->data[i] = (float)value[i];
+	}
+}
+
 void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
 	// Checking if the uniform does exist
 	if (location == -1)
@@ -1027,6 +1116,18 @@ void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
 }
 
 void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
+	// Checking if the uniform does exist
+	if (location == -1)
+		return;
+
+	// Grabbing passed uniform
+	uniform *u = (uniform *)-location;
+
+	// Setting passed value to desired uniform
+	sceClibMemcpy(u->data, value, count * 4 * sizeof(float));
+}
+
+void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1)
 		return;
