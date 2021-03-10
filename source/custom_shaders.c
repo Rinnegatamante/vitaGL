@@ -844,8 +844,10 @@ void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLc
 void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 	// Grabbing passed program
 	program *p = &progs[progr - 1];
-	int i;
-
+	int i, cnt;
+	const SceGxmProgramParameter *param;
+	uniform *u;
+	
 	switch (pname) {
 	case GL_LINK_STATUS:
 		*params = p->status == PROG_LINKED;
@@ -864,9 +866,37 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 	case GL_ACTIVE_ATTRIBUTES:
 		*params = p->attr_num;
 		break;
+	case GL_ACTIVE_UNIFORM_MAX_LENGTH:
+		i = 0;
+		u = p->vert_uniforms;
+		while (u) {
+			int len = strlen(sceGxmProgramParameterGetName(u->ptr)) + 1;
+			if (len > i) i = len;
+			u = u->chain;
+		}
+		u = p->frag_uniforms;
+		while (u) {
+			int len = strlen(sceGxmProgramParameterGetName(u->ptr)) + 1;
+			if (len > i) i = len;
+			u = u->chain;
+		}
+		*params = i;
+		break;
+	case GL_ACTIVE_ATTRIBUTE_MAX_LENGTH:
+		i = 0;
+		cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
+		while (cnt--) {
+			param = sceGxmProgramGetParameter(p->vshader->prog, cnt);
+			if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
+				int len = strlen(sceGxmProgramParameterGetName(param)) + 1;
+				if (len > i) i = len;
+			}
+		}
+		*params = i;
+		break;
 	case GL_ACTIVE_UNIFORMS:
 		i = 0;
-		uniform *u = p->vert_uniforms;
+		u = p->vert_uniforms;
 		while (u) {
 			i++;
 			u = u->chain;

@@ -325,7 +325,9 @@ extern "C" {
 #define GL_INFO_LOG_LENGTH                           0x8B84
 #define GL_ATTACHED_SHADERS                          0x8B85
 #define GL_ACTIVE_UNIFORMS                           0x8B86
+#define GL_ACTIVE_UNIFORM_MAX_LENGTH                 0x8B87
 #define GL_ACTIVE_ATTRIBUTES                         0x8B89
+#define GL_ACTIVE_ATTRIBUTE_MAX_LENGTH               0x8B8A
 #define GL_SHADING_LANGUAGE_VERSION                  0x8B8C
 #define GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG           0x8C00
 #define GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG           0x8C01
@@ -581,6 +583,7 @@ void vglEnd(void);
 void *vglForceAlloc(uint32_t size);
 void vglFree(void *addr);
 SceGxmTexture *vglGetGxmTexture(GLenum target);
+void *vglGetProcAddress(const char *name);
 void *vglGetTexDataPointer(GLenum target);
 GLboolean vglHasRuntimeShaderCompiler(void);
 void vglInit(int legacy_pool_size);
@@ -601,7 +604,6 @@ void vglUseVram(GLboolean usage);
 void vglUseVramForUSSE(GLboolean usage);
 void vglUseExtraMem(GLboolean usage);
 void vglWaitVblankStart(GLboolean enable);
-void *vglGetProcAddress(const char *name);
 
 #ifdef __cplusplus
 }

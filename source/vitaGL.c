@@ -109,12 +109,10 @@ vector4f texenv_color = {0.0f, 0.0f, 0.0f, 0.0f}; // Current in use texture envi
 #ifdef ENABLE_LOG
 void LOG(const char *format, ...) {
 	__gnuc_va_list arg;
-	int done;
 	va_start(arg, format);
 	char msg[512];
-	done = vsprintf(msg, format, arg);
+	vsprintf(msg, format, arg);
 	va_end(arg);
-	int i;
 	sprintf(msg, "%s\n", msg);
 	FILE *log = fopen("ux0:/data/vitaGL.log", "a+");
 	if (log != NULL) {
