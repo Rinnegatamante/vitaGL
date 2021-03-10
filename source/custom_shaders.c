@@ -1512,17 +1512,33 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 	program *p = &progs[prog - 1];
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
 	if (param == NULL)
-		return -1;
+		return -1;	
+	int index = sceGxmProgramParameterGetResourceIndex(param);
 
+	// If attribute has been already bound, we return its location
 	int i;
 	for (i = 0; i < p->attr_highest_idx; i++) {
-		if (p->attr[i].regIndex == sceGxmProgramParameterGetResourceIndex(param))
+		if (p->attr[i].regIndex == index)
 			return i;
 	}
 	
+	// If attribute is not bound, we bind it and return its location
 	for (i = 0; i < p->attr_num; i++) {
 		if (p->attr[i].regIndex == 0xDEAD)
-			p->attr[i].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			p->attr[i].regIndex = index;
+			
+			if ((p->attr_highest_idx == 0) || (p->attr_highest_idx - 1 < i))
+				p->attr_highest_idx = i + 1;
+			
+			// Checking back if attributes are aligned
+			p->has_unaligned_attrs = GL_FALSE;
+			for (i = 0; i < p->attr_num; i++) {
+				if (p->attr[i].regIndex == 0xDEAD) {
+					p->has_unaligned_attrs = GL_TRUE;
+					break;
+				}
+			
+			}
 			return i;
 	}
 }
