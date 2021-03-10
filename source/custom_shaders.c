@@ -797,7 +797,7 @@ GLuint glCreateProgram(void) {
 			progs[i].fshader = NULL;
 			progs[i].vert_uniforms = NULL;
 			progs[i].frag_uniforms = NULL;
-			progs[i].attr_highest_idx = 1;
+			progs[i].attr_highest_idx = 0;
 			for (j = 0; j < GL_MAX_VERTEX_ATTRIBS; j++) {
 				progs[i].attr[j].regIndex = 0xDEAD;
 			}
@@ -1504,7 +1504,7 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 
 	SceGxmVertexAttribute *attributes = &p->attr[index];
 	attributes->regIndex = sceGxmProgramParameterGetResourceIndex(param);
-	if (p->attr_highest_idx - 1 < index)
+	if ((p->attr_highest_idx == 0) || (p->attr_highest_idx - 1 < index))
 		p->attr_highest_idx = index + 1;
 }
 
@@ -1519,18 +1519,23 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 		if (p->attr[i].regIndex == sceGxmProgramParameterGetResourceIndex(param))
 			return i;
 	}
+	
+	for (i = 0; i < p->attr_num; i++) {
+		if (p->attr[i].regIndex == 0xDEAD)
+			p->attr[i].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			return i;
+	}
 }
 
 void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name) {
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
-	SceGxmVertexAttribute *attributes = &p->attr[index];
 
 	int i, cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
 	const SceGxmProgramParameter *param;
 	for (i = 0; i < cnt; i++) {
 		param = sceGxmProgramGetParameter(p->vshader->prog, i);
-		if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE && sceGxmProgramParameterGetResourceIndex(param) == attributes->regIndex)
+		if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE && (sceGxmProgramParameterGetResourceIndex(param) / 4) == index)
 			break;
 	}
 	
