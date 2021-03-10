@@ -1541,10 +1541,10 @@ void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *leng
 	
 	// Copying attribute name
 	const char *pname = sceGxmProgramParameterGetName(param);
-	bufSize = strlen(pname) + 1 < bufSize ? strlen(pname) : (bufSize - 1);
+	bufSize = min(strlen(pname), bufSize - 1);
 	if (length) *length = bufSize;
 	strncpy(name, pname, bufSize);
-	name[bufSize + 1] = 0;
+	name[bufSize] = 0;
 	
 	*type = gxm_attr_type_to_gl(sceGxmProgramParameterGetComponentCount(param), sceGxmProgramParameterGetArraySize(param));
 	*size = 1;
@@ -1569,10 +1569,10 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 	
 	// Copying attribute name
 	const char *pname = sceGxmProgramParameterGetName(u->ptr);
-	bufSize = strlen(pname) + 1 < bufSize ? strlen(pname) : (bufSize - 1);
+	bufSize = min(strlen(pname), bufSize - 1);
 	if (length) *length = bufSize;
 	strncpy(name, pname, bufSize);
-	name[bufSize + 1] = 0;
+	name[bufSize] = 0;
 	
 	*type = gxm_unif_type_to_gl(sceGxmProgramParameterGetType(u->ptr), sceGxmProgramParameterGetComponentCount(u->ptr));
 	*size = sceGxmProgramParameterGetArraySize(u->ptr);
