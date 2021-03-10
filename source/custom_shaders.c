@@ -1532,8 +1532,9 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 			
 			// Checking back if attributes are aligned
 			p->has_unaligned_attrs = GL_FALSE;
-			for (i = 0; i < p->attr_num; i++) {
-				if (p->attr[i].regIndex == 0xDEAD) {
+			int j;
+			for (j = 0; j < p->attr_num; j++) {
+				if (p->attr[j].regIndex == 0xDEAD) {
 					p->has_unaligned_attrs = GL_TRUE;
 					break;
 				}
