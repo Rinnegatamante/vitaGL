@@ -187,6 +187,7 @@ typedef enum {
 typedef struct {
 	void *ptr;
 	int32_t size;
+	vglMemType type;
 	GLboolean used;
 } gpubuffer;
 

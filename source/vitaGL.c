@@ -540,6 +540,17 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 	}
 #endif
 
+	switch (usage) {
+	case GL_DYNAMIC_DRAW:
+	case GL_DYNAMIC_READ:
+	case GL_DYNAMIC_COPY:
+		gpu_buf->type = VGL_MEM_RAM;
+		break;
+	default:
+		gpu_buf->type = VGL_MEM_VRAM;
+		break;
+	}
+
 	// Marking previous content for deletion or deleting it straight if unused
 	if (gpu_buf->ptr) {
 		if (gpu_buf->used)
@@ -549,7 +560,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 	}
 
 	// Allocating a new buffer
-	gpu_buf->ptr = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	gpu_buf->ptr = gpu_alloc_mapped(size, gpu_buf->type);
 	
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf->ptr) {
@@ -587,7 +598,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 	
 	// Allocating a new buffer
 	uint8_t *ptr = gpu_buf->ptr;
-	gpu_buf->ptr = gpu_alloc_mapped(gpu_buf->size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	gpu_buf->ptr = gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
 
 	// Copying up previous data combined to modified data
 	if (offset > 0)

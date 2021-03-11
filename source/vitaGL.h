@@ -285,6 +285,7 @@ extern "C" {
 #define GL_TEXTURE_COMPRESSION_HINT                  0x84EF
 #define GL_TEXTURE_LOD_BIAS                          0x8501
 #define GL_INCR_WRAP                                 0x8507
+#define GL_DECR_WRAP                                 0x8508
 #define GL_VERTEX_ATTRIB_ARRAY_ENABLED               0x8622
 #define GL_VERTEX_ATTRIB_ARRAY_SIZE                  0x8623
 #define GL_VERTEX_ATTRIB_ARRAY_STRIDE                0x8624
@@ -294,7 +295,6 @@ extern "C" {
 #define GL_NUM_COMPRESSED_TEXTURE_FORMATS            0x86A2
 #define GL_COMPRESSED_TEXTURE_FORMATS                0x86A3
 #define GL_MIRROR_CLAMP_EXT                          0x8742
-#define GL_DECR_WRAP                                 0x8508
 #define GL_VERTEX_ATTRIB_ARRAY_NORMALIZED            0x886A
 #define GL_ARRAY_BUFFER                              0x8892
 #define GL_ELEMENT_ARRAY_BUFFER                      0x8893
