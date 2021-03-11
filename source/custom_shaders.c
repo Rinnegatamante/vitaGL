@@ -1545,6 +1545,12 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 }
 
 void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name) {
+#ifndef SKIP_ERROR_HANDLING
+	if (bufSize < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 
@@ -1568,22 +1574,22 @@ void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *leng
 }
 
 void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name) {
+#ifndef SKIP_ERROR_HANDLING
+	if (bufSize < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 	
 	uniform *u = p->vert_uniforms;
 	while (index && u) {
 		u = u->chain;
+		if (!u) u = p->frag_uniforms;
 		index--;
 	}
-	if (index--) {
-		u = p->frag_uniforms;
-		while (index && u) {
-			u = u->chain;
-			index--;
-		}
-	}
-	
+
 	// Copying attribute name
 	const char *pname = sceGxmProgramParameterGetName(u->ptr);
 	bufSize = min(strlen(pname), bufSize - 1);
