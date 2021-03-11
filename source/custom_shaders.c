@@ -1502,8 +1502,7 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 	if (param == NULL)
 		return;
 
-	SceGxmVertexAttribute *attributes = &p->attr[index];
-	attributes->regIndex = sceGxmProgramParameterGetResourceIndex(param);
+	p->attr[index].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 	if ((p->attr_highest_idx == 0) || (p->attr_highest_idx - 1 < index))
 		p->attr_highest_idx = index + 1;
 }
@@ -1524,7 +1523,7 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 	
 	// If attribute is not bound, we bind it and return its location
 	for (i = 0; i < p->attr_num; i++) {
-		if (p->attr[i].regIndex == 0xDEAD)
+		if (p->attr[i].regIndex == 0xDEAD) {
 			p->attr[i].regIndex = index;
 			
 			if ((p->attr_highest_idx == 0) || (p->attr_highest_idx - 1 < i))
@@ -1541,6 +1540,7 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 			
 			}
 			return i;
+		}
 	}
 }
 
