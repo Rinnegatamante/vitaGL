@@ -1583,8 +1583,9 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 	
+	// FIXME: We assume the func is never called by going out of bounds towards the active uniforms
 	uniform *u = p->vert_uniforms;
-	while (index && u) {
+	while (index) {
 		u = u->chain;
 		if (!u) u = p->frag_uniforms;
 		index--;
@@ -1596,7 +1597,7 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 	if (length) *length = bufSize;
 	strncpy(name, pname, bufSize);
 	name[bufSize] = 0;
-	
+
 	*type = gxm_unif_type_to_gl(sceGxmProgramParameterGetType(u->ptr), sceGxmProgramParameterGetComponentCount(u->ptr));
 	*size = sceGxmProgramParameterGetArraySize(u->ptr);
 }

@@ -584,19 +584,24 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-
-	// Marking previous content for deletion
-	markAsDirty(gpu_buf->ptr);
-
+	
 	// Allocating a new buffer
-	gpu_buf->ptr = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	uint8_t *ptr = gpu_buf->ptr;
+	gpu_buf->ptr = gpu_alloc_mapped(gpu_buf->size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
 	// Copying up previous data combined to modified data
 	if (offset > 0)
-		sceClibMemcpy(gpu_buf->ptr, frame_purge_list[frame_purge_idx][frame_elem_purge_idx - 1], offset);
+		sceClibMemcpy(gpu_buf->ptr, ptr, offset);
 	sceClibMemcpy((uint8_t *)gpu_buf->ptr + offset, data, size);
 	if (gpu_buf->size - size - offset > 0)
-		sceClibMemcpy((uint8_t *)gpu_buf->ptr + offset + size, (uint8_t *)frame_purge_list[frame_purge_idx][frame_elem_purge_idx - 1] + offset + size, gpu_buf->size - size - offset);
+		sceClibMemcpy((uint8_t *)gpu_buf->ptr + offset + size, ptr + offset + size, gpu_buf->size - size - offset);
+
+	// Marking previous content for deletion
+	if (gpu_buf->used)
+		markAsDirty(ptr);
+	else
+		vgl_mem_free(ptr);
+	gpu_buf->used = GL_FALSE;
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor) {
