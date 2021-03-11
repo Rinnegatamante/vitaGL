@@ -1576,7 +1576,7 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 		u = u->chain;
 		index--;
 	}
-	if (index) {
+	if (index--) {
 		u = p->frag_uniforms;
 		while (index && u) {
 			u = u->chain;
