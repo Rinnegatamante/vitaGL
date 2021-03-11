@@ -496,7 +496,7 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
-#ifdef HAS_SAMPLERS_AS_UNIFORMS
+#ifdef HAVE_SAMPLERS_AS_UNIFORMS
 			if (u->size)
 #endif
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
@@ -1598,7 +1598,7 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 	program *p = &progs[prog - 1];
 	
 	// FIXME: We assume the func is never called by going out of bounds towards the active uniforms
-	uniform *u = p->vert_uniforms;
+	uniform *u = p->vert_uniforms ? p->vert_uniforms : p->frag_uniforms;
 	while (index) {
 		u = u->chain;
 		if (!u) u = p->frag_uniforms;
