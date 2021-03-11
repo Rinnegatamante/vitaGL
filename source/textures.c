@@ -68,14 +68,7 @@ void glBindTexture(GLenum target, GLuint texture) {
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 
 	// Setting current in use texture id for the in use server texture unit
-	switch (target) {
-	case GL_TEXTURE_2D:
-		tex_unit->tex_id = texture;
-		break;
-	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
-	}
+	tex_unit->tex_id = texture;
 }
 
 void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {

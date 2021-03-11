@@ -339,7 +339,10 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
-			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
+#ifdef HAVE_SAMPLERS_AS_UNIFORMS
+			if (u->size)
+#endif
+				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
 	}
@@ -493,7 +496,10 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
-			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
+#ifdef HAS_SAMPLERS_AS_UNIFORMS
+			if (u->size)
+#endif
+				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
 	}
@@ -934,6 +940,14 @@ void glLinkProgram(GLuint progr) {
 		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
 			p->texunits[sceGxmProgramParameterGetResourceIndex(param)] = GL_TRUE;
+#ifdef HAVE_SAMPLERS_AS_UNIFORMS
+			uniform *u = (uniform *)malloc(sizeof(uniform));
+			u->chain = p->frag_uniforms;
+			u->ptr = param;
+			u->size = 0;
+			u->data = (float *)malloc(sizeof(float));
+			p->frag_uniforms = u;
+#endif
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
 			uniform *u = (uniform *)malloc(sizeof(uniform));
 			u->chain = p->frag_uniforms;
