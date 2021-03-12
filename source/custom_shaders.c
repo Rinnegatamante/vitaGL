@@ -339,7 +339,10 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
-			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
+#ifdef HAVE_SAMPLERS_AS_UNIFORMS
+			if (u->size)
+#endif
+				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
 	}
@@ -493,7 +496,10 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
-			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
+#ifdef HAVE_SAMPLERS_AS_UNIFORMS
+			if (u->size)
+#endif
+				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
 	}
@@ -797,7 +803,7 @@ GLuint glCreateProgram(void) {
 			progs[i].fshader = NULL;
 			progs[i].vert_uniforms = NULL;
 			progs[i].frag_uniforms = NULL;
-			progs[i].attr_highest_idx = 1;
+			progs[i].attr_highest_idx = 0;
 			for (j = 0; j < GL_MAX_VERTEX_ATTRIBS; j++) {
 				progs[i].attr[j].regIndex = 0xDEAD;
 			}
@@ -934,6 +940,14 @@ void glLinkProgram(GLuint progr) {
 		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
 			p->texunits[sceGxmProgramParameterGetResourceIndex(param)] = GL_TRUE;
+#ifdef HAVE_SAMPLERS_AS_UNIFORMS
+			uniform *u = (uniform *)malloc(sizeof(uniform));
+			u->chain = p->frag_uniforms;
+			u->ptr = param;
+			u->size = 0;
+			u->data = (float *)malloc(sizeof(float));
+			p->frag_uniforms = u;
+#endif
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
 			uniform *u = (uniform *)malloc(sizeof(uniform));
 			u->chain = p->frag_uniforms;
@@ -1502,9 +1516,8 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 	if (param == NULL)
 		return;
 
-	SceGxmVertexAttribute *attributes = &p->attr[index];
-	attributes->regIndex = sceGxmProgramParameterGetResourceIndex(param);
-	if (p->attr_highest_idx - 1 < index)
+	p->attr[index].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+	if ((p->attr_highest_idx == 0) || (p->attr_highest_idx - 1 < index))
 		p->attr_highest_idx = index + 1;
 }
 
@@ -1512,63 +1525,93 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 	program *p = &progs[prog - 1];
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
 	if (param == NULL)
-		return -1;
+		return -1;	
+	int index = sceGxmProgramParameterGetResourceIndex(param);
 
+	// If attribute has been already bound, we return its location
 	int i;
 	for (i = 0; i < p->attr_highest_idx; i++) {
-		if (p->attr[i].regIndex == sceGxmProgramParameterGetResourceIndex(param))
+		if (p->attr[i].regIndex == index)
 			return i;
+	}
+	
+	// If attribute is not bound, we bind it and return its location
+	for (i = 0; i < p->attr_num; i++) {
+		if (p->attr[i].regIndex == 0xDEAD) {
+			p->attr[i].regIndex = index;
+			
+			if ((p->attr_highest_idx == 0) || (p->attr_highest_idx - 1 < i))
+				p->attr_highest_idx = i + 1;
+			
+			// Checking back if attributes are aligned
+			p->has_unaligned_attrs = GL_FALSE;
+			int j;
+			for (j = 0; j < p->attr_num; j++) {
+				if (p->attr[j].regIndex == 0xDEAD) {
+					p->has_unaligned_attrs = GL_TRUE;
+					break;
+				}
+			
+			}
+			return i;
+		}
 	}
 }
 
 void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name) {
+#ifndef SKIP_ERROR_HANDLING
+	if (bufSize < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
-	SceGxmVertexAttribute *attributes = &p->attr[index];
 
 	int i, cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
 	const SceGxmProgramParameter *param;
 	for (i = 0; i < cnt; i++) {
 		param = sceGxmProgramGetParameter(p->vshader->prog, i);
-		if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE && sceGxmProgramParameterGetResourceIndex(param) == attributes->regIndex)
+		if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE && (sceGxmProgramParameterGetResourceIndex(param) / 4) == index)
 			break;
 	}
 	
 	// Copying attribute name
 	const char *pname = sceGxmProgramParameterGetName(param);
-	bufSize = strlen(pname) + 1 < bufSize ? strlen(pname) : (bufSize - 1);
+	bufSize = min(strlen(pname), bufSize - 1);
 	if (length) *length = bufSize;
 	strncpy(name, pname, bufSize);
-	name[bufSize + 1] = 0;
+	name[bufSize] = 0;
 	
 	*type = gxm_attr_type_to_gl(sceGxmProgramParameterGetComponentCount(param), sceGxmProgramParameterGetArraySize(param));
 	*size = 1;
 }
 
 void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name) {
+#ifndef SKIP_ERROR_HANDLING
+	if (bufSize < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 	
-	uniform *u = p->vert_uniforms;
-	while (index && u) {
+	// FIXME: We assume the func is never called by going out of bounds towards the active uniforms
+	uniform *u = p->vert_uniforms ? p->vert_uniforms : p->frag_uniforms;
+	while (index) {
 		u = u->chain;
+		if (!u) u = p->frag_uniforms;
 		index--;
 	}
-	if (index) {
-		u = p->frag_uniforms;
-		while (index && u) {
-			u = u->chain;
-			index--;
-		}
-	}
-	
+
 	// Copying attribute name
 	const char *pname = sceGxmProgramParameterGetName(u->ptr);
-	bufSize = strlen(pname) + 1 < bufSize ? strlen(pname) : (bufSize - 1);
+	bufSize = min(strlen(pname), bufSize - 1);
 	if (length) *length = bufSize;
 	strncpy(name, pname, bufSize);
-	name[bufSize + 1] = 0;
-	
+	name[bufSize] = 0;
+
 	*type = gxm_unif_type_to_gl(sceGxmProgramParameterGetType(u->ptr), sceGxmProgramParameterGetComponentCount(u->ptr));
 	*size = sceGxmProgramParameterGetArraySize(u->ptr);
 }
