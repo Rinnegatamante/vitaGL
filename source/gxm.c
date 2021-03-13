@@ -617,3 +617,11 @@ void glReleaseShaderCompiler(void) {
 		is_shark_online = GL_FALSE;
 	}
 }
+
+void glFlush(void) {
+	needs_end_scene = GL_FALSE;
+	if (!needs_scene_reset)
+		sceneEnd();
+		
+	needs_scene_reset = GL_TRUE;
+}

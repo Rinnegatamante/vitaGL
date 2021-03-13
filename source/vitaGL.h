@@ -434,6 +434,7 @@ void glEnableClientState(GLenum array);
 void glEnableVertexAttribArray(GLuint index);
 void glEnd(void);
 void glFinish(void);
+void glFlush(void);
 void glFogf(GLenum pname, GLfloat param);
 void glFogfv(GLenum pname, const GLfloat *params);
 void glFogi(GLenum pname, const GLint param);

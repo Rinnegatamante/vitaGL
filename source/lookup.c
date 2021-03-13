@@ -89,6 +89,7 @@ static const struct {
 	{"glEnableVertexAttribArray", (void *)glEnableVertexAttribArray},
 	{"glEnd", (void *)glEnd},
 	{"glFinish", (void *)glFinish},
+	{"glFlush", (void *)glFlush},
 	{"glFogf", (void *)glFogf},
 	{"glFogfv", (void *)glFogfv},
 	{"glFogi", (void *)glFogi},
