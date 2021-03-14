@@ -1513,7 +1513,7 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 
 	// Looking for desired parameter in requested program
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
-	if (param == NULL)
+	if (param == NULL || sceGxmProgramParameterGetCategory(param) != SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE)
 		return;
 
 	p->attr[index].regIndex = sceGxmProgramParameterGetResourceIndex(param);
