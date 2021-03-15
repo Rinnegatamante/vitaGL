@@ -555,14 +555,18 @@ void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
 void glLineWidth(GLfloat width) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
-	if (width <= 0) {
+	if (width <= 0.0f) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-
+	
+	uint32_t int_width = width;
+	if (int_width > 16) int_width = 16;
+	else if (int_width < 1) int_width = 1;
+	
 	// Changing line width as requested
-	sceGxmSetFrontPointLineWidth(gxm_context, width);
-	sceGxmSetBackPointLineWidth(gxm_context, width);
+	sceGxmSetFrontPointLineWidth(gxm_context, int_width);
+	sceGxmSetBackPointLineWidth(gxm_context, int_width);
 }
 
 void glPointSize(GLfloat size) {
