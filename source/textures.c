@@ -25,8 +25,6 @@
 
 texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
 texture texture_slots[TEXTURES_NUM]; // Available texture slots
-uint16_t free_texture_slots[TEXTURES_NUM - 1]; // Available free texture slots
-uint32_t free_tex_idx = TEXTURES_NUM - 2;
 
 palette *color_table = NULL; // Current in-use color table
 int8_t server_texture_unit = 0; // Current in use server side texture unit
@@ -46,21 +44,24 @@ void glGenTextures(GLsizei n, GLuint *res) {
 #endif
 
 	// Reserving a texture and returning its id if available
-	while (n > 0) {
-		n--;
-		uint16_t i = free_texture_slots[free_tex_idx--];
-		res[n] = i;
-		texture_slots[i].status = TEX_UNINITIALIZED;
+	int i, j = 0;
+	for (i = 1; i < TEXTURES_NUM; i++) {
+		if (texture_slots[i].status == TEX_UNUSED) {
+			res[j++] = i;
+			texture_slots[i].status = TEX_UNINITIALIZED;
 
-		// Resetting texture parameters to their default values
-		texture_slots[i].mip_count = 1;
-		texture_slots[i].use_mips = GL_FALSE;
-		texture_slots[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-		texture_slots[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-		texture_slots[i].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-		texture_slots[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-		texture_slots[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-		texture_slots[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
+			// Resetting texture parameters to their default values
+			texture_slots[i].mip_count = 1;
+			texture_slots[i].use_mips = GL_FALSE;
+			texture_slots[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+			texture_slots[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+			texture_slots[i].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+			texture_slots[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+			texture_slots[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+			texture_slots[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
+		}
+		if (j >= n)
+			break;
 	}
 }
 
@@ -88,15 +89,13 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 	for (j = 0; j < n; j++) {
 		GLuint i = gl_textures[j];
 		if (i > 0) {
-			gpu_free_texture(&texture_slots[i]);
+			if (texture_slots[i].status == TEX_VALID)
+				gpu_free_texture(&texture_slots[i]);
 			
 			if (i == tex_unit->tex_id)
 				tex_unit->tex_id = 0;
 				
 			texture_slots[i].status = TEX_UNUSED;
-			
-			free_tex_idx++;
-			free_texture_slots[free_tex_idx] = i;
 		}
 	}
 }
@@ -744,9 +743,11 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
 			}
-			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex->min_filter);
-			sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
-			sceGxmTextureSetMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+			if (tex->status == TEX_VALID) {
+				sceGxmTextureSetMinFilter(&tex->gxm_tex, tex->min_filter);
+				sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
+				sceGxmTextureSetMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+			}
 			break;
 		case GL_TEXTURE_MAG_FILTER: // Mag Filter
 			switch (param) {
@@ -759,7 +760,8 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
 			}
-			sceGxmTextureSetMagFilter(&tex->gxm_tex, tex->mag_filter);
+			if (tex->status == TEX_VALID)
+				sceGxmTextureSetMagFilter(&tex->gxm_tex, tex->mag_filter);
 			break;
 		case GL_TEXTURE_WRAP_S: // U Mode
 			switch (param) {
@@ -778,7 +780,8 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
 			}
-			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
+			if (tex->status == TEX_VALID)
+				sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
 			break;
 		case GL_TEXTURE_WRAP_T: // V Mode
 			switch (param) {
@@ -797,11 +800,13 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
 			}
-			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex->v_mode);
+			if (tex->status == TEX_VALID)
+				sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex->v_mode);
 			break;
 		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
 			tex->lod_bias = (uint32_t)(param + GL_MAX_TEXTURE_LOD_BIAS);
-			sceGxmTextureSetLodBias(&tex->gxm_tex, tex->lod_bias);
+			if (tex->status == TEX_VALID)
+				sceGxmTextureSetLodBias(&tex->gxm_tex, tex->lod_bias);
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
@@ -847,16 +852,19 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 			}
-			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex->min_filter);
-			sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
-			sceGxmTextureSetMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+			if (tex->status == TEX_VALID) {
+				sceGxmTextureSetMinFilter(&tex->gxm_tex, tex->min_filter);
+				sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
+				sceGxmTextureSetMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+			}
 			break;
 		case GL_TEXTURE_MAG_FILTER: // Mag filter
 			if (param == GL_NEAREST)
 				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
 			else if (param == GL_LINEAR)
 				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			sceGxmTextureSetMagFilter(&tex->gxm_tex, tex->mag_filter);
+			if (tex->status == TEX_VALID)
+				sceGxmTextureSetMagFilter(&tex->gxm_tex, tex->mag_filter);
 			break;
 		case GL_TEXTURE_WRAP_S: // U Mode
 			if (param == GL_CLAMP_TO_EDGE)
@@ -867,7 +875,8 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR; // Mirror
 			else if (param == GL_MIRROR_CLAMP_EXT)
 				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP; // Mirror Clamp
-			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
+			if (tex->status == TEX_VALID)
+				sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
 			break;
 		case GL_TEXTURE_WRAP_T: // V Mode
 			if (param == GL_CLAMP_TO_EDGE)
@@ -878,11 +887,13 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR; // Mirror
 			else if (param == GL_MIRROR_CLAMP_EXT)
 				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP; // Mirror Clamp
-			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex->v_mode);
+			if (tex->status == TEX_VALID)
+				sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex->v_mode);
 			break;
 		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
 			tex->lod_bias = (uint32_t)(param + GL_MAX_TEXTURE_LOD_BIAS);
-			sceGxmTextureSetLodBias(&tex->gxm_tex, tex->lod_bias);
+			if (tex->status == TEX_VALID)
+				sceGxmTextureSetLodBias(&tex->gxm_tex, tex->lod_bias);
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)

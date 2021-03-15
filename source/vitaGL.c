@@ -376,7 +376,6 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	for (i = 1; i < TEXTURES_NUM; i++) {
 		texture_slots[i].status = TEX_UNUSED;
 		texture_slots[i].gxm_tex = texture_slots[0].gxm_tex;
-		free_texture_slots[i - 1] = i;
 	}
 
 	// Set texture matrix to identity
