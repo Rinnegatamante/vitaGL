@@ -52,7 +52,6 @@ void glMatrixMode(GLenum mode) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 

@@ -37,7 +37,7 @@ enum {
 };
 
 // Texture object struct
-typedef struct texture {
+typedef struct {
 	SceGxmTexture gxm_tex;
 	void *data;
 	vglMemType mtype;
@@ -57,7 +57,7 @@ typedef struct texture {
 } texture;
 
 // Palette object struct
-typedef struct palette {
+typedef struct {
 	void *data;
 } palette;
 

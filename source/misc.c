@@ -134,7 +134,6 @@ void glPolygonMode(GLenum face, GLenum mode) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	switch (face) {
 	case GL_FRONT:
@@ -155,7 +154,6 @@ void glPolygonMode(GLenum face, GLenum mode) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		return;
 	}
 	update_polygon_offset();
 }
@@ -311,7 +309,6 @@ void glEnable(GLenum cap) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -414,7 +411,6 @@ void glDisable(GLenum cap) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -449,7 +445,6 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -599,7 +594,6 @@ void glFogf(GLenum pname, GLfloat param) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -623,7 +617,6 @@ void glFogfv(GLenum pname, const GLfloat *params) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -644,7 +637,6 @@ void glFogi(GLenum pname, const GLint param) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -681,6 +673,5 @@ void glHint(GLenum target, GLenum mode) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }

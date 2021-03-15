@@ -121,7 +121,6 @@ void glBindFramebuffer(GLenum target, GLuint fb) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -138,7 +137,6 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 
 #ifndef SKIP_ERROR_HANDLING
@@ -191,7 +189,6 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -208,7 +205,6 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 
 #ifndef SKIP_ERROR_HANDLING
@@ -263,7 +259,6 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -339,7 +334,6 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 				break;
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
-				break;
 			}
 			break;
 		case GL_RGB:
@@ -349,12 +343,10 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 				break;
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
-				break;
 			}
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
-			break;
 		}
 	}
 
@@ -400,6 +392,5 @@ void vglTexImageDepthBuffer(GLenum target) {
 	} break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }

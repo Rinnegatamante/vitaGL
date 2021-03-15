@@ -530,7 +530,6 @@ void glEnableClientState(GLenum array) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -550,7 +549,6 @@ void glDisableClientState(GLenum array) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -579,7 +577,6 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
@@ -768,7 +765,6 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -809,7 +805,6 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
@@ -840,7 +835,6 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *po
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
@@ -896,7 +890,6 @@ void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 

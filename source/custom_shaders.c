@@ -662,7 +662,6 @@ GLuint glCreateShader(GLenum shaderType) {
 		break;
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, 0)
-		break;
 	}
 	shaders[res - 1].valid = GL_TRUE;
 
@@ -685,7 +684,6 @@ void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -734,7 +732,6 @@ void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, c
 	s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
 }
 
-uint8_t shader_idxs = 0;
 void glCompileShader(GLuint handle) {
 	// If vitaShaRK is not enabled, we try to initialize it
 	if (!is_shark_online && !startShaderCompiler()) {
@@ -925,7 +922,6 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -1372,7 +1368,6 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
@@ -1416,7 +1411,6 @@ void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -1458,7 +1452,6 @@ void glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -1664,7 +1657,6 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 
 	// Setting various info about the stream
@@ -1708,7 +1700,6 @@ GLint vglBindPackedAttribLocation(GLuint prog, const GLchar *name, const GLuint 
 		break;
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, GL_FALSE)
-		break;
 	}
 
 	// Setting various info about the stream
@@ -1742,7 +1733,6 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 
 	// Allocating enough memory on vitaGL mempool

@@ -743,7 +743,6 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				break;
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
-				break;
 			}
 			sceGxmTextureSetMinFilter(&tex->gxm_tex, tex->min_filter);
 			sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
@@ -759,7 +758,6 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				break;
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
-				break;
 			}
 			sceGxmTextureSetMagFilter(&tex->gxm_tex, tex->mag_filter);
 			break;
@@ -779,7 +777,6 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				break;
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
-				break;
 			}
 			sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
 			break;
@@ -799,7 +796,6 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				break;
 			default:
 				SET_GL_ERROR(GL_INVALID_ENUM)
-				break;
 			}
 			sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex->v_mode);
 			break;

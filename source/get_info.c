@@ -135,7 +135,6 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -192,7 +191,6 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -266,7 +264,6 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 

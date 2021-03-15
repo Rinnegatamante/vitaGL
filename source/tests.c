@@ -425,38 +425,49 @@ void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass
 	// Properly updating stencil operation settings
 	switch (face) {
 	case GL_FRONT:
-		if (!change_stencil_config(&stencil_fail_front, sfail))
+		if (!change_stencil_config(&stencil_fail_front, sfail)) {
 			SET_GL_ERROR(GL_INVALID_ENUM)
-		if (!change_stencil_config(&depth_fail_front, dpfail))
+		}
+		if (!change_stencil_config(&depth_fail_front, dpfail)) {
 			SET_GL_ERROR(GL_INVALID_ENUM)
-		if (!change_stencil_config(&depth_pass_front, dppass))
+		}
+		if (!change_stencil_config(&depth_pass_front, dppass)) {
 			SET_GL_ERROR(GL_INVALID_ENUM)
+		}
 		break;
 	case GL_BACK:
-		if (!change_stencil_config(&stencil_fail_back, sfail))
+		if (!change_stencil_config(&stencil_fail_back, sfail)) {
 			SET_GL_ERROR(GL_INVALID_ENUM)
-		if (!change_stencil_config(&depth_fail_back, dpfail))
+		}
+		if (!change_stencil_config(&depth_fail_back, dpfail)) {
 			SET_GL_ERROR(GL_INVALID_ENUM)
-		if (!change_stencil_config(&depth_pass_front, dppass))
+		}
+		if (!change_stencil_config(&depth_pass_front, dppass)) {
 			SET_GL_ERROR(GL_INVALID_ENUM)
+		}
 		break;
 	case GL_FRONT_AND_BACK:
-		if (!change_stencil_config(&stencil_fail_front, sfail))
+		if (!change_stencil_config(&stencil_fail_front, sfail)) {
 			SET_GL_ERROR(GL_INVALID_ENUM)
-		if (!change_stencil_config(&stencil_fail_back, sfail))
+		}
+		if (!change_stencil_config(&stencil_fail_back, sfail)) {
 			SET_GL_ERROR(GL_INVALID_ENUM)
-		if (!change_stencil_config(&depth_fail_front, dpfail))
+		}
+		if (!change_stencil_config(&depth_fail_front, dpfail)) {
 			SET_GL_ERROR(GL_INVALID_ENUM)
-		if (!change_stencil_config(&depth_fail_back, dpfail))
+		}
+		if (!change_stencil_config(&depth_fail_back, dpfail)) {
 			SET_GL_ERROR(GL_INVALID_ENUM)
-		if (!change_stencil_config(&depth_pass_front, dppass))
+		}
+		if (!change_stencil_config(&depth_pass_front, dppass)) {
 			SET_GL_ERROR(GL_INVALID_ENUM)
-		if (!change_stencil_config(&depth_pass_back, dppass))
+		}
+		if (!change_stencil_config(&depth_pass_back, dppass)) {
 			SET_GL_ERROR(GL_INVALID_ENUM)
+		}
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	change_stencil_settings();
 }
@@ -494,7 +505,6 @@ void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	change_stencil_settings();
 }
@@ -517,7 +527,6 @@ void glStencilMaskSeparate(GLenum face, GLuint mask) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		return;
 	}
 	change_stencil_settings();
 }

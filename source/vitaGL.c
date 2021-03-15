@@ -481,7 +481,6 @@ void glBindBuffer(GLenum target, GLuint buffer) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 }
 
@@ -514,7 +513,6 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 #ifndef SKIP_ERROR_HANDLING
 	if (size < 0) {
@@ -570,7 +568,6 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 #ifndef SKIP_ERROR_HANDLING
 	if ((size < 0) || (offset < 0) || ((offset + size) > gpu_buf->size)) {
@@ -636,7 +633,6 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	switch (dfactor) {
 	case GL_ZERO:
@@ -674,7 +670,6 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	if (blend_state)
 		change_blend_factor();
@@ -717,7 +712,6 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	switch (dstRGB) {
 	case GL_ZERO:
@@ -755,7 +749,6 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	switch (srcAlpha) {
 	case GL_ZERO:
@@ -793,7 +786,6 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	switch (dstAlpha) {
 	case GL_ZERO:
@@ -831,7 +823,6 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	if (blend_state)
 		change_blend_factor();
@@ -856,7 +847,6 @@ void glBlendEquation(GLenum mode) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	if (blend_state)
 		change_blend_factor();
@@ -881,7 +871,6 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	switch (modeAlpha) {
 	case GL_FUNC_ADD:
@@ -901,7 +890,6 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	if (blend_state)
 		change_blend_factor();
@@ -1091,7 +1079,6 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 
 	attributes->componentCount = size;
@@ -1136,7 +1123,6 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 
 	attributes->componentCount = size;
@@ -1169,7 +1155,6 @@ void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, c
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 
 	attributes->componentCount = size;
@@ -1193,7 +1178,6 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *po
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 	tex_unit->index_object = gpu_alloc_mapped_temp(count * bpe);
 	if (stride == 0)
@@ -1250,7 +1234,6 @@ void vglColorPointerMapped(GLenum type, const GLvoid *pointer) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
-		break;
 	}
 
 	attributes->componentCount = 4;
