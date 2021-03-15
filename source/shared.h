@@ -68,6 +68,15 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #include "state.h"
 #include "texture_callbacks.h"
 
+// Debugging tool
+char *get_gl_error_literal(uint32_t code);
+#ifdef FILE_LOG
+void vgl_file_log(const char *format, ...);
+#define vgl_log vgl_file_log
+#else
+#define vgl_log sceClibPrintf
+#endif
+
 extern GLboolean prim_is_non_native; // Flag for when a primitive not supported natively by sceGxm is used
 
 // Translates a GL primitive enum to its sceGxm equivalent
@@ -163,9 +172,23 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 		sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back); \
 	}
 
+#ifdef LOG_ERRORS
+#define SET_GL_ERROR(x) \
+	vgl_log("%lu) %s:%s: %s set %s\n", sceKernelGetProcessTimeWide(), __FILE__, __LINE__, __func__, get_gl_error_literal(x)); \
+	vgl_error = x; \
+	return;
+#define SET_GL_ERROR_WITH_RET(x, y) \
+	vgl_log("%lu) %s:%s: %s set %s\n", sceKernelGetProcessTimeWide(), __FILE__, __LINE__, __func__, get_gl_error_literal(x)); \
+	vgl_error = x; \
+	return y;
+#else
 #define SET_GL_ERROR(x) \
 	vgl_error = x; \
 	return;
+#define SET_GL_ERROR_WITH_RET(x, y) \
+	vgl_error = x; \
+	return y;
+#endif
 
 #ifdef HAVE_SOFTFP_ABI
 extern __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale);
@@ -237,11 +260,6 @@ extern SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM]
 extern SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 extern SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 extern SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
-
-// Debugging tool
-#ifdef ENABLE_LOG
-void LOG(const char *format, ...);
-#endif
 
 // Logging callback for vitaShaRK
 #ifdef HAVE_SHARK_LOG
@@ -383,8 +401,8 @@ void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders
 void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
-void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count); // glDrawElements implementation for rendering with custom shaders
-void _glDrawArrays_CustomShadersIMPL(GLsizei count); // glDrawArrays implementation for rendering with custom shaders
+GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count); // glDrawElements implementation for rendering with custom shaders
+GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count); // glDrawArrays implementation for rendering with custom shaders
 
 /* ffp.c */
 void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count); // glDrawElements implementation for rendering with ffp

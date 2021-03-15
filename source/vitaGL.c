@@ -105,23 +105,6 @@ uint16_t *default_line_strips_idx_ptr; // sceGxm mapped progressive indices buff
 vector4f texenv_color = {0.0f, 0.0f, 0.0f, 0.0f}; // Current in use texture environment color
 
 // Internal functions
-
-#ifdef ENABLE_LOG
-void LOG(const char *format, ...) {
-	__gnuc_va_list arg;
-	va_start(arg, format);
-	char msg[512];
-	vsprintf(msg, format, arg);
-	va_end(arg);
-	sprintf(msg, "%s\n", msg);
-	FILE *log = fopen("ux0:/data/vitaGL.log", "a+");
-	if (log != NULL) {
-		fwrite(msg, 1, strlen(msg), log);
-		fclose(log);
-	}
-}
-#endif
-
 #ifdef HAVE_CIRCULAR_VERTEX_POOL
 #define CIRCULAR_VERTEX_POOL_SIZE_DEF (32 * 1024 * 1024) // Default size in bytes for the circular vertex pool
 static uint8_t *vertex_data_pool;
@@ -380,6 +363,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 
 	// Allocating default texture object
 	texture_slots[0].mip_count = 1;
+	texture_slots[0].use_mips = GL_FALSE;
 	texture_slots[0].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 	texture_slots[0].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 	texture_slots[0].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
@@ -939,27 +923,34 @@ void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
 		change_blend_mask();
 }
 
+extern GLboolean skip_this_draw;
+
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
 	sceneReset();
-
+	GLboolean is_draw_legal = GL_TRUE;
+	
 	if (cur_program != 0)
-		_glDrawArrays_CustomShadersIMPL(first + count);
+		is_draw_legal = _glDrawArrays_CustomShadersIMPL(first + count);
 	else {
 		if (!(ffp_vertex_attrib_state & (1 << 0)))
 			return;
 		_glDrawArrays_FixedFunctionIMPL(first + count);
 	}
-
-	if (prim_is_non_native)
-		if (gxm_p == SCE_GXM_PRIMITIVE_TRIANGLES) // GL_QUADS
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_quads_idx_ptr + (first / 2) * 3, (count / 2) * 3);
-		else // GL_LINE_STRIP
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_line_strips_idx_ptr + first * 2, (count - 1) * 2);
-	else
-		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
-		
+	
+#ifndef SKIP_ERROR_HANDLING
+	if (is_draw_legal)
+#endif
+	{
+		if (prim_is_non_native)
+			if (gxm_p == SCE_GXM_PRIMITIVE_TRIANGLES) // GL_QUADS
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_quads_idx_ptr + (first / 2) * 3, (count / 2) * 3);
+			else // GL_LINE_STRIP
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_line_strips_idx_ptr + first * 2, (count - 1) * 2);
+		else
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
+	}
 	restore_polygon_mode(gxm_p);
 }
 
@@ -973,87 +964,93 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-
+	
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
 	sceneReset();
+	GLboolean is_draw_legal = GL_TRUE;
 
 	gpubuffer *gpu_buf = (gpubuffer *)index_array_unit;
 	if (cur_program != 0)
-		_glDrawElements_CustomShadersIMPL(index_array_unit ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices, count);
+		is_draw_legal = _glDrawElements_CustomShadersIMPL(index_array_unit ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices, count);
 	else {
 		if (!(ffp_vertex_attrib_state & (1 << 0)))
 			return;
 		_glDrawElements_FixedFunctionIMPL(index_array_unit ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices, count);
 	}
 
-	if (!gpu_buf) { // Drawing without an index buffer
+#ifndef SKIP_ERROR_HANDLING
+	if (is_draw_legal)
+#endif
+	{
+		if (!gpu_buf) { // Drawing without an index buffer
 
-		// Allocating a temp buffer for the indices
-		void *ptr;
-		if (prim_is_non_native) {
-			int i;
-			uint16_t *dst = (uint16_t *)ptr;
-			uint16_t *src = (uint16_t *)gl_indices;
-			if (gxm_p == SCE_GXM_PRIMITIVE_TRIANGLES) { // GL_QUADS	
-				ptr = gpu_alloc_mapped_temp(count * 3);
-				for (i = 0; i < count / 4; i++) {
-					dst[i * 6] = src[i * 4];
-					dst[i * 6 + 1] = src[i * 4 + 1];
-					dst[i * 6 + 2] = src[i * 4 + 3];
-					dst[i * 6 + 3] = src[i * 4 + 1];
-					dst[i * 6 + 4] = src[i * 4 + 2];
-					dst[i * 6 + 5] = src[i * 4 + 3];
+			// Allocating a temp buffer for the indices
+			void *ptr;
+			if (prim_is_non_native) {
+				int i;
+				uint16_t *dst = (uint16_t *)ptr;
+				uint16_t *src = (uint16_t *)gl_indices;
+				if (gxm_p == SCE_GXM_PRIMITIVE_TRIANGLES) { // GL_QUADS	
+					ptr = gpu_alloc_mapped_temp(count * 3);
+					for (i = 0; i < count / 4; i++) {
+						dst[i * 6] = src[i * 4];
+						dst[i * 6 + 1] = src[i * 4 + 1];
+						dst[i * 6 + 2] = src[i * 4 + 3];
+						dst[i * 6 + 3] = src[i * 4 + 1];
+						dst[i * 6 + 4] = src[i * 4 + 2];
+						dst[i * 6 + 5] = src[i * 4 + 3];
+					}
+					count = (count / 2) * 3;
+				} else { // GL_LINE_STRIP
+					ptr = gpu_alloc_mapped_temp((count - 1) * 4);
+					dst[0] = src[0];
+					for (i = 1; i < count - 1; i++) {
+						dst[(i - 1) * 2 + 1] = src[i];
+						dst[(i - 1) * 2 + 2] = src[i];
+					}
+					dst[(count - 1) * 2 - 1] = src[count - 1];
+					count = (count - 1) * 2;
 				}
-				count = (count / 2) * 3;
-			} else { // GL_LINE_STRIP
-				ptr = gpu_alloc_mapped_temp((count - 1) * 4);
-				dst[0] = src[0];
-				for (i = 1; i < count - 1; i++) {
-					dst[(i - 1) * 2 + 1] = src[i];
-					dst[(i - 1) * 2 + 2] = src[i];
-				}
-				dst[(count - 1) * 2 - 1] = src[count - 1];
-				count = (count - 1) * 2;
+			} else {
+				ptr = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
+				sceClibMemcpy(ptr, gl_indices, count * sizeof(uint16_t));
 			}
-		} else {
-			ptr = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
-			sceClibMemcpy(ptr, gl_indices, count * sizeof(uint16_t));
-		}
 
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
-	} else { // Drawing with an index buffer
+		} else { // Drawing with an index buffer
 
-		// If primitive is not supported natively by sceGxm, we need a temporary buffer still
-		if (prim_is_non_native) {
-			int i;
-			uint16_t *src = (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices);
-			if (gxm_p == SCE_GXM_PRIMITIVE_TRIANGLES) { // GL_QUADS	
-				void *ptr = gpu_alloc_mapped_temp(count * 3);
-				uint16_t *dst = (uint16_t *)ptr;
-				for (i = 0; i < count / 4; i++) {
-					dst[i * 6] = src[i * 4];
-					dst[i * 6 + 1] = src[i * 4 + 1];
-					dst[i * 6 + 2] = src[i * 4 + 3];
-					dst[i * 6 + 3] = src[i * 4 + 1];
-					dst[i * 6 + 4] = src[i * 4 + 2];
-					dst[i * 6 + 5] = src[i * 4 + 3];
+			// If primitive is not supported natively by sceGxm, we need a temporary buffer still
+			if (prim_is_non_native) {
+				int i;
+				uint16_t *src = (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices);
+				if (gxm_p == SCE_GXM_PRIMITIVE_TRIANGLES) { // GL_QUADS	
+					void *ptr = gpu_alloc_mapped_temp(count * 3);
+					uint16_t *dst = (uint16_t *)ptr;
+					for (i = 0; i < count / 4; i++) {
+						dst[i * 6] = src[i * 4];
+						dst[i * 6 + 1] = src[i * 4 + 1];
+						dst[i * 6 + 2] = src[i * 4 + 3];
+						dst[i * 6 + 3] = src[i * 4 + 1];
+						dst[i * 6 + 4] = src[i * 4 + 2];
+						dst[i * 6 + 5] = src[i * 4 + 3];
+					}
+					sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, (count / 2) * 3);
+				} else { // GL_LINE_STRIP
+					void *ptr = gpu_alloc_mapped_temp((count - 1) * 4);
+					uint16_t *dst = (uint16_t *)ptr;
+					dst[0] = src[0];
+					for (i = 1; i < count - 1; i++) {
+						dst[(i - 1) * 2 + 1] = src[i];
+						dst[(i - 1) * 2 + 2] = src[i];
+					}
+					dst[(count - 1) * 2 - 1] = src[count - 1];
+					sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, (count - 1) * 2);
 				}
-				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, (count / 2) * 3);
-			} else { // GL_LINE_STRIP
-				void *ptr = gpu_alloc_mapped_temp((count - 1) * 4);
-				uint16_t *dst = (uint16_t *)ptr;
-				dst[0] = src[0];
-				for (i = 1; i < count - 1; i++) {
-					dst[(i - 1) * 2 + 1] = src[i];
-					dst[(i - 1) * 2 + 2] = src[i];
-				}
-				dst[(count - 1) * 2 - 1] = src[count - 1];
-				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, (count - 1) * 2);
+			} else {
+				gpu_buf->used = GL_TRUE;
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices, count);
 			}
-		} else {
-			gpu_buf->used = GL_TRUE;
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, (uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices, count);
 		}
 	}
 	

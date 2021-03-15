@@ -53,8 +53,7 @@ uint32_t get_color_from_texture(uint32_t type) {
 		res = SCE_GXM_COLOR_FORMAT_U8_A;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
-		break;
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, 0)
 	}
 	return res;
 }
@@ -280,9 +279,7 @@ GLenum glCheckFramebufferStatus(GLenum target) {
 		fb = active_read_fb;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
-		return GL_FRAMEBUFFER_COMPLETE;
-		break;
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, GL_FRAMEBUFFER_COMPLETE)
 	}
 
 	if (!fb)

@@ -49,6 +49,14 @@ ifeq ($(SAMPLER_UNIFORMS),1)
 CFLAGS += -DHAVE_SAMPLERS_AS_UNIFORMS
 endif
 
+ifeq ($(LOG_ERRORS),1)
+CFLAGS += -DLOG_ERRORS
+endif
+
+ifeq ($(LOG_ERRORS),2)
+CFLAGS += -DLOG_ERRORS -DFILE_LOG
+endif
+
 all: $(TARGET).a
 
 $(TARGET).a: $(OBJS)

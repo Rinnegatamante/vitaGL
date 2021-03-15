@@ -79,8 +79,7 @@ const GLubyte *glGetString(GLenum name) {
 	case GL_SHADING_LANGUAGE_VERSION: // Supported shading language version
 		return glsl_version;
 	default:
-		vgl_error = GL_INVALID_ENUM;
-		return NULL;
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
 	}
 }
 
@@ -89,8 +88,7 @@ const GLubyte *glGetStringi(GLenum name, GLuint index) {
 	case GL_EXTENSIONS:
 		return extensions[index];
 	default:
-		vgl_error = GL_INVALID_ENUM;
-		return NULL;
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
 	}
 }
 
@@ -322,8 +320,7 @@ GLboolean glIsEnabled(GLenum cap) {
 		ret = light_mask & (1 << (cap - GL_LIGHT0)) ? GL_TRUE : GL_FALSE;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
-		break;
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, GL_FALSE)
 	}
 	return ret;
 }
@@ -338,8 +335,7 @@ GLboolean glIsTexture(GLuint i) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
-		vgl_error = GL_INVALID_ENUM;
-		return GL_FALSE;
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, GL_FALSE)
 	}
 #endif
 

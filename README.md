@@ -7,11 +7,14 @@ If you already have a newlib sbrk replacement in your app (eg. RetroArch), use i
 <br>These are all the available flags usable when compiling the library:<br>
 `HAVE_SBRK=1` Enables internal custom implementation for sbrk.c from newlib.<br>
 `HAVE_SHARK_LOG=1` Enables logging support in runtime shader compiler.<br>
+`LOG_ERRORS=1` Errors will be logged with sceClibPrintf.<br>
+`LOG_ERRORS=2` Errors will be logged to ux0:data/vitaGL.log.<br>
 `NO_DEBUG=1` Disables most of the error handling features (Faster CPU code execution but code may be non compliant to all OpenGL standards).<br>
 `SOFTFP_ABI=1` Compiles the library in soft floating point compatibility mode.<br>
 `HAVE_UNFLIPPED_FBOS=1` Framebuffers objects won't be internally flipped to match OpenGL standards.<br>
 `SHARED_RENDERTARGETS=1` Makes small framebuffers objects use shared rendertargets instead of dedicated ones.<br>
 `CIRCULAR_VERTEX_POOL=1` Makes temporary data buffers being handled with a circular pool.<br>
+`SAMPLER_UNIFORMS=1` When enabled, shader samplers are treated as uniforms.<br>
 # Samples
 
 You can find samples in the *samples* folder in this repository.

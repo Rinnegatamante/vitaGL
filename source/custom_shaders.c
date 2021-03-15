@@ -224,11 +224,30 @@ void resetCustomShaders(void) {
 	}
 }
 
-void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
+GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	program *p = &progs[cur_program - 1];
-
-	// Aligning attributes
+	
+	// Check if a blend info rebuild is required and upload fragment program
+	if (p->blend_info.raw != blend_info.raw) {
+		p->blend_info.raw = blend_info.raw;
+		rebuild_frag_shader(p->fshader->id, &p->fprog);
+	}
+	sceGxmSetFragmentProgram(gxm_context, p->fprog);
+	
+	// Uploading textures on relative texture units
 	int i;
+	for (i = 0; i < GL_MAX_TEXTURE_IMAGE_UNITS; i++) {
+		if (p->texunits[i]) {
+			texture_unit *tex_unit = &texture_units[client_texture_unit + i];
+#ifndef SKIP_ERROR_HANDLING
+			if (sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex))
+				return GL_FALSE;
+#endif
+			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
+		}
+	}
+	
+	// Aligning attributes
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
 	uint8_t real_i[GL_MAX_VERTEX_ATTRIBS] = {0, 1, 2, 3, 4, 5, 6, 7};
@@ -301,9 +320,11 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		}
 	}
-
+	
+	// Uploading new vertex program
 	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
-
+	sceGxmSetVertexProgram(gxm_context, p->vprog);
+	
 	// Restoring stride values to their original settings
 	if (!p->has_unaligned_attrs) {
 		for (i = 0; i < p->attr_num; i++) {
@@ -314,16 +335,6 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			}
 		}
 	}
-
-	// Check if a blend info rebuild is required
-	if (p->blend_info.raw != blend_info.raw) {
-		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog);
-	}
-
-	// Setting up required shader
-	sceGxmSetVertexProgram(gxm_context, p->vprog);
-	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 
 	// Uploading both fragment and vertex uniforms data
 	void *buffer;
@@ -347,14 +358,6 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		}
 	}
 
-	// Uploading textures on relative texture units
-	for (i = 0; i < GL_MAX_TEXTURE_IMAGE_UNITS; i++) {
-		if (p->texunits[i]) {
-			texture_unit *tex_unit = &texture_units[client_texture_unit + i];
-			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
-		}
-	}
-
 	// Uploading vertex streams
 	for (i = 0; i < p->attr_num; i++) {
 		if (vertex_attrib_state & (1 << real_i[i])) {
@@ -366,13 +369,34 @@ void _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			attributes[i].regIndex = i;
 		}
 	}
+	
+	return GL_TRUE;
 }
 
-void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
+GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	program *p = &progs[cur_program - 1];
+	
+	// Check if a blend info rebuild is required and upload fragment program
+	if (p->blend_info.raw != blend_info.raw) {
+		p->blend_info.raw = blend_info.raw;
+		rebuild_frag_shader(p->fshader->id, &p->fprog);
+	}
+	sceGxmSetFragmentProgram(gxm_context, p->fprog);
+
+	// Uploading textures on relative texture units
+	int i;
+	for (i = 0; i < GL_MAX_TEXTURE_IMAGE_UNITS; i++) {
+		if (p->texunits[i]) {
+			texture_unit *tex_unit = &texture_units[client_texture_unit + i];
+#ifndef SKIP_ERROR_HANDLING
+			if (sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex))
+				return GL_FALSE;
+#endif
+			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
+		}
+	}
 
 	// Aligning attributes
-	int i;
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
 	uint8_t real_i[GL_MAX_VERTEX_ATTRIBS] = {0, 1, 2, 3, 4, 5, 6, 7};
@@ -459,8 +483,10 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		}
 	}
 
+	// Uploading new vertex program
 	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
-
+	sceGxmSetVertexProgram(gxm_context, p->vprog);
+	
 	// Restoring stride values to their original settings
 	if (!p->has_unaligned_attrs) {
 		for (i = 0; i < p->attr_num; i++) {
@@ -471,16 +497,6 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 			}
 		}
 	}
-
-	// Check if a blend info rebuild is required
-	if (p->blend_info.raw != blend_info.raw) {
-		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog);
-	}
-
-	// Setting up required shader
-	sceGxmSetVertexProgram(gxm_context, p->vprog);
-	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 
 	// Uploading both fragment and vertex uniforms data
 	void *buffer;
@@ -504,14 +520,6 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		}
 	}
 
-	// Uploading textures on relative texture units
-	for (i = 0; i < GL_MAX_TEXTURE_IMAGE_UNITS; i++) {
-		if (p->texunits[i]) {
-			texture_unit *tex_unit = &texture_units[client_texture_unit + i];
-			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
-		}
-	}
-
 	// Uploading vertex streams
 	for (i = 0; i < p->attr_num; i++) {
 		if (vertex_attrib_state & (1 << real_i[i])) {
@@ -523,6 +531,8 @@ void _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 			attributes[i].regIndex = i;
 		}
 	}
+	
+	return GL_TRUE;
 }
 
 void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
@@ -651,8 +661,7 @@ GLuint glCreateShader(GLenum shaderType) {
 		shaders[res - 1].type = GL_VERTEX_SHADER;
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
-		return 0;
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, 0)
 		break;
 	}
 	shaders[res - 1].valid = GL_TRUE;
@@ -1698,8 +1707,7 @@ GLint vglBindPackedAttribLocation(GLuint prog, const GLchar *name, const GLuint 
 		bpe = sizeof(uint8_t);
 		break;
 	default:
-		vgl_error = GL_INVALID_ENUM;
-		return GL_FALSE;
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, GL_FALSE)
 		break;
 	}
 
