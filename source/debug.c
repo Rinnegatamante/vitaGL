@@ -34,6 +34,7 @@ void vgl_file_log(const char *format, ...) {
 }
 #endif
 
+#ifdef LOG_ERRORS
 char *get_gl_error_literal(uint32_t code) {
 	switch (code) {
 	case GL_INVALID_VALUE:
@@ -111,3 +112,4 @@ char *get_gxm_error_literal(uint32_t code) {
 		return "Unknown Error";
 	}
 }
+#endif
