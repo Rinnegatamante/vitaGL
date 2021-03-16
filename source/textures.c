@@ -61,8 +61,10 @@ void glGenTextures(GLsizei n, GLuint *res) {
 			texture_slots[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
 		}
 		if (j >= n)
-			break;
+			return;
 	}
+	
+	vgl_log("glGenTextures: Texture slots limit reached (%i textures hadn't been generated).\n", n - j);
 }
 
 void glBindTexture(GLenum target, GLuint texture) {

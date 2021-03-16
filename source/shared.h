@@ -70,11 +70,14 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 // Debugging tool
 char *get_gl_error_literal(uint32_t code);
+char *get_gxm_error_literal(uint32_t code);
 #ifdef FILE_LOG
 void vgl_file_log(const char *format, ...);
 #define vgl_log vgl_file_log
-#else
+#elif defined(LOG_ERRORS)
 #define vgl_log sceClibPrintf
+#else
+#define vgl_log(...)
 #endif
 
 extern GLboolean prim_is_non_native; // Flag for when a primitive not supported natively by sceGxm is used

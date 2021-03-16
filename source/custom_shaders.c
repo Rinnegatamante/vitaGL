@@ -240,8 +240,11 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		if (p->texunits[i]) {
 			texture_unit *tex_unit = &texture_units[client_texture_unit + i];
 #ifndef SKIP_ERROR_HANDLING
-			if (sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex))
+			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex);
+			if (r) {
+				vgl_log("glDrawArrays: Texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", i, get_gxm_error_literal(r));
 				return GL_FALSE;
+			}
 #endif
 			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
 		}
@@ -389,8 +392,11 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		if (p->texunits[i]) {
 			texture_unit *tex_unit = &texture_units[client_texture_unit + i];
 #ifndef SKIP_ERROR_HANDLING
-			if (sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex))
+			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex);
+			if (r) {
+				vgl_log("glDrawElements: Texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", i, get_gxm_error_literal(r));
 				return GL_FALSE;
+			}
 #endif
 			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
 		}
