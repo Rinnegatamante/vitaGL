@@ -28,6 +28,15 @@
 
 #define DISABLED_ATTRIBS_POOL_SIZE (256 * 1024) // Disabled attributes circular pool size in bytes
 
+#define disableDrawAttrib(i) \
+	orig_stride[i] = streams[i].stride; \
+	orig_fmt[i] = attributes[i].format; \
+	orig_size[i] = attributes[i].componentCount; \
+	streams[i].stride = 0; \
+	attributes[i].offset = 0; \
+	attributes[i].componentCount = vertex_attrib_size[real_i[i]]; \
+	attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+
 // Internal stuffs
 GLboolean use_shark = GL_TRUE; // Flag to check if vitaShaRK should be initialized at vitaGL boot
 GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status
@@ -290,8 +299,12 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
 		sceClibMemcpy(ptrs[0], (void *)vertex_attrib_offsets[real_i[0]], count * streams[0].stride);
 		for (i = 0; i < p->attr_num; i++) {
-			attributes[i].offset = vertex_attrib_offsets[real_i[i]] - vertex_attrib_offsets[real_i[0]];
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
+			if (vertex_attrib_state & (1 << real_i[i])) {
+				attributes[i].offset = vertex_attrib_offsets[real_i[i]] - vertex_attrib_offsets[real_i[0]];
+			} else {
+				disableDrawAttrib(i)
+			}
 		}
 	} else {
 		for (i = 0; i < p->attr_num; i++) {
@@ -307,37 +320,15 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 					sceClibMemcpy(ptrs[i], (void *)vertex_attrib_offsets[real_i[i]], count * streams[i].stride);
 					attributes[i].offset = 0;
 				}
+			} else {
+				disableDrawAttrib(i)
 			}
-		}
-	}
-
-	// Making disabled vertex attribs to loop
-	for (i = 0; i < p->attr_num; i++) {
-		if (!(vertex_attrib_state & (1 << real_i[i]))) {
-			orig_stride[i] = streams[i].stride;
-			orig_fmt[i] = attributes[i].format;
-			orig_size[i] = attributes[i].componentCount;
-			streams[i].stride = 0;
-			attributes[i].offset = 0;
-			attributes[i].componentCount = vertex_attrib_size[real_i[i]];
-			attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		}
 	}
 	
 	// Uploading new vertex program
 	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
-	
-	// Restoring stride values to their original settings
-	if (!p->has_unaligned_attrs) {
-		for (i = 0; i < p->attr_num; i++) {
-			if (!(vertex_attrib_state & (1 << i))) {
-				streams[i].stride = orig_stride[i];
-				attributes[i].componentCount = orig_size[i];
-				attributes[i].format = orig_fmt[i];
-			}
-		}
-	}
 
 	// Uploading both fragment and vertex uniforms data
 	void *buffer;
@@ -363,13 +354,19 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 
 	// Uploading vertex streams
 	for (i = 0; i < p->attr_num; i++) {
-		if (vertex_attrib_state & (1 << real_i[i])) {
+		GLboolean is_active = vertex_attrib_state & (1 << real_i[i]);
+		if (is_active) {
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
 		} else {
 			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[real_i[i]]);
 		}
 		if (!p->has_unaligned_attrs) {
 			attributes[i].regIndex = i;
+			if (!is_active) {
+				streams[i].stride = orig_stride[i];
+				attributes[i].componentCount = orig_size[i];
+				attributes[i].format = orig_fmt[i];
+			}
 		}
 	}
 	
@@ -455,8 +452,12 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		ptrs[0] = gpu_alloc_mapped_temp(top_idx * streams[0].stride);
 		sceClibMemcpy(ptrs[0], (void *)vertex_attrib_offsets[real_i[0]], top_idx * streams[0].stride);
 		for (i = 0; i < p->attr_num; i++) {
-			attributes[i].offset = vertex_attrib_offsets[real_i[i]] - vertex_attrib_offsets[real_i[0]];
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
+			if (vertex_attrib_state & (1 << real_i[i])) {
+				attributes[i].offset = vertex_attrib_offsets[real_i[i]] - vertex_attrib_offsets[real_i[0]];
+			} else {
+				disableDrawAttrib(i)
+			}
 		}
 	} else {
 		for (i = 0; i < p->attr_num; i++) {
@@ -472,37 +473,15 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 					sceClibMemcpy(ptrs[i], (void *)vertex_attrib_offsets[real_i[i]], top_idx * streams[i].stride);
 					attributes[i].offset = 0;
 				}
+			} else {
+				disableDrawAttrib(i)
 			}
-		}
-	}
-
-	// Making disabled vertex attribs to loop
-	for (i = 0; i < p->attr_num; i++) {
-		if (!(vertex_attrib_state & (1 << real_i[i]))) {
-			orig_stride[i] = streams[i].stride;
-			orig_fmt[i] = attributes[i].format;
-			orig_size[i] = attributes[i].componentCount;
-			streams[i].stride = 0;
-			attributes[i].offset = 0;
-			attributes[i].componentCount = vertex_attrib_size[real_i[i]];
-			attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		}
 	}
 
 	// Uploading new vertex program
 	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
-	
-	// Restoring stride values to their original settings
-	if (!p->has_unaligned_attrs) {
-		for (i = 0; i < p->attr_num; i++) {
-			if (!(vertex_attrib_state & (1 << i))) {
-				streams[i].stride = orig_stride[i];
-				attributes[i].componentCount = orig_size[i];
-				attributes[i].format = orig_fmt[i];
-			}
-		}
-	}
 
 	// Uploading both fragment and vertex uniforms data
 	void *buffer;
@@ -528,13 +507,19 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 
 	// Uploading vertex streams
 	for (i = 0; i < p->attr_num; i++) {
-		if (vertex_attrib_state & (1 << real_i[i])) {
+		GLboolean is_active = vertex_attrib_state & (1 << real_i[i]);
+		if (is_active) {
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
 		} else {
 			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[real_i[i]]);
 		}
 		if (!p->has_unaligned_attrs) {
 			attributes[i].regIndex = i;
+			if (!is_active) {
+				streams[i].stride = orig_stride[i];
+				attributes[i].componentCount = orig_size[i];
+				attributes[i].format = orig_fmt[i];
+			}
 		}
 	}
 	
