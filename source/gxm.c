@@ -167,6 +167,11 @@ static void display_queue_callback(const void *callbackData) {
 
 GLboolean startShaderCompiler(void) {
 	is_shark_online = shark_init(NULL) >= 0;
+	
+	// If standard path failed to init we try to init it with ScePiglet path
+	if (!is_shark_online)
+		is_shark_online = shark_init("ur0:data/external/libshacccg.suprx") >= 0;
+	
 	return is_shark_online;
 }
 
