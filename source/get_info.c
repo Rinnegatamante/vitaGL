@@ -80,12 +80,12 @@ const GLubyte *glGetString(GLenum name) {
 			for (i = 0; i < NUM_EXTENSIONS; i++) {
 				size += strlen(extensions[i]) + 1;
 			}
-			extension = malloc(size);
+			extension = malloc(size + 1);
 			extension[0] = 0;
 			for (i = 0; i < NUM_EXTENSIONS; i++) {
 				sprintf(extension, "%s%s ", extension, extensions[i]);
 			}
-			extension[size] = 0;
+			extension[size - 1] = 0;
 		}
 		return extension;
 	case GL_SHADING_LANGUAGE_VERSION: // Supported shading language version
