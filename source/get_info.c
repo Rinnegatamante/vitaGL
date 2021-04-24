@@ -28,10 +28,10 @@
 #define NUM_EXTENSIONS 11 // Number of supported extensions
 
 // Constants returned by glGetString
-static GLubyte *vendor = "Rinnegatamante";
-static GLubyte *renderer = "SGX543MP4+";
-static GLubyte *version = "OpenGL ES 2 VitaGL";
-static GLubyte *glsl_version = "2.00 NVIDIA via Cg compiler";
+static GLubyte *vendor = NULL;
+static GLubyte *renderer = NULL;
+static GLubyte *version = NULL;
+static GLubyte *glsl_version = NULL;
 
 static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_OES_vertex_half_float",
@@ -57,10 +57,22 @@ static GLubyte *extension = NULL;
 const GLubyte *glGetString(GLenum name) {
 	switch (name) {
 	case GL_VENDOR: // Vendor
+		if (!vendor) {
+			vendor = malloc(15);
+			strcpy(vendor, "Rinnegatamante");
+		}
 		return vendor;
 	case GL_RENDERER: // Renderer
+		if (!renderer) {
+			renderer = malloc(11);
+			strcpy(renderer, "SGX543MP4+");
+		}
 		return renderer;
 	case GL_VERSION: // openGL Version
+		if (!version) {
+			version = malloc(19);
+			strcpy(version, "OpenGL ES 2 VitaGL");
+		}
 		return version;
 	case GL_EXTENSIONS: // Supported extensions
 		if (!extension) {
@@ -77,6 +89,10 @@ const GLubyte *glGetString(GLenum name) {
 		}
 		return extension;
 	case GL_SHADING_LANGUAGE_VERSION: // Supported shading language version
+		if (!glsl_version) {
+			glsl_version = malloc(28);
+			strcpy(glsl_version, "2.00 NVIDIA via Cg compiler");
+		}
 		return glsl_version;
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
