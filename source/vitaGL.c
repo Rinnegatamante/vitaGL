@@ -440,6 +440,12 @@ void vglEnd(void) {
 
 	// Terminating sceGxm
 	sceGxmTerminate();
+	
+#ifdef HAVE_RAZOR
+	// Terminating sceRazor debugger
+	sceSysmoduleUnloadModule(SCE_SYSMODULE_RAZOR_HUD);
+	sceSysmoduleUnloadModule(SCE_SYSMODULE_RAZOR_CAPTURE);
+#endif
 }
 
 void vglWaitVblankStart(GLboolean enable) {

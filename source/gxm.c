@@ -87,6 +87,8 @@ int frame_elem_purge_idx = 0; // Index for currently populatable purge list elem
 int frame_rt_purge_idx = 0; // Index for currently populatable purge list rendetarget
 static int frame_purge_clean_idx = 1;
 
+#define RAZOR_FPC 120 // Number of frames per sceRazor capture
+
 #ifdef HAVE_SHARED_RENDERTARGETS
 #define MAX_RENDER_TARGETS_NUM 47 // Maximum amount of dedicated render targets usable for fbos
 #define MAX_SHARED_RT_SIZE 256 // Maximum  width value in pixels for shared rendertargets usage
@@ -178,6 +180,12 @@ GLboolean startShaderCompiler(void) {
 void initGxm(void) {
 	if (gxm_initialized)
 		return;
+
+#ifdef HAVE_RAZOR
+	// Initializing sceRazor debugger
+	sceSysmoduleLoadModule(SCE_SYSMODULE_RAZOR_CAPTURE);
+	sceRazorGpuCaptureSetTrigger(RAZOR_FPC, "ux0:data/vitaGL.sgx");
+#endif
 
 	// Initializing runtime shader compiler
 	if (use_shark) {
@@ -579,6 +587,9 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		if (system_app_mode)
 			sceSharedFbEnd(shared_fb);
 		else {
+#ifdef HAVE_RAZOR
+			sceGxmPadHeartbeat(&gxm_color_surfaces_addr[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
+#endif
 			struct display_queue_callback_data queue_cb_data;
 			queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
 			sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],

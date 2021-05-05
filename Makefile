@@ -57,6 +57,10 @@ ifeq ($(LOG_ERRORS),2)
 CFLAGS += -DLOG_ERRORS -DFILE_LOG
 endif
 
+ifeq ($(HAVE_RAZOR),1)
+CFLAGS += -DHAVE_RAZOR
+endif
+
 all: $(TARGET).a
 
 $(TARGET).a: $(OBJS)

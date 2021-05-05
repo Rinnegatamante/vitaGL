@@ -15,6 +15,7 @@ If you already have a newlib sbrk replacement in your app (eg. RetroArch), use i
 `SHARED_RENDERTARGETS=1` Makes small framebuffers objects use shared rendertargets instead of dedicated ones.<br>
 `CIRCULAR_VERTEX_POOL=1` Makes temporary data buffers being handled with a circular pool.<br>
 `SAMPLER_UNIFORMS=1` When enabled, shader samplers are treated as uniforms.<br>
+`HAVE_RAZOR=1` Enables debugging features through Razor debugger.<br>
 # Samples
 
 You can find samples in the *samples* folder in this repository.
