@@ -42,10 +42,6 @@ static SceGxmSyncObject *gxm_sync_objects[DISPLAY_MAX_BUFFER_COUNT]; // Display 
 unsigned int gxm_front_buffer_index; // Display front buffer id
 unsigned int gxm_back_buffer_index; // Display back buffer id
 
-#ifdef HAVE_RAZOR
-#define RAZOR_FPC 120 // Number of frames per sceRazor capture
-#endif
-
 static void *gxm_shader_patcher_buffer_addr; // Shader PAtcher buffer memblock starting address
 static void *gxm_shader_patcher_vertex_usse_addr; // Shader Patcher vertex USSE memblock starting address
 static void *gxm_shader_patcher_fragment_usse_addr; // Shader Patcher fragment USSE memblock starting address
@@ -185,8 +181,8 @@ void initGxm(void) {
 
 #ifdef HAVE_RAZOR
 	// Initializing sceRazor debugger
+	sceSysmoduleLoadModule(SCE_SYSMODULE_RAZOR_HUD);
 	sceSysmoduleLoadModule(SCE_SYSMODULE_RAZOR_CAPTURE);
-	sceRazorGpuCaptureSetTrigger(RAZOR_FPC, "ux0:data/vitaGL.sgx");
 #endif
 
 	// Initializing runtime shader compiler
@@ -610,7 +606,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 			sceSharedFbEnd(shared_fb);
 		else {
 #ifdef HAVE_RAZOR
-			sceGxmPadHeartbeat(&gxm_color_surfaces_addr[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
+			sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
 #endif
 			struct display_queue_callback_data queue_cb_data;
 			queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
