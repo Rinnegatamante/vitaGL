@@ -123,7 +123,7 @@ uint8_t *reserve_data_pool(uint32_t size) {
 #endif
 
 void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog) {
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+	patchFragmentProgram(gxm_shader_patcher,
 		pid, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		msaa_mode, &blend_info.info, NULL, prog);
 }
@@ -237,10 +237,10 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	clear_depth = sceGxmProgramFindParameterByName(clear_vertex_program, "u_clear_depth");
 	clear_color = sceGxmProgramFindParameterByName(clear_fragment_program, "u_clear_color");
 
-	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
+	patchVertexProgram(gxm_shader_patcher,
 		clear_vertex_id, NULL, 0, NULL, 0, &clear_vertex_program_patched);
 
-	sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+	patchFragmentProgram(gxm_shader_patcher,
 		clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		msaa_mode, NULL, NULL,
 		&clear_fragment_program_patched);
@@ -1010,7 +1010,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 				sceClibMemcpy(ptr, gl_indices, count * sizeof(uint16_t));
 			}
 
-		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		} else { // Drawing with an index buffer
 
 			// If primitive is not supported natively by sceGxm, we need a temporary buffer still

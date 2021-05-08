@@ -42,6 +42,10 @@ static SceGxmSyncObject *gxm_sync_objects[DISPLAY_MAX_BUFFER_COUNT]; // Display 
 unsigned int gxm_front_buffer_index; // Display front buffer id
 unsigned int gxm_back_buffer_index; // Display back buffer id
 
+#ifdef HAVE_RAZOR
+#define RAZOR_FPC 120 // Number of frames per sceRazor capture
+#endif
+
 static void *gxm_shader_patcher_buffer_addr; // Shader PAtcher buffer memblock starting address
 static void *gxm_shader_patcher_vertex_usse_addr; // Shader Patcher vertex USSE memblock starting address
 static void *gxm_shader_patcher_fragment_usse_addr; // Shader Patcher fragment USSE memblock starting address
@@ -86,8 +90,6 @@ int frame_purge_idx = 0; // Index for currently populatable purge list
 int frame_elem_purge_idx = 0; // Index for currently populatable purge list element
 int frame_rt_purge_idx = 0; // Index for currently populatable purge list rendetarget
 static int frame_purge_clean_idx = 1;
-
-#define RAZOR_FPC 120 // Number of frames per sceRazor capture
 
 #ifdef HAVE_SHARED_RENDERTARGETS
 #define MAX_RENDER_TARGETS_NUM 47 // Maximum amount of dedicated render targets usable for fbos
@@ -473,11 +475,21 @@ void sceneReset(void) {
 				shared_fb_info.vsync = vblank;
 				gxm_back_buffer_index = (shared_fb_info.index + 1) % 2;
 			}
+#ifdef LOG_ERRORS
+			int r = sceGxmBeginScene(gxm_context, 0, gxm_render_target,
+				NULL, NULL,
+				gxm_sync_objects[gxm_back_buffer_index],
+				&gxm_color_surfaces[gxm_back_buffer_index],
+				&gxm_depth_stencil_surface);
+			if (r)
+				vgl_log("Scene reset failed due to sceGxmBeginScene erroring (%s) on display.\n", get_gxm_error_literal(r));
+#else
 			sceGxmBeginScene(gxm_context, 0, gxm_render_target,
 				NULL, NULL,
 				gxm_sync_objects[gxm_back_buffer_index],
 				&gxm_color_surfaces[gxm_back_buffer_index],
 				&gxm_depth_stencil_surface);
+#endif
 		} else {
 			// If a rendertarget is not bound to the in use framebuffer, we get one for it
 			if (!active_write_fb->target) {
@@ -498,13 +510,23 @@ void sceneReset(void) {
 			}
 #ifdef HAVE_SHARED_RENDERTARGETS
 			render_target *fbo_rt = (render_target *)active_write_fb->target;
+#ifdef LOG_ERRORS
+			int r = 
+#endif
 			sceGxmBeginScene(gxm_context, 0, fbo_rt->rt,
 #else
+#ifdef LOG_ERRORS
+			int r = 
+#endif
 			sceGxmBeginScene(gxm_context, 0, active_write_fb->target,
 #endif
 				NULL, NULL, NULL,
 				&active_write_fb->colorbuffer,
 				&active_write_fb->depthbuffer);
+#ifdef LOG_ERRORS
+			if (r)
+				vgl_log("Scene reset failed due to sceGxmBeginScene erroring (%s) on framebuffer 0x%08X.\n", get_gxm_error_literal(r), active_write_fb);
+#endif
 		}
 
 		// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call

@@ -185,6 +185,12 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 	vgl_log("%lu) %s:%s: %s set %s\n", sceKernelGetProcessTimeWide(), __FILE__, __LINE__, __func__, get_gl_error_literal(x)); \
 	vgl_error = x; \
 	return y;
+#define patchVertexProgram(patcher, id, attr, attr_num, stream, stream_num, prog) \
+	int __v = sceGxmShaderPatcherCreateVertexProgram(patcher, id, attr, attr_num, stream, stream_num, prog); \
+	if (__v) vgl_log("Vertex shader patching failed (%s) on shader %d with %d attributes and %d streams.\n", get_gxm_error_literal(__v), id, attr_num, stream_num);
+#define patchFragmentProgram(patcher, id, fmt, msaa_mode, blend_cfg, vertex_link, prog) \
+	int __f = sceGxmShaderPatcherCreateFragmentProgram(patcher, id, fmt, msaa_mode, blend_cfg, vertex_link, prog); \
+	if (__f) vgl_log("Fragment shader patching failed (%s) on shader %d.\n", get_gxm_error_literal(__f), id);
 #else
 #define SET_GL_ERROR(x) \
 	vgl_error = x; \
@@ -192,6 +198,8 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 #define SET_GL_ERROR_WITH_RET(x, y) \
 	vgl_error = x; \
 	return y;
+#define patchVertexProgram sceGxmShaderPatcherCreateVertexProgram
+#define patchFragmentProgram sceGxmShaderPatcherCreateFragmentProgram
 #endif
 
 #ifdef HAVE_SOFTFP_ABI

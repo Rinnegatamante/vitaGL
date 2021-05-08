@@ -327,7 +327,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	}
 	
 	// Uploading new vertex program
-	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
+	patchVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
 
 	// Uploading both fragment and vertex uniforms data
@@ -480,7 +480,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	}
 
 	// Uploading new vertex program
-	sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
+	patchVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
 
 	// Uploading both fragment and vertex uniforms data
@@ -737,7 +737,13 @@ void glCompileShader(GLuint handle) {
 	if (s->prog) {
 		SceGxmProgram *res = (SceGxmProgram *)malloc(s->size);
 		sceClibMemcpy((void *)res, (void *)s->prog, s->size);
+#ifdef LOG_ERRORS
+		int r = sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
+		if (r)
+			vgl_log("glCompileShader: Program failed to register on sceGxm (%s).\n", get_gxm_error_literal(r));
+#else
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
+#endif
 		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
 	}
 #ifdef HAVE_SHARK_LOG
@@ -984,10 +990,10 @@ void glLinkProgram(GLuint progr) {
 	if (p->stream_num) {
 		if (p->stream_num > 1)
 			p->stream_num = p->attr_num;
-		sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher,
+		patchVertexProgram(gxm_shader_patcher,
 			p->vshader->id, p->attr, p->attr_num,
 			p->stream, p->stream_num, &p->vprog);
-		sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher,
+		patchFragmentProgram(gxm_shader_patcher,
 			p->fshader->id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 			msaa_mode, &blend_info.info, NULL, &p->fprog);
 
