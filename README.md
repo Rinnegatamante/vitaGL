@@ -1,6 +1,12 @@
 <p align="center"><img width="50%" height="50%" src="./vitagl.png"></p>
 vitaGL is an opensource openGL driver for PSVITA development. It acts as a wrapper between openGL and sceGxm and allows to use a subset of openGL functions with fully hardware acceleration by translating the code to sceGxm equivalent.
 
+# Prerequisites
+In order to run an homebrew made with vitaGL, you are going to need libshacccg.suprx extracted and decrypted on your console. You can refer to this guide for more details about its extraction: https://samilops2.gitbook.io/vita-troubleshooting-guide/shader-compiler/extract-libshacccg.suprx<br>
+If you want your homebrew to not be hard dependant from libshaccg.suprx you can either:
+- Stick to precompiled shaders usage only (glShaderBinary).
+- Stick to fixed function pipeline features (GL1) while using this old legacy version of the library: https://github.com/Rinnegatamante/vitaGL/tree/legacy_precompiled_ffp
+
 # Build Instructions
 In order to build vitaGL use the following command: `make HAVE_SBRK=1 install`.
 If you already have a newlib sbrk replacement in your app (eg. RetroArch), use instead this command: `make install`.
