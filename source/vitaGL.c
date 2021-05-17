@@ -371,7 +371,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	texture_slots[0].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 	texture_slots[0].lod_bias = GL_MAX_TEXTURE_LOD_BIAS;
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	
+
 	// Defaulting textures into using texture on ID 0 and resetting free textures queue
 	for (i = 1; i < TEXTURES_NUM; i++) {
 		texture_slots[i].status = TEX_UNUSED;
@@ -440,7 +440,7 @@ void vglEnd(void) {
 
 	// Terminating sceGxm
 	sceGxmTerminate();
-	
+
 #ifdef HAVE_RAZOR
 	// Terminating sceRazor debugger
 	sceSysmoduleUnloadModule(SCE_SYSMODULE_RAZOR_HUD);
@@ -548,7 +548,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 
 	// Allocating a new buffer
 	gpu_buf->ptr = gpu_alloc_mapped(size, gpu_buf->type);
-	
+
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf->ptr) {
 		SET_GL_ERROR(GL_OUT_OF_MEMORY)
@@ -581,7 +581,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	
+
 	// Allocating a new buffer
 	uint8_t *ptr = gpu_buf->ptr;
 	gpu_buf->ptr = gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
@@ -923,7 +923,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	gl_primitive_to_gxm(mode, gxm_p, count);
 	sceneReset();
 	GLboolean is_draw_legal = GL_TRUE;
-	
+
 	if (cur_program != 0)
 		is_draw_legal = _glDrawArrays_CustomShadersIMPL(first + count);
 	else {
@@ -931,18 +931,17 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 			return;
 		_glDrawArrays_FixedFunctionIMPL(first + count);
 	}
-	
+
 #ifndef SKIP_ERROR_HANDLING
 	if (is_draw_legal)
 #endif
 	{
-		if (prim_is_non_native)
+		if (prim_is_non_native) {
 			if (mode == GL_QUADS) // GL_QUADS
 				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_quads_idx_ptr + (first / 2) * 3, (count / 2) * 3);
 			else if (mode == GL_LINE_STRIP)
 				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_line_strips_idx_ptr + first * 2, (count - 1) * 2);
-			else if (mode == GL_LINE_LOOP)
-			{
+			else if (mode == GL_LINE_LOOP) {
 				uint16_t *ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t));
 				sceClibMemcpy(ptr, default_line_strips_idx_ptr + first * 2, (count - 1) * 2 * sizeof(uint16_t));
 				ptr[(count - 1) * 2] = count - 1;
@@ -950,7 +949,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 
 				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count * 2);
 			}
-		else
+		} else
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
 	}
 	restore_polygon_mode(gxm_p);
@@ -966,7 +965,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	
+
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
 	sceneReset();
@@ -1006,21 +1005,17 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 					dst[i * 6 + 5] = src[i * 4 + 3];
 				}
 				count = (count / 2) * 3;
-			}
-			else if (mode == GL_LINE_STRIP) {
+			} else if (mode == GL_LINE_STRIP) {
 				dst = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(uint16_t));
-				for (i = 0; i < count - 1; i++)
-				{
+				for (i = 0; i < count - 1; i++) {
 					dst[i * 2] = src[i];
 					dst[i * 2 + 1] = src[i + 1];
 				}
 
 				count = (count - 1) * 2;
-			}
-			else if (mode == GL_LINE_LOOP) {
+			} else if (mode == GL_LINE_LOOP) {
 				dst = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t));
-				for (i = 0; i < count - 1; i++)
-				{
+				for (i = 0; i < count - 1; i++) {
 					dst[i * 2] = src[i];
 					dst[i * 2 + 1] = src[i + 1];
 				}
@@ -1029,8 +1024,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 				dst[i * 2 + 1] = src[0];
 
 				count = count * 2;
-			}
-			else {
+			} else {
 				dst = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
 				sceClibMemcpy(dst, src, count * sizeof(uint16_t));
 			}
@@ -1290,7 +1284,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 		sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 	}
-	
+
 	restore_polygon_mode(gxm_p);
 }
 
