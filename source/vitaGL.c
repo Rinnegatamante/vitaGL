@@ -944,8 +944,8 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 			else if (mode == GL_LINE_LOOP) {
 				uint16_t *ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t));
 				sceClibMemcpy(ptr, default_line_strips_idx_ptr + first * 2, (count - 1) * 2 * sizeof(uint16_t));
-				ptr[(count - 1) * 2] = count - 1;
-				ptr[(count - 1) * 2 + 1] = 0;
+				ptr[(count - 1) * 2] = first + count - 1;
+				ptr[(count - 1) * 2 + 1] = first;
 
 				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count * 2);
 			}
