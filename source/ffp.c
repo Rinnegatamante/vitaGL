@@ -241,7 +241,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		// Restarting vitaShaRK if we released it before
 		if (!is_shark_online)
 			startShaderCompiler();
-			
+
 		// Compiling the new shader
 		char vshader[8192];
 		sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.has_texture, mask.has_colors, mask.lights_num);
@@ -339,7 +339,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		// Restarting vitaShaRK if we released it before
 		if (!is_shark_online)
 			startShaderCompiler();
-		
+
 		// Compiling the new shader
 		char fshader[8192];
 		sprintf(fshader, ffp_frag_src, alpha_op, mask.has_texture, mask.has_colors, mask.fog_mode, mask.texenv_mode);
@@ -590,7 +590,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 #endif
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
-	
+
 	switch (format) {
 	case GL_V2F:
 		// Vertex2f
@@ -621,7 +621,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_U8N;
 		attributes->componentCount = 4;
 		streams->stride = stride ? stride : 12;
-		
+
 		// Vertex2f
 		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 4;
 		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
@@ -640,7 +640,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_U8N;
 		attributes->componentCount = 4;
 		streams->stride = stride ? stride : 16;
-		
+
 		// Vertex3f
 		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 4;
 		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
@@ -659,7 +659,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		attributes->componentCount = 3;
 		streams->stride = stride ? stride : 24;
-		
+
 		// Vertex3f
 		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 12;
 		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
@@ -678,7 +678,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		attributes->componentCount = 2;
 		streams->stride = stride ? stride : 20;
-		
+
 		// Vertex3f
 		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 8;
 		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
@@ -697,7 +697,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		attributes->componentCount = 4;
 		streams->stride = stride ? stride : 32;
-		
+
 		// Vertex4f
 		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 16;
 		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
@@ -716,7 +716,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		attributes->componentCount = 2;
 		streams->stride = stride ? stride : 24;
-		
+
 		// Color4ub
 		ffp_vertex_attrib_offsets[2] = (uint32_t)pointer + 8;
 		ffp_vertex_attrib_vbo[2] = vertex_array_unit;
@@ -725,7 +725,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_U8N;
 		attributes->componentCount = 4;
 		streams->stride = stride ? stride : 24;
-		
+
 		// Vertex3f
 		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 12;
 		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
@@ -744,7 +744,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		attributes->componentCount = 2;
 		streams->stride = stride ? stride : 32;
-		
+
 		// Color3f
 		ffp_vertex_attrib_offsets[2] = (uint32_t)pointer + 8;
 		ffp_vertex_attrib_vbo[2] = vertex_array_unit;
@@ -753,7 +753,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		attributes->componentCount = 3;
 		streams->stride = stride ? stride : 32;
-		
+
 		// Vertex3f
 		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 20;
 		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
@@ -1071,17 +1071,38 @@ void glEnd(void) {
 	// Restoring original attributes state settings
 	ffp_vertex_attrib_state = orig_state;
 
-	if (prim_is_non_native)
-		if (prim == SCE_GXM_PRIMITIVE_TRIANGLES) // GL_QUADS
-			sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_quads_idx_ptr, (vertex_count / 2) * 3);
-		else // GL_LINE_STRIP
-			sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_line_strips_idx_ptr, (vertex_count - 1) * 2);
-	else
-		sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr, vertex_count);
+	uint16_t *ptr;
+	uint32_t index_count;
+
+	// Get the index source
+	switch (ffp_mode) {
+	case GL_QUADS:
+		ptr = default_quads_idx_ptr;
+		index_count = (vertex_count / 2) * 3;
+		break;
+	case GL_LINE_STRIP:
+		ptr = default_line_strips_idx_ptr;
+		index_count = (vertex_count - 1) * 2;
+		break;
+	case GL_LINE_LOOP:
+		ptr = gpu_alloc_mapped_temp(vertex_count * 2 * sizeof(uint16_t));
+		sceClibMemcpy(ptr, default_line_strips_idx_ptr, (vertex_count - 1) * 2 * sizeof(uint16_t));
+		ptr[(vertex_count - 1) * 2] = vertex_count - 1;
+		ptr[(vertex_count - 1) * 2 + 1] = 0;
+
+		index_count = vertex_count * 2;
+		break;
+	default:
+		ptr = default_idx_ptr;
+		index_count = vertex_count;
+		break;
+	}
+
+	sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, ptr, index_count);
 
 	// Moving legacy pool address offset
 	legacy_pool += vertex_count * LEGACY_VERTEX_STRIDE;
-	
+
 	// Restore polygon mode if a GL_LINES/GL_POINTS has been rendered
 	restore_polygon_mode(prim);
 }
