@@ -1071,21 +1071,34 @@ void glEnd(void) {
 	// Restoring original attributes state settings
 	ffp_vertex_attrib_state = orig_state;
 
-	if (prim_is_non_native) {
-		if (ffp_mode == GL_QUADS)
-			sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_quads_idx_ptr, (vertex_count / 2) * 3);
-		else if (ffp_mode == GL_LINE_STRIP)
-			sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_line_strips_idx_ptr, (vertex_count - 1) * 2);
-		else if (ffp_mode == GL_LINE_LOOP) {
-			uint16_t *ptr = gpu_alloc_mapped_temp(vertex_count * 2 * sizeof(uint16_t));
-			sceClibMemcpy(ptr, default_line_strips_idx_ptr, (vertex_count - 1) * 2 * sizeof(uint16_t));
-			ptr[(vertex_count - 1) * 2] = vertex_count - 1;
-			ptr[(vertex_count - 1) * 2 + 1] = 0;
+	uint16_t *ptr;
+	uint32_t index_count;
 
-			sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, ptr, vertex_count * 2);
-		}
-	} else
-		sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr, vertex_count);
+	// Get the index source
+	switch (ffp_mode) {
+	case GL_QUADS:
+		ptr = default_quads_idx_ptr;
+		index_count = (vertex_count / 2) * 3;
+		break;
+	case GL_LINE_STRIP:
+		ptr = default_line_strips_idx_ptr;
+		index_count = (vertex_count - 1) * 2;
+		break;
+	case GL_LINE_LOOP:
+		ptr = gpu_alloc_mapped_temp(vertex_count * 2 * sizeof(uint16_t));
+		sceClibMemcpy(ptr, default_line_strips_idx_ptr, (vertex_count - 1) * 2 * sizeof(uint16_t));
+		ptr[(vertex_count - 1) * 2] = vertex_count - 1;
+		ptr[(vertex_count - 1) * 2 + 1] = 0;
+
+		index_count = vertex_count * 2;
+		break;
+	default:
+		ptr = default_idx_ptr;
+		index_count = vertex_count;
+		break;
+	}
+
+	sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, ptr, index_count);
 
 	// Moving legacy pool address offset
 	legacy_pool += vertex_count * LEGACY_VERTEX_STRIDE;

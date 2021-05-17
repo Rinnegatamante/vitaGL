@@ -936,21 +936,31 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	if (is_draw_legal)
 #endif
 	{
-		if (prim_is_non_native) {
-			if (mode == GL_QUADS) // GL_QUADS
-				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_quads_idx_ptr + (first / 2) * 3, (count / 2) * 3);
-			else if (mode == GL_LINE_STRIP)
-				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_line_strips_idx_ptr + first * 2, (count - 1) * 2);
-			else if (mode == GL_LINE_LOOP) {
-				uint16_t *ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t));
-				sceClibMemcpy(ptr, default_line_strips_idx_ptr + first * 2, (count - 1) * 2 * sizeof(uint16_t));
-				ptr[(count - 1) * 2] = first + count - 1;
-				ptr[(count - 1) * 2 + 1] = first;
+		uint16_t *ptr;
 
-				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count * 2);
-			}
-		} else
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, default_idx_ptr + first, count);
+		switch (mode) {
+		case GL_QUADS:
+			ptr = default_quads_idx_ptr + (first / 2) * 3;
+			count = (count / 2) * 3;
+			break;
+		case GL_LINE_STRIP:
+			ptr = default_line_strips_idx_ptr + first * 2;
+			count = (count - 1) * 2;
+			break;
+		case GL_LINE_LOOP:
+			ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t));
+			sceClibMemcpy(ptr, default_line_strips_idx_ptr + first * 2, (count - 1) * 2 * sizeof(uint16_t));
+			ptr[(count - 1) * 2] = first + count - 1;
+			ptr[(count - 1) * 2 + 1] = first;
+
+			count *= 2;
+			break;
+		default:
+			ptr = default_idx_ptr + first;
+			break;
+		}
+
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 	}
 	restore_polygon_mode(gxm_p);
 }
@@ -994,7 +1004,8 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 			uint16_t *dst;
 			uint16_t *src = gpu_buf != NULL ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 
-			if (mode == GL_QUADS) {
+			switch (mode) {
+			case GL_QUADS:
 				dst = gpu_alloc_mapped_temp(count * 3 * sizeof(uint16_t));
 				for (i = 0; i < count / 4; i++) {
 					dst[i * 6] = src[i * 4];
@@ -1005,7 +1016,8 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 					dst[i * 6 + 5] = src[i * 4 + 3];
 				}
 				count = (count / 2) * 3;
-			} else if (mode == GL_LINE_STRIP) {
+				break;
+			case GL_LINE_STRIP:
 				dst = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(uint16_t));
 				for (i = 0; i < count - 1; i++) {
 					dst[i * 2] = src[i];
@@ -1013,7 +1025,8 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 				}
 
 				count = (count - 1) * 2;
-			} else if (mode == GL_LINE_LOOP) {
+				break;
+			case GL_LINE_LOOP:
 				dst = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t));
 				for (i = 0; i < count - 1; i++) {
 					dst[i * 2] = src[i];
@@ -1024,9 +1037,11 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 				dst[i * 2 + 1] = src[0];
 
 				count = count * 2;
-			} else {
+				break;
+			default:
 				dst = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
 				sceClibMemcpy(dst, src, count * sizeof(uint16_t));
+				break;
 			}
 
 			ptr = dst;

@@ -158,6 +158,12 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
 		prim_is_non_native = GL_TRUE; \
 		break; \
+	case GL_LINE_LOOP: \
+		p = SCE_GXM_PRIMITIVE_LINES; \
+		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
+		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
+		prim_is_non_native = GL_TRUE; \
+		break; \
 	case GL_TRIANGLES: \
 		p = SCE_GXM_PRIMITIVE_TRIANGLES; \
 		break; \
