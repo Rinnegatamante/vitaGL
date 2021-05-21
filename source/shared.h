@@ -294,6 +294,49 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line);
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
+// sceRazor debugger related stuffs
+#ifdef HAVE_RAZOR
+#define RAZOR_MAX_SCENES_NUM 32
+
+typedef struct {
+	uint32_t vertexDuration;
+	uint32_t fragmentDuration;
+} scene_metrics;
+
+typedef struct {
+	uint32_t vertexJobCount;
+	uint64_t vertexJobTime;
+	uint32_t fragmentJobCount;
+	uint64_t fragmentJobTime;
+	uint32_t firmwareJobCount;
+	uint64_t firmwareJobTime;
+	float usseVertexProcessing;
+	float usseFragmentProcessing;
+	float usseDependentTextureReadRequest;
+	float usseNonDependentTextureReadRequest;
+	uint32_t vdmPrimitivesInput;
+	uint32_t mtePrimitivesOutput;
+	uint32_t vdmVerticesInput;
+	uint32_t mteVerticesOutput;
+	uint32_t rasterizedPixelsBeforeHsr;
+	uint32_t rasterizedOutputPixels;
+	uint32_t rasterizedOutputSamples;
+	uint32_t bifTaMemoryWrite;						
+	uint32_t bifIspParameterFetchMemoryRead;
+	uint32_t peakUsage;
+	uint8_t partialRender;
+	uint8_t vertexJobPaused;
+	uint64_t frameStartTime;
+	uint32_t frameDuration;
+	uint32_t frameNumber;
+	uint32_t frameGpuActive;
+	uint32_t sceneCount;
+	scene_metrics scenes[RAZOR_MAX_SCENES_NUM];
+} razor_results;
+
+extern uint32_t frame_idx; // Current frame number
+#endif
+
 extern GLboolean use_shark; // Flag to check if vitaShaRK should be initialized at vitaGL boot
 extern GLboolean is_shark_online; // Current vitaShaRK status
 
@@ -405,8 +448,8 @@ void change_depth_func(void); // Changes current in use depth test function
 void invalidate_depth_test(void); // Invalidates depth test state
 void validate_depth_test(void); // Resets original depth test state after invalidation
 void change_stencil_settings(void); // Changes current in use stencil test parameters
-GLboolean change_stencil_config(SceGxmStencilOp *cfg, GLenum new); // Changes current in use stencil test operation value
-GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new); // Changes current in use stencil test function value
+GLboolean change_stencil_config(SceGxmStencilOp *cfg, GLenum new_cfg); // Changes current in use stencil test operation value
+GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new_cfg); // Changes current in use stencil test function value
 void update_alpha_test_settings(void); // Changes current in use alpha test operation value
 void update_scissor_test(void); // Changes current in use scissor test region
 void resetScissorTestRegion(void); // Resets scissor test region to default values
@@ -435,6 +478,10 @@ void change_cull_mode(void); // Updates current cull mode
 
 /* misc functions */
 void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height); // Converts screen coords to local space
+
+/* debug.cpp */
+void vgl_debugger_init(); // Inits ImGui debugger context
+void vgl_debugger_draw(); // Draws ImGui debugger window
 
 /* vitaGL.c */
 uint8_t *reserve_data_pool(uint32_t size);
