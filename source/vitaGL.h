@@ -362,7 +362,7 @@ extern "C" {
 
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS   2
 #define GL_MAX_TEXTURE_LOD_BIAS               31
-#define GL_MAX_VERTEX_ATTRIBS                 8
+#define GL_MAX_VERTEX_ATTRIBS                 16
 #define GL_MAX_TEXTURE_IMAGE_UNITS            3
 
 // Aliases
