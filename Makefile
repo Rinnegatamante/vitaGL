@@ -7,12 +7,14 @@ SOURCES += source/hacks
 endif
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
+CPPFILES := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.cpp))
 CGFILES  := $(foreach dir,$(SHADERS), $(wildcard $(dir)/*.cg))
 HEADERS  := $(CGFILES:.cg=.h)
-OBJS     := $(CFILES:.c=.o)
+OBJS     := $(CFILES:.c=.o) $(CPPFILES:.cpp=.o)
 
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
+CXX     = $(PREFIX)-g++
 AR      = $(PREFIX)-gcc-ar
 CFLAGS  = -g -Wl,-q -O3 -ffast-math -mtune=cortex-a9 -mfpu=neon
 ASFLAGS = $(CFLAGS)
@@ -37,6 +39,10 @@ ifeq ($(SHARED_RENDERTARGETS),1)
 CFLAGS  += -DHAVE_SHARED_RENDERTARGETS
 endif
 
+ifeq ($(UNPURE_TEXTURES),1)
+CFLAGS  += -DHAVE_UNPURE_TEXTURES
+endif
+
 ifeq ($(CIRCULAR_VERTEX_POOL),1)
 CFLAGS += -DHAVE_CIRCULAR_VERTEX_POOL
 endif
@@ -56,6 +62,8 @@ endif
 ifeq ($(HAVE_RAZOR),1)
 CFLAGS += -DHAVE_RAZOR
 endif
+
+CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a
 

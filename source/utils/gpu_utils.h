@@ -54,6 +54,9 @@ typedef struct {
 	uint32_t lod_bias;
 	uint8_t mip_count;
 	GLboolean use_mips;
+#ifdef HAVE_UNPURE_TEXTURES
+	int8_t mip_start;
+#endif
 } texture;
 
 // Palette object struct

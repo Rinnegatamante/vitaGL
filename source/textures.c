@@ -52,6 +52,9 @@ void glGenTextures(GLsizei n, GLuint *res) {
 
 			// Resetting texture parameters to their default values
 			texture_slots[i].mip_count = 1;
+#ifdef HAVE_UNPURE_TEXTURES
+			texture_slots[i].mip_start = -1;
+#endif
 			texture_slots[i].use_mips = GL_FALSE;
 			texture_slots[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 			texture_slots[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
@@ -107,7 +110,13 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	texture *tex = &texture_slots[texture2d_idx];
-
+	
+#ifdef HAVE_UNPURE_TEXTURES
+	if (tex->mip_start < 0)
+		tex->mip_start = level;
+	level -= tex->mip_start;
+#endif
+	
 	SceGxmTextureFormat tex_format;
 	uint8_t data_bpp = 0;
 	GLboolean fast_store = GL_FALSE;
@@ -387,6 +396,10 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	int texture2d_idx = tex_unit->tex_id;
 	texture *target_texture = &texture_slots[texture2d_idx];
 
+#ifdef HAVE_UNPURE_TEXTURES
+	level -= target_texture->mip_start;
+#endif
+
 	// Calculating implicit texture stride and start address of requested texture modification
 	uint32_t orig_w = sceGxmTextureGetWidth(&target_texture->gxm_tex);
 	uint32_t orig_h = sceGxmTextureGetHeight(&target_texture->gxm_tex);
@@ -594,6 +607,12 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	texture *tex = &texture_slots[texture2d_idx];
+	
+#ifdef HAVE_UNPURE_TEXTURES
+	if (tex->mip_start < 0)
+		tex->mip_start = level;
+	level -= tex->mip_start;
+#endif
 
 	SceGxmTextureFormat tex_format;
 	GLboolean gamma_correction = GL_FALSE;
