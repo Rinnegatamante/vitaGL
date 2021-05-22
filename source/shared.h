@@ -335,6 +335,7 @@ typedef struct {
 } razor_results;
 
 extern uint32_t frame_idx; // Current frame number
+extern GLboolean has_razor_live; // Flag for live metrics support with sceRazor
 #endif
 
 extern GLboolean use_shark; // Flag to check if vitaShaRK should be initialized at vitaGL boot

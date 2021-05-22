@@ -382,7 +382,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	matrix4x4_identity(texture_matrix);
 	
 #ifdef HAVE_RAZOR
-	vgl_debugger_init();
+	if (has_razor_live) vgl_debugger_init();
 #endif
 }
 
