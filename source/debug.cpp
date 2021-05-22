@@ -48,13 +48,6 @@ void vgl_debugger_init() {
 }
 
 void vgl_debugger_draw() {
-	// Invalidating current program
-	GLuint program_bkp = 0;
-	if (cur_program) {
-		program_bkp = cur_program;
-		glUseProgram(0);
-	}
-	
 	// Initializing a new ImGui frame
 	ImGui_ImplVitaGL_NewFrame();
 		
@@ -131,15 +124,40 @@ void vgl_debugger_draw() {
 		break;
 	}
 	ImGui::End();
-		
+	
+	// Invalidating current GL machine state
+	GLuint program_bkp = 0;
+	if (cur_program) {
+		program_bkp = cur_program;
+		glUseProgram(0);
+	}
+	GLboolean blend_state_bkp = blend_state;
+	SceGxmBlendFactor sfactor_bkp = blend_sfactor_rgb;
+	SceGxmBlendFactor dfactor_bkp = blend_dfactor_rgb;
+	GLboolean cull_face_state_bkp = cull_face_state;
+	GLboolean depth_test_state_bkp = depth_test_state;
+	GLboolean scissor_test_state_bkp = scissor_test_state;
+	
 	// Sending job to ImGui renderer
 	glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
 	ImGui::Render();
 	ImGui_ImplVitaGL_RenderDrawData(ImGui::GetDrawData());
 	
-	// Restoring invalidated program
+	// Restoring invalidated GL machine state
 	if (program_bkp)
 		glUseProgram(program_bkp);
+	blend_sfactor_rgb = blend_sfactor_a = sfactor_bkp;
+	blend_dfactor_rgb = blend_dfactor_a = dfactor_bkp;
+	if (!blend_state_bkp)
+		glDisable(GL_BLEND);
+	else
+		change_blend_factor();
+	if (!scissor_test_state_bkp)
+		glDisable(GL_SCISSOR_TEST);
+	if (depth_test_state_bkp)
+		glEnable(GL_DEPTH_TEST);
+	if (cull_face_state_bkp)
+		glEnable(GL_CULL_FACE);
 }
 #endif
 
