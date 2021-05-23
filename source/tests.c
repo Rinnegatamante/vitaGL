@@ -340,7 +340,7 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 #endif
 
 	// Converting openGL scissor test region to sceGxm one
-	region.x = x;
+	region.x = x < 0 ? 0 : x;
 	region.w = width;
 	region.h = height;
 #ifdef HAVE_UNFLIPPED_FBOS
@@ -349,7 +349,11 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 	region.y = is_rendering_display ? (DISPLAY_HEIGHT - y - height) : y;
 #endif
 	region.gl_y = y;
-
+	
+	// Optimizing region
+	if (region.y < 0)
+		region.y = 0;
+	
 	// Updating in use scissor test parameters if GL_SCISSOR_TEST is enabled
 	if (scissor_test_state) {
 		if (!skip_scene_reset)
