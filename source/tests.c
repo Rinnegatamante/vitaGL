@@ -256,7 +256,7 @@ void update_scissor_test() {
 	invalidate_viewport();
 
 	// Invalidating internal tile based region clip
-	sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
+	sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, is_rendering_display ? DISPLAY_WIDTH : in_use_framebuffer->width - 1, is_rendering_display ? DISPLAY_HEIGHT : in_use_framebuffer->height - 1);
 
 	if (scissor_test_state) {
 		// Calculating scissor test region vertices
@@ -353,6 +353,17 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 	// Optimizing region
 	if (region.y < 0)
 		region.y = 0;
+	if (is_rendering_display) {
+		if (region.x + region.w > DISPLAY_WIDTH)
+			region.w = DISPLAY_WIDTH - region.x;
+		if (region.y + region.h > DISPLAY_HEIGHT)
+			region.h = DISPLAY_HEIGHT - region.y;
+	} else {
+		if (region.x + region.w > in_use_framebuffer->width)
+			region.w = in_use_framebuffer->width - region.x;
+		if (region.y + region.h > in_use_framebuffer->height)
+			region.h = in_use_framebuffer->height - region.y;
+	}
 	
 	// Updating in use scissor test parameters if GL_SCISSOR_TEST is enabled
 	if (scissor_test_state) {

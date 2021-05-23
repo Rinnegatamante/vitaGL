@@ -149,10 +149,17 @@ void change_blend_mask() {
 }
 
 void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height) {
-	out[0].x = (float)(2 * x) / DISPLAY_WIDTH_FLOAT - 1.0f;
-	out[0].y = (float)(2 * (x + width)) / DISPLAY_WIDTH_FLOAT - 1.0f;
-	out[0].z = 1.0f - (float)(2 * y) / DISPLAY_HEIGHT_FLOAT;
-	out[0].w = 1.0f - (float)(2 * (y + height)) / DISPLAY_HEIGHT_FLOAT;
+	if (is_rendering_display) {
+		out[0].x = (float)(2 * x) / DISPLAY_WIDTH_FLOAT - 1.0f;
+		out[0].y = (float)(2 * (x + width)) / DISPLAY_WIDTH_FLOAT - 1.0f;
+		out[0].z = 1.0f - (float)(2 * y) / DISPLAY_HEIGHT_FLOAT;
+		out[0].w = 1.0f - (float)(2 * (y + height)) / DISPLAY_HEIGHT_FLOAT;
+	} else {
+		out[0].x = (float)(2 * x) / (float)in_use_framebuffer->width - 1.0f;
+		out[0].y = (float)(2 * (x + width)) / (float)in_use_framebuffer->width - 1.0f;
+		out[0].z = 1.0f - (float)(2 * y) / (float)in_use_framebuffer->height;
+		out[0].w = 1.0f - (float)(2 * (y + height)) / (float)in_use_framebuffer->height;
+	}
 }
 
 // vitaGL specific functions
