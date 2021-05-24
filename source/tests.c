@@ -254,6 +254,9 @@ void update_scissor_test() {
 
 	// Invalidating viewport
 	invalidate_viewport();
+	
+	// Invalidating culling
+	sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_NONE);
 
 	// Invalidating internal tile based region clip
 	sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, is_rendering_display ? DISPLAY_WIDTH : in_use_framebuffer->width - 1, is_rendering_display ? DISPLAY_HEIGHT : in_use_framebuffer->height - 1);
@@ -309,6 +312,9 @@ void update_scissor_test() {
 
 	// Restoring viewport
 	validate_viewport();
+	
+	// Restoring culling mode
+	change_cull_mode();
 
 	// Reducing GPU workload by performing tile granularity clipping
 	if (scissor_test_state)
