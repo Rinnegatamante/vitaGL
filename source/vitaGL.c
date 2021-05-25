@@ -393,10 +393,10 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 #endif
 }
 
-void vglInitExtended(int pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
+void vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, SceGxmMultisampleMode msaa) {
 	// Initializing sceGxm
 	initGxm();
-
+	
 	// Getting max allocatable CDRAM and RAM memory
 	if (system_app_mode) {
 		SceAppMgrBudgetInfo info;
@@ -407,8 +407,12 @@ void vglInitExtended(int pool_size, int width, int height, int ram_threshold, Sc
 		SceKernelFreeMemorySizeInfo info;
 		info.size = sizeof(SceKernelFreeMemorySizeInfo);
 		sceKernelGetFreeMemorySize(&info);
-		vglInitWithCustomSizes(pool_size, width, height, info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram - 256 * 1024, info.size_phycont - 1 * 1024 * 1024, msaa);
+		vglInitWithCustomSizes(pool_size, width, height, info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram > cdram_threshold ? info.size_cdram - cdram_threshold : 0, info.size_phycont > phycont_threshold ? info.size_phycont - phycont_threshold : 0, msaa);
 	}
+}
+
+void vglInitExtended(int pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
+	vglInitWithCustomThreshold(pool_size, width, height, ram_threshold, 256 * 1024, 1 * 1024 * 1024, msaa);
 }
 
 void vglInit(int pool_size) {
