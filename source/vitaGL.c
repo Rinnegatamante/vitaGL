@@ -150,15 +150,15 @@ void change_blend_mask() {
 
 void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height) {
 	if (is_rendering_display) {
-		out[0].x = (float)(2 * x) / DISPLAY_WIDTH_FLOAT - 1.0f;
-		out[0].y = (float)(2 * (x + width)) / DISPLAY_WIDTH_FLOAT - 1.0f;
-		out[0].z = 1.0f - (float)(2 * y) / DISPLAY_HEIGHT_FLOAT;
-		out[0].w = 1.0f - (float)(2 * (y + height)) / DISPLAY_HEIGHT_FLOAT;
+		out->x = (float)(2 * x) / DISPLAY_WIDTH_FLOAT - 1.0f;
+		out->y = (float)(2 * (x + width)) / DISPLAY_WIDTH_FLOAT - 1.0f;
+		out->z = 1.0f - (float)(2 * y) / DISPLAY_HEIGHT_FLOAT;
+		out->w = 1.0f - (float)(2 * (y + height)) / DISPLAY_HEIGHT_FLOAT;
 	} else {
-		out[0].x = (float)(2 * x) / (float)in_use_framebuffer->width - 1.0f;
-		out[0].y = (float)(2 * (x + width)) / (float)in_use_framebuffer->width - 1.0f;
-		out[0].z = 1.0f - (float)(2 * y) / (float)in_use_framebuffer->height;
-		out[0].w = 1.0f - (float)(2 * (y + height)) / (float)in_use_framebuffer->height;
+		out->x = (float)(2 * x) / (float)in_use_framebuffer->width - 1.0f;
+		out->y = (float)(2 * (x + width)) / (float)in_use_framebuffer->width - 1.0f;
+		out->z = 1.0f - (float)(2 * y) / (float)in_use_framebuffer->height;
+		out->w = 1.0f - (float)(2 * (y + height)) / (float)in_use_framebuffer->height;
 	}
 }
 
@@ -389,7 +389,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	matrix4x4_identity(texture_matrix);
 	
 #ifdef HAVE_RAZOR
-	if (has_razor_live) vgl_debugger_init();
+	vgl_debugger_init();
 #endif
 }
 
@@ -454,8 +454,12 @@ void vglEnd(void) {
 	
 #ifdef HAVE_RAZOR
 	// Terminating sceRazor debugger
+#ifdef HAVE_DEVKIT
 	sceSysmoduleUnloadModule(SCE_SYSMODULE_RAZOR_HUD);
 	sceSysmoduleUnloadModule(SCE_SYSMODULE_RAZOR_CAPTURE);
+#else
+	sceKernelStopUnloadModule(razor_modid, 0, NULL, 0, NULL, NULL);
+#endif
 #endif
 }
 

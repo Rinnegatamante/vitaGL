@@ -298,6 +298,10 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line);
 #ifdef HAVE_RAZOR
 #define RAZOR_MAX_SCENES_NUM 32
 
+#ifndef HAVE_DEVKIT
+extern SceUID razor_modid;
+#endif
+
 typedef struct {
 	uint32_t vertexDuration;
 	uint32_t fragmentDuration;

@@ -92,6 +92,11 @@ static int frame_purge_clean_idx = 1;
 #define RAZOR_BUF_SIZE (256 * 1024) // Size in bytes for a live metrics data buffer
 #define UPDATE_RATIO 30 // Number of frames between two live metrics updates
 
+#ifndef HAVE_DEVKIT
+#define RAZOR_CAPTURE_MOD_PATH "ur0:data/librazorcapture_es4.suprx"
+SceUID razor_modid;
+#endif
+
 typedef union {
 	SceRazorGpuLiveEntryJob *job;
 	SceRazorGpuLiveEntryParameterBuffer *pbuf;
@@ -200,9 +205,12 @@ void initGxm(void) {
 
 #ifdef HAVE_RAZOR
 	// Initializing sceRazor debugger
+#ifdef HAVE_DEVKIT
 	sceSysmoduleLoadModule(SCE_SYSMODULE_RAZOR_HUD);
 	sceSysmoduleLoadModule(SCE_SYSMODULE_RAZOR_CAPTURE);
-	
+#else
+	razor_modid = sceKernelLoadStartModule(RAZOR_CAPTURE_MOD_PATH, 0, NULL, 0, NULL, NULL);
+#endif
 	for (int i = 0; i < DISPLAY_MAX_BUFFER_COUNT; i++) {
 		razor_buf[i] = memalign(8, RAZOR_BUF_SIZE);
 	}
@@ -244,7 +252,7 @@ void initGxm(void) {
 		sceGxmInitialize(&gxm_init_params);
 	gxm_initialized = GL_TRUE;
 	
-#ifdef HAVE_RAZOR
+#ifdef HAVE_DEVKIT
 	sceRazorGpuLiveSetMetricsGroup(SCE_RAZOR_GPU_LIVE_METRICS_GROUP_PBUFFER_USAGE);
 	has_razor_live = !sceRazorGpuLiveStart();
 #endif
@@ -609,7 +617,7 @@ void vglUseTripleBuffering(GLboolean usage) {
 
 void vglSwapBuffers(GLboolean has_commondialog) {
 #ifdef HAVE_RAZOR
-	if (has_razor_live && !in_use_framebuffer) {
+	if (!in_use_framebuffer) {
 		vgl_debugger_draw();
 	}
 #endif	
@@ -642,7 +650,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		else {
 #ifdef HAVE_RAZOR
 			sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
-			
+#ifdef HAVE_DEVKIT		
 			if (has_razor_live) {
 				SceRazorGpuLiveResultInfo razor_res;
 				sceRazorGpuLiveSetBuffer(razor_buf[gxm_back_buffer_index], RAZOR_BUF_SIZE, &razor_res);
@@ -738,6 +746,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 					frame_idx++;
 				}
 			}
+#endif
 #endif
 			struct display_queue_callback_data queue_cb_data;
 			queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];

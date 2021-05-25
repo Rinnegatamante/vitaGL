@@ -22,7 +22,8 @@ If you already have a newlib sbrk replacement in your app (eg. RetroArch), use i
 `CIRCULAR_VERTEX_POOL=1` Makes temporary data buffers being handled with a circular pool.<br>
 `SAMPLER_UNIFORMS=1` When enabled, shader samplers are treated as uniforms.<br>
 `UNPURE_TEXTURES=1` Makes legal to upload textures without base level.<br>
-`HAVE_RAZOR=1` Enables debugging features through Razor debugger.<br>
+`HAVE_RAZOR=1` Enables debugging features through Razor debugger (retail and devkit compatible).<br>
+`HAVE_DEVKIT=1` Enables extra debugging features through Razor debugger available only for devkit users.<br>
 # Samples
 
 You can find samples in the *samples* folder in this repository.
