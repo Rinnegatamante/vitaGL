@@ -63,8 +63,12 @@ ifeq ($(HAVE_RAZOR),1)
 CFLAGS += -DHAVE_RAZOR
 endif
 
+ifeq ($(HAVE_RAZOR),2)
+CFLAGS += -DHAVE_RAZOR -DHAVE_RAZOR_INTERFACE
+endif
+
 ifeq ($(HAVE_DEVKIT),1)
-CFLAGS += -DHAVE_DEVKIT -DHAVE_RAZOR
+CFLAGS += -DHAVE_DEVKIT -DHAVE_RAZOR -DHAVE_RAZOR_INTERFACE
 endif
 
 CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11 -Wno-write-strings

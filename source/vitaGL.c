@@ -388,7 +388,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	// Set texture matrix to identity
 	matrix4x4_identity(texture_matrix);
 	
-#ifdef HAVE_RAZOR
+#ifdef HAVE_RAZOR_INTERFACE
 	vgl_debugger_init();
 #endif
 }

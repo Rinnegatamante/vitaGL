@@ -211,9 +211,13 @@ void initGxm(void) {
 #else
 	razor_modid = sceKernelLoadStartModule(RAZOR_CAPTURE_MOD_PATH, 0, NULL, 0, NULL, NULL);
 #endif
+#ifdef HAVE_DEVKIT
 	for (int i = 0; i < DISPLAY_MAX_BUFFER_COUNT; i++) {
 		razor_buf[i] = memalign(8, RAZOR_BUF_SIZE);
 	}
+#endif
+
+	sceRazorGpuCaptureEnableSalvage("ux0:data/vitagl_gpucrash.sgx");
 #endif
 
 	// Initializing runtime shader compiler
@@ -616,7 +620,7 @@ void vglUseTripleBuffering(GLboolean usage) {
 }
 
 void vglSwapBuffers(GLboolean has_commondialog) {
-#ifdef HAVE_RAZOR
+#ifdef HAVE_RAZOR_INTERFACE
 	if (!in_use_framebuffer) {
 		vgl_debugger_draw();
 	}

@@ -24,7 +24,7 @@ extern razor_results razor_metrics;
 #endif
 };
 
-#ifdef HAVE_RAZOR
+#ifdef HAVE_RAZOR_INTERFACE
 #include <imgui_vita.h>
 
 bool razor_dbg_window = true; // Current state for sceRazor debugger window
