@@ -350,13 +350,21 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		}
 	}
 
+#ifdef HAVE_UNFLIPPED_FBOS
 	uint8_t *data_u8 = data + (width * src_bpp * (height - 1));
+#else
+	uint8_t *data_u8 = active_read_fb ? data : (data + (width * src_bpp * (height - 1)));
+#endif
 	int i;
 	if (fast_store) {
 		for (i = 0; i < height; i++) {
 			sceClibMemcpy(data_u8, &src[y + x * src_bpp], width * src_bpp);
 			y += stride;
+#ifdef HAVE_UNFLIPPED_FBOS
 			data_u8 -= width * src_bpp;
+#else
+			data_u8 -= (active_read_fb ? -width : width) * src_bpp;
+#endif
 		}
 	} else {
 		int j;
@@ -369,7 +377,11 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 				src += src_bpp;
 				line_u8 += dst_bpp;
 			}
+#ifdef HAVE_UNFLIPPED_FBOS
 			data_u8 -= width * src_bpp;
+#else
+			data_u8 -= (active_read_fb ? -width : width) * src_bpp;
+#endif
 		}
 	}
 }
