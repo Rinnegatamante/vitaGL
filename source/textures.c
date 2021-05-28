@@ -928,7 +928,7 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 void glActiveTexture(GLenum texture) {
 	// Changing current in use server texture unit
 #ifndef SKIP_ERROR_HANDLING
-	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE31)) {
+	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE15)) {
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	} else
 #endif

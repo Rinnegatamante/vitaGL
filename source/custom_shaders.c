@@ -717,7 +717,7 @@ void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, c
 	shader *s = &shaders[handles[0] - 1];
 
 	// Allocating compiled shader on RAM and registering it into sceGxmShaderPatcher
-	s->prog = (SceGxmProgram *)malloc(length);
+	s->prog = (SceGxmProgram *)memalign(MEM_ALIGNMENT, length);
 	sceClibMemcpy((void *)s->prog, binary, length);
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
 	s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
@@ -735,7 +735,7 @@ void glCompileShader(GLuint handle) {
 	// Compiling shader source
 	s->prog = shark_compile_shader_extended((const char *)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 	if (s->prog) {
-		SceGxmProgram *res = (SceGxmProgram *)malloc(s->size);
+		SceGxmProgram *res = (SceGxmProgram *)memalign(MEM_ALIGNMENT, s->size);
 		sceClibMemcpy((void *)res, (void *)s->prog, s->size);
 #ifdef LOG_ERRORS
 		int r = sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
@@ -943,19 +943,19 @@ void glLinkProgram(GLuint progr) {
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
 			p->texunits[sceGxmProgramParameterGetResourceIndex(param)] = GL_TRUE;
 #ifdef HAVE_SAMPLERS_AS_UNIFORMS
-			uniform *u = (uniform *)malloc(sizeof(uniform));
+			uniform *u = (uniform *)memalign(MEM_ALIGNMENT, sizeof(uniform));
 			u->chain = p->frag_uniforms;
 			u->ptr = param;
 			u->size = 0;
-			u->data = (float *)malloc(sizeof(float));
+			u->data = (float *)memalign(MEM_ALIGNMENT, sizeof(float));
 			p->frag_uniforms = u;
 #endif
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
-			uniform *u = (uniform *)malloc(sizeof(uniform));
+			uniform *u = (uniform *)memalign(MEM_ALIGNMENT, sizeof(uniform));
 			u->chain = p->frag_uniforms;
 			u->ptr = param;
 			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
-			u->data = (float *)malloc(u->size * sizeof(float));
+			u->data = (float *)memalign(MEM_ALIGNMENT, u->size * sizeof(float));
 			memset(u->data, 0, u->size * sizeof(float));
 			p->frag_uniforms = u;
 		}
@@ -970,7 +970,7 @@ void glLinkProgram(GLuint progr) {
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
 			p->attr_num++;
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
-			uniform *u = (uniform *)malloc(sizeof(uniform));
+			uniform *u = (uniform *)memalign(MEM_ALIGNMENT, sizeof(uniform));
 			u->chain = p->vert_uniforms;
 			u->ptr = param;
 			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
@@ -979,7 +979,7 @@ void glLinkProgram(GLuint progr) {
 				u->is_alias = GL_TRUE;
 			} else {
 				u->is_alias = GL_FALSE;
-				u->data = (float *)malloc(u->size * sizeof(float));
+				u->data = (float *)memalign(MEM_ALIGNMENT, u->size * sizeof(float));
 				memset(u->data, 0, u->size * sizeof(float));
 			}
 			p->vert_uniforms = u;

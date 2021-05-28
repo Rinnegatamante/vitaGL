@@ -23,8 +23,6 @@
 
 #include "../shared.h"
 
-#define MEM_ALIGNMENT 16
-
 typedef struct tm_block_s {
 	struct tm_block_s *next; // next block in list (either free or allocated)
 	int32_t type; // one of vglMemType (VGL_MEM_ALL when unused)

@@ -277,9 +277,9 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 #endif
 
 	// Init constant index buffers
-	default_idx_ptr = (uint16_t *)malloc(MAX_IDX_NUMBER * sizeof(uint16_t));
-	default_quads_idx_ptr = (uint16_t *)malloc(MAX_IDX_NUMBER * sizeof(uint16_t));
-	default_line_strips_idx_ptr = (uint16_t *)malloc(MAX_IDX_NUMBER * sizeof(uint16_t));
+	default_idx_ptr = (uint16_t *)memalign(MEM_ALIGNMENT, MAX_IDX_NUMBER * sizeof(uint16_t));
+	default_quads_idx_ptr = (uint16_t *)memalign(MEM_ALIGNMENT, MAX_IDX_NUMBER * sizeof(uint16_t));
+	default_line_strips_idx_ptr = (uint16_t *)memalign(MEM_ALIGNMENT, MAX_IDX_NUMBER * sizeof(uint16_t));
 	for (i = 0; i < MAX_IDX_NUMBER / 6; i++) {
 		default_idx_ptr[i * 6] = i * 6;
 		default_idx_ptr[i * 6 + 1] = i * 6 + 1;
@@ -491,7 +491,7 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 	}
 #endif
 	for (i = 0; i < n; i++) {
-		res[j++] = (GLuint)(malloc(sizeof(gpubuffer)));
+		res[j++] = (GLuint)(memalign(MEM_ALIGNMENT, sizeof(gpubuffer)));
 	}
 }
 
@@ -1074,7 +1074,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 
 void glClientActiveTexture(GLenum texture) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE31)) {
+	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE15)) {
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	} else
 #endif

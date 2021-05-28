@@ -39,6 +39,7 @@
 #define FRAME_PURGE_FREQ 3 // Frequency in frames for garbage collection
 #define BUFFERS_NUM 256 // Maximum amount of framebuffers objects usable
 #define FFP_VERTEX_ATTRIBS_NUM 7 // Number of attributes used in ffp shaders
+#define MEM_ALIGNMENT 16 // Memory alignment
 
 // Internal constants set in bootup phase
 extern int DISPLAY_WIDTH; // Display width in pixels
@@ -50,6 +51,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <malloc.h>
 
 #include <psp2/appmgr.h>
 #include <psp2/common_dialog.h>

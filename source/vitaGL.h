@@ -266,22 +266,6 @@ extern "C" {
 #define GL_TEXTURE13                                 0x84CD
 #define GL_TEXTURE14                                 0x84CE
 #define GL_TEXTURE15                                 0x84CF
-#define GL_TEXTURE16                                 0x84D0
-#define GL_TEXTURE17                                 0x84D1
-#define GL_TEXTURE18                                 0x84D2
-#define GL_TEXTURE19                                 0x84D3
-#define GL_TEXTURE20                                 0x84D4
-#define GL_TEXTURE21                                 0x84D5
-#define GL_TEXTURE22                                 0x84D6
-#define GL_TEXTURE23                                 0x84D7
-#define GL_TEXTURE24                                 0x84D8
-#define GL_TEXTURE25                                 0x84D9
-#define GL_TEXTURE26                                 0x84DA
-#define GL_TEXTURE27                                 0x84DB
-#define GL_TEXTURE28                                 0x84DC
-#define GL_TEXTURE29                                 0x84DD
-#define GL_TEXTURE30                                 0x84DE
-#define GL_TEXTURE31                                 0x84DF
 #define GL_ACTIVE_TEXTURE                            0x84E0
 #define GL_TEXTURE_COMPRESSION_HINT                  0x84EF
 #define GL_TEXTURE_LOD_BIAS                          0x8501
@@ -360,7 +344,7 @@ extern "C" {
 #define GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG          0x9137
 #define GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG          0x9138
 
-#define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS   2
+#define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS   16
 #define GL_MAX_TEXTURE_LOD_BIAS               31
 #define GL_MAX_VERTEX_ATTRIBS                 16
 #define GL_MAX_TEXTURE_IMAGE_UNITS            3
