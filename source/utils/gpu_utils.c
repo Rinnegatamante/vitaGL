@@ -154,7 +154,7 @@ void *gpu_alloc_mapped_with_external(size_t size, vglMemType *type) {
 	// Internal mempool finished, using newlib mem
 	if (res == NULL && use_extra_mem) {
 		*type = VGL_MEM_EXTERNAL;
-		res = malloc(size);
+		res = memalign(MEM_ALIGNMENT, size);
 	}
 
 	return res;

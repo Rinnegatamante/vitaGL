@@ -1074,7 +1074,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 
 void glClientActiveTexture(GLenum texture) {
 #ifndef SKIP_ERROR_HANDLING
-	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE31)) {
+	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE15)) {
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	} else
 #endif

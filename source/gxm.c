@@ -21,7 +21,6 @@
  * Implementation for setup and cleanup for sceGxm specific stuffs
  */
 
-#include <malloc.h>
 #include "shared.h"
 
 static uint32_t gxm_param_buf_size = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE; // Param buffer size for sceGxm
