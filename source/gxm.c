@@ -159,7 +159,7 @@ struct display_queue_callback_data {
 
 // sceGxmShaderPatcher custom allocator
 static void *shader_patcher_host_alloc_cb(void *user_data, unsigned int size) {
-	return memalign(MEM_ALIGNMENT, size);
+	return malloc(size);
 }
 
 // sceGxmShaderPatcher custom deallocator
@@ -278,7 +278,7 @@ void initGxmContext(void) {
 	// Setting sceGxm context parameters
 	SceGxmContextParams gxm_context_params;
 	sceClibMemset(&gxm_context_params, 0, sizeof(SceGxmContextParams));
-	gxm_context_params.hostMem = memalign(MEM_ALIGNMENT, SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
+	gxm_context_params.hostMem = malloc(SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
 	gxm_context_params.hostMemSize = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
 	gxm_context_params.vdmRingBufferMem = vdm_ring_buffer_addr;
 	gxm_context_params.vdmRingBufferMemSize = gxm_vdm_buf_size;

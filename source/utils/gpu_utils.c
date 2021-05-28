@@ -265,7 +265,7 @@ int tex_format_to_alignment(SceGxmTextureFormat format) {
 
 palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 	// Allocating a palette object
-	palette *res = (palette *)memalign(MEM_ALIGNMENT, sizeof(palette));
+	palette *res = (palette *)malloc(sizeof(palette));
 
 	// Allocating palette data buffer
 	void *texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
@@ -458,7 +458,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 
 				// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
 				if (read_cb != readRGBA) {
-					temp = memalign(MEM_ALIGNMENT, w * h * 4);
+					temp = malloc(w * h * 4);
 					uint8_t *src = (uint8_t *)data;
 					uint32_t *dst = (uint32_t *)temp;
 					int i;
@@ -556,7 +556,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		// Moving texture data to heap and deallocating texture memblock
 		GLboolean has_temp_buffer = GL_TRUE;
 		stride = ALIGN(orig_w, 8);
-		void *temp = (void *)memalign(MEM_ALIGNMENT, stride * orig_h * bpp);
+		void *temp = (void *)malloc(stride * orig_h * bpp);
 		if (temp == NULL) { // If we finished newlib heap, we delay texture free
 			has_temp_buffer = GL_FALSE;
 			temp = sceGxmTextureGetData(&tex->gxm_tex);
