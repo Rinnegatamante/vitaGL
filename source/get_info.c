@@ -27,12 +27,6 @@
 
 #define NUM_EXTENSIONS 11 // Number of supported extensions
 
-// Constants returned by glGetString
-static GLubyte *vendor = NULL;
-static GLubyte *renderer = NULL;
-static GLubyte *version = NULL;
-static GLubyte *glsl_version = NULL;
-
 static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_OES_vertex_half_float",
 	"GL_OES_texture_npot",
