@@ -72,9 +72,6 @@ float fullscreen_z_scale = 0.5f;
 
 GLboolean vblank = GL_TRUE; // Current setting for VSync
 
-extern int _newlib_heap_memblock; // Newlib Heap memblock
-extern unsigned _newlib_heap_size; // Newlib Heap size
-
 static const SceGxmProgram *const gxm_program_clear_v = (SceGxmProgram *)&clear_v;
 static const SceGxmProgram *const gxm_program_clear_f = (SceGxmProgram *)&clear_f;
 
@@ -361,12 +358,13 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	// Init scissor test state
 	resetScissorTestRegion();
 
-	// Getting newlib heap memblock starting address
-	void *addr = NULL;
-	sceKernelGetMemBlockBase(_newlib_heap_memblock, &addr);
-
 	// Mapping newlib heap into sceGxm
-	sceGxmMapMemory(addr, _newlib_heap_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	void *dummy = malloc(1);
+	SceKernelMemBlockInfo info;
+	info.size = sizeof(SceKernelMemBlockInfo);
+	sceKernelGetMemBlockInfoByAddr(dummy, &info);
+	sceGxmMapMemory(info.mappedBase, info.mappedSize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	free(dummy);
 
 	// Allocating default texture object
 	texture_slots[0].mip_count = 1;
