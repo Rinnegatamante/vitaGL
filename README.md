@@ -8,10 +8,8 @@ If you want your homebrew to not be hard dependant from libshaccg.suprx you can 
 - Stick to fixed function pipeline features (GL1) while using this old legacy version of the library: https://github.com/Rinnegatamante/vitaGL/tree/legacy_precompiled_ffp
 
 # Build Instructions
-In order to build vitaGL use the following command: `make HAVE_SBRK=1 install`.
-If you already have a newlib sbrk replacement in your app (eg. RetroArch), use instead this command: `make install`.
+In order to build vitaGL use the following command: `make install`.
 <br>These are all the available flags usable when compiling the library:<br>
-`HAVE_SBRK=1` Enables internal custom implementation for sbrk.c from newlib.<br>
 `HAVE_SHARK_LOG=1` Enables logging support in runtime shader compiler.<br>
 `LOG_ERRORS=1` Errors will be logged with sceClibPrintf.<br>
 `LOG_ERRORS=2` Errors will be logged to ux0:data/vitaGL.log.<br>

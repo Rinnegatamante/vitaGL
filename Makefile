@@ -2,10 +2,6 @@ TARGET          := libvitaGL
 SOURCES         := source source/utils
 SHADERS         := shaders
 
-ifeq ($(HAVE_SBRK),1)
-SOURCES += source/hacks
-endif
-
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
 CPPFILES := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.cpp))
 CGFILES  := $(foreach dir,$(SHADERS), $(wildcard $(dir)/*.cg))
