@@ -429,7 +429,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		if (mip_count >= mip_level)
 			texture_data = tex->data;
 		else {
-			vglMemType new_mtype;
+			vglMemType new_mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 			texture_data = gpu_alloc_mapped_with_external(tex_size, &new_mtype);
 
 			// Copy old data.
