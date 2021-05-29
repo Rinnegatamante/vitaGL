@@ -429,13 +429,15 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		if (mip_count >= mip_level)
 			texture_data = tex->data;
 		else {
-			texture_data = gpu_alloc_mapped_with_external(tex_size, &tex->mtype);
+			vglMemType new_mtype;
+			texture_data = gpu_alloc_mapped_with_external(tex_size, &new_mtype);
 
 			// Copy old data.
 			const int old_data_size = gpu_get_compressed_mipchain_size(mip_count, aligned_max_width, aligned_max_height, format);
 			sceClibMemcpy(texture_data, tex->data, old_data_size);
 
 			gpu_free_texture(tex);
+			tex->mtype = new_mtype;
 
 			// Set new mip count.
 			mip_count = mip_level;
