@@ -144,6 +144,11 @@ void *gpu_alloc_mapped(size_t size, vglMemType type) {
 			res = vgl_mem_alloc(size, VGL_MEM_SLOW);
 	}
 
+#ifdef LOG_ERRORS
+	if (!res)
+		vgl_log("gpu_alloc_mapped failed with a requested size of 0x%08X\n", size);
+#endif
+
 	return res;
 }
 
@@ -156,6 +161,11 @@ void *gpu_alloc_mapped_with_external(size_t size, vglMemType *type) {
 		*type = VGL_MEM_EXTERNAL;
 		res = memalign(MEM_ALIGNMENT, size);
 	}
+
+#ifdef LOG_ERRORS
+	if (!res)
+		vgl_log("gpu_alloc_mapped_with_external failed with a requested size of 0x%08X\n", size);
+#endif
 
 	return res;
 }
@@ -202,6 +212,12 @@ void *gpu_alloc_mapped_temp(size_t size) {
 #ifndef HAVE_CIRCULAR_VERTEX_POOL
 	// Allocating memblock and marking it for garbage collection
 	void *res = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	
+#ifdef LOG_ERRORS
+	if (!res)
+		vgl_log("gpu_alloc_mapped_temp failed with a requested size of 0x%08X\n", size);
+#endif
+
 	markAsDirty(res);
 	return res;
 #else

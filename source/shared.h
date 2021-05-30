@@ -193,11 +193,11 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 
 // Error set funcs
 #define SET_GL_ERROR(x) \
-	vgl_log("%llu) %s:%d: %s set %s\n", sceKernelGetProcessTimeWide(), __FILE__, __LINE__, __func__, get_gl_error_literal(x)); \
+	vgl_log("%s:%d: %s set %s\n", __FILE__, __LINE__, __func__, get_gl_error_literal(x)); \
 	vgl_error = x; \
 	return;
 #define SET_GL_ERROR_WITH_RET(x, y) \
-	vgl_log("%llu) %s:%d: %s set %s\n", sceKernelGetProcessTimeWide(), __FILE__, __LINE__, __func__, get_gl_error_literal(x)); \
+	vgl_log("%s:%d: %s set %s\n", __FILE__, __LINE__, __func__, get_gl_error_literal(x)); \
 	vgl_error = x; \
 	return y;
 
