@@ -409,7 +409,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		gpu_free_texture(tex);
 
 	// Calculating swizzled compressed texture size on memory
-	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
+	vglMemType new_mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 
 	if (!image_size)
 		image_size = gpu_get_compressed_mip_size(mip_level, w, h, format);
@@ -445,7 +445,6 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		if (mip_count >= mip_level)
 			texture_data = tex->data;
 		else {
-			vglMemType new_mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 			texture_data = gpu_alloc_mapped_with_external(tex_size, &new_mtype);
 
 			// Copy old data.
@@ -462,7 +461,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		mip_count = mip_level;
 		tex_width = w;
 		tex_height = h;
-
+		tex->mtype = new_mtype;
 		texture_data = gpu_alloc_mapped_with_external(tex_size, &tex->mtype);
 	}
 
