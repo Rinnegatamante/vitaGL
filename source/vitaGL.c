@@ -482,14 +482,19 @@ EGLBoolean eglSwapBuffers(EGLDisplay display, EGLSurface surface) {
 // openGL implementation
 
 void glGenBuffers(GLsizei n, GLuint *res) {
-	int i = 0, j = 0;
+	int i;
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 	for (i = 0; i < n; i++) {
-		res[j++] = (GLuint)(malloc(sizeof(gpubuffer)));
+		res[i] = (GLuint)(malloc(sizeof(gpubuffer)));
+#ifdef LOG_ERRORS
+		if (!res[i])
+			vgl_log("glGenBuffers failed to alloc a buffer (%d/%lu).\n", i, n);
+#endif
+		sceClibMemset((void*)res[i], 0, sizeof(gpubuffer));
 	}
 }
 
