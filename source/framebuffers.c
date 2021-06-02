@@ -99,7 +99,6 @@ void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
 				fb->tex->ref_counter--;
 				if (fb->tex->dirty && fb->tex->ref_counter == 0) {
 					gpu_free_texture(fb->tex);
-					fb->tex->status = TEX_UNUSED;
 				}
 			}
 			if (fb->target) {
@@ -174,7 +173,6 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 			fb->tex->ref_counter--;
 			if (fb->tex->dirty && fb->tex->ref_counter == 0) {
 				gpu_free_texture(fb->tex);
-				fb->tex->status = TEX_UNUSED;
 			}
 			markAsDirty(fb->depth_buffer_addr);
 			markAsDirty(fb->stencil_buffer_addr);

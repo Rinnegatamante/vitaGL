@@ -97,12 +97,10 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 		GLuint i = gl_textures[j];
 		if (i > 0) {
 			if (texture_slots[i].status == TEX_VALID) {
-				if (texture_slots[i].ref_counter > 0) {
+				if (texture_slots[i].ref_counter > 0)
 					texture_slots[i].dirty = GL_TRUE;
-				} else {
+				else
 					gpu_free_texture(&texture_slots[i]);
-					texture_slots[i].status = TEX_UNUSED;
-				}
 			}
 			
 			if (i == tex_unit->tex_id)
