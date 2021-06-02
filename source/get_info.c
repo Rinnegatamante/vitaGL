@@ -247,7 +247,7 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	case GL_MAX_VERTEX_UNIFORM_VECTORS:
 		data[0] = 256;
 		break;
-	case GL_MAJOR_VERSION:	
+	case GL_MAJOR_VERSION:
 		data[0] = 2;
 		break;
 	case GL_MINOR_VERSION:

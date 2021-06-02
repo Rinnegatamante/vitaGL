@@ -254,7 +254,7 @@ void update_scissor_test() {
 
 	// Invalidating viewport
 	invalidate_viewport();
-	
+
 	// Invalidating culling
 	sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_NONE);
 
@@ -312,7 +312,7 @@ void update_scissor_test() {
 
 	// Restoring viewport
 	validate_viewport();
-	
+
 	// Restoring culling mode
 	change_cull_mode();
 
@@ -355,7 +355,7 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 	region.y = is_rendering_display ? (DISPLAY_HEIGHT - y - height) : y;
 #endif
 	region.gl_y = y;
-	
+
 	// Optimizing region
 	if (region.y < 0)
 		region.y = 0;
@@ -370,7 +370,7 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 		if (region.y + region.h > in_use_framebuffer->height)
 			region.h = in_use_framebuffer->height - region.y;
 	}
-	
+
 	// Updating in use scissor test parameters if GL_SCISSOR_TEST is enabled
 	if (scissor_test_state) {
 		if (!skip_scene_reset)

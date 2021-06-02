@@ -559,11 +559,13 @@ void glLineWidth(GLfloat width) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	
+
 	uint32_t int_width = width;
-	if (int_width > 16) int_width = 16;
-	else if (int_width < 1) int_width = 1;
-	
+	if (int_width > 16)
+		int_width = 16;
+	else if (int_width < 1)
+		int_width = 1;
+
 	// Changing line width as requested
 	sceGxmSetFrontPointLineWidth(gxm_context, int_width);
 	sceGxmSetBackPointLineWidth(gxm_context, int_width);

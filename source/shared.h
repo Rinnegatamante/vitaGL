@@ -48,17 +48,17 @@ extern int DISPLAY_STRIDE; // Display stride in pixels
 extern float DISPLAY_WIDTH_FLOAT; // Display width in pixels (float)
 extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
+#include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <malloc.h>
 
 #include <psp2/appmgr.h>
 #include <psp2/common_dialog.h>
 #include <psp2/display.h>
 #include <psp2/gxm.h>
 #include <psp2/kernel/clib.h>
-#include <psp2/kernel/processmgr.h> 
+#include <psp2/kernel/processmgr.h>
 #include <psp2/kernel/sysmem.h>
 #include <psp2/sharedfb.h>
 
@@ -88,7 +88,8 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 // Translates a GL primitive enum to its sceGxm equivalent
 #ifndef SKIP_ERROR_HANDLING
 #define gl_primitive_to_gxm(x, p, c) \
-	if (c <= 0) return; \
+	if (c <= 0) \
+		return; \
 	prim_is_non_native = GL_FALSE; \
 	switch (x) { \
 	case GL_POINTS: \
@@ -97,20 +98,23 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_POINT_01UV); \
 		break; \
 	case GL_LINES: \
-		if (c % 2) return; \
+		if (c % 2) \
+			return; \
 		p = SCE_GXM_PRIMITIVE_LINES; \
 		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
 		break; \
 	case GL_LINE_STRIP: \
-		if (c < 2) return; \
+		if (c < 2) \
+			return; \
 		p = SCE_GXM_PRIMITIVE_LINES; \
 		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
 		prim_is_non_native = GL_TRUE; \
 		break; \
 	case GL_LINE_LOOP: \
-		if (c < 2) return; \
+		if (c < 2) \
+			return; \
 		p = SCE_GXM_PRIMITIVE_LINES; \
 		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
@@ -204,10 +208,12 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 #ifdef LOG_ERRORS
 #define patchVertexProgram(patcher, id, attr, attr_num, stream, stream_num, prog) \
 	int __v = sceGxmShaderPatcherCreateVertexProgram(patcher, id, attr, attr_num, stream, stream_num, prog); \
-	if (__v) vgl_log("Vertex shader patching failed (%s) on shader %d with %d attributes and %d streams.\n", get_gxm_error_literal(__v), id, attr_num, stream_num);
+	if (__v) \
+		vgl_log("Vertex shader patching failed (%s) on shader %d with %d attributes and %d streams.\n", get_gxm_error_literal(__v), id, attr_num, stream_num);
 #define patchFragmentProgram(patcher, id, fmt, msaa_mode, blend_cfg, vertex_link, prog) \
 	int __f = sceGxmShaderPatcherCreateFragmentProgram(patcher, id, fmt, msaa_mode, blend_cfg, vertex_link, prog); \
-	if (__f) vgl_log("Fragment shader patching failed (%s) on shader %d.\n", get_gxm_error_literal(__f), id);
+	if (__f) \
+		vgl_log("Fragment shader patching failed (%s) on shader %d.\n", get_gxm_error_literal(__f), id);
 #else
 #define patchVertexProgram sceGxmShaderPatcherCreateVertexProgram
 #define patchFragmentProgram sceGxmShaderPatcherCreateFragmentProgram
@@ -327,7 +333,7 @@ typedef struct {
 	uint32_t rasterizedPixelsBeforeHsr;
 	uint32_t rasterizedOutputPixels;
 	uint32_t rasterizedOutputSamples;
-	uint32_t bifTaMemoryWrite;						
+	uint32_t bifTaMemoryWrite;
 	uint32_t bifIspParameterFetchMemoryRead;
 	uint32_t peakUsage;
 	uint8_t partialRender;

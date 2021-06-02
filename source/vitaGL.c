@@ -368,7 +368,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	texture_slots[0].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 	texture_slots[0].lod_bias = GL_MAX_TEXTURE_LOD_BIAS;
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	
+
 	// Defaulting textures into using texture on ID 0 and resetting free textures queue
 	for (i = 1; i < TEXTURES_NUM; i++) {
 		texture_slots[i].status = TEX_UNUSED;
@@ -377,7 +377,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 
 	// Set texture matrix to identity
 	matrix4x4_identity(texture_matrix);
-	
+
 #ifdef HAVE_RAZOR_INTERFACE
 	vgl_debugger_init();
 #endif
@@ -386,7 +386,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 void vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, SceGxmMultisampleMode msaa) {
 	// Initializing sceGxm
 	initGxm();
-	
+
 	// Getting max allocatable CDRAM and RAM memory
 	if (system_app_mode) {
 		SceAppMgrBudgetInfo info;
@@ -445,7 +445,7 @@ void vglEnd(void) {
 
 	// Terminating sceGxm
 	sceGxmTerminate();
-	
+
 #ifdef HAVE_RAZOR
 	// Terminating sceRazor debugger
 #ifdef HAVE_DEVKIT
@@ -486,7 +486,7 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 		if (!res[i])
 			vgl_log("glGenBuffers failed to alloc a buffer (%d/%lu).\n", i, n);
 #endif
-		sceClibMemset((void*)res[i], 0, sizeof(gpubuffer));
+		sceClibMemset((void *)res[i], 0, sizeof(gpubuffer));
 	}
 }
 
@@ -562,7 +562,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 
 	// Allocating a new buffer
 	gpu_buf->ptr = gpu_alloc_mapped(size, gpu_buf->type);
-	
+
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf->ptr) {
 		SET_GL_ERROR(GL_OUT_OF_MEMORY)
@@ -595,7 +595,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	
+
 	// Allocating a new buffer
 	uint8_t *ptr = gpu_buf->ptr;
 	gpu_buf->ptr = gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
@@ -937,7 +937,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	gl_primitive_to_gxm(mode, gxm_p, count);
 	sceneReset();
 	GLboolean is_draw_legal = GL_TRUE;
-	
+
 	if (cur_program != 0)
 		is_draw_legal = _glDrawArrays_CustomShadersIMPL(first + count);
 	else {
@@ -945,7 +945,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 			return;
 		_glDrawArrays_FixedFunctionIMPL(first + count);
 	}
-	
+
 #ifndef SKIP_ERROR_HANDLING
 	if (is_draw_legal)
 #endif
@@ -989,7 +989,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	
+
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
 	sceneReset();
@@ -1063,7 +1063,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 	}
-	
+
 	restore_polygon_mode(gxm_p);
 }
 
@@ -1313,7 +1313,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 		sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
 	}
-	
+
 	restore_polygon_mode(gxm_p);
 }
 

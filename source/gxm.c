@@ -190,11 +190,11 @@ static void display_queue_callback(const void *callbackData) {
 
 GLboolean startShaderCompiler(void) {
 	is_shark_online = shark_init(NULL) >= 0;
-	
+
 	// If standard path failed to init we try to init it with ScePiglet path
 	if (!is_shark_online)
 		is_shark_online = shark_init("ur0:data/external/libshacccg.suprx") >= 0;
-	
+
 	return is_shark_online;
 }
 
@@ -254,7 +254,7 @@ void initGxm(void) {
 	else
 		sceGxmInitialize(&gxm_init_params);
 	gxm_initialized = GL_TRUE;
-	
+
 #ifdef HAVE_DEVKIT
 	sceRazorGpuLiveSetMetricsGroup(SCE_RAZOR_GPU_LIVE_METRICS_GROUP_PBUFFER_USAGE);
 	has_razor_live = !sceRazorGpuLiveStart();
@@ -546,18 +546,18 @@ void sceneReset(void) {
 #ifdef HAVE_SHARED_RENDERTARGETS
 			render_target *fbo_rt = (render_target *)active_write_fb->target;
 #ifdef LOG_ERRORS
-			int r = 
+			int r =
 #endif
-			sceGxmBeginScene(gxm_context, 0, fbo_rt->rt,
+				sceGxmBeginScene(gxm_context, 0, fbo_rt->rt,
 #else
 #ifdef LOG_ERRORS
-			int r = 
+			int r =
 #endif
-			sceGxmBeginScene(gxm_context, 0, active_write_fb->target,
+				sceGxmBeginScene(gxm_context, 0, active_write_fb->target,
 #endif
-				NULL, NULL, NULL,
-				&active_write_fb->colorbuffer,
-				&active_write_fb->depthbuffer);
+					NULL, NULL, NULL,
+					&active_write_fb->colorbuffer,
+					&active_write_fb->depthbuffer);
 #ifdef LOG_ERRORS
 			if (r)
 				vgl_log("Scene reset failed due to sceGxmBeginScene erroring (%s) on framebuffer 0x%08X.\n", get_gxm_error_literal(r), active_write_fb);
@@ -623,7 +623,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 	if (!in_use_framebuffer) {
 		vgl_debugger_draw();
 	}
-#endif	
+#endif
 
 	needs_end_scene = GL_FALSE;
 
@@ -653,11 +653,11 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		else {
 #ifdef HAVE_RAZOR
 			sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
-#ifdef HAVE_DEVKIT		
+#ifdef HAVE_DEVKIT
 			if (has_razor_live) {
 				SceRazorGpuLiveResultInfo razor_res;
 				sceRazorGpuLiveSetBuffer(razor_buf[gxm_back_buffer_index], RAZOR_BUF_SIZE, &razor_res);
-			
+
 				if (razor_res.resultData) {
 					if ((frame_idx % UPDATE_RATIO) == 1) {
 						if (!razor_res.overflowCount) {
@@ -665,7 +665,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 							SceUID pid = sceKernelGetProcessId();
 							SceRazorGpuResult r;
 							r.ptr = (uintptr_t)razor_res.resultData;
-						
+
 							// Analyzing the collected jobs
 							for (uint32_t i = 0; i < razor_res.entryCount; i++) {
 								switch (r.job->header.entryType) {
@@ -733,7 +733,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 									razor_metrics.vertexJobPaused = r.pbuf->vertexJobPaused;
 									break;
 								case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_FRAME:
-									razor_metrics.frameStartTime  = r.frame->startTime;
+									razor_metrics.frameStartTime = r.frame->startTime;
 									razor_metrics.frameDuration = r.frame->duration;
 									razor_metrics.frameNumber = r.frame->frameNumber;
 									razor_metrics.frameGpuActive = r.frame->gpuActiveDuration;
@@ -743,7 +743,6 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 								}
 								r.ptr += r.job->header.entrySize;
 							}
-						
 						}
 					}
 					frame_idx++;
@@ -799,6 +798,6 @@ void glFlush(void) {
 	needs_end_scene = GL_FALSE;
 	if (!needs_scene_reset)
 		sceneEnd();
-		
+
 	needs_scene_reset = GL_TRUE;
 }
