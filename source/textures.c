@@ -68,7 +68,7 @@ void glGenTextures(GLsizei n, GLuint *res) {
 		if (j >= n)
 			return;
 	}
-	
+
 	vgl_log("glGenTextures: Texture slots limit reached (%i textures hadn't been generated).\n", n - j);
 }
 
@@ -108,8 +108,6 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 							gpu_free_texture(&texture_slots[i]);
 							markAsDirty(fb->depth_buffer_addr);
 							markAsDirty(fb->stencil_buffer_addr);
-							fb->depth_buffer_addr = NULL;
-							fb->stencil_buffer_addr = NULL;
 							if (fb->target) {
 								markRtAsDirty(fb->target);
 								fb->target = NULL;
@@ -123,7 +121,7 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 				else
 					gpu_free_texture(&texture_slots[i]);
 			}
-			
+
 			if (i == tex_unit->tex_id)
 				tex_unit->tex_id = 0;
 		}
@@ -135,13 +133,13 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	texture *tex = &texture_slots[texture2d_idx];
-	
+
 #ifdef HAVE_UNPURE_TEXTURES
 	if (tex->mip_start < 0)
 		tex->mip_start = level;
 	level -= tex->mip_start;
 #endif
-	
+
 	SceGxmTextureFormat tex_format;
 	uint8_t data_bpp = 0;
 	GLboolean fast_store = GL_FALSE;
@@ -632,7 +630,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	texture *tex = &texture_slots[texture2d_idx];
-	
+
 #ifdef HAVE_UNPURE_TEXTURES
 	if (tex->mip_start < 0)
 		tex->mip_start = level;

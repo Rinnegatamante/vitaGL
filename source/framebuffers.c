@@ -94,13 +94,12 @@ void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
 	while (n > 0) {
 		framebuffer *fb = (framebuffer *)ids[--n];
 		if (fb) {
-			
 			// Check if the framebuffer is currently bound
 			if (fb == active_read_fb)
 				active_read_fb = NULL;
 			if (fb == active_write_fb)
 				active_write_fb = NULL;
-			
+
 			fb->active = GL_FALSE;
 			if (fb->tex) {
 				fb->tex->ref_counter--;
@@ -171,7 +170,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
-		
+
 		// Dirtying depth/stencil buffers for already attached textures
 		if (fb->tex) { // FIXME: This should be moved elsewhere once renderbuffers are implemented
 			fb->tex->ref_counter--;
@@ -181,7 +180,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 			markAsDirty(fb->depth_buffer_addr);
 			markAsDirty(fb->stencil_buffer_addr);
 		}
-		
+
 		// Detaching attached texture if passed texture ID is 0
 		if (tex_id == 0) {
 			if (fb->target) {
@@ -191,7 +190,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 			fb->tex = NULL;
 			return;
 		}
-		
+
 		// Increasing texture reference counter
 		fb->tex = tex;
 		tex->ref_counter++;
