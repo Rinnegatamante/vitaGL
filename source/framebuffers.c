@@ -78,6 +78,7 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 			framebuffers[i].depth_buffer_addr = NULL;
 			framebuffers[i].stencil_buffer_addr = NULL;
 			framebuffers[i].target = NULL;
+			framebuffers[i].tex = NULL;
 		}
 		if (j >= n)
 			break;
@@ -94,6 +95,13 @@ void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
 		framebuffer *fb = (framebuffer *)ids[--n];
 		if (fb) {
 			fb->active = GL_FALSE;
+			if (fb->tex) {
+				fb->tex->ref_counter--;
+				if (fb->tex->dirty && fb->tex->ref_counter == 0) {
+					gpu_free_texture(fb->tex);
+					fb->tex->status = TEX_UNUSED;
+				}
+			}
 			if (fb->target) {
 				markRtAsDirty(fb->target);
 				fb->target = NULL;
@@ -163,9 +171,16 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 		
 		// Dirtying depth/stencil buffers for already attached textures
 		if (fb->depth_buffer_addr) { // FIXME: This should be moved elsewhere once renderbuffers are implemented
+			fb->tex->ref_counter--;
+			if (fb->tex->dirty && fb->tex->ref_counter == 0) {
+				gpu_free_texture(fb->tex);
+				fb->tex->status = TEX_UNUSED;
+			}
 			markAsDirty(fb->depth_buffer_addr);
 			markAsDirty(fb->stencil_buffer_addr);
 		}
+		
+		fb->tex = tex;
 		
 		// Detaching attached texture if passed texture ID is 0
 		if (tex_id == 0) {
@@ -179,6 +194,9 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 			}
 			return;
 		}
+		
+		// Increasing texture reference counter
+		tex->ref_counter++;
 
 		// Allocating colorbuffer
 		sceGxmColorSurfaceInit(

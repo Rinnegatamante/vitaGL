@@ -104,6 +104,7 @@ typedef struct {
 	int stride;
 	void *data;
 	uint32_t data_type;
+	texture *tex;
 } framebuffer;
 
 // Blending

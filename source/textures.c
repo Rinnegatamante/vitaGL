@@ -51,6 +51,8 @@ void glGenTextures(GLsizei n, GLuint *res) {
 			texture_slots[i].status = TEX_UNINITIALIZED;
 
 			// Resetting texture parameters to their default values
+			texture_slots[i].dirty = GL_FALSE;
+			texture_slots[i].ref_counter = 0;
 			texture_slots[i].mip_count = 1;
 #ifdef HAVE_UNPURE_TEXTURES
 			texture_slots[i].mip_start = -1;
@@ -94,13 +96,17 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 	for (j = 0; j < n; j++) {
 		GLuint i = gl_textures[j];
 		if (i > 0) {
-			if (texture_slots[i].status == TEX_VALID)
-				gpu_free_texture(&texture_slots[i]);
+			if (texture_slots[i].status == TEX_VALID) {
+				if (texture_slots[i].ref_counter > 0) {
+					texture_slots[i].dirty = GL_TRUE;
+				} else {
+					gpu_free_texture(&texture_slots[i]);
+					texture_slots[i].status = TEX_UNUSED;
+				}
+			}
 			
 			if (i == tex_unit->tex_id)
 				tex_unit->tex_id = 0;
-				
-			texture_slots[i].status = TEX_UNUSED;
 		}
 	}
 }
