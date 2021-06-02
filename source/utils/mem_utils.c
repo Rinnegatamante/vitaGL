@@ -40,6 +40,8 @@ void vgl_mem_term(void) {
 		mempool_addr[i] = NULL;
 		mempool_id[i] = 0;
 	}
+
+	mempool_initialized = 0;
 }
 
 void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
