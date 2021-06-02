@@ -274,9 +274,9 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 #endif
 
 	// Init constant index buffers
-	default_idx_ptr = (uint16_t *)malloc(MAX_IDX_NUMBER * sizeof(uint16_t));
-	default_quads_idx_ptr = (uint16_t *)malloc(MAX_IDX_NUMBER * sizeof(uint16_t));
-	default_line_strips_idx_ptr = (uint16_t *)malloc(MAX_IDX_NUMBER * sizeof(uint16_t));
+	default_idx_ptr = (uint16_t *)vgl_malloc(MAX_IDX_NUMBER * sizeof(uint16_t), VGL_MEM_EXTERNAL);
+	default_quads_idx_ptr = (uint16_t *)vgl_malloc(MAX_IDX_NUMBER * sizeof(uint16_t), VGL_MEM_EXTERNAL);
+	default_line_strips_idx_ptr = (uint16_t *)vgl_malloc(MAX_IDX_NUMBER * sizeof(uint16_t), VGL_MEM_EXTERNAL);
 	for (i = 0; i < MAX_IDX_NUMBER / 6; i++) {
 		default_idx_ptr[i * 6] = i * 6;
 		default_idx_ptr[i * 6 + 1] = i * 6 + 1;
@@ -358,14 +358,6 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	// Init scissor test state
 	resetScissorTestRegion();
 
-	// Mapping newlib heap into sceGxm
-	void *dummy = malloc(1);
-	SceKernelMemBlockInfo info;
-	info.size = sizeof(SceKernelMemBlockInfo);
-	sceKernelGetMemBlockInfoByAddr(dummy, &info);
-	sceGxmMapMemory(info.mappedBase, info.mappedSize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
-	free(dummy);
-
 	// Allocating default texture object
 	texture_slots[0].mip_count = 1;
 	texture_slots[0].use_mips = GL_FALSE;
@@ -422,10 +414,10 @@ void vglEnd(void) {
 	waitRenderingDone();
 
 	// Deallocating default vertices buffers
-	vgl_mem_free(clear_vertices);
-	vgl_mem_free(depth_vertices);
-	vgl_mem_free(depth_clear_indices);
-	vgl_mem_free(scissor_test_vertices);
+	vgl_free(clear_vertices);
+	vgl_free(depth_vertices);
+	vgl_free(depth_clear_indices);
+	vgl_free(scissor_test_vertices);
 
 	// Releasing shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, scissor_test_fragment_program);
@@ -489,7 +481,7 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 	}
 #endif
 	for (i = 0; i < n; i++) {
-		res[i] = (GLuint)(malloc(sizeof(gpubuffer)));
+		res[i] = (GLuint)(vgl_malloc(sizeof(gpubuffer), VGL_MEM_EXTERNAL));
 #ifdef LOG_ERRORS
 		if (!res[i])
 			vgl_log("glGenBuffers failed to alloc a buffer (%d/%lu).\n", i, n);
@@ -524,7 +516,7 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 			gpubuffer *gpu_buf = (gpubuffer *)gl_buffers[j];
 			if (gpu_buf->ptr != NULL)
 				markAsDirty(gpu_buf->ptr);
-			free(gpu_buf);
+			vgl_free(gpu_buf);
 		}
 	}
 }
@@ -565,7 +557,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		if (gpu_buf->used)
 			markAsDirty(gpu_buf->ptr);
 		else
-			vgl_mem_free(gpu_buf->ptr);
+			vgl_free(gpu_buf->ptr);
 	}
 
 	// Allocating a new buffer
@@ -619,7 +611,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 	if (gpu_buf->used)
 		markAsDirty(ptr);
 	else
-		vgl_mem_free(ptr);
+		vgl_free(ptr);
 	gpu_buf->used = GL_FALSE;
 }
 
@@ -1327,7 +1319,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 
 size_t vglMemFree(vglMemType type) {
 #ifndef SKIP_ERROR_HANDLING
-	if (type >= VGL_MEM_TYPE_COUNT)
+	if (type >= VGL_MEM_ALL)
 		return 0;
 #endif
 	return vgl_mem_get_free_space(type);
@@ -1335,10 +1327,10 @@ size_t vglMemFree(vglMemType type) {
 
 void *vglAlloc(uint32_t size, vglMemType type) {
 #ifndef SKIP_ERROR_HANDLING
-	if (type >= VGL_MEM_TYPE_COUNT)
+	if (type >= VGL_MEM_ALL)
 		return NULL;
 #endif
-	return vgl_mem_alloc(size, type);
+	return vgl_malloc(size, type);
 }
 
 void *vglForceAlloc(uint32_t size) {
@@ -1346,7 +1338,7 @@ void *vglForceAlloc(uint32_t size) {
 }
 
 void vglFree(void *addr) {
-	vgl_mem_free(addr);
+	vgl_free(addr);
 }
 
 void vglUseExtraMem(GLboolean use) {

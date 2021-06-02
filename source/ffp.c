@@ -247,7 +247,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.has_texture, mask.has_colors, mask.lights_num);
 		uint32_t size = strlen(vshader);
 		SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
-		ffp_vertex_program = (SceGxmProgram *)malloc(size);
+		ffp_vertex_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
 		sceClibMemcpy((void *)ffp_vertex_program, (void *)t, size);
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_vertex_program, &ffp_vertex_program_id);
 		shark_clear_output();
@@ -345,7 +345,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		sprintf(fshader, ffp_frag_src, alpha_op, mask.has_texture, mask.has_colors, mask.fog_mode, mask.texenv_mode);
 		uint32_t size = strlen(fshader);
 		SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
-		ffp_fragment_program = (SceGxmProgram *)malloc(size);
+		ffp_fragment_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
 		sceClibMemcpy((void *)ffp_fragment_program, (void *)t, size);
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_fragment_program, &ffp_fragment_program_id);
 		shark_clear_output();
@@ -373,8 +373,8 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		else {
 			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, shader_cache[shader_cache_idx].vert_id);
 			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, shader_cache[shader_cache_idx].frag_id);
-			free(shader_cache[shader_cache_idx].frag);
-			free(shader_cache[shader_cache_idx].vert);
+			vgl_free(shader_cache[shader_cache_idx].frag);
+			vgl_free(shader_cache[shader_cache_idx].vert);
 		}
 		shader_cache[shader_cache_idx].mask.raw = mask.raw;
 		shader_cache[shader_cache_idx].frag = ffp_fragment_program;
