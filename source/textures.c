@@ -97,12 +97,31 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 		GLuint i = gl_textures[j];
 		if (i > 0) {
 			if (texture_slots[i].status == TEX_VALID) {
-				if (texture_slots[i].ref_counter > 0) {
-					texture_slots[i].dirty = GL_TRUE;
-				} else {
+				if (texture_slots[i].ref_counter > 0)
+					if (texture_slots[i].ref_counter == 1) {
+						framebuffer *fb = NULL;
+						if (active_read_fb && active_read_fb->tex == &texture_slots[i])
+							fb = active_read_fb;
+						else if (active_write_fb && active_write_fb->tex == &texture_slots[i])
+							fb = active_write_fb;
+						if (fb) {
+							gpu_free_texture(&texture_slots[i]);
+							markAsDirty(fb->depth_buffer_addr);
+							markAsDirty(fb->stencil_buffer_addr);
+							fb->depth_buffer_addr = NULL;
+							fb->stencil_buffer_addr = NULL;
+							if (fb->target) {
+								markRtAsDirty(fb->target);
+								fb->target = NULL;
+							}
+							fb->tex = NULL;
+						} else
+							texture_slots[i].dirty = GL_TRUE;
+					} else {
+						texture_slots[i].dirty = GL_TRUE;
+					}
+				else
 					gpu_free_texture(&texture_slots[i]);
-					texture_slots[i].status = TEX_UNUSED;
-				}
 			}
 			
 			if (i == tex_unit->tex_id)

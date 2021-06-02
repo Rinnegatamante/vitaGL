@@ -297,7 +297,7 @@ palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 	return res;
 }
 
-void gpu_free_texture(texture *tex) {
+void gpu_free_texture_data(texture *tex) {
 	// Deallocating texture
 	if (tex->data != NULL) {
 		if (tex->mtype == VGL_MEM_EXTERNAL)
@@ -306,15 +306,17 @@ void gpu_free_texture(texture *tex) {
 			vgl_mem_free(tex->data);
 		tex->data = NULL;
 	}
+}
 
-	// Invalidating texture object
-	tex->status = TEX_UNINITIALIZED;
+void gpu_free_texture(texture *tex) {
+	gpu_free_texture_data(tex);
+	tex->status = TEX_UNUSED;
 }
 
 void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), GLboolean fast_store) {
 	// If there's already a texture in passed texture object we first dealloc it
 	if (tex->status == TEX_VALID)
-		gpu_free_texture(tex);
+		gpu_free_texture_data(tex);
 
 	// Getting texture format bpp
 	uint8_t bpp = tex_format_to_bytespp(format);
@@ -406,7 +408,7 @@ int gpu_get_compressed_mip_offset(int level, int width, int height, SceGxmTextur
 void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *)) {
 	// If there's already a texture in passed texture object we first dealloc it
 	if (tex->status == TEX_VALID && !mip_level)
-		gpu_free_texture(tex);
+		gpu_free_texture_data(tex);
 
 	// Calculating swizzled compressed texture size on memory
 	vglMemType new_mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
@@ -451,7 +453,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 			const int old_data_size = gpu_get_compressed_mipchain_size(mip_count, aligned_max_width, aligned_max_height, format);
 			sceClibMemcpy(texture_data, tex->data, old_data_size);
 
-			gpu_free_texture(tex);
+			gpu_free_texture_data(tex);
 			tex->mtype = new_mtype;
 
 			// Set new mip count.
@@ -579,7 +581,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 			temp = sceGxmTextureGetData(&tex->gxm_tex);
 		} else {
 			sceClibMemcpy(temp, sceGxmTextureGetData(&tex->gxm_tex), stride * orig_h * bpp);
-			gpu_free_texture(tex);
+			gpu_free_texture_data(tex);
 		}
 
 		// Allocating the new texture data buffer
@@ -591,7 +593,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		if (has_temp_buffer)
 			free(temp);
 		else
-			gpu_free_texture(tex);
+			gpu_free_texture_data(tex);
 		tex->status = TEX_VALID;
 
 		// Performing a chain downscale process to generate requested mipmaps

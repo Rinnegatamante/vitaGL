@@ -94,23 +94,26 @@ void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
 	while (n > 0) {
 		framebuffer *fb = (framebuffer *)ids[--n];
 		if (fb) {
+			
+			// Check if the framebuffer is currently bound
+			if (fb == active_read_fb)
+				active_read_fb = NULL;
+			if (fb == active_write_fb)
+				active_write_fb = NULL;
+			
 			fb->active = GL_FALSE;
 			if (fb->tex) {
 				fb->tex->ref_counter--;
 				if (fb->tex->dirty && fb->tex->ref_counter == 0) {
 					gpu_free_texture(fb->tex);
-					fb->tex->status = TEX_UNUSED;
 				}
+				fb->tex = NULL;
 			}
-			if (fb->target) {
+			if (fb->target)
 				markRtAsDirty(fb->target);
-				fb->target = NULL;
-			}
 			if (fb->depth_buffer_addr) {
 				markAsDirty(fb->depth_buffer_addr);
 				markAsDirty(fb->stencil_buffer_addr);
-				fb->depth_buffer_addr = NULL;
-				fb->stencil_buffer_addr = NULL;
 			}
 		}
 	}
@@ -170,17 +173,14 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 	case GL_COLOR_ATTACHMENT0:
 		
 		// Dirtying depth/stencil buffers for already attached textures
-		if (fb->depth_buffer_addr) { // FIXME: This should be moved elsewhere once renderbuffers are implemented
+		if (fb->tex) { // FIXME: This should be moved elsewhere once renderbuffers are implemented
 			fb->tex->ref_counter--;
 			if (fb->tex->dirty && fb->tex->ref_counter == 0) {
 				gpu_free_texture(fb->tex);
-				fb->tex->status = TEX_UNUSED;
 			}
 			markAsDirty(fb->depth_buffer_addr);
 			markAsDirty(fb->stencil_buffer_addr);
 		}
-		
-		fb->tex = tex;
 		
 		// Detaching attached texture if passed texture ID is 0
 		if (tex_id == 0) {
@@ -188,14 +188,12 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 				markRtAsDirty(fb->target);
 				fb->target = NULL;
 			}
-			if (fb->depth_buffer_addr) { // FIXME: This should be moved elsewhere once renderbuffers are implemented
-				fb->depth_buffer_addr = NULL;
-				fb->stencil_buffer_addr = NULL;
-			}
+			fb->tex = NULL;
 			return;
 		}
 		
 		// Increasing texture reference counter
+		fb->tex = tex;
 		tex->ref_counter++;
 
 		// Allocating colorbuffer
@@ -238,7 +236,7 @@ GLenum glCheckFramebufferStatus(GLenum target) {
 	if (!fb)
 		return GL_FRAMEBUFFER_COMPLETE;
 	else
-		return fb->depth_buffer_addr ? GL_FRAMEBUFFER_COMPLETE : GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT;
+		return fb->tex ? GL_FRAMEBUFFER_COMPLETE : GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT;
 }
 
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data) {
