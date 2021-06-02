@@ -133,16 +133,19 @@ void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width
 
 void *gpu_alloc_mapped(size_t size, vglMemType type) {
 	// Allocating requested memblock
-	void *res = vgl_mem_alloc(size, type);
+	void *res = vgl_memalign(MEM_ALIGNMENT, size, type);
 
 	// Requested memory type finished, using other one
-	if (res == NULL) {
-		res = vgl_mem_alloc(size, type == VGL_MEM_VRAM ? VGL_MEM_RAM : VGL_MEM_VRAM);
+	if (res == NULL)
+		res = vgl_memalign(MEM_ALIGNMENT, size, type == VGL_MEM_VRAM ? VGL_MEM_RAM : VGL_MEM_VRAM);
 
-		// Even the other one failed, using our last resort
-		if (res == NULL)
-			res = vgl_mem_alloc(size, VGL_MEM_SLOW);
-	}
+	// Even the other one failed, using our last resort
+	if (res == NULL)
+		res = vgl_memalign(MEM_ALIGNMENT, size, VGL_MEM_SLOW);
+
+	// Internal mempool finished, using newlib mem
+	if (res == NULL && use_extra_mem)
+		res = vgl_memalign(MEM_ALIGNMENT, size, VGL_MEM_EXTERNAL);
 
 #ifdef LOG_ERRORS
 	if (!res)
@@ -152,27 +155,9 @@ void *gpu_alloc_mapped(size_t size, vglMemType type) {
 	return res;
 }
 
-void *gpu_alloc_mapped_with_external(size_t size, vglMemType *type) {
-	// Allocating requested memblock
-	void *res = gpu_alloc_mapped(size, *type);
-
-	// Internal mempool finished, using newlib mem
-	if (res == NULL && use_extra_mem) {
-		*type = VGL_MEM_EXTERNAL;
-		res = memalign(MEM_ALIGNMENT, size);
-	}
-
-#ifdef LOG_ERRORS
-	if (!res)
-		vgl_log("gpu_alloc_mapped_with_external failed with a requested size of 0x%08X\n", size);
-#endif
-
-	return res;
-}
-
 void *gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
-	void *addr = gpu_alloc_mapped(size, use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	void *addr = vgl_memalign(4096, size, use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
 	// Mapping memblock into sceGxm as vertex USSE memory
 	sceGxmMapVertexUsseMemory(addr, size, usse_offset);
@@ -186,12 +171,12 @@ void gpu_vertex_usse_free_mapped(void *addr) {
 	sceGxmUnmapVertexUsseMemory(addr);
 
 	// Deallocating memblock
-	vgl_mem_free(addr);
+	vgl_free(addr);
 }
 
 void *gpu_fragment_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
-	void *addr = gpu_alloc_mapped(size, use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	void *addr = vgl_memalign(4096, size, use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
 	// Mapping memblock into sceGxm as fragment USSE memory
 	sceGxmMapFragmentUsseMemory(addr, size, usse_offset);
@@ -205,7 +190,7 @@ void gpu_fragment_usse_free_mapped(void *addr) {
 	sceGxmUnmapFragmentUsseMemory(addr);
 
 	// Deallocating memblock
-	vgl_mem_free(addr);
+	vgl_free(addr);
 }
 
 void *gpu_alloc_mapped_temp(size_t size) {
@@ -281,7 +266,7 @@ int tex_format_to_alignment(SceGxmTextureFormat format) {
 
 palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 	// Allocating a palette object
-	palette *res = (palette *)malloc(sizeof(palette));
+	palette *res = (palette *)vgl_malloc(sizeof(palette), VGL_MEM_EXTERNAL);
 
 	// Allocating palette data buffer
 	void *texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
@@ -300,10 +285,7 @@ palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 void gpu_free_texture_data(texture *tex) {
 	// Deallocating texture
 	if (tex->data != NULL) {
-		if (tex->mtype == VGL_MEM_EXTERNAL)
-			free(tex->data);
-		else
-			vgl_mem_free(tex->data);
+		vgl_free(tex->data);
 		tex->data = NULL;
 	}
 }
@@ -322,9 +304,8 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	uint8_t bpp = tex_format_to_bytespp(format);
 
 	// Allocating texture data buffer
-	tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 	const int tex_size = ALIGN(w, 8) * h * bpp;
-	void *texture_data = gpu_alloc_mapped_with_external(tex_size, &tex->mtype);
+	void *texture_data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
 	if (texture_data != NULL) {
 		// Initializing texture data buffer
@@ -447,14 +428,14 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		if (mip_count >= mip_level)
 			texture_data = tex->data;
 		else {
-			texture_data = gpu_alloc_mapped_with_external(tex_size, &new_mtype);
-
-			// Copy old data.
-			const int old_data_size = gpu_get_compressed_mipchain_size(mip_count, aligned_max_width, aligned_max_height, format);
-			sceClibMemcpy(texture_data, tex->data, old_data_size);
-
-			gpu_free_texture_data(tex);
-			tex->mtype = new_mtype;
+			texture_data = vgl_realloc(tex->data, tex_size);
+			if (!texture_data) {
+				// Reallocation in the same mspace failed, try manually.
+				texture_data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+				const int old_data_size = gpu_get_compressed_mipchain_size(mip_count, aligned_max_width, aligned_max_height, format);
+				sceClibMemcpy(texture_data, tex->data, old_data_size);
+				gpu_free_texture_data(tex);
+			}
 
 			// Set new mip count.
 			mip_count = mip_level;
@@ -463,8 +444,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		mip_count = mip_level;
 		tex_width = w;
 		tex_height = h;
-		tex->mtype = new_mtype;
-		texture_data = gpu_alloc_mapped_with_external(tex_size, &tex->mtype);
+		texture_data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 	}
 
 	void *mip_data = texture_data + mip_offset;
@@ -477,7 +457,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 
 				// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
 				if (read_cb != readRGBA) {
-					temp = malloc(w * h * 4);
+					temp = vgl_malloc(w * h * 4, VGL_MEM_EXTERNAL);
 					uint8_t *src = (uint8_t *)data;
 					uint32_t *dst = (uint32_t *)temp;
 					int i;
@@ -494,7 +474,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 
 				// Freeing temporary data if necessary
 				if (read_cb != readRGBA)
-					free(temp);
+					vgl_free(temp);
 			} else {
 				// Perform swizzling if necessary.
 				switch (format) {
@@ -575,7 +555,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		// Moving texture data to heap and deallocating texture memblock
 		GLboolean has_temp_buffer = GL_TRUE;
 		stride = ALIGN(orig_w, 8);
-		void *temp = (void *)malloc(stride * orig_h * bpp);
+		void *temp = (void *)vgl_malloc(stride * orig_h * bpp, VGL_MEM_EXTERNAL);
 		if (temp == NULL) { // If we finished newlib heap, we delay texture free
 			has_temp_buffer = GL_FALSE;
 			temp = sceGxmTextureGetData(&tex->gxm_tex);
@@ -585,13 +565,12 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		}
 
 		// Allocating the new texture data buffer
-		tex->mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-		void *texture_data = gpu_alloc_mapped_with_external(size, &tex->mtype);
+		void *texture_data = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
 		// Moving back old texture data from heap to texture memblock
 		sceClibMemcpy(texture_data, temp, stride * orig_h * bpp);
 		if (has_temp_buffer)
-			free(temp);
+			vgl_free(temp);
 		else
 			gpu_free_texture_data(tex);
 		tex->status = TEX_VALID;
@@ -631,6 +610,6 @@ void gpu_free_palette(palette *pal) {
 	// Deallocating palette memblock and object
 	if (pal == NULL)
 		return;
-	vgl_mem_free(pal->data);
-	free(pal);
+	vgl_free(pal->data);
+	vgl_free(pal);
 }

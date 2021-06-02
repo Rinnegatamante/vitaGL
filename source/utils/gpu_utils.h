@@ -40,7 +40,6 @@ enum {
 typedef struct {
 	SceGxmTexture gxm_tex;
 	void *data;
-	vglMemType mtype;
 	SceUID palette_UID;
 	SceUID depth_UID;
 	uint8_t status;
@@ -68,7 +67,6 @@ typedef struct {
 
 // Alloc a generic memblock into sceGxm mapped memory
 void *gpu_alloc_mapped(size_t size, vglMemType type);
-void *gpu_alloc_mapped_with_external(size_t size, vglMemType *type);
 void *gpu_alloc_mapped_temp(size_t size);
 
 // Alloc into sceGxm mapped memory a vertex USSE memblock

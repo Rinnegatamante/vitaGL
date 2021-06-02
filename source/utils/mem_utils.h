@@ -24,10 +24,15 @@
 #ifndef _MEM_UTILS_H_
 #define _MEM_UTILS_H_
 
-void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont); // Initialize internal mempools
-void vgl_mem_term(void); // Terminate internal mempools
-size_t vgl_mem_get_free_space(vglMemType type); // Return free space in bytes for a mempool
-void *vgl_mem_alloc(size_t size, vglMemType type); // Allocate a memory block on a mempool
-void vgl_mem_free(void *ptr); // Free a memory block on a mempool
+void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont);
+void vgl_mem_term(void);
+size_t vgl_mem_get_free_space(vglMemType type);
+
+size_t vgl_malloc_usable_size(void *ptr);
+void *vgl_malloc(size_t size, vglMemType type);
+void *vgl_calloc(size_t num, size_t size, vglMemType type);
+void *vgl_memalign(size_t alignment, size_t size, vglMemType type);
+void *vgl_realloc(void *ptr, size_t size);
+void vgl_free(void *ptr);
 
 #endif

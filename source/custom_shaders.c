@@ -717,7 +717,7 @@ void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, c
 	shader *s = &shaders[handles[0] - 1];
 
 	// Allocating compiled shader on RAM and registering it into sceGxmShaderPatcher
-	s->prog = (SceGxmProgram *)malloc(length);
+	s->prog = (SceGxmProgram *)vgl_malloc(length, VGL_MEM_EXTERNAL);
 	sceClibMemcpy((void *)s->prog, binary, length);
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
 	s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
@@ -735,7 +735,7 @@ void glCompileShader(GLuint handle) {
 	// Compiling shader source
 	s->prog = shark_compile_shader_extended((const char *)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 	if (s->prog) {
-		SceGxmProgram *res = (SceGxmProgram *)malloc(s->size);
+		SceGxmProgram *res = (SceGxmProgram *)vgl_malloc(s->size, VGL_MEM_EXTERNAL);
 		sceClibMemcpy((void *)res, (void *)s->prog, s->size);
 #ifdef LOG_ERRORS
 		int r = sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
@@ -760,9 +760,9 @@ void glDeleteShader(GLuint shad) {
 	// Deallocating shader and unregistering it from sceGxmShaderPatcher
 	if (s->valid) {
 		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
-		free((void *)s->prog);
+		vgl_free((void *)s->prog);
 		if (s->log)
-			free(s->log);
+			vgl_free(s->log);
 	}
 	s->log = NULL;
 	s->valid = GL_FALSE;
@@ -832,14 +832,14 @@ void glDeleteProgram(GLuint prog) {
 			uniform *old = p->vert_uniforms;
 			p->vert_uniforms = (uniform *)p->vert_uniforms->chain;
 			if (!old->is_alias)
-				free(old->data);
-			free(old);
+				vgl_free(old->data);
+			vgl_free(old);
 		}
 		while (p->frag_uniforms) {
 			uniform *old = p->frag_uniforms;
 			p->frag_uniforms = (uniform *)p->frag_uniforms->chain;
-			free(old->data);
-			free(old);
+			vgl_free(old->data);
+			vgl_free(old);
 		}
 	}
 	p->status = PROG_INVALID;
@@ -946,19 +946,19 @@ void glLinkProgram(GLuint progr) {
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
 			p->texunits[sceGxmProgramParameterGetResourceIndex(param)] = GL_TRUE;
 #ifdef HAVE_SAMPLERS_AS_UNIFORMS
-			uniform *u = (uniform *)malloc(sizeof(uniform));
+			uniform *u = (uniform *)vgl_malloc(sizeof(uniform), VGL_MEM_EXTERNAL);
 			u->chain = p->frag_uniforms;
 			u->ptr = param;
 			u->size = 0;
-			u->data = (float *)malloc(sizeof(float));
+			u->data = (float *)vgl_malloc(sizeof(float), VGL_MEM_EXTERNAL);
 			p->frag_uniforms = u;
 #endif
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
-			uniform *u = (uniform *)malloc(sizeof(uniform));
+			uniform *u = (uniform *)vgl_malloc(sizeof(uniform), VGL_MEM_EXTERNAL);
 			u->chain = p->frag_uniforms;
 			u->ptr = param;
 			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
-			u->data = (float *)malloc(u->size * sizeof(float));
+			u->data = (float *)vgl_malloc(u->size * sizeof(float), VGL_MEM_EXTERNAL);
 			memset(u->data, 0, u->size * sizeof(float));
 			p->frag_uniforms = u;
 		}
@@ -973,7 +973,7 @@ void glLinkProgram(GLuint progr) {
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
 			p->attr_num++;
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
-			uniform *u = (uniform *)malloc(sizeof(uniform));
+			uniform *u = (uniform *)vgl_malloc(sizeof(uniform), VGL_MEM_EXTERNAL);
 			u->chain = p->vert_uniforms;
 			u->ptr = param;
 			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
@@ -982,7 +982,7 @@ void glLinkProgram(GLuint progr) {
 				u->is_alias = GL_TRUE;
 			} else {
 				u->is_alias = GL_FALSE;
-				u->data = (float *)malloc(u->size * sizeof(float));
+				u->data = (float *)vgl_malloc(u->size * sizeof(float), VGL_MEM_EXTERNAL);
 				memset(u->data, 0, u->size * sizeof(float));
 			}
 			p->vert_uniforms = u;
