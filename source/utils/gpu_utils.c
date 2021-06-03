@@ -285,7 +285,7 @@ palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 void gpu_free_texture_data(texture *tex) {
 	// Deallocating texture
 	if (tex->data != NULL) {
-		vgl_free(tex->data);
+		markAsDirty(tex->data);
 		tex->data = NULL;
 	}
 }
