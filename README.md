@@ -23,6 +23,7 @@ In order to build vitaGL use the following command: `make install`.
 `HAVE_RAZOR=1` Enables debugging features through Razor debugger (retail and devkit compatible).<br>
 `HAVE_RAZOR=2` Enables debugging features through Razor debugger (retail and devkit compatible) with ImGui interface.<br>
 `HAVE_DEVKIT=1` Enables extra debugging features through Razor debugger available only for devkit users.<br>
+`HAVE_DEVKIT=2` Enables extra debugging features through Razor debugger available only for devkit users with ImGui interface.<br>
 # Samples
 
 You can find samples in the *samples* folder in this repository.

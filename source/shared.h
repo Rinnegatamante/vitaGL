@@ -36,7 +36,7 @@
 #define GXM_TEX_MAX_SIZE 4096 // Maximum width/height in pixels per texture
 #define FRAME_PURGE_LIST_SIZE 16384 // Number of elements a single frame can hold
 #define FRAME_PURGE_RENDERTARGETS_LIST_SIZE 128 // Number of rendertargets a single frame can hold
-#define FRAME_PURGE_FREQ 3 // Frequency in frames for garbage collection
+#define FRAME_PURGE_FREQ 5 // Frequency in frames for garbage collection
 #define BUFFERS_NUM 256 // Maximum amount of framebuffers objects usable
 #define FFP_VERTEX_ATTRIBS_NUM 7 // Number of attributes used in ffp shaders
 #define MEM_ALIGNMENT 16 // Memory alignment
