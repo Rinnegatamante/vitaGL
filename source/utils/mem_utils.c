@@ -37,8 +37,10 @@ void vgl_mem_term(void) {
 	for (int i = 0; i < VGL_MEM_EXTERNAL; i++) {
 		sceClibMspaceDestroy(mempool_mspace[i]);
 		sceKernelFreeMemBlock(mempool_id[i]);
+		mempool_mspace[i] = NULL;
 		mempool_addr[i] = NULL;
 		mempool_id[i] = 0;
+		mempool_size[i] = 0;
 	}
 
 	mempool_initialized = 0;
@@ -131,35 +133,39 @@ void vgl_free(void *ptr) {
 	vglMemType type = vgl_mem_get_type_by_addr(ptr);
 	if (type == VGL_MEM_EXTERNAL)
 		free(ptr);
-	else
+	else if (mempool_mspace[type])
 		sceClibMspaceFree(mempool_mspace[type], ptr);
 }
 
 void *vgl_malloc(size_t size, vglMemType type) {
 	if (type == VGL_MEM_EXTERNAL)
 		return malloc(size);
-	else
+	else if (mempool_mspace[type])
 		return sceClibMspaceMalloc(mempool_mspace[type], size);
+	return NULL;
 }
 
 void *vgl_calloc(size_t num, size_t size, vglMemType type) {
 	if (type == VGL_MEM_EXTERNAL)
 		return calloc(num, size);
-	else
+	else if (mempool_mspace[type])
 		return sceClibMspaceCalloc(mempool_mspace[type], num, size);
+	return NULL;
 }
 
 void *vgl_memalign(size_t alignment, size_t size, vglMemType type) {
 	if (type == VGL_MEM_EXTERNAL)
 		return memalign(alignment, size);
-	else
+	else if (mempool_mspace[type])
 		return sceClibMspaceMemalign(mempool_mspace[type], alignment, size);
+	return NULL;
 }
 
 void *vgl_realloc(void *ptr, size_t size) {
 	vglMemType type = vgl_mem_get_type_by_addr(ptr);
 	if (type == VGL_MEM_EXTERNAL)
 		return realloc(ptr, size);
-	else
+	else if (mempool_mspace[type])
 		return sceClibMspaceRealloc(mempool_mspace[type], ptr, size);
+	return NULL;
 }
