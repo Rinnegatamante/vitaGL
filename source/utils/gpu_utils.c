@@ -134,17 +134,21 @@ void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width
 void *gpu_alloc_mapped(size_t size, vglMemType type) {
 	// Allocating requested memblock
 	void *res = vgl_memalign(MEM_ALIGNMENT, size, type);
+	if (res)
+		return res;
 
 	// Requested memory type finished, using other one
-	if (res == NULL)
-		res = vgl_memalign(MEM_ALIGNMENT, size, type == VGL_MEM_VRAM ? VGL_MEM_RAM : VGL_MEM_VRAM);
+	res = vgl_memalign(MEM_ALIGNMENT, size, type == VGL_MEM_VRAM ? VGL_MEM_RAM : VGL_MEM_VRAM);
+	if (res)
+		return res;
 
 	// Even the other one failed, using our last resort
-	if (res == NULL)
-		res = vgl_memalign(MEM_ALIGNMENT, size, VGL_MEM_SLOW);
+	res = vgl_memalign(MEM_ALIGNMENT, size, VGL_MEM_SLOW);
+	if (res)
+		return res;
 
 	// Internal mempool finished, using newlib mem
-	if (res == NULL && use_extra_mem)
+	if (use_extra_mem)
 		res = vgl_memalign(MEM_ALIGNMENT, size, VGL_MEM_EXTERNAL);
 
 #ifdef LOG_ERRORS
@@ -512,23 +516,19 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 	// Getting current mipmap count in passed texture
 	uint32_t count = tex->mip_count - 1;
 
-	// Getting textures info and calculating bpp
-	uint32_t w, h, stride;
-	uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
-	uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
-	SceGxmTextureFormat format = sceGxmTextureGetFormat(&tex->gxm_tex);
-	uint32_t bpp = tex_format_to_bytespp(format);
-
 	// Checking if we need at least one more new mipmap level
 	if ((level > count) || (level < 0)) { // Note: level < 0 means we will use max possible mipmaps level
 
-		uint32_t jumps[10];
-		for (w = 1; w < orig_w; w <<= 1) {
-		}
-		for (h = 1; h < orig_h; h <<= 1) {
-		}
+		// Getting textures info and calculating bpp
+		SceGxmTextureFormat format = sceGxmTextureGetFormat(&tex->gxm_tex);
+		uint32_t bpp = tex_format_to_bytespp(format);
+		uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
+		uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
+		uint32_t w = nearest_po2(orig_w);
+		uint32_t h = nearest_po2(orig_h);
 
 		// Calculating new texture data buffer size
+		uint32_t jumps[10];
 		uint32_t size = 0;
 		int j;
 		if (level > 0) {
@@ -552,28 +552,14 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		// Calculating needed sceGxmTransfer format for the downscale process
 		SceGxmTransferFormat fmt = tex_format_to_transfer(format);
 
-		// Moving texture data to heap and deallocating texture memblock
-		GLboolean has_temp_buffer = GL_TRUE;
-		stride = ALIGN(orig_w, 8);
-		void *temp = (void *)vgl_malloc(stride * orig_h * bpp, VGL_MEM_EXTERNAL);
-		if (temp == NULL) { // If we finished newlib heap, we delay texture free
-			has_temp_buffer = GL_FALSE;
-			temp = sceGxmTextureGetData(&tex->gxm_tex);
-		} else {
-			sceClibMemcpy(temp, sceGxmTextureGetData(&tex->gxm_tex), stride * orig_h * bpp);
+		// Reallocating texture
+		void *texture_data = vgl_realloc(tex->data, size);
+		if (!texture_data) {
+			// Reallocation in the same mspace failed, try manually.
+			texture_data = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+			sceClibMemcpy(texture_data, tex->data, ALIGN(orig_w, 8) * orig_h * bpp);
 			gpu_free_texture_data(tex);
 		}
-
-		// Allocating the new texture data buffer
-		void *texture_data = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-
-		// Moving back old texture data from heap to texture memblock
-		sceClibMemcpy(texture_data, temp, stride * orig_h * bpp);
-		if (has_temp_buffer)
-			vgl_free(temp);
-		else
-			gpu_free_texture_data(tex);
-		tex->status = TEX_VALID;
 
 		// Performing a chain downscale process to generate requested mipmaps
 		uint8_t *curPtr = (uint8_t *)texture_data;
@@ -602,6 +588,8 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		// Initializing texture in sceGxm
 		tex->mip_count = level + 1;
 		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, tex->use_mips ? tex->mip_count : 0);
+		tex->palette_UID = 0;
+		tex->status = TEX_VALID;
 		tex->data = texture_data;
 	}
 }
