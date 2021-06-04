@@ -296,8 +296,12 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 
 	// Gathering real attribute data pointers
 	if (is_packed) {
+#ifdef DRAW_SPEEDHACK
+		ptrs[0] = (void *)vertex_attrib_offsets[real_i[0];
+#else
 		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
 		sceClibMemcpy(ptrs[0], (void *)vertex_attrib_offsets[real_i[0]], count * streams[0].stride);
+#endif
 		for (i = 0; i < p->attr_num; i++) {
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
 			if (vertex_attrib_state & (1 << real_i[i])) {
@@ -316,8 +320,12 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 					gpu_buf->used = GL_TRUE;
 					attributes[i].offset = 0;
 				} else {
+#ifdef DRAW_SPEEDHACK
+					ptrs[i] = (void *)vertex_attrib_offsets[real_i[i]];
+#else
 					ptrs[i] = gpu_alloc_mapped_temp(count * streams[i].stride);
 					sceClibMemcpy(ptrs[i], (void *)vertex_attrib_offsets[real_i[i]], count * streams[i].stride);
+#endif
 					attributes[i].offset = 0;
 				}
 			} else {
@@ -423,18 +431,25 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 
 	void *ptrs[GL_MAX_VERTEX_ATTRIBS];
 	GLboolean is_packed = p->attr_num > 1;
+#ifndef DRAW_SPEEDHACK	
 	GLboolean is_full_vbo = GL_TRUE;
+#endif
 	if (is_packed) {
 		for (i = 0; i < p->attr_num; i++) {
 			if (vertex_attrib_vbo[real_i[i]]) {
 				is_packed = GL_FALSE;
-			} else {
+			}
+#ifndef DRAW_SPEEDHACK			
+			else {
 				is_full_vbo = GL_FALSE;
 			}
+#endif
 		}
 		if (is_packed && (!(vertex_attrib_offsets[real_i[0]] + streams[0].stride > vertex_attrib_offsets[real_i[1]] && vertex_attrib_offsets[real_i[1]] > vertex_attrib_offsets[real_i[0]])))
 			is_packed = GL_FALSE;
-	} else if (!vertex_attrib_vbo[real_i[0]])
+	} 
+#ifndef DRAW_SPEEDHACK
+	else if (!vertex_attrib_vbo[real_i[0]])
 		is_full_vbo = GL_FALSE;
 
 	// Detecting highest index value
@@ -446,11 +461,15 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		}
 		top_idx++;
 	}
-
+#endif
 	// Gathering real attribute data pointers
 	if (is_packed) {
+#ifdef DRAW_SPEEDHACK
+		ptrs[0] = (void *)vertex_attrib_offsets[real_i[0]];
+#else
 		ptrs[0] = gpu_alloc_mapped_temp(top_idx * streams[0].stride);
 		sceClibMemcpy(ptrs[0], (void *)vertex_attrib_offsets[real_i[0]], top_idx * streams[0].stride);
+#endif
 		for (i = 0; i < p->attr_num; i++) {
 			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
 			if (vertex_attrib_state & (1 << real_i[i])) {
@@ -469,8 +488,12 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 					gpu_buf->used = GL_TRUE;
 					attributes[i].offset = 0;
 				} else {
+#ifdef DRAW_SPEEDHACK
+					ptrs[i] = (void *)vertex_attrib_offsets[real_i[i]];
+#else
 					ptrs[i] = gpu_alloc_mapped_temp(top_idx * streams[i].stride);
 					sceClibMemcpy(ptrs[i], (void *)vertex_attrib_offsets[real_i[i]], top_idx * streams[i].stride);
+#endif
 					attributes[i].offset = 0;
 				}
 			} else {

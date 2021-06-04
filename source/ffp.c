@@ -466,8 +466,12 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 				gpubuffer *gpu_buf = (gpubuffer *)ffp_vertex_attrib_vbo[i];
 				ptrs[i] = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[i];
 			} else {
+#ifdef DRAW_SPEEDHACK
+				ptrs[i] = (void *)ffp_vertex_attrib_offsets[i];
+#else
 				ptrs[i] = gpu_alloc_mapped_temp(count * ffp_vertex_stream_config[i].stride);
 				sceClibMemcpy(ptrs[i], (void *)ffp_vertex_attrib_offsets[i], count * ffp_vertex_stream_config[i].stride);
+#endif
 			}
 			sceGxmSetVertexStream(gxm_context, j++, ptrs[i]);
 		}
@@ -476,7 +480,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 
 void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
 	reload_ffp_shaders(NULL, NULL);
-
+#ifndef DRAW_SPEEDHACK
 	uint32_t top_idx = 0;
 	int i;
 	for (i = 0; i < count; i++) {
@@ -484,7 +488,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
 			top_idx = idx_buf[i];
 	}
 	top_idx++;
-
+#endif
 	// Uploading textures on relative texture units
 	if (ffp_vertex_attrib_state & (1 << 1)) {
 		texture_unit *tex_unit = &texture_units[client_texture_unit];
@@ -500,8 +504,12 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
 				gpubuffer *gpu_buf = (gpubuffer *)ffp_vertex_attrib_vbo[i];
 				ptrs[i] = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[i];
 			} else {
+#ifdef DRAW_SPEEDHACK
+				ptrs[i] = (void *)ffp_vertex_attrib_offsets[i];
+#else
 				ptrs[i] = gpu_alloc_mapped_temp(top_idx * ffp_vertex_stream_config[i].stride);
 				sceClibMemcpy(ptrs[i], (void *)ffp_vertex_attrib_offsets[i], top_idx * ffp_vertex_stream_config[i].stride);
+#endif
 			}
 			sceGxmSetVertexStream(gxm_context, j++, ptrs[i]);
 		}
