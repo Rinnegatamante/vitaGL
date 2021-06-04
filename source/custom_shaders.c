@@ -297,7 +297,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	// Gathering real attribute data pointers
 	if (is_packed) {
 #ifdef DRAW_SPEEDHACK
-		ptrs[0] = (void *)vertex_attrib_offsets[real_i[0];
+		ptrs[0] = (void *)vertex_attrib_offsets[real_i[0]];
 #else
 		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
 		sceClibMemcpy(ptrs[0], (void *)vertex_attrib_offsets[real_i[0]], count * streams[0].stride);
@@ -982,7 +982,7 @@ void glLinkProgram(GLuint progr) {
 			u->ptr = param;
 			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
 			u->data = (float *)vgl_malloc(u->size * sizeof(float), VGL_MEM_EXTERNAL);
-			memset(u->data, 0, u->size * sizeof(float));
+			sceClibMemset(u->data, 0, u->size * sizeof(float));
 			p->frag_uniforms = u;
 		}
 	}
@@ -1006,7 +1006,7 @@ void glLinkProgram(GLuint progr) {
 			} else {
 				u->is_alias = GL_FALSE;
 				u->data = (float *)vgl_malloc(u->size * sizeof(float), VGL_MEM_EXTERNAL);
-				memset(u->data, 0, u->size * sizeof(float));
+				sceClibMemset(u->data, 0, u->size * sizeof(float));
 			}
 			p->vert_uniforms = u;
 		}
