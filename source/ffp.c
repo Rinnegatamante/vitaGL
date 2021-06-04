@@ -480,9 +480,9 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 
 void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
 	reload_ffp_shaders(NULL, NULL);
+	int i;
 #ifndef DRAW_SPEEDHACK
 	uint32_t top_idx = 0;
-	int i;
 	for (i = 0; i < count; i++) {
 		if (idx_buf[i] > top_idx)
 			top_idx = idx_buf[i];

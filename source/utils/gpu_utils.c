@@ -126,7 +126,7 @@ void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width
 		dst_x = offs_x - (region_y / 4);
 		dst_y = offs_y - (region_x / blockw);
 
-		memcpy(dst, src + dst_y * blocksize + dst_x * (region_width / blockw) * blocksize, blocksize);
+		sceClibMemcpy(dst, src + dst_y * blocksize + dst_x * (region_width / blockw) * blocksize, blocksize);
 		dst += blocksize;
 	}
 }
