@@ -403,8 +403,9 @@ typedef struct {
 	int ref_count;
 	int max_refs;
 } render_target;
-void markRtAsDirty(render_target *rt);
+void __markRtAsDirty(render_target *rt);
 #define _markRtAsDirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
+#define markRtAsDirty(x) __markRtAsDirty((render_target *)x)
 #else
 #define markRtAsDirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
 #endif

@@ -146,7 +146,7 @@ render_target *getFreeRenderTarget(int w, int h) {
 	return NULL;
 }
 
-void markRtAsDirty(render_target *rt) {
+void __markRtAsDirty(render_target *rt) {
 	rt->ref_count--;
 	if (!rt->ref_count) {
 		_markRtAsDirty(rt->rt);
@@ -567,7 +567,7 @@ void sceneReset(void) {
 			// If a rendertarget is not bound to the in use framebuffer, we get one for it
 			if (!active_write_fb->target) {
 #ifdef HAVE_SHARED_RENDERTARGETS
-				active_write_fb->target = getFreeRenderTarget(active_write_fb->width, active_write_fb->height);
+				active_write_fb->target = (SceGxmRenderTarget *)getFreeRenderTarget(active_write_fb->width, active_write_fb->height);
 #else
 				SceGxmRenderTargetParams renderTargetParams;
 				sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
