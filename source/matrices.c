@@ -96,7 +96,7 @@ void glMultMatrixf(const GLfloat *m) {
 	matrix4x4 res;
 
 	// Multiplicating passed matrix with in use one
-	matrix4x4_multiply(res, m, *matrix);
+	matrix4x4_multiply(res, (const float (*)[4])m, *matrix);
 
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
