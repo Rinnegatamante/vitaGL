@@ -24,9 +24,75 @@ extern razor_results razor_metrics;
 #endif
 };
 
+#ifdef HAVE_DEBUG_INTERFACE
+#ifndef HAVE_RAZOR_INTERFACE
+#include "debug_font.h"
+int dbg_y = 8;
+uint32_t *frame_buf;
+
+void vgl_debugger_draw_character(int character, int x, int y) {
+    for (int yy = 0; yy < 10; yy++) {
+        int xDisplacement = x;
+        int yDisplacement = (y + (yy<<1)) * DISPLAY_STRIDE;
+        uint32_t* screenPos = frame_buf + xDisplacement + yDisplacement;
+
+        uint8_t charPos = font[character * 10 + yy];
+        for (int xx = 7; xx >= 2; xx--) {
+			uint32_t clr = ((charPos >> xx) & 1) ? 0xFFFFFFFF : 0x00000000;
+			*(screenPos) = clr;
+			*(screenPos+1) = clr;
+			*(screenPos+DISPLAY_STRIDE) = clr;
+			*(screenPos+DISPLAY_STRIDE+1) = clr;			
+			screenPos += 2;
+        }
+    }
+}
+
+void vgl_debugger_draw_string(int x, int y, const char *str) {
+    for (size_t i = 0; i < strlen(str); i++)
+        vgl_debugger_draw_character(str[i], x + i * 12, y);
+}
+
+void vgl_debugger_draw_string_format(int x, int y, const char *format, ...) {
+    char str[512] = { 0 };
+    va_list va;
+
+    va_start(va, format);
+    vsnprintf(str, 512, format, va);
+    va_end(va);
+
+    for (char* text = strtok(str, "\n"); text != NULL; text = strtok(NULL, "\n"), y += 20)
+        vgl_debugger_draw_string(x, y, text);
+}
+#endif
+
+void vgl_debugger_draw_mem_usage(const char *str, vglMemType type) {
+	uint32_t tot = vgl_mem_get_total_space(type) / (1024 * 1024);
+	uint32_t used = tot - (vgl_mem_get_free_space(type) / (1024 * 1024));
+	float ratio = ((float)used / (float)tot) * 100.0f;
+#ifdef HAVE_RAZOR_INTERFACE
+	ImGui::Text("%s: %luMBs / %luMBs (%.2f%%)", str, used, tot, ratio);
+#else
+	vgl_debugger_draw_string_format(5, dbg_y, "%s: %luMBs / %luMBs (%.2f%%)", str, used, tot, ratio);
+	dbg_y += 20;
+#endif
+}
+
+#ifndef HAVE_RAZOR_INTERFACE
+void vgl_debugger_light_draw(int stride, uint32_t *fb) {
+	frame_buf = fb;
+	dbg_y = 8;
+	vgl_debugger_draw_mem_usage("RAM Usage", VGL_MEM_RAM);
+	vgl_debugger_draw_mem_usage("VRAM Usage", VGL_MEM_VRAM);
+#ifndef PHYCONT_ON_DEMAND
+	vgl_debugger_draw_mem_usage("Phycont RAM Usage", VGL_MEM_SLOW);
+#endif
+}
+#endif
+#endif
+
 #ifdef HAVE_RAZOR_INTERFACE
 #include <imgui_vita.h>
-
 bool razor_dbg_window = true; // Current state for sceRazor debugger window
 int metrics_mode = SCE_RAZOR_GPU_LIVE_METRICS_GROUP_PBUFFER_USAGE; // Current live metrics to show
 
@@ -135,8 +201,16 @@ void vgl_debugger_draw() {
 		default:
 			break;
 		}
+		ImGui::Separator();
 	}
 #endif
+	
+	vgl_debugger_draw_mem_usage("RAM Usage", VGL_MEM_RAM);
+	vgl_debugger_draw_mem_usage("VRAM Usage", VGL_MEM_VRAM);
+#ifndef PHYCONT_ON_DEMAND
+	vgl_debugger_draw_mem_usage("Phycont RAM Usage", VGL_MEM_SLOW);
+#endif
+		
 	ImGui::End();
 	
 	// Invalidating current GL machine state

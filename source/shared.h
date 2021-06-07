@@ -496,6 +496,7 @@ void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int
 /* debug.cpp */
 void vgl_debugger_init(); // Inits ImGui debugger context
 void vgl_debugger_draw(); // Draws ImGui debugger window
+void vgl_debugger_light_draw(int stride, uint32_t *fb); // Draws CPU rendered debugger window
 
 /* vitaGL.c */
 uint8_t *reserve_data_pool(uint32_t size);
