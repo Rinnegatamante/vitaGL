@@ -185,7 +185,7 @@ static void display_queue_callback(const void *callbackData) {
 
 #if defined(HAVE_DEBUG_INTERFACE) && !defined(HAVE_RAZOR_INTERFACE)
 	// Drawing lightweighted debugger info
-	vgl_debugger_light_draw(DISPLAY_STRIDE, cb_data->addr);
+	vgl_debugger_light_draw(cb_data->addr);
 #endif
 
 	// Setting sceDisplay framebuffer

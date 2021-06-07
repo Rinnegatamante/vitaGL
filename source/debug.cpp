@@ -79,7 +79,7 @@ void vgl_debugger_draw_mem_usage(const char *str, vglMemType type) {
 }
 
 #ifndef HAVE_RAZOR_INTERFACE
-void vgl_debugger_light_draw(int stride, uint32_t *fb) {
+void vgl_debugger_light_draw(uint32_t *fb) {
 	frame_buf = fb;
 	dbg_y = 8;
 	vgl_debugger_draw_mem_usage("RAM Usage", VGL_MEM_RAM);
