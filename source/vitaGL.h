@@ -582,6 +582,7 @@ void vglSetUSSEBufferSize(uint32_t size);
 void vglSetVDMBufferSize(uint32_t size);
 void vglSetVertexBufferSize(uint32_t size);
 void vglSetVertexPoolSize(uint32_t size);
+void vglSetupDisplayQueue(uint32_t flags);
 void vglSetupGarbageCollector(int priority, int affinity);
 void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, int32_t use_fastprecision, int32_t use_fastint);
 void vglSwapBuffers(GLboolean has_commondialog);
