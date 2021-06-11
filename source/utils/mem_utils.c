@@ -96,6 +96,21 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
 		}
 	}
 
+#ifdef PHYCONT_ON_DEMAND
+	// Getting total available phycont mem
+	if (system_app_mode) {
+		SceAppMgrBudgetInfo info;
+		info.size = sizeof(SceAppMgrBudgetInfo);
+		sceAppMgrGetBudgetInfo(&info);
+		mempool_size[VGL_MEM_SLOW] = info.total_phycont_mem;
+	} else {
+		SceKernelFreeMemorySizeInfo info;
+		info.size = sizeof(SceKernelFreeMemorySizeInfo);
+		sceKernelGetFreeMemorySize(&info);
+		mempool_size[VGL_MEM_SLOW] = info.size_phycont;
+	}
+#endif
+
 	// Mapping newlib heap into sceGxm
 	void *dummy = malloc(1);
 	free(dummy);
@@ -132,12 +147,24 @@ vglMemType vgl_mem_get_type_by_addr(void *addr) {
 size_t vgl_mem_get_free_space(vglMemType type) {
 	if (type == VGL_MEM_EXTERNAL) {
 		return 0;
+#ifdef PHYCONT_ON_DEMAND
+	} else if (type == VGL_MEM_SLOW) {
+		if (system_app_mode) {
+			SceAppMgrBudgetInfo info;
+			info.size = sizeof(SceAppMgrBudgetInfo);
+			sceAppMgrGetBudgetInfo(&info);
+			return info.free_phycont_mem;
+		} else {
+			SceKernelFreeMemorySizeInfo info;
+			info.size = sizeof(SceKernelFreeMemorySizeInfo);
+			sceKernelGetFreeMemorySize(&info);
+			return info.size_phycont;
+		}
+#endif
 	} else if (type == VGL_MEM_ALL) {
 		size_t size = 0;
 		for (int i = 0; i < VGL_MEM_EXTERNAL; i++) {
-			SceClibMspaceStats stats;
-			sceClibMspaceMallocStats(mempool_mspace[i], &stats);
-			size += stats.capacity - stats.current_in_use;
+			size += vgl_mem_get_free_space(i);
 		}
 		return size;
 	} else {
@@ -148,7 +175,15 @@ size_t vgl_mem_get_free_space(vglMemType type) {
 }
 
 size_t vgl_mem_get_total_space(vglMemType type) {
-	return mempool_size[type];
+	if (type == VGL_MEM_ALL) {
+		size_t size = 0;
+		for (int i = 0; i < VGL_MEM_EXTERNAL; i++) {
+			size += vgl_mem_get_total_space(i);
+		}
+		return size;
+	} else {
+		return mempool_size[type];
+	}
 }
 
 size_t vgl_malloc_usable_size(void *ptr) {

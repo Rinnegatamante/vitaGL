@@ -84,9 +84,7 @@ void vgl_debugger_light_draw(uint32_t *fb) {
 	dbg_y = 8;
 	vgl_debugger_draw_mem_usage("RAM Usage", VGL_MEM_RAM);
 	vgl_debugger_draw_mem_usage("VRAM Usage", VGL_MEM_VRAM);
-#ifndef PHYCONT_ON_DEMAND
 	vgl_debugger_draw_mem_usage("Phycont RAM Usage", VGL_MEM_SLOW);
-#endif
 }
 #endif
 #endif
@@ -207,9 +205,7 @@ void vgl_debugger_draw() {
 	
 	vgl_debugger_draw_mem_usage("RAM Usage", VGL_MEM_RAM);
 	vgl_debugger_draw_mem_usage("VRAM Usage", VGL_MEM_VRAM);
-#ifndef PHYCONT_ON_DEMAND
 	vgl_debugger_draw_mem_usage("Phycont RAM Usage", VGL_MEM_SLOW);
-#endif
 		
 	ImGui::End();
 	
