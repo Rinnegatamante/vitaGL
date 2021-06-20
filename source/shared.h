@@ -64,6 +64,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 #include "vitaGL.h"
 
+#include "utils/gxm_utils.h"
 #include "utils/gpu_utils.h"
 #include "utils/math_utils.h"
 #include "utils/mem_utils.h"

@@ -393,19 +393,19 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			gpu_alloc_compressed_texture(level, width, height, tex_format, 0, data, tex, data_bpp, read_cb);
 
 		// Setting texture parameters
-		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
-		sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex->v_mode);
-		sceGxmTextureSetMinFilter(&tex->gxm_tex, tex->min_filter);
-		sceGxmTextureSetMagFilter(&tex->gxm_tex, tex->mag_filter);
-		sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
-		sceGxmTextureSetLodBias(&tex->gxm_tex, tex->lod_bias);
-		sceGxmTextureSetMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+		vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+		vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+		vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+		vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
+		vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+		vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
+		vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
 		if (gamma_correction)
-			sceGxmTextureSetGammaMode(&tex->gxm_tex, SCE_GXM_TEXTURE_GAMMA_BGR);
+			vglSetTexGammaMode(&tex->gxm_tex, SCE_GXM_TEXTURE_GAMMA_BGR);
 
 		// Setting palette if the format requests one
 		if (tex->palette_UID)
-			sceGxmTextureSetPalette(&tex->gxm_tex, color_table->data);
+			vglSetTexPalette(&tex->gxm_tex, color_table->data);
 
 		break;
 	default:
@@ -424,12 +424,12 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 #endif
 
 	// Calculating implicit texture stride and start address of requested texture modification
-	uint32_t orig_w = sceGxmTextureGetWidth(&target_texture->gxm_tex);
-	uint32_t orig_h = sceGxmTextureGetHeight(&target_texture->gxm_tex);
+	uint32_t orig_w = vglGetTexWidth(&target_texture->gxm_tex);
+	uint32_t orig_h = vglGetTexHeight(&target_texture->gxm_tex);
 	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&target_texture->gxm_tex);
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
 	uint32_t stride = ALIGN(orig_w, 8) * bpp;
-	uint8_t *ptr = (uint8_t *)sceGxmTextureGetData(&target_texture->gxm_tex) + xoffset * bpp + yoffset * stride;
+	uint8_t *ptr = (uint8_t *)target_texture->data + xoffset * bpp + yoffset * stride;
 	uint8_t *ptr_line = ptr;
 	uint8_t data_bpp = 0;
 	int i, j;
@@ -700,15 +700,15 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		gpu_alloc_compressed_texture(level, width, height, tex_format, imageSize, data, tex, 0, NULL);
 
 		// Setting texture parameters
-		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
-		sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex->v_mode);
-		sceGxmTextureSetMinFilter(&tex->gxm_tex, tex->min_filter);
-		sceGxmTextureSetMagFilter(&tex->gxm_tex, tex->mag_filter);
-		sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
-		sceGxmTextureSetLodBias(&tex->gxm_tex, tex->lod_bias);
-		sceGxmTextureSetMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+		vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+		vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+		vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+		vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
+		vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+		vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
+		vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
 		if (gamma_correction)
-			sceGxmTextureSetGammaMode(&tex->gxm_tex, SCE_GXM_TEXTURE_GAMMA_BGR);
+			vglSetTexGammaMode(&tex->gxm_tex, SCE_GXM_TEXTURE_GAMMA_BGR);
 
 		break;
 	default:
@@ -788,9 +788,9 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				SET_GL_ERROR(GL_INVALID_ENUM)
 			}
 			if (tex->status == TEX_VALID) {
-				sceGxmTextureSetMinFilter(&tex->gxm_tex, tex->min_filter);
-				sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
-				sceGxmTextureSetMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
 			}
 			break;
 		case GL_TEXTURE_MAG_FILTER: // Mag Filter
@@ -805,7 +805,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				SET_GL_ERROR(GL_INVALID_ENUM)
 			}
 			if (tex->status == TEX_VALID)
-				sceGxmTextureSetMagFilter(&tex->gxm_tex, tex->mag_filter);
+				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
 			break;
 		case GL_TEXTURE_WRAP_S: // U Mode
 			switch (param) {
@@ -825,7 +825,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				SET_GL_ERROR(GL_INVALID_ENUM)
 			}
 			if (tex->status == TEX_VALID)
-				sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
+				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
 			break;
 		case GL_TEXTURE_WRAP_T: // V Mode
 			switch (param) {
@@ -845,12 +845,12 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				SET_GL_ERROR(GL_INVALID_ENUM)
 			}
 			if (tex->status == TEX_VALID)
-				sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex->v_mode);
+				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
 			break;
 		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
 			tex->lod_bias = (uint32_t)(param + GL_MAX_TEXTURE_LOD_BIAS);
 			if (tex->status == TEX_VALID)
-				sceGxmTextureSetLodBias(&tex->gxm_tex, tex->lod_bias);
+				vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
@@ -897,9 +897,9 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 			}
 			if (tex->status == TEX_VALID) {
-				sceGxmTextureSetMinFilter(&tex->gxm_tex, tex->min_filter);
-				sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
-				sceGxmTextureSetMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
 			}
 			break;
 		case GL_TEXTURE_MAG_FILTER: // Mag filter
@@ -908,7 +908,7 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 			else if (param == GL_LINEAR)
 				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 			if (tex->status == TEX_VALID)
-				sceGxmTextureSetMagFilter(&tex->gxm_tex, tex->mag_filter);
+				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
 			break;
 		case GL_TEXTURE_WRAP_S: // U Mode
 			if (param == GL_CLAMP_TO_EDGE)
@@ -920,7 +920,7 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 			else if (param == GL_MIRROR_CLAMP_EXT)
 				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP; // Mirror Clamp
 			if (tex->status == TEX_VALID)
-				sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
+				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
 			break;
 		case GL_TEXTURE_WRAP_T: // V Mode
 			if (param == GL_CLAMP_TO_EDGE)
@@ -932,12 +932,12 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 			else if (param == GL_MIRROR_CLAMP_EXT)
 				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP; // Mirror Clamp
 			if (tex->status == TEX_VALID)
-				sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex->v_mode);
+				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
 			break;
 		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
 			tex->lod_bias = (uint32_t)(param + GL_MAX_TEXTURE_LOD_BIAS);
 			if (tex->status == TEX_VALID)
-				sceGxmTextureSetLodBias(&tex->gxm_tex, tex->lod_bias);
+				vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
 			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
@@ -977,13 +977,13 @@ void glGenerateMipmap(GLenum target) {
 		gpu_alloc_mipmaps(-1, tex);
 
 		// Setting texture parameters
-		sceGxmTextureSetUAddrMode(&tex->gxm_tex, tex->u_mode);
-		sceGxmTextureSetVAddrMode(&tex->gxm_tex, tex->v_mode);
-		sceGxmTextureSetMinFilter(&tex->gxm_tex, tex->min_filter);
-		sceGxmTextureSetMagFilter(&tex->gxm_tex, tex->mag_filter);
-		sceGxmTextureSetMipFilter(&tex->gxm_tex, tex->mip_filter);
-		sceGxmTextureSetLodBias(&tex->gxm_tex, tex->lod_bias);
-		sceGxmTextureSetMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+		vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+		vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+		vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+		vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
+		vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+		vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
+		vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
 
 		break;
 	default:

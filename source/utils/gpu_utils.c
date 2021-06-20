@@ -216,7 +216,7 @@ void *gpu_alloc_mapped_temp(size_t size) {
 
 int tex_format_to_bytespp(SceGxmTextureFormat format) {
 	// Calculating bpp for the requested texture format
-	switch (format & 0x9f000000U) {
+	switch (format & 0x9F000000) {
 	case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
 	case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
 	case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
@@ -244,7 +244,7 @@ int tex_format_to_bytespp(SceGxmTextureFormat format) {
 
 SceGxmTransferFormat tex_format_to_transfer(SceGxmTextureFormat format) {
 	// Calculating transfer format for the requested texture format
-	switch (format & 0x9f000000U) {
+	switch (format & 0x9F000000) {
 	case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
 		return SCE_GXM_TRANSFER_FORMAT_U1U5U5U5_ABGR;
 	case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
@@ -260,7 +260,7 @@ SceGxmTransferFormat tex_format_to_transfer(SceGxmTextureFormat format) {
 }
 
 int tex_format_to_alignment(SceGxmTextureFormat format) {
-	switch (format & 0x9f000000U) {
+	switch (format & 0x9F000000) {
 	case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
 		return 16;
 	default:
@@ -340,7 +340,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 
 		// Initializing texture and validating it
 		tex->mip_count = 1;
-		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, w, h, tex->mip_count);
+		vglInitLinearTexture(&tex->gxm_tex, texture_data, format, w, h, tex->mip_count);
 		if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8)
 			tex->palette_UID = 1;
 		else
@@ -411,8 +411,8 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		aligned_max_width = aligned_width;
 		aligned_max_height = aligned_height;
 	} else {
-		max_width = sceGxmTextureGetWidth(&tex->gxm_tex);
-		max_height = sceGxmTextureGetHeight(&tex->gxm_tex);
+		max_width = vglGetTexWidth(&tex->gxm_tex);
+		max_height = vglGetTexHeight(&tex->gxm_tex);
 		aligned_max_width = nearest_po2(max_width);
 		aligned_max_height = nearest_po2(max_height);
 	}
@@ -505,7 +505,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 
 		// Initializing texture and validating it
 		tex->mip_count = mip_count + 1;
-		sceGxmTextureInitSwizzledArbitrary(&tex->gxm_tex, texture_data, format, tex_width, tex_height, tex->use_mips ? tex->mip_count : 0);
+		vglInitSwizzledTexture(&tex->gxm_tex, texture_data, format, tex_width, tex_height, tex->use_mips ? tex->mip_count : 0);
 		tex->palette_UID = 0;
 		tex->status = TEX_VALID;
 		tex->data = texture_data;
@@ -522,8 +522,8 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		// Getting textures info and calculating bpp
 		SceGxmTextureFormat format = sceGxmTextureGetFormat(&tex->gxm_tex);
 		uint32_t bpp = tex_format_to_bytespp(format);
-		uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
-		uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
+		uint32_t orig_w = vglGetTexWidth(&tex->gxm_tex);
+		uint32_t orig_h = vglGetTexHeight(&tex->gxm_tex);
 		uint32_t w = nearest_po2(orig_w);
 		uint32_t h = nearest_po2(orig_h);
 
@@ -579,7 +579,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 				curSrcStride * bpp,
 				fmt, dstPtr, 0, 0,
 				curDstStride * bpp,
-				NULL, SCE_GXM_TRANSFER_FRAGMENT_SYNC, NULL);
+				NULL, 0, NULL);
 			curPtr = dstPtr;
 			curWidth /= 2;
 			curHeight /= 2;
@@ -587,7 +587,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 
 		// Initializing texture in sceGxm
 		tex->mip_count = level + 1;
-		sceGxmTextureInitLinear(&tex->gxm_tex, texture_data, format, orig_w, orig_h, tex->use_mips ? tex->mip_count : 0);
+		vglInitLinearTexture(&tex->gxm_tex, texture_data, format, orig_w, orig_h, tex->use_mips ? tex->mip_count : 0);
 		tex->palette_UID = 0;
 		tex->status = TEX_VALID;
 		tex->data = texture_data;
