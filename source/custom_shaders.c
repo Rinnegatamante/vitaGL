@@ -80,6 +80,7 @@ typedef struct shader {
 	SceGxmShaderPatcherId id;
 	const SceGxmProgram *prog;
 	uint32_t size;
+	char *source;
 	char *log;
 } shader;
 
@@ -209,6 +210,7 @@ void resetCustomShaders(void) {
 	for (i = 0; i < MAX_CUSTOM_SHADERS; i++) {
 		shaders[i].valid = GL_FALSE;
 		shaders[i].log = NULL;
+		shaders[i].source = NULL;
 	}
 
 	// Init custom programs
@@ -728,10 +730,23 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
-
-	// Temporarily setting prog to point to the shader source
-	s->prog = (SceGxmProgram *)*string;
-	s->size = length ? *length : strlen(*string);
+	
+	if (count > 1) {
+		uint32_t size = 1;
+		for (int i = 0; i < count; i++) {
+			size += length ? length[i] : strlen(string[i]);
+		}
+		s->source = (char *)vgl_malloc(size, VGL_MEM_EXTERNAL);
+		s->source[0] = 0;
+		for (int i = 0; i < count; i++) {
+			sprintf(s->source, "%s%s", s->source, string[i]);
+		}
+		s->prog = (SceGxmProgram *)s->source;
+		s->size = size - 1;
+	} else {
+		s->prog = (SceGxmProgram *)*string;
+		s->size = length ? *length : strlen(*string);
+	}
 }
 
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length) {
@@ -757,6 +772,8 @@ void glCompileShader(GLuint handle) {
 	// Compiling shader source
 	s->prog = shark_compile_shader_extended((const char *)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 	if (s->prog) {
+		if (s->source)
+			vgl_free(s->source);
 		SceGxmProgram *res = (SceGxmProgram *)vgl_malloc(s->size, VGL_MEM_EXTERNAL);
 		sceClibMemcpy((void *)res, (void *)s->prog, s->size);
 #ifdef LOG_ERRORS
@@ -787,6 +804,7 @@ void glDeleteShader(GLuint shad) {
 			vgl_free(s->log);
 	}
 	s->log = NULL;
+	s->source = NULL;
 	s->valid = GL_FALSE;
 }
 
