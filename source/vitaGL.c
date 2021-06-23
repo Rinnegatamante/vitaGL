@@ -258,7 +258,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 
 	// Init texture units
 	int i, j;
-	for (i = 0; i < GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS; i++) {
+	for (i = 0; i < COMBINED_TEXTURE_IMAGE_UNITS_NUM; i++) {
 		texture_units[i].env_mode = MODULATE;
 		texture_units[i].tex_id = 0;
 		texture_units[i].enabled = GL_FALSE;
@@ -299,7 +299,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	}
 
 	// Init buffers
-	for (i = 0; i < GL_MAX_VERTEX_ATTRIBS; i++) {
+	for (i = 0; i < VERTEX_ATTRIBS_NUM; i++) {
 		vertex_attrib_config[i].regIndex = i;
 	}
 

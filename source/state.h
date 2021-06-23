@@ -154,7 +154,7 @@ extern GLfloat pol_factor; // Current factor for glPolygonOffset
 extern GLfloat pol_units; // Current units for glPolygonOffset
 
 // Texture Units
-extern texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
+extern texture_unit texture_units[COMBINED_TEXTURE_IMAGE_UNITS_NUM]; // Available texture units
 extern texture texture_slots[TEXTURES_NUM]; // Available texture slots
 extern int8_t server_texture_unit; // Current in use server side texture unit
 extern int8_t client_texture_unit; // Current in use client side texture unit

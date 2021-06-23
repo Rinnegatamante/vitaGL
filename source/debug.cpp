@@ -250,7 +250,7 @@ void vgl_file_log(const char *format, ...) {
 	__gnuc_va_list arg;
 	va_start(arg, format);
 	char msg[512];
-	vsprintf(msg, format, arg);
+	vsnprintf(msg, sizeof(msg), format, arg);
 	va_end(arg);
 	FILE *log = fopen("ux0:/data/vitaGL.log", "a+");
 	if (log != NULL) {

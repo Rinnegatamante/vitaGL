@@ -280,7 +280,9 @@ extern "C" {
 #define GL_NUM_COMPRESSED_TEXTURE_FORMATS            0x86A2
 #define GL_COMPRESSED_TEXTURE_FORMATS                0x86A3
 #define GL_MIRROR_CLAMP_EXT                          0x8742
+#define GL_MAX_VERTEX_ATTRIBS                        0x8869
 #define GL_VERTEX_ATTRIB_ARRAY_NORMALIZED            0x886A
+#define GL_MAX_TEXTURE_IMAGE_UNITS                   0x8872
 #define GL_ARRAY_BUFFER                              0x8892
 #define GL_ELEMENT_ARRAY_BUFFER                      0x8893
 #define GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING        0x889F
@@ -340,14 +342,17 @@ extern "C" {
 #define GL_FRAMEBUFFER_COMPLETE                      0x8CD5
 #define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT 0x8CD7
 #define GL_FRAMEBUFFER                               0x8D40
+#define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS          0x8B4D
+#define GL_SHADER_BINARY_FORMATS                     0x8DF8
+#define GL_NUM_SHADER_BINARY_FORMATS                 0x8DF9
+#define GL_SHADER_COMPILER                           0x8DFA
 #define GL_MAX_VERTEX_UNIFORM_VECTORS                0x8DFB
+#define GL_MAX_VARYING_VECTORS                       0x8DFC
+#define GL_MAX_FRAGMENT_UNIFORM_VECTORS              0x8DFD
 #define GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG          0x9137
 #define GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG          0x9138
 
-#define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS   16
 #define GL_MAX_TEXTURE_LOD_BIAS               31
-#define GL_MAX_VERTEX_ATTRIBS                 16
-#define GL_MAX_TEXTURE_IMAGE_UNITS            3
 
 // Aliases
 #define GL_CLAMP GL_CLAMP_TO_EDGE
