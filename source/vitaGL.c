@@ -615,6 +615,33 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 	gpu_buf->used = GL_FALSE;
 }
 
+void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params) {
+	gpubuffer *gpu_buf;
+	switch (target) {
+	case GL_ARRAY_BUFFER:
+		gpu_buf = (gpubuffer *)vertex_array_unit;
+		break;
+	case GL_ELEMENT_ARRAY_BUFFER:
+		gpu_buf = (gpubuffer *)index_array_unit;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+#ifndef SKIP_ERROR_HANDLING
+	if (!gpu_buf) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
+	switch (pname) {
+	case GL_BUFFER_SIZE:
+		*params = gpu_buf->size;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+}
+
 void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 	switch (sfactor) {
 	case GL_ZERO:
