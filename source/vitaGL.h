@@ -280,6 +280,7 @@ extern "C" {
 #define GL_NUM_COMPRESSED_TEXTURE_FORMATS            0x86A2
 #define GL_COMPRESSED_TEXTURE_FORMATS                0x86A3
 #define GL_MIRROR_CLAMP_EXT                          0x8742
+#define GL_BUFFER_SIZE                               0x8764
 #define GL_MAX_VERTEX_ATTRIBS                        0x8869
 #define GL_VERTEX_ATTRIB_ARRAY_NORMALIZED            0x886A
 #define GL_MAX_TEXTURE_IMAGE_UNITS                   0x8872
@@ -440,6 +441,7 @@ void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *leng
 void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
 GLint glGetAttribLocation(GLuint prog, const GLchar *name);
 void glGetBooleanv(GLenum pname, GLboolean *params);
+void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params);
 void glGetFloatv(GLenum pname, GLfloat *data);
 GLenum glGetError(void);
 void glGetIntegerv(GLenum pname, GLint *data);
