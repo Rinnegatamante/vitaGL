@@ -730,23 +730,18 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
-	
-	if (count > 1) {
-		uint32_t size = 1;
-		for (int i = 0; i < count; i++) {
-			size += length ? length[i] : strlen(string[i]);
-		}
-		s->source = (char *)vgl_malloc(size, VGL_MEM_EXTERNAL);
-		s->source[0] = 0;
-		for (int i = 0; i < count; i++) {
-			sprintf(s->source, "%s%s", s->source, string[i]);
-		}
-		s->prog = (SceGxmProgram *)s->source;
-		s->size = size - 1;
-	} else {
-		s->prog = (SceGxmProgram *)*string;
-		s->size = length ? *length : strlen(*string);
+
+	uint32_t size = 1;
+	for (int i = 0; i < count; i++) {
+		size += length ? length[i] : strlen(string[i]);
 	}
+	s->source = (char *)vgl_malloc(size, VGL_MEM_EXTERNAL);
+	s->source[0] = 0;
+	for (int i = 0; i < count; i++) {
+		sprintf(s->source, "%s%s", s->source, string[i]);
+	}
+	s->prog = (SceGxmProgram *)s->source;
+	s->size = size - 1;
 }
 
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length) {

@@ -241,6 +241,11 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[7] = GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG;
 		data[8] = GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG;
 		break;
+	case GL_NUM_SHADER_BINARY_FORMATS:
+		*data = 0;
+		break;
+	case GL_SHADER_BINARY_FORMATS:
+		break;
 	case GL_FRAMEBUFFER_BINDING:
 		*data = (GLint)active_write_fb;
 		break;

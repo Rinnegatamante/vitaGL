@@ -343,6 +343,8 @@ extern "C" {
 #define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT 0x8CD7
 #define GL_FRAMEBUFFER                               0x8D40
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS          0x8B4D
+#define GL_SHADER_BINARY_FORMATS                     0x8DF8
+#define GL_NUM_SHADER_BINARY_FORMATS                 0x8DF9
 #define GL_SHADER_COMPILER                           0x8DFA
 #define GL_MAX_VERTEX_UNIFORM_VECTORS                0x8DFB
 #define GL_MAX_VARYING_VECTORS                       0x8DFC
