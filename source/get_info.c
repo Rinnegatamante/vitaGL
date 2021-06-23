@@ -127,6 +127,9 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 	case GL_DEPTH_WRITEMASK:
 		*params = depth_mask_state;
 		break;
+	case GL_SHADER_COMPILER:
+		*params = GL_TRUE;
+		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
@@ -219,10 +222,10 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[3] = gl_viewport.h;
 		break;
 	case GL_DEPTH_BITS:
-		data[0] = 32;
+		*data = 32;
 		break;
 	case GL_STENCIL_BITS:
-		data[0] = 8;
+		*data = 8;
 		break;
 	case GL_NUM_COMPRESSED_TEXTURE_FORMATS:
 		*data = COMPRESSED_TEXTURE_FORMATS_NUM;
@@ -239,22 +242,37 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[8] = GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG;
 		break;
 	case GL_FRAMEBUFFER_BINDING:
-		data[0] = (GLint)active_write_fb;
+		*data = (GLint)active_write_fb;
 		break;
 	case GL_READ_FRAMEBUFFER_BINDING:
-		data[0] = (GLint)active_read_fb;
+		*data = (GLint)active_read_fb;
+		break;
+	case GL_MAX_VERTEX_ATTRIBS:
+		*data = VERTEX_ATTRIBS_NUM;
 		break;
 	case GL_MAX_VERTEX_UNIFORM_VECTORS:
-		data[0] = 256;
+		*data = 128;
+		break;
+	case GL_MAX_FRAGMENT_UNIFORM_VECTORS:
+		*data = 16;
+		break;
+	case GL_MAX_VARYING_VECTORS:
+		*data = 8;
 		break;
 	case GL_MAJOR_VERSION:
-		data[0] = 2;
+		*data = 2;
 		break;
 	case GL_MINOR_VERSION:
-		data[0] = 0;
+		*data = 0;
 		break;
 	case GL_NUM_EXTENSIONS:
-		data[0] = NUM_EXTENSIONS;
+		*data = NUM_EXTENSIONS;
+		break;
+	case GL_MAX_TEXTURE_IMAGE_UNITS:
+		*data = TEXTURE_IMAGE_UNITS_NUM;
+		break;
+	case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
+		*data = COMBINED_TEXTURE_IMAGE_UNITS_NUM;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)

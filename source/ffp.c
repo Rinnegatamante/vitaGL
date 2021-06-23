@@ -57,11 +57,11 @@ SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 static uint32_t ffp_vertex_attrib_offsets[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0};
-static uint32_t ffp_vertex_attrib_vbo[GL_MAX_VERTEX_ATTRIBS] = {0, 0, 0};
+static uint32_t ffp_vertex_attrib_vbo[VERTEX_ATTRIBS_NUM] = {0, 0, 0};
 uint8_t ffp_vertex_attrib_state = 0;
-static unsigned short orig_stride[GL_MAX_VERTEX_ATTRIBS];
-static SceGxmAttributeFormat orig_fmt[GL_MAX_VERTEX_ATTRIBS];
-static unsigned char orig_size[GL_MAX_VERTEX_ATTRIBS];
+static unsigned short orig_stride[VERTEX_ATTRIBS_NUM];
+static SceGxmAttributeFormat orig_fmt[VERTEX_ATTRIBS_NUM];
+static unsigned char orig_size[VERTEX_ATTRIBS_NUM];
 static GLenum ffp_mode;
 
 typedef union shader_mask {

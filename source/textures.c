@@ -23,7 +23,7 @@
 
 #include "shared.h"
 
-texture_unit texture_units[GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS]; // Available texture units
+texture_unit texture_units[COMBINED_TEXTURE_IMAGE_UNITS_NUM]; // Available texture units
 texture texture_slots[TEXTURES_NUM]; // Available texture slots
 
 palette *color_table = NULL; // Current in-use color table

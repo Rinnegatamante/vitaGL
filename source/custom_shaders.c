@@ -40,21 +40,21 @@
 // Internal stuffs
 GLboolean use_shark = GL_TRUE; // Flag to check if vitaShaRK should be initialized at vitaGL boot
 GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status
-SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
-static SceGxmVertexStream vertex_stream_config[GL_MAX_VERTEX_ATTRIBS];
-static float *vertex_attrib_value[GL_MAX_VERTEX_ATTRIBS];
+SceGxmVertexAttribute vertex_attrib_config[VERTEX_ATTRIBS_NUM];
+static SceGxmVertexStream vertex_stream_config[VERTEX_ATTRIBS_NUM];
+static float *vertex_attrib_value[VERTEX_ATTRIBS_NUM];
 static float *vertex_attrib_pool;
 static float *vertex_attrib_pool_ptr;
 static float *vertex_attrib_pool_limit;
-static uint8_t vertex_attrib_size[GL_MAX_VERTEX_ATTRIBS] = {4, 4, 4, 4, 4, 4, 4, 4};
-static uint32_t vertex_attrib_offsets[GL_MAX_VERTEX_ATTRIBS] = {0, 0, 0, 0, 0, 0, 0, 0};
-static uint32_t vertex_attrib_vbo[GL_MAX_VERTEX_ATTRIBS] = {0, 0, 0, 0, 0, 0, 0, 0};
+static uint8_t vertex_attrib_size[VERTEX_ATTRIBS_NUM] = {4, 4, 4, 4, 4, 4, 4, 4};
+static uint32_t vertex_attrib_offsets[VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
+static uint32_t vertex_attrib_vbo[VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 static uint8_t vertex_attrib_state = 0;
-static SceGxmVertexAttribute temp_attributes[GL_MAX_VERTEX_ATTRIBS];
-static SceGxmVertexStream temp_streams[GL_MAX_VERTEX_ATTRIBS];
-static unsigned short orig_stride[GL_MAX_VERTEX_ATTRIBS];
-static SceGxmAttributeFormat orig_fmt[GL_MAX_VERTEX_ATTRIBS];
-static unsigned char orig_size[GL_MAX_VERTEX_ATTRIBS];
+static SceGxmVertexAttribute temp_attributes[VERTEX_ATTRIBS_NUM];
+static SceGxmVertexStream temp_streams[VERTEX_ATTRIBS_NUM];
+static unsigned short orig_stride[VERTEX_ATTRIBS_NUM];
+static SceGxmAttributeFormat orig_fmt[VERTEX_ATTRIBS_NUM];
+static unsigned char orig_size[VERTEX_ATTRIBS_NUM];
 
 // Internal runtime shader compiler settings
 int32_t compiler_fastmath = GL_TRUE;
@@ -96,9 +96,9 @@ typedef struct program {
 	shader *vshader;
 	shader *fshader;
 	uint8_t status;
-	GLboolean texunits[GL_MAX_TEXTURE_IMAGE_UNITS];
-	SceGxmVertexAttribute attr[GL_MAX_VERTEX_ATTRIBS];
-	SceGxmVertexStream stream[GL_MAX_VERTEX_ATTRIBS];
+	GLboolean texunits[TEXTURE_IMAGE_UNITS_NUM];
+	SceGxmVertexAttribute attr[VERTEX_ATTRIBS_NUM];
+	SceGxmVertexStream stream[VERTEX_ATTRIBS_NUM];
 	SceGxmVertexProgram *vprog;
 	SceGxmFragmentProgram *fprog;
 	blend_config blend_info;
@@ -223,7 +223,7 @@ void resetCustomShaders(void) {
 	vertex_attrib_pool_limit = (float *)((uint8_t *)vertex_attrib_pool + DISABLED_ATTRIBS_POOL_SIZE);
 
 	// Init generic vertex attrib arrays
-	for (i = 0; i < GL_MAX_VERTEX_ATTRIBS; i++) {
+	for (i = 0; i < VERTEX_ATTRIBS_NUM; i++) {
 		vertex_attrib_value[i] = reserve_attrib_pool(4);
 		vertex_attrib_config[i].componentCount = 4;
 		vertex_attrib_config[i].offset = 0;
@@ -247,7 +247,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 
 	// Uploading textures on relative texture units
 	int i;
-	for (i = 0; i < GL_MAX_TEXTURE_IMAGE_UNITS; i++) {
+	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
 		if (p->texunits[i]) {
 			texture_unit *tex_unit = &texture_units[client_texture_unit + i];
 #ifndef SKIP_ERROR_HANDLING
@@ -264,7 +264,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	// Aligning attributes
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
-	uint8_t real_i[GL_MAX_VERTEX_ATTRIBS] = {0, 1, 2, 3, 4, 5, 6, 7};
+	uint8_t real_i[VERTEX_ATTRIBS_NUM] = {0, 1, 2, 3, 4, 5, 6, 7};
 	if (p->has_unaligned_attrs) {
 		attributes = temp_attributes;
 		streams = temp_streams;
@@ -283,7 +283,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		streams = vertex_stream_config;
 	}
 
-	void *ptrs[GL_MAX_VERTEX_ATTRIBS];
+	void *ptrs[VERTEX_ATTRIBS_NUM];
 #ifndef DRAW_SPEEDHACK
 	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
@@ -398,7 +398,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 
 	// Uploading textures on relative texture units
 	int i;
-	for (i = 0; i < GL_MAX_TEXTURE_IMAGE_UNITS; i++) {
+	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
 		if (p->texunits[i]) {
 			texture_unit *tex_unit = &texture_units[client_texture_unit + i];
 #ifndef SKIP_ERROR_HANDLING
@@ -415,7 +415,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	// Aligning attributes
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
-	uint8_t real_i[GL_MAX_VERTEX_ATTRIBS] = {0, 1, 2, 3, 4, 5, 6, 7};
+	uint8_t real_i[VERTEX_ATTRIBS_NUM] = {0, 1, 2, 3, 4, 5, 6, 7};
 	if (p->has_unaligned_attrs) {
 		attributes = temp_attributes;
 		streams = temp_streams;
@@ -434,7 +434,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		streams = vertex_stream_config;
 	}
 
-	void *ptrs[GL_MAX_VERTEX_ATTRIBS];
+	void *ptrs[VERTEX_ATTRIBS_NUM];
 #ifndef DRAW_SPEEDHACK	
 	GLboolean is_packed = p->attr_num > 1;
 	GLboolean is_full_vbo = GL_TRUE;
@@ -591,7 +591,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 
 	// Uploading textures on relative texture units
 	int i;
-	for (i = 0; i < GL_MAX_TEXTURE_IMAGE_UNITS; i++) {
+	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
 		if (p->texunits[i]) {
 			texture_unit *tex_unit = &texture_units[client_texture_unit + i];
 			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
@@ -847,7 +847,7 @@ GLuint glCreateProgram(void) {
 			progs[i].vert_uniforms = NULL;
 			progs[i].frag_uniforms = NULL;
 			progs[i].attr_highest_idx = 0;
-			for (j = 0; j < GL_MAX_VERTEX_ATTRIBS; j++) {
+			for (j = 0; j < VERTEX_ATTRIBS_NUM; j++) {
 				progs[i].attr[j].regIndex = 0xDEAD;
 			}
 			break;
@@ -976,7 +976,7 @@ void glLinkProgram(GLuint progr) {
 
 	// Analyzing fragment shader
 	uint32_t i, cnt;
-	for (i = 0; i < GL_MAX_TEXTURE_IMAGE_UNITS; i++) {
+	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
 		p->texunits[i] = GL_FALSE;
 	}
 	cnt = sceGxmProgramGetParameterCount(p->fshader->prog);
@@ -1339,7 +1339,7 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 
 void glEnableVertexAttribArray(GLuint index) {
 #ifndef SKIP_ERROR_HANDLING
-	if (index >= GL_MAX_VERTEX_ATTRIBS) {
+	if (index >= VERTEX_ATTRIBS_NUM) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
@@ -1348,7 +1348,7 @@ void glEnableVertexAttribArray(GLuint index) {
 
 void glDisableVertexAttribArray(GLuint index) {
 #ifndef SKIP_ERROR_HANDLING
-	if (index >= GL_MAX_VERTEX_ATTRIBS) {
+	if (index >= VERTEX_ATTRIBS_NUM) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
@@ -1359,7 +1359,7 @@ void glGetVertexAttribPointerv(GLuint index, GLenum pname, void **pointer) {
 #ifndef SKIP_ERROR_HANDLING
 	if (pname != GL_VERTEX_ATTRIB_ARRAY_POINTER) {
 		SET_GL_ERROR(GL_INVALID_ENUM)
-	} else if (index >= GL_MAX_VERTEX_ATTRIBS) {
+	} else if (index >= VERTEX_ATTRIBS_NUM) {
 		SET_GL_ERROR(GL_INVALID_VALUE);
 	}
 #endif
@@ -1368,7 +1368,7 @@ void glGetVertexAttribPointerv(GLuint index, GLenum pname, void **pointer) {
 
 void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer) {
 #ifndef SKIP_ERROR_HANDLING
-	if (size < 1 || size > 4 || stride < 0 || index >= GL_MAX_VERTEX_ATTRIBS) {
+	if (size < 1 || size > 4 || stride < 0 || index >= VERTEX_ATTRIBS_NUM) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
@@ -1415,7 +1415,7 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 
 void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {
 #ifndef SKIP_ERROR_HANDLING
-	if (index >= GL_MAX_VERTEX_ATTRIBS) {
+	if (index >= VERTEX_ATTRIBS_NUM) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
@@ -1456,7 +1456,7 @@ void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {
 
 void glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params) {
 #ifndef SKIP_ERROR_HANDLING
-	if (index >= GL_MAX_VERTEX_ATTRIBS) {
+	if (index >= VERTEX_ATTRIBS_NUM) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif

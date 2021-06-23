@@ -27,7 +27,10 @@
 
 // Internal constants
 #define TEXTURES_NUM 16384 // Available textures
+#define TEXTURE_IMAGE_UNITS_NUM 3 // Available texture image units
+#define COMBINED_TEXTURE_IMAGE_UNITS_NUM 16 // Available combined texture image units
 #define COMPRESSED_TEXTURE_FORMATS_NUM 9 // The number of supported texture formats
+#define VERTEX_ATTRIBS_NUM 16 // Available vertex attributes
 #define MODELVIEW_STACK_DEPTH 32 // Depth of modelview matrix stack
 #define GENERIC_STACK_DEPTH 2 // Depth of generic matrix stack
 #define DISPLAY_WIDTH_DEF 960 // Default display width in pixels
@@ -276,7 +279,7 @@ extern void *vert_uniforms;
 extern SceGxmMultisampleMode msaa_mode;
 extern GLboolean use_extra_mem;
 extern blend_config blend_info;
-extern SceGxmVertexAttribute vertex_attrib_config[GL_MAX_VERTEX_ATTRIBS];
+extern SceGxmVertexAttribute vertex_attrib_config[VERTEX_ATTRIBS_NUM];
 extern GLboolean is_rendering_display; // Flag for when we're rendering without a framebuffer object
 extern uint16_t *default_idx_ptr; // sceGxm mapped progressive indices buffer
 extern uint16_t *default_quads_idx_ptr; // sceGxm mapped progressive indices buffer for quads
