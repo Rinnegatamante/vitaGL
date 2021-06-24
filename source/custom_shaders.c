@@ -735,12 +735,20 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	for (int i = 0; i < count; i++) {
 		size += length ? length[i] : strlen(string[i]);
 	}
-	s->source = (char *)vgl_malloc(size, VGL_MEM_EXTERNAL);
-	s->source[0] = 0;
-	for (int i = 0; i < count; i++) {
-		sprintf(s->source, "%s%s", s->source, string[i]);
+#ifdef SHADER_COMPILER_SPEEDHACK
+	if (count == 1)
+		s->prog = (SceGxmProgram *)*string;
+	else
+#endif
+	{
+		s->source = (char *)vgl_malloc(size, VGL_MEM_EXTERNAL);
+		s->source[0] = 0;
+		for (int i = 0; i < count; i++) {
+			sprintf(s->source, "%s%s", s->source, string[i]);
+		}
+		
+		s->prog = (SceGxmProgram *)s->source;
 	}
-	s->prog = (SceGxmProgram *)s->source;
 	s->size = size - 1;
 }
 
