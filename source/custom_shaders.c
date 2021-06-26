@@ -81,7 +81,9 @@ typedef struct shader {
 	const SceGxmProgram *prog;
 	uint32_t size;
 	char *source;
+#ifdef HAVE_SHARK_LOG
 	char *log;
+#endif
 } shader;
 
 // Program status enum
@@ -209,7 +211,9 @@ void resetCustomShaders(void) {
 	int i;
 	for (i = 0; i < MAX_CUSTOM_SHADERS; i++) {
 		shaders[i].valid = GL_FALSE;
+#ifdef HAVE_SHARK_LOG
 		shaders[i].log = NULL;
+#endif
 		shaders[i].source = NULL;
 	}
 
@@ -602,22 +606,21 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 #ifdef HAVE_SHARK_LOG
 static char *shark_log = NULL;
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
-	uint8_t append = shark_log != NULL;
 	char newline[1024];
 	switch (msg_level) {
 	case SHARK_LOG_INFO:
-		sprintf(newline, "%sI] %s on line %d", append ? "\n" : "", msg, line);
+		sprintf(newline, "%sI] %s on line %d", shark_log ? "\n" : "", msg, line);
 		break;
 	case SHARK_LOG_WARNING:
-		sprintf(newline, "%sW] %s on line %d", append ? "\n" : "", msg, line);
+		sprintf(newline, "%sW] %s on line %d", shark_log ? "\n" : "", msg, line);
 		break;
 	case SHARK_LOG_ERROR:
-		sprintf(newline, "%sE] %s on line %d", append ? "\n" : "", msg, line);
+		sprintf(newline, "%sE] %s on line %d", shark_log ? "\n" : "", msg, line);
 		break;
 	}
-	uint32_t size = (append ? strlen(shark_log) : 0) + strlen(newline);
-	shark_log = realloc(shark_log, size + 1);
-	if (append)
+	uint32_t size = (shark_log ? strlen(shark_log) : 0) + strlen(newline);
+	shark_log = shark_log ? vgl_realloc(shark_log, size + 1) : vgl_malloc(size + 1, VGL_MEM_EXTERNAL);
+	if (shark_log)
 		sprintf(shark_log, "%s%s", shark_log, newline);
 	else
 		strcpy(shark_log, newline);
@@ -695,7 +698,11 @@ void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
 		*params = s->prog ? GL_TRUE : GL_FALSE;
 		break;
 	case GL_INFO_LOG_LENGTH:
+#ifdef HAVE_SHARK_LOG
 		*params = s->log ? strlen(s->log) : 0;
+#else
+		*params = 0;
+#endif
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -713,10 +720,12 @@ void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLcha
 	shader *s = &shaders[handle - 1];
 
 	GLsizei len = 0;
+#ifdef HAVE_SHARK_LOG
 	if (s->log) {
 		len = min(strlen(s->log), maxLength);
 		sceClibMemcpy(infoLog, s->log, len);
 	}
+#endif
 	if (length)
 		*length = len;
 }
@@ -789,6 +798,8 @@ void glCompileShader(GLuint handle) {
 		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
 	}
 #ifdef HAVE_SHARK_LOG
+	if (s->log)
+		vgl_free(s->log);
 	s->log = shark_log;
 	shark_log = NULL;
 #endif
@@ -803,10 +814,13 @@ void glDeleteShader(GLuint shad) {
 	if (s->valid) {
 		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
 		vgl_free((void *)s->prog);
-		if (s->log)
+#ifdef HAVE_SHARK_LOG
+		if (s->log) {
 			vgl_free(s->log);
+			s->log = NULL;
+		}
+#endif
 	}
-	s->log = NULL;
 	s->source = NULL;
 	s->valid = GL_FALSE;
 }
