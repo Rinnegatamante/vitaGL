@@ -699,7 +699,7 @@ void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
 		break;
 	case GL_INFO_LOG_LENGTH:
 #ifdef HAVE_SHARK_LOG
-		*params = s->log ? strlen(s->log) : 0;
+		*params = s->log ? (strlen(s->log) + 1) : 0;
 #else
 		*params = 0;
 #endif
@@ -722,8 +722,9 @@ void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLcha
 	GLsizei len = 0;
 #ifdef HAVE_SHARK_LOG
 	if (s->log) {
-		len = min(strlen(s->log), maxLength);
+		len = min(strlen(s->log), maxLength - 1);
 		sceClibMemcpy(infoLog, s->log, len);
+		infoLog[len] = 0;
 	}
 #endif
 	if (length)
