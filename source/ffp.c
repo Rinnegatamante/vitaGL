@@ -162,11 +162,17 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	GLboolean ffp_dirty_frag_blend = ffp_blend_info.raw != blend_info.raw;
 	shader_mask mask = {.raw = 0};
-	mask.texenv_mode = tex_unit->env_mode;
 	mask.alpha_test_mode = alpha_op;
 	mask.has_texture = (ffp_vertex_attrib_state & (1 << 1)) ? GL_TRUE : GL_FALSE;
 	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
+	
+	// Counting number of enabled texture units
+	mask.num_textures = 0;
+	for (int i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
+		if (texture_units[i].enabled)
+			mask.num_textures++;
+	}
 
 	vector4f *clip_planes;
 	vector4f temp_clip_planes[MAX_CLIP_PLANES_NUM];
@@ -245,7 +251,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 
 		// Compiling the new shader
 		char vshader[8192];
-		sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.has_texture, mask.has_colors, mask.lights_num);
+		sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num);
 		uint32_t size = strlen(vshader);
 		SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 		ffp_vertex_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
@@ -273,9 +279,11 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		attrs[0].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 
 		// Vertex texture coordinates
-		if (mask.has_texture) {
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord");
-			attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+		for (int i = 1; i <= mask.num_textures; i++) {
+			char param_name[12];
+			sprintf(param_name, "texcoord%d", i);
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, param_name);
+			attrs[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 			ffp_vertex_num_params++;
 		}
 

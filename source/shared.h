@@ -41,7 +41,7 @@
 #define FRAME_PURGE_RENDERTARGETS_LIST_SIZE 128 // Number of rendertargets a single frame can hold
 #define FRAME_PURGE_FREQ 5 // Frequency in frames for garbage collection
 #define BUFFERS_NUM 256 // Maximum amount of framebuffers objects usable
-#define FFP_VERTEX_ATTRIBS_NUM 7 // Number of attributes used in ffp shaders
+#define FFP_VERTEX_ATTRIBS_NUM 9 // Number of attributes used in ffp shaders
 #define MEM_ALIGNMENT 16 // Memory alignment
 
 // Internal constants set in bootup phase
