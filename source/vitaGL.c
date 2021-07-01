@@ -87,6 +87,10 @@ vector3f *depth_vertices = NULL; // Memblock starting address for depth clear sc
 blend_config blend_info; // Current blend info mode
 SceGxmMultisampleMode msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
 int legacy_pool_size = 0; // Mempool size for GL1 immediate draw pipeline
+void *vertex_object;
+void *color_object;
+void *texture_object;
+void *index_object;
 
 extern GLboolean use_vram_for_usse;
 
@@ -1111,8 +1115,6 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
-
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[0];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[0];
 
@@ -1133,8 +1135,8 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
 
-	tex_unit->vertex_object = gpu_alloc_mapped_temp(count * streams->stride);
-	sceClibMemcpy(tex_unit->vertex_object, pointer, count * streams->stride);
+	vertex_object = gpu_alloc_mapped_temp(count * streams->stride);
+	sceClibMemcpy(vertex_object, pointer, count * streams->stride);
 }
 
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
@@ -1143,8 +1145,6 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
-
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[2];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[2];
 
@@ -1177,8 +1177,8 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
 
-	tex_unit->color_object = gpu_alloc_mapped_temp(count * streams->stride);
-	sceClibMemcpy(tex_unit->color_object, pointer, count * streams->stride);
+	color_object = gpu_alloc_mapped_temp(count * streams->stride);
+	sceClibMemcpy(color_object, pointer, count * streams->stride);
 }
 
 void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
@@ -1187,8 +1187,6 @@ void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, c
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
-
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[1];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[1];
 
@@ -1209,8 +1207,8 @@ void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, c
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
 
-	tex_unit->texture_object = gpu_alloc_mapped_temp(count * streams->stride);
-	sceClibMemcpy(tex_unit->texture_object, pointer, count * streams->stride);
+	texture_object = gpu_alloc_mapped_temp(count * streams->stride);
+	sceClibMemcpy(texture_object, pointer, count * streams->stride);
 }
 
 void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
@@ -1219,7 +1217,6 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *po
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	int bpe;
 	switch (type) {
 	case GL_SHORT:
@@ -1228,12 +1225,12 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *po
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
-	tex_unit->index_object = gpu_alloc_mapped_temp(count * bpe);
+	index_object = gpu_alloc_mapped_temp(count * bpe);
 	if (stride == 0)
-		sceClibMemcpy(tex_unit->index_object, pointer, count * bpe);
+		sceClibMemcpy(index_object, pointer, count * bpe);
 	else {
 		int i;
-		uint8_t *dst = (uint8_t *)tex_unit->index_object;
+		uint8_t *dst = (uint8_t *)index_object;
 		uint8_t *src = (uint8_t *)pointer;
 		for (i = 0; i < count; i++) {
 			sceClibMemcpy(dst, src, bpe);
@@ -1252,7 +1249,7 @@ void vglVertexPointerMapped(const GLvoid *pointer) {
 	streams->stride = 12;
 
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	tex_unit->vertex_object = (GLvoid *)pointer;
+	vertex_object = (GLvoid *)pointer;
 }
 
 void vglColorPointerMapped(GLenum type, const GLvoid *pointer) {
@@ -1288,8 +1285,7 @@ void vglColorPointerMapped(GLenum type, const GLvoid *pointer) {
 	attributes->componentCount = 4;
 	streams->stride = 4 * bpe;
 
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	tex_unit->color_object = (GLvoid *)pointer;
+	color_object = (GLvoid *)pointer;
 }
 
 void vglTexCoordPointerMapped(const GLvoid *pointer) {
@@ -1300,13 +1296,12 @@ void vglTexCoordPointerMapped(const GLvoid *pointer) {
 	attributes->componentCount = 2;
 	streams->stride = 8;
 
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	tex_unit->texture_object = (GLvoid *)pointer;
+	texture_object = (GLvoid *)pointer;
 }
 
 void vglIndexPointerMapped(const GLvoid *pointer) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
-	tex_unit->index_object = (GLvoid *)pointer;
+	index_object = (GLvoid *)pointer;
 }
 
 void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
@@ -1325,20 +1320,20 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	if (cur_program != 0) {
 		_vglDrawObjects_CustomShadersIMPL(implicit_wvp);
-		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, index_object, count);
 	} else if (ffp_vertex_attrib_state & (1 << 0)) {
 		reload_ffp_shaders(NULL, NULL);
 		if (ffp_vertex_attrib_state & (1 << 1)) {
 			if (texture_slots[tex_unit->tex_id].status != TEX_VALID)
 				return;
 			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[tex_unit->tex_id].gxm_tex);
-			sceGxmSetVertexStream(gxm_context, 1, tex_unit->texture_object);
+			sceGxmSetVertexStream(gxm_context, 1, texture_object);
 			if (ffp_vertex_num_params > 2)
-				sceGxmSetVertexStream(gxm_context, 2, tex_unit->color_object);
+				sceGxmSetVertexStream(gxm_context, 2, color_object);
 		} else if (ffp_vertex_num_params > 1)
-			sceGxmSetVertexStream(gxm_context, 1, tex_unit->color_object);
-		sceGxmSetVertexStream(gxm_context, 0, tex_unit->vertex_object);
-		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, tex_unit->index_object, count);
+			sceGxmSetVertexStream(gxm_context, 1, color_object);
+		sceGxmSetVertexStream(gxm_context, 0, vertex_object);
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, index_object, count);
 	}
 
 	restore_polygon_mode(gxm_p);

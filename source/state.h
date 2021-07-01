@@ -83,10 +83,6 @@ typedef enum {
 typedef struct {
 	GLboolean enabled;
 	matrix4x4 stack[GENERIC_STACK_DEPTH];
-	void *vertex_object;
-	void *color_object;
-	void *texture_object;
-	void *index_object;
 	int env_mode;
 	int tex_id;
 } texture_unit;
@@ -216,5 +212,11 @@ extern vector4f clip_planes_eq[MAX_CLIP_PLANES_NUM]; // Current equation for use
 // Framebuffers
 extern framebuffer *active_read_fb; // Current readback framebuffer in use
 extern framebuffer *active_write_fb; // Current write framebuffer in use
+
+// vgl* Draw Pipeline
+extern void *vertex_object;
+extern void *color_object;
+extern void *texture_object;
+extern void *index_object;
 
 #endif
