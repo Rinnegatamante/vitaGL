@@ -58,7 +58,7 @@ void calculate_light(int i, float3 ecPosition, float3 N) {
 
 void main(
 	float3 position,
-#if has_texture == 1
+#if num_textures == 1
 	float2 texcoord,
 #endif
 #if has_colors == 1
@@ -70,7 +70,7 @@ void main(
 	float4 emission,
 	float3 normals,
 #endif
-#if has_texture == 1
+#if num_textures > 0
 	float2 out vTexcoord : TEXCOORD0,
 #endif
 	float4 out vPosition : POSITION,
@@ -84,7 +84,9 @@ void main(
 #endif
 	uniform float4x4 modelview,
 	uniform float4x4 wvp,
-	uniform float4x4 texmat,
+#if num_textures > 0
+	uniform float4x4 texmat[num_textures],
+#endif
 	uniform float point_size,
 	uniform float4x4 normal_mat
 ) {
@@ -109,7 +111,7 @@ void main(
 	}
 #endif
 
-#if has_texture == 1
+#if num_textures == 1
 	vTexcoord = mul(texmat, float4(texcoord, 0.f, 1.f)).xy;
 #endif
 #if has_colors == 1

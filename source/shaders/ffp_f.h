@@ -1,12 +1,12 @@
 const char *ffp_frag_src =
 R"(#define alpha_test_mode %d
-#define has_texture %d
+#define num_textures %d
 #define has_colors %d
 #define fog_mode %d
 #define tex_env_mode %d
 
 float4 main(
-#if has_texture == 1
+#if num_textures > 0
 	float2 vTexcoord : TEXCOORD0,
 #endif
 #if has_colors == 1
@@ -15,10 +15,13 @@ float4 main(
 #if fog_mode < 3
 	float4 coords : WPOS,
 #endif
-	uniform sampler2D tex,
+#if num_textures > 0
+	uniform sampler2D tex[num_textures],
+	uniform float tex_env_mode[num_textures],
+	uniform float4 texEnvColor[num_textures],
+#endif
 	uniform float alphaCut,
 	uniform float4 fogColor,
-	uniform float4 texEnvColor,
 	uniform float4 tintColor,
 	uniform float fog_near,
 	uniform float fog_far,
@@ -31,28 +34,26 @@ float4 main(
 #if has_colors == 0
 	float4 vColor = tintColor;
 #endif
-#if has_texture == 0
-	float4 texColor = vColor;
-#else
-	float4 texColor = tex2D(tex, vTexcoord);
-
+#if num_textures > 0
 	// Texture Environment
-#if tex_env_mode == 0 // GL_MODULATE
-	texColor = texColor * vColor;
+	for (int i = 0; i < num_textures; i++) {
+		float4 currColor = tex2D(tex[i], vTexcoord);
+		if (tex_env_mode[i] == 0.0f) { // GL_MODULATE
+			currColor = currColor * vColor;
+		} else if (tex_env_mode[i] == 1.0f) { // GL_DECAL
+			currColor.rgb = lerp(vColor.rgb, currColor.rgb, currColor.a);
+			currColor.a = vColor.a;
+		} else if (tex_env_mode[i] == 2.0f) { // GL_BLEND
+			currColor.rgb = lerp(vColor.rgb, texEnvColor.rgb, currColor.rgb);
+			currColor.a = currColor.a * vColor.a;
+		} else if (tex_env_mode[i] == 3.0f) { // GL_ADD
+			currColor.rgb = clamp(currColor.rgb + vColor.rgb, 0.0, 1.0);
+			currColor.a = currColor.a * vColor.a;
+		}
+		vColor = currColor;
+	}
 #endif
-#if tex_env_mode == 1 // GL_DECAL
-	texColor.rgb = lerp(vColor.rgb, texColor.rgb, texColor.a);
-	texColor.a = vColor.a;
-#endif
-#if tex_env_mode == 2 // GL_BLEND
-	texColor.rgb = lerp(vColor.rgb, texEnvColor.rgb, texColor.rgb);
-	texColor.a = texColor.a * vColor.a;
-#endif
-#if tex_env_mode == 3 // GL_ADD
-	texColor.rgb = clamp(texColor.rgb + vColor.rgb, 0.0, 1.0);
-	texColor.a = texColor.a * vColor.a;
-#endif
-#endif
+	float4 texColor = vColor;
 	
 	// Alpha Test
 #if alpha_test_mode == 0

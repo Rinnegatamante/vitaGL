@@ -82,8 +82,10 @@ typedef enum {
 // Texture unit struct
 typedef struct {
 	GLboolean enabled;
-	matrix4x4 stack[GENERIC_STACK_DEPTH];
+	matrix4x4 texture_matrix_stack[GENERIC_STACK_DEPTH];
+	uint8_t texture_stack_counter;
 	int env_mode;
+	vector4f env_color;
 	int tex_id;
 } texture_unit;
 
@@ -179,9 +181,6 @@ extern SceGxmPolygonMode polygon_mode_front; // Current in use polygon mode for 
 extern SceGxmPolygonMode polygon_mode_back; // Current in use polygon mode for back
 extern GLenum gl_polygon_mode_front; // Current in use polygon mode for front
 extern GLenum gl_polygon_mode_back; // Current in use polygon mode for back
-
-// Texture Environment
-extern vector4f texenv_color; // Current in use texture environment color
 
 // Lighting
 extern GLboolean lighting_state; // Current lighting processor state

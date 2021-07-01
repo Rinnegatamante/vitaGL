@@ -24,12 +24,11 @@
 #include "shared.h"
 
 matrix4x4 *matrix = NULL; // Current in-use matrix mode
+matrix4x4 *texture_matrix = (matrix4x4 *)0xDEADBEEF; // Current in-use texture matrix
 static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH]; // Modelview matrices stack
 static uint8_t modelview_stack_counter = 0; // Modelview matrices stack counter
 static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH]; // Projection matrices stack
 static uint8_t projection_stack_counter = 0; // Projection matrices stack counter
-static matrix4x4 texture_matrix_stack[GENERIC_STACK_DEPTH]; // Texture matrices stack
-static uint8_t texture_stack_counter = 0; // Texture matrices stack counter
 GLboolean mvp_modified = GL_TRUE; // Check if ModelViewProjection matrix needs to be recreated
 
 /*
@@ -48,7 +47,7 @@ void glMatrixMode(GLenum mode) {
 		matrix = &projection_matrix;
 		break;
 	case GL_TEXTURE: // Texture matrix
-		matrix = &texture_matrix;
+		matrix = texture_matrix;
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -88,7 +87,7 @@ void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLd
 void glLoadIdentity(void) {
 	// Set current in use matrix to identity one
 	matrix4x4_identity(*matrix);
-	if (matrix != &texture_matrix)
+	if (matrix != texture_matrix)
 		mvp_modified = GL_TRUE;
 }
 
@@ -101,7 +100,7 @@ void glMultMatrixf(const GLfloat *m) {
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
 
-	if (matrix != &texture_matrix)
+	if (matrix != texture_matrix)
 		mvp_modified = GL_TRUE;
 }
 
@@ -114,21 +113,21 @@ void glLoadMatrixf(const GLfloat *m) {
 		}
 	}
 
-	if (matrix != &texture_matrix)
+	if (matrix != texture_matrix)
 		mvp_modified = GL_TRUE;
 }
 
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
 	// Translating in use matrix
 	matrix4x4_translate(*matrix, x, y, z);
-	if (matrix != &texture_matrix)
+	if (matrix != texture_matrix)
 		mvp_modified = GL_TRUE;
 }
 
 void glScalef(GLfloat x, GLfloat y, GLfloat z) {
 	// Scaling in use matrix
 	matrix4x4_scale(*matrix, x, y, z);
-	if (matrix != &texture_matrix)
+	if (matrix != texture_matrix)
 		mvp_modified = GL_TRUE;
 }
 
@@ -152,7 +151,7 @@ void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 		matrix4x4_rotate_z(*matrix, rad);
 	}
 
-	if (matrix != &texture_matrix)
+	if (matrix != texture_matrix)
 		mvp_modified = GL_TRUE;
 }
 
@@ -183,15 +182,17 @@ void glPushMatrix(void) {
 #endif
 			// Copying current matrix into the matrix stack and increasing stack counter
 			matrix4x4_copy(projection_matrix_stack[projection_stack_counter++], *matrix);
-	} else if (matrix == &texture_matrix) {
+	} else if (matrix == texture_matrix) {
+		texture_unit *tex_unit = &texture_units[server_texture_unit];
+		
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
-		if (texture_stack_counter >= GENERIC_STACK_DEPTH) {
+		if (tex_unit->texture_stack_counter >= GENERIC_STACK_DEPTH) {
 			SET_GL_ERROR(GL_STACK_OVERFLOW)
 		} else
 #endif
 			// Copying current matrix into the matrix stack and increasing stack counter
-			matrix4x4_copy(texture_matrix_stack[texture_stack_counter++], *matrix);
+			matrix4x4_copy(tex_unit->texture_matrix_stack[texture_stack_counter++], *matrix);
 	}
 }
 
@@ -229,15 +230,17 @@ void glPopMatrix(void) {
 		// MVP matrix will have to be updated
 		mvp_modified = GL_TRUE;
 
-	} else if (matrix == &texture_matrix) {
+	} else if (matrix == texture_matrix) {
+		texture_unit *tex_unit = &texture_units[server_texture_unit];
+		
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
-		if (texture_stack_counter == 0) {
+		if (tex_unit->texture_stack_counter == 0) {
 			SET_GL_ERROR(GL_STACK_UNDERFLOW)
 		}
 #endif
 		// Copying last matrix on stack into current matrix and decreasing stack counter
-		matrix4x4_copy(*matrix, texture_matrix_stack[--texture_stack_counter]);
+		matrix4x4_copy(*matrix, tex_unit->texture_matrix_stack[--texture_stack_counter]);
 	}
 }
 

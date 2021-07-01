@@ -1098,15 +1098,6 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 	restore_polygon_mode(gxm_p);
 }
 
-void glClientActiveTexture(GLenum texture) {
-#ifndef SKIP_ERROR_HANDLING
-	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE15)) {
-		SET_GL_ERROR(GL_INVALID_ENUM)
-	} else
-#endif
-		client_texture_unit = texture - GL_TEXTURE0;
-}
-
 // VGL_EXT_gpu_objects_array extension implementation
 
 void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
@@ -1248,7 +1239,6 @@ void vglVertexPointerMapped(const GLvoid *pointer) {
 	attributes->componentCount = 3;
 	streams->stride = 12;
 
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	vertex_object = (GLvoid *)pointer;
 }
 
@@ -1300,7 +1290,6 @@ void vglTexCoordPointerMapped(const GLvoid *pointer) {
 }
 
 void vglIndexPointerMapped(const GLvoid *pointer) {
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	index_object = (GLvoid *)pointer;
 }
 

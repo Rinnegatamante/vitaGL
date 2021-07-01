@@ -66,14 +66,13 @@ static GLenum ffp_mode;
 
 typedef union shader_mask {
 	struct {
-		uint32_t texenv_mode : 3;
 		uint32_t alpha_test_mode : 3;
-		uint32_t has_texture : 1;
+		uint32_t num_textures : 2;
 		uint32_t has_colors : 1;
 		uint32_t fog_mode : 2;
 		uint32_t clip_planes_num : 3;
 		uint32_t lights_num : 4;
-		uint32_t UNUSED : 15;
+		uint32_t UNUSED : 17;
 	};
 	uint32_t raw;
 } shader_mask;
@@ -107,6 +106,7 @@ typedef enum {
 	ALPHA_CUT_UNIF,
 	FOG_COLOR_UNIF,
 	TEX_ENV_COLOR_UNIF,
+	TEX_ENV_MODE_UNIF,
 	TINT_COLOR_UNIF,
 	FOG_NEAR_UNIF,
 	FOG_FAR_UNIF,
@@ -150,6 +150,7 @@ void reload_fragment_uniforms() {
 	ffp_fragment_params[ALPHA_CUT_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "alphaCut");
 	ffp_fragment_params[FOG_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fogColor");
 	ffp_fragment_params[TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "texEnvColor");
+	ffp_fragment_params[TEX_ENV_MODE_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tex_env_mode");
 	ffp_fragment_params[TINT_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tintColor");
 	ffp_fragment_params[FOG_NEAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_near");
 	ffp_fragment_params[FOG_FAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_far");
@@ -407,8 +408,10 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_CUT_UNIF], 0, 1, &alpha_ref);
 	if (ffp_fragment_params[FOG_COLOR_UNIF])
 		sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_COLOR_UNIF], 0, 4, &fog_color.r);
-	if (ffp_fragment_params[TEX_ENV_COLOR_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 0, 4, &texenv_color.r);
+	if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) {
+		sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 0, 4, &tex_unitenv_color.r);
+		sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_MODE_UNIF], 0, 4, &texenv_color.r);
+	}
 	if (ffp_fragment_params[TINT_COLOR_UNIF])
 		sceGxmSetUniformDataF(buffer, ffp_fragment_params[TINT_COLOR_UNIF], 0, 4, &current_vtx.clr.r);
 	if (ffp_fragment_params[FOG_NEAR_UNIF])
@@ -868,6 +871,15 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 
 	// Increasing vertex counter
 	vertex_count++;
+}
+
+void glClientActiveTexture(GLenum texture) {
+#ifndef SKIP_ERROR_HANDLING
+	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE15)) {
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	} else
+#endif
+		client_texture_unit = texture - GL_TEXTURE0;
 }
 
 void glVertex3fv(const GLfloat *v) {

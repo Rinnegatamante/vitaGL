@@ -283,6 +283,7 @@ extern "C" {
 #define GL_BUFFER_SIZE                               0x8764
 #define GL_MAX_VERTEX_ATTRIBS                        0x8869
 #define GL_VERTEX_ATTRIB_ARRAY_NORMALIZED            0x886A
+#define GL_MAX_TEXTURE_COORDS                        0x8871
 #define GL_MAX_TEXTURE_IMAGE_UNITS                   0x8872
 #define GL_ARRAY_BUFFER                              0x8892
 #define GL_ELEMENT_ARRAY_BUFFER                      0x8893
