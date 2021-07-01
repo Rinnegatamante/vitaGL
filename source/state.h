@@ -82,9 +82,10 @@ typedef enum {
 // Texture unit struct
 typedef struct {
 	GLboolean enabled;
-	matrix4x4 stack[GENERIC_STACK_DEPTH];
 	int env_mode;
 	int tex_id;
+	matrix4x4 texture_matrix_stack[GENERIC_STACK_DEPTH];
+	uint8_t texture_stack_counter;
 } texture_unit;
 
 // Framebuffer struct

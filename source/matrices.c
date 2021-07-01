@@ -28,8 +28,6 @@ static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH]; // Modelview mat
 static uint8_t modelview_stack_counter = 0; // Modelview matrices stack counter
 static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH]; // Projection matrices stack
 static uint8_t projection_stack_counter = 0; // Projection matrices stack counter
-static matrix4x4 texture_matrix_stack[GENERIC_STACK_DEPTH]; // Texture matrices stack
-static uint8_t texture_stack_counter = 0; // Texture matrices stack counter
 GLboolean mvp_modified = GL_TRUE; // Check if ModelViewProjection matrix needs to be recreated
 
 /*
@@ -67,7 +65,9 @@ void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdou
 
 	// Initializing ortho matrix with requested parameters
 	matrix4x4_init_orthographic(*matrix, left, right, bottom, top, nearVal, farVal);
-	mvp_modified = GL_TRUE;
+	
+	if (matrix != &texture_matrix)
+		mvp_modified = GL_TRUE;
 }
 
 void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal) {
@@ -82,7 +82,9 @@ void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLd
 
 	// Initializing frustum matrix with requested parameters
 	matrix4x4_init_frustum(*matrix, left, right, bottom, top, nearVal, farVal);
-	mvp_modified = GL_TRUE;
+	
+	if (matrix != &texture_matrix)
+		mvp_modified = GL_TRUE;
 }
 
 void glLoadIdentity(void) {
@@ -184,14 +186,16 @@ void glPushMatrix(void) {
 			// Copying current matrix into the matrix stack and increasing stack counter
 			matrix4x4_copy(projection_matrix_stack[projection_stack_counter++], *matrix);
 	} else if (matrix == &texture_matrix) {
+		texture_unit *tex_unit = &texture_units[server_texture_unit];
+		
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
-		if (texture_stack_counter >= GENERIC_STACK_DEPTH) {
+		if (tex_unit->texture_stack_counter >= GENERIC_STACK_DEPTH) {
 			SET_GL_ERROR(GL_STACK_OVERFLOW)
 		} else
 #endif
 			// Copying current matrix into the matrix stack and increasing stack counter
-			matrix4x4_copy(texture_matrix_stack[texture_stack_counter++], *matrix);
+			matrix4x4_copy(tex_unit->texture_matrix_stack[tex_unit->texture_stack_counter++], *matrix);
 	}
 }
 
@@ -230,14 +234,16 @@ void glPopMatrix(void) {
 		mvp_modified = GL_TRUE;
 
 	} else if (matrix == &texture_matrix) {
+		texture_unit *tex_unit = &texture_units[server_texture_unit];
+		
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
-		if (texture_stack_counter == 0) {
+		if (tex_unit->texture_stack_counter == 0) {
 			SET_GL_ERROR(GL_STACK_UNDERFLOW)
 		}
 #endif
 		// Copying last matrix on stack into current matrix and decreasing stack counter
-		matrix4x4_copy(*matrix, texture_matrix_stack[--texture_stack_counter]);
+		matrix4x4_copy(*matrix, tex_unit->texture_matrix_stack[--tex_unit->texture_stack_counter]);
 	}
 }
 
@@ -251,5 +257,7 @@ void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFa
 
 	// Initializing perspective matrix with requested parameters
 	matrix4x4_init_perspective(*matrix, fovy, aspect, zNear, zFar);
-	mvp_modified = GL_TRUE;
+	
+	if (matrix != &texture_matrix)
+		mvp_modified = GL_TRUE;
 }

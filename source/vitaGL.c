@@ -266,6 +266,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 		texture_units[i].env_mode = MODULATE;
 		texture_units[i].tex_id = 0;
 		texture_units[i].enabled = GL_FALSE;
+		texture_units[i].texture_stack_counter = 0;
 	}
 
 	// Init custom shaders
