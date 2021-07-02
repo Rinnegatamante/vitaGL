@@ -23,6 +23,14 @@
 
 #include "shaders/ffp_f.h"
 #include "shaders/ffp_v.h"
+#include "shaders/texture_combiners/modulate.h"
+#include "shaders/texture_combiners/replace.h"
+#include "shaders/texture_combiners/decal.h"
+#include "shaders/texture_combiners/blend.h"
+#include "shaders/texture_combiners/add.h"
+#ifndef DISABLE_TEXTURE_COMBINER
+#include "shaders/texture_combiners/combine.h"
+#endif
 #include "shared.h"
 
 #define SHADER_CACHE_SIZE 256
@@ -56,13 +64,14 @@ SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
-static uint32_t ffp_vertex_attrib_offsets[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0};
+static uint32_t ffp_vertex_attrib_offsets[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 static uint32_t ffp_vertex_attrib_vbo[VERTEX_ATTRIBS_NUM] = {0, 0, 0};
 uint8_t ffp_vertex_attrib_state = 0;
 static unsigned short orig_stride[VERTEX_ATTRIBS_NUM];
 static SceGxmAttributeFormat orig_fmt[VERTEX_ATTRIBS_NUM];
 static unsigned char orig_size[VERTEX_ATTRIBS_NUM];
 static GLenum ffp_mode;
+static uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 1};
 
 typedef union shader_mask {
 	struct {
@@ -72,10 +81,21 @@ typedef union shader_mask {
 		uint32_t fog_mode : 2;
 		uint32_t clip_planes_num : 3;
 		uint32_t lights_num : 4;
-		uint32_t UNUSED : 17;
+		uint32_t tex_env_mode_pass0 : 3;
+		uint32_t tex_env_mode_pass1 : 3;
+		uint32_t UNUSED : 11;
 	};
 	uint32_t raw;
 } shader_mask;
+#ifndef DISABLE_TEXTURE_COMBINER
+typedef union combiner_mask {
+	struct {
+		combinerState pass0;
+		combinerState pass1;
+	};
+	uint64_t raw;
+} combiner_mask;
+#endif
 
 typedef struct {
 	SceGxmProgram *frag;
@@ -106,7 +126,6 @@ typedef enum {
 	ALPHA_CUT_UNIF,
 	FOG_COLOR_UNIF,
 	TEX_ENV_COLOR_UNIF,
-	TEX_ENV_MODE_UNIF,
 	TINT_COLOR_UNIF,
 	FOG_NEAR_UNIF,
 	FOG_FAR_UNIF,
@@ -126,6 +145,9 @@ GLboolean ffp_dirty_frag = GL_TRUE;
 GLboolean ffp_dirty_vert = GL_TRUE;
 blend_config ffp_blend_info;
 shader_mask ffp_mask = {.raw = 0};
+#ifndef DISABLE_TEXTURE_COMBINER
+combiner_mask ffp_combiner_mask = {.raw = 0};
+#endif
 
 SceGxmVertexAttribute ffp_vertex_attribute[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream ffp_vertex_stream[FFP_VERTEX_ATTRIBS_NUM];
@@ -150,28 +172,125 @@ void reload_fragment_uniforms() {
 	ffp_fragment_params[ALPHA_CUT_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "alphaCut");
 	ffp_fragment_params[FOG_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fogColor");
 	ffp_fragment_params[TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "texEnvColor");
-	ffp_fragment_params[TEX_ENV_MODE_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tex_env_mode");
 	ffp_fragment_params[TINT_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tintColor");
 	ffp_fragment_params[FOG_NEAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_near");
 	ffp_fragment_params[FOG_FAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_far");
 	ffp_fragment_params[FOG_DENSITY_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_density");
 }
 
+#ifndef DISABLE_TEXTURE_COMBINER
+void setup_combiner_pass(int i, char *dst) {
+	char tmp[2048] = {0};
+	char arg0_rgb[32] = {0};
+	char arg1_rgb[32] = {0};
+	char arg2_rgb[32] = {0};
+	char arg0_a[32] = {0};
+	char arg1_a[32] = {0};
+	char arg2_a[32] = {0};
+	
+	char *args[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+	int args_count = 0;
+	
+	if (texture_units[i].combiner.rgb_func == INTERPOLATE) {
+		sprintf(arg2_rgb, op_modes[texture_units[i].combiner.op_mode_rgb_2], operands[texture_units[i].combiner.op_rgb_2]);
+		args[0] = arg2_rgb;
+		args[1] = arg1_rgb;
+		args[2] = arg2_rgb;
+		args[3] = arg0_a;
+		args_count = 4;
+	}
+	if (texture_units[i].combiner.rgb_func != REPLACE) {
+		sprintf(arg1_rgb, op_modes[texture_units[i].combiner.op_mode_rgb_1], operands[texture_units[i].combiner.op_rgb_1]);
+		if (!args[0]) {
+			args[0] = arg1_rgb;
+			args[1] = arg0_a;
+			args_count = 2;
+		}
+	} else {
+		args[0] = arg0_a;
+		args_count = 1;
+	}
+	if (texture_units[i].combiner.a_func == INTERPOLATE) {
+		sprintf(arg2_a, op_modes[texture_units[i].combiner.op_mode_a_2], operands[texture_units[i].combiner.op_a_2]);
+		args[args_count++] = arg2_a;
+		args[args_count++] = arg1_a;
+		args[args_count++] = arg2_a;
+	}
+	if (texture_units[i].combiner.a_func != REPLACE) {
+		sprintf(arg1_a, op_modes[texture_units[i].combiner.op_mode_a_1], operands[texture_units[i].combiner.op_a_1]);
+		args[args_count++] = arg1_a;
+	}
+	
+	// Common arguments
+	sprintf(arg0_rgb, op_modes[texture_units[i].combiner.op_mode_rgb_0], operands[texture_units[i].combiner.op_rgb_0]);
+	sprintf(arg0_a, op_modes[texture_units[i].combiner.op_mode_a_0], operands[texture_units[i].combiner.op_a_0]);
+	
+	sprintf(tmp, combine_src, i, calc_funcs[texture_units[i].combiner.rgb_func], calc_funcs[texture_units[i].combiner.a_func]);
+	switch (args_count) {
+	case 1:
+		sprintf(dst, tmp, arg0_rgb, args[0]);
+		break;
+	case 2:
+		sprintf(dst, tmp, arg0_rgb, args[0], args[1]);
+		break;
+	case 3:
+		sprintf(dst, tmp, arg0_rgb, args[0], args[1], args[2]);
+		break;
+	case 4:
+		sprintf(dst, tmp, arg0_rgb, args[0], args[1], args[2], args[3]);
+		break;
+	case 5:
+		sprintf(dst, tmp, arg0_rgb, args[0], args[1], args[2], args[3], args[4]);
+		break;
+	case 6:
+		sprintf(dst, tmp, arg0_rgb, args[0], args[1], args[2], args[3], args[4], args[5]);
+		break;
+	case 7:
+		sprintf(dst, tmp, arg0_rgb, args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+		break;
+	default:
+		break;
+	}
+	
+}
+#endif
+
 void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams) {
 	// Checking if mask changed
 	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	GLboolean ffp_dirty_frag_blend = ffp_blend_info.raw != blend_info.raw;
 	shader_mask mask = {.raw = 0};
+#ifndef DISABLE_TEXTURE_COMBINER
+	combiner_mask cmb_mask = {.raw = 0};
+#endif
 	mask.alpha_test_mode = alpha_op;
-	mask.has_texture = (ffp_vertex_attrib_state & (1 << 1)) ? GL_TRUE : GL_FALSE;
-	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
+	mask.has_colors = (ffp_vertex_attrib_state & (1 << 1)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
 	
 	// Counting number of enabled texture units
 	mask.num_textures = 0;
-	for (int i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
-		if (texture_units[i].enabled)
+	for (int i = 0; i < TEXTURE_COORDS_NUM; i++) {
+		if (texture_units[i].enabled && texture_units[i].texcoord_enabled) {
 			mask.num_textures++;
+			switch (i) {
+			case 0:
+				mask.tex_env_mode_pass0 = texture_units[0].env_mode;
+#ifndef DISABLE_TEXTURE_COMBINER
+				if (mask.tex_env_mode_pass0 == COMBINE)
+					cmb_mask.pass0.raw = texture_units[0].combiner.raw;
+#endif
+				break;
+			case 1:
+				mask.tex_env_mode_pass1 = texture_units[1].env_mode;
+#ifndef DISABLE_TEXTURE_COMBINER
+				if (mask.tex_env_mode_pass1 == COMBINE)
+					cmb_mask.pass1.raw = texture_units[1].combiner.raw;
+#endif
+				break;
+			default:
+				break;
+			}
+		}
 	}
 
 	vector4f *clip_planes;
@@ -213,8 +332,11 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			}
 		}
 	}
-
+#ifndef DISABLE_TEXTURE_COMBINER
 	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
+#else
+	if (ffp_mask.raw == mask.raw && ffp_combiner_mask == cmb_mask.raw) { // Fixed function pipeline config didn't change
+#endif
 		ffp_dirty_vert = GL_FALSE;
 		ffp_dirty_frag = GL_FALSE;
 	} else {
@@ -239,6 +361,9 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			}
 		}
 		ffp_mask.raw = mask.raw;
+#ifndef DISABLE_TEXTURE_COMBINER
+		ffp_combiner_mask.raw = cmb_mask.raw;
+#endif
 	}
 
 	GLboolean new_shader_flag = ffp_dirty_vert || ffp_dirty_frag;
@@ -252,6 +377,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		// Compiling the new shader
 		char vshader[8192];
 		sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num);
+		sceClibPrintf(vshader);
 		uint32_t size = strlen(vshader);
 		SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 		ffp_vertex_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
@@ -267,7 +393,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	}
 
 	// Not going for the vertex config setup if we have aligned datas
-	if (!attrs && ffp_vertex_attrib_state != 0x05) {
+	if (!attrs && mask.num_textures == 1) {
 		attrs = ffp_vertex_attrib_config;
 		streams = ffp_vertex_stream_config;
 	}
@@ -279,13 +405,9 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		attrs[0].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 
 		// Vertex texture coordinates
-		for (int i = 1; i <= mask.num_textures; i++) {
-			char param_name[12];
-			sprintf(param_name, "texcoord%d", i);
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, param_name);
-			attrs[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			ffp_vertex_num_params++;
-		}
+		param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord0");
+		attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+		ffp_vertex_num_params++;
 
 		// Vertex colors
 		if (mask.has_colors) {
@@ -315,13 +437,15 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		ffp_vertex_stream[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 
 		// Vertex texture coordinates
-		if (mask.has_texture) {
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord");
-			sceClibMemcpy(&ffp_vertex_attribute[1], &ffp_vertex_attrib_config[1], sizeof(SceGxmVertexAttribute));
-			ffp_vertex_attribute[1].streamIndex = 1;
-			ffp_vertex_attribute[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			ffp_vertex_stream[1].stride = ffp_vertex_stream_config[1].stride;
-			ffp_vertex_stream[1].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+		for (int i = 0; i < mask.num_textures; i++) {
+			char param_name[12];
+			sprintf(param_name, "texcoord%d", i);
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, param_name);
+			sceClibMemcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[texcoord_idxs[i]], sizeof(SceGxmVertexAttribute));
+			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[texcoord_idxs[i]].stride;
+			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 		}
 
@@ -350,9 +474,54 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			startShaderCompiler();
 
 		// Compiling the new shader
-		char fshader[8192];
-		sprintf(fshader, ffp_frag_src, alpha_op, mask.has_texture, mask.has_colors, mask.fog_mode, mask.texenv_mode);
+		char fshader[8192] = {0};
+		GLboolean unused_mode[5] = {GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE};
+		for (int i = 0; i < mask.num_textures; i++) {
+			char tmp[1024] = {0};
+			switch (texture_units[i].env_mode) {
+			case MODULATE:
+				if (unused_mode[MODULATE]) {
+					sprintf(fshader, "%s\n%s", fshader, modulate_src);
+					unused_mode[MODULATE] = GL_FALSE;
+				}
+				break;
+			case DECAL:
+				if (unused_mode[DECAL]) {
+					sprintf(fshader, "%s\n%s", fshader, decal_src);
+					unused_mode[DECAL] = GL_FALSE;
+				}
+				break;
+			case BLEND:
+				if (unused_mode[BLEND]) {
+					sprintf(fshader, "%s\n%s", fshader, blend_src);
+					unused_mode[BLEND] = GL_FALSE;
+				}
+				break;
+			case ADD:
+				if (unused_mode[ADD]) {
+					sprintf(fshader, "%s\n%s", fshader, add_src);
+					unused_mode[ADD] = GL_FALSE;
+				}
+				break;
+			case REPLACE:
+				if (unused_mode[REPLACE]) {
+					sprintf(fshader, "%s\n%s", fshader, replace_src);
+					unused_mode[REPLACE] = GL_FALSE;
+				}
+				break;
+#ifndef DISABLE_TEXTURE_COMBINER
+			case COMBINE:
+				setup_combiner_pass(i, tmp);
+				sprintf(fshader, "%s\n%s", fshader, tmp);
+				break;
+#endif
+			default:
+				break;
+			}
+		}
+		sprintf(fshader, ffp_frag_src, fshader, alpha_op, mask.num_textures, mask.has_colors, mask.fog_mode, mask.tex_env_mode_pass0 != COMBINE ? mask.tex_env_mode_pass0 : 50, mask.tex_env_mode_pass1 != COMBINE ? mask.tex_env_mode_pass1 : 51);
 		uint32_t size = strlen(fshader);
+		sceClibPrintf(fshader);
 		SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 		ffp_fragment_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
 		sceClibMemcpy((void *)ffp_fragment_program, (void *)t, size);
@@ -417,8 +586,9 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	if (ffp_fragment_params[FOG_COLOR_UNIF])
 		sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_COLOR_UNIF], 0, 4, &fog_color.r);
 	if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) {
-		sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 0, 4, &tex_unitenv_color.r);
-		sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_MODE_UNIF], 0, 4, &texenv_color.r);
+		for (int i = 0; i < mask.num_textures; i++) {
+			sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_ENV_COLOR_UNIF], 4 * i, 4, (const float *)&texture_units[i].env_color.r);
+		}
 	}
 	if (ffp_fragment_params[TINT_COLOR_UNIF])
 		sceGxmSetUniformDataF(buffer, ffp_fragment_params[TINT_COLOR_UNIF], 0, 4, &current_vtx.clr.r);
@@ -463,9 +633,9 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 	reload_ffp_shaders(NULL, NULL);
 
 	// Uploading textures on relative texture units
-	if (ffp_vertex_attrib_state & (1 << 1)) {
+	for (int i = 0; i < ffp_mask.num_textures; i++) {
 		texture_unit *tex_unit = &texture_units[client_texture_unit];
-		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[tex_unit->tex_id].gxm_tex);
+		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[i].tex_id].gxm_tex);
 	}
 
 	// Uploading vertex streams
@@ -501,9 +671,9 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
 	top_idx++;
 #endif
 	// Uploading textures on relative texture units
-	if (ffp_vertex_attrib_state & (1 << 1)) {
+	for (int i = 0; i < ffp_mask.num_textures; i++) {
 		texture_unit *tex_unit = &texture_units[client_texture_unit];
-		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[tex_unit->tex_id].gxm_tex);
+		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[i].tex_id].gxm_tex);
 	}
 
 	// Uploading vertex streams
@@ -542,10 +712,10 @@ void glEnableClientState(GLenum array) {
 		ffp_vertex_attrib_state |= (1 << 0);
 		break;
 	case GL_TEXTURE_COORD_ARRAY:
-		ffp_vertex_attrib_state |= (1 << 1);
+		tex_unit->texcoord_enabled = GL_TRUE;
 		break;
 	case GL_COLOR_ARRAY:
-		ffp_vertex_attrib_state |= (1 << 2);
+		ffp_vertex_attrib_state |= (1 << 1);
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -561,10 +731,10 @@ void glDisableClientState(GLenum array) {
 		ffp_vertex_attrib_state &= ~(1 << 0);
 		break;
 	case GL_TEXTURE_COORD_ARRAY:
-		ffp_vertex_attrib_state &= ~(1 << 1);
+		tex_unit->texcoord_enabled = GL_TRUE;
 		break;
 	case GL_COLOR_ARRAY:
-		ffp_vertex_attrib_state &= ~(1 << 2);
+		ffp_vertex_attrib_state &= ~(1 << 1);
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -835,12 +1005,12 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *po
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
+	
+	ffp_vertex_attrib_offsets[texcoord_idxs[client_texture_unit]] = (uint32_t)pointer;
+	ffp_vertex_attrib_vbo[texcoord_idxs[client_texture_unit]] = vertex_array_unit;
 
-	ffp_vertex_attrib_offsets[1] = (uint32_t)pointer;
-	ffp_vertex_attrib_vbo[1] = vertex_array_unit;
-
-	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[1];
-	SceGxmVertexStream *streams = &ffp_vertex_stream_config[1];
+	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[texcoord_idxs[client_texture_unit]];
+	SceGxmVertexStream *streams = &ffp_vertex_stream_config[texcoord_idxs[client_texture_unit]];
 
 	unsigned short bpe;
 	switch (type) {
@@ -1133,4 +1303,513 @@ void glEnd(void) {
 
 	// Restore polygon mode if a GL_LINES/GL_POINTS has been rendered
 	restore_polygon_mode(prim);
+}
+
+void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
+	// Aliasing texture unit for cleaner code
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+
+	// Properly changing texture environment settings as per request
+	switch (target) {
+	case GL_TEXTURE_ENV:
+		switch (pname) {
+		case GL_TEXTURE_ENV_MODE:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_MODULATE)
+				tex_unit->env_mode = MODULATE;
+			else if (param == GL_DECAL)
+				tex_unit->env_mode = DECAL;
+			else if (param == GL_REPLACE)
+				tex_unit->env_mode = REPLACE;
+			else if (param == GL_BLEND)
+				tex_unit->env_mode = BLEND;
+			else if (param == GL_ADD)
+				tex_unit->env_mode = ADD;
+#ifndef DISABLE_TEXTURE_COMBINER
+			else if (param == GL_COMBINE)
+				tex_unit->env_mode = COMBINE;
+#endif
+			break;
+#ifndef DISABLE_TEXTURE_COMBINER
+		case GL_COMBINE_RGB:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_REPLACE)
+				tex_unit->combiner.rgb_func = REPLACE;
+			else if (param == GL_MODULATE)
+				tex_unit->combiner.rgb_func = MODULATE;
+			else if (param == GL_ADD)
+				tex_unit->combiner.rgb_func = ADD;
+			else if (param == GL_ADD_SIGNED)
+				tex_unit->combiner.rgb_func = ADD_SIGNED;
+			else if (param == GL_INTERPOLATE)
+				tex_unit->combiner.rgb_func = INTERPOLATE;
+			else if (param == GL_SUBTRACT)
+				tex_unit->combiner.rgb_func = SUBTRACT;
+			break;
+		case GL_COMBINE_ALPHA:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_REPLACE)
+				tex_unit->combiner.a_func = REPLACE;
+			else if (param == GL_MODULATE)
+				tex_unit->combiner.a_func = MODULATE;
+			else if (param == GL_ADD)
+				tex_unit->combiner.a_func = ADD;
+			else if (param == GL_ADD_SIGNED)
+				tex_unit->combiner.a_func = ADD_SIGNED;
+			else if (param == GL_INTERPOLATE)
+				tex_unit->combiner.a_func = INTERPOLATE;
+			else if (param == GL_SUBTRACT)
+				tex_unit->combiner.a_func = SUBTRACT;
+			break;
+		case GL_SRC0_RGB:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_TEXTURE)
+				tex_unit->combiner.op_rgb_0 = TEXTURE;
+			else if (param == GL_CONSTANT)
+				tex_unit->combiner.op_rgb_0 = CONSTANT;
+			else if (param == GL_PRIMARY_COLOR)
+				tex_unit->combiner.op_rgb_0 = PRIMARY_COLOR;
+			else if (param == GL_PREVIOUS)
+				tex_unit->combiner.op_rgb_0 = PREVIOUS;
+			break;
+		case GL_SRC1_RGB:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_TEXTURE)
+				tex_unit->combiner.op_rgb_1 = TEXTURE;
+			else if (param == GL_CONSTANT)
+				tex_unit->combiner.op_rgb_1 = CONSTANT;
+			else if (param == GL_PRIMARY_COLOR)
+				tex_unit->combiner.op_rgb_1 = PRIMARY_COLOR;
+			else if (param == GL_PREVIOUS)
+				tex_unit->combiner.op_rgb_1 = PREVIOUS;
+			break;
+		case GL_SRC2_RGB:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_TEXTURE)
+				tex_unit->combiner.op_rgb_2 = TEXTURE;
+			else if (param == GL_CONSTANT)
+				tex_unit->combiner.op_rgb_2 = CONSTANT;
+			else if (param == GL_PRIMARY_COLOR)
+				tex_unit->combiner.op_rgb_2 = PRIMARY_COLOR;
+			else if (param == GL_PREVIOUS)
+				tex_unit->combiner.op_rgb_2 = PREVIOUS;
+			break;
+		case GL_SRC0_ALPHA:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_TEXTURE)
+				tex_unit->combiner.op_a_0 = TEXTURE;
+			else if (param == GL_CONSTANT)
+				tex_unit->combiner.op_a_0 = CONSTANT;
+			else if (param == GL_PRIMARY_COLOR)
+				tex_unit->combiner.op_a_0 = PRIMARY_COLOR;
+			else if (param == GL_PREVIOUS)
+				tex_unit->combiner.op_a_0 = PREVIOUS;
+			break;
+		case GL_SRC1_ALPHA:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_TEXTURE)
+				tex_unit->combiner.op_a_1 = TEXTURE;
+			else if (param == GL_CONSTANT)
+				tex_unit->combiner.op_a_1 = CONSTANT;
+			else if (param == GL_PRIMARY_COLOR)
+				tex_unit->combiner.op_a_1 = PRIMARY_COLOR;
+			else if (param == GL_PREVIOUS)
+				tex_unit->combiner.op_a_1 = PREVIOUS;
+			break;
+		case GL_SRC2_ALPHA:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_TEXTURE)
+				tex_unit->combiner.op_a_2 = TEXTURE;
+			else if (param == GL_CONSTANT)
+				tex_unit->combiner.op_a_2 = CONSTANT;
+			else if (param == GL_PRIMARY_COLOR)
+				tex_unit->combiner.op_a_2 = PRIMARY_COLOR;
+			else if (param == GL_PREVIOUS)
+				tex_unit->combiner.op_a_2 = PREVIOUS;
+			break;
+		case GL_OPERAND0_RGB:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_SRC_COLOR)
+				tex_unit->combiner.op_mode_rgb_0 = SRC_COLOR;
+			else if (param == GL_ONE_MINUS_SRC_COLOR)
+				tex_unit->combiner.op_mode_rgb_0 = ONE_MINUS_SRC_COLOR;
+			else if (param == GL_SRC_ALPHA)
+				tex_unit->combiner.op_mode_rgb_0 = SRC_ALPHA;
+			else if (param == GL_ONE_MINUS_SRC_ALPHA)
+				tex_unit->combiner.op_mode_rgb_0 = ONE_MINUS_SRC_ALPHA;
+			break;
+		case GL_OPERAND1_RGB:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_SRC_COLOR)
+				tex_unit->combiner.op_mode_rgb_1 = SRC_COLOR;
+			else if (param == GL_ONE_MINUS_SRC_COLOR)
+				tex_unit->combiner.op_mode_rgb_1 = ONE_MINUS_SRC_COLOR;
+			else if (param == GL_SRC_ALPHA)
+				tex_unit->combiner.op_mode_rgb_1 = SRC_ALPHA;
+			else if (param == GL_ONE_MINUS_SRC_ALPHA)
+				tex_unit->combiner.op_mode_rgb_1 = ONE_MINUS_SRC_ALPHA;
+			break;
+		case GL_OPERAND2_RGB:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_SRC_COLOR)
+				tex_unit->combiner.op_mode_rgb_2 = SRC_COLOR;
+			else if (param == GL_ONE_MINUS_SRC_COLOR)
+				tex_unit->combiner.op_mode_rgb_2 = ONE_MINUS_SRC_COLOR;
+			else if (param == GL_SRC_ALPHA)
+				tex_unit->combiner.op_mode_rgb_2 = SRC_ALPHA;
+			else if (param == GL_ONE_MINUS_SRC_ALPHA)
+				tex_unit->combiner.op_mode_rgb_2 = ONE_MINUS_SRC_ALPHA;
+			break;
+		case GL_OPERAND0_ALPHA:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_SRC_COLOR)
+				tex_unit->combiner.op_mode_a_0 = SRC_COLOR;
+			else if (param == GL_ONE_MINUS_SRC_COLOR)
+				tex_unit->combiner.op_mode_a_0 = ONE_MINUS_SRC_COLOR;
+			else if (param == GL_SRC_ALPHA)
+				tex_unit->combiner.op_mode_a_0 = SRC_ALPHA;
+			else if (param == GL_ONE_MINUS_SRC_ALPHA)
+				tex_unit->combiner.op_mode_a_0 = ONE_MINUS_SRC_ALPHA;
+			break;
+		case GL_OPERAND1_ALPHA:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_SRC_COLOR)
+				tex_unit->combiner.op_mode_a_1 = SRC_COLOR;
+			else if (param == GL_ONE_MINUS_SRC_COLOR)
+				tex_unit->combiner.op_mode_a_1 = ONE_MINUS_SRC_COLOR;
+			else if (param == GL_SRC_ALPHA)
+				tex_unit->combiner.op_mode_a_1 = SRC_ALPHA;
+			else if (param == GL_ONE_MINUS_SRC_ALPHA)
+				tex_unit->combiner.op_mode_a_1 = ONE_MINUS_SRC_ALPHA;
+			break;
+		case GL_OPERAND2_ALPHA:
+			ffp_dirty_frag = GL_TRUE;
+			if (param == GL_SRC_COLOR)
+				tex_unit->combiner.op_mode_a_2 = SRC_COLOR;
+			else if (param == GL_ONE_MINUS_SRC_COLOR)
+				tex_unit->combiner.op_mode_a_2 = ONE_MINUS_SRC_COLOR;
+			else if (param == GL_SRC_ALPHA)
+				tex_unit->combiner.op_mode_a_2 = SRC_ALPHA;
+			else if (param == GL_ONE_MINUS_SRC_ALPHA)
+				tex_unit->combiner.op_mode_a_2 = ONE_MINUS_SRC_ALPHA;
+			break;
+#endif
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+		}
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+}
+
+void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
+	// Properly changing texture environment settings as per request
+	switch (target) {
+	case GL_TEXTURE_ENV:
+		switch (pname) {
+		case GL_TEXTURE_ENV_COLOR:
+			sceClibMemcpy(&texture_units[server_texture_unit].env_color.r, param, sizeof(GLfloat) * 4);
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+		}
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+}
+
+void glTexEnvi(GLenum target, GLenum pname, GLint param) {
+	// Aliasing texture unit for cleaner code
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+
+	// Properly changing texture environment settings as per request
+	switch (target) {
+	case GL_TEXTURE_ENV:
+		switch (pname) {
+		case GL_TEXTURE_ENV_MODE:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_MODULATE:
+				tex_unit->env_mode = MODULATE;
+				break;
+			case GL_DECAL:
+				tex_unit->env_mode = DECAL;
+				break;
+			case GL_REPLACE:
+				tex_unit->env_mode = REPLACE;
+				break;
+			case GL_BLEND:
+				tex_unit->env_mode = BLEND;
+				break;
+			case GL_ADD:
+				tex_unit->env_mode = ADD;
+				break;
+#ifndef DISABLE_TEXTURE_COMBINER
+			case GL_COMBINE:
+				tex_unit->env_mode = COMBINE;
+				break;
+#endif
+			}
+			break;
+#ifndef DISABLE_TEXTURE_COMBINER
+		case GL_COMBINE_RGB:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_REPLACE:
+				tex_unit->combiner.rgb_func = REPLACE;
+				break;
+			case GL_MODULATE:
+				tex_unit->combiner.rgb_func = MODULATE;
+				break;
+			case GL_ADD:
+				tex_unit->combiner.rgb_func = ADD;
+				break;
+			case GL_ADD_SIGNED:
+				tex_unit->combiner.rgb_func = ADD_SIGNED;
+				break;
+			case GL_INTERPOLATE:
+				tex_unit->combiner.rgb_func = INTERPOLATE;
+				break;
+			case GL_SUBTRACT:
+				tex_unit->combiner.rgb_func = SUBTRACT;
+				break;
+			}
+			break;
+		case GL_COMBINE_ALPHA:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_REPLACE:
+				tex_unit->combiner.a_func = REPLACE;
+				break;
+			case GL_MODULATE:
+				tex_unit->combiner.a_func = MODULATE;
+				break;
+			case GL_ADD:
+				tex_unit->combiner.a_func = ADD;
+				break;
+			case GL_ADD_SIGNED:
+				tex_unit->combiner.a_func = ADD_SIGNED;
+				break;
+			case GL_INTERPOLATE:
+				tex_unit->combiner.a_func = INTERPOLATE;
+				break;
+			case GL_SUBTRACT:
+				tex_unit->combiner.a_func = SUBTRACT;
+				break;
+			}
+			break;
+		case GL_SRC0_RGB:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_TEXTURE:
+				tex_unit->combiner.op_rgb_0 = TEXTURE;
+				break;
+			case GL_CONSTANT:
+				tex_unit->combiner.op_rgb_0 = CONSTANT;
+				break;
+			case GL_PRIMARY_COLOR:
+				tex_unit->combiner.op_rgb_0 = PRIMARY_COLOR;
+				break;
+			case GL_PREVIOUS:
+				tex_unit->combiner.op_rgb_0 = PREVIOUS;
+				break;
+			}
+			break;
+		case GL_SRC1_RGB:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_TEXTURE:
+				tex_unit->combiner.op_rgb_1 = TEXTURE;
+				break;
+			case GL_CONSTANT:
+				tex_unit->combiner.op_rgb_1 = CONSTANT;
+				break;
+			case GL_PRIMARY_COLOR:
+				tex_unit->combiner.op_rgb_1 = PRIMARY_COLOR;
+				break;
+			case GL_PREVIOUS:
+				tex_unit->combiner.op_rgb_1 = PREVIOUS;
+				break;
+			}
+			break;
+		case GL_SRC2_RGB:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_TEXTURE:
+				tex_unit->combiner.op_rgb_2 = TEXTURE;
+				break;
+			case GL_CONSTANT:
+				tex_unit->combiner.op_rgb_2 = CONSTANT;
+				break;
+			case GL_PRIMARY_COLOR:
+				tex_unit->combiner.op_rgb_2 = PRIMARY_COLOR;
+				break;
+			case GL_PREVIOUS:
+				tex_unit->combiner.op_rgb_2 = PREVIOUS;
+				break;
+			}
+			break;
+		case GL_SRC0_ALPHA:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_TEXTURE:
+				tex_unit->combiner.op_a_0 = TEXTURE;
+				break;
+			case GL_CONSTANT:
+				tex_unit->combiner.op_a_0 = CONSTANT;
+				break;
+			case GL_PRIMARY_COLOR:
+				tex_unit->combiner.op_a_0 = PRIMARY_COLOR;
+				break;
+			case GL_PREVIOUS:
+				tex_unit->combiner.op_a_0 = PREVIOUS;
+				break;
+			}
+			break;
+		case GL_SRC1_ALPHA:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_TEXTURE:
+				tex_unit->combiner.op_a_1 = TEXTURE;
+				break;
+			case GL_CONSTANT:
+				tex_unit->combiner.op_a_1 = CONSTANT;
+				break;
+			case GL_PRIMARY_COLOR:
+				tex_unit->combiner.op_a_1 = PRIMARY_COLOR;
+				break;
+			case GL_PREVIOUS:
+				tex_unit->combiner.op_a_1 = PREVIOUS;
+				break;
+			}
+			break;
+		case GL_SRC2_ALPHA:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_TEXTURE:
+				tex_unit->combiner.op_a_2 = TEXTURE;
+				break;
+			case GL_CONSTANT:
+				tex_unit->combiner.op_a_2 = CONSTANT;
+				break;
+			case GL_PRIMARY_COLOR:
+				tex_unit->combiner.op_a_2 = PRIMARY_COLOR;
+				break;
+			case GL_PREVIOUS:
+				tex_unit->combiner.op_a_2 = PREVIOUS;
+				break;
+			}
+			break;
+		case GL_OPERAND0_RGB:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_SRC_COLOR:
+				tex_unit->combiner.op_mode_rgb_0 = SRC_COLOR;
+				break;
+			case GL_ONE_MINUS_SRC_COLOR:
+				tex_unit->combiner.op_mode_rgb_0 = ONE_MINUS_SRC_COLOR;
+				break;
+			case GL_SRC_ALPHA:
+				tex_unit->combiner.op_mode_rgb_0 = SRC_ALPHA;
+				break;
+			case GL_ONE_MINUS_SRC_ALPHA:
+				tex_unit->combiner.op_mode_rgb_0 = ONE_MINUS_SRC_ALPHA;
+				break;
+			}
+			break;
+		case GL_OPERAND1_RGB:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_SRC_COLOR:
+				tex_unit->combiner.op_mode_rgb_1 = SRC_COLOR;
+				break;
+			case GL_ONE_MINUS_SRC_COLOR:
+				tex_unit->combiner.op_mode_rgb_1 = ONE_MINUS_SRC_COLOR;
+				break;
+			case GL_SRC_ALPHA:
+				tex_unit->combiner.op_mode_rgb_1 = SRC_ALPHA;
+				break;
+			case GL_ONE_MINUS_SRC_ALPHA:
+				tex_unit->combiner.op_mode_rgb_1 = ONE_MINUS_SRC_ALPHA;
+				break;
+			}
+			break;
+		case GL_OPERAND2_RGB:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_SRC_COLOR:
+				tex_unit->combiner.op_mode_rgb_2 = SRC_COLOR;
+				break;
+			case GL_ONE_MINUS_SRC_COLOR:
+				tex_unit->combiner.op_mode_rgb_2 = ONE_MINUS_SRC_COLOR;
+				break;
+			case GL_SRC_ALPHA:
+				tex_unit->combiner.op_mode_rgb_2 = SRC_ALPHA;
+				break;
+			case GL_ONE_MINUS_SRC_ALPHA:
+				tex_unit->combiner.op_mode_rgb_2 = ONE_MINUS_SRC_ALPHA;
+				break;
+			}
+			break;
+		case GL_OPERAND0_ALPHA:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_SRC_COLOR:
+				tex_unit->combiner.op_mode_a_0 = SRC_COLOR;
+				break;
+			case GL_ONE_MINUS_SRC_COLOR:
+				tex_unit->combiner.op_mode_a_0 = ONE_MINUS_SRC_COLOR;
+				break;
+			case GL_SRC_ALPHA:
+				tex_unit->combiner.op_mode_a_0 = SRC_ALPHA;
+				break;
+			case GL_ONE_MINUS_SRC_ALPHA:
+				tex_unit->combiner.op_mode_a_0 = ONE_MINUS_SRC_ALPHA;
+				break;
+			}
+			break;
+		case GL_OPERAND1_ALPHA:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_SRC_COLOR:
+				tex_unit->combiner.op_mode_a_1 = SRC_COLOR;
+				break;
+			case GL_ONE_MINUS_SRC_COLOR:
+				tex_unit->combiner.op_mode_a_1 = ONE_MINUS_SRC_COLOR;
+				break;
+			case GL_SRC_ALPHA:
+				tex_unit->combiner.op_mode_a_1 = SRC_ALPHA;
+				break;
+			case GL_ONE_MINUS_SRC_ALPHA:
+				tex_unit->combiner.op_mode_a_1 = ONE_MINUS_SRC_ALPHA;
+				break;
+			}
+			break;
+		case GL_OPERAND2_ALPHA:
+			ffp_dirty_frag = GL_TRUE;
+			switch (param) {
+			case GL_SRC_COLOR:
+				tex_unit->combiner.op_mode_a_2 = SRC_COLOR;
+				break;
+			case GL_ONE_MINUS_SRC_COLOR:
+				tex_unit->combiner.op_mode_a_2 = ONE_MINUS_SRC_COLOR;
+				break;
+			case GL_SRC_ALPHA:
+				tex_unit->combiner.op_mode_a_2 = SRC_ALPHA;
+				break;
+			case GL_ONE_MINUS_SRC_ALPHA:
+				tex_unit->combiner.op_mode_a_2 = ONE_MINUS_SRC_ALPHA;
+				break;
+			}
+			break;
+#endif
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+		}
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
 }

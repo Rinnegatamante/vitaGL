@@ -1,13 +1,18 @@
 const char *ffp_frag_src =
-R"(#define alpha_test_mode %d
+R"(%s
+#define alpha_test_mode %d
 #define num_textures %d
 #define has_colors %d
 #define fog_mode %d
-#define tex_env_mode %d
+#define pass0_func texenv%d
+#define pass1_func texenv%d
 
 float4 main(
 #if num_textures > 0
 	float2 vTexcoord : TEXCOORD0,
+#if num_textures > 1
+	float2 vTexcoord2 : TEXCOORD1,
+#endif
 #endif
 #if has_colors == 1
 	float4 vColor : COLOR,
@@ -36,24 +41,15 @@ float4 main(
 #endif
 #if num_textures > 0
 	// Texture Environment
-	for (int i = 0; i < num_textures; i++) {
-		float4 currColor = tex2D(tex[i], vTexcoord);
-		if (tex_env_mode[i] == 0.0f) { // GL_MODULATE
-			currColor = currColor * vColor;
-		} else if (tex_env_mode[i] == 1.0f) { // GL_DECAL
-			currColor.rgb = lerp(vColor.rgb, currColor.rgb, currColor.a);
-			currColor.a = vColor.a;
-		} else if (tex_env_mode[i] == 2.0f) { // GL_BLEND
-			currColor.rgb = lerp(vColor.rgb, texEnvColor.rgb, currColor.rgb);
-			currColor.a = currColor.a * vColor.a;
-		} else if (tex_env_mode[i] == 3.0f) { // GL_ADD
-			currColor.rgb = clamp(currColor.rgb + vColor.rgb, 0.0, 1.0);
-			currColor.a = currColor.a * vColor.a;
-		}
-		vColor = currColor;
-	}
+	float4 prevColor = vColor;
+	prevColor = pass0_func(tex[0], vTexcoord, prevColor, vColor, texEnvColor[0]);
+#if num_textures > 1
+	prevColor = pass1_func(tex[1], vTexcoord2, prevColor, vColor, texEnvColor[1]);
 #endif
+	float4 texColor = prevColor;
+#else
 	float4 texColor = vColor;
+#endif
 	
 	// Alpha Test
 #if alpha_test_mode == 0

@@ -79,12 +79,35 @@ typedef enum {
 	DISABLED
 } fogType;
 
+typedef union combinerState{
+	struct {
+		uint32_t rgb_func : 3;
+		uint32_t a_func : 3;
+		uint32_t op_mode_rgb_0 : 2;
+		uint32_t op_mode_a_0 : 2;
+		uint32_t op_rgb_0 : 2;
+		uint32_t op_a_0 : 2;
+		uint32_t op_mode_rgb_1 : 2;
+		uint32_t op_mode_a_1 : 2;
+		uint32_t op_rgb_1 : 2;
+		uint32_t op_a_1 : 2;
+		uint32_t op_mode_rgb_2 : 2;
+		uint32_t op_mode_a_2 : 2;
+		uint32_t op_rgb_2 : 2;
+		uint32_t op_a_2 : 2;
+		uint32_t UNUSED : 2;
+	};
+	uint32_t raw;
+} combinerState;
+
 // Texture unit struct
 typedef struct {
 	GLboolean enabled;
+	GLboolean texcoord_enabled;
 	matrix4x4 texture_matrix_stack[GENERIC_STACK_DEPTH];
 	uint8_t texture_stack_counter;
 	int env_mode;
+	combinerState combiner;
 	vector4f env_color;
 	int tex_id;
 } texture_unit;

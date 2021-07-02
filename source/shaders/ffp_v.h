@@ -1,5 +1,5 @@
-/*const char *ffp_vert_src =
-	R"(*/#define clip_planes_num %d
+const char *ffp_vert_src =
+	R"(#define clip_planes_num %d
 #define num_textures %d
 #define has_colors %d
 #define lights_num %d
@@ -59,12 +59,9 @@ void calculate_light(int i, float3 ecPosition, float3 N) {
 void main(
 	float3 position,
 #if num_textures > 0
-	float2 texcoord1,
+	float2 texcoord0,
 #if num_textures > 1
-	float2 texcoord2,
-#if num_textures > 2
-	float2 texcoord3,
-#endif
+	float2 texcoord1,
 #endif
 #endif
 #if has_colors == 1
@@ -80,9 +77,6 @@ void main(
 	float2 out vTexcoord : TEXCOORD0,
 #if num_textures > 1
 	float2 out vTexcoord2 : TEXCOORD1,
-#if num_textures > 2
-	float2 out vTexcoord3 : TEXCOORD2,
-#endif
 #endif
 #endif
 	float4 out vPosition : POSITION,
@@ -122,12 +116,9 @@ void main(
 #endif
 
 #if num_textures > 0
-	vTexcoord = mul(texmat, float4(texcoord1, 0.f, 1.f)).xy;
+	vTexcoord = mul(texmat, float4(texcoord0, 0.f, 1.f)).xy;
 #if num_textures > 1
-	vTexcoord2 = mul(texmat, float4(texcoord2, 0.f, 1.f)).xy;
-#if num_textures > 2
-	vTexcoord3 = mul(texmat, float4(texcoord3, 0.f, 1.f)).xy;
-#endif
+	vTexcoord2 = mul(texmat, float4(texcoord1, 0.f, 1.f)).xy;
 #endif
 #endif
 #if has_colors == 1
