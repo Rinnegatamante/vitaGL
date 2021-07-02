@@ -377,7 +377,6 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		// Compiling the new shader
 		char vshader[8192];
 		sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num);
-		sceClibPrintf(vshader);
 		uint32_t size = strlen(vshader);
 		SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 		ffp_vertex_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
@@ -521,7 +520,6 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		}
 		sprintf(fshader, ffp_frag_src, fshader, alpha_op, mask.num_textures, mask.has_colors, mask.fog_mode, mask.tex_env_mode_pass0 != COMBINE ? mask.tex_env_mode_pass0 : 50, mask.tex_env_mode_pass1 != COMBINE ? mask.tex_env_mode_pass1 : 51);
 		uint32_t size = strlen(fshader);
-		sceClibPrintf(fshader);
 		SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 		ffp_fragment_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
 		sceClibMemcpy((void *)ffp_fragment_program, (void *)t, size);
@@ -634,7 +632,6 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
-		texture_unit *tex_unit = &texture_units[client_texture_unit];
 		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[i].tex_id].gxm_tex);
 	}
 
@@ -672,7 +669,6 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
 #endif
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
-		texture_unit *tex_unit = &texture_units[client_texture_unit];
 		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[i].tex_id].gxm_tex);
 	}
 
@@ -704,7 +700,6 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
  */
 
 void glEnableClientState(GLenum array) {
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	ffp_dirty_vert = GL_TRUE;
 	ffp_dirty_frag = GL_TRUE;
 	switch (array) {
@@ -712,7 +707,7 @@ void glEnableClientState(GLenum array) {
 		ffp_vertex_attrib_state |= (1 << 0);
 		break;
 	case GL_TEXTURE_COORD_ARRAY:
-		tex_unit->texcoord_enabled = GL_TRUE;
+		texture_units[client_texture_unit].texcoord_enabled = GL_TRUE;
 		break;
 	case GL_COLOR_ARRAY:
 		ffp_vertex_attrib_state |= (1 << 1);
@@ -723,7 +718,6 @@ void glEnableClientState(GLenum array) {
 }
 
 void glDisableClientState(GLenum array) {
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	ffp_dirty_vert = GL_TRUE;
 	ffp_dirty_frag = GL_TRUE;
 	switch (array) {
@@ -731,7 +725,7 @@ void glDisableClientState(GLenum array) {
 		ffp_vertex_attrib_state &= ~(1 << 0);
 		break;
 	case GL_TEXTURE_COORD_ARRAY:
-		tex_unit->texcoord_enabled = GL_TRUE;
+		texture_units[client_texture_unit].texcoord_enabled = GL_TRUE;
 		break;
 	case GL_COLOR_ARRAY:
 		ffp_vertex_attrib_state &= ~(1 << 1);
@@ -1253,7 +1247,7 @@ void glEnd(void) {
 	reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
 
 	// Uploading texture to use
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	texture_unit *tex_unit = &texture_units[0];
 	int texture2d_idx = tex_unit->tex_id;
 	sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
 
