@@ -597,7 +597,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	int i;
 	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
 		if (p->texunits[i]) {
-			texture_unit *tex_unit = &texture_units[client_texture_unit + i];
+			texture_unit *tex_unit = &texture_units[i];
 			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
 		}
 	}

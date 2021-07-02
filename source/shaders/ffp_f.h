@@ -22,7 +22,6 @@ float4 main(
 #endif
 #if num_textures > 0
 	uniform sampler2D tex[num_textures],
-	uniform float tex_env_mode[num_textures],
 	uniform float4 texEnvColor[num_textures],
 #endif
 	uniform float alphaCut,

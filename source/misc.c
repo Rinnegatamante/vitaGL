@@ -256,6 +256,8 @@ void glEnable(GLenum cap) {
 		update_polygon_offset();
 		break;
 	case GL_TEXTURE_2D:
+		ffp_dirty_vert = GL_TRUE;
+		ffp_dirty_frag = GL_TRUE;
 		texture_units[server_texture_unit].enabled = GL_TRUE;
 		break;
 	case GL_ALPHA_TEST:
@@ -358,6 +360,8 @@ void glDisable(GLenum cap) {
 		update_polygon_offset();
 		break;
 	case GL_TEXTURE_2D:
+		ffp_dirty_vert = GL_TRUE;
+		ffp_dirty_frag = GL_TRUE;
 		texture_units[server_texture_unit].enabled = GL_FALSE;
 		break;
 	case GL_ALPHA_TEST:

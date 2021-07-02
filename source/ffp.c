@@ -103,6 +103,9 @@ typedef struct {
 	SceGxmShaderPatcherId frag_id;
 	SceGxmShaderPatcherId vert_id;
 	shader_mask mask;
+#ifndef DISABLE_TEXTURE_COMBINER
+	combiner_mask cmb_mask;
+#endif
 } cached_shader;
 cached_shader shader_cache[SHADER_CACHE_SIZE];
 uint8_t shader_cache_size = 0;
@@ -332,7 +335,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			}
 		}
 	}
-#ifndef DISABLE_TEXTURE_COMBINER
+#ifdef DISABLE_TEXTURE_COMBINER
 	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
 #else
 	if (ffp_mask.raw == mask.raw && ffp_combiner_mask == cmb_mask.raw) { // Fixed function pipeline config didn't change
@@ -342,7 +345,11 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	} else {
 		int i;
 		for (i = 0; i < shader_cache_size; i++) {
+#ifdef DISABLE_TEXTURE_COMBINER
 			if (shader_cache[i].mask.raw == mask.raw) {
+#else
+			if (shader_cache[i].mask.raw == mask.raw && shader_cache[i].cmb_mask.raw == cmb_mask.raw) {
+#endif
 				ffp_vertex_program = shader_cache[i].vert;
 				ffp_fragment_program = shader_cache[i].frag;
 				ffp_vertex_program_id = shader_cache[i].vert_id;
@@ -553,6 +560,9 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			vgl_free(shader_cache[shader_cache_idx].vert);
 		}
 		shader_cache[shader_cache_idx].mask.raw = mask.raw;
+#ifndef DISABLE_TEXTURE_COMBINER
+		shader_cache[shader_cache_idx].cmb_mask.raw = cmb_mask.raw;
+#endif
 		shader_cache[shader_cache_idx].frag = ffp_fragment_program;
 		shader_cache[shader_cache_idx].vert = ffp_vertex_program;
 		shader_cache[shader_cache_idx].frag_id = ffp_fragment_program_id;
@@ -585,7 +595,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_COLOR_UNIF], 0, 4, &fog_color.r);
 	if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) {
 		for (int i = 0; i < mask.num_textures; i++) {
-			sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_ENV_COLOR_UNIF], 4 * i, 4, (const float *)&texture_units[i].env_color.r);
+			sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 4 * i, 4, (const float *)&texture_units[i].env_color.r);
 		}
 	}
 	if (ffp_fragment_params[TINT_COLOR_UNIF])
@@ -1247,9 +1257,7 @@ void glEnd(void) {
 	reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
 
 	// Uploading texture to use
-	texture_unit *tex_unit = &texture_units[0];
-	int texture2d_idx = tex_unit->tex_id;
-	sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture2d_idx].gxm_tex);
+	sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[0].tex_id].gxm_tex);
 
 	// Restoring original attributes state settings
 	ffp_vertex_attrib_state = orig_state;
