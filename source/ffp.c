@@ -34,6 +34,10 @@
 #include "shared.h"
 
 #define SHADER_CACHE_SIZE 256
+#ifndef DISABLE_ADVANCED_SHADER_CACHE
+#define SHADER_CACHE_MAGIC 0 // This must be increased whenever ffp shader sources change
+//#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
+#endif
 
 #define VERTEX_UNIFORMS_NUM 11
 #define FRAGMENT_UNIFORMS_NUM 7
@@ -65,7 +69,7 @@ SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 static uint32_t ffp_vertex_attrib_offsets[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
-static uint32_t ffp_vertex_attrib_vbo[VERTEX_ATTRIBS_NUM] = {0, 0, 0};
+static uint32_t ffp_vertex_attrib_vbo[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 uint8_t ffp_vertex_attrib_state = 0;
 static unsigned short orig_stride[VERTEX_ATTRIBS_NUM];
 static SceGxmAttributeFormat orig_fmt[VERTEX_ATTRIBS_NUM];
@@ -267,7 +271,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	combiner_mask cmb_mask = {.raw = 0};
 #endif
 	mask.alpha_test_mode = alpha_op;
-	mask.has_colors = (ffp_vertex_attrib_state & (1 << 1)) ? GL_TRUE : GL_FALSE;
+	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
 	
 	// Counting number of enabled texture units
@@ -338,7 +342,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 #ifdef DISABLE_TEXTURE_COMBINER
 	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
 #else
-	if (ffp_mask.raw == mask.raw && ffp_combiner_mask == cmb_mask.raw) { // Fixed function pipeline config didn't change
+	if (ffp_mask.raw == mask.raw && ffp_combiner_mask.raw == cmb_mask.raw) { // Fixed function pipeline config didn't change
 #endif
 		ffp_dirty_vert = GL_FALSE;
 		ffp_dirty_frag = GL_FALSE;
@@ -381,15 +385,53 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		if (!is_shark_online)
 			startShaderCompiler();
 
-		// Compiling the new shader
-		char vshader[8192];
-		sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num);
-		uint32_t size = strlen(vshader);
-		SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
-		ffp_vertex_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
-		sceClibMemcpy((void *)ffp_vertex_program, (void *)t, size);
+#ifndef DISABLE_ADVANCED_SHADER_CACHE
+		char fname[256];
+#ifndef DISABLE_TEXTURE_COMBINER
+		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016X_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+#else
+		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-0000000000000000_v.gxp", SHADER_CACHE_MAGIC, mask.raw);
+#endif
+		FILE *f = fopen(fname, "rb");
+		if (f) {
+			// Gathering the precompiled shader from cache
+			fseek(f, 0, SEEK_END);
+			uint32_t size = ftell(f);
+			fseek(f, 0, SEEK_SET);
+			ffp_vertex_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
+			fread(ffp_vertex_program, 1, size, f);
+			fclose(f);
+		} else
+#endif
+		{
+			// Compiling the new shader
+			char vshader[8192];
+			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num);
+			uint32_t size = strlen(vshader);
+			SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
+			ffp_vertex_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
+			sceClibMemcpy((void *)ffp_vertex_program, (void *)t, size);
+			shark_clear_output();
+#ifndef DISABLE_ADVANCED_SHADER_CACHE
+			// Saving compiled shader in filesystem cache
+			f = fopen(fname, "wb");
+			fwrite(ffp_vertex_program, 1, size, f);
+			fclose(f);
+#ifdef DUMP_SHADER_SOURCES
+#ifndef DISABLE_TEXTURE_COMBINER
+			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016X_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+#else
+			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-0000000000000000_v.cg", SHADER_CACHE_MAGIC, mask.raw);
+#endif
+			// Saving shader source in filesystem cache
+			f = fopen(fname, "wb");
+			fwrite(vshader, 1, strlen(vshader), f);
+			fclose(f);
+#endif
+#endif
+		}
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_vertex_program, &ffp_vertex_program_id);
-		shark_clear_output();
+		
 
 		// Checking for existing uniforms in the shader
 		reload_vertex_uniforms();
@@ -413,14 +455,14 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		// Vertex texture coordinates
 		param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord0");
 		attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-		ffp_vertex_num_params++;
 
 		// Vertex colors
 		if (mask.has_colors) {
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
-			attrs[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			attrs[2].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			ffp_vertex_num_params += 2;
+		} else
 			ffp_vertex_num_params++;
-		}
 
 		// Lighting data
 		if (mask.lights_num > 0) {
@@ -478,60 +520,97 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		// Restarting vitaShaRK if we released it before
 		if (!is_shark_online)
 			startShaderCompiler();
-
-		// Compiling the new shader
-		char fshader[8192] = {0};
-		GLboolean unused_mode[5] = {GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE};
-		for (int i = 0; i < mask.num_textures; i++) {
-			char tmp[1024] = {0};
-			switch (texture_units[i].env_mode) {
-			case MODULATE:
-				if (unused_mode[MODULATE]) {
-					sprintf(fshader, "%s\n%s", fshader, modulate_src);
-					unused_mode[MODULATE] = GL_FALSE;
-				}
-				break;
-			case DECAL:
-				if (unused_mode[DECAL]) {
-					sprintf(fshader, "%s\n%s", fshader, decal_src);
-					unused_mode[DECAL] = GL_FALSE;
-				}
-				break;
-			case BLEND:
-				if (unused_mode[BLEND]) {
-					sprintf(fshader, "%s\n%s", fshader, blend_src);
-					unused_mode[BLEND] = GL_FALSE;
-				}
-				break;
-			case ADD:
-				if (unused_mode[ADD]) {
-					sprintf(fshader, "%s\n%s", fshader, add_src);
-					unused_mode[ADD] = GL_FALSE;
-				}
-				break;
-			case REPLACE:
-				if (unused_mode[REPLACE]) {
-					sprintf(fshader, "%s\n%s", fshader, replace_src);
-					unused_mode[REPLACE] = GL_FALSE;
-				}
-				break;
+#ifndef DISABLE_ADVANCED_SHADER_CACHE
+		char fname[256];
 #ifndef DISABLE_TEXTURE_COMBINER
-			case COMBINE:
-				setup_combiner_pass(i, tmp);
-				sprintf(fshader, "%s\n%s", fshader, tmp);
-				break;
+		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016X_f.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+#else
+		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-0000000000000000_f.gxp", SHADER_CACHE_MAGIC, mask.raw);
 #endif
-			default:
-				break;
+		FILE *f = fopen(fname, "rb");
+		if (f) {
+			// Gathering the precompiled shader from cache
+			fseek(f, 0, SEEK_END);
+			uint32_t size = ftell(f);
+			fseek(f, 0, SEEK_SET);
+			ffp_fragment_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
+			fread(ffp_fragment_program, 1, size, f);
+			fclose(f);
+		} else
+#endif
+		{
+			// Compiling the new shader
+			char fshader[8192] = {0};
+			GLboolean unused_mode[5] = {GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE};
+			for (int i = 0; i < mask.num_textures; i++) {
+				char tmp[1024];
+				switch (texture_units[i].env_mode) {
+				case MODULATE:
+					if (unused_mode[MODULATE]) {
+						sprintf(fshader, "%s\n%s", fshader, modulate_src);
+						unused_mode[MODULATE] = GL_FALSE;
+					}
+					break;
+				case DECAL:
+					if (unused_mode[DECAL]) {
+						sprintf(fshader, "%s\n%s", fshader, decal_src);
+						unused_mode[DECAL] = GL_FALSE;
+					}
+					break;
+				case BLEND:
+					if (unused_mode[BLEND]) {
+						sprintf(fshader, "%s\n%s", fshader, blend_src);
+						unused_mode[BLEND] = GL_FALSE;
+					}
+					break;
+				case ADD:
+					if (unused_mode[ADD]) {
+						sprintf(fshader, "%s\n%s", fshader, add_src);
+						unused_mode[ADD] = GL_FALSE;
+					}
+					break;
+				case REPLACE:
+					if (unused_mode[REPLACE]) {
+						sprintf(fshader, "%s\n%s", fshader, replace_src);
+						unused_mode[REPLACE] = GL_FALSE;
+					}
+					break;
+#ifndef DISABLE_TEXTURE_COMBINER
+				case COMBINE:
+					setup_combiner_pass(i, tmp);
+					sprintf(fshader, "%s\n%s", fshader, tmp);
+					break;
+#endif
+				default:
+					break;
+				}
 			}
+			sprintf(fshader, ffp_frag_src, fshader, alpha_op, mask.num_textures, mask.has_colors, mask.fog_mode, mask.tex_env_mode_pass0 != COMBINE ? mask.tex_env_mode_pass0 : 50, mask.tex_env_mode_pass1 != COMBINE ? mask.tex_env_mode_pass1 : 51);
+			uint32_t size = strlen(fshader);
+			SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
+			ffp_fragment_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
+			sceClibMemcpy((void *)ffp_fragment_program, (void *)t, size);
+			shark_clear_output();
+#ifndef DISABLE_ADVANCED_SHADER_CACHE
+			// Saving compiled shader in filesystem cache
+			f = fopen(fname, "wb");
+			fwrite(ffp_fragment_program, 1, size, f);
+			fclose(f);
+#ifdef DUMP_SHADER_SOURCES
+#ifndef DISABLE_TEXTURE_COMBINER
+			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016X_f.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+#else
+			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-0000000000000000_f.cg", SHADER_CACHE_MAGIC, mask.raw);
+#endif
+			// Saving shader source in filesystem cache
+			f = fopen(fname, "wb");
+			fwrite(fshader, 1, strlen(fshader), f);
+			fclose(f);
+#endif
+#endif
 		}
-		sprintf(fshader, ffp_frag_src, fshader, alpha_op, mask.num_textures, mask.has_colors, mask.fog_mode, mask.tex_env_mode_pass0 != COMBINE ? mask.tex_env_mode_pass0 : 50, mask.tex_env_mode_pass1 != COMBINE ? mask.tex_env_mode_pass1 : 51);
-		uint32_t size = strlen(fshader);
-		SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
-		ffp_fragment_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
-		sceClibMemcpy((void *)ffp_fragment_program, (void *)t, size);
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_fragment_program, &ffp_fragment_program_id);
-		shark_clear_output();
+		
 
 		// Checking for existing uniforms in the shader
 		reload_fragment_uniforms();
@@ -720,7 +799,7 @@ void glEnableClientState(GLenum array) {
 		texture_units[client_texture_unit].texcoord_enabled = GL_TRUE;
 		break;
 	case GL_COLOR_ARRAY:
-		ffp_vertex_attrib_state |= (1 << 1);
+		ffp_vertex_attrib_state |= (1 << 2);
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -735,10 +814,10 @@ void glDisableClientState(GLenum array) {
 		ffp_vertex_attrib_state &= ~(1 << 0);
 		break;
 	case GL_TEXTURE_COORD_ARRAY:
-		texture_units[client_texture_unit].texcoord_enabled = GL_TRUE;
+		texture_units[client_texture_unit].texcoord_enabled = GL_FALSE;
 		break;
 	case GL_COLOR_ARRAY:
-		ffp_vertex_attrib_state &= ~(1 << 1);
+		ffp_vertex_attrib_state &= ~(1 << 2);
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)

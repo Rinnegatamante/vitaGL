@@ -174,6 +174,10 @@ void vglUseVramForUSSE(GLboolean usage) {
 }
 
 void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa) {
+#ifndef DISABLE_ADVANCED_SHADER_CACHE
+	sceIoMkdir("ux0:data/shader_cache", 0777);
+#endif	
+	
 	// Setting our display size
 	msaa_mode = msaa;
 	DISPLAY_WIDTH = width;

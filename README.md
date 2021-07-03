@@ -14,6 +14,8 @@ In order to build vitaGL use the following command: `make install`.
 `LOG_ERRORS=1` Errors will be logged with sceClibPrintf.<br>
 `LOG_ERRORS=2` Errors will be logged to ux0:data/vitaGL.log.<br>
 `NO_DEBUG=1` Disables most of the error handling features (Faster CPU code execution but code may be non compliant to all OpenGL standards).<br>
+`NO_TEX_COMBINER=1` Disables texture combiner support (GL_COMBINE) for faster fixed function pipeline code execution.<br>
+`NO_SHADER_CACHE=1` Disables extra shader cache layer on filesystem (ux0:data/shader_cache) for fixed function pipeline.<br>
 `SOFTFP_ABI=1` Compiles the library in soft floating point compatibility mode.<br>
 `DRAW_SPEEDHACK=1` Enables faster code for draw calls. May cause crashes.<br>
 `SHADER_COMPILER_SPEEDHACK=1` Enables faster code for glShaderSource. May cause errors.<br>
