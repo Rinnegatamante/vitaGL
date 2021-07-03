@@ -279,6 +279,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
 		*data = COMBINED_TEXTURE_IMAGE_UNITS_NUM;
 		break;
+	case GL_MAX_TEXTURE_COORDS:
+		*data = TEXTURE_COORDS_NUM;
+		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}

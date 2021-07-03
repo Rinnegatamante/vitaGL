@@ -1,6 +1,6 @@
 const char *ffp_vert_src =
 	R"(#define clip_planes_num %d
-#define has_texture %d
+#define num_textures %d
 #define has_colors %d
 #define lights_num %d
 
@@ -58,8 +58,11 @@ void calculate_light(int i, float3 ecPosition, float3 N) {
 
 void main(
 	float3 position,
-#if has_texture == 1
-	float2 texcoord,
+#if num_textures > 0
+	float2 texcoord0,
+#if num_textures > 1
+	float2 texcoord1,
+#endif
 #endif
 #if has_colors == 1
 	float4 color, // We re-use this for ambient values when lighting is on
@@ -70,8 +73,11 @@ void main(
 	float4 emission,
 	float3 normals,
 #endif
-#if has_texture == 1
+#if num_textures > 0
 	float2 out vTexcoord : TEXCOORD0,
+#if num_textures > 1
+	float2 out vTexcoord2 : TEXCOORD1,
+#endif
 #endif
 	float4 out vPosition : POSITION,
 #if has_colors == 1
@@ -109,8 +115,11 @@ void main(
 	}
 #endif
 
-#if has_texture == 1
-	vTexcoord = mul(texmat, float4(texcoord, 0.f, 1.f)).xy;
+#if num_textures > 0
+	vTexcoord = mul(texmat, float4(texcoord0, 0.f, 1.f)).xy;
+#if num_textures > 1
+	vTexcoord2 = mul(texmat, float4(texcoord1, 0.f, 1.f)).xy;
+#endif
 #endif
 #if has_colors == 1
 #if lights_num > 0

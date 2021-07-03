@@ -28,6 +28,7 @@
 // Internal constants
 #define TEXTURES_NUM 16384 // Available textures
 #define TEXTURE_IMAGE_UNITS_NUM 3 // Available texture image units
+#define TEXTURE_COORDS_NUM 2 // Available texture coords sets for multitexturing with ffp
 #define COMBINED_TEXTURE_IMAGE_UNITS_NUM 16 // Available combined texture image units
 #define COMPRESSED_TEXTURE_FORMATS_NUM 9 // The number of supported texture formats
 #define VERTEX_ATTRIBS_NUM 16 // Available vertex attributes
@@ -41,7 +42,7 @@
 #define FRAME_PURGE_RENDERTARGETS_LIST_SIZE 128 // Number of rendertargets a single frame can hold
 #define FRAME_PURGE_FREQ 5 // Frequency in frames for garbage collection
 #define BUFFERS_NUM 256 // Maximum amount of framebuffers objects usable
-#define FFP_VERTEX_ATTRIBS_NUM 7 // Number of attributes used in ffp shaders
+#define FFP_VERTEX_ATTRIBS_NUM 8 // Number of attributes used in ffp shaders
 #define MEM_ALIGNMENT 16 // Memory alignment
 
 // Internal constants set in bootup phase
@@ -60,6 +61,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #include <psp2/common_dialog.h>
 #include <psp2/display.h>
 #include <psp2/gxm.h>
+#include <psp2/io/stat.h>
 #include <psp2/kernel/clib.h>
 #include <psp2/kernel/processmgr.h>
 #include <psp2/kernel/sysmem.h>
@@ -239,8 +241,28 @@ typedef enum {
 	DECAL,
 	BLEND,
 	ADD,
-	REPLACE
+	REPLACE,
+	SUBTRACT,
+	COMBINE,
+	ADD_SIGNED = 1,
+	INTERPOLATE = 2,
 } texEnvMode;
+
+#ifndef DISABLE_TEXTURE_COMBINER
+typedef enum {
+	TEXTURE,
+	CONSTANT,
+	PRIMARY_COLOR,
+	PREVIOUS
+} texEnvOp;
+
+typedef enum {
+	SRC_COLOR,
+	ONE_MINUS_SRC_COLOR,
+	SRC_ALPHA,
+	ONE_MINUS_SRC_ALPHA
+} texEnvOpMode;
+#endif
 
 // VBO struct
 typedef struct {

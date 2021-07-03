@@ -174,6 +174,10 @@ void vglUseVramForUSSE(GLboolean usage) {
 }
 
 void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa) {
+#ifndef DISABLE_ADVANCED_SHADER_CACHE
+	sceIoMkdir("ux0:data/shader_cache", 0777);
+#endif	
+	
 	// Setting our display size
 	msaa_mode = msaa;
 	DISPLAY_WIDTH = width;
@@ -263,9 +267,11 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	// Init texture units
 	int i, j;
 	for (i = 0; i < COMBINED_TEXTURE_IMAGE_UNITS_NUM; i++) {
+		sceClibMemset(&texture_units[i].env_color.r, 0, sizeof(vector4f));
 		texture_units[i].env_mode = MODULATE;
 		texture_units[i].tex_id = 0;
 		texture_units[i].enabled = GL_FALSE;
+		texture_units[i].texcoord_enabled = GL_FALSE;
 		texture_units[i].texture_stack_counter = 0;
 	}
 
@@ -325,6 +331,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	legacy_vertex_attrib_config[4].offset = sizeof(float) * 13;
 	legacy_vertex_attrib_config[5].offset = sizeof(float) * 17;
 	legacy_vertex_attrib_config[6].offset = sizeof(float) * 21;
+	legacy_vertex_attrib_config[7].offset = sizeof(float) * 24;
 	legacy_vertex_attrib_config[0].componentCount = 3;
 	legacy_vertex_attrib_config[1].componentCount = 2;
 	legacy_vertex_attrib_config[2].componentCount = 4;
@@ -332,6 +339,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	legacy_vertex_attrib_config[4].componentCount = 4;
 	legacy_vertex_attrib_config[5].componentCount = 4;
 	legacy_vertex_attrib_config[6].componentCount = 3;
+	legacy_vertex_attrib_config[7].componentCount = 2;
 	legacy_pool_size = pool_size;
 
 	// Initializing lights configs
@@ -1099,15 +1107,6 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 	restore_polygon_mode(gxm_p);
 }
 
-void glClientActiveTexture(GLenum texture) {
-#ifndef SKIP_ERROR_HANDLING
-	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE15)) {
-		SET_GL_ERROR(GL_INVALID_ENUM)
-	} else
-#endif
-		client_texture_unit = texture - GL_TEXTURE0;
-}
-
 // VGL_EXT_gpu_objects_array extension implementation
 
 void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
@@ -1249,7 +1248,6 @@ void vglVertexPointerMapped(const GLvoid *pointer) {
 	attributes->componentCount = 3;
 	streams->stride = 12;
 
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	vertex_object = (GLvoid *)pointer;
 }
 
@@ -1301,7 +1299,6 @@ void vglTexCoordPointerMapped(const GLvoid *pointer) {
 }
 
 void vglIndexPointerMapped(const GLvoid *pointer) {
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	index_object = (GLvoid *)pointer;
 }
 
@@ -1318,13 +1315,13 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	gl_primitive_to_gxm(mode, gxm_p, count);
 	sceneReset();
 
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
+	texture_unit *tex_unit = &texture_units[0];
 	if (cur_program != 0) {
 		_vglDrawObjects_CustomShadersIMPL(implicit_wvp);
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, index_object, count);
 	} else if (ffp_vertex_attrib_state & (1 << 0)) {
 		reload_ffp_shaders(NULL, NULL);
-		if (ffp_vertex_attrib_state & (1 << 1)) {
+		if (tex_unit->texcoord_enabled) {
 			if (texture_slots[tex_unit->tex_id].status != TEX_VALID)
 				return;
 			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[tex_unit->tex_id].gxm_tex);
