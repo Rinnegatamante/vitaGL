@@ -385,7 +385,7 @@ extern GLboolean is_shark_online; // Current vitaShaRK status
 // Internal fixed function pipeline dirty flags and variables
 extern GLboolean ffp_dirty_frag;
 extern GLboolean ffp_dirty_vert;
-extern uint8_t ffp_vertex_attrib_state;
+extern uint16_t ffp_vertex_attrib_state;
 extern uint8_t ffp_vertex_num_params;
 
 // Internal runtime shader compiler settings
