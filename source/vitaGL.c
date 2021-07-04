@@ -271,7 +271,6 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 		texture_units[i].env_mode = MODULATE;
 		texture_units[i].tex_id = 0;
 		texture_units[i].enabled = GL_FALSE;
-		texture_units[i].texcoord_enabled = GL_FALSE;
 		texture_units[i].texture_stack_counter = 0;
 	}
 
@@ -991,7 +990,6 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 #endif
 	{
 		uint16_t *ptr;
-
 		switch (mode) {
 		case GL_QUADS:
 			ptr = default_quads_idx_ptr + (first / 2) * 3;
@@ -1036,12 +1034,13 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 	GLboolean is_draw_legal = GL_TRUE;
 
 	gpubuffer *gpu_buf = (gpubuffer *)index_array_unit;
+	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
-		is_draw_legal = _glDrawElements_CustomShadersIMPL(index_array_unit ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices, count);
+		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count);
 	else {
 		if (!(ffp_vertex_attrib_state & (1 << 0)))
 			return;
-		_glDrawElements_FixedFunctionIMPL(index_array_unit ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices, count);
+		_glDrawElements_FixedFunctionIMPL(src, count);
 	}
 
 #ifndef SKIP_ERROR_HANDLING
@@ -1055,50 +1054,42 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 			gpu_buf->used = GL_TRUE;
 		} else {
 			int i;
-			uint16_t *dst;
-			uint16_t *src = gpu_buf != NULL ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
-
 			switch (mode) {
 			case GL_QUADS:
-				dst = gpu_alloc_mapped_temp(count * 3 * sizeof(uint16_t));
+				ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(uint16_t));
 				for (i = 0; i < count / 4; i++) {
-					dst[i * 6] = src[i * 4];
-					dst[i * 6 + 1] = src[i * 4 + 1];
-					dst[i * 6 + 2] = src[i * 4 + 3];
-					dst[i * 6 + 3] = src[i * 4 + 1];
-					dst[i * 6 + 4] = src[i * 4 + 2];
-					dst[i * 6 + 5] = src[i * 4 + 3];
+					ptr[i * 6] = src[i * 4];
+					ptr[i * 6 + 1] = src[i * 4 + 1];
+					ptr[i * 6 + 2] = src[i * 4 + 3];
+					ptr[i * 6 + 3] = src[i * 4 + 1];
+					ptr[i * 6 + 4] = src[i * 4 + 2];
+					ptr[i * 6 + 5] = src[i * 4 + 3];
 				}
 				count = (count / 2) * 3;
 				break;
 			case GL_LINE_STRIP:
-				dst = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(uint16_t));
+				ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(uint16_t));
 				for (i = 0; i < count - 1; i++) {
-					dst[i * 2] = src[i];
-					dst[i * 2 + 1] = src[i + 1];
+					ptr[i * 2] = src[i];
+					ptr[i * 2 + 1] = src[i + 1];
 				}
-
 				count = (count - 1) * 2;
 				break;
 			case GL_LINE_LOOP:
-				dst = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t));
+				ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t));
 				for (i = 0; i < count - 1; i++) {
-					dst[i * 2] = src[i];
-					dst[i * 2 + 1] = src[i + 1];
+					ptr[i * 2] = src[i];
+					ptr[i * 2 + 1] = src[i + 1];
 				}
-
-				dst[i * 2] = src[count - 1];
-				dst[i * 2 + 1] = src[0];
-
+				ptr[i * 2] = src[count - 1];
+				ptr[i * 2 + 1] = src[0];
 				count = count * 2;
 				break;
 			default:
-				dst = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
-				sceClibMemcpy(dst, src, count * sizeof(uint16_t));
+				ptr = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
+				sceClibMemcpy(ptr, src, count * sizeof(uint16_t));
 				break;
 			}
-
-			ptr = dst;
 		}
 
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
@@ -1321,7 +1312,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, index_object, count);
 	} else if (ffp_vertex_attrib_state & (1 << 0)) {
 		reload_ffp_shaders(NULL, NULL);
-		if (tex_unit->texcoord_enabled) {
+		if (ffp_vertex_attrib_state & (1 << 1)) {
 			if (texture_slots[tex_unit->tex_id].status != TEX_VALID)
 				return;
 			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[tex_unit->tex_id].gxm_tex);

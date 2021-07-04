@@ -187,14 +187,9 @@ void reload_fragment_uniforms() {
 
 #ifndef DISABLE_TEXTURE_COMBINER
 void setup_combiner_pass(int i, char *dst) {
-	char tmp[2048] = {0};
-	char arg0_rgb[32] = {0};
-	char arg1_rgb[32] = {0};
-	char arg2_rgb[32] = {0};
-	char arg0_a[32] = {0};
-	char arg1_a[32] = {0};
-	char arg2_a[32] = {0};
-	
+	char tmp[2048];
+	char arg0_rgb[32], arg1_rgb[32], arg2_rgb[32];
+	char arg0_a[32], arg1_a[32], arg2_a[32];
 	char *args[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 	int args_count = 0;
 	
@@ -277,7 +272,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	// Counting number of enabled texture units
 	mask.num_textures = 0;
 	for (int i = 0; i < TEXTURE_COORDS_NUM; i++) {
-		if (texture_units[i].enabled && texture_units[i].texcoord_enabled) {
+		if (texture_units[i].enabled && (ffp_vertex_attrib_state & (1 << texcoord_idxs[i]))) {
 			mask.num_textures++;
 			switch (i) {
 			case 0:
@@ -447,7 +442,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	}
 
 	ffp_vertex_num_params = 1;
-	if (attrs) {
+	if (attrs) { // Immediate mode and non-immediate only when #textures == 1
 		// Vertex positions
 		const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(ffp_vertex_program, "position");
 		attrs[0].regIndex = sceGxmProgramParameterGetResourceIndex(param);
@@ -475,7 +470,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "normals");
 			attrs[ffp_vertex_num_params++].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 		}
-	} else {
+	} else { // Non immediate mode
 		// Vertex positions
 		const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(ffp_vertex_program, "position");
 		sceClibMemcpy(&ffp_vertex_attribute[0], &ffp_vertex_attrib_config[0], sizeof(SceGxmVertexAttribute));
@@ -484,19 +479,17 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		ffp_vertex_stream[0].stride = ffp_vertex_stream_config[0].stride;
 		ffp_vertex_stream[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 
-		// Vertex texture coordinates
-		for (int i = 0; i < mask.num_textures; i++) {
-			char param_name[12];
-			sprintf(param_name, "texcoord%d", i);
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, param_name);
-			sceClibMemcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[texcoord_idxs[i]], sizeof(SceGxmVertexAttribute));
-			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[texcoord_idxs[i]].stride;
-			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+		// Vertex texture coordinates (First pass)
+		if (mask.num_textures > 0) {
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord0");
+			sceClibMemcpy(&ffp_vertex_attribute[1], &ffp_vertex_attrib_config[texcoord_idxs[0]], sizeof(SceGxmVertexAttribute));
+			ffp_vertex_attribute[1].streamIndex = 1;
+			ffp_vertex_attribute[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			ffp_vertex_stream[1].stride = ffp_vertex_stream_config[texcoord_idxs[0]].stride;
+			ffp_vertex_stream[1].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 		}
-
+		
 		// Vertex colors
 		if (mask.has_colors) {
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
@@ -507,7 +500,18 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 		}
-
+		
+		// Vertex texture coordinates (Second pass)
+		if (mask.num_textures > 1) {
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord1");
+			sceClibMemcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[texcoord_idxs[1]], sizeof(SceGxmVertexAttribute));
+			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[texcoord_idxs[1]].stride;
+			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+			ffp_vertex_num_params++;
+		}
+		
 		streams = ffp_vertex_stream;
 		attrs = ffp_vertex_attribute;
 	}
@@ -722,7 +726,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
-		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[i].tex_id].gxm_tex);
+		sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[texture_units[i].tex_id].gxm_tex);
 	}
 
 	// Uploading vertex streams
@@ -737,8 +741,9 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 #ifdef DRAW_SPEEDHACK
 				ptrs[i] = (void *)ffp_vertex_attrib_offsets[i];
 #else
-				ptrs[i] = gpu_alloc_mapped_temp(count * ffp_vertex_stream_config[i].stride);
-				sceClibMemcpy(ptrs[i], (void *)ffp_vertex_attrib_offsets[i], count * ffp_vertex_stream_config[i].stride);
+				uint16_t stride = ffp_vertex_stream_config[i].stride;
+				ptrs[i] = gpu_alloc_mapped_temp(count * stride);
+				sceClibMemcpy(ptrs[i], (void *)ffp_vertex_attrib_offsets[i], count * stride);
 #endif
 			}
 			sceGxmSetVertexStream(gxm_context, j++, ptrs[i]);
@@ -759,7 +764,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
 #endif
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
-		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[i].tex_id].gxm_tex);
+		sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[texture_units[i].tex_id].gxm_tex);
 	}
 
 	// Uploading vertex streams
@@ -774,8 +779,9 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
 #ifdef DRAW_SPEEDHACK
 				ptrs[i] = (void *)ffp_vertex_attrib_offsets[i];
 #else
-				ptrs[i] = gpu_alloc_mapped_temp(top_idx * ffp_vertex_stream_config[i].stride);
-				sceClibMemcpy(ptrs[i], (void *)ffp_vertex_attrib_offsets[i], top_idx * ffp_vertex_stream_config[i].stride);
+				uint16_t stride = ffp_vertex_stream_config[i].stride;
+				ptrs[i] = gpu_alloc_mapped_temp(top_idx * stride);
+				sceClibMemcpy(ptrs[i], (void *)ffp_vertex_attrib_offsets[i], top_idx * stride);
 #endif
 			}
 			sceGxmSetVertexStream(gxm_context, j++, ptrs[i]);
@@ -797,7 +803,7 @@ void glEnableClientState(GLenum array) {
 		ffp_vertex_attrib_state |= (1 << 0);
 		break;
 	case GL_TEXTURE_COORD_ARRAY:
-		texture_units[client_texture_unit].texcoord_enabled = GL_TRUE;
+		ffp_vertex_attrib_state |= (1 << texcoord_idxs[client_texture_unit]);
 		break;
 	case GL_COLOR_ARRAY:
 		ffp_vertex_attrib_state |= (1 << 2);
@@ -815,7 +821,7 @@ void glDisableClientState(GLenum array) {
 		ffp_vertex_attrib_state &= ~(1 << 0);
 		break;
 	case GL_TEXTURE_COORD_ARRAY:
-		texture_units[client_texture_unit].texcoord_enabled = GL_FALSE;
+		ffp_vertex_attrib_state &= ~(1 << texcoord_idxs[client_texture_unit]);
 		break;
 	case GL_COLOR_ARRAY:
 		ffp_vertex_attrib_state &= ~(1 << 2);

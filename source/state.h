@@ -103,7 +103,6 @@ typedef union combinerState{
 // Texture unit struct
 typedef struct {
 	GLboolean enabled;
-	GLboolean texcoord_enabled;
 	matrix4x4 texture_matrix_stack[GENERIC_STACK_DEPTH];
 	uint8_t texture_stack_counter;
 	int env_mode;
