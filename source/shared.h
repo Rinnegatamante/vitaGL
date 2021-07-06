@@ -447,7 +447,7 @@ extern matrix4x4 normal_matrix; // Normal Matrix
 extern GLboolean mvp_modified; // Check if ModelViewProjection matrix needs to be recreated
 
 extern GLuint cur_program; // Current in use custom program (0 = No custom program)
-extern GLboolean vblank; // Current setting for VSync
+extern uint32_t vsync_interval; // Current setting for VSync
 extern uint32_t vertex_array_unit; // Current in-use vertex array buffer unit
 
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)

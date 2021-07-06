@@ -70,7 +70,7 @@ float fullscreen_x_scale = 480.0f;
 float fullscreen_y_scale = -272.0f;
 float fullscreen_z_scale = 0.5f;
 
-GLboolean vblank = GL_TRUE; // Current setting for VSync
+uint32_t vsync_interval = 1; // Current setting for VSync
 
 static const SceGxmProgram *const gxm_program_clear_v = (SceGxmProgram *)&clear_v;
 static const SceGxmProgram *const gxm_program_clear_f = (SceGxmProgram *)&clear_f;
@@ -470,17 +470,7 @@ void vglEnd(void) {
 }
 
 void vglWaitVblankStart(GLboolean enable) {
-	vblank = enable;
-}
-
-// EGL implementation
-
-EGLBoolean eglSwapInterval(EGLDisplay display, EGLint interval) {
-	vblank = interval;
-}
-
-EGLBoolean eglSwapBuffers(EGLDisplay display, EGLSurface surface) {
-	vglSwapBuffers(GL_FALSE);
+	vsync_interval = enable ? 1 : 0;
 }
 
 // openGL implementation

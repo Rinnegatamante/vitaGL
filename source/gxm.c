@@ -193,8 +193,8 @@ static void display_queue_callback(const void *callbackData) {
 	sceDisplaySetFrameBuf(&display_fb, SCE_DISPLAY_SETBUF_NEXTFRAME);
 
 	// Performing VSync if enabled
-	if (vblank)
-		sceDisplayWaitVblankStart();
+	if (vsync_interval)
+		sceDisplayWaitVblankStartMulti(vsync_interval);
 }
 
 // Garbage collector
@@ -526,8 +526,8 @@ void waitRenderingDone(void) {
 void sceneEnd(void) {
 	// Ends current gxm scene
 	sceGxmEndScene(gxm_context, NULL, NULL);
-	if (system_app_mode && vblank)
-		sceDisplayWaitVblankStart();
+	if (system_app_mode && vsync_interval)
+		sceDisplayWaitVblankStartMulti(vsync_interval);
 }
 
 void sceneReset(void) {
@@ -551,7 +551,7 @@ void sceneReset(void) {
 		if (is_rendering_display) { // Default framebuffer is used
 			if (system_app_mode) {
 				sceSharedFbBegin(shared_fb, &shared_fb_info);
-				shared_fb_info.vsync = vblank;
+				shared_fb_info.vsync = vsync_interval;
 				gxm_back_buffer_index = (shared_fb_info.index + 1) % 2;
 			}
 #ifdef LOG_ERRORS

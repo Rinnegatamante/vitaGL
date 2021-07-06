@@ -188,7 +188,7 @@ void setup_combiner_pass(int i, char *dst) {
 	char arg0_rgb[32], arg1_rgb[32], arg2_rgb[32];
 	char arg0_a[32], arg1_a[32], arg2_a[32];
 	char *args[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-	int args_count = 0;
+	int args_count;
 	
 	if (texture_units[i].combiner.rgb_func == INTERPOLATE) { // Arg0, Arg2, Arg1, Arg2
 		sprintf(arg2_rgb, op_modes[texture_units[i].combiner.op_mode_rgb_2], operands[texture_units[i].combiner.op_rgb_2]);
