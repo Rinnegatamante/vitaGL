@@ -117,6 +117,7 @@ typedef struct {
 	SceGxmRenderTarget *target;
 	SceGxmColorSurface colorbuffer;
 	SceGxmDepthStencilSurface depthbuffer;
+	SceGxmDepthStencilSurface *depthbuffer_ptr;
 	void *depth_buffer_addr;
 	void *stencil_buffer_addr;
 	int width;
@@ -126,6 +127,15 @@ typedef struct {
 	uint32_t data_type;
 	texture *tex;
 } framebuffer;
+
+// Renderbuffer struct
+typedef struct {
+	uint8_t active;
+	SceGxmDepthStencilSurface depthbuffer;
+	SceGxmDepthStencilSurface *depthbuffer_ptr;
+	void *depth_buffer_addr;
+	void *stencil_buffer_addr;
+} renderbuffer;
 
 // Blending
 extern GLboolean blend_state; // Current state for GL_BLEND

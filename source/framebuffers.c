@@ -27,9 +27,11 @@ extern void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color
 extern unsigned int gxm_back_buffer_index; // Display back buffer id
 
 static framebuffer framebuffers[BUFFERS_NUM]; // Framebuffers array
+static renderbuffer renderbuffers[BUFFERS_NUM]; // Renderbuffers array
 
 framebuffer *active_read_fb = NULL; // Current readback framebuffer in use
 framebuffer *active_write_fb = NULL; // Current write framebuffer in use
+renderbuffer *active_rb = NULL; // Current renderbuffer in use
 
 uint32_t get_color_from_texture(uint32_t type) {
 	uint32_t res = 0;
@@ -76,9 +78,29 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 			ids[j++] = (GLuint)&framebuffers[i];
 			framebuffers[i].active = GL_TRUE;
 			framebuffers[i].depth_buffer_addr = NULL;
+			framebuffers[i].depthbuffer_ptr = NULL;
 			framebuffers[i].stencil_buffer_addr = NULL;
 			framebuffers[i].target = NULL;
 			framebuffers[i].tex = NULL;
+		}
+		if (j >= n)
+			break;
+	}
+}
+
+void glGenRenderbuffers(GLsizei n, GLuint *ids) {
+		int i = 0, j = 0;
+#ifndef SKIP_ERROR_HANDLING
+	if (n < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+	for (i = 0; i < BUFFERS_NUM; i++) {
+		if (!renderbuffers[i].active) {
+			ids[j++] = (GLuint)&renderbuffers[i];
+			renderbuffers[i].active = GL_TRUE;
+			renderbuffers[i].depth_buffer_addr = NULL;
+			renderbuffers[i].stencil_buffer_addr = NULL;
 		}
 		if (j >= n)
 			break;
@@ -118,6 +140,33 @@ void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
 	}
 }
 
+void glDeleteRenderbuffers(GLsizei n, const GLuint *ids) {
+#ifndef SKIP_ERROR_HANDLING
+	if (n < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+	while (n > 0) {
+		renderbuffer *fb = (renderbuffer *)ids[--n];
+		if (fb) {
+			// Check if the framebuffer is currently bound
+			if (active_read_fb && active_read_fb->depthbuffer_ptr == &fb->depthbuffer)
+				active_read_fb->depthbuffer_ptr = &active_read_fb->depthbuffer;
+			if (active_write_fb && active_write_fb->depthbuffer_ptr == &fb->depthbuffer)
+				active_write_fb->depthbuffer_ptr = &active_write_fb->depthbuffer;
+			if (active_rb == fb)
+				active_rb = NULL;
+
+			fb->active = GL_FALSE;
+			if (fb->depth_buffer_addr) {
+				markAsDirty(fb->depth_buffer_addr);
+				if (fb->stencil_buffer_addr)
+					markAsDirty(fb->stencil_buffer_addr);
+			}
+		}
+	}
+}
+
 void glBindFramebuffer(GLenum target, GLuint fb) {
 	switch (target) {
 	case GL_DRAW_FRAMEBUFFER:
@@ -132,6 +181,79 @@ void glBindFramebuffer(GLenum target, GLuint fb) {
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
+}
+
+void glBindRenderbuffer(GLenum target, GLuint rb) {
+	switch (target) {
+	case GL_RENDERBUFFER:
+		active_rb = (renderbuffer *)rb;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+}
+
+void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer) {
+#ifndef SKIP_ERROR_HANDLING
+	if (renderbuffertarget != GL_RENDERBUFFER)
+		SET_GL_ERROR(GL_INVALID_ENUM)
+#endif
+
+	framebuffer *fb;
+	switch (target) {
+	case GL_FRAMEBUFFER:
+	case GL_DRAW_FRAMEBUFFER:
+		fb = active_write_fb;
+		break;
+	case GL_READ_FRAMEBUFFER:
+		fb = active_read_fb;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+	
+	switch (attachment) {
+	case GL_DEPTH_STENCIL_ATTACHMENT:
+	case GL_DEPTH_ATTACHMENT:
+		if (active_rb)
+			fb->depthbuffer_ptr = active_rb->depthbuffer_ptr;
+		else
+			fb->depthbuffer_ptr = &fb->depthbuffer; // Resetting to temporary depth buffer
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+}
+
+void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, GLsizei height) {
+#ifndef SKIP_ERROR_HANDLING
+	if (target != GL_RENDERBUFFER)
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	if (width < 0 || height < 0)
+		SET_GL_ERROR(GL_INVALID_VALUE)
+#endif
+	
+	if (active_rb->depth_buffer_addr) {
+		markAsDirty(active_rb->depth_buffer_addr);
+		if (active_rb->stencil_buffer_addr)
+			markAsDirty(active_rb->stencil_buffer_addr);
+	}
+	
+	// FIXME: We use mask update bit for scissoring, would be cool to find an alternative to support more formats
+	switch (internalformat) {
+	case GL_DEPTH32F_STENCIL8:
+		initDepthStencilBuffer(width, height, &active_rb->depthbuffer, &active_rb->depth_buffer_addr, &active_rb->stencil_buffer_addr);
+		break;
+	case GL_DEPTH_COMPONENT32F:
+		initDepthStencilBuffer(width, height, &active_rb->depthbuffer, &active_rb->depth_buffer_addr, NULL);
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+		break;
+	}
+
+	sceGxmDepthStencilSurfaceSetForceStoreMode(&active_rb->depthbuffer, SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED);
 }
 
 void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint tex_id, GLint level) {
@@ -170,15 +292,12 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
-
-		// Dirtying depth/stencil buffers for already attached textures
-		if (fb->tex) { // FIXME: This should be moved elsewhere once renderbuffers are implemented
+		// Clearing previously attached texture
+		if (fb->tex) {
 			fb->tex->ref_counter--;
 			if (fb->tex->dirty && fb->tex->ref_counter == 0) {
 				gpu_free_texture(fb->tex);
 			}
-			markAsDirty(fb->depth_buffer_addr);
-			markAsDirty(fb->stencil_buffer_addr);
 		}
 
 		// Detaching attached texture if passed texture ID is 0
@@ -204,8 +323,12 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
 			fb->width, fb->height, ALIGN(fb->width, 8), fb->data);
 
-		// Allocating depth and stencil buffer (FIXME: This probably shouldn't be here)
-		initDepthStencilBuffer(fb->width, fb->height, &fb->depthbuffer, &fb->depth_buffer_addr, &fb->stencil_buffer_addr);
+		// Allocating temporary depth and stencil buffers (if necessary) to ensure scissoring works
+		if (!fb->depth_buffer_addr) {
+			initDepthStencilBuffer(fb->width, fb->height, &fb->depthbuffer, &fb->depth_buffer_addr, &fb->stencil_buffer_addr);
+			if (!fb->depthbuffer_ptr)
+				fb->depthbuffer_ptr = &fb->depthbuffer;
+		}
 
 		break;
 	default:

@@ -249,6 +249,7 @@ extern "C" {
 #define GL_BGRA                                      0x80E1
 #define GL_COLOR_INDEX8_EXT                          0x80E5
 #define GL_CLAMP_TO_EDGE                             0x812F
+#define GL_DEPTH_STENCIL_ATTACHMENT                  0x821A
 #define GL_MAJOR_VERSION                             0x821B
 #define GL_MINOR_VERSION                             0x821C
 #define GL_NUM_EXTENSIONS                            0x821D
@@ -370,9 +371,13 @@ extern "C" {
 #define GL_DRAW_FRAMEBUFFER                          0x8CA9
 #define GL_READ_FRAMEBUFFER_BINDING                  0x8CAA
 #define GL_COLOR_ATTACHMENT0                         0x8CE0
+#define GL_DEPTH_ATTACHMENT                          0x8D00
+#define GL_DEPTH_COMPONENT32F                        0x8DAB
+#define GL_DEPTH32F_STENCIL8                         0x8DAC
 #define GL_FRAMEBUFFER_COMPLETE                      0x8CD5
 #define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT 0x8CD7
 #define GL_FRAMEBUFFER                               0x8D40
+#define GL_RENDERBUFFER                              0x8D41
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS          0x8B4D
 #define GL_SHADER_BINARY_FORMATS                     0x8DF8
 #define GL_NUM_SHADER_BINARY_FORMATS                 0x8DF9
@@ -409,6 +414,7 @@ void glBegin(GLenum mode);
 void glBindAttribLocation(GLuint program, GLuint index, const GLchar *name);
 void glBindBuffer(GLenum target, GLuint buffer);
 void glBindFramebuffer(GLenum target, GLuint framebuffer);
+void glBindRenderbuffer(GLenum target, GLuint renderbuffer);
 void glBindTexture(GLenum target, GLuint texture);
 void glBlendEquation(GLenum mode);
 void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha);
@@ -442,8 +448,9 @@ GLuint glCreateProgram(void);
 GLuint glCreateShader(GLenum shaderType);
 void glCullFace(GLenum mode);
 void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers);
-void glDeleteFramebuffers(GLsizei n, const GLuint *ids);
+void glDeleteFramebuffers(GLsizei n, const GLuint *framebuffers);
 void glDeleteProgram(GLuint prog);
+void glDeleteRenderbuffers(GLsizei n, const GLuint *renderbuffers);
 void glDeleteShader(GLuint shad);
 void glDeleteTextures(GLsizei n, const GLuint *textures);
 void glDepthFunc(GLenum func);
@@ -464,13 +471,15 @@ void glFlush(void);
 void glFogf(GLenum pname, GLfloat param);
 void glFogfv(GLenum pname, const GLfloat *params);
 void glFogi(GLenum pname, const GLint param);
+void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
 void glFramebufferTexture(GLenum target, GLenum attachment, GLuint texture, GLint level);
 void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 void glFrontFace(GLenum mode);
 void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
 void glGenBuffers(GLsizei n, GLuint *buffers);
 void glGenerateMipmap(GLenum target);
-void glGenFramebuffers(GLsizei n, GLuint *ids);
+void glGenFramebuffers(GLsizei n, GLuint *framebuffers);
+void glGenRenderbuffers(GLsizei n, GLuint *renderbuffers);
 void glGenTextures(GLsizei n, GLuint *textures);
 void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
 void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
@@ -513,6 +522,7 @@ void glPopMatrix(void);
 void glPushMatrix(void);
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data);
 void glReleaseShaderCompiler(void);
+void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);

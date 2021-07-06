@@ -439,16 +439,17 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 		depth_stencil_samples *= 2;
 	else if (msaa_mode == SCE_GXM_MULTISAMPLE_4X)
 		depth_stencil_samples *= 4;
-
+	
 	// Allocating depth surface
 	*depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, VGL_MEM_VRAM);
 
 	// Allocating stencil surface
-	*stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, VGL_MEM_VRAM);
-
+	if (stencil_buffer)
+		*stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, VGL_MEM_VRAM);
+	
 	// Initializing depth and stencil surfaces
 	sceGxmDepthStencilSurfaceInit(surface,
-		SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M_S8,
+		stencil_buffer ? SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M_S8 : SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M,
 		SCE_GXM_DEPTH_STENCIL_SURFACE_LINEAR,
 		msaa_mode == SCE_GXM_MULTISAMPLE_4X ? depth_stencil_width * 2 : depth_stencil_width,
 		*depth_buffer,
@@ -601,7 +602,7 @@ void sceneReset(void) {
 #endif
 					NULL, NULL, NULL,
 					&active_write_fb->colorbuffer,
-					&active_write_fb->depthbuffer);
+					active_write_fb->depthbuffer_ptr);
 #ifdef LOG_ERRORS
 			if (r)
 				vgl_log("Scene reset failed due to sceGxmBeginScene erroring (%s) on framebuffer 0x%08X.\n", get_gxm_error_literal(r), active_write_fb);

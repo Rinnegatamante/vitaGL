@@ -94,5 +94,8 @@ EGLint eglGetError(void) {
 }
 
 void (*eglGetProcAddress(char const *procname))(void) {
+#ifdef EGL_PEDANTIC
+	egl_error = EGL_SUCCESS;
+#endif
 	return vglGetProcAddress(procname);
 }

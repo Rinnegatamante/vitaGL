@@ -424,7 +424,6 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		}
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_vertex_program, &ffp_vertex_program_id);
 		
-
 		// Checking for existing uniforms in the shader
 		reload_vertex_uniforms();
 
