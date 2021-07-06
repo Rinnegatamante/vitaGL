@@ -516,8 +516,12 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 	for (j = 0; j < n; j++) {
 		if (gl_buffers[j]) {
 			gpubuffer *gpu_buf = (gpubuffer *)gl_buffers[j];
-			if (gpu_buf->ptr != NULL)
-				markAsDirty(gpu_buf->ptr);
+			if (gpu_buf->ptr) {
+				if (gpu_buf->used)
+					markAsDirty(gpu_buf->ptr);
+				else
+					vgl_free(gpu_buf->ptr);
+			}
 			vgl_free(gpu_buf);
 		}
 	}
