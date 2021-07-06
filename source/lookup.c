@@ -218,6 +218,7 @@ static const struct {
 	{"vglForceAlloc", (void *)vglForceAlloc},
 	{"vglFree", (void *)vglFree},
 	{"vglGetGxmTexture", (void *)vglGetGxmTexture},
+	{"vglGetProcAddress", (void *)vglGetProcAddress},
 	{"vglGetTexDataPointer", (void *)vglGetTexDataPointer},
 	{"vglHasRuntimeShaderCompiler", (void *)vglHasRuntimeShaderCompiler},
 	{"vglInit", (void *)vglInit},
@@ -244,6 +245,7 @@ static const struct {
 	// *egl
 	{"eglBindAPI", (void *)eglBindAPI},
 	{"eglGetError", (void *)eglGetError},
+	{"eglGetProcAddress", (void *)eglGetProcAddress},
 	{"eglQueryAPI", (void *)eglQueryAPI},
 	{"eglSwapInterval", (void *)eglSwapInterval},
 	{"eglSwapBuffers", (void *)eglSwapBuffers},

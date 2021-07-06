@@ -92,3 +92,7 @@ EGLint eglGetError(void) {
 	egl_error = EGL_SUCCESS;
 	return ret;
 }
+
+void (*eglGetProcAddress(char const *procname))(void) {
+	return vglGetProcAddress(procname);
+}

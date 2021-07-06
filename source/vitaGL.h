@@ -577,6 +577,7 @@ void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFa
 // egl*
 EGLBoolean eglBindAPI(EGLenum api);
 EGLint eglGetError(void);
+void (*eglGetProcAddress(char const *procname))(void);
 EGLenum eglQueryAPI(void);
 EGLBoolean eglSwapInterval(EGLDisplay display, EGLint interval);
 EGLBoolean eglSwapBuffers(EGLDisplay display, EGLSurface surface);
