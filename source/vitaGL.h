@@ -50,11 +50,19 @@ extern "C" {
 
 #define EGLBoolean    uint8_t
 #define EGLDisplay    void*
+#define EGLenum       uint32_t
 #define EGLSurface    void*
+#define EGLContext    void*
 #define EGLint        int32_t
+
+#define EGL_NO_CONTEXT NULL
+#define EGL_NO_DISPLAY NULL
+#define EGL_NO_SURFACE NULL
 
 #define GL_FALSE                              0
 #define GL_TRUE                               1
+#define EGL_FALSE                             0
+#define EGL_TRUE                              1
 
 #define GL_NO_ERROR                           0
 
@@ -375,6 +383,11 @@ extern "C" {
 #define GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG          0x9137
 #define GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG          0x9138
 
+#define EGL_SUCCESS                                  0x3000
+#define EGL_BAD_PARAMETER                            0x300C
+#define EGL_OPENGL_ES_API                            0x30A0
+#define EGL_OPENGL_API                               0x30A2
+
 #define GL_MAX_TEXTURE_LOD_BIAS               31
 
 // Aliases
@@ -562,6 +575,9 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
 
 // egl*
+EGLBoolean eglBindAPI(EGLenum api);
+EGLint eglGetError(void);
+EGLenum eglQueryAPI(void);
 EGLBoolean eglSwapInterval(EGLDisplay display, EGLint interval);
 EGLBoolean eglSwapBuffers(EGLDisplay display, EGLSurface surface);
 

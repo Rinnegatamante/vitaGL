@@ -242,6 +242,9 @@ static const struct {
 	{"vglUseExtraMem", (void *)vglUseExtraMem},
 	{"vglWaitVblankStart", (void *)vglWaitVblankStart},
 	// *egl
+	{"eglBindAPI", (void *)eglBindAPI},
+	{"eglGetError", (void *)eglGetError},
+	{"eglQueryAPI", (void *)eglQueryAPI},
 	{"eglSwapInterval", (void *)eglSwapInterval},
 	{"eglSwapBuffers", (void *)eglSwapBuffers},
 };
