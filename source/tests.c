@@ -212,7 +212,7 @@ GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new) {
 
 void update_alpha_test_settings() {
 	ffp_dirty_frag = GL_TRUE;
-	ffp_dirty_frag_unifs = GL_TRUE;
+	dirty_frag_unifs = GL_TRUE;
 
 	// Translating openGL alpha test operation to internal one
 	if (alpha_test_state) {
@@ -323,9 +323,9 @@ void update_scissor_test() {
 
 	// Restoring original stencil test settings
 	change_stencil_settings();
-	
-	ffp_dirty_frag_unifs = GL_TRUE;
-	ffp_dirty_vert_unifs = GL_TRUE;
+
+	dirty_frag_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void resetScissorTestRegion(void) {

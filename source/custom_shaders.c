@@ -70,7 +70,8 @@ typedef struct uniform {
 	void *chain;
 	float *data;
 	uint32_t size;
-	GLboolean is_alias;
+	GLboolean is_fragment;
+	GLboolean is_vertex;
 } uniform;
 
 // Generic shader struct
@@ -345,15 +346,16 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 
 	// Uploading both fragment and vertex uniforms data
 	void *buffer;
-	if (p->vert_uniforms) {
+	if (p->vert_uniforms && dirty_vert_unifs) {
 		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &buffer);
 		uniform *u = p->vert_uniforms;
 		while (u) {
 			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
+		dirty_vert_unifs = GL_FALSE;
 	}
-	if (p->frag_uniforms) {
+	if (p->frag_uniforms && dirty_frag_unifs) {
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
@@ -363,6 +365,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
+		dirty_frag_unifs = GL_FALSE;
 	}
 
 	// Uploading vertex streams
@@ -509,15 +512,16 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 
 	// Uploading both fragment and vertex uniforms data
 	void *buffer;
-	if (p->vert_uniforms) {
+	if (p->vert_uniforms && dirty_vert_unifs) {
 		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &buffer);
 		uniform *u = p->vert_uniforms;
 		while (u) {
 			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
+		dirty_vert_unifs = GL_FALSE;
 	}
-	if (p->frag_uniforms) {
+	if (p->frag_uniforms && dirty_frag_unifs) {
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
@@ -527,6 +531,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
+		dirty_frag_unifs = GL_FALSE;
 	}
 
 	// Uploading vertex streams
@@ -569,7 +574,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 
 	// Uploading both fragment and vertex uniforms data
 	void *vbuffer, *fbuffer;
-	if (p->vert_uniforms) {
+	if (p->vert_uniforms && dirty_vert_unifs) {
 		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
 		uniform *u = p->vert_uniforms;
 		while (u) {
@@ -583,14 +588,16 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 				sceGxmSetUniformDataF(vbuffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
+		dirty_vert_unifs = GL_FALSE;
 	}
-	if (p->frag_uniforms) {
+	if (p->frag_uniforms && dirty_frag_unifs) {
 		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
 			sceGxmSetUniformDataF(fbuffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
+		dirty_frag_unifs = GL_FALSE;
 	}
 
 	// Uploading textures on relative texture units
@@ -889,7 +896,7 @@ void glDeleteProgram(GLuint prog) {
 		while (p->vert_uniforms) {
 			uniform *old = p->vert_uniforms;
 			p->vert_uniforms = (uniform *)p->vert_uniforms->chain;
-			if (!old->is_alias)
+			if (!(old->is_fragment && old->is_vertex))
 				vgl_free(old->data);
 			vgl_free(old);
 		}
@@ -1015,6 +1022,8 @@ void glLinkProgram(GLuint progr) {
 			uniform *u = (uniform *)vgl_malloc(sizeof(uniform), VGL_MEM_EXTERNAL);
 			u->chain = p->frag_uniforms;
 			u->ptr = param;
+			u->is_vertex = GL_FALSE;
+			u->is_fragment = GL_TRUE;
 			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
 			u->data = (float *)vgl_malloc(u->size * sizeof(float), VGL_MEM_EXTERNAL);
 			sceClibMemset(u->data, 0, u->size * sizeof(float));
@@ -1034,12 +1043,13 @@ void glLinkProgram(GLuint progr) {
 			uniform *u = (uniform *)vgl_malloc(sizeof(uniform), VGL_MEM_EXTERNAL);
 			u->chain = p->vert_uniforms;
 			u->ptr = param;
+			u->is_vertex = GL_TRUE;
 			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
 			u->data = getUniformAliasDataPtr(p->frag_uniforms, sceGxmProgramParameterGetName(param), u->size);
 			if (u->data) {
-				u->is_alias = GL_TRUE;
+				u->is_fragment = GL_TRUE;
 			} else {
-				u->is_alias = GL_FALSE;
+				u->is_fragment = GL_FALSE;
 				u->data = (float *)vgl_malloc(u->size * sizeof(float), VGL_MEM_EXTERNAL);
 				sceClibMemset(u->data, 0, u->size * sizeof(float));
 			}
@@ -1075,6 +1085,8 @@ void glLinkProgram(GLuint progr) {
 void glUseProgram(GLuint prog) {
 	// Setting current custom program to passed program
 	cur_program = prog;
+	dirty_frag_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
@@ -1113,6 +1125,11 @@ void glUniform1i(GLint location, GLint v0) {
 
 	// Setting passed value to desired uniform
 	u->data[0] = (float)v0;
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
@@ -1128,6 +1145,11 @@ void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 	for (i = 0; i < count; i++) {
 		u->data[i] = (float)value[i];
 	}
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform1f(GLint location, GLfloat v0) {
@@ -1140,6 +1162,11 @@ void glUniform1f(GLint location, GLfloat v0) {
 
 	// Setting passed value to desired uniform
 	u->data[0] = v0;
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
@@ -1152,6 +1179,11 @@ void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * sizeof(float));
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform2i(GLint location, GLint v0, GLint v1) {
@@ -1165,6 +1197,11 @@ void glUniform2i(GLint location, GLint v0, GLint v1) {
 	// Setting passed value to desired uniform
 	u->data[0] = (float)v0;
 	u->data[1] = (float)v1;
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
@@ -1180,6 +1217,11 @@ void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 	for (i = 0; i < count * 2; i++) {
 		u->data[i] = (float)value[i];
 	}
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
@@ -1193,6 +1235,11 @@ void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
 	// Setting passed value to desired uniform
 	u->data[0] = v0;
 	u->data[1] = v1;
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
@@ -1205,6 +1252,11 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * 2 * sizeof(float));
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) {
@@ -1219,6 +1271,11 @@ void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) {
 	u->data[0] = (float)v0;
 	u->data[1] = (float)v1;
 	u->data[2] = (float)v2;
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
@@ -1234,6 +1291,11 @@ void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
 	for (i = 0; i < count * 3; i++) {
 		u->data[i] = (float)value[i];
 	}
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
@@ -1248,6 +1310,11 @@ void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
 	u->data[0] = v0;
 	u->data[1] = v1;
 	u->data[2] = v2;
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
@@ -1260,6 +1327,11 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * 3 * sizeof(float));
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) {
@@ -1275,6 +1347,11 @@ void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) {
 	u->data[1] = (float)v1;
 	u->data[2] = (float)v2;
 	u->data[3] = (float)v3;
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
@@ -1290,6 +1367,11 @@ void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 	for (i = 0; i < count * 4; i++) {
 		u->data[i] = (float)value[i];
 	}
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
@@ -1305,6 +1387,11 @@ void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
 	u->data[1] = v1;
 	u->data[2] = v2;
 	u->data[3] = v3;
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
@@ -1317,6 +1404,11 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * 4 * sizeof(float));
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
@@ -1329,6 +1421,11 @@ void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, cons
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * 4 * sizeof(float));
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
@@ -1341,6 +1438,11 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, cons
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * 9 * sizeof(float));
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
@@ -1353,6 +1455,11 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * 16 * sizeof(float));
+	
+	if (u->is_vertex)
+		dirty_vert_unifs = GL_TRUE;
+	if (u->is_fragment)
+		dirty_frag_unifs = GL_TRUE;
 }
 
 void glEnableVertexAttribArray(GLuint index) {
