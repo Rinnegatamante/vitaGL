@@ -147,6 +147,8 @@ SceGxmVertexProgram *ffp_vertex_program_patched; // Patched vertex program for t
 SceGxmFragmentProgram *ffp_fragment_program_patched; // Patched fragment program for the fixed function pipeline implementation
 GLboolean ffp_dirty_frag = GL_TRUE;
 GLboolean ffp_dirty_vert = GL_TRUE;
+GLboolean ffp_dirty_frag_unifs = GL_TRUE;
+GLboolean ffp_dirty_vert_unifs = GL_TRUE;
 blend_config ffp_blend_info;
 shader_mask ffp_mask = {.raw = 0};
 #ifndef DISABLE_TEXTURE_COMBINER
@@ -363,6 +365,8 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 				break;
 			}
 		}
+		ffp_dirty_frag_unifs = GL_TRUE;
+		ffp_dirty_vert_unifs = GL_TRUE;
 		ffp_mask.raw = mask.raw;
 #ifndef DISABLE_TEXTURE_COMBINER
 		ffp_combiner_mask.raw = cmb_mask.raw;
@@ -664,56 +668,63 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		}
 
 		mvp_modified = GL_FALSE;
+		ffp_dirty_vert_unifs = GL_TRUE;
 	}
 
 	// Uploading fragment shader uniforms
 	void *buffer;
-	sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
-	if (ffp_fragment_params[ALPHA_CUT_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_CUT_UNIF], 0, 1, &alpha_ref);
-	if (ffp_fragment_params[FOG_COLOR_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_COLOR_UNIF], 0, 4, &fog_color.r);
-	if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) {
-		for (int i = 0; i < mask.num_textures; i++) {
-			sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 4 * i, 4, (const float *)&texture_units[i].env_color.r);
-		}
-	}
-	if (ffp_fragment_params[TINT_COLOR_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_fragment_params[TINT_COLOR_UNIF], 0, 4, &current_vtx.clr.r);
-	if (ffp_fragment_params[FOG_NEAR_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_NEAR_UNIF], 0, 1, (const float *)&fog_near);
-	if (ffp_fragment_params[FOG_FAR_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_FAR_UNIF], 0, 1, (const float *)&fog_far);
-	if (ffp_fragment_params[FOG_DENSITY_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_DENSITY_UNIF], 0, 1, (const float *)&fog_density);
-
-	// Uploading vertex shader uniforms
-	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &buffer);
-	if (ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF], 0, 4 * mask.clip_planes_num, &clip_planes[0].x);
-	if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
-	sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
-	if (ffp_vertex_params[TEX_MATRIX_UNIF])
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
-	sceGxmSetUniformDataF(buffer, ffp_vertex_params[POINT_SIZE_UNIF], 0, 1, &point_size);
-	if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) {
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[NORMAL_MATRIX_UNIF], 0, 16, (const float *)normal_matrix);
-		if (lights_aligned) {
-			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_AMBIENTS_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][0]);
-			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_DIFFUSES_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][1]);
-			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_SPECULARS_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][2]);
-			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_POSITIONS_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][3]);
-			sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_ATTENUATIONS_UNIF], 0, 3 * mask.lights_num, (const float *)light_vars[0][4]);
-		} else {
-			for (int i = 0; i < mask.lights_num; i++) {
-				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_AMBIENTS_UNIF], 4 * i, 4, (const float *)light_vars[i][0]);
-				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_DIFFUSES_UNIF], 4 * i, 4, (const float *)light_vars[i][1]);
-				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_SPECULARS_UNIF], 4 * i, 4, (const float *)light_vars[i][2]);
-				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_POSITIONS_UNIF], 4 * i, 4, (const float *)light_vars[i][3]);
-				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_ATTENUATIONS_UNIF], 3 * i, 3, (const float *)light_vars[i][4]);
+	if (ffp_dirty_frag_unifs) {
+		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
+		if (ffp_fragment_params[ALPHA_CUT_UNIF])
+			sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_CUT_UNIF], 0, 1, &alpha_ref);
+		if (ffp_fragment_params[FOG_COLOR_UNIF])
+			sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_COLOR_UNIF], 0, 4, &fog_color.r);
+		if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) {
+			for (int i = 0; i < mask.num_textures; i++) {
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 4 * i, 4, (const float *)&texture_units[i].env_color.r);
 			}
 		}
+		if (ffp_fragment_params[TINT_COLOR_UNIF])
+			sceGxmSetUniformDataF(buffer, ffp_fragment_params[TINT_COLOR_UNIF], 0, 4, &current_vtx.clr.r);
+		if (ffp_fragment_params[FOG_NEAR_UNIF])
+			sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_NEAR_UNIF], 0, 1, (const float *)&fog_near);
+		if (ffp_fragment_params[FOG_FAR_UNIF])
+			sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_FAR_UNIF], 0, 1, (const float *)&fog_far);
+		if (ffp_fragment_params[FOG_DENSITY_UNIF])
+			sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_DENSITY_UNIF], 0, 1, (const float *)&fog_density);
+		ffp_dirty_frag_unifs = GL_FALSE;
+	}
+
+	// Uploading vertex shader uniforms
+	if (ffp_dirty_vert_unifs) {
+		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &buffer);
+		if (ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF])
+			sceGxmSetUniformDataF(buffer, ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF], 0, 4 * mask.clip_planes_num, &clip_planes[0].x);
+		if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF])
+			sceGxmSetUniformDataF(buffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
+		sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
+		if (ffp_vertex_params[TEX_MATRIX_UNIF])
+			sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
+		sceGxmSetUniformDataF(buffer, ffp_vertex_params[POINT_SIZE_UNIF], 0, 1, &point_size);
+		if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) {
+			sceGxmSetUniformDataF(buffer, ffp_vertex_params[NORMAL_MATRIX_UNIF], 0, 16, (const float *)normal_matrix);
+			if (lights_aligned) {
+				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_AMBIENTS_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][0]);
+				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_DIFFUSES_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][1]);
+				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_SPECULARS_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][2]);
+				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_POSITIONS_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][3]);
+				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_ATTENUATIONS_UNIF], 0, 3 * mask.lights_num, (const float *)light_vars[0][4]);
+			} else {
+				for (int i = 0; i < mask.lights_num; i++) {
+					sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_AMBIENTS_UNIF], 4 * i, 4, (const float *)light_vars[i][0]);
+					sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_DIFFUSES_UNIF], 4 * i, 4, (const float *)light_vars[i][1]);
+					sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_SPECULARS_UNIF], 4 * i, 4, (const float *)light_vars[i][2]);
+					sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_POSITIONS_UNIF], 4 * i, 4, (const float *)light_vars[i][3]);
+					sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_ATTENUATIONS_UNIF], 3 * i, 3, (const float *)light_vars[i][4]);
+				}
+			}
+		}
+		ffp_dirty_vert_unifs = GL_FALSE;
 	}
 }
 
@@ -1197,12 +1208,14 @@ void glColor3f(GLfloat red, GLfloat green, GLfloat blue) {
 	current_vtx.clr.g = green;
 	current_vtx.clr.b = blue;
 	current_vtx.clr.a = 1.0f;
+	ffp_dirty_frag_unifs = GL_TRUE;
 }
 
 void glColor3fv(const GLfloat *v) {
 	// Setting current color value
 	sceClibMemcpy(&current_vtx.clr.r, v, sizeof(vector3f));
 	current_vtx.clr.a = 1.0f;
+	ffp_dirty_frag_unifs = GL_TRUE;
 }
 
 void glColor3ub(GLubyte red, GLubyte green, GLubyte blue) {
@@ -1211,6 +1224,7 @@ void glColor3ub(GLubyte red, GLubyte green, GLubyte blue) {
 	current_vtx.clr.g = (1.0f * green) / 255.0f;
 	current_vtx.clr.b = (1.0f * blue) / 255.0f;
 	current_vtx.clr.a = 1.0f;
+	ffp_dirty_frag_unifs = GL_TRUE;
 }
 
 void glColor3ubv(const GLubyte *c) {
@@ -1219,6 +1233,7 @@ void glColor3ubv(const GLubyte *c) {
 	current_vtx.clr.g = (1.0f * c[1]) / 255.0f;
 	current_vtx.clr.b = (1.0f * c[2]) / 255.0f;
 	current_vtx.clr.a = 1.0f;
+	ffp_dirty_frag_unifs = GL_TRUE;
 }
 
 void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
@@ -1227,11 +1242,13 @@ void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
 	current_vtx.clr.g = green;
 	current_vtx.clr.b = blue;
 	current_vtx.clr.a = alpha;
+	ffp_dirty_frag_unifs = GL_TRUE;
 }
 
 void glColor4fv(const GLfloat *v) {
 	// Setting current color value
 	sceClibMemcpy(&current_vtx.clr.r, v, sizeof(vector4f));
+	ffp_dirty_frag_unifs = GL_TRUE;
 }
 
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha) {
@@ -1239,6 +1256,7 @@ void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha) {
 	current_vtx.clr.g = (1.0f * green) / 255.0f;
 	current_vtx.clr.b = (1.0f * blue) / 255.0f;
 	current_vtx.clr.a = (1.0f * alpha) / 255.0f;
+	ffp_dirty_frag_unifs = GL_TRUE;
 }
 
 void glColor4ubv(const GLubyte *c) {
@@ -1247,6 +1265,7 @@ void glColor4ubv(const GLubyte *c) {
 	current_vtx.clr.g = (1.0f * c[1]) / 255.0f;
 	current_vtx.clr.b = (1.0f * c[2]) / 255.0f;
 	current_vtx.clr.a = (1.0f * c[3]) / 255.0f;
+	ffp_dirty_frag_unifs = GL_TRUE;
 }
 
 void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha) {
@@ -1262,6 +1281,7 @@ void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha) {
 	current_vtx.clr.g = (1.0f * green) / 65536.0f;
 	current_vtx.clr.b = (1.0f * blue) / 65536.0f;
 	current_vtx.clr.a = (1.0f * alpha) / 65536.0f;
+	ffp_dirty_frag_unifs = GL_TRUE;
 }
 
 void glNormal3f(GLfloat x, GLfloat y, GLfloat z) {
@@ -1616,6 +1636,7 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
+	ffp_dirty_frag_unifs = GL_TRUE;
 }
 
 void glTexEnvi(GLenum target, GLenum pname, GLint param) {

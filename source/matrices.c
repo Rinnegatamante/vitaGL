@@ -68,6 +68,8 @@ void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdou
 	
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
+	else
+		ffp_dirty_vert_unifs = GL_TRUE;
 }
 
 void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal) {
@@ -85,6 +87,8 @@ void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLd
 	
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
+	else
+		ffp_dirty_vert_unifs = GL_TRUE;
 }
 
 void glLoadIdentity(void) {
@@ -92,6 +96,8 @@ void glLoadIdentity(void) {
 	matrix4x4_identity(*matrix);
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
+	else
+		ffp_dirty_vert_unifs = GL_TRUE;
 }
 
 void glMultMatrixf(const GLfloat *m) {
@@ -105,6 +111,8 @@ void glMultMatrixf(const GLfloat *m) {
 
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
+	else
+		ffp_dirty_vert_unifs = GL_TRUE;
 }
 
 void glLoadMatrixf(const GLfloat *m) {
@@ -118,6 +126,8 @@ void glLoadMatrixf(const GLfloat *m) {
 
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
+	else
+		ffp_dirty_vert_unifs = GL_TRUE;
 }
 
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
@@ -125,6 +135,8 @@ void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
 	matrix4x4_translate(*matrix, x, y, z);
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
+	else
+		ffp_dirty_vert_unifs = GL_TRUE;
 }
 
 void glScalef(GLfloat x, GLfloat y, GLfloat z) {
@@ -132,6 +144,8 @@ void glScalef(GLfloat x, GLfloat y, GLfloat z) {
 	matrix4x4_scale(*matrix, x, y, z);
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
+	else
+		ffp_dirty_vert_unifs = GL_TRUE;
 }
 
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
@@ -156,6 +170,8 @@ void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
+	else
+		ffp_dirty_vert_unifs = GL_TRUE;
 }
 
 void glPushMatrix(void) {
@@ -244,6 +260,8 @@ void glPopMatrix(void) {
 #endif
 		// Copying last matrix on stack into current matrix and decreasing stack counter
 		matrix4x4_copy(*matrix, tex_unit->texture_matrix_stack[--tex_unit->texture_stack_counter]);
+
+		ffp_dirty_vert_unifs = GL_TRUE;
 	}
 }
 
@@ -260,4 +278,6 @@ void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFa
 	
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
+	else
+		ffp_dirty_vert_unifs = GL_TRUE;
 }

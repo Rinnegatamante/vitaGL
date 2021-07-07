@@ -450,6 +450,8 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
+	
+	ffp_dirty_vert_unifs = GL_TRUE;
 }
 
 void glClear(GLbitfield mask) {
@@ -547,6 +549,9 @@ void glClear(GLbitfield mask) {
 	// Restoring viewport and culling
 	validate_viewport();
 	change_cull_mode();
+	
+	ffp_dirty_frag_unifs = GL_TRUE;
+	ffp_dirty_vert_unifs = GL_TRUE;
 }
 
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
@@ -582,6 +587,7 @@ void glPointSize(GLfloat size) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
+	ffp_dirty_vert_unifs = GL_TRUE;
 
 	// Changing point size as requested
 	point_size = size;
@@ -605,6 +611,7 @@ void glFogf(GLenum pname, GLfloat param) {
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
+	ffp_dirty_frag_unifs = GL_TRUE;
 }
 
 void glFogfv(GLenum pname, const GLfloat *params) {
@@ -628,6 +635,7 @@ void glFogfv(GLenum pname, const GLfloat *params) {
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
+	ffp_dirty_frag_unifs = GL_TRUE;
 }
 
 void glFogi(GLenum pname, const GLint param) {
@@ -648,6 +656,7 @@ void glFogi(GLenum pname, const GLint param) {
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
+	ffp_dirty_frag_unifs = GL_TRUE;
 }
 
 void glClipPlane(GLenum plane, const GLdouble *equation) {
@@ -667,6 +676,7 @@ void glClipPlane(GLenum plane, const GLdouble *equation) {
 	vector4f temp;
 	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
 	sceClibMemcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
+	ffp_dirty_vert_unifs = GL_TRUE;
 }
 
 void glHint(GLenum target, GLenum mode) {
