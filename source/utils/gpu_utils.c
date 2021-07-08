@@ -160,7 +160,7 @@ void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type) {
 }
 
 void *gpu_alloc_mapped(size_t size, vglMemType type) {
-	gpu_alloc_mapped_aligned(MEM_ALIGNMENT, size, type);
+	return gpu_alloc_mapped_aligned(MEM_ALIGNMENT, size, type);
 }
 
 void *gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {

@@ -26,8 +26,8 @@
 
 //#define PARANOID // Enable this flag to use original sceGxmTexture functions instead of faster re-implementations
 
-void vglReserveFragmentUniformBuffer(SceGxmProgram *p, void **uniformBuffer);
-void vglReserveVertexUniformBuffer(SceGxmProgram *p, void **uniformBuffer);
+uint32_t vglReserveFragmentUniformBuffer(const SceGxmProgram *p, void **uniformBuffer);
+uint32_t vglReserveVertexUniformBuffer(const SceGxmProgram *p, void **uniformBuffer);
 void vglRestoreFragmentUniformBuffer(void);
 void vglRestoreVertexUniformBuffer(void);
 void vglSetupUniformCircularPool(void);

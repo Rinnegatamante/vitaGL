@@ -573,28 +573,29 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 
 	// Uploading both fragment and vertex uniforms data
-	void *vbuffer, *fbuffer;
+	void *buffer;
 	if (p->vert_uniforms && (dirty_vert_unifs || mvp_modified)) {
-		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
-		uniform *u = p->vert_uniforms;
-		while (u) {
-			if (u->ptr == p->wvp && implicit_wvp) {
-				if (mvp_modified) {
-					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-					mvp_modified = GL_FALSE;
-				}
-				sceGxmSetUniformDataF(vbuffer, p->wvp, 0, 16, (const float *)mvp_matrix);
-			} else
-				sceGxmSetUniformDataF(vbuffer, u->ptr, 0, u->size, u->data);
-			u = (uniform *)u->chain;
+		if (vglReserveVertexUniformBuffer(p->vshader->prog, &buffer)) {
+			uniform *u = p->vert_uniforms;
+			while (u) {
+				if (u->ptr == p->wvp && implicit_wvp) {
+					if (mvp_modified) {
+						matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+						mvp_modified = GL_FALSE;
+					}
+					sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
+				} else
+					sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
+				u = (uniform *)u->chain;
+			}
 		}
 		dirty_vert_unifs = GL_FALSE;
 	}
 	if (p->frag_uniforms && dirty_frag_unifs) {
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
+		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
-			sceGxmSetUniformDataF(fbuffer, u->ptr, 0, u->size, u->data);
+			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
 		dirty_frag_unifs = GL_FALSE;

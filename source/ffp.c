@@ -674,24 +674,25 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	// Uploading fragment shader uniforms
 	void *buffer;
 	if (dirty_frag_unifs) {
-		vglReserveFragmentUniformBuffer(ffp_fragment_program, &buffer);
-		if (ffp_fragment_params[ALPHA_CUT_UNIF])
-			sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_CUT_UNIF], 0, 1, &alpha_ref);
-		if (ffp_fragment_params[FOG_COLOR_UNIF])
-			sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_COLOR_UNIF], 0, 4, &fog_color.r);
-		if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) {
-			for (int i = 0; i < mask.num_textures; i++) {
-				sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 4 * i, 4, (const float *)&texture_units[i].env_color.r);
+		if (vglReserveFragmentUniformBuffer(ffp_fragment_program, &buffer)) {
+			if (ffp_fragment_params[ALPHA_CUT_UNIF])
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_CUT_UNIF], 0, 1, &alpha_ref);
+			if (ffp_fragment_params[FOG_COLOR_UNIF])
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_COLOR_UNIF], 0, 4, &fog_color.r);
+			if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) {
+				for (int i = 0; i < mask.num_textures; i++) {
+					sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 4 * i, 4, (const float *)&texture_units[i].env_color.r);
+				}
 			}
+			if (ffp_fragment_params[TINT_COLOR_UNIF])
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[TINT_COLOR_UNIF], 0, 4, &current_vtx.clr.r);
+			if (ffp_fragment_params[FOG_NEAR_UNIF])
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_NEAR_UNIF], 0, 1, (const float *)&fog_near);
+			if (ffp_fragment_params[FOG_FAR_UNIF])
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_FAR_UNIF], 0, 1, (const float *)&fog_far);
+			if (ffp_fragment_params[FOG_DENSITY_UNIF])
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_DENSITY_UNIF], 0, 1, (const float *)&fog_density);
 		}
-		if (ffp_fragment_params[TINT_COLOR_UNIF])
-			sceGxmSetUniformDataF(buffer, ffp_fragment_params[TINT_COLOR_UNIF], 0, 4, &current_vtx.clr.r);
-		if (ffp_fragment_params[FOG_NEAR_UNIF])
-			sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_NEAR_UNIF], 0, 1, (const float *)&fog_near);
-		if (ffp_fragment_params[FOG_FAR_UNIF])
-			sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_FAR_UNIF], 0, 1, (const float *)&fog_far);
-		if (ffp_fragment_params[FOG_DENSITY_UNIF])
-			sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_DENSITY_UNIF], 0, 1, (const float *)&fog_density);
 		dirty_frag_unifs = GL_FALSE;
 	}
 

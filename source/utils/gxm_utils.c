@@ -53,16 +53,24 @@ void vglRestoreVertexUniformBuffer(void) {
 	sceGxmSetVertexDefaultUniformBuffer(gxm_context, vert_buf);
 }
 
-void vglReserveFragmentUniformBuffer(SceGxmProgram *p, void **uniformBuffer) {
-	frag_buf = vglReserveUniformCircularPoolBuffer(sceGxmProgramGetDefaultUniformBufferSize(p));
-	vglRestoreFragmentUniformBuffer();
-	*uniformBuffer = frag_buf;
+uint32_t vglReserveFragmentUniformBuffer(const SceGxmProgram *p, void **uniformBuffer) {
+	uint32_t size = sceGxmProgramGetDefaultUniformBufferSize(p);
+	if (size) {
+		frag_buf = vglReserveUniformCircularPoolBuffer(size);
+		vglRestoreFragmentUniformBuffer();
+		*uniformBuffer = frag_buf;
+	}
+	return size;
 }
 
-void vglReserveVertexUniformBuffer(SceGxmProgram *p, void **uniformBuffer) {
-	vert_buf = vglReserveUniformCircularPoolBuffer(sceGxmProgramGetDefaultUniformBufferSize(p));
-	vglRestoreVertexUniformBuffer();
-	*uniformBuffer = vert_buf;
+uint32_t vglReserveVertexUniformBuffer(const SceGxmProgram *p, void **uniformBuffer) {
+	uint32_t size = sceGxmProgramGetDefaultUniformBufferSize(p);
+	if (size) {
+		vert_buf = vglReserveUniformCircularPoolBuffer(size);
+		vglRestoreVertexUniformBuffer();
+		*uniformBuffer = vert_buf;
+	}
+	return size;
 }
 
 #ifndef PARANOID
