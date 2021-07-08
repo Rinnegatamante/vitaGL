@@ -575,19 +575,18 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	// Uploading both fragment and vertex uniforms data
 	void *buffer;
 	if (p->vert_uniforms && (dirty_vert_unifs || mvp_modified)) {
-		if (vglReserveVertexUniformBuffer(p->vshader->prog, &buffer)) {
-			uniform *u = p->vert_uniforms;
-			while (u) {
-				if (u->ptr == p->wvp && implicit_wvp) {
-					if (mvp_modified) {
-						matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-						mvp_modified = GL_FALSE;
-					}
-					sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
-				} else
-					sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
-				u = (uniform *)u->chain;
-			}
+		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer);
+		uniform *u = p->vert_uniforms;
+		while (u) {
+			if (u->ptr == p->wvp && implicit_wvp) {
+				if (mvp_modified) {
+					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+					mvp_modified = GL_FALSE;
+				}
+				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
+			} else
+				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
+			u = (uniform *)u->chain;
 		}
 		dirty_vert_unifs = GL_FALSE;
 	}
