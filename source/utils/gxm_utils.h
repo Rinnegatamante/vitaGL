@@ -26,6 +26,12 @@
 
 //#define PARANOID // Enable this flag to use original sceGxmTexture functions instead of faster re-implementations
 
+void vglReserveFragmentUniformBuffer(SceGxmProgram *p, void **uniformBuffer);
+void vglReserveVertexUniformBuffer(SceGxmProgram *p, void **uniformBuffer);
+void vglRestoreFragmentUniformBuffer(void);
+void vglRestoreVertexUniformBuffer(void);
+void vglSetupUniformCircularPool(void);
+
 #ifndef PARANOID
 // Faster variants with stripped error handling
 uint32_t vglGetTexWidth(const SceGxmTexture *texture);

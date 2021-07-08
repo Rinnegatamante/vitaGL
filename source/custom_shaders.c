@@ -347,7 +347,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	// Uploading both fragment and vertex uniforms data
 	void *buffer;
 	if (p->vert_uniforms && dirty_vert_unifs) {
-		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &buffer);
+		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer);
 		uniform *u = p->vert_uniforms;
 		while (u) {
 			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
@@ -356,7 +356,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		dirty_vert_unifs = GL_FALSE;
 	}
 	if (p->frag_uniforms && dirty_frag_unifs) {
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
+		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
 #ifdef HAVE_SAMPLERS_AS_UNIFORMS
@@ -513,7 +513,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	// Uploading both fragment and vertex uniforms data
 	void *buffer;
 	if (p->vert_uniforms && dirty_vert_unifs) {
-		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &buffer);
+		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer);
 		uniform *u = p->vert_uniforms;
 		while (u) {
 			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
@@ -522,7 +522,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		dirty_vert_unifs = GL_FALSE;
 	}
 	if (p->frag_uniforms && dirty_frag_unifs) {
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
+		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
 #ifdef HAVE_SAMPLERS_AS_UNIFORMS
@@ -574,7 +574,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 
 	// Uploading both fragment and vertex uniforms data
 	void *vbuffer, *fbuffer;
-	if (p->vert_uniforms && dirty_vert_unifs) {
+	if (p->vert_uniforms && (dirty_vert_unifs || mvp_modified)) {
 		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
 		uniform *u = p->vert_uniforms;
 		while (u) {

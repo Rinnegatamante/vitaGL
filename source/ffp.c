@@ -674,7 +674,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	// Uploading fragment shader uniforms
 	void *buffer;
 	if (dirty_frag_unifs) {
-		sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &buffer);
+		vglReserveFragmentUniformBuffer(ffp_fragment_program, &buffer);
 		if (ffp_fragment_params[ALPHA_CUT_UNIF])
 			sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_CUT_UNIF], 0, 1, &alpha_ref);
 		if (ffp_fragment_params[FOG_COLOR_UNIF])
@@ -697,7 +697,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 
 	// Uploading vertex shader uniforms
 	if (dirty_vert_unifs) {
-		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &buffer);
+		vglReserveVertexUniformBuffer(ffp_vertex_program, &buffer);
 		if (ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF])
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF], 0, 4 * mask.clip_planes_num, &clip_planes[0].x);
 		if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF])

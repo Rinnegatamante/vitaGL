@@ -131,37 +131,41 @@ void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width
 	}
 }
 
-void *gpu_alloc_mapped(size_t size, vglMemType type) {
-	// Allocating requested memblock
-	void *res = vgl_memalign(MEM_ALIGNMENT, size, type);
+void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type) {
+		// Allocating requested memblock
+	void *res = vgl_memalign(alignment, size, type);
 	if (res)
 		return res;
 
 	// Requested memory type finished, using other one
-	res = vgl_memalign(MEM_ALIGNMENT, size, type == VGL_MEM_VRAM ? VGL_MEM_RAM : VGL_MEM_VRAM);
+	res = vgl_memalign(alignment, size, type == VGL_MEM_VRAM ? VGL_MEM_RAM : VGL_MEM_VRAM);
 	if (res)
 		return res;
 
 	// Even the other one failed, using our last resort
-	res = vgl_memalign(MEM_ALIGNMENT, size, VGL_MEM_SLOW);
+	res = vgl_memalign(alignment, size, VGL_MEM_SLOW);
 	if (res)
 		return res;
 
 	// Internal mempool finished, using newlib mem
 	if (use_extra_mem)
-		res = vgl_memalign(MEM_ALIGNMENT, size, VGL_MEM_EXTERNAL);
+		res = vgl_memalign(alignment, size, VGL_MEM_EXTERNAL);
 
 #ifdef LOG_ERRORS
 	if (!res)
-		vgl_log("gpu_alloc_mapped failed with a requested size of 0x%08X\n", size);
+		vgl_log("gpu_alloc_mapped_aligned failed with a requested size of 0x%08X\n", size);
 #endif
 
 	return res;
 }
 
+void *gpu_alloc_mapped(size_t size, vglMemType type) {
+	gpu_alloc_mapped_aligned(MEM_ALIGNMENT, size, type);
+}
+
 void *gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
-	void *addr = vgl_memalign(4096, size, use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	void *addr = gpu_alloc_mapped_aligned(4096, size, use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
 	// Mapping memblock into sceGxm as vertex USSE memory
 	sceGxmMapVertexUsseMemory(addr, size, usse_offset);
@@ -180,7 +184,7 @@ void gpu_vertex_usse_free_mapped(void *addr) {
 
 void *gpu_fragment_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
-	void *addr = vgl_memalign(4096, size, use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	void *addr = gpu_alloc_mapped_aligned(4096, size, use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
 	// Mapping memblock into sceGxm as fragment USSE memory
 	sceGxmMapFragmentUsseMemory(addr, size, usse_offset);

@@ -550,10 +550,8 @@ void glClear(GLbitfield mask) {
 	validate_viewport();
 	change_cull_mode();
 	
-	dirty_frag_unifs = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
-	dirty_frag_unifs = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	vglRestoreFragmentUniformBuffer();
+	vglRestoreVertexUniformBuffer();
 }
 
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {

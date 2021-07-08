@@ -22,6 +22,49 @@
  */
 #include "../shared.h"
 
+#define UNIFORM_CIRCULAR_POOL_SIZE (2 * 1024 * 1024)
+
+static void *frag_buf = NULL;
+static void *vert_buf = NULL;
+static uint8_t *unif_pool = NULL;
+static uint32_t unif_idx = 0;
+
+void vglSetupUniformCircularPool() {
+	unif_pool = gpu_alloc_mapped(UNIFORM_CIRCULAR_POOL_SIZE, VGL_MEM_VRAM);
+}
+
+void *vglReserveUniformCircularPoolBuffer(uint32_t size) {
+	void *r;
+	if (unif_idx + size > UNIFORM_CIRCULAR_POOL_SIZE) {
+		r = unif_pool;
+		unif_idx = size;
+	} else {
+		r = (unif_pool + unif_idx);
+		unif_idx += size;
+	}
+	return r;
+}
+
+void vglRestoreFragmentUniformBuffer(void) {
+	sceGxmSetFragmentDefaultUniformBuffer(gxm_context, frag_buf);
+}
+
+void vglRestoreVertexUniformBuffer(void) {
+	sceGxmSetVertexDefaultUniformBuffer(gxm_context, vert_buf);
+}
+
+void vglReserveFragmentUniformBuffer(SceGxmProgram *p, void **uniformBuffer) {
+	frag_buf = vglReserveUniformCircularPoolBuffer(sceGxmProgramGetDefaultUniformBufferSize(p));
+	vglRestoreFragmentUniformBuffer();
+	*uniformBuffer = frag_buf;
+}
+
+void vglReserveVertexUniformBuffer(SceGxmProgram *p, void **uniformBuffer) {
+	vert_buf = vglReserveUniformCircularPoolBuffer(sceGxmProgramGetDefaultUniformBufferSize(p));
+	vglRestoreVertexUniformBuffer();
+	*uniformBuffer = vert_buf;
+}
+
 #ifndef PARANOID
 typedef struct {
 	uint32_t control_words[4];

@@ -23,6 +23,7 @@
 
 #include "shared.h"
 
+// FIXME: Since we use our own default uniform buffers circular pool, fragment and vertex buffer rings can likely be reduced in size
 static uint32_t gxm_param_buf_size = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE; // Param buffer size for sceGxm
 static uint32_t gxm_vdm_buf_size = SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE; // VDM ring buffer size for sceGxm
 static uint32_t gxm_vertex_buf_size = SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE; // Vertex ring buffer size for sceGxm
@@ -307,13 +308,13 @@ void initGxm(void) {
 
 void initGxmContext(void) {
 	// Allocating VDM ring buffer
-	vdm_ring_buffer_addr = vgl_memalign(4096, gxm_vdm_buf_size, VGL_MEM_VRAM);
+	vdm_ring_buffer_addr = gpu_alloc_mapped_aligned(4096, gxm_vdm_buf_size, VGL_MEM_VRAM);
 
 	// Allocating vertex ring buffer
-	vertex_ring_buffer_addr = vgl_memalign(4096, gxm_vertex_buf_size, VGL_MEM_VRAM);
+	vertex_ring_buffer_addr = gpu_alloc_mapped_aligned(4096, gxm_vertex_buf_size, VGL_MEM_VRAM);
 
 	// Allocating fragment ring buffer
-	fragment_ring_buffer_addr = vgl_memalign(4096, gxm_fragment_buf_size, VGL_MEM_VRAM);
+	fragment_ring_buffer_addr = gpu_alloc_mapped_aligned(4096, gxm_fragment_buf_size, VGL_MEM_VRAM);
 
 	// Allocating fragment USSE ring buffer
 	unsigned int fragment_usse_offset;
@@ -336,6 +337,9 @@ void initGxmContext(void) {
 
 	// Initializing sceGxm context
 	sceGxmCreateContext(&gxm_context_params, &gxm_context);
+	
+	// Initializing circular pool for uniform buffers
+	vglSetupUniformCircularPool();
 }
 
 void termGxmContext(void) {
@@ -400,7 +404,7 @@ void initDisplayColorSurfaces(void) {
 	for (i = 0; i < gxm_display_buffer_count; i++) {
 		// Allocating color surface memblock
 		if (!system_app_mode) {
-			gxm_color_surfaces_addr[i] = vgl_memalign(4096, ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024), VGL_MEM_VRAM);
+			gxm_color_surfaces_addr[i] = gpu_alloc_mapped_aligned(4096, ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024), VGL_MEM_VRAM);
 			sceClibMemset(gxm_color_surfaces_addr[i], 0, DISPLAY_STRIDE * DISPLAY_HEIGHT);
 		}
 
@@ -473,7 +477,7 @@ void startShaderPatcher(void) {
 	static const unsigned int shader_patcher_fragment_usse_size = 1024 * 1024;
 
 	// Allocating Shader Patcher buffer
-	gxm_shader_patcher_buffer_addr = vgl_memalign(4096, shader_patcher_buffer_size, VGL_MEM_VRAM);
+	gxm_shader_patcher_buffer_addr = gpu_alloc_mapped_aligned(4096, shader_patcher_buffer_size, VGL_MEM_VRAM);
 
 	// Allocating Shader Patcher vertex USSE buffer
 	unsigned int shader_patcher_vertex_usse_offset;

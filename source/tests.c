@@ -324,8 +324,7 @@ void update_scissor_test() {
 	// Restoring original stencil test settings
 	change_stencil_settings();
 
-	dirty_frag_unifs = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	vglRestoreVertexUniformBuffer();
 }
 
 void resetScissorTestRegion(void) {
