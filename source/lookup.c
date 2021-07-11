@@ -120,6 +120,7 @@ static const struct {
 	{"glGetVertexAttribfv", (void *)glGetVertexAttribfv},
 	{"glGetVertexAttribiv", (void *)glGetVertexAttribiv},
 	{"glGetVertexAttribPointerv", (void *)glGetVertexAttribPointerv},
+	{"glHint", (void *)glHint},
 	{"glInterleavedArrays", (void *)glInterleavedArrays},
 	{"glIsEnabled", (void *)glIsEnabled},
 	{"glIsFramebuffer", (void *)glIsFramebuffer},
