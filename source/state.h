@@ -25,7 +25,7 @@
 #define _STATE_H_
 
 #define MAX_CLIP_PLANES_NUM 7 // Maximum number of allowed user defined clip planes
-#define LEGACY_VERTEX_STRIDE 24 // Vertex stride for GL1 immediate draw pipeline
+#define LEGACY_VERTEX_STRIDE 26 // Vertex stride for GL1 immediate draw pipeline
 #define MAX_LIGHTS_NUM 8 // Maximum number of allowed light sources
 
 // Drawing phases constants for legacy openGL

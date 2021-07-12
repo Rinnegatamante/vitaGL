@@ -271,7 +271,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	// Counting number of enabled texture units
 	mask.num_textures = 0;
 	for (int i = 0; i < TEXTURE_COORDS_NUM; i++) {
-		if (texture_units[i].enabled && (ffp_vertex_attrib_state & (1 << texcoord_idxs[i]))) {
+		if (ffp_vertex_attrib_state & (1 << texcoord_idxs[i])) {
 			mask.num_textures++;
 			switch (i) {
 			case 0:
@@ -456,7 +456,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
 			attrs[2].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 			ffp_vertex_num_params += 2;
-		} else
+		}else
 			ffp_vertex_num_params++;
 
 		// Lighting data
@@ -1368,7 +1368,7 @@ void glEnd(void) {
 
 	// Invalidating current attributes state settings
 	uint8_t orig_state = ffp_vertex_attrib_state;
-	ffp_vertex_attrib_state = 0xFF;
+	ffp_vertex_attrib_state = 0x07;
 	ffp_dirty_frag = GL_TRUE;
 	ffp_dirty_vert = GL_TRUE;
 	reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
