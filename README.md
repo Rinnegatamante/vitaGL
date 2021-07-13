@@ -69,6 +69,7 @@ Direct OpenGL Usage:<br>
 [gtactw-vita](https://vitadb.rinnegatamante.it/#/info/625) - Port of Grand Theft Auto: Chinatown Wars Mobile<br>
 [bully-vita](https://vitadb.rinnegatamante.it/#/info/676) - Port of Bully: Anniversary Edition<br>
 [VITA Homebrew Sorter](https://vitadb.rinnegatamante.it/#/info/655) - App to sort your app.db<br>
+[jfsw-vita](https://vitadb.rinnegatamante.it/#/info/705) - Port of JFSW (Shadow Warrior Classic sourceport)db<br>
 
 Libraries:<br>
 [sdl12_gl](https://github.com/Rinnegatamante/SDL-Vita/tree/sdl12_gl/src) - SDL 1.2 Vita port adapted to work with vitaGL as renderer<br>
