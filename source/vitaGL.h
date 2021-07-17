@@ -26,6 +26,7 @@ extern "C" {
 #include <vitashark.h>
 
 // clang-format off
+#define GLbitfield    uint32_t
 #define GLboolean     uint8_t
 #define GLbyte        int8_t
 #define GLubyte       uint8_t
@@ -395,15 +396,14 @@ extern "C" {
 
 #define GL_MAX_TEXTURE_LOD_BIAS               31
 
+#define GL_DEPTH_BUFFER_BIT   0x00000100
+#define GL_STENCIL_BUFFER_BIT 0x00000400
+#define GL_COLOR_BUFFER_BIT   0x00004000
+
 // Aliases
 #define GL_CLAMP GL_CLAMP_TO_EDGE
 #define GL_DRAW_FRAMEBUFFER_BINDING GL_FRAMEBUFFER_BINDING
 
-typedef enum GLbitfield{
-	GL_DEPTH_BUFFER_BIT   = 0x00000100,
-	GL_STENCIL_BUFFER_BIT = 0x00000400,
-	GL_COLOR_BUFFER_BIT   = 0x00004000
-} GLbitfield;
 // clang-format on
 
 // gl*
