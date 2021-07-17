@@ -24,6 +24,10 @@ extern razor_results razor_metrics;
 #endif
 };
 
+#ifdef HAVE_RAZOR_INTERFACE
+#include <imgui.h>
+#endif
+
 #ifdef HAVE_DEBUG_INTERFACE
 #ifndef HAVE_RAZOR_INTERFACE
 #include "debug_font.h"
@@ -90,7 +94,6 @@ void vgl_debugger_light_draw(uint32_t *fb) {
 #endif
 
 #ifdef HAVE_RAZOR_INTERFACE
-#include <imgui_vita.h>
 bool razor_dbg_window = true; // Current state for sceRazor debugger window
 int metrics_mode = SCE_RAZOR_GPU_LIVE_METRICS_GROUP_PBUFFER_USAGE; // Current live metrics to show
 
