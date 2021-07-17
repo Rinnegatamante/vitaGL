@@ -282,6 +282,13 @@ extern "C" {
 #define GL_TEXTURE_LOD_BIAS                          0x8501
 #define GL_INCR_WRAP                                 0x8507
 #define GL_DECR_WRAP                                 0x8508
+#define GL_TEXTURE_CUBE_MAP                          0x8513
+#define GL_TEXTURE_CUBE_MAP_POSITIVE_X               0x8515
+#define GL_TEXTURE_CUBE_MAP_NEGATIVE_X               0x8516
+#define GL_TEXTURE_CUBE_MAP_POSITIVE_Y               0x8517
+#define GL_TEXTURE_CUBE_MAP_NEGATIVE_Y               0x8518
+#define GL_TEXTURE_CUBE_MAP_POSITIVE_Z               0x8519
+#define GL_TEXTURE_CUBE_MAP_NEGATIVE_Z               0x851A
 #define GL_COMBINE                                   0x8570
 #define GL_COMBINE_RGB                               0x8571
 #define GL_COMBINE_ALPHA                             0x8572

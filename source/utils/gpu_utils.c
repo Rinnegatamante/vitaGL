@@ -303,6 +303,47 @@ void gpu_free_texture(texture *tex) {
 	tex->status = TEX_UNUSED;
 }
 
+void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, SceGxmTransferFormat src_format, const void *data, texture *tex, uint8_t src_bpp, int index) {
+	// If there's already a texture in passed texture object we first dealloc it
+	if (tex->status == TEX_VALID && tex->faces_counter >= 6) {
+		gpu_free_texture_data(tex);
+		tex->faces_counter = 1;
+	} else
+		tex->faces_counter++;
+	
+	// Getting texture format bpp
+	uint8_t bpp = tex_format_to_bytespp(format);
+
+	// Allocating texture data buffer
+	const int face_size = ALIGN(w, 8) * h * bpp;
+	void *base_texture_data = tex->faces_counter == 1 ? gpu_alloc_mapped(face_size * 6, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM) : tex->data;
+	
+	if (base_texture_data != NULL) {
+		// Calculating face texture data pointer
+		uint8_t *texture_data = (uint8_t *)base_texture_data + face_size * index;
+	
+		if (data != NULL) {
+			SceGxmTransferFormat dst_fmt = tex_format_to_transfer(format);
+			sceGxmMapMemory((void *)data, w * h * bpp, SCE_GXM_MEMORY_ATTRIB_RW);
+			sceGxmTransferCopy(
+				w, h, 0, 0, SCE_GXM_TRANSFER_COLORKEY_NONE,
+				src_format, SCE_GXM_TRANSFER_LINEAR,
+				data, 0, 0, w * src_bpp,
+				dst_fmt, SCE_GXM_TRANSFER_SWIZZLED,
+				texture_data, 0, 0, ALIGN(w, 8) * bpp,
+				NULL, 0, NULL);
+		} else
+			sceClibMemset(texture_data, 0xFF, face_size);
+
+		// Initializing texture and validating it
+		tex->mip_count = 0;
+		sceGxmTextureInitCube(&tex->gxm_tex, base_texture_data, format, w, h, tex->mip_count);
+		tex->palette_UID = 0;
+		tex->status = TEX_VALID;
+		tex->data = base_texture_data;
+	}
+}
+
 void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), GLboolean fast_store) {
 	// If there's already a texture in passed texture object we first dealloc it
 	if (tex->status == TEX_VALID)

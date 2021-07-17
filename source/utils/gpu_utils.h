@@ -54,6 +54,7 @@ typedef struct {
 	uint8_t mip_count;
 	GLboolean use_mips;
 	uint8_t ref_counter;
+	uint8_t faces_counter;
 	GLboolean dirty;
 #ifdef HAVE_UNPURE_TEXTURES
 	int8_t mip_start;
@@ -91,6 +92,9 @@ int tex_format_to_bytespp(SceGxmTextureFormat format);
 
 // Alloc a texture
 void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), GLboolean fast_store);
+
+// Alloc a cube texture
+void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, SceGxmTransferFormat src_format, const void *data, texture *tex, uint8_t src_bpp, int index);
 
 // Alloc a compresseed texture
 void gpu_alloc_compressed_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *));

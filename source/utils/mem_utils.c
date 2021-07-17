@@ -40,7 +40,7 @@ void *vgl_alloc_phycont_block(uint32_t size) {
 	
 	void *res;
 	sceKernelGetMemBlockBase(blk, &res);
-	sceGxmMapMemory(res, size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	sceGxmMapMemory(res, size, SCE_GXM_MEMORY_ATTRIB_RW);
 	
 	return res;
 }
@@ -90,7 +90,7 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
 			sceKernelGetMemBlockBase(mempool_id[i], &mempool_addr[i]);
 
 			if (mempool_addr[i]) {
-				sceGxmMapMemory(mempool_addr[i], mempool_size[i], SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+				sceGxmMapMemory(mempool_addr[i], mempool_size[i], SCE_GXM_MEMORY_ATTRIB_RW);
 				mempool_mspace[i] = sceClibMspaceCreate(mempool_addr[i], mempool_size[i]);
 			}
 		}
@@ -118,7 +118,7 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
 	SceKernelMemBlockInfo info;
 	info.size = sizeof(SceKernelMemBlockInfo);
 	sceKernelGetMemBlockInfoByAddr(dummy, &info);
-	sceGxmMapMemory(info.mappedBase, info.mappedSize, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
+	sceGxmMapMemory(info.mappedBase, info.mappedSize, SCE_GXM_MEMORY_ATTRIB_RW);
 
 	mempool_size[VGL_MEM_EXTERNAL] = info.mappedSize;
 	mempool_addr[VGL_MEM_EXTERNAL] = info.mappedBase;
