@@ -169,6 +169,14 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 	// Allocating a new buffer
 	uint8_t *ptr = gpu_buf->ptr;
 	gpu_buf->ptr = gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
+	
+#ifdef LOG_ERRORS
+	if (!gpu_buf->ptr) {
+		vgl_log("glBufferSubData failed to alloc a buffer of %ld bytes. Buffer content won't be updated.\n", gpu_buf->size);
+		gpu_buf->ptr = ptr;
+		return;
+	}
+#endif
 
 	// Copying up previous data combined to modified data
 	if (offset > 0)
