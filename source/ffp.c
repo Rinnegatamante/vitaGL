@@ -46,6 +46,37 @@ static uint32_t vertex_count = 0; // Vertex counter for vertex list
 static SceGxmPrimitiveType prim; // Current in use primitive for rendering
 GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not supported natively by sceGxm is used
 
+int8_t client_texture_unit = 0; // Current in use client side texture unit
+
+// Lighting
+GLboolean lighting_state = GL_FALSE; // Current lighting processor state
+GLboolean lights_aligned; // Are clip planes in a contiguous range
+uint8_t light_range[2]; // The highest and lowest enabled lights
+uint8_t light_mask; // Bitmask of enabled lights
+vector4f lights_ambients[MAX_LIGHTS_NUM];
+vector4f lights_diffuses[MAX_LIGHTS_NUM];
+vector4f lights_speculars[MAX_LIGHTS_NUM];
+vector4f lights_positions[MAX_LIGHTS_NUM];
+vector3f lights_attenuations[MAX_LIGHTS_NUM];
+
+// Fogging
+GLboolean fogging = GL_FALSE; // Current fogging processor state
+GLint fog_mode = GL_EXP; // Current fogging mode (openGL)
+fogType internal_fog_mode = DISABLED; // Current fogging mode (sceGxm)
+GLfloat fog_density = 1.0f; // Current fogging density
+GLfloat fog_near = 0.0f; // Current fogging near distance
+GLfloat fog_far = 1.0f; // Current fogging far distance
+vector4f fog_color = {0.0f, 0.0f, 0.0f, 0.0f}; // Current fogging color
+
+// Clipping Planes
+GLboolean clip_planes_aligned = GL_TRUE; // Are clip planes in a contiguous range?
+uint8_t clip_plane_range[2] = {0}; // The hightest enabled clip plane
+uint8_t clip_planes_mask = 0; // Bitmask of enabled clip planes
+vector4f clip_planes_eq[MAX_CLIP_PLANES_NUM]; // Current equation for user clip planes
+
+// Miscellaneous
+glPhase phase = NONE; // Current drawing phase for legacy openGL
+
 typedef struct {
 	vector2f uv;
 	vector4f clr;
@@ -809,6 +840,24 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
 		}
 		sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
 	}
+}
+
+void update_fogging_state() {
+	ffp_dirty_frag = GL_TRUE;
+	if (fogging) {
+		switch (fog_mode) {
+		case GL_LINEAR:
+			internal_fog_mode = LINEAR;
+			break;
+		case GL_EXP:
+			internal_fog_mode = EXP;
+			break;
+		default:
+			internal_fog_mode = EXP2;
+			break;
+		}
+	} else
+		internal_fog_mode = DISABLED;
 }
 
 /*
@@ -1932,4 +1981,126 @@ void glTexEnvi(GLenum target, GLenum pname, GLint param) {
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
+}
+
+void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
+#ifndef SKIP_ERROR_HANDLING
+	if (light < GL_LIGHT0 && light > GL_LIGHT7) {
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+#endif
+
+	switch (pname) {
+	case GL_AMBIENT:
+		sceClibMemcpy(&lights_ambients[light - GL_LIGHT0].r, params, sizeof(float) * 4);
+		break;
+	case GL_DIFFUSE:
+		sceClibMemcpy(&lights_diffuses[light - GL_LIGHT0].r, params, sizeof(float) * 4);
+		break;
+	case GL_SPECULAR:
+		sceClibMemcpy(&lights_speculars[light - GL_LIGHT0].r, params, sizeof(float) * 4);
+		break;
+	case GL_POSITION:
+		sceClibMemcpy(&lights_positions[light - GL_LIGHT0].r, params, sizeof(float) * 4);
+		break;
+	case GL_CONSTANT_ATTENUATION:
+		lights_attenuations[light - GL_LIGHT0].r = params[0];
+		break;
+	case GL_LINEAR_ATTENUATION:
+		lights_attenuations[light - GL_LIGHT0].g = params[0];
+		break;
+	case GL_QUADRATIC_ATTENUATION:
+		lights_attenuations[light - GL_LIGHT0].b = params[0];
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+	
+	dirty_vert_unifs = GL_TRUE;
+}
+
+void glFogf(GLenum pname, GLfloat param) {
+	switch (pname) {
+	case GL_FOG_MODE:
+		fog_mode = param;
+		update_fogging_state();
+		break;
+	case GL_FOG_DENSITY:
+		fog_density = param;
+		break;
+	case GL_FOG_START:
+		fog_near = param;
+		break;
+	case GL_FOG_END:
+		fog_far = param;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+	dirty_frag_unifs = GL_TRUE;
+}
+
+void glFogfv(GLenum pname, const GLfloat *params) {
+	switch (pname) {
+	case GL_FOG_MODE:
+		fog_mode = params[0];
+		update_fogging_state();
+		break;
+	case GL_FOG_DENSITY:
+		fog_density = params[0];
+		break;
+	case GL_FOG_START:
+		fog_near = params[0];
+		break;
+	case GL_FOG_END:
+		fog_far = params[0];
+		break;
+	case GL_FOG_COLOR:
+		sceClibMemcpy(&fog_color.r, params, sizeof(vector4f));
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+	dirty_frag_unifs = GL_TRUE;
+}
+
+void glFogi(GLenum pname, const GLint param) {
+	switch (pname) {
+	case GL_FOG_MODE:
+		fog_mode = param;
+		update_fogging_state();
+		break;
+	case GL_FOG_DENSITY:
+		fog_density = param;
+		break;
+	case GL_FOG_START:
+		fog_near = param;
+		break;
+	case GL_FOG_END:
+		fog_far = param;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+	dirty_frag_unifs = GL_TRUE;
+}
+
+void glClipPlane(GLenum plane, const GLdouble *equation) {
+#ifndef SKIP_ERROR_HANDLING
+	if (plane < GL_CLIP_PLANE0 || plane > GL_CLIP_PLANE6) {
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+#endif
+	int idx = plane - GL_CLIP_PLANE0;
+	clip_planes_eq[idx].x = equation[0];
+	clip_planes_eq[idx].y = equation[1];
+	clip_planes_eq[idx].z = equation[2];
+	clip_planes_eq[idx].w = equation[3];
+	matrix4x4 inverted, inverted_transposed;
+	matrix4x4_invert(inverted, modelview_matrix);
+	matrix4x4_transpose(inverted_transposed, inverted);
+	vector4f temp;
+	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
+	sceClibMemcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
+	dirty_vert_unifs = GL_TRUE;
 }

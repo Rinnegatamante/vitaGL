@@ -24,24 +24,28 @@
 #include "shared.h"
 GLfloat point_size = 1.0f;
 GLboolean fast_texture_compression = GL_FALSE; // Hints for texture compression
+vector4f clear_rgba_val; // Current clear color for glClear
 
-static void update_fogging_state() {
-	ffp_dirty_frag = GL_TRUE;
-	if (fogging) {
-		switch (fog_mode) {
-		case GL_LINEAR:
-			internal_fog_mode = LINEAR;
-			break;
-		case GL_EXP:
-			internal_fog_mode = EXP;
-			break;
-		default:
-			internal_fog_mode = EXP2;
-			break;
-		}
-	} else
-		internal_fog_mode = DISABLED;
-}
+// Polygon Mode
+GLfloat pol_factor = 0.0f; // Current factor for glPolygonOffset
+GLfloat pol_units = 0.0f; // Current units for glPolygonOffset
+
+// Cullling
+GLboolean cull_face_state = GL_FALSE; // Current state for GL_CULL_FACE
+GLenum gl_cull_mode = GL_BACK; // Current in use openGL cull mode
+GLenum gl_front_face = GL_CCW; // Current in use openGL setting for front facing primitives
+GLboolean no_polygons_mode = GL_FALSE; // GL_TRUE when cull mode is set to GL_FRONT_AND_BACK
+
+// Polygon Offset
+GLboolean pol_offset_fill = GL_FALSE; // Current state for GL_POLYGON_OFFSET_FILL
+GLboolean pol_offset_line = GL_FALSE; // Current state for GL_POLYGON_OFFSET_LINE
+GLboolean pol_offset_point = GL_FALSE; // Current state for GL_POLYGON_OFFSET_POINT
+SceGxmPolygonMode polygon_mode_front = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Current in use polygon mode for front
+SceGxmPolygonMode polygon_mode_back = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Current in use polygon mode for back
+GLenum gl_polygon_mode_front = GL_FILL; // Current in use polygon mode for front
+GLenum gl_polygon_mode_back = GL_FILL; // Current in use polygon mode for back
+
+viewport gl_viewport; // Current viewport state
 
 static void update_polygon_offset() {
 	switch (polygon_mode_front) {
@@ -418,42 +422,6 @@ void glDisable(GLenum cap) {
 	}
 }
 
-void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
-#ifndef SKIP_ERROR_HANDLING
-	if (light < GL_LIGHT0 && light > GL_LIGHT7) {
-		SET_GL_ERROR(GL_INVALID_ENUM)
-	}
-#endif
-
-	switch (pname) {
-	case GL_AMBIENT:
-		sceClibMemcpy(&lights_ambients[light - GL_LIGHT0].r, params, sizeof(float) * 4);
-		break;
-	case GL_DIFFUSE:
-		sceClibMemcpy(&lights_diffuses[light - GL_LIGHT0].r, params, sizeof(float) * 4);
-		break;
-	case GL_SPECULAR:
-		sceClibMemcpy(&lights_speculars[light - GL_LIGHT0].r, params, sizeof(float) * 4);
-		break;
-	case GL_POSITION:
-		sceClibMemcpy(&lights_positions[light - GL_LIGHT0].r, params, sizeof(float) * 4);
-		break;
-	case GL_CONSTANT_ATTENUATION:
-		lights_attenuations[light - GL_LIGHT0].r = params[0];
-		break;
-	case GL_LINEAR_ATTENUATION:
-		lights_attenuations[light - GL_LIGHT0].g = params[0];
-		break;
-	case GL_QUADRATIC_ATTENUATION:
-		lights_attenuations[light - GL_LIGHT0].b = params[0];
-		break;
-	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
-	}
-	
-	dirty_vert_unifs = GL_TRUE;
-}
-
 void glClear(GLbitfield mask) {
 #ifndef SKIP_ERROR_HANDLING
 	if (mask & ~(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)) {
@@ -591,92 +559,6 @@ void glPointSize(GLfloat size) {
 
 	// Changing point size as requested
 	point_size = size;
-}
-
-void glFogf(GLenum pname, GLfloat param) {
-	switch (pname) {
-	case GL_FOG_MODE:
-		fog_mode = param;
-		update_fogging_state();
-		break;
-	case GL_FOG_DENSITY:
-		fog_density = param;
-		break;
-	case GL_FOG_START:
-		fog_near = param;
-		break;
-	case GL_FOG_END:
-		fog_far = param;
-		break;
-	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
-	}
-	dirty_frag_unifs = GL_TRUE;
-}
-
-void glFogfv(GLenum pname, const GLfloat *params) {
-	switch (pname) {
-	case GL_FOG_MODE:
-		fog_mode = params[0];
-		update_fogging_state();
-		break;
-	case GL_FOG_DENSITY:
-		fog_density = params[0];
-		break;
-	case GL_FOG_START:
-		fog_near = params[0];
-		break;
-	case GL_FOG_END:
-		fog_far = params[0];
-		break;
-	case GL_FOG_COLOR:
-		sceClibMemcpy(&fog_color.r, params, sizeof(vector4f));
-		break;
-	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
-	}
-	dirty_frag_unifs = GL_TRUE;
-}
-
-void glFogi(GLenum pname, const GLint param) {
-	switch (pname) {
-	case GL_FOG_MODE:
-		fog_mode = param;
-		update_fogging_state();
-		break;
-	case GL_FOG_DENSITY:
-		fog_density = param;
-		break;
-	case GL_FOG_START:
-		fog_near = param;
-		break;
-	case GL_FOG_END:
-		fog_far = param;
-		break;
-	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
-	}
-	dirty_frag_unifs = GL_TRUE;
-}
-
-void glClipPlane(GLenum plane, const GLdouble *equation) {
-#ifndef SKIP_ERROR_HANDLING
-	if (plane < GL_CLIP_PLANE0 || plane > GL_CLIP_PLANE6) {
-		SET_GL_ERROR(GL_INVALID_ENUM)
-	}
-#endif
-	int idx = plane - GL_CLIP_PLANE0;
-	clip_planes_eq[idx].x = equation[0];
-	clip_planes_eq[idx].y = equation[1];
-	clip_planes_eq[idx].z = equation[2];
-	clip_planes_eq[idx].w = equation[3];
-	matrix4x4 inverted, inverted_transposed;
-	matrix4x4_invert(inverted, modelview_matrix);
-	matrix4x4_transpose(inverted_transposed, inverted);
-	vector4f temp;
-	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
-	sceClibMemcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
-	dirty_vert_unifs = GL_TRUE;
 }
 
 void glHint(GLenum target, GLenum mode) {
