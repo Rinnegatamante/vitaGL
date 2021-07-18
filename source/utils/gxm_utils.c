@@ -141,6 +141,14 @@ void vglInitLinearTexture(SceGxmTexture *texture, const void *data, SceGxmTextur
 	tex->control_words[3] = ((texFormat & 0x7000) << 16) | 0x80000000;
 }
 
+void vglInitCubeTexture(SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	tex->control_words[0] = ((mipCount - 1) & 0xF) << 17 | 0x3E00090 | texFormat & 0x80000000;
+	tex->control_words[1] = (31 - __builtin_clz(height)) | 0x40000000 | ((31 - __builtin_clz(width)) << 16) | texFormat & 0x1F000000;
+	tex->control_words[2] = (uint32_t)data & 0xFFFFFFFC;
+	tex->control_words[3] = ((texFormat & 0x7000) << 16) | 0x80000000;
+}
+
 void vglInitSwizzledTexture(SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
 	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
 	tex->control_words[0] = ((mipCount - 1) & 0xF) << 17 | 0x3E00090 | texFormat & 0x80000000;

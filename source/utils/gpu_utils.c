@@ -337,7 +337,7 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 
 		// Initializing texture and validating it
 		tex->mip_count = 0;
-		sceGxmTextureInitCube(&tex->gxm_tex, base_texture_data, format, w, h, tex->mip_count);
+		vglInitCubeTexture(&tex->gxm_tex, base_texture_data, format, w, h, tex->mip_count);
 		tex->palette_UID = 0;
 		tex->status = TEX_VALID;
 		tex->data = base_texture_data;

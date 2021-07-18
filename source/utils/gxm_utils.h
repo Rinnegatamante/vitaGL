@@ -46,6 +46,7 @@ void vglSetTexMipmapCount(SceGxmTexture *texture, uint32_t count);
 void vglSetTexGammaMode(SceGxmTexture *texture, SceGxmTextureGammaMode mode);
 void vglSetTexPalette(SceGxmTexture *texture, void *data);
 void vglInitLinearTexture(SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount);
+void vglInitCubeTexture(SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount);
 void vglInitSwizzledTexture(SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount);
 #else
 // Default sceGxm functions
@@ -61,6 +62,7 @@ void vglInitSwizzledTexture(SceGxmTexture *texture, const void *data, SceGxmText
 #define vglSetTexGammaMode sceGxmTextureSetGammaMode
 #define vglSetTexPalette sceGxmTextureSetPalette
 #define vglInitLinearTexture sceGxmTextureInitLinear
+#define vglInitCubeTexture sceGxmTextureInitCube
 #define vglInitSwizzledTexture sceGxmTextureInitSwizzledArbitrary
 #endif
 #endif
