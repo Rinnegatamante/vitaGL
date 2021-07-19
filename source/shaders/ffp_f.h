@@ -9,7 +9,7 @@ R"(%s
 #define lights_num %d
 #define shading_mode %d
 
-#if lights_num > 0 && shading_mode == 2 // GL_PHONG_WIN
+#if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
 static float4 Ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
 static float4 Diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
 static float4 Specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -68,7 +68,7 @@ float4 main(
 	float2 vTexcoord2 : TEXCOORD1,
 #endif
 #endif
-#if lights_num > 0 && shading_mode == 2 // GL_PHONG_WIN
+#if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
 	float3 vNormal : TEXCOORD2,
 	float3 vEcPosition : TEXCOORD3,
 	float4 vDiffuse : TEXCOORD4,
@@ -76,7 +76,7 @@ float4 main(
 	float4 vEmission : TEXCOORD6,
 #endif
 #if has_colors == 1
-	float4 vColor : COLOR,
+	float4 vColor : COLOR0,
 #endif
 #if fog_mode < 3
 	float4 coords : WPOS,
@@ -142,7 +142,18 @@ float4 main(
 		discard;
 	}
 #endif
-	
+
+	// Lighting
+#if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
+	for (int i = 0; i < lights_num; i++) {
+		calculate_light(i, vEcPosition, vNormal);
+	}
+	float4 fragColor = texColor;
+	texColor = vEmission + fragColor * float4(0.2f, 0.2f, 0.2f, 1.0f); // TODO: glLightAmbient impl
+	texColor += Ambient * fragColor + Diffuse * vDiffuse + Specular * vSpecular;
+	texColor = clamp(texColor, 0.0f, 1.0f);
+#endif	
+
 	// Fogging
 #if fog_mode < 3
 #if fog_mode == 0 // GL_LINEAR
@@ -159,17 +170,6 @@ float4 main(
 	vFog = clamp(vFog, 0.0, 1.0);
 	texColor.rgb = lerp(fogColor.rgb, texColor.rgb, vFog);
 #endif
-
-	// Lighting
-#if lights_num > 0 && shading_mode == 2 // GL_PHONG_WIN
-	for (int i = 0; i < lights_num; i++) {
-		calculate_light(i, vEcPosition, vNormal);
-	}
-	float4 fragColor = texColor;
-	texColor = vEmission + fragColor * float4(0.2f, 0.2f, 0.2f, 1.0f); // TODO: glLightAmbient impl
-	texColor += Ambient * fragColor + Diffuse * vDiffuse + Specular * vSpecular;
-	texColor = clamp(texColor, 0.0f, 1.0f);
-#endif	
 
 	return texColor;
 }

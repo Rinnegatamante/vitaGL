@@ -35,7 +35,7 @@
 
 #define SHADER_CACHE_SIZE 256
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 1 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 2 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
@@ -43,7 +43,7 @@
 #define FRAGMENT_UNIFORMS_NUM 12
 
 typedef enum {
-	FLAT,
+	//FLAT, // FIXME: Not easy to implement with ShaccCg constraints
 	SMOOTH,
 	PHONG
 } shadingMode;
@@ -122,8 +122,8 @@ typedef union shader_mask {
 		uint32_t lights_num : 4;
 		uint32_t tex_env_mode_pass0 : 3;
 		uint32_t tex_env_mode_pass1 : 3;
-		uint32_t shading_mode : 2;
-		uint32_t UNUSED : 9;
+		uint32_t shading_mode : 1;
+		uint32_t UNUSED : 10;
 	};
 	uint32_t raw;
 } shader_mask;
@@ -2157,7 +2157,9 @@ void glShadeModel(GLenum mode) {
 
 	switch (mode) {
 	case GL_FLAT:
-		shading_mode = FLAT;
+		//shading_mode = FLAT;
+		shading_mode = SMOOTH;
+		vgl_log("GL_FLAT as shading model is not supported. GL_SMOOTH will be used instead.\n");
 		break;
 	case GL_SMOOTH:
 		shading_mode = SMOOTH;

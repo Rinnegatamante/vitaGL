@@ -5,7 +5,7 @@ R"(#define clip_planes_num %d
 #define lights_num %d
 #define shading_mode %d
 
-#if lights_num > 0 && shading_mode == 1 // GL_SMOOTH
+#if lights_num > 0 && shading_mode < 1 // GL_SMOOTH/GL_FLAT
 static float4 Ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
 static float4 Diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
 static float4 Specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -80,7 +80,7 @@ void main(
 	float2 out vTexcoord2 : TEXCOORD1,
 #endif
 #endif
-#if lights_num > 0 && shading_mode == 2 //GL_PHONG_WIN
+#if lights_num > 0 && shading_mode == 1 //GL_PHONG_WIN
 	float3 out vNormal : TEXCOORD2,
 	float3 out vEcPosition : TEXCOORD3,
 	float4 out vDiffuse : TEXCOORD4,
@@ -117,7 +117,7 @@ void main(
 #if lights_num > 0
 	float3 normal = normalize(mul(float3x3(normal_mat), normals));
 	float3 ecPosition = modelpos.xyz / modelpos.w;
-#if shading_mode == 1 // GL_SMOOTH
+#if shading_mode < 1 // GL_SMOOTH/GL_FLAT
 	for (int i = 0; i < lights_num; i++) {
 		calculate_light(i, ecPosition, normal);
 	}
@@ -132,12 +132,12 @@ void main(
 #endif
 #if has_colors == 1
 #if lights_num > 0
-#if shading_mode == 1 // GL_SMOOTH
+#if shading_mode < 1 // GL_SMOOTH/GL_FLAT
 	vColor = emission + color * float4(0.2f, 0.2f, 0.2f, 1.0f); // TODO: glLightAmbient impl
 	vColor += Ambient * color + Diffuse * diff + Specular * spec;
 	vColor = clamp(vColor, 0.0f, 1.0f);
 #endif
-#if shading_mode == 2 // GL_PHONG_WIN
+#if shading_mode == 1 // GL_PHONG_WIN
 	vColor = color;
 	vNormal = normal;
 	vEcPosition = ecPosition;
