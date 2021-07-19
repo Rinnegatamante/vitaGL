@@ -126,6 +126,7 @@ clean:
 	@make -C samples/sample8 clean
 	@make -C samples/sample9 clean
 	@make -C samples/sample10 clean
+	@make -C samples/sample11 clean
 	
 install: $(TARGET).a
 	@mkdir -p $(VITASDK)/$(PREFIX)/lib/
@@ -154,3 +155,5 @@ samples: $(TARGET).a
 	cp "samples/sample9/vitaGL-Sample009.vpk" .
 	@make -C samples/sample10
 	cp "samples/sample10/vitaGL-Sample010.vpk" .
+	@make -C samples/sample11
+	cp "samples/sample10/vitaGL-Sample011.vpk" .

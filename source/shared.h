@@ -730,8 +730,7 @@ void validate_viewport(void); // Restores previously invalidated viewport
 /* blending.c (TODO) */
 void change_blend_factor(void); // Changes current blending settings for all used shaders
 void change_blend_mask(void); // Changes color mask when blending is disabled for all used shaders
-void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog); // Creates a new patched fragment program with proper blend settings
-void rebuild_ffp_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, SceGxmProgram *vprog); // Fixed function pipeline variant of rebuild_frag_shader
+void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, SceGxmProgram *vprog); // Creates a new patched fragment program with proper blend settings
 
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders

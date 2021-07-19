@@ -35,13 +35,7 @@ static SceGxmColorMask blend_color_mask = SCE_GXM_COLOR_MASK_ALL; // Current in-
 static SceGxmBlendFunc blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD; // Current in-use RGB blend func
 static SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use A blend func
 
-void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog) {
-	patchFragmentProgram(gxm_shader_patcher,
-		pid, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa_mode, &blend_info.info, NULL, prog);
-}
-
-void rebuild_ffp_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, SceGxmProgram *vprog) {
+void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, SceGxmProgram *vprog) {
 	patchFragmentProgram(gxm_shader_patcher,
 		pid, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
 		msaa_mode, &blend_info.info, vprog, prog);
