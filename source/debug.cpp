@@ -35,38 +35,38 @@ int dbg_y = 8;
 uint32_t *frame_buf;
 
 void vgl_debugger_draw_character(int character, int x, int y) {
-    for (int yy = 0; yy < 10; yy++) {
-        int xDisplacement = x;
-        int yDisplacement = (y + (yy<<1)) * DISPLAY_STRIDE;
-        uint32_t* screenPos = frame_buf + xDisplacement + yDisplacement;
+	for (int yy = 0; yy < 10; yy++) {
+		int xDisplacement = x;
+		int yDisplacement = (y + (yy<<1)) * DISPLAY_STRIDE;
+		uint32_t* screenPos = frame_buf + xDisplacement + yDisplacement;
 
-        uint8_t charPos = font[character * 10 + yy];
-        for (int xx = 7; xx >= 2; xx--) {
+		uint8_t charPos = font[character * 10 + yy];
+		for (int xx = 7; xx >= 2; xx--) {
 			uint32_t clr = ((charPos >> xx) & 1) ? 0xFFFFFFFF : 0x00000000;
 			*(screenPos) = clr;
 			*(screenPos+1) = clr;
 			*(screenPos+DISPLAY_STRIDE) = clr;
 			*(screenPos+DISPLAY_STRIDE+1) = clr;			
 			screenPos += 2;
-        }
-    }
+		}
+	}
 }
 
 void vgl_debugger_draw_string(int x, int y, const char *str) {
-    for (size_t i = 0; i < strlen(str); i++)
-        vgl_debugger_draw_character(str[i], x + i * 12, y);
+	for (size_t i = 0; i < strlen(str); i++)
+		vgl_debugger_draw_character(str[i], x + i * 12, y);
 }
 
 void vgl_debugger_draw_string_format(int x, int y, const char *format, ...) {
-    char str[512] = { 0 };
-    va_list va;
+	char str[512] = { 0 };
+	va_list va;
 
-    va_start(va, format);
-    vsnprintf(str, 512, format, va);
-    va_end(va);
+	va_start(va, format);
+	vsnprintf(str, 512, format, va);
+	va_end(va);
 
-    for (char* text = strtok(str, "\n"); text != NULL; text = strtok(NULL, "\n"), y += 20)
-        vgl_debugger_draw_string(x, y, text);
+	for (char* text = strtok(str, "\n"); text != NULL; text = strtok(NULL, "\n"), y += 20)
+		vgl_debugger_draw_string(x, y, text);
 }
 #endif
 

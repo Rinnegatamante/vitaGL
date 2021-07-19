@@ -142,7 +142,6 @@ void change_stencil_settings() {
 
 GLboolean change_stencil_config(SceGxmStencilOp *cfg, GLenum new) {
 	// Translating openGL stencil operation value to sceGxm one
-	GLboolean ret = GL_TRUE;
 	switch (new) {
 	case GL_KEEP:
 		*cfg = SCE_GXM_STENCIL_OP_KEEP;
@@ -169,15 +168,14 @@ GLboolean change_stencil_config(SceGxmStencilOp *cfg, GLenum new) {
 		*cfg = SCE_GXM_STENCIL_OP_INVERT;
 		break;
 	default:
-		ret = GL_FALSE;
+		return GL_FALSE;
 		break;
 	}
-	return ret;
+	return GL_TRUE;
 }
 
 GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new) {
 	// Translating openGL stencil function to sceGxm one
-	GLboolean ret = GL_TRUE;
 	switch (new) {
 	case GL_NEVER:
 		*cfg = SCE_GXM_STENCIL_FUNC_NEVER;
@@ -204,10 +202,10 @@ GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new) {
 		*cfg = SCE_GXM_STENCIL_FUNC_ALWAYS;
 		break;
 	default:
-		ret = GL_FALSE;
+		return GL_FALSE;
 		break;
 	}
-	return ret;
+	return GL_TRUE;
 }
 
 void update_alpha_test_settings() {
@@ -466,7 +464,7 @@ void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass
 		if (!change_stencil_config(&depth_fail_back, dpfail)) {
 			SET_GL_ERROR(GL_INVALID_ENUM)
 		}
-		if (!change_stencil_config(&depth_pass_front, dppass)) {
+		if (!change_stencil_config(&depth_pass_back, dppass)) {
 			SET_GL_ERROR(GL_INVALID_ENUM)
 		}
 		break;
