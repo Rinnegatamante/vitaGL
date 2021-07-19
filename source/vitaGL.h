@@ -176,6 +176,8 @@ extern "C" {
 #define GL_POINT                                     0x1B00
 #define GL_LINE                                      0x1B01
 #define GL_FILL                                      0x1B02
+#define GL_FLAT                                      0x1D00
+#define GL_SMOOTH                                    0x1D01
 #define GL_KEEP                                      0x1E00
 #define GL_REPLACE                                   0x1E01
 #define GL_INCR                                      0x1E02
@@ -249,6 +251,7 @@ extern "C" {
 #define GL_BGR                                       0x80E0
 #define GL_BGRA                                      0x80E1
 #define GL_COLOR_INDEX8_EXT                          0x80E5
+#define GL_PHONG_WIN                                 0x80EA
 #define GL_CLAMP_TO_EDGE                             0x812F
 #define GL_DEPTH_STENCIL_ATTACHMENT                  0x821A
 #define GL_MAJOR_VERSION                             0x821B
@@ -533,6 +536,7 @@ void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, 
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);
+void glShadeModel(GLenum mode);
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length); // NOTE: Uses GXP shaders
 void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length); // NOTE: Uses CG shader sources
 void glStencilFunc(GLenum func, GLint ref, GLuint mask);

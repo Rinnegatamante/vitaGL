@@ -25,7 +25,7 @@
 
 #include "shared.h"
 
-#define NUM_EXTENSIONS 11 // Number of supported extensions
+#define NUM_EXTENSIONS 12 // Number of supported extensions
 
 static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_OES_vertex_half_float",
@@ -38,7 +38,8 @@ static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_EXT_texture_compression_dxt3",
 	"GL_EXT_texture_compression_dxt5",
 	"GL_EXT_texture_compression_s3tc",
-	"GL_IMG_texture_compression_pvrtc"
+	"GL_IMG_texture_compression_pvrtc",
+	"GL_WIN_phong_shading"
 };
 static GLubyte *extension = NULL;
 

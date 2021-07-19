@@ -167,29 +167,29 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 #endif
 
 	// Allocating a new buffer
-	uint8_t *ptr = gpu_buf->ptr;
-	gpu_buf->ptr = gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
+	uint8_t *ptr = gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
 	
 #ifdef LOG_ERRORS
-	if (!gpu_buf->ptr) {
+	if (!ptr) {
 		vgl_log("glBufferSubData failed to alloc a buffer of %ld bytes. Buffer content won't be updated.\n", gpu_buf->size);
-		gpu_buf->ptr = ptr;
 		return;
 	}
 #endif
 
 	// Copying up previous data combined to modified data
 	if (offset > 0)
-		sceClibMemcpy(gpu_buf->ptr, ptr, offset);
-	sceClibMemcpy((uint8_t *)gpu_buf->ptr + offset, data, size);
+		sceClibMemcpy(ptr, gpu_buf->ptr, offset);
+	sceClibMemcpy(ptr + offset, data, size);
 	if (gpu_buf->size - size - offset > 0)
-		sceClibMemcpy((uint8_t *)gpu_buf->ptr + offset + size, ptr + offset + size, gpu_buf->size - size - offset);
+		sceClibMemcpy(ptr + offset + size, (uint8_t *)gpu_buf->ptr + offset + size, gpu_buf->size - size - offset);
 
 	// Marking previous content for deletion
 	if (gpu_buf->used)
-		markAsDirty(ptr);
+		markAsDirty(gpu_buf->ptr);
 	else
-		vgl_free(ptr);
+		vgl_free(gpu_buf->ptr);
+	
+	gpu_buf->ptr = ptr;
 	gpu_buf->used = GL_FALSE;
 }
 
