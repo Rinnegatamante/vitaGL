@@ -25,7 +25,7 @@
 
 // Depth Test
 GLboolean depth_test_state = GL_FALSE; // Current state for GL_DEPTH_TEST
-SceGxmDepthFunc gxm_depth = SCE_GXM_DEPTH_FUNC_LESS; // Current in-use depth test func
+SceGxmDepthFunc depth_func = SCE_GXM_DEPTH_FUNC_LESS; // Current in-use depth test func
 GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
 GLdouble depth_value = 1.0f; // Current depth test clear value
 GLboolean depth_mask_state = GL_TRUE; // Current state for glDepthMask
@@ -70,8 +70,8 @@ void change_depth_write(SceGxmDepthWriteMode mode) {
 
 void change_depth_func() {
 	// Setting depth function for both front and back primitives
-	sceGxmSetFrontDepthFunc(gxm_context, depth_test_state ? gxm_depth : SCE_GXM_DEPTH_FUNC_ALWAYS);
-	sceGxmSetBackDepthFunc(gxm_context, depth_test_state ? gxm_depth : SCE_GXM_DEPTH_FUNC_ALWAYS);
+	sceGxmSetFrontDepthFunc(gxm_context, depth_test_state ? depth_func : SCE_GXM_DEPTH_FUNC_ALWAYS);
+	sceGxmSetBackDepthFunc(gxm_context, depth_test_state ? depth_func : SCE_GXM_DEPTH_FUNC_ALWAYS);
 
 	// Calling an update for the depth write mode
 	change_depth_write(depth_mask_state ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
@@ -384,28 +384,28 @@ void glDepthFunc(GLenum func) {
 	// Properly translating openGL function to sceGxm one
 	switch (func) {
 	case GL_NEVER:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_NEVER;
+		depth_func = SCE_GXM_DEPTH_FUNC_NEVER;
 		break;
 	case GL_LESS:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_LESS;
+		depth_func = SCE_GXM_DEPTH_FUNC_LESS;
 		break;
 	case GL_EQUAL:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_EQUAL;
+		depth_func = SCE_GXM_DEPTH_FUNC_EQUAL;
 		break;
 	case GL_LEQUAL:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
+		depth_func = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
 		break;
 	case GL_GREATER:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_GREATER;
+		depth_func = SCE_GXM_DEPTH_FUNC_GREATER;
 		break;
 	case GL_NOTEQUAL:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_NOT_EQUAL;
+		depth_func = SCE_GXM_DEPTH_FUNC_NOT_EQUAL;
 		break;
 	case GL_GEQUAL:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_GREATER_EQUAL;
+		depth_func = SCE_GXM_DEPTH_FUNC_GREATER_EQUAL;
 		break;
 	case GL_ALWAYS:
-		gxm_depth = SCE_GXM_DEPTH_FUNC_ALWAYS;
+		depth_func = SCE_GXM_DEPTH_FUNC_ALWAYS;
 		break;
 	}
 

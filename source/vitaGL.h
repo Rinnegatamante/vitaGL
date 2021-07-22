@@ -406,9 +406,20 @@ extern "C" {
 
 #define GL_MAX_TEXTURE_LOD_BIAS               31
 
+#define GL_POINT_BIT          0x00000002
+#define GL_LINE_BIT           0x00000004
+#define GL_POLYGON_BIT        0x00000008
+#define GL_LIGHTING_BIT       0x00000040
+#define GL_FOG_BIT            0x00000080
 #define GL_DEPTH_BUFFER_BIT   0x00000100
 #define GL_STENCIL_BUFFER_BIT 0x00000400
+#define GL_VIEWPORT_BIT       0x00000800
+#define GL_TRANSFORM_BIT      0x00001000
+#define GL_ENABLE_BIT         0x00002000
 #define GL_COLOR_BUFFER_BIT   0x00004000
+#define GL_HINT_BIT           0x00008000
+#define GL_SCISSOR_BIT        0x00080000
+#define GL_ALL_ATTRIB_BITS    0xFFFFFFFF
 
 // Aliases
 #define GL_CLAMP GL_CLAMP_TO_EDGE
@@ -528,7 +539,9 @@ void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdou
 void glPointSize(GLfloat size);
 void glPolygonMode(GLenum face, GLenum mode);
 void glPolygonOffset(GLfloat factor, GLfloat units);
+void glPopAttrib(void);
 void glPopMatrix(void);
+void glPushAttrib(GLbitfield mask);
 void glPushMatrix(void);
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data);
 void glReleaseShaderCompiler(void);

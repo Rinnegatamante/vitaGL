@@ -558,10 +558,13 @@ extern SceGxmBlendFactor blend_sfactor_rgb; // Current in use RGB source blend f
 extern SceGxmBlendFactor blend_dfactor_rgb; // Current in use RGB dest blend factor
 extern SceGxmBlendFactor blend_sfactor_a; // Current in use A source blend factor
 extern SceGxmBlendFactor blend_dfactor_a; // Current in use A dest blend factor
+extern SceGxmColorMask blend_color_mask; // Current in-use color mask (glColorMask)
+extern SceGxmBlendFunc blend_func_rgb; // Current in-use RGB blend func
+extern SceGxmBlendFunc blend_func_a; // Current in-use A blend func
 
 // Depth Test
 extern GLboolean depth_test_state; // Current state for GL_DEPTH_TEST
-extern SceGxmDepthFunc gxm_depth; // Current in-use depth test func
+extern SceGxmDepthFunc depth_func; // Current in-use depth test func
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
 extern GLdouble depth_value; // Current depth test clear value
 extern GLboolean depth_mask_state; // Current state for glDepthMask

@@ -246,7 +246,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	// Check if a blend info rebuild is required and upload fragment program
 	if (p->blend_info.raw != blend_info.raw) {
 		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, p->vshader->prog);
+		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog);
 	}
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 
@@ -399,7 +399,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	// Check if a blend info rebuild is required and upload fragment program
 	if (p->blend_info.raw != blend_info.raw) {
 		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, p->vshader->prog);
+		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog);
 	}
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 
@@ -565,7 +565,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	// Check if a blend info rebuild is required
 	if (p->blend_info.raw != blend_info.raw) {
 		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, p->vshader->prog);
+		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog);
 	}
 
 	// Setting up required shader

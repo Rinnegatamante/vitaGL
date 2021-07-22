@@ -22,6 +22,102 @@
  */
 
 #include "shared.h"
+
+#define ATTRIBS_STACK_DEPTH 16 // Depth of attributes stack
+
+enum {
+	COLOR_BUFFER_BIT,
+	DEPTH_BUFFER_BIT,
+	ENABLE_BIT,
+	FOG_BIT,
+	HINT_BIT,
+	LINE_BIT,
+	POINT_BIT,
+	POLYGON_BIT,
+	SCISSOR_BIT,
+	STENCIL_BUFFER_BIT,
+	TRANSFORM_BIT,
+	VIEWPORT_BIT
+};
+
+typedef struct {
+	uint16_t enabled_bits;
+	// GL_COLOR_BUFFER_BIT
+	GLenum alpha_func;
+	GLfloat alpha_ref;
+	uint8_t blend_color_mask;
+	uint8_t blend_func_rgb;
+	uint8_t blend_func_a;
+	uint8_t blend_sfactor_rgb;
+	uint8_t blend_dfactor_rgb;
+	uint8_t blend_sfactor_a;
+	uint8_t blend_dfactor_a;
+	// GL_DEPTH_BUFFER_BIT
+	uint32_t depth_func;
+	GLdouble depth_value;
+	GLboolean depth_mask_state;
+	// GL_ENABLE_BIT
+	GLboolean alpha_test_state;
+	GLboolean blend_state;
+	GLboolean depth_test_state;
+	GLboolean lighting_state;
+	GLboolean stencil_test_state;
+	GLboolean scissor_test_state;
+	GLboolean cull_face_state;
+	GLboolean pol_offset_fill;
+	GLboolean pol_offset_line;
+	GLboolean pol_offset_point;
+	GLboolean fogging;
+	uint8_t clip_planes_mask;
+	uint8_t light_mask;
+	// GL_FOG_BIT
+	GLfloat fog_density;
+	vector4f fog_color;
+	GLfloat fog_far;
+	GLfloat fog_near;
+	GLint fog_mode;
+	// GL_HINT_BIT
+	GLboolean fast_texture_compression;
+	// GL_LINE_BIT
+	GLfloat line_width;
+	// GL_POINT_BIT
+	GLfloat point_size;
+	// GL_POLYGON_BIT
+	GLenum gl_cull_mode;
+	GLenum gl_front_face;
+	GLfloat pol_factor;
+	GLfloat pol_units;
+	// GL_SCISSOR_BIT
+	scissor_region region;
+	// GL_STENCIL_BUFFER_BIT
+	uint8_t stencil_mask_back_write;
+	uint8_t stencil_mask_front_write;
+	uint8_t stencil_mask_back;
+	uint8_t stencil_mask_front;
+	uint8_t stencil_ref_front;
+	uint8_t stencil_ref_back;
+	SceGxmStencilOp stencil_fail_front;
+	SceGxmStencilOp depth_fail_front;
+	SceGxmStencilOp depth_pass_front;
+	SceGxmStencilOp stencil_fail_back;
+	SceGxmStencilOp depth_fail_back;
+	SceGxmStencilOp depth_pass_back;
+	SceGxmStencilFunc stencil_func_front;
+	SceGxmStencilFunc stencil_func_back;
+	GLint stencil_value;
+	// GL_TRANSFORM_BIT
+	vector4f clip_planes_eq[MAX_CLIP_PLANES_NUM];
+	matrix4x4 *matrix;
+	// GL_VIEWPORT_BIT
+	viewport gl_viewport;
+	float z_port;
+	float z_scale;
+} attrib_state;
+
+attrib_state attrib_stack[ATTRIBS_STACK_DEPTH];
+uint8_t attrib_stack_counter = 0;
+
+GLfloat line_width = 1.0f;
 GLfloat point_size = 1.0f;
 GLboolean fast_texture_compression = GL_FALSE; // Hints for texture compression
 vector4f clear_rgba_val; // Current clear color for glClear
@@ -327,6 +423,7 @@ void glDisable(GLenum cap) {
 	switch (cap) {
 	case GL_LIGHTING:
 		ffp_dirty_vert = GL_TRUE;
+		ffp_dirty_frag = GL_TRUE;
 		lighting_state = GL_FALSE;
 		break;
 	case GL_DEPTH_TEST:
@@ -536,7 +633,8 @@ void glLineWidth(GLfloat width) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-
+	
+	line_width = width;
 	uint32_t int_width = width;
 	if (int_width > 16)
 		int_width = 16;
@@ -575,5 +673,262 @@ void glHint(GLenum target, GLenum mode) {
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+}
+
+void glPushAttrib(GLbitfield mask) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	} else if (attrib_stack_counter >= ATTRIBS_STACK_DEPTH) {
+		SET_GL_ERROR(GL_STACK_OVERFLOW)
+	}
+#endif
+	attrib_state *setup = &attrib_stack[attrib_stack_counter++];
+	setup->enabled_bits = 0;
+	
+	if (mask & GL_COLOR_BUFFER_BIT) {
+		setup->enabled_bits += (1 << COLOR_BUFFER_BIT);
+		setup->alpha_test_state = alpha_test_state;
+		setup->alpha_func = alpha_func;
+		setup->alpha_ref = alpha_ref;
+		setup->blend_state = blend_state;
+		setup->blend_color_mask = blend_color_mask;
+		setup->blend_func_rgb = blend_func_rgb;
+		setup->blend_func_a = blend_func_a;
+		setup->blend_sfactor_rgb = blend_sfactor_rgb;
+		setup->blend_sfactor_a = blend_sfactor_a;
+		setup->blend_dfactor_rgb = blend_dfactor_rgb;
+		setup->blend_dfactor_a = blend_dfactor_a;
+	}
+	if (mask & GL_DEPTH_BUFFER_BIT) {
+		setup->enabled_bits += (1 << DEPTH_BUFFER_BIT);
+		setup->depth_test_state = depth_test_state;
+		setup->depth_func = depth_func;
+		setup->depth_value = depth_value;
+		setup->depth_mask_state = depth_mask_state;
+	}
+	if (mask & GL_ENABLE_BIT) {
+		setup->enabled_bits += (1 << ENABLE_BIT);
+		setup->alpha_test_state = alpha_test_state;
+		setup->blend_state = blend_state;
+		setup->depth_test_state = depth_test_state;
+		setup->lighting_state = lighting_state;
+		setup->stencil_test_state = stencil_test_state;
+		setup->scissor_test_state = scissor_test_state;
+		setup->cull_face_state = cull_face_state;
+		setup->pol_offset_fill = pol_offset_fill;
+		setup->pol_offset_line = pol_offset_line;
+		setup->pol_offset_point = pol_offset_point;
+		setup->fogging = fogging;
+		setup->clip_planes_mask = clip_planes_mask;
+		setup->light_mask = light_mask;
+	}
+	if (mask & GL_FOG_BIT) {
+		setup->enabled_bits += (1 << FOG_BIT);
+		setup->fogging = fogging;
+		setup->fog_density = fog_density;
+		setup->fog_color = fog_color;
+		setup->fog_far = fog_far;
+		setup->fog_near = fog_near;
+		setup->fog_mode = fog_mode;
+	}
+	if (mask & GL_HINT_BIT) {
+		setup->enabled_bits += (1 << HINT_BIT);
+		setup->fast_texture_compression = fast_texture_compression;
+	}
+	if (mask & GL_LINE_BIT) {
+		setup->enabled_bits += (1 << LINE_BIT);
+		setup->line_width = line_width;
+	}
+	if (mask & GL_POINT_BIT) {
+		setup->enabled_bits += (1 << POINT_BIT);
+		setup->point_size = point_size;
+	}
+	if (mask & GL_POLYGON_BIT) {
+		setup->enabled_bits += (1 << POLYGON_BIT);
+		setup->cull_face_state = cull_face_state;
+		setup->gl_cull_mode = gl_cull_mode;
+		setup->gl_front_face = gl_front_face;
+		setup->pol_offset_fill = pol_offset_fill;
+		setup->pol_offset_line = pol_offset_line;
+		setup->pol_offset_point = pol_offset_point;
+		setup->pol_factor = pol_factor;
+		setup->pol_units = pol_units;
+	}
+	if (mask & GL_SCISSOR_BIT) {
+		setup->enabled_bits += (1 << SCISSOR_BIT);
+		setup->scissor_test_state = scissor_test_state;
+		setup->region = region;
+	}
+	if (mask & GL_STENCIL_BUFFER_BIT) {
+		setup->enabled_bits += (1 << STENCIL_BUFFER_BIT);
+		setup->stencil_test_state = stencil_test_state;
+		setup->stencil_mask_back_write = stencil_mask_back_write;
+		setup->stencil_mask_front_write = stencil_mask_front_write;
+		setup->stencil_mask_back = stencil_mask_back;
+		setup->stencil_mask_front = stencil_mask_front;
+		setup->stencil_ref_front = stencil_ref_front;
+		setup->stencil_ref_back = stencil_ref_back;
+		setup->stencil_fail_front = stencil_fail_front;
+		setup->depth_fail_front = depth_fail_front;
+		setup->depth_pass_front = depth_pass_front;
+		setup->stencil_fail_back = stencil_fail_back;
+		setup->depth_fail_back = depth_fail_back;
+		setup->depth_pass_back = depth_pass_back;
+		setup->stencil_func_front = stencil_func_front;
+		setup->stencil_func_back = stencil_func_back;
+		setup->stencil_value = stencil_value;
+	}
+	if (mask & GL_TRANSFORM_BIT) {
+		setup->enabled_bits += (1 << TRANSFORM_BIT);
+		setup->clip_planes_mask = clip_planes_mask;
+		setup->matrix = matrix;
+		for (int i = 0; i < MAX_CLIP_PLANES_NUM; i++) {
+			setup->clip_planes_eq[i] = clip_planes_eq[i];
+		}
+	}
+	if (mask & GL_VIEWPORT_BIT) {
+		setup->enabled_bits += (1 << VIEWPORT_BIT);
+		setup->gl_viewport = gl_viewport;
+		setup->z_port = z_port;
+		setup->z_scale = z_scale;
+	}
+}
+
+void glPopAttrib(void) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	} else if (attrib_stack_counter == 0) {
+		SET_GL_ERROR(GL_STACK_UNDERFLOW)
+	}
+#endif
+	attrib_state *setup = &attrib_stack[attrib_stack_counter--];
+	
+	if (setup->enabled_bits & (1 << COLOR_BUFFER_BIT)) {
+		alpha_test_state = setup->alpha_test_state;
+		alpha_func = setup->alpha_func;
+		alpha_ref = setup->alpha_ref;
+		update_alpha_test_settings();
+		blend_state = setup->blend_state;
+		blend_color_mask = setup->blend_color_mask;
+		blend_func_rgb = setup->blend_func_rgb;
+		blend_func_a = setup->blend_func_a;
+		blend_sfactor_rgb = setup->blend_sfactor_rgb;
+		blend_sfactor_a = setup->blend_sfactor_a;
+		blend_dfactor_rgb = setup->blend_dfactor_rgb;
+		blend_dfactor_a = setup->blend_dfactor_a;
+		if (blend_state)
+			change_blend_factor();
+		else
+			change_blend_mask();
+	}
+	if (setup->enabled_bits & (1 << DEPTH_BUFFER_BIT)) {
+		depth_test_state = setup->depth_test_state;
+		depth_func = setup->depth_func;
+		depth_value = setup->depth_value;
+		depth_mask_state = setup->depth_mask_state;
+		change_depth_func();
+	}
+	if (setup->enabled_bits & (1 << ENABLE_BIT)) {
+		alpha_test_state = setup->alpha_test_state;
+		update_alpha_test_settings();
+		blend_state = setup->blend_state;
+		if (blend_state)
+			change_blend_factor();
+		else
+			change_blend_mask();
+		depth_test_state = setup->depth_test_state;
+		change_depth_func();
+		lighting_state = setup->lighting_state;
+		stencil_test_state = setup->stencil_test_state;
+		change_stencil_settings();
+		scissor_test_state = setup->scissor_test_state;
+		sceneReset();
+		update_scissor_test();
+		cull_face_state = setup->cull_face_state;
+		change_cull_mode();
+		pol_offset_fill = setup->pol_offset_fill;
+		pol_offset_line = setup->pol_offset_line;
+		pol_offset_point = setup->pol_offset_point;
+		update_polygon_offset();
+		fogging = setup->fogging;
+		update_fogging_state();
+		clip_planes_mask = setup->clip_planes_mask;
+		light_mask = setup->light_mask;
+		ffp_dirty_vert = GL_TRUE;
+		ffp_dirty_frag = GL_TRUE;
+	}
+	if (setup->enabled_bits & (1 << FOG_BIT)) {
+		fogging = setup->fogging;
+		fog_density = setup->fog_density;
+		fog_color = setup->fog_color;
+		fog_far = setup->fog_far;
+		fog_near = setup->fog_near;
+		fog_mode = setup->fog_mode;
+		update_fogging_state();
+	}
+	if (setup->enabled_bits & (1 << HINT_BIT)) {
+		fast_texture_compression = setup->fast_texture_compression;
+	}
+	if (setup->enabled_bits & (1 << LINE_BIT)) {
+		line_width = setup->line_width;
+	}
+	if (setup->enabled_bits & (1 << POINT_BIT)) {
+		point_size = setup->point_size;
+	}
+	if (setup->enabled_bits & (1 << POLYGON_BIT)) {
+		cull_face_state = setup->cull_face_state;
+		gl_cull_mode = setup->gl_cull_mode;
+		gl_front_face = setup->gl_front_face;
+		pol_offset_fill = setup->pol_offset_fill;
+		pol_offset_line = setup->pol_offset_line;
+		pol_offset_point = setup->pol_offset_point;
+		pol_factor = setup->pol_factor;
+		pol_units = setup->pol_units;
+		change_cull_mode();
+		update_polygon_offset();
+	}
+	if (setup->enabled_bits & (1 << SCISSOR_BIT)) {
+		scissor_test_state = setup->scissor_test_state;
+		region = setup->region;
+		sceneReset();
+		update_scissor_test();
+	}
+	if (setup->enabled_bits & (1 << STENCIL_BUFFER_BIT)) {
+		stencil_test_state = setup->stencil_test_state;
+		stencil_mask_back_write = setup->stencil_mask_back_write;
+		stencil_mask_front_write = setup->stencil_mask_front_write;
+		stencil_mask_back = setup->stencil_mask_back;
+		stencil_mask_front = setup->stencil_mask_front;
+		stencil_ref_front = setup->stencil_ref_front;
+		stencil_ref_back = setup->stencil_ref_back;
+		stencil_fail_front = setup->stencil_fail_front;
+		depth_fail_front = setup->depth_fail_front;
+		depth_pass_front = setup->depth_pass_front;
+		stencil_fail_back = setup->stencil_fail_back;
+		depth_fail_back = setup->depth_fail_back;
+		depth_pass_back = setup->depth_pass_back;
+		stencil_func_front = setup->stencil_func_front;
+		stencil_func_back = setup->stencil_func_back;
+		stencil_value = setup->stencil_value;
+		change_stencil_settings();
+	}
+	if (setup->enabled_bits & (1 << TRANSFORM_BIT)) {
+		clip_planes_mask = setup->clip_planes_mask;
+		matrix = setup->matrix;
+		for (int i = 0; i < MAX_CLIP_PLANES_NUM; i++) {
+			clip_planes_eq[i] = setup->clip_planes_eq[i];
+		}
+		ffp_dirty_vert = GL_TRUE;
+	}
+	if (setup->enabled_bits & (1 << VIEWPORT_BIT)) {
+		gl_viewport = setup->gl_viewport;
+		z_port = setup->z_port;
+		z_scale = setup->z_scale;
+		glViewport(gl_viewport.x, gl_viewport.y, gl_viewport.w, gl_viewport.h);
 	}
 }
