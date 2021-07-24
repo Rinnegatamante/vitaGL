@@ -178,10 +178,10 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 
 	// Copying up previous data combined to modified data
 	if (offset > 0)
-		sceClibMemcpy(ptr, gpu_buf->ptr, offset);
-	sceClibMemcpy(ptr + offset, data, size);
+		vgl_memcpy(ptr, gpu_buf->ptr, offset);
+	vgl_memcpy(ptr + offset, data, size);
 	if (gpu_buf->size - size - offset > 0)
-		sceClibMemcpy(ptr + offset + size, (uint8_t *)gpu_buf->ptr + offset + size, gpu_buf->size - size - offset);
+		vgl_memcpy(ptr + offset + size, (uint8_t *)gpu_buf->ptr + offset + size, gpu_buf->size - size - offset);
 
 	// Marking previous content for deletion
 	if (gpu_buf->used)

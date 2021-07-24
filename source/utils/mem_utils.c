@@ -272,3 +272,10 @@ void *vgl_realloc(void *ptr, size_t size) {
 		return sceClibMspaceRealloc(mempool_mspace[type], ptr, size);
 	return NULL;
 }
+
+void vgl_memcpy(void *dst, const void *src, size_t size) {
+	if (size >= 0x2000)
+		sceDmacMemcpy(dst, src, size);
+	else
+		sceClibMemcpy(dst, src, size);
+}

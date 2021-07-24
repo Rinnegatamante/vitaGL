@@ -36,4 +36,7 @@ void *vgl_memalign(size_t alignment, size_t size, vglMemType type);
 void *vgl_realloc(void *ptr, size_t size);
 void vgl_free(void *ptr);
 
+// Helper function for fastest memory copy on uncached mem
+void vgl_memcpy(void *dst, const void *src, size_t size);
+
 #endif

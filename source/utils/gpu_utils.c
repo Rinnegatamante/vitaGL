@@ -365,7 +365,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 			uint8_t *dst;
 			if (fast_store) { // Internal Format and Data Format are the same, we can just use sceClibMemcpy for better performance
 				if (aligned_w == w) // Texture size is already aligned, we can use a single sceClibMemcpy for better performance
-					sceClibMemcpy(texture_data, src, w * h * bpp);
+					sceClibMemcpy(texture_data, src, tex_size);
 				else {
 					uint32_t line_size = w * bpp;
 					for (i = 0; i < h; i++) {
@@ -487,7 +487,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 				// Reallocation in the same mspace failed, try manually.
 				texture_data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 				const int old_data_size = gpu_get_compressed_mipchain_size(mip_count, aligned_max_width, aligned_max_height, format);
-				sceClibMemcpy(texture_data, tex->data, old_data_size);
+				vgl_memcpy(texture_data, tex->data, old_data_size);
 				gpu_free_texture_data(tex);
 			}
 
@@ -607,7 +607,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		if (!texture_data) {
 			// Reallocation in the same mspace failed, try manually.
 			texture_data = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-			sceClibMemcpy(texture_data, tex->data, ALIGN(orig_w, 8) * orig_h * bpp);
+			vgl_memcpy(texture_data, tex->data, ALIGN(orig_w, 8) * orig_h * bpp);
 			gpu_free_texture_data(tex);
 		}
 
