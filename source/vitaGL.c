@@ -486,7 +486,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 			break;
 		}
 
-		sceClibPrintf("Draw on drawArrays: %X\n", sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count));
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 	}
 	restore_polygon_mode(gxm_p);
 }
@@ -517,9 +517,9 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		_glDrawElements_FixedFunctionIMPL(src, count);
 	}
 
-//#ifndef SKIP_ERROR_HANDLING
+#ifndef SKIP_ERROR_HANDLING
 	if (is_draw_legal)
-//#endif
+#endif
 	{
 		uint16_t *ptr;
 		// Directly use the current IBO if there is no need for a temporary index buffer.
