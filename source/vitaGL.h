@@ -166,6 +166,7 @@ extern "C" {
 #define GL_PROJECTION                                0x1701
 #define GL_TEXTURE                                   0x1702
 #define GL_COLOR_INDEX                               0x1900
+#define GL_DEPTH_COMPONENT                           0x1902
 #define GL_RED                                       0x1903
 #define GL_GREEN                                     0x1904
 #define GL_BLUE                                      0x1905
@@ -254,6 +255,9 @@ extern "C" {
 #define GL_COLOR_INDEX8_EXT                          0x80E5
 #define GL_PHONG_WIN                                 0x80EA
 #define GL_CLAMP_TO_EDGE                             0x812F
+#define GL_DEPTH_COMPONENT16                         0x81A5
+#define GL_DEPTH_COMPONENT24                         0x81A6
+#define GL_DEPTH_COMPONENT32                         0x81A7
 #define GL_DEPTH_STENCIL_ATTACHMENT                  0x821A
 #define GL_MAJOR_VERSION                             0x821B
 #define GL_MINOR_VERSION                             0x821C
@@ -339,6 +343,7 @@ extern "C" {
 #define GL_DYNAMIC_DRAW                              0x88E8
 #define GL_DYNAMIC_READ                              0x88E9
 #define GL_DYNAMIC_COPY                              0x88EA
+#define GL_DEPTH24_STENCIL8                          0x88F0
 #define GL_FRAGMENT_SHADER                           0x8B30
 #define GL_VERTEX_SHADER                             0x8B31
 #define GL_SHADER_TYPE                               0x8B4F

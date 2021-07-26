@@ -239,12 +239,16 @@ void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, 
 		if (active_rb->stencil_buffer_addr)
 			markAsDirty(active_rb->stencil_buffer_addr);
 	}
-	
-	// FIXME: We use mask update bit for scissoring, would be cool to find an alternative to support more formats
+
 	switch (internalformat) {
+	case GL_DEPTH24_STENCIL8:
 	case GL_DEPTH32F_STENCIL8:
 		initDepthStencilBuffer(width, height, &active_rb->depthbuffer, &active_rb->depth_buffer_addr, &active_rb->stencil_buffer_addr);
 		break;
+	case GL_DEPTH_COMPONENT:
+	case GL_DEPTH_COMPONENT16:
+	case GL_DEPTH_COMPONENT24:
+	case GL_DEPTH_COMPONENT32:
 	case GL_DEPTH_COMPONENT32F:
 		initDepthStencilBuffer(width, height, &active_rb->depthbuffer, &active_rb->depth_buffer_addr, NULL);
 		break;
