@@ -15,6 +15,7 @@ uniform float4 lights_diffuses[lights_num];
 uniform float4 lights_speculars[lights_num];
 uniform float4 lights_positions[lights_num];
 uniform float3 lights_attenuations[lights_num];
+uniform float4 light_global_ambient;
 
 void point_light(int i, float3 normal, float3 eye, float3 position) {
 	float3 VP = lights_positions[i].xyz - position;
@@ -133,7 +134,7 @@ void main(
 #if has_colors == 1
 #if lights_num > 0
 #if shading_mode < 1 // GL_SMOOTH/GL_FLAT
-	vColor = emission + color * float4(0.2f, 0.2f, 0.2f, 1.0f); // TODO: glLightAmbient impl
+	vColor = emission + color * light_global_ambient;
 	vColor += Ambient * color + Diffuse * diff + Specular * spec;
 	vColor = clamp(vColor, 0.0f, 1.0f);
 #endif

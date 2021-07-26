@@ -35,12 +35,12 @@
 
 #define SHADER_CACHE_SIZE 256
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 2 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 3 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
-#define VERTEX_UNIFORMS_NUM 11
-#define FRAGMENT_UNIFORMS_NUM 12
+#define VERTEX_UNIFORMS_NUM 12
+#define FRAGMENT_UNIFORMS_NUM 13
 
 typedef enum {
 	//FLAT, // FIXME: Not easy to implement with ShaccCg constraints
@@ -64,6 +64,7 @@ vector4f lights_diffuses[MAX_LIGHTS_NUM];
 vector4f lights_speculars[MAX_LIGHTS_NUM];
 vector4f lights_positions[MAX_LIGHTS_NUM];
 vector3f lights_attenuations[MAX_LIGHTS_NUM];
+vector4f light_global_ambient = {0.2f, 0.2f, 0.2f, 1.0f};
 shadingMode shading_mode = SMOOTH;
 
 // Fogging
@@ -161,6 +162,7 @@ typedef enum {
 	LIGHTS_SPECULARS_V_UNIF,
 	LIGHTS_POSITIONS_V_UNIF,
 	LIGHTS_ATTENUATIONS_V_UNIF,
+	LIGHT_GLOBAL_AMBIENT_V_UNIF,
 	NORMAL_MATRIX_UNIF,
 	POINT_SIZE_UNIF
 } vert_uniform_type;
@@ -178,6 +180,7 @@ typedef enum {
 	LIGHTS_SPECULARS_F_UNIF,
 	LIGHTS_POSITIONS_F_UNIF,
 	LIGHTS_ATTENUATIONS_F_UNIF,
+	LIGHT_GLOBAL_AMBIENT_F_UNIF
 } frag_uniform_type;
 
 uint8_t ffp_vertex_num_params = 1;
@@ -216,6 +219,7 @@ void reload_vertex_uniforms() {
 			ffp_vertex_params[LIGHTS_SPECULARS_V_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_speculars");
 			ffp_vertex_params[LIGHTS_POSITIONS_V_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_positions");
 			ffp_vertex_params[LIGHTS_ATTENUATIONS_V_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_attenuations");
+			ffp_vertex_params[LIGHT_GLOBAL_AMBIENT_V_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "light_global_ambient");
 		}
 	}
 }
@@ -234,6 +238,7 @@ void reload_fragment_uniforms() {
 		ffp_fragment_params[LIGHTS_SPECULARS_F_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "lights_speculars");
 		ffp_fragment_params[LIGHTS_POSITIONS_F_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "lights_positions");
 		ffp_fragment_params[LIGHTS_ATTENUATIONS_F_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "lights_attenuations");
+		ffp_fragment_params[LIGHT_GLOBAL_AMBIENT_F_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "light_global_ambient");
 	}
 }
 
@@ -747,6 +752,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			if (ffp_fragment_params[FOG_DENSITY_UNIF])
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_DENSITY_UNIF], 0, 1, (const float *)&fog_density);
 			if (ffp_fragment_params[LIGHTS_AMBIENTS_F_UNIF]) {
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[LIGHT_GLOBAL_AMBIENT_F_UNIF], 0, 4, (const float *)&light_global_ambient.r);
 				if (lights_aligned) {
 					sceGxmSetUniformDataF(buffer, ffp_fragment_params[LIGHTS_AMBIENTS_F_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][0]);
 					sceGxmSetUniformDataF(buffer, ffp_fragment_params[LIGHTS_DIFFUSES_F_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][1]);
@@ -781,6 +787,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) {
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[NORMAL_MATRIX_UNIF], 0, 16, (const float *)normal_matrix);
 			if (ffp_vertex_params[LIGHTS_AMBIENTS_V_UNIF]) {
+				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHT_GLOBAL_AMBIENT_V_UNIF], 0, 4, (const float *)&light_global_ambient.r);
 				if (lights_aligned) {
 					sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_AMBIENTS_V_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][0]);
 					sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHTS_DIFFUSES_V_UNIF], 0, 4 * mask.lights_num, (const float *)light_vars[0][1]);
@@ -2059,6 +2066,27 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 	}
 	
 	dirty_vert_unifs = GL_TRUE;
+}
+
+void glLightModelfv(GLenum pname, const GLfloat * params) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+	
+	switch (pname) {
+	case GL_LIGHT_MODEL_AMBIENT:
+		sceClibMemcpy(&light_global_ambient.r, params, sizeof(float) * 4);
+		if (shading_mode == SMOOTH)
+			dirty_vert_unifs = GL_TRUE;
+		else
+			dirty_frag_unifs = GL_TRUE;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
 }
 
 void glFogf(GLenum pname, GLfloat param) {

@@ -115,6 +115,7 @@ extern "C" {
 #define GL_POLYGON_MODE                              0x0B40
 #define GL_CULL_FACE                                 0x0B44
 #define GL_LIGHTING                                  0x0B50
+#define GL_LIGHT_MODEL_AMBIENT                       0x0B53
 #define GL_FOG                                       0x0B60
 #define GL_FOG_DENSITY                               0x0B62
 #define GL_FOG_START                                 0x0B63
@@ -526,6 +527,7 @@ GLboolean glIsEnabled(GLenum cap);
 GLboolean glIsFramebuffer(GLuint fb);
 GLboolean glIsTexture(GLuint texture);
 void glLightfv(GLenum light, GLenum pname, const GLfloat *params);
+void glLightModelfv(GLenum pname, const GLfloat * params);
 void glLineWidth(GLfloat width);
 void glLinkProgram(GLuint progr);
 void glLoadIdentity(void);

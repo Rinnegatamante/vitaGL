@@ -127,6 +127,7 @@ static const struct {
 	{"glIsFramebuffer", (void *)glIsFramebuffer},
 	{"glIsTexture", (void *)glIsTexture},
 	{"glLightfv", (void *)glLightfv},
+	{"glLightModelfv", (void *)glLightModelfv},
 	{"glLineWidth", (void *)glLineWidth},
 	{"glLinkProgram", (void *)glLinkProgram},
 	{"glLoadIdentity", (void *)glLoadIdentity},

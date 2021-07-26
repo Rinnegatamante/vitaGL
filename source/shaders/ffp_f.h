@@ -19,6 +19,7 @@ uniform float4 lights_diffuses[lights_num];
 uniform float4 lights_speculars[lights_num];
 uniform float4 lights_positions[lights_num];
 uniform float3 lights_attenuations[lights_num];
+uniform float4 light_global_ambient;
 
 void point_light(int i, float3 normal, float3 eye, float3 position) {
 	float3 VP = lights_positions[i].xyz - position;
@@ -149,7 +150,7 @@ float4 main(
 		calculate_light(i, vEcPosition, vNormal);
 	}
 	float4 fragColor = texColor;
-	texColor = vEmission + fragColor * float4(0.2f, 0.2f, 0.2f, 1.0f); // TODO: glLightAmbient impl
+	texColor = vEmission + fragColor * light_global_ambient;
 	texColor += Ambient * fragColor + Diffuse * vDiffuse + Specular * vSpecular;
 	texColor = clamp(texColor, 0.0f, 1.0f);
 #endif	
