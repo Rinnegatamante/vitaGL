@@ -25,7 +25,11 @@
 
 #include "shared.h"
 
+#ifndef DISABLE_TEXTURE_COMBINER
+#define NUM_EXTENSIONS 14 // Number of supported extensions
+#else
 #define NUM_EXTENSIONS 13 // Number of supported extensions
+#endif
 
 static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_OES_vertex_half_float",
@@ -40,7 +44,10 @@ static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_EXT_texture_compression_s3tc",
 	"GL_IMG_texture_compression_pvrtc",
 	"GL_WIN_phong_shading",
-	"GL_EXT_texture_env_add"
+	"GL_EXT_texture_env_add",
+#ifndef DISABLE_TEXTURE_COMBINER
+	"GL_EXT_texture_env_combine"
+#endif
 };
 static GLubyte *extension = NULL;
 
