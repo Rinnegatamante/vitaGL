@@ -285,6 +285,7 @@ extern "C" {
 #define GL_TEXTURE14                                 0x84CE
 #define GL_TEXTURE15                                 0x84CF
 #define GL_ACTIVE_TEXTURE                            0x84E0
+#define GL_MAX_TEXTURE_UNITS                         0x84E2
 #define GL_SUBTRACT                                  0x84E7
 #define GL_TEXTURE_COMPRESSION_HINT                  0x84EF
 #define GL_TEXTURE_LOD_BIAS                          0x8501
@@ -539,6 +540,9 @@ void glLoadIdentity(void);
 void glLoadMatrixf(const GLfloat *m);
 void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params);
 void glMatrixMode(GLenum mode);
+void glMultiTexCoord2f(GLenum target, GLfloat s, GLfloat t);
+void glMultiTexCoord2fv(GLenum target, GLfloat *f);
+void glMultiTexCoord2i(GLenum target, GLint s, GLint t);
 void glMultMatrixf(const GLfloat *m);
 void glNormal3f(GLfloat x, GLfloat y, GLfloat z);
 void glNormal3fv(const GLfloat *v);

@@ -26,9 +26,9 @@
 #include "shared.h"
 
 #ifndef DISABLE_TEXTURE_COMBINER
-#define NUM_EXTENSIONS 14 // Number of supported extensions
+#define NUM_EXTENSIONS 15 // Number of supported extensions
 #else
-#define NUM_EXTENSIONS 13 // Number of supported extensions
+#define NUM_EXTENSIONS 14 // Number of supported extensions
 #endif
 
 static GLubyte *extensions[NUM_EXTENSIONS] = {
@@ -45,6 +45,7 @@ static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_IMG_texture_compression_pvrtc",
 	"GL_WIN_phong_shading",
 	"GL_EXT_texture_env_add",
+	"GL_ARB_multitexture",
 #ifndef DISABLE_TEXTURE_COMBINER
 	"GL_EXT_texture_env_combine"
 #endif
@@ -289,6 +290,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		*data = COMBINED_TEXTURE_IMAGE_UNITS_NUM;
 		break;
 	case GL_MAX_TEXTURE_COORDS:
+		*data = TEXTURE_COORDS_NUM;
+		break;
+	case GL_MAX_TEXTURE_UNITS:
 		*data = TEXTURE_COORDS_NUM;
 		break;
 	default:

@@ -45,7 +45,8 @@
 #define FFP_VERTEX_ATTRIBS_NUM 8 // Number of attributes used in ffp shaders
 #define MEM_ALIGNMENT 16 // Memory alignment
 #define MAX_CLIP_PLANES_NUM 7 // Maximum number of allowed user defined clip planes for ffp
-#define LEGACY_VERTEX_STRIDE 26 // Vertex stride for GL1 immediate draw pipeline
+#define LEGACY_VERTEX_STRIDE 24 // Vertex stride for GL1 immediate draw pipeline
+#define LEGACY_MT_VERTEX_STRIDE 26 // Vertex stride for GL1 immediate draw pipeline with multitexturing
 #define MAX_LIGHTS_NUM 8 // Maximum number of allowed light sources for ffp
 
 // Internal constants set in bootup phase
@@ -425,8 +426,10 @@ extern uint16_t *default_line_strips_idx_ptr; // sceGxm mapped progressive indic
 extern int legacy_pool_size; // Mempool size for GL1 immediate draw pipeline
 extern float *legacy_pool; // Mempool for GL1 immediate draw pipeline
 extern float *legacy_pool_ptr; // Current address for vertices population for GL1 immediate draw pipeline
-extern SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
-extern SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
+extern SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 1];
+extern SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 1];
+extern SceGxmVertexAttribute legacy_mt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
+extern SceGxmVertexStream legacy_mt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 extern SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 extern SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 

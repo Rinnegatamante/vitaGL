@@ -283,22 +283,32 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 
 	// Init default vertex attributes configurations
 	for (i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
+		// Single Texture variant
+		if (i != FFP_VERTEX_ATTRIBS_NUM - 1) {
+			legacy_vertex_attrib_config[i].streamIndex = i;
+			legacy_vertex_attrib_config[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+			legacy_vertex_stream_config[i].stride = sizeof(float) * LEGACY_VERTEX_STRIDE;
+			legacy_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+		}
+		
+		// Multi Texture variant
 		ffp_vertex_attrib_config[i].streamIndex = i;
 		ffp_vertex_attrib_config[i].offset = 0;
 		ffp_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-		legacy_vertex_attrib_config[i].streamIndex = i;
-		legacy_vertex_attrib_config[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		legacy_vertex_stream_config[i].stride = sizeof(float) * LEGACY_VERTEX_STRIDE;
-		legacy_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+		legacy_mt_vertex_attrib_config[i].streamIndex = i;
+		legacy_mt_vertex_attrib_config[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		legacy_mt_vertex_stream_config[i].stride = sizeof(float) * LEGACY_MT_VERTEX_STRIDE;
+		legacy_mt_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	}
-	legacy_vertex_attrib_config[0].offset = 0;
-	legacy_vertex_attrib_config[1].offset = sizeof(float) * 3;
-	legacy_vertex_attrib_config[2].offset = sizeof(float) * 5;
-	legacy_vertex_attrib_config[3].offset = sizeof(float) * 9;
-	legacy_vertex_attrib_config[4].offset = sizeof(float) * 13;
-	legacy_vertex_attrib_config[5].offset = sizeof(float) * 17;
-	legacy_vertex_attrib_config[6].offset = sizeof(float) * 21;
-	legacy_vertex_attrib_config[7].offset = sizeof(float) * 24;
+	
+	// Single Texture Variant
+	legacy_vertex_attrib_config[0].offset = 0; // Position
+	legacy_vertex_attrib_config[1].offset = sizeof(float) * 3; // Texcoord (UNIT0)
+	legacy_vertex_attrib_config[2].offset = sizeof(float) * 5; // Color/Ambient
+	legacy_vertex_attrib_config[3].offset = sizeof(float) * 9; // Diffuse
+	legacy_vertex_attrib_config[4].offset = sizeof(float) * 13; // Specular
+	legacy_vertex_attrib_config[5].offset = sizeof(float) * 17; // Emission
+	legacy_vertex_attrib_config[6].offset = sizeof(float) * 21; // Normals
 	legacy_vertex_attrib_config[0].componentCount = 3;
 	legacy_vertex_attrib_config[1].componentCount = 2;
 	legacy_vertex_attrib_config[2].componentCount = 4;
@@ -306,7 +316,26 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	legacy_vertex_attrib_config[4].componentCount = 4;
 	legacy_vertex_attrib_config[5].componentCount = 4;
 	legacy_vertex_attrib_config[6].componentCount = 3;
-	legacy_vertex_attrib_config[7].componentCount = 2;
+	
+	// Multi Texture Variant
+	legacy_mt_vertex_attrib_config[0].offset = 0; // Position
+	legacy_mt_vertex_attrib_config[1].offset = sizeof(float) * 3; // Texcoord (UNIT0)
+	legacy_mt_vertex_attrib_config[2].offset = sizeof(float) * 5; // Texcoord (UNIT1)
+	legacy_mt_vertex_attrib_config[3].offset = sizeof(float) * 7; // Color/Ambient
+	legacy_mt_vertex_attrib_config[4].offset = sizeof(float) * 11; // Diffuse
+	legacy_mt_vertex_attrib_config[5].offset = sizeof(float) * 15; // Specular
+	legacy_mt_vertex_attrib_config[6].offset = sizeof(float) * 19; // Emission
+	legacy_mt_vertex_attrib_config[7].offset = sizeof(float) * 23; // Normals
+	legacy_mt_vertex_attrib_config[0].componentCount = 3;
+	legacy_mt_vertex_attrib_config[1].componentCount = 2;
+	legacy_mt_vertex_attrib_config[2].componentCount = 2;
+	legacy_mt_vertex_attrib_config[3].componentCount = 4;
+	legacy_mt_vertex_attrib_config[4].componentCount = 4;
+	legacy_mt_vertex_attrib_config[5].componentCount = 4;
+	legacy_mt_vertex_attrib_config[6].componentCount = 4;
+	legacy_mt_vertex_attrib_config[7].componentCount = 3;
+	
+	// Init vertex pool for immediate mode support
 	legacy_pool_size = pool_size;
 	if (legacy_pool_size) {
 		legacy_pool = (float *)gpu_alloc_mapped_temp(legacy_pool_size);
