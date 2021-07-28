@@ -35,12 +35,12 @@
 
 #define SHADER_CACHE_SIZE 256
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 3 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 4 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
 #define VERTEX_UNIFORMS_NUM 12
-#define FRAGMENT_UNIFORMS_NUM 13
+#define FRAGMENT_UNIFORMS_NUM 15
 
 typedef enum {
 	//FLAT, // FIXME: Not easy to implement with ShaccCg constraints
@@ -185,7 +185,9 @@ typedef enum {
 	LIGHTS_SPECULARS_F_UNIF,
 	LIGHTS_POSITIONS_F_UNIF,
 	LIGHTS_ATTENUATIONS_F_UNIF,
-	LIGHT_GLOBAL_AMBIENT_F_UNIF
+	LIGHT_GLOBAL_AMBIENT_F_UNIF,
+	RGB_SCALE_UNIF,
+	ALPHA_SCALE_UNIF
 } frag_uniform_type;
 
 uint8_t ffp_vertex_num_params = 1;
@@ -233,6 +235,10 @@ void reload_fragment_uniforms() {
 	ffp_fragment_params[ALPHA_CUT_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "alphaCut");
 	ffp_fragment_params[FOG_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fogColor");
 	ffp_fragment_params[TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "texEnvColor");
+	if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) {
+		ffp_fragment_params[RGB_SCALE_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "rgb_scale");
+		ffp_fragment_params[ALPHA_SCALE_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "a_scale");
+	}
 	ffp_fragment_params[TINT_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tintColor");
 	ffp_fragment_params[FOG_NEAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_near");
 	ffp_fragment_params[FOG_FAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_far");
@@ -760,6 +766,8 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) {
 				for (int i = 0; i < mask.num_textures; i++) {
 					sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 4 * i, 4, (const float *)&texture_units[i].env_color.r);
+					sceGxmSetUniformDataF(buffer, ffp_fragment_params[RGB_SCALE_UNIF], i, 1, &texture_units[i].rgb_scale);
+					sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_SCALE_UNIF], i, 1, &texture_units[i].a_scale);
 				}
 			}
 			if (ffp_fragment_params[TINT_COLOR_UNIF])
@@ -1611,6 +1619,22 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
 #endif
 			break;
 #ifndef DISABLE_TEXTURE_COMBINER
+		case GL_RGB_SCALE:
+#ifndef SKIP_ERROR_HANDLING
+			if (param != 1.0f && param != 2.0f && param != 4.0f)
+				SET_GL_ERROR(GL_INVALID_VALUE)
+#endif
+			dirty_frag_unifs = GL_TRUE;
+			tex_unit->rgb_scale = param;
+			break;
+		case GL_ALPHA_SCALE:
+#ifndef SKIP_ERROR_HANDLING
+			if (param != 1.0f && param != 2.0f && param != 4.0f)
+				SET_GL_ERROR(GL_INVALID_VALUE)
+#endif
+			dirty_frag_unifs = GL_TRUE;
+			tex_unit->a_scale = param;
+			break;
 		case GL_COMBINE_RGB:
 			ffp_dirty_frag = GL_TRUE;
 			if (param == GL_REPLACE)

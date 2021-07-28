@@ -319,6 +319,8 @@ typedef struct {
 	int env_mode;
 	combinerState combiner;
 	vector4f env_color;
+	float rgb_scale;
+	float a_scale;
 	int tex_id;
 } texture_unit;
 

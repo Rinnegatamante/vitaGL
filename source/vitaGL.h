@@ -133,6 +133,7 @@ extern "C" {
 #define GL_BLEND                                     0x0BE2
 #define GL_SCISSOR_BOX                               0x0C10
 #define GL_SCISSOR_TEST                              0x0C11
+#define GL_ALPHA_SCALE                               0x0D1C
 #define GL_MAX_CLIP_PLANES                           0x0D32
 #define GL_MAX_TEXTURE_SIZE                          0x0D33
 #define GL_MAX_MODELVIEW_STACK_DEPTH                 0x0D36
@@ -301,6 +302,7 @@ extern "C" {
 #define GL_COMBINE                                   0x8570
 #define GL_COMBINE_RGB                               0x8571
 #define GL_COMBINE_ALPHA                             0x8572
+#define GL_RGB_SCALE                                 0x8573
 #define GL_ADD_SIGNED                                0x8574
 #define GL_INTERPOLATE                               0x8575
 #define GL_CONSTANT                                  0x8576
