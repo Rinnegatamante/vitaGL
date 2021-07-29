@@ -285,6 +285,14 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 
 	// Init default vertex attributes configurations
 	for (i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
+		// Textureless variant
+		if (i < FFP_VERTEX_ATTRIBS_NUM - 2) {
+			legacy_nt_vertex_attrib_config[i].streamIndex = i;
+			legacy_nt_vertex_attrib_config[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+			legacy_nt_vertex_stream_config[i].stride = sizeof(float) * LEGACY_NT_VERTEX_STRIDE;
+			legacy_nt_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+		}
+		
 		// Single Texture variant
 		if (i != FFP_VERTEX_ATTRIBS_NUM - 1) {
 			legacy_vertex_attrib_config[i].streamIndex = i;
@@ -302,6 +310,20 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 		legacy_mt_vertex_stream_config[i].stride = sizeof(float) * LEGACY_MT_VERTEX_STRIDE;
 		legacy_mt_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	}
+	
+	// Textureless Variant
+	legacy_nt_vertex_attrib_config[0].offset = 0; // Position
+	legacy_nt_vertex_attrib_config[1].offset = sizeof(float) * 3; // Color/Ambient
+	legacy_nt_vertex_attrib_config[2].offset = sizeof(float) * 7; // Diffuse
+	legacy_nt_vertex_attrib_config[3].offset = sizeof(float) * 11; // Specular
+	legacy_nt_vertex_attrib_config[4].offset = sizeof(float) * 15; // Emission
+	legacy_nt_vertex_attrib_config[5].offset = sizeof(float) * 19; // Normals
+	legacy_nt_vertex_attrib_config[0].componentCount = 3;
+	legacy_nt_vertex_attrib_config[1].componentCount = 4;
+	legacy_nt_vertex_attrib_config[2].componentCount = 4;
+	legacy_nt_vertex_attrib_config[3].componentCount = 4;
+	legacy_nt_vertex_attrib_config[4].componentCount = 4;
+	legacy_nt_vertex_attrib_config[5].componentCount = 3;
 	
 	// Single Texture Variant
 	legacy_vertex_attrib_config[0].offset = 0; // Position

@@ -106,12 +106,22 @@ legacy_vtx_attachment current_vtx = {
 	.uv2 = {0.0f, 0.0f}
 };
 
-SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 1];
-SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 1];
+// Non-Immediate Mode
 SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
+
+// Immediate Mode with Texturing
+SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 1];
+SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 1];
+
+// Immediate Mode with Multitexturing
 SceGxmVertexAttribute legacy_mt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream legacy_mt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
+
+// Immediate Mode without Texturing
+SceGxmVertexAttribute legacy_nt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 2];
+SceGxmVertexStream legacy_nt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 2];
+
 static uint32_t ffp_vertex_attrib_offsets[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 static uint32_t ffp_vertex_attrib_vbo[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 uint16_t ffp_vertex_attrib_state = 0;
@@ -342,11 +352,6 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	
 	// Counting number of enabled texture units
 	mask.num_textures = 0;
-	GLboolean tex0_state;
-	if (attrs == legacy_vertex_attrib_config || attrs == legacy_mt_vertex_attrib_config) {
-		tex0_state = texture_units[0].enabled;
-		texture_units[0].enabled = GL_TRUE;
-	}
 	for (int i = 0; i < TEXTURE_COORDS_NUM; i++) {
 		if (texture_units[i].enabled && (ffp_vertex_attrib_state & (1 << texcoord_idxs[i]))) {
 			mask.num_textures++;
@@ -369,9 +374,6 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 				break;
 			}
 		}
-	}
-	if (attrs == legacy_vertex_attrib_config || attrs == legacy_mt_vertex_attrib_config) {
-		texture_units[0].enabled = tex0_state;
 	}
 
 	vector4f *clip_planes;
@@ -526,18 +528,20 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		// Vertex positions
 		const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(ffp_vertex_program, "position");
 		attrs[0].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-
-		// Vertex texture coordinates (First Pass)
-		param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord0");
-		attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 		
-		// Vertex texture coordinates (Second Pass)
-		if (mask.num_textures > 1) {
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord1");
-			attrs[2].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			ffp_vertex_num_params += 2;
-		} else
-			ffp_vertex_num_params++;
+		if (mask.num_textures > 0) {
+			// Vertex texture coordinates (First Pass)
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord0");
+			attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+		
+			// Vertex texture coordinates (Second Pass)
+			if (mask.num_textures > 1) {
+				param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord1");
+				attrs[2].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+				ffp_vertex_num_params += 2;
+			} else
+				ffp_vertex_num_params += 1;
+		}
 
 		// Vertex colors
 		if (mask.has_colors) {
@@ -1294,13 +1298,19 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 		} else
 			sceClibMemcpy(legacy_pool_ptr + 7, &current_vtx.clr.x, sizeof(float) * 4);
 		legacy_pool_ptr += LEGACY_MT_VERTEX_STRIDE;
-	} else {
+	} else if (texture_units[0].enabled) { // Texturing enabled
 		if (lighting_state) {
 			sceClibMemcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 2);
 			sceClibMemcpy(legacy_pool_ptr + 5, &current_vtx.amb.x, sizeof(float) * 19);
 		} else
 			sceClibMemcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 6);
 		legacy_pool_ptr += LEGACY_VERTEX_STRIDE;
+	} else { // Texturing disabled
+		if (lighting_state)
+			sceClibMemcpy(legacy_pool_ptr + 3, &current_vtx.amb.x, sizeof(float) * 19);
+		else
+			sceClibMemcpy(legacy_pool_ptr + 3, &current_vtx.clr.x, sizeof(float) * 4);
+		legacy_pool_ptr += LEGACY_NT_VERTEX_STRIDE;
 	}
 
 	// Increasing vertex counter
@@ -1542,18 +1552,23 @@ void glEnd(void) {
 
 	// Invalidating current attributes state settings
 	uint8_t orig_state = ffp_vertex_attrib_state;
-	ffp_vertex_attrib_state = texture_units[1].enabled ? 0xFF : 0x07;
+
 	ffp_dirty_frag = GL_TRUE;
 	ffp_dirty_vert = GL_TRUE;
 	if (texture_units[1].enabled) { // Multitexture usage
+		ffp_vertex_attrib_state = 0xFF;
 		reload_ffp_shaders(legacy_mt_vertex_attrib_config, legacy_mt_vertex_stream_config);
+		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[0].tex_id].gxm_tex);
 		sceGxmSetFragmentTexture(gxm_context, 1, &texture_slots[texture_units[1].tex_id].gxm_tex);
-	} else
+	} else if (texture_units[0].enabled) { // Texturing usage
+		ffp_vertex_attrib_state = 0x07;
 		reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
-
-	// Uploading texture to use
-	sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[0].tex_id].gxm_tex);
-
+		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[0].tex_id].gxm_tex);
+	} else { // No texturing usage
+		ffp_vertex_attrib_state = 0x05;
+		reload_ffp_shaders(legacy_nt_vertex_attrib_config, legacy_nt_vertex_stream_config);
+	}
+	
 	// Restoring original attributes state settings
 	ffp_vertex_attrib_state = orig_state;
 
@@ -1596,7 +1611,12 @@ void glEnd(void) {
 	sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, ptr, index_count);
 
 	// Moving legacy pool address offset
-	legacy_pool += vertex_count * (texture_units[1].enabled ? LEGACY_MT_VERTEX_STRIDE : LEGACY_VERTEX_STRIDE);
+	if (texture_units[1].enabled)
+		legacy_pool += vertex_count * LEGACY_MT_VERTEX_STRIDE;
+	else if (texture_units[0].enabled)
+		legacy_pool += vertex_count * LEGACY_VERTEX_STRIDE;
+	else
+		legacy_pool += vertex_count * LEGACY_NT_VERTEX_STRIDE;
 
 	// Restore polygon mode if a GL_LINES/GL_POINTS has been rendered
 	restore_polygon_mode(prim);

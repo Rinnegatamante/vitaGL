@@ -47,6 +47,7 @@
 #define MAX_CLIP_PLANES_NUM 7 // Maximum number of allowed user defined clip planes for ffp
 #define LEGACY_VERTEX_STRIDE 24 // Vertex stride for GL1 immediate draw pipeline
 #define LEGACY_MT_VERTEX_STRIDE 26 // Vertex stride for GL1 immediate draw pipeline with multitexturing
+#define LEGACY_NT_VERTEX_STRIDE 22 // Vertex stride for GL1 immediate draw pipeline without texturing
 #define MAX_LIGHTS_NUM 8 // Maximum number of allowed light sources for ffp
 
 // Internal constants set in bootup phase
@@ -432,6 +433,8 @@ extern SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM 
 extern SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 1];
 extern SceGxmVertexAttribute legacy_mt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 extern SceGxmVertexStream legacy_mt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
+extern SceGxmVertexAttribute legacy_nt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 2];
+extern SceGxmVertexStream legacy_nt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 2];
 extern SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 extern SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 
