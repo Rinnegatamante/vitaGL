@@ -294,7 +294,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 		}
 		
 		// Single Texture variant
-		if (i != FFP_VERTEX_ATTRIBS_NUM - 1) {
+		if (i < FFP_VERTEX_ATTRIBS_NUM - 1) {
 			legacy_vertex_attrib_config[i].streamIndex = i;
 			legacy_vertex_attrib_config[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 			legacy_vertex_stream_config[i].stride = sizeof(float) * LEGACY_VERTEX_STRIDE;

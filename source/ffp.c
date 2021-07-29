@@ -247,10 +247,12 @@ void reload_fragment_uniforms() {
 	ffp_fragment_params[ALPHA_CUT_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "alphaCut");
 	ffp_fragment_params[FOG_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fogColor");
 	ffp_fragment_params[TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "texEnvColor");
+#ifndef DISABLE_TEXTURE_COMBINER
 	ffp_fragment_params[RGB_SCALE_PASS_0_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass0_rgb_scale");
 	ffp_fragment_params[ALPHA_SCALE_PASS_0_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass0_a_scale");
 	ffp_fragment_params[RGB_SCALE_PASS_1_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass1_rgb_scale");
 	ffp_fragment_params[ALPHA_SCALE_PASS_1_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass1_a_scale");
+#endif
 	ffp_fragment_params[TINT_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tintColor");
 	ffp_fragment_params[FOG_NEAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_near");
 	ffp_fragment_params[FOG_FAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_far");
@@ -775,6 +777,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 					sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 4 * i, 4, (const float *)&texture_units[i].env_color.r);
 				}
 			}
+#ifndef DISABLE_TEXTURE_COMBINER
 			if (ffp_fragment_params[RGB_SCALE_PASS_0_UNIF]) {
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[RGB_SCALE_PASS_0_UNIF], 0, 1, &texture_units[0].rgb_scale);
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_SCALE_PASS_0_UNIF], 0, 1, &texture_units[0].a_scale);
@@ -783,6 +786,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[RGB_SCALE_PASS_1_UNIF], 0, 1, &texture_units[1].rgb_scale);
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_SCALE_PASS_1_UNIF], 0, 1, &texture_units[1].a_scale);
 			}
+#endif
 			if (ffp_fragment_params[TINT_COLOR_UNIF])
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[TINT_COLOR_UNIF], 0, 4, &current_vtx.clr.r);
 			if (ffp_fragment_params[FOG_NEAR_UNIF])

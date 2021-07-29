@@ -446,9 +446,6 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 	}
 #endif
 
-	// Aliasing to make code more readable
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
-
 	// Deallocating given textures and invalidating used texture ids
 	int j;
 	for (j = 0; j < n; j++) {
@@ -479,9 +476,12 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 				else
 					gpu_free_texture(&texture_slots[i]);
 			}
-
-			if (i == tex_unit->tex_id)
-				tex_unit->tex_id = 0;
+			
+			for (int j = 0; j < TEXTURE_IMAGE_UNITS_NUM; j++) {
+				texture_unit *tex_unit = &texture_units[j];
+				if (i == tex_unit->tex_id)
+					tex_unit->tex_id = 0;
+			}
 		}
 	}
 }
