@@ -40,7 +40,7 @@
 #endif
 
 #define VERTEX_UNIFORMS_NUM 12
-#define FRAGMENT_UNIFORMS_NUM 15
+#define FRAGMENT_UNIFORMS_NUM 17
 
 typedef enum {
 	//FLAT, // FIXME: Not easy to implement with ShaccCg constraints
@@ -186,8 +186,10 @@ typedef enum {
 	LIGHTS_POSITIONS_F_UNIF,
 	LIGHTS_ATTENUATIONS_F_UNIF,
 	LIGHT_GLOBAL_AMBIENT_F_UNIF,
-	RGB_SCALE_UNIF,
-	ALPHA_SCALE_UNIF
+	RGB_SCALE_PASS_0_UNIF,
+	ALPHA_SCALE_PASS_0_UNIF,
+	RGB_SCALE_PASS_1_UNIF,
+	ALPHA_SCALE_PASS_1_UNIF
 } frag_uniform_type;
 
 uint8_t ffp_vertex_num_params = 1;
@@ -236,8 +238,10 @@ void reload_fragment_uniforms() {
 	ffp_fragment_params[FOG_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fogColor");
 	ffp_fragment_params[TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "texEnvColor");
 	if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) {
-		ffp_fragment_params[RGB_SCALE_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "rgb_scale");
-		ffp_fragment_params[ALPHA_SCALE_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "a_scale");
+		ffp_fragment_params[RGB_SCALE_PASS_0_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass0_rgb_scale");
+		ffp_fragment_params[ALPHA_SCALE_PASS_0_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass0_a_scale");
+		ffp_fragment_params[RGB_SCALE_PASS_1_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass1_rgb_scale");
+		ffp_fragment_params[ALPHA_SCALE_PASS_1_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass1_a_scale");
 	}
 	ffp_fragment_params[TINT_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tintColor");
 	ffp_fragment_params[FOG_NEAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_near");
@@ -295,7 +299,7 @@ void setup_combiner_pass(int i, char *dst) {
 	sprintf(arg0_rgb, op_modes[texture_units[i].combiner.op_mode_rgb_0], operands[texture_units[i].combiner.op_rgb_0]);
 	sprintf(arg0_a, op_modes[texture_units[i].combiner.op_mode_a_0], operands[texture_units[i].combiner.op_a_0]);
 	
-	sprintf(tmp, combine_src, i, calc_funcs[texture_units[i].combiner.rgb_func], calc_funcs[texture_units[i].combiner.a_func]);
+	sprintf(tmp, combine_src, i, calc_funcs[texture_units[i].combiner.rgb_func], i, calc_funcs[texture_units[i].combiner.a_func], i);
 	switch (args_count) {
 	case 1:
 		sprintf(dst, tmp, arg0_rgb, args[0]);
@@ -629,52 +633,53 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 				startShaderCompiler();
 			
 			// Compiling the new shader
-			char fshader[8192] = {0};
+			char fshader[8192];
+			char texenv_shad[8192] = {0};
 			GLboolean unused_mode[5] = {GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE};
 			for (int i = 0; i < mask.num_textures; i++) {
 				char tmp[1024];
 				switch (texture_units[i].env_mode) {
 				case MODULATE:
 					if (unused_mode[MODULATE]) {
-						sprintf(fshader, "%s\n%s", fshader, modulate_src);
+						sprintf(texenv_shad, "%s\n%s", texenv_shad, modulate_src);
 						unused_mode[MODULATE] = GL_FALSE;
 					}
 					break;
 				case DECAL:
 					if (unused_mode[DECAL]) {
-						sprintf(fshader, "%s\n%s", fshader, decal_src);
+						sprintf(texenv_shad, "%s\n%s", texenv_shad, decal_src);
 						unused_mode[DECAL] = GL_FALSE;
 					}
 					break;
 				case BLEND:
 					if (unused_mode[BLEND]) {
-						sprintf(fshader, "%s\n%s", fshader, blend_src);
+						sprintf(texenv_shad, "%s\n%s", texenv_shad, blend_src);
 						unused_mode[BLEND] = GL_FALSE;
 					}
 					break;
 				case ADD:
 					if (unused_mode[ADD]) {
-						sprintf(fshader, "%s\n%s", fshader, add_src);
+						sprintf(texenv_shad, "%s\n%s", texenv_shad, add_src);
 						unused_mode[ADD] = GL_FALSE;
 					}
 					break;
 				case REPLACE:
 					if (unused_mode[REPLACE]) {
-						sprintf(fshader, "%s\n%s", fshader, replace_src);
+						sprintf(texenv_shad, "%s\n%s", texenv_shad, replace_src);
 						unused_mode[REPLACE] = GL_FALSE;
 					}
 					break;
 #ifndef DISABLE_TEXTURE_COMBINER
 				case COMBINE:
 					setup_combiner_pass(i, tmp);
-					sprintf(fshader, "%s\n%s", fshader, tmp);
+					sprintf(texenv_shad, "%s\n%s", texenv_shad, tmp);
 					break;
 #endif
 				default:
 					break;
 				}
 			}
-			sprintf(fshader, ffp_frag_src, fshader, alpha_op, mask.num_textures, mask.has_colors, mask.fog_mode, mask.tex_env_mode_pass0 != COMBINE ? mask.tex_env_mode_pass0 : 50, mask.tex_env_mode_pass1 != COMBINE ? mask.tex_env_mode_pass1 : 51, mask.lights_num, mask.shading_mode);
+			sprintf(fshader, ffp_frag_src, texenv_shad, alpha_op, mask.num_textures, mask.has_colors, mask.fog_mode, mask.tex_env_mode_pass0 != COMBINE ? mask.tex_env_mode_pass0 : 50, mask.tex_env_mode_pass1 != COMBINE ? mask.tex_env_mode_pass1 : 51, mask.lights_num, mask.shading_mode);
 			uint32_t size = strlen(fshader);
 			SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 			ffp_fragment_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
@@ -766,8 +771,14 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) {
 				for (int i = 0; i < mask.num_textures; i++) {
 					sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 4 * i, 4, (const float *)&texture_units[i].env_color.r);
-					sceGxmSetUniformDataF(buffer, ffp_fragment_params[RGB_SCALE_UNIF], i, 1, &texture_units[i].rgb_scale);
-					sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_SCALE_UNIF], i, 1, &texture_units[i].a_scale);
+				}
+				if (ffp_fragment_params[RGB_SCALE_PASS_0_UNIF]) {
+					sceGxmSetUniformDataF(buffer, ffp_fragment_params[RGB_SCALE_PASS_0_UNIF], 0, 1, &texture_units[0].rgb_scale);
+					sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_SCALE_PASS_0_UNIF], 0, 1, &texture_units[0].a_scale);
+				}	
+				if (ffp_fragment_params[RGB_SCALE_PASS_1_UNIF]) {
+					sceGxmSetUniformDataF(buffer, ffp_fragment_params[RGB_SCALE_PASS_1_UNIF], 0, 1, &texture_units[1].rgb_scale);
+					sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_SCALE_PASS_1_UNIF], 0, 1, &texture_units[1].a_scale);
 				}
 			}
 			if (ffp_fragment_params[TINT_COLOR_UNIF])
@@ -1621,16 +1632,18 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
 #ifndef DISABLE_TEXTURE_COMBINER
 		case GL_RGB_SCALE:
 #ifndef SKIP_ERROR_HANDLING
-			if (param != 1.0f && param != 2.0f && param != 4.0f)
+			if (param != 1.0f && param != 2.0f && param != 4.0f) {
 				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
 #endif
 			dirty_frag_unifs = GL_TRUE;
 			tex_unit->rgb_scale = param;
 			break;
 		case GL_ALPHA_SCALE:
 #ifndef SKIP_ERROR_HANDLING
-			if (param != 1.0f && param != 2.0f && param != 4.0f)
+			if (param != 1.0f && param != 2.0f && param != 4.0f) {
 				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
 #endif
 			dirty_frag_unifs = GL_TRUE;
 			tex_unit->a_scale = param;

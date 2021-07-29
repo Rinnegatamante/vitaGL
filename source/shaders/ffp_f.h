@@ -1,5 +1,11 @@
 const char *ffp_frag_src =
-R"(%s
+R"(uniform float pass0_rgb_scale;
+uniform float pass0_a_scale;
+uniform float pass1_rgb_scale;
+uniform float pass1_a_scale;
+
+%s
+
 #define alpha_test_mode %d
 #define num_textures %d
 #define has_colors %d
@@ -85,8 +91,6 @@ float4 main(
 #if num_textures > 0
 	uniform sampler2D tex[num_textures],
 	uniform float4 texEnvColor[num_textures],
-	uniform float rgb_scale[num_textures],
-	uniform float a_scale[num_textures],
 #endif
 	uniform float alphaCut,
 	uniform float4 fogColor,
@@ -106,14 +110,8 @@ float4 main(
 	// Texture Environment
 	float4 prevColor = vColor;
 	prevColor = pass0_func(tex[0], vTexcoord, prevColor, vColor, texEnvColor[0]);
-	prevColor.rgb *= rgb_scale[0];
-	prevColor.a *= a_scale[0];
-	prevColor = clamp(prevColor, 0.0f, 1.0f);
 #if num_textures > 1
 	prevColor = pass1_func(tex[1], vTexcoord2, prevColor, vColor, texEnvColor[1]);
-	prevColor.rgb *= rgb_scale[1];
-	prevColor.a *= a_scale[1];
-	prevColor = clamp(prevColor, 0.0f, 1.0f);
 #endif
 	float4 texColor = prevColor;
 #else
@@ -176,7 +174,7 @@ float4 main(
 	float d = fog_density * coords.z;
 	float vFog = exp(d * d * LOG2);
 #endif
-	vFog = clamp(vFog, 0.0, 1.0);
+	vFog = clamp(vFog, 0.0f, 1.0f);
 	texColor.rgb = lerp(fogColor.rgb, texColor.rgb, vFog);
 #endif
 

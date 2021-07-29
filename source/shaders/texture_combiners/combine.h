@@ -29,9 +29,9 @@ R"(float4 texenv5%d(sampler2D tex, float2 texcoord, float4 prepass, float4 fragc
 	float4 texcol = tex2D(tex, texcoord);
 	float4 res;
 	
-	res.rgb = %s;
-	res.a = %s;
+	res.rgb = (%s) * pass%d_rgb_scale;
+	res.a = (%s)  * pass%d_a_scale;
 	
-	return res;
+	return clamp(res, 0.0f, 1.0f);
 }
 )";
