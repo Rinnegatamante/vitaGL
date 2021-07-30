@@ -1582,9 +1582,6 @@ void glEnd(void) {
 		sceGxmSetVertexStream(gxm_context, i, legacy_pool);
 	}
 
-	// Restoring original attributes state settings
-	ffp_vertex_attrib_state = orig_state;
-
 	uint16_t *ptr;
 	uint32_t index_count;
 

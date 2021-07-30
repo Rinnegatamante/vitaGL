@@ -302,13 +302,15 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 		}
 		
 		// Multi Texture variant
-		ffp_vertex_attrib_config[i].streamIndex = i;
-		ffp_vertex_attrib_config[i].offset = 0;
-		ffp_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 		legacy_mt_vertex_attrib_config[i].streamIndex = i;
 		legacy_mt_vertex_attrib_config[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		legacy_mt_vertex_stream_config[i].stride = sizeof(float) * LEGACY_MT_VERTEX_STRIDE;
 		legacy_mt_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+		
+		// Non-immediate mode variant
+		ffp_vertex_attrib_config[i].streamIndex = i;
+		ffp_vertex_attrib_config[i].offset = 0;
+		ffp_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	}
 	
 	// Textureless Variant
@@ -520,6 +522,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	if (is_draw_legal)
 #endif
 	{
+
 		uint16_t *ptr;
 		switch (mode) {
 		case GL_QUADS:
@@ -625,7 +628,6 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 	}
-
 	restore_polygon_mode(gxm_p);
 }
 
