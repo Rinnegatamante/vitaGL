@@ -401,8 +401,8 @@ void glGenTextures(GLsizei n, GLuint *res) {
 #endif
 
 	// Reserving a texture and returning its id if available
-	int i, j = 0;
-	for (i = 1; i < TEXTURES_NUM; i++) {
+	int j = 0;
+	for (GLuint i = 1; i < TEXTURES_NUM; i++) {
 		if (texture_slots[i].status == TEX_UNUSED) {
 			res[j++] = i;
 			texture_slots[i].status = TEX_UNINITIALIZED;
@@ -427,15 +427,12 @@ void glGenTextures(GLsizei n, GLuint *res) {
 			return;
 	}
 
-	vgl_log("glGenTextures: Texture slots limit reached (%i textures hadn't been generated).\n", n - j);
+	vgl_log("glGenTextures: Texture slots limit reached (%d textures hadn't been generated).\n", n - j);
 }
 
 void glBindTexture(GLenum target, GLuint texture) {
-	// Aliasing to make code more readable
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
-
 	// Setting current in use texture id for the in use server texture unit
-	tex_unit->tex_id = texture;
+	texture_units[server_texture_unit].tex_id = texture;
 }
 
 void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
@@ -447,8 +444,7 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 #endif
 
 	// Deallocating given textures and invalidating used texture ids
-	int j;
-	for (j = 0; j < n; j++) {
+	for (int j = 0; j < n; j++) {
 		GLuint i = gl_textures[j];
 		if (i > 0) {
 			if (texture_slots[i].status == TEX_VALID) {
@@ -477,8 +473,8 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 					gpu_free_texture(&texture_slots[i]);
 			}
 
-			for (int j = 0; j < TEXTURE_IMAGE_UNITS_NUM; j++) {
-				texture_unit *tex_unit = &texture_units[j];
+			for (int k = 0; k < TEXTURE_IMAGE_UNITS_NUM; k++) {
+				texture_unit *tex_unit = &texture_units[k];
 				if (i == tex_unit->tex_id)
 					tex_unit->tex_id = 0;
 			}
