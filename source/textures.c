@@ -125,7 +125,7 @@ void _glTexImage2D_CubeIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
 		break;
 	}
-		
+
 	// Allocating texture/mipmaps depending on user call
 	tex->type = internalFormat;
 	if (level == 0) // FIXME: Add proper mipmaps support
@@ -146,7 +146,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 	uint8_t data_bpp = 0;
 	GLboolean fast_store = GL_FALSE;
 	GLboolean gamma_correction = GL_FALSE;
-	
+
 	/*
 	 * Callbacks are actually used to just perform down/up-sampling
 	 * between U8 texture formats. Reads are expected to give as result
@@ -356,7 +356,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
 		break;
 	}
-	
+
 	// Allocating texture/mipmaps depending on user call
 	tex->type = internalFormat;
 	tex->write_cb = write_cb;
@@ -476,7 +476,7 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 				else
 					gpu_free_texture(&texture_slots[i]);
 			}
-			
+
 			for (int j = 0; j < TEXTURE_IMAGE_UNITS_NUM; j++) {
 				texture_unit *tex_unit = &texture_units[j];
 				if (i == tex_unit->tex_id)

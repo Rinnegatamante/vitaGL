@@ -535,7 +535,7 @@ GLboolean glIsEnabled(GLenum cap);
 GLboolean glIsFramebuffer(GLuint fb);
 GLboolean glIsTexture(GLuint texture);
 void glLightfv(GLenum light, GLenum pname, const GLfloat *params);
-void glLightModelfv(GLenum pname, const GLfloat * params);
+void glLightModelfv(GLenum pname, const GLfloat *params);
 void glLineWidth(GLfloat width);
 void glLinkProgram(GLuint progr);
 void glLoadIdentity(void);

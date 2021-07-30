@@ -20,9 +20,9 @@
  * vgl.c:
  * Implementation for custom vitaGL functions
  */
-#include "vitaGL.h"
 #include "shared.h"
 #include "texture_callbacks.h"
+#include "vitaGL.h"
 
 // Shaders
 #include "shaders/clear_f.h"
@@ -141,8 +141,8 @@ void vglUseVramForUSSE(GLboolean usage) {
 void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa) {
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
 	sceIoMkdir("ux0:data/shader_cache", 0777);
-#endif	
-	
+#endif
+
 	// Setting our display size
 	msaa_mode = msaa;
 	DISPLAY_WIDTH = width;
@@ -289,7 +289,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 			legacy_nt_vertex_stream_config[i].stride = sizeof(float) * LEGACY_NT_VERTEX_STRIDE;
 			legacy_nt_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 		}
-		
+
 		// Single Texture variant
 		if (i < FFP_VERTEX_ATTRIBS_NUM - 1) {
 			legacy_vertex_attrib_config[i].streamIndex = i;
@@ -297,19 +297,19 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 			legacy_vertex_stream_config[i].stride = sizeof(float) * LEGACY_VERTEX_STRIDE;
 			legacy_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 		}
-		
+
 		// Multi Texture variant
 		legacy_mt_vertex_attrib_config[i].streamIndex = i;
 		legacy_mt_vertex_attrib_config[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		legacy_mt_vertex_stream_config[i].stride = sizeof(float) * LEGACY_MT_VERTEX_STRIDE;
 		legacy_mt_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-		
+
 		// Non-immediate mode variant
 		ffp_vertex_attrib_config[i].streamIndex = i;
 		ffp_vertex_attrib_config[i].offset = 0;
 		ffp_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	}
-	
+
 	// Textureless Variant
 	legacy_nt_vertex_attrib_config[0].offset = 0; // Position
 	legacy_nt_vertex_attrib_config[1].offset = sizeof(float) * 3; // Color/Ambient
@@ -323,7 +323,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	legacy_nt_vertex_attrib_config[3].componentCount = 4;
 	legacy_nt_vertex_attrib_config[4].componentCount = 4;
 	legacy_nt_vertex_attrib_config[5].componentCount = 3;
-	
+
 	// Single Texture Variant
 	legacy_vertex_attrib_config[0].offset = 0; // Position
 	legacy_vertex_attrib_config[1].offset = sizeof(float) * 3; // Texcoord (UNIT0)
@@ -339,7 +339,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	legacy_vertex_attrib_config[4].componentCount = 4;
 	legacy_vertex_attrib_config[5].componentCount = 4;
 	legacy_vertex_attrib_config[6].componentCount = 3;
-	
+
 	// Multi Texture Variant
 	legacy_mt_vertex_attrib_config[0].offset = 0; // Position
 	legacy_mt_vertex_attrib_config[1].offset = sizeof(float) * 3; // Texcoord (UNIT0)
@@ -357,7 +357,7 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	legacy_mt_vertex_attrib_config[5].componentCount = 4;
 	legacy_mt_vertex_attrib_config[6].componentCount = 4;
 	legacy_mt_vertex_attrib_config[7].componentCount = 3;
-	
+
 	// Init vertex pool for immediate mode support
 	legacy_pool_size = pool_size;
 	if (legacy_pool_size) {

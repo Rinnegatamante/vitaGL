@@ -203,7 +203,7 @@ static int garbage_collector(unsigned int args, void *arg) {
 	for (;;) {
 		// Waiting for garbage collection request
 		sceKernelWaitSema(gc_mutex, 1, NULL);
-		
+
 		// Purging all elements marked for deletion
 		int i;
 		for (i = 0; i < FRAME_PURGE_LIST_SIZE; i++) {
@@ -268,12 +268,12 @@ void initGxm(void) {
 #endif
 		}
 	}
-	
+
 	// Initializing garbage collector
 	gc_mutex = sceKernelCreateSema("Garbage Collector Sema", 0, 0, FRAME_PURGE_FREQ, NULL);
 	gc_thread = sceKernelCreateThread("Garbage Collector", &garbage_collector, gc_thread_priority, 0x10000, 0, gc_thread_affinity, NULL);
 	sceKernelStartThread(gc_thread, 0, NULL);
-			
+
 	// Checking if the running application is a system one
 	SceAppMgrBudgetInfo info;
 	info.size = sizeof(SceAppMgrBudgetInfo);
@@ -337,7 +337,7 @@ void initGxmContext(void) {
 
 	// Initializing sceGxm context
 	sceGxmCreateContext(&gxm_context_params, &gxm_context);
-	
+
 	// Initializing circular pool for uniform buffers
 	vglSetupUniformCircularPool();
 }
@@ -443,14 +443,14 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 		depth_stencil_samples *= 2;
 	else if (msaa_mode == SCE_GXM_MULTISAMPLE_4X)
 		depth_stencil_samples *= 4;
-	
+
 	// Allocating depth surface
 	*depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, VGL_MEM_VRAM);
 
 	// Allocating stencil surface
 	if (stencil_buffer)
 		*stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, VGL_MEM_VRAM);
-	
+
 	// Initializing depth and stencil surfaces
 	sceGxmDepthStencilSurfaceInit(surface,
 		stencil_buffer ? SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M_S8 : SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M,

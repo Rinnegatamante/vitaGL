@@ -34,14 +34,14 @@ static int mempool_initialized = 0;
 void *vgl_alloc_phycont_block(uint32_t size) {
 	size = ALIGN(size, 1024 * 1024);
 	SceUID blk = sceKernelAllocMemBlock("phycont_blk", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW, size, NULL);
-	
+
 	if (blk < 0)
 		return NULL;
-	
+
 	void *res;
 	sceKernelGetMemBlockBase(blk, &res);
 	sceGxmMapMemory(res, size, SCE_GXM_MEMORY_ATTRIB_RW);
-	
+
 	return res;
 }
 #endif

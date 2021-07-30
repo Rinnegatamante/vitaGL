@@ -20,8 +20,8 @@
  * draw.c:
  * Implementation for draw call functions
  */
-#include "vitaGL.h"
 #include "shared.h"
+#include "vitaGL.h"
 
 GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not supported natively by sceGxm is used
 

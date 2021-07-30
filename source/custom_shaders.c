@@ -65,7 +65,7 @@ shark_opt compiler_opts = SHARK_OPT_FAST;
 GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
 
 // Uniform struct
-typedef struct uniform {
+typedef struct {
 	const SceGxmProgramParameter *ptr;
 	void *chain;
 	float *data;
@@ -75,7 +75,7 @@ typedef struct uniform {
 } uniform;
 
 // Generic shader struct
-typedef struct shader {
+typedef struct {
 	GLenum type;
 	GLboolean valid;
 	SceGxmShaderPatcherId id;
@@ -88,14 +88,14 @@ typedef struct shader {
 } shader;
 
 // Program status enum
-typedef enum prog_status {
+typedef enum {
 	PROG_INVALID,
 	PROG_UNLINKED,
 	PROG_LINKED
 } prog_status;
 
 // Program struct holding vertex/fragment shader info
-typedef struct program {
+typedef struct {
 	shader *vshader;
 	shader *fshader;
 	uint8_t status;
@@ -314,7 +314,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 				disableDrawAttrib(i)
 			}
 		}
-	} else 
+	} else
 #endif
 	{
 		for (i = 0; i < p->attr_num; i++) {
@@ -442,7 +442,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	}
 
 	void *ptrs[VERTEX_ATTRIBS_NUM];
-#ifndef DRAW_SPEEDHACK	
+#ifndef DRAW_SPEEDHACK
 	GLboolean is_packed = p->attr_num > 1;
 	GLboolean is_full_vbo = GL_TRUE;
 	if (is_packed) {
@@ -763,7 +763,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		for (int i = 0; i < count; i++) {
 			sprintf(s->source, "%s%s", s->source, string[i]);
 		}
-		
+
 		s->prog = (SceGxmProgram *)s->source;
 	}
 	s->size = size - 1;
@@ -1125,7 +1125,7 @@ void glUniform1i(GLint location, GLint v0) {
 
 	// Setting passed value to desired uniform
 	u->data[0] = (float)v0;
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1145,7 +1145,7 @@ void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 	for (i = 0; i < count; i++) {
 		u->data[i] = (float)value[i];
 	}
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1162,7 +1162,7 @@ void glUniform1f(GLint location, GLfloat v0) {
 
 	// Setting passed value to desired uniform
 	u->data[0] = v0;
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1179,7 +1179,7 @@ void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * sizeof(float));
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1197,7 +1197,7 @@ void glUniform2i(GLint location, GLint v0, GLint v1) {
 	// Setting passed value to desired uniform
 	u->data[0] = (float)v0;
 	u->data[1] = (float)v1;
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1217,7 +1217,7 @@ void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 	for (i = 0; i < count * 2; i++) {
 		u->data[i] = (float)value[i];
 	}
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1235,7 +1235,7 @@ void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
 	// Setting passed value to desired uniform
 	u->data[0] = v0;
 	u->data[1] = v1;
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1252,7 +1252,7 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * 2 * sizeof(float));
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1271,7 +1271,7 @@ void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) {
 	u->data[0] = (float)v0;
 	u->data[1] = (float)v1;
 	u->data[2] = (float)v2;
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1291,7 +1291,7 @@ void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
 	for (i = 0; i < count * 3; i++) {
 		u->data[i] = (float)value[i];
 	}
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1310,7 +1310,7 @@ void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
 	u->data[0] = v0;
 	u->data[1] = v1;
 	u->data[2] = v2;
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1327,7 +1327,7 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * 3 * sizeof(float));
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1347,7 +1347,7 @@ void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) {
 	u->data[1] = (float)v1;
 	u->data[2] = (float)v2;
 	u->data[3] = (float)v3;
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1367,7 +1367,7 @@ void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 	for (i = 0; i < count * 4; i++) {
 		u->data[i] = (float)value[i];
 	}
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1387,7 +1387,7 @@ void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
 	u->data[1] = v1;
 	u->data[2] = v2;
 	u->data[3] = v3;
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1404,7 +1404,7 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * 4 * sizeof(float));
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1421,7 +1421,7 @@ void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, cons
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * 4 * sizeof(float));
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1438,7 +1438,7 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, cons
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * 9 * sizeof(float));
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
@@ -1455,7 +1455,7 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 
 	// Setting passed value to desired uniform
 	sceClibMemcpy(u->data, value, count * 16 * sizeof(float));
-	
+
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)

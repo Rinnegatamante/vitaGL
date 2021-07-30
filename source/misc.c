@@ -614,7 +614,7 @@ void glClear(GLbitfield mask) {
 	// Restoring viewport and culling
 	validate_viewport();
 	change_cull_mode();
-	
+
 	vglRestoreFragmentUniformBuffer();
 	vglRestoreVertexUniformBuffer();
 }
@@ -633,7 +633,7 @@ void glLineWidth(GLfloat width) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	
+
 	line_width = width;
 	uint32_t int_width = width;
 	if (int_width > 16)
@@ -687,7 +687,7 @@ void glPushAttrib(GLbitfield mask) {
 #endif
 	attrib_state *setup = &attrib_stack[attrib_stack_counter++];
 	setup->enabled_bits = 0;
-	
+
 	if (mask & GL_COLOR_BUFFER_BIT) {
 		setup->enabled_bits += (1 << COLOR_BUFFER_BIT);
 		setup->alpha_test_state = alpha_test_state;
@@ -807,7 +807,7 @@ void glPopAttrib(void) {
 	}
 #endif
 	attrib_state *setup = &attrib_stack[attrib_stack_counter--];
-	
+
 	if (setup->enabled_bits & (1 << COLOR_BUFFER_BIT)) {
 		alpha_test_state = setup->alpha_test_state;
 		alpha_func = setup->alpha_func;

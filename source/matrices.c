@@ -65,7 +65,7 @@ void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdou
 
 	// Initializing ortho matrix with requested parameters
 	matrix4x4_init_orthographic(*matrix, left, right, bottom, top, nearVal, farVal);
-	
+
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
 	else
@@ -84,7 +84,7 @@ void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLd
 
 	// Initializing frustum matrix with requested parameters
 	matrix4x4_init_frustum(*matrix, left, right, bottom, top, nearVal, farVal);
-	
+
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
 	else
@@ -104,7 +104,7 @@ void glMultMatrixf(const GLfloat *m) {
 	matrix4x4 res;
 
 	// Multiplicating passed matrix with in use one
-	matrix4x4_multiply(res, (const float (*)[4])m, *matrix);
+	matrix4x4_multiply(res, (const float(*)[4])m, *matrix);
 
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
@@ -203,7 +203,7 @@ void glPushMatrix(void) {
 			matrix4x4_copy(projection_matrix_stack[projection_stack_counter++], *matrix);
 	} else if (matrix == &texture_matrix) {
 		texture_unit *tex_unit = &texture_units[server_texture_unit];
-		
+
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
 		if (tex_unit->texture_stack_counter >= GENERIC_STACK_DEPTH) {
@@ -251,7 +251,7 @@ void glPopMatrix(void) {
 
 	} else if (matrix == &texture_matrix) {
 		texture_unit *tex_unit = &texture_units[server_texture_unit];
-		
+
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
 		if (tex_unit->texture_stack_counter == 0) {
@@ -275,7 +275,7 @@ void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFa
 
 	// Initializing perspective matrix with requested parameters
 	matrix4x4_init_perspective(*matrix, fovy, aspect, zNear, zFar);
-	
+
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
 	else

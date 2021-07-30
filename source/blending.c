@@ -20,7 +20,7 @@
  * blending.c:
  * Implementation for blending related functions
  */
- 
+
 #include "shared.h"
 
 GLboolean blend_state = GL_FALSE; // Current state for GL_BLEND

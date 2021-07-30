@@ -89,7 +89,7 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 }
 
 void glGenRenderbuffers(GLsizei n, GLuint *ids) {
-		int i = 0, j = 0;
+	int i = 0, j = 0;
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -212,7 +212,7 @@ void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbu
 		SET_GL_ERROR(GL_INVALID_ENUM)
 		break;
 	}
-	
+
 	switch (attachment) {
 	case GL_DEPTH_STENCIL_ATTACHMENT:
 	case GL_DEPTH_ATTACHMENT:
@@ -233,7 +233,7 @@ void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, 
 	if (width < 0 || height < 0)
 		SET_GL_ERROR(GL_INVALID_VALUE)
 #endif
-	
+
 	if (active_rb->depth_buffer_addr) {
 		markAsDirty(active_rb->depth_buffer_addr);
 		if (active_rb->stencil_buffer_addr)

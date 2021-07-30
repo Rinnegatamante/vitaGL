@@ -78,8 +78,8 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 #include "vitaGL.h"
 
-#include "utils/gxm_utils.h"
 #include "utils/gpu_utils.h"
+#include "utils/gxm_utils.h"
 #include "utils/math_utils.h"
 #include "utils/mem_utils.h"
 
@@ -246,14 +246,6 @@ typedef enum {
 	MODEL_CREATION
 } glPhase;
 
-// Vertex array attributes struct
-typedef struct {
-	GLint size;
-	GLint num;
-	GLsizei stride;
-	const GLvoid *pointer;
-} vertexArray;
-
 // Scissor test region struct
 typedef struct {
 	int x;
@@ -291,7 +283,7 @@ typedef enum {
 	DISABLED
 } fogType;
 
-typedef union combinerState{
+typedef union combinerState {
 	struct {
 		uint32_t rgb_func : 3;
 		uint32_t a_func : 3;
@@ -327,7 +319,7 @@ typedef struct {
 
 // Framebuffer struct
 typedef struct {
-	uint8_t active;
+	GLboolean active;
 	SceGxmRenderTarget *target;
 	SceGxmColorSurface colorbuffer;
 	SceGxmDepthStencilSurface depthbuffer;
@@ -344,7 +336,7 @@ typedef struct {
 
 // Renderbuffer struct
 typedef struct {
-	uint8_t active;
+	GLboolean active;
 	SceGxmDepthStencilSurface depthbuffer;
 	SceGxmDepthStencilSurface *depthbuffer_ptr;
 	void *depth_buffer_addr;

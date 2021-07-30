@@ -132,7 +132,7 @@ void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width
 }
 
 void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type) {
-		// Allocating requested memblock
+	// Allocating requested memblock
 	void *res = vgl_memalign(alignment, size, type);
 	if (res)
 		return res;
@@ -310,18 +310,18 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 		tex->faces_counter = 1;
 	} else
 		tex->faces_counter++;
-	
+
 	// Getting texture format bpp
 	uint8_t bpp = tex_format_to_bytespp(format);
 
 	// Allocating texture data buffer
 	const int face_size = ALIGN(w, 8) * h * bpp;
 	void *base_texture_data = tex->faces_counter == 1 ? gpu_alloc_mapped(face_size * 6, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM) : tex->data;
-	
+
 	if (base_texture_data != NULL) {
 		// Calculating face texture data pointer
 		uint8_t *texture_data = (uint8_t *)base_texture_data + face_size * index;
-	
+
 		if (data != NULL) {
 			SceGxmTransferFormat dst_fmt = tex_format_to_transfer(format);
 			sceGxmMapMemory((void *)data, w * h * bpp, SCE_GXM_MEMORY_ATTRIB_RW);

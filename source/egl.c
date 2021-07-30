@@ -19,8 +19,8 @@
 /*
  *
  */
-#include "vitaGL.h"
 #include "shared.h"
+#include "vitaGL.h"
 
 //#define EGL_PEDANTIC // This flag makes eGL error be properly set when a function success
 

@@ -108,7 +108,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-if (!gpu_buf) {
+	if (!gpu_buf) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 	switch (usage) {
@@ -168,7 +168,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 
 	// Allocating a new buffer
 	uint8_t *ptr = gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
-	
+
 #ifdef LOG_ERRORS
 	if (!ptr) {
 		vgl_log("glBufferSubData failed to alloc a buffer of %ld bytes. Buffer content won't be updated.\n", gpu_buf->size);
@@ -188,7 +188,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 		markAsDirty(gpu_buf->ptr);
 	else
 		vgl_free(gpu_buf->ptr);
-	
+
 	gpu_buf->ptr = ptr;
 	gpu_buf->used = GL_FALSE;
 }

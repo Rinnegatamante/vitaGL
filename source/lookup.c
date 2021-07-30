@@ -21,8 +21,8 @@
  * A GL GetProcAddress implementation
  */
 
-#include "vitaGL.h"
 #include "shared.h"
+#include "vitaGL.h"
 
 static const struct {
 	const char *name;

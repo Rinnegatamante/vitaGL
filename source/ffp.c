@@ -23,11 +23,11 @@
 
 #include "shaders/ffp_f.h"
 #include "shaders/ffp_v.h"
+#include "shaders/texture_combiners/add.h"
+#include "shaders/texture_combiners/blend.h"
+#include "shaders/texture_combiners/decal.h"
 #include "shaders/texture_combiners/modulate.h"
 #include "shaders/texture_combiners/replace.h"
-#include "shaders/texture_combiners/decal.h"
-#include "shaders/texture_combiners/blend.h"
-#include "shaders/texture_combiners/add.h"
 #ifndef DISABLE_TEXTURE_COMBINER
 #include "shaders/texture_combiners/combine.h"
 #endif
@@ -274,7 +274,7 @@ void setup_combiner_pass(int i, char *dst) {
 	char arg0_a[32], arg1_a[32], arg2_a[32];
 	char *args[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 	int args_count;
-	
+
 	if (texture_units[i].combiner.rgb_func == INTERPOLATE) { // Arg0, Arg2, Arg1, Arg2
 		sprintf(arg2_rgb, op_modes[texture_units[i].combiner.op_mode_rgb_2], operands[texture_units[i].combiner.op_rgb_2]);
 		args[0] = arg2_rgb;
@@ -304,11 +304,11 @@ void setup_combiner_pass(int i, char *dst) {
 		sprintf(arg1_a, op_modes[texture_units[i].combiner.op_mode_a_1], operands[texture_units[i].combiner.op_a_1]);
 		args[args_count++] = arg1_a;
 	}
-	
+
 	// Common arguments
 	sprintf(arg0_rgb, op_modes[texture_units[i].combiner.op_mode_rgb_0], operands[texture_units[i].combiner.op_rgb_0]);
 	sprintf(arg0_a, op_modes[texture_units[i].combiner.op_mode_a_0], operands[texture_units[i].combiner.op_a_0]);
-	
+
 	sprintf(tmp, combine_src, i, calc_funcs[texture_units[i].combiner.rgb_func], i, calc_funcs[texture_units[i].combiner.a_func], i);
 	switch (args_count) {
 	case 1:
@@ -335,7 +335,6 @@ void setup_combiner_pass(int i, char *dst) {
 	default:
 		break;
 	}
-	
 }
 #endif
 
@@ -351,7 +350,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
 	mask.shading_mode = shading_mode;
-	
+
 	// Counting number of enabled texture units
 	mask.num_textures = 0;
 	for (int i = 0; i < TEXTURE_COORDS_NUM; i++) {
@@ -483,7 +482,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			// Restarting vitaShaRK if we released it before
 			if (!is_shark_online)
 				startShaderCompiler();
-		
+
 			// Compiling the new shader
 			char vshader[8192];
 			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode);
@@ -511,7 +510,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 #endif
 		}
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_vertex_program, &ffp_vertex_program_id);
-		
+
 		// Checking for existing uniforms in the shader
 		reload_vertex_uniforms();
 
@@ -530,12 +529,12 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		// Vertex positions
 		const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(ffp_vertex_program, "position");
 		attrs[0].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-		
+
 		if (mask.num_textures > 0) {
 			// Vertex texture coordinates (First Pass)
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord0");
 			attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-		
+
 			// Vertex texture coordinates (Second Pass)
 			if (mask.num_textures > 1) {
 				param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord1");
@@ -581,7 +580,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			ffp_vertex_stream[1].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 		}
-		
+
 		// Vertex colors
 		if (mask.has_colors) {
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
@@ -592,7 +591,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 		}
-		
+
 		// Vertex texture coordinates (Second pass)
 		if (mask.num_textures > 1) {
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord1");
@@ -603,7 +602,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 		}
-		
+
 		streams = ffp_vertex_stream;
 		attrs = ffp_vertex_attribute;
 	}
@@ -635,7 +634,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			// Restarting vitaShaRK if we released it before
 			if (!is_shark_online)
 				startShaderCompiler();
-			
+
 			// Compiling the new shader
 			char fshader[8192];
 			char texenv_shad[8192] = {0};
@@ -708,7 +707,6 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 #endif
 		}
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_fragment_program, &ffp_fragment_program_id);
-		
 
 		// Checking for existing uniforms in the shader
 		reload_fragment_uniforms();
@@ -781,7 +779,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			if (ffp_fragment_params[RGB_SCALE_PASS_0_UNIF]) {
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[RGB_SCALE_PASS_0_UNIF], 0, 1, &texture_units[0].rgb_scale);
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_SCALE_PASS_0_UNIF], 0, 1, &texture_units[0].a_scale);
-			}	
+			}
 			if (ffp_fragment_params[RGB_SCALE_PASS_1_UNIF]) {
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[RGB_SCALE_PASS_1_UNIF], 0, 1, &texture_units[1].rgb_scale);
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_SCALE_PASS_1_UNIF], 0, 1, &texture_units[1].a_scale);
@@ -1073,7 +1071,7 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *po
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	
+
 	ffp_vertex_attrib_offsets[texcoord_idxs[client_texture_unit]] = (uint32_t)pointer;
 	ffp_vertex_attrib_vbo[texcoord_idxs[client_texture_unit]] = vertex_array_unit;
 
@@ -1496,7 +1494,7 @@ void glMultiTexCoord2f(GLenum target, GLfloat s, GLfloat t) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	
+
 	switch (target) {
 	case GL_TEXTURE0:
 		current_vtx.uv.x = s;
@@ -1572,7 +1570,7 @@ void glEnd(void) {
 		ffp_vertex_attrib_state = 0x05;
 		reload_ffp_shaders(legacy_nt_vertex_attrib_config, legacy_nt_vertex_stream_config);
 	}
-	
+
 	// Restoring original attributes state settings
 	ffp_vertex_attrib_state = orig_state;
 
@@ -2183,18 +2181,18 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
-	
+
 	dirty_vert_unifs = GL_TRUE;
 }
 
-void glLightModelfv(GLenum pname, const GLfloat * params) {
+void glLightModelfv(GLenum pname, const GLfloat *params) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	
+
 	switch (pname) {
 	case GL_LIGHT_MODEL_AMBIENT:
 		sceClibMemcpy(&light_global_ambient.r, params, sizeof(float) * 4);
@@ -2317,7 +2315,7 @@ void glShadeModel(GLenum mode) {
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
-	
+
 	ffp_dirty_frag = GL_TRUE;
 	ffp_dirty_vert = GL_TRUE;
 }
