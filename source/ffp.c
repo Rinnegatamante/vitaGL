@@ -48,11 +48,9 @@ typedef enum {
 	PHONG
 } shadingMode;
 
+// Internal stuffs
 static uint32_t vertex_count = 0; // Vertex counter for vertex list
 static SceGxmPrimitiveType prim; // Current in use primitive for rendering
-GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not supported natively by sceGxm is used
-
-int8_t client_texture_unit = 0; // Current in use client side texture unit
 
 // Lighting
 GLboolean lighting_state = GL_FALSE; // Current lighting processor state
@@ -84,6 +82,8 @@ vector4f clip_planes_eq[MAX_CLIP_PLANES_NUM]; // Current equation for user clip 
 
 // Miscellaneous
 glPhase phase = NONE; // Current drawing phase for legacy openGL
+int legacy_pool_size = 0; // Mempool size for GL1 immediate draw pipeline
+int8_t client_texture_unit = 0; // Current in use client side texture unit
 
 typedef struct {
 	vector2f uv;
