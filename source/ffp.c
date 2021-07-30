@@ -124,7 +124,7 @@ SceGxmVertexStream legacy_nt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 2];
 
 static uint32_t ffp_vertex_attrib_offsets[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 static uint32_t ffp_vertex_attrib_vbo[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
-uint16_t ffp_vertex_attrib_state = 0;
+uint8_t ffp_vertex_attrib_state = 0x00;
 static GLenum ffp_mode;
 static uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 1};
 
@@ -340,7 +340,6 @@ void setup_combiner_pass(int i, char *dst) {
 
 void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams) {
 	// Checking if mask changed
-	texture_unit *tex_unit = &texture_units[client_texture_unit];
 	GLboolean ffp_dirty_frag_blend = ffp_blend_info.raw != blend_info.raw;
 	shader_mask mask = {.raw = 0};
 #ifndef DISABLE_TEXTURE_COMBINER
@@ -1575,8 +1574,7 @@ void glEnd(void) {
 	ffp_vertex_attrib_state = orig_state;
 
 	// Uploading vertex streams and performing the draw
-	int i;
-	for (i = 0; i < ffp_vertex_num_params; i++) {
+	for (int i = 0; i < ffp_vertex_num_params; i++) {
 		sceGxmSetVertexStream(gxm_context, i, legacy_pool);
 	}
 

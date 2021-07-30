@@ -21,8 +21,8 @@
  * Implementation for texture data reading/writing callbacks
  */
 
-#include "texture_callbacks.h"
 #include "shared.h"
+#include "texture_callbacks.h"
 #include "vitaGL.h"
 
 #define convert_u16_to_u32_cspace(color, lshift, rshift, mask) ((((color << lshift) >> rshift) & mask) * 0xFF) / mask

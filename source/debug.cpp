@@ -30,7 +30,7 @@ extern razor_results razor_metrics;
 
 #ifdef HAVE_DEBUG_INTERFACE
 #ifndef HAVE_RAZOR_INTERFACE
-#include "debug_font.h"
+#include "utils/font_utils.h"
 int dbg_y = 8;
 uint32_t *frame_buf;
 
