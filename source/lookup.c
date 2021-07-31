@@ -275,7 +275,7 @@ void *vglGetProcAddress(const char *name) {
 	const int len = strlen(name);
 	char tmpname[len + 1];
 	sceClibMemcpy(tmpname, name, len + 1);
-	if (!strcmp(tmpname + len - 3, "EXT") || !strcmp(tmpname + len - 3, "ARB")) {
+	if (!strcmp(tmpname + len - 3, "EXT") || !strcmp(tmpname + len - 3, "ARB") || !strcmp(tmpname + len - 3, "OES")) {
 		tmpname[len - 3] = 0;
 	}
 

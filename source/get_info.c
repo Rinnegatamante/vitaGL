@@ -26,9 +26,9 @@
 #include "shared.h"
 
 #ifndef DISABLE_TEXTURE_COMBINER
-#define NUM_EXTENSIONS 15 // Number of supported extensions
+#define NUM_EXTENSIONS 16 // Number of supported extensions
 #else
-#define NUM_EXTENSIONS 14 // Number of supported extensions
+#define NUM_EXTENSIONS 15 // Number of supported extensions
 #endif
 
 static GLubyte *extensions[NUM_EXTENSIONS] = {
@@ -36,6 +36,7 @@ static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_OES_texture_npot",
 	"GL_OES_rgb8_rgba8",
 	"GL_OES_depth_texture",
+	"GL_OES_framebuffer_object",
 	"GL_EXT_texture_format_BGRA8888",
 	"GL_EXT_read_format_bgra",
 	"GL_EXT_texture_compression_dxt1",
