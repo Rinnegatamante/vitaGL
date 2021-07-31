@@ -1836,6 +1836,9 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
 }
 
 void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
+	// Aliasing texture unit for cleaner code
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+
 	// Properly changing texture environment settings as per request
 	switch (target) {
 	case GL_TEXTURE_ENV:
@@ -1843,6 +1846,26 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 		case GL_TEXTURE_ENV_COLOR:
 			sceClibMemcpy(&texture_units[server_texture_unit].env_color.r, param, sizeof(GLfloat) * 4);
 			break;
+#ifndef DISABLE_TEXTURE_COMBINER
+		case GL_RGB_SCALE:
+#ifndef SKIP_ERROR_HANDLING
+			if (*param != 1.0f && *param != 2.0f && *param != 4.0f) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
+			dirty_frag_unifs = GL_TRUE;
+			tex_unit->rgb_scale = *param;
+			break;
+		case GL_ALPHA_SCALE:
+#ifndef SKIP_ERROR_HANDLING
+			if (*param != 1.0f && *param != 2.0f && *param != 4.0f) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
+			dirty_frag_unifs = GL_TRUE;
+			tex_unit->a_scale = *param;
+			break;
+#endif
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
 		}
