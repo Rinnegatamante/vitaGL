@@ -364,6 +364,10 @@ void glEnable(GLenum cap) {
 		alpha_test_state = GL_TRUE;
 		update_alpha_test_settings();
 		break;
+	case GL_NORMALIZE:
+		ffp_dirty_vert = GL_TRUE;
+		normalize = GL_TRUE;
+		break;
 	case GL_FOG:
 		fogging = GL_TRUE;
 		update_fogging_state();
@@ -468,6 +472,10 @@ void glDisable(GLenum cap) {
 	case GL_ALPHA_TEST:
 		alpha_test_state = GL_FALSE;
 		update_alpha_test_settings();
+		break;
+	case GL_NORMALIZE:
+		ffp_dirty_vert = GL_TRUE;
+		normalize = GL_FALSE;
 		break;
 	case GL_FOG:
 		fogging = GL_FALSE;

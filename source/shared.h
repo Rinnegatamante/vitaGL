@@ -645,6 +645,7 @@ extern vector4f lights_diffuses[MAX_LIGHTS_NUM];
 extern vector4f lights_speculars[MAX_LIGHTS_NUM];
 extern vector4f lights_positions[MAX_LIGHTS_NUM];
 extern vector3f lights_attenuations[MAX_LIGHTS_NUM];
+extern GLboolean normalize;
 
 // Fogging
 extern GLboolean fogging; // Current fogging processor state

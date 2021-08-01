@@ -4,6 +4,7 @@ R"(#define clip_planes_num %d
 #define has_colors %d
 #define lights_num %d
 #define shading_mode %d
+#define normalization %d
 
 #if lights_num > 0 && shading_mode < 1 // GL_SMOOTH/GL_FLAT
 static float4 Ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -116,7 +117,11 @@ void main(
 	
 	// Lighting
 #if lights_num > 0
+#ifdef normalization == 1
+	float3 normal = normalize(mul(float3x3(normal_mat), normalize(normals)));
+#else
 	float3 normal = normalize(mul(float3x3(normal_mat), normals));
+#endif
 	float3 ecPosition = modelpos.xyz / modelpos.w;
 #if shading_mode < 1 // GL_SMOOTH/GL_FLAT
 	for (int i = 0; i < lights_num; i++) {
@@ -140,7 +145,11 @@ void main(
 #endif
 #if shading_mode == 1 // GL_PHONG_WIN
 	vColor = color;
+#ifdef normalization == 1
+	vNormal = normalize(normal);
+#else
 	vNormal = normal;
+#endif
 	vEcPosition = ecPosition;
 	vDiffuse = diff;
 	vSpecular = spec;

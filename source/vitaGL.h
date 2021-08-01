@@ -125,6 +125,7 @@ extern "C" {
 #define GL_DEPTH_TEST                                0x0B71
 #define GL_DEPTH_WRITEMASK                           0x0B72
 #define GL_STENCIL_TEST                              0x0B90
+#define GL_NORMALIZE                                 0x0BA1
 #define GL_VIEWPORT                                  0x0BA2
 #define GL_MODELVIEW_MATRIX                          0x0BA6
 #define GL_PROJECTION_MATRIX                         0x0BA7
@@ -245,6 +246,7 @@ extern "C" {
 #define GL_INTENSITY                                 0x8049
 #define GL_TEXTURE_BINDING_2D                        0x8069
 #define GL_VERTEX_ARRAY                              0x8074
+#define GL_NORMAL_ARRAY                              0x8075
 #define GL_COLOR_ARRAY                               0x8076
 #define GL_TEXTURE_COORD_ARRAY                       0x8078
 #define GL_BLEND_DST_RGB                             0x80C8
@@ -552,6 +554,7 @@ void glMultiTexCoord2i(GLenum target, GLint s, GLint t);
 void glMultMatrixf(const GLfloat *m);
 void glNormal3f(GLfloat x, GLfloat y, GLfloat z);
 void glNormal3fv(const GLfloat *v);
+void glNormalPointer(GLenum type, GLsizei stride, const void *pointer);
 void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
 void glPointSize(GLfloat size);
 void glPolygonMode(GLenum face, GLenum mode);

@@ -35,7 +35,7 @@
 
 #define SHADER_CACHE_SIZE 256
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 4 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 5 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
@@ -64,6 +64,7 @@ vector4f lights_positions[MAX_LIGHTS_NUM];
 vector3f lights_attenuations[MAX_LIGHTS_NUM];
 vector4f light_global_ambient = {0.2f, 0.2f, 0.2f, 1.0f};
 shadingMode shading_mode = SMOOTH;
+GLboolean normalize = GL_FALSE;
 
 // Fogging
 GLboolean fogging = GL_FALSE; // Current fogging processor state
@@ -139,7 +140,8 @@ typedef union shader_mask {
 		uint32_t tex_env_mode_pass0 : 3;
 		uint32_t tex_env_mode_pass1 : 3;
 		uint32_t shading_mode : 1;
-		uint32_t UNUSED : 10;
+		uint32_t normalize : 1;
+		uint32_t UNUSED : 9;
 	};
 	uint32_t raw;
 } shader_mask;
@@ -349,6 +351,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
 	mask.shading_mode = shading_mode;
+	mask.normalize = normalize;
 
 	// Counting number of enabled texture units
 	mask.num_textures = 0;
@@ -484,7 +487,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 
 			// Compiling the new shader
 			char vshader[8192];
-			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode);
+			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode, mask.normalize);
 			uint32_t size = strlen(vshader);
 			SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 			ffp_vertex_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
@@ -518,7 +521,7 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	}
 
 	// Not going for the vertex config setup if we have aligned datas
-	if (!attrs && mask.num_textures == 1) {
+	if (!attrs && mask.num_textures == 1 && mask.lights_num == 0) {
 		attrs = ffp_vertex_attrib_config;
 		streams = ffp_vertex_stream_config;
 	}
@@ -587,6 +590,43 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[2].stride;
+			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+			ffp_vertex_num_params++;
+		}
+		
+		if (mask.lights_num > 0) {	
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "diffuse");
+			ffp_vertex_attribute[ffp_vertex_num_params].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+			ffp_vertex_attribute[ffp_vertex_num_params].componentCount = 4;
+			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			ffp_vertex_stream[ffp_vertex_num_params].stride = 0;
+			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+			ffp_vertex_num_params++;
+			
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "spec");
+			ffp_vertex_attribute[ffp_vertex_num_params].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+			ffp_vertex_attribute[ffp_vertex_num_params].componentCount = 4;
+			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			ffp_vertex_stream[ffp_vertex_num_params].stride = 0;
+			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+			ffp_vertex_num_params++;
+			
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "emission");
+			ffp_vertex_attribute[ffp_vertex_num_params].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+			ffp_vertex_attribute[ffp_vertex_num_params].componentCount = 4;
+			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			ffp_vertex_stream[ffp_vertex_num_params].stride = 0;
+			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+			ffp_vertex_num_params++;
+			
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "normals");
+			sceClibMemcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[6], sizeof(SceGxmVertexAttribute));
+			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[6].stride;
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 		}
@@ -860,6 +900,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 
 	// Uploading vertex streams
 	int i, j = 0;
+	float *materials = NULL, *src_materials;
 	void *ptrs[FFP_VERTEX_ATTRIBS_NUM];
 	for (i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
 		if (ffp_vertex_attrib_state & (1 << i)) {
@@ -868,13 +909,25 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 				gpu_buf->used = GL_TRUE;
 				ptrs[i] = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[i];
 			} else {
+				if (ffp_vertex_stream_config[i].stride == 0) { // Materials
+					if (!materials) {
+						materials = (float *)gpu_alloc_mapped_temp(12 * sizeof(float));
+						src_materials = (float *)&current_vtx.diff.x;
+					} else {
+						materials += 4;
+						src_materials += 4;
+					}
+					ptrs[i] = materials;
+					sceClibMemcpy(materials, src_materials, 4 * sizeof(float));
+				} else {
 #ifdef DRAW_SPEEDHACK
-				ptrs[i] = (void *)ffp_vertex_attrib_offsets[i];
+					ptrs[i] = (void *)ffp_vertex_attrib_offsets[i];
 #else
-				uint32_t size = count * ffp_vertex_stream_config[i].stride;
-				ptrs[i] = gpu_alloc_mapped_temp(size);
-				sceClibMemcpy(ptrs[i], (void *)ffp_vertex_attrib_offsets[i], size);
+					uint32_t size = count * ffp_vertex_stream_config[i].stride;
+					ptrs[i] = gpu_alloc_mapped_temp(size);
+					sceClibMemcpy(ptrs[i], (void *)ffp_vertex_attrib_offsets[i], size);
 #endif
+				}
 			}
 			sceGxmSetVertexStream(gxm_context, j++, ptrs[i]);
 		}
@@ -912,6 +965,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
 	}
 
 	// Uploading vertex streams
+	float *materials = NULL, *src_materials;
 	void *ptrs[FFP_VERTEX_ATTRIBS_NUM];
 	for (int i = 0; i < attr_num; i++) {
 		int attr_idx = attr_idxs[i];
@@ -920,13 +974,25 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
 			gpu_buf->used = GL_TRUE;
 			ptrs[i] = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[attr_idx];
 		} else {
+			if (ffp_vertex_stream_config[attr_idx].stride == 0) { // Materials
+				if (!materials) {
+					materials = (float *)gpu_alloc_mapped_temp(12 * sizeof(float));
+					src_materials = (float *)&current_vtx.diff.x;
+				} else {
+					materials += 4;
+					src_materials += 4;
+				}
+				ptrs[i] = materials;
+				sceClibMemcpy(materials, src_materials, 4 * sizeof(float));
+			} else {
 #ifdef DRAW_SPEEDHACK
-			ptrs[i] = (void *)ffp_vertex_attrib_offsets[attr_idx];
+				ptrs[i] = (void *)ffp_vertex_attrib_offsets[attr_idx];
 #else
-			uint32_t size = top_idx * ffp_vertex_stream_config[attr_idx].stride;
-			ptrs[i] = gpu_alloc_mapped_temp(size);
-			sceClibMemcpy(ptrs[i], (void *)ffp_vertex_attrib_offsets[attr_idx], size);
+				uint32_t size = top_idx * ffp_vertex_stream_config[attr_idx].stride;
+				ptrs[i] = gpu_alloc_mapped_temp(size);
+				sceClibMemcpy(ptrs[i], (void *)ffp_vertex_attrib_offsets[attr_idx], size);
 #endif
+			}
 		}
 		sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
 	}
@@ -969,6 +1035,12 @@ void glEnableClientState(GLenum array) {
 	case GL_COLOR_ARRAY:
 		ffp_vertex_attrib_state |= (1 << 2);
 		break;
+	case GL_NORMAL_ARRAY:
+		ffp_vertex_attrib_state |= (1 << 3);
+		ffp_vertex_attrib_state |= (1 << 4);
+		ffp_vertex_attrib_state |= (1 << 5);
+		ffp_vertex_attrib_state |= (1 << 6);
+		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
 	}
@@ -986,6 +1058,12 @@ void glDisableClientState(GLenum array) {
 		break;
 	case GL_COLOR_ARRAY:
 		ffp_vertex_attrib_state &= ~(1 << 2);
+		break;
+	case GL_NORMAL_ARRAY:
+		ffp_vertex_attrib_state &= ~(1 << 3);
+		ffp_vertex_attrib_state &= ~(1 << 4);
+		ffp_vertex_attrib_state &= ~(1 << 5);
+		ffp_vertex_attrib_state &= ~(1 << 6);
 		break;
 	default:
 		SET_GL_ERROR(GL_INVALID_ENUM)
@@ -1062,6 +1140,40 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 	}
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
+}
+
+void glNormalPointer(GLenum type, GLsizei stride, const void *pointer) {
+#ifndef SKIP_ERROR_HANDLING
+	if (stride < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+	ffp_vertex_attrib_offsets[6] = (uint32_t)pointer;
+	ffp_vertex_attrib_vbo[6] = vertex_array_unit;
+
+	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[6];
+	SceGxmVertexStream *streams = &ffp_vertex_stream_config[6];
+
+	unsigned short bpe;
+	switch (type) {
+	case GL_FLOAT:
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		bpe = 4;
+		break;
+	case GL_SHORT:
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_S16N;
+		bpe = 2;
+		break;
+	case GL_BYTE:
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_S8N;
+		bpe = 1;
+		break;
+	default:
+		SET_GL_ERROR(GL_INVALID_ENUM)
+	}
+	attributes->componentCount = 3;
+	streams->stride = stride ? stride : bpe * 3;
 }
 
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
