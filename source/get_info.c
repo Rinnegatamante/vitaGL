@@ -26,9 +26,9 @@
 #include "shared.h"
 
 #ifndef DISABLE_TEXTURE_COMBINER
-#define NUM_EXTENSIONS 17 // Number of supported extensions
+#define NUM_EXTENSIONS 18 // Number of supported extensions
 #else
-#define NUM_EXTENSIONS 16 // Number of supported extensions
+#define NUM_EXTENSIONS 17 // Number of supported extensions
 #endif
 
 static GLubyte *extensions[NUM_EXTENSIONS] = {
@@ -47,6 +47,7 @@ static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_IMG_texture_compression_pvrtc",
 	"GL_EXT_texture_env_add",
 	"GL_WIN_phong_shading",
+	"GL_AMD_compressed_ATC_texture",
 	"GL_ARB_multitexture",
 #ifndef DISABLE_TEXTURE_COMBINER
 	"GL_EXT_texture_env_combine"
@@ -252,6 +253,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[6] = GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
 		data[7] = GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG;
 		data[8] = GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG;
+		data[9] = GL_ATC_RGB_AMD;
+		data[10] = GL_ATC_RGBA_EXPLICIT_ALPHA_AMD;
+		data[11] = GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD;
 		break;
 	case GL_NUM_SHADER_BINARY_FORMATS:
 		*data = 0;

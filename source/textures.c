@@ -777,6 +777,9 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 
 	SceGxmTextureFormat tex_format;
 	GLboolean gamma_correction = GL_FALSE;
+	GLboolean non_native_format = GL_FALSE;
+	void *decompressed_data;
+	uint8_t data_bpp;
 
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if texture is too big for sceGxm
@@ -829,13 +832,41 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		case GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR;
 			break;
+		case GL_ATC_RGB_AMD:
+			non_native_format = GL_TRUE;
+			decompressed_data = vgl_malloc(width * height * 4, VGL_MEM_EXTERNAL);
+			atitc_decode(data, decompressed_data, width, height, ATC_RGB);
+			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
+			data_bpp = 4;
+			break;
+		case GL_ATC_RGBA_EXPLICIT_ALPHA_AMD:
+			non_native_format = GL_TRUE;
+			decompressed_data = vgl_malloc(width * height * 4, VGL_MEM_EXTERNAL);
+			atitc_decode(data, decompressed_data, width, height, ATC_EXPLICIT_ALPHA);
+			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
+			data_bpp = 4;
+			break;
+		case GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD:
+			non_native_format = GL_TRUE;
+			decompressed_data = vgl_malloc(width * height * 4, VGL_MEM_EXTERNAL);
+			atitc_decode(data, decompressed_data, width, height, ATC_INTERPOLATED_ALPHA);
+			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
+			data_bpp = 4;
+			break;
 		default:
 			SET_GL_ERROR(GL_INVALID_ENUM)
 		}
 
 		// Allocating texture/mipmaps depending on user call
 		tex->type = internalFormat;
-		gpu_alloc_compressed_texture(level, width, height, tex_format, imageSize, data, tex, 0, NULL);
+		if (non_native_format) {
+			if (level == 0)
+				gpu_alloc_texture(width, height, tex_format, decompressed_data, tex, data_bpp, NULL, NULL, GL_TRUE);
+			else
+				gpu_alloc_mipmaps(level, tex);
+			vgl_free(decompressed_data);
+		} else
+			gpu_alloc_compressed_texture(level, width, height, tex_format, imageSize, data, tex, 0, NULL);
 
 		// Setting texture parameters
 		vglSetTexUMode(&tex->gxm_tex, tex->u_mode);

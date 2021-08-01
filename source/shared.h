@@ -30,7 +30,7 @@
 #define TEXTURE_IMAGE_UNITS_NUM 5 // Available texture image units
 #define TEXTURE_COORDS_NUM 2 // Available texture coords sets for multitexturing with ffp
 #define COMBINED_TEXTURE_IMAGE_UNITS_NUM 16 // Available combined texture image units
-#define COMPRESSED_TEXTURE_FORMATS_NUM 9 // The number of supported texture formats
+#define COMPRESSED_TEXTURE_FORMATS_NUM 12 // The number of supported texture formats
 #define VERTEX_ATTRIBS_NUM 16 // Available vertex attributes
 #define MODELVIEW_STACK_DEPTH 32 // Depth of modelview matrix stack
 #define GENERIC_STACK_DEPTH 2 // Depth of generic matrix stack
@@ -78,6 +78,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 #include "vitaGL.h"
 
+#include "utils/atitc_utils.h"
 #include "utils/gpu_utils.h"
 #include "utils/gxm_utils.h"
 #include "utils/math_utils.h"

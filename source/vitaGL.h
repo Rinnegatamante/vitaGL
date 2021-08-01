@@ -331,6 +331,7 @@ extern "C" {
 #define GL_COMPRESSED_TEXTURE_FORMATS                0x86A3
 #define GL_MIRROR_CLAMP_EXT                          0x8742
 #define GL_BUFFER_SIZE                               0x8764
+#define GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD           0x87EE
 #define GL_MAX_VERTEX_ATTRIBS                        0x8869
 #define GL_VERTEX_ATTRIB_ARRAY_NORMALIZED            0x886A
 #define GL_MAX_TEXTURE_COORDS                        0x8871
@@ -387,6 +388,8 @@ extern "C" {
 #define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1           0x8C4D
 #define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3           0x8C4E
 #define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5           0x8C4F
+#define GL_ATC_RGB_AMD                               0x8C92
+#define GL_ATC_RGBA_EXPLICIT_ALPHA_AMD               0x8C93
 #define GL_FRAMEBUFFER_BINDING                       0x8CA6
 #define GL_READ_FRAMEBUFFER                          0x8CA8
 #define GL_DRAW_FRAMEBUFFER                          0x8CA9
