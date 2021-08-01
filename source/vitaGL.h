@@ -232,6 +232,7 @@ extern "C" {
 #define GL_LIGHT5                                    0x4005
 #define GL_LIGHT6                                    0x4006
 #define GL_LIGHT7                                    0x4007
+#define GL_ABGR_EXT                                  0x8000
 #define GL_FUNC_ADD                                  0x8006
 #define GL_MIN                                       0x8007
 #define GL_MAX                                       0x8008

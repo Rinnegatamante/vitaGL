@@ -251,6 +251,19 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 			SET_GL_ERROR(GL_INVALID_ENUM)
 		}
 		break;
+	case GL_ABGR_EXT:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			data_bpp = 4;
+			if (internalFormat == GL_ABGR_EXT)
+				fast_store = GL_TRUE;
+			else
+				read_cb = readABGR;
+			break;
+		default:
+			SET_GL_ERROR(GL_INVALID_ENUM)
+		}
+		break;
 	case GL_RGBA:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
@@ -324,6 +337,10 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 	case GL_BGRA:
 		write_cb = writeBGRA;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
+		break;
+	case GL_ABGR_EXT:
+		write_cb = writeABGR;
+		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_RGBA;
 		break;
 	case GL_INTENSITY:
 		write_cb = writeR;

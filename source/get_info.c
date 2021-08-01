@@ -26,9 +26,9 @@
 #include "shared.h"
 
 #ifndef DISABLE_TEXTURE_COMBINER
-#define NUM_EXTENSIONS 16 // Number of supported extensions
+#define NUM_EXTENSIONS 17 // Number of supported extensions
 #else
-#define NUM_EXTENSIONS 15 // Number of supported extensions
+#define NUM_EXTENSIONS 16 // Number of supported extensions
 #endif
 
 static GLubyte *extensions[NUM_EXTENSIONS] = {
@@ -39,13 +39,14 @@ static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_OES_framebuffer_object",
 	"GL_EXT_texture_format_BGRA8888",
 	"GL_EXT_read_format_bgra",
+	"GL_EXT_abgr",
 	"GL_EXT_texture_compression_dxt1",
 	"GL_EXT_texture_compression_dxt3",
 	"GL_EXT_texture_compression_dxt5",
 	"GL_EXT_texture_compression_s3tc",
 	"GL_IMG_texture_compression_pvrtc",
-	"GL_WIN_phong_shading",
 	"GL_EXT_texture_env_add",
+	"GL_WIN_phong_shading",
 	"GL_ARB_multitexture",
 #ifndef DISABLE_TEXTURE_COMBINER
 	"GL_EXT_texture_env_combine"

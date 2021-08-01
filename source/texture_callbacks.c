@@ -39,6 +39,12 @@ uint32_t readRGBA(void *data) {
 	return ((rgba[3] << 24) | (rgba[2] << 16) | (rgba[1] << 8) | rgba[0]);
 }
 
+// Read callback for 32bpp unsigned ABGR format
+uint32_t readABGR(void *data) {
+	uint8_t *rgba = (uint8_t *)data;
+	return ((rgba[0] << 24) | (rgba[1] << 16) | (rgba[2] << 8) | rgba[3]);
+}
+
 // Read callback for 16bpp unsigned RGBA5551 format
 uint32_t readRGBA5551(void *data) {
 	uint16_t clr;
@@ -128,6 +134,16 @@ void writeRGBA(void *data, uint32_t color) {
 	dst[1] = src[1];
 	dst[2] = src[2];
 	dst[3] = src[3];
+}
+
+// Write callback for 32bpp unsigned ABGR format
+void writeABGR(void *data, uint32_t color) {
+	uint8_t *dst = (uint8_t *)data;
+	uint8_t *src = (uint8_t *)&color;
+	dst[0] = src[3];
+	dst[1] = src[2];
+	dst[2] = src[1];
+	dst[3] = src[0];
 }
 
 // Write callback for 32bpp unsigned BGRA format
