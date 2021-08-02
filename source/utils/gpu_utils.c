@@ -33,7 +33,7 @@
 #endif
 
 // VRAM usage setting
-uint8_t use_vram = GL_FALSE;
+uint8_t use_vram = GL_TRUE;
 uint8_t use_vram_for_usse = GL_FALSE;
 
 // Newlib mempool usage setting
