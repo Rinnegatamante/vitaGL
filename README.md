@@ -72,6 +72,7 @@ Direct OpenGL Usage:<br>
 [jfsw-vita](https://vitadb.rinnegatamante.it/#/info/705) - Port of JFSW (Shadow Warrior Classic sourceport)<br>
 [jfduke3d-vita](https://vitadb.rinnegatamante.it/#/info/711) - Port of JFDuke3D (Duke Nukem 3D sourceport)<br>
 [d3es-vita](https://github.com/Rinnegatamante/d3es-vita) - Port of Doom 3<br>
+[bc2_vita](https://vitadb.rinnegatamante.it/#/info/714) - Port of Battlefield Bad Company 2 Mobile<br>
 
 Libraries:<br>
 [sdl12_gl](https://github.com/Rinnegatamante/SDL-Vita/tree/sdl12_gl/src) - SDL 1.2 Vita port adapted to work with vitaGL as renderer<br>

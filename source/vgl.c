@@ -360,10 +360,6 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 
 	// Init vertex pool for immediate mode support
 	legacy_pool_size = pool_size;
-	if (legacy_pool_size) {
-		legacy_pool = (float *)gpu_alloc_mapped_temp(legacy_pool_size);
-		legacy_pool_ptr = legacy_pool;
-	}
 
 	// Initializing lights configs
 	for (i = 0; i < MAX_LIGHTS_NUM; i++) {

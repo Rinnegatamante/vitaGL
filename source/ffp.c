@@ -1639,6 +1639,9 @@ void glBegin(GLenum mode) {
 	phase = MODEL_CREATION;
 #endif
 
+	// Performing a scene reset if necessary
+	sceneReset();
+	
 	// Tracking desired primitive
 	ffp_mode = mode;
 
@@ -1651,7 +1654,6 @@ void glEnd(void) {
 	// Error handling
 	if (phase != MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
-		return;
 	}
 
 	// Changing current openGL machine state
@@ -1660,8 +1662,6 @@ void glEnd(void) {
 
 	// Translating primitive to sceGxm one
 	gl_primitive_to_gxm(ffp_mode, prim, vertex_count);
-
-	sceneReset();
 
 	// Invalidating current attributes state settings
 	uint8_t orig_state = ffp_vertex_attrib_state;
