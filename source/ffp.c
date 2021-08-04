@@ -1042,7 +1042,7 @@ void glEnableClientState(GLenum array) {
 		ffp_vertex_attrib_state |= (1 << 6);
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, array)
 	}
 }
 
@@ -1066,7 +1066,7 @@ void glDisableClientState(GLenum array) {
 		ffp_vertex_attrib_state &= ~(1 << 6);
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, array)
 	}
 }
 
@@ -1094,7 +1094,7 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 		bpe = 2;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	}
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
@@ -1136,7 +1136,7 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 		bpe = 1;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	}
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
@@ -1170,7 +1170,7 @@ void glNormalPointer(GLenum type, GLsizei stride, const void *pointer) {
 		bpe = 1;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	}
 	attributes->componentCount = 3;
 	streams->stride = stride ? stride : bpe * 3;
@@ -1200,7 +1200,7 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *po
 		bpe = 2;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	}
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
@@ -1388,7 +1388,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 		streams->stride = stride ? stride : 32;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, format)
 	}
 }
 
@@ -1433,7 +1433,7 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 void glClientActiveTexture(GLenum texture) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE15)) {
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, texture)
 	} else
 #endif
 		client_texture_unit = texture - GL_TEXTURE0;
@@ -1466,7 +1466,7 @@ void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
 		sceClibMemcpy(&current_vtx.diff.x, params, sizeof(float) * 4);
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 }
 
@@ -1616,7 +1616,7 @@ void glMultiTexCoord2f(GLenum target, GLfloat s, GLfloat t) {
 		current_vtx.uv2.y = t;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }
 
@@ -1939,11 +1939,11 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
 			break;
 #endif
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 		}
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }
 
@@ -1979,11 +1979,11 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 			break;
 #endif
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 		}
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 	dirty_frag_unifs = GL_TRUE;
 }
@@ -2274,18 +2274,18 @@ void glTexEnvi(GLenum target, GLenum pname, GLint param) {
 			break;
 #endif
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 		}
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }
 
 void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 #ifndef SKIP_ERROR_HANDLING
 	if (light < GL_LIGHT0 && light > GL_LIGHT7) {
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, light)
 	}
 #endif
 
@@ -2312,7 +2312,7 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 		lights_attenuations[light - GL_LIGHT0].b = params[0];
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 
 	dirty_vert_unifs = GL_TRUE;
@@ -2335,7 +2335,7 @@ void glLightModelfv(GLenum pname, const GLfloat *params) {
 			dirty_frag_unifs = GL_TRUE;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 }
 
@@ -2355,7 +2355,7 @@ void glFogf(GLenum pname, GLfloat param) {
 		fog_far = param;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 	dirty_frag_unifs = GL_TRUE;
 }
@@ -2379,7 +2379,7 @@ void glFogfv(GLenum pname, const GLfloat *params) {
 		sceClibMemcpy(&fog_color.r, params, sizeof(vector4f));
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 	dirty_frag_unifs = GL_TRUE;
 }
@@ -2400,7 +2400,7 @@ void glFogi(GLenum pname, const GLint param) {
 		fog_far = param;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 	dirty_frag_unifs = GL_TRUE;
 }
@@ -2408,7 +2408,7 @@ void glFogi(GLenum pname, const GLint param) {
 void glClipPlane(GLenum plane, const GLdouble *equation) {
 #ifndef SKIP_ERROR_HANDLING
 	if (plane < GL_CLIP_PLANE0 || plane > GL_CLIP_PLANE6) {
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, plane)
 	}
 #endif
 	int idx = plane - GL_CLIP_PLANE0;
@@ -2446,7 +2446,7 @@ void glShadeModel(GLenum mode) {
 		shading_mode = PHONG;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
 	}
 
 	ffp_dirty_frag = GL_TRUE;

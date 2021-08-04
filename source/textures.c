@@ -47,7 +47,7 @@ void _glTexImage2D_CubeIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 			data_bpp = 1;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_RG:
@@ -58,7 +58,7 @@ void _glTexImage2D_CubeIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 			data_bpp = 2;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_RGB:
@@ -72,7 +72,7 @@ void _glTexImage2D_CubeIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 			src_format = SCE_GXM_TRANSFER_FORMAT_U5U6U5_BGR;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_RGBA:
@@ -90,11 +90,11 @@ void _glTexImage2D_CubeIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 			src_format = SCE_GXM_TRANSFER_FORMAT_U4U4U4U4_ABGR;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_VALUE)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, format)
 		break;
 	}
 
@@ -166,7 +166,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 			data_bpp = 1;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_LUMINANCE:
@@ -179,7 +179,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 				read_cb = readL;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_RG:
@@ -189,7 +189,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 			data_bpp = 2;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_LUMINANCE_ALPHA:
@@ -202,7 +202,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 				read_cb = readLA;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_BGR:
@@ -215,7 +215,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 				read_cb = readBGR;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_RGB:
@@ -235,7 +235,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 				read_cb = readRGB565;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_BGRA:
@@ -248,7 +248,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 				read_cb = readBGRA;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_ABGR_EXT:
@@ -261,7 +261,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 				read_cb = readABGR;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_RGBA:
@@ -286,8 +286,11 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 			read_cb = readRGBA4444;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, format)
 		break;
 	}
 
@@ -547,7 +550,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 		_glTexImage2D_CubeIMPL(tex, level, internalFormat, width, height, format, type, data, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }
 
@@ -616,7 +619,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			data_bpp = 1;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_RG:
@@ -626,7 +629,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			data_bpp = 2;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_RGB:
@@ -640,7 +643,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			read_cb = readRGB565;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_BGR:
@@ -650,7 +653,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			read_cb = readBGR;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_RGBA:
@@ -668,7 +671,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			read_cb = readRGBA4444;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
 	case GL_BGRA:
@@ -678,8 +681,11 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			read_cb = readBGRA;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, format)
 		break;
 	}
 
@@ -759,7 +765,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }
 
@@ -854,7 +860,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			data_bpp = 4;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 		}
 
 		// Allocating texture/mipmaps depending on user call
@@ -881,7 +887,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }
 
@@ -901,11 +907,11 @@ void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum fo
 			bpp = 4;
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, format)
 		}
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 
 	// Allocating and initializing color table
@@ -954,7 +960,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 				break;
 			default:
-				SET_GL_ERROR(GL_INVALID_ENUM)
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
 			if (tex->status == TEX_VALID) {
 				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
@@ -971,13 +977,13 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 				break;
 			default:
-				SET_GL_ERROR(GL_INVALID_ENUM)
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
 			if (tex->status == TEX_VALID)
 				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 		}
 	case GL_TEXTURE_2D:
 		switch (pname) {
@@ -1014,7 +1020,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 				break;
 			default:
-				SET_GL_ERROR(GL_INVALID_ENUM)
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
 			if (tex->status == TEX_VALID) {
 				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
@@ -1031,7 +1037,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 				break;
 			default:
-				SET_GL_ERROR(GL_INVALID_ENUM)
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
 			if (tex->status == TEX_VALID)
 				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
@@ -1051,7 +1057,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
 				break;
 			default:
-				SET_GL_ERROR(GL_INVALID_ENUM)
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
 			if (tex->status == TEX_VALID)
 				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
@@ -1071,7 +1077,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
 				break;
 			default:
-				SET_GL_ERROR(GL_INVALID_ENUM)
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
 			if (tex->status == TEX_VALID)
 				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
@@ -1082,11 +1088,11 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 				vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 		}
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }
 
@@ -1140,7 +1146,7 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 		}
 	case GL_TEXTURE_2D:
 		switch (pname) {
@@ -1214,11 +1220,11 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 				vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 		}
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }
 
@@ -1226,7 +1232,7 @@ void glActiveTexture(GLenum texture) {
 	// Changing current in use server texture unit
 #ifndef SKIP_ERROR_HANDLING
 	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE15)) {
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, texture)
 	} else
 #endif
 		server_texture_unit = texture - GL_TEXTURE0;
@@ -1261,7 +1267,7 @@ void glGenerateMipmap(GLenum target) {
 
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }
 

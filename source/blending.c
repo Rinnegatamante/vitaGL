@@ -103,7 +103,7 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, sfactor)
 	}
 	switch (dfactor) {
 	case GL_ZERO:
@@ -140,7 +140,7 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 		blend_dfactor_rgb = blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, dfactor)
 	}
 	if (blend_state)
 		change_blend_factor();
@@ -182,7 +182,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, srcRGB)
 	}
 	switch (dstRGB) {
 	case GL_ZERO:
@@ -219,7 +219,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		blend_dfactor_rgb = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, dstRGB)
 	}
 	switch (srcAlpha) {
 	case GL_ZERO:
@@ -256,7 +256,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		blend_sfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, srcAlpha)
 	}
 	switch (dstAlpha) {
 	case GL_ZERO:
@@ -293,7 +293,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 		blend_dfactor_a = SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, dstAlpha)
 	}
 	if (blend_state)
 		change_blend_factor();
@@ -317,7 +317,7 @@ void glBlendEquation(GLenum mode) {
 		blend_func_rgb = blend_func_a = SCE_GXM_BLEND_FUNC_MAX;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
 	}
 	if (blend_state)
 		change_blend_factor();
@@ -341,7 +341,7 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
 		blend_func_rgb = SCE_GXM_BLEND_FUNC_MAX;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, modeRGB)
 	}
 	switch (modeAlpha) {
 	case GL_FUNC_ADD:
@@ -360,7 +360,7 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
 		blend_func_a = SCE_GXM_BLEND_FUNC_MAX;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, modeAlpha)
 	}
 	if (blend_state)
 		change_blend_factor();

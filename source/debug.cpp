@@ -264,25 +264,6 @@ void vgl_file_log(const char *format, ...) {
 #endif
 
 #ifdef LOG_ERRORS
-char *get_gl_error_literal(uint32_t code) {
-	switch (code) {
-	case GL_INVALID_VALUE:
-		return "GL_INVALID_VALUE";
-	case GL_INVALID_ENUM:
-		return "GL_INVALID_ENUM";
-	case GL_INVALID_OPERATION:
-		return "GL_INVALID_OPERATION";
-	case GL_OUT_OF_MEMORY:
-		return "GL_OUT_OF_MEMORY";
-	case GL_STACK_OVERFLOW:
-		return "GL_STACK_OVERFLOW";
-	case GL_STACK_UNDERFLOW:
-		return "GL_STACK_UNDERFLOW";
-	default:
-		return "Unknown Error";
-	}
-}
-
 char *get_gxm_error_literal(uint32_t code) {
 	switch (code) {
 	case SCE_GXM_ERROR_UNINITIALIZED:

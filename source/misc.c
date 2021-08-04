@@ -233,7 +233,7 @@ void glPolygonMode(GLenum face, GLenum mode) {
 		new_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
 	}
 	switch (face) {
 	case GL_FRONT:
@@ -253,7 +253,7 @@ void glPolygonMode(GLenum face, GLenum mode) {
 		sceGxmSetBackPolygonMode(gxm_context, new_mode);
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, face)
 	}
 	update_polygon_offset();
 }
@@ -414,7 +414,7 @@ void glEnable(GLenum cap) {
 		}
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, cap)
 	}
 }
 
@@ -523,7 +523,7 @@ void glDisable(GLenum cap) {
 		}
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, cap)
 	}
 }
 
@@ -680,7 +680,7 @@ void glHint(GLenum target, GLenum mode) {
 		}
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }
 

@@ -87,7 +87,6 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #include "texture_callbacks.h"
 
 // Debugging tool
-char *get_gl_error_literal(uint32_t code);
 char *get_gxm_error_literal(uint32_t code);
 #ifdef FILE_LOG
 void vgl_file_log(const char *format, ...);
@@ -157,7 +156,7 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 		prim_is_non_native = GL_TRUE; \
 		break; \
 	default: \
-		SET_GL_ERROR(GL_INVALID_ENUM) \
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, x) \
 	}
 #else
 #define gl_primitive_to_gxm(x, p, c) \
@@ -199,7 +198,7 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 		prim_is_non_native = GL_TRUE; \
 		break; \
 	default: \
-		SET_GL_ERROR(GL_INVALID_ENUM) \
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, x) \
 	}
 #endif
 
@@ -212,13 +211,17 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 
 // Error set funcs
 #define SET_GL_ERROR(x) \
-	vgl_log("%s:%d: %s set %s\n", __FILE__, __LINE__, __func__, get_gl_error_literal(x)); \
+	vgl_log("%s:%d: %s set %s\n", __FILE__, __LINE__, __func__, #x); \
 	vgl_error = x; \
 	return;
 #define SET_GL_ERROR_WITH_RET(x, y) \
-	vgl_log("%s:%d: %s set %s\n", __FILE__, __LINE__, __func__, get_gl_error_literal(x)); \
+	vgl_log("%s:%d: %s set %s\n", __FILE__, __LINE__, __func__, #x); \
 	vgl_error = x; \
 	return y;
+#define SET_GL_ERROR_WITH_VALUE(x, y) \
+	vgl_log("%s:%d: %s set %s (%s: 0x%X)\n", __FILE__, __LINE__, __func__, #x, #y, y); \
+	vgl_error = x; \
+	return;
 
 #ifdef LOG_ERRORS
 #define patchVertexProgram(patcher, id, attr, attr_num, stream, stream_num, prog) \

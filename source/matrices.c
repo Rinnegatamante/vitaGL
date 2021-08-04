@@ -49,7 +49,7 @@ void glMatrixMode(GLenum mode) {
 		matrix = &texture_matrix;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
 	}
 }
 

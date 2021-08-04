@@ -144,7 +144,7 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 		*params = GL_TRUE;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 }
 
@@ -200,7 +200,7 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 		*data = 8;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 }
 
@@ -302,7 +302,7 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		*data = TEXTURE_COORDS_NUM;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 }
 

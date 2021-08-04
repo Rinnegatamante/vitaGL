@@ -179,7 +179,7 @@ void glBindFramebuffer(GLenum target, GLuint fb) {
 		active_write_fb = active_read_fb = (framebuffer *)fb;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }
 
@@ -189,14 +189,14 @@ void glBindRenderbuffer(GLenum target, GLuint rb) {
 		active_rb = (renderbuffer *)rb;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }
 
 void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer) {
 #ifndef SKIP_ERROR_HANDLING
 	if (renderbuffertarget != GL_RENDERBUFFER)
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, renderbuffertarget)
 #endif
 
 	framebuffer *fb;
@@ -209,7 +209,7 @@ void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbu
 		fb = active_read_fb;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 		break;
 	}
 
@@ -222,16 +222,18 @@ void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbu
 			fb->depthbuffer_ptr = &fb->depthbuffer; // Resetting to temporary depth buffer
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, attachment)
 	}
 }
 
 void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, GLsizei height) {
 #ifndef SKIP_ERROR_HANDLING
-	if (target != GL_RENDERBUFFER)
-		SET_GL_ERROR(GL_INVALID_ENUM)
-	if (width < 0 || height < 0)
+	if (target != GL_RENDERBUFFER) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+	if (width < 0 || height < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
 #endif
 
 	if (active_rb->depth_buffer_addr) {
@@ -253,7 +255,7 @@ void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, 
 		initDepthStencilBuffer(width, height, &active_rb->depthbuffer, &active_rb->depth_buffer_addr, NULL);
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalformat)
 		break;
 	}
 
@@ -272,14 +274,14 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 		fb = active_read_fb;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 
 #ifndef SKIP_ERROR_HANDLING
 	if (!fb) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	} else if (textarget != GL_TEXTURE_2D) {
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, textarget)
 	}
 #endif
 
@@ -336,7 +338,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, attachment)
 	}
 }
 
@@ -415,7 +417,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 				write_cb = writeRGBA;
 				break;
 			default:
-				SET_GL_ERROR(GL_INVALID_ENUM)
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 			}
 			break;
 		case GL_RGB:
@@ -424,11 +426,11 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 				write_cb = writeRGB;
 				break;
 			default:
-				SET_GL_ERROR(GL_INVALID_ENUM)
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 			}
 			break;
 		default:
-			SET_GL_ERROR(GL_INVALID_ENUM)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, format)
 		}
 	}
 
@@ -485,6 +487,6 @@ void vglTexImageDepthBuffer(GLenum target) {
 		tex->status = TEX_VALID;
 	} break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }

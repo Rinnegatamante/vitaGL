@@ -63,7 +63,7 @@ void glBindBuffer(GLenum target, GLuint buffer) {
 		index_array_unit = buffer;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }
 
@@ -99,7 +99,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		gpu_buf = (gpubuffer *)index_array_unit;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 #ifndef SKIP_ERROR_HANDLING
 	if (size < 0) {
@@ -156,7 +156,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 		gpu_buf = (gpubuffer *)index_array_unit;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 #ifndef SKIP_ERROR_HANDLING
 	if ((size < 0) || (offset < 0) || ((offset + size) > gpu_buf->size)) {
@@ -203,7 +203,7 @@ void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params) {
 		gpu_buf = (gpubuffer *)index_array_unit;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf) {
@@ -216,7 +216,7 @@ void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params) {
 		*params = gpu_buf->size;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 }
 
@@ -242,7 +242,7 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 		bpe = 2;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	}
 
 	attributes->componentCount = size;
@@ -284,7 +284,7 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 		bpe = 1;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	}
 
 	attributes->componentCount = size;
@@ -314,7 +314,7 @@ void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, c
 		bpe = 2;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	}
 
 	attributes->componentCount = size;
@@ -336,7 +336,7 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *po
 		bpe = sizeof(GLshort);
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	}
 	index_object = gpu_alloc_mapped_temp(count * bpe);
 	if (stride == 0)
@@ -391,7 +391,7 @@ void vglColorPointerMapped(GLenum type, const GLvoid *pointer) {
 		bpe = 1;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	}
 
 	attributes->componentCount = 4;

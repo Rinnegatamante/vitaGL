@@ -712,7 +712,7 @@ void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
 #endif
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 }
 
@@ -986,7 +986,7 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 		*params = i;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 }
 
@@ -1483,7 +1483,7 @@ void glDisableVertexAttribArray(GLuint index) {
 void glGetVertexAttribPointerv(GLuint index, GLenum pname, void **pointer) {
 #ifndef SKIP_ERROR_HANDLING
 	if (pname != GL_VERTEX_ATTRIB_ARRAY_POINTER) {
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	} else if (index >= VERTEX_ATTRIBS_NUM) {
 		SET_GL_ERROR(GL_INVALID_VALUE);
 	}
@@ -1532,7 +1532,7 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 		bpe = 1;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	}
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
@@ -1575,7 +1575,7 @@ void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {
 		params[3] = vertex_attrib_size[index] > 3 ? vertex_attrib_value[index][3] : 1;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 }
 
@@ -1616,7 +1616,7 @@ void glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params) {
 		params[3] = vertex_attrib_size[index] > 3 ? vertex_attrib_value[index][3] : 1;
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 }
 
@@ -1823,7 +1823,7 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 		bpe = sizeof(uint8_t);
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	}
 
 	// Setting various info about the stream
@@ -1899,7 +1899,7 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 		bpe = sizeof(GLshort);
 		break;
 	default:
-		SET_GL_ERROR(GL_INVALID_ENUM)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	}
 
 	// Allocating enough memory on vitaGL mempool
