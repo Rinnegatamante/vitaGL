@@ -46,18 +46,20 @@ void *vglReserveUniformCircularPoolBuffer(uint32_t size) {
 }
 
 void vglRestoreFragmentUniformBuffer(void) {
-	sceGxmSetFragmentDefaultUniformBuffer(gxm_context, frag_buf);
+	if (frag_buf)
+		sceGxmSetFragmentDefaultUniformBuffer(gxm_context, frag_buf);
 }
 
 void vglRestoreVertexUniformBuffer(void) {
-	sceGxmSetVertexDefaultUniformBuffer(gxm_context, vert_buf);
+	if (vert_buf)
+		sceGxmSetVertexDefaultUniformBuffer(gxm_context, vert_buf);
 }
 
 uint32_t vglReserveFragmentUniformBuffer(const SceGxmProgram *p, void **uniformBuffer) {
 	uint32_t size = sceGxmProgramGetDefaultUniformBufferSize(p);
 	if (size) {
 		frag_buf = vglReserveUniformCircularPoolBuffer(size);
-		vglRestoreFragmentUniformBuffer();
+		sceGxmSetFragmentDefaultUniformBuffer(gxm_context, frag_buf);
 		*uniformBuffer = frag_buf;
 	}
 	return size;
@@ -67,7 +69,7 @@ uint32_t vglReserveVertexUniformBuffer(const SceGxmProgram *p, void **uniformBuf
 	uint32_t size = sceGxmProgramGetDefaultUniformBufferSize(p);
 	if (size) {
 		vert_buf = vglReserveUniformCircularPoolBuffer(size);
-		vglRestoreVertexUniformBuffer();
+		sceGxmSetVertexDefaultUniformBuffer(gxm_context, vert_buf);
 		*uniformBuffer = vert_buf;
 	}
 	return size;
