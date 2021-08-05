@@ -927,6 +927,14 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 	switch (target) {
 	case GL_TEXTURE_CUBE_MAP:
 		switch (pname) {
+		case GL_TEXTURE_WRAP_S: 
+		case GL_TEXTURE_WRAP_T:
+#ifndef SKIP_ERROR_HANDLING
+			if (param != GL_CLAMP_TO_EDGE) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
+			break;
 		case GL_TEXTURE_MIN_FILTER: // Min filter
 			switch (param) {
 			case GL_NEAREST: // Point
@@ -1150,6 +1158,13 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 		}
 	case GL_TEXTURE_2D:
 		switch (pname) {
+		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
+#ifndef SKIP_ERROR_HANDLING			
+			if (param != 1.0f) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
+			break;
 		case GL_TEXTURE_MIN_FILTER: // Min Filter
 			if (param == GL_NEAREST) {
 				tex->use_mips = GL_FALSE;

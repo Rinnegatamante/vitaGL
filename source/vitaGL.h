@@ -292,6 +292,8 @@ extern "C" {
 #define GL_MAX_TEXTURE_UNITS                         0x84E2
 #define GL_SUBTRACT                                  0x84E7
 #define GL_TEXTURE_COMPRESSION_HINT                  0x84EF
+#define GL_TEXTURE_MAX_ANISOTROPY_EXT                0x84FE
+#define GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT            0x84FF
 #define GL_TEXTURE_LOD_BIAS                          0x8501
 #define GL_INCR_WRAP                                 0x8507
 #define GL_DECR_WRAP                                 0x8508
@@ -329,6 +331,7 @@ extern "C" {
 #define GL_VERTEX_ATTRIB_ARRAY_TYPE                  0x8625
 #define GL_CURRENT_VERTEX_ATTRIB                     0x8626
 #define GL_VERTEX_ATTRIB_ARRAY_POINTER               0x8645
+#define GL_PROGRAM_ERROR_POSITION_ARB                0x864B
 #define GL_NUM_COMPRESSED_TEXTURE_FORMATS            0x86A2
 #define GL_COMPRESSED_TEXTURE_FORMATS                0x86A3
 #define GL_MIRROR_CLAMP_EXT                          0x8742

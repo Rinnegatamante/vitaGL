@@ -193,6 +193,9 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 	case GL_MAX_TEXTURE_STACK_DEPTH: // Max texture stack depth
 		*data = GENERIC_STACK_DEPTH;
 		break;
+	case GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT:
+		*data = 1.0f;
+		break;
 	case GL_DEPTH_BITS:
 		*data = 32;
 		break;
@@ -209,6 +212,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_PROGRAM_ERROR_POSITION_ARB:
+		*data = -1;
+		break;
 	case GL_POLYGON_MODE:
 		data[0] = gl_polygon_mode_front;
 		data[1] = gl_polygon_mode_back;
