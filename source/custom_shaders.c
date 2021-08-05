@@ -99,7 +99,11 @@ typedef struct {
 	shader *vshader;
 	shader *fshader;
 	uint8_t status;
+#ifdef HAVE_SAMPLERS_AS_UNIFORMS
+	uniform *texunits[TEXTURE_IMAGE_UNITS_NUM];
+#else
 	GLboolean texunits[TEXTURE_IMAGE_UNITS_NUM];
+#endif
 	SceGxmVertexAttribute attr[VERTEX_ATTRIBS_NUM];
 	SceGxmVertexStream stream[VERTEX_ATTRIBS_NUM];
 	SceGxmVertexProgram *vprog;
@@ -254,7 +258,11 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	int i;
 	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
 		if (p->texunits[i]) {
+#ifdef HAVE_SAMPLERS_AS_UNIFORMS
+			texture_unit *tex_unit = &texture_units[(int)p->texunits[i]->data];
+#else
 			texture_unit *tex_unit = &texture_units[i];
+#endif
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex);
 			if (r) {
@@ -407,7 +415,11 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	int i;
 	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
 		if (p->texunits[i]) {
+#ifdef HAVE_SAMPLERS_AS_UNIFORMS
+			texture_unit *tex_unit = &texture_units[(int)p->texunits[i]->data];
+#else
 			texture_unit *tex_unit = &texture_units[i];
+#endif
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex);
 			if (r) {
@@ -896,14 +908,21 @@ void glDeleteProgram(GLuint prog) {
 		while (p->vert_uniforms) {
 			uniform *old = p->vert_uniforms;
 			p->vert_uniforms = (uniform *)p->vert_uniforms->chain;
+#ifdef HAVE_SAMPLERS_AS_UNIFORMS
+			if (old->size && !(old->is_fragment && old->is_vertex))
+#else
 			if (!(old->is_fragment && old->is_vertex))
+#endif
 				vgl_free(old->data);
 			vgl_free(old);
 		}
 		while (p->frag_uniforms) {
 			uniform *old = p->frag_uniforms;
 			p->frag_uniforms = (uniform *)p->frag_uniforms->chain;
-			vgl_free(old->data);
+#ifdef HAVE_SAMPLERS_AS_UNIFORMS
+			if (old->size)
+#endif
+				vgl_free(old->data);
 			vgl_free(old);
 		}
 	}
@@ -1009,14 +1028,16 @@ void glLinkProgram(GLuint progr) {
 		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->fshader->prog, i);
 		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-			p->texunits[sceGxmProgramParameterGetResourceIndex(param)] = GL_TRUE;
 #ifdef HAVE_SAMPLERS_AS_UNIFORMS
 			uniform *u = (uniform *)vgl_malloc(sizeof(uniform), VGL_MEM_EXTERNAL);
 			u->chain = p->frag_uniforms;
 			u->ptr = param;
 			u->size = 0;
-			u->data = (float *)vgl_malloc(sizeof(float), VGL_MEM_EXTERNAL);
+			u->data = NULL;
 			p->frag_uniforms = u;
+			p->texunits[sceGxmProgramParameterGetResourceIndex(param)] = u;
+#else
+			p->texunits[sceGxmProgramParameterGetResourceIndex(param)] = GL_TRUE;
 #endif
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
 			uniform *u = (uniform *)vgl_malloc(sizeof(uniform), VGL_MEM_EXTERNAL);
@@ -1124,7 +1145,12 @@ void glUniform1i(GLint location, GLint v0) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	u->data[0] = (float)v0;
+#ifdef HAVE_SAMPLERS_AS_UNIFORMS
+	if (u->size == 0) // Sampler
+		u->data = (float *)v0;
+	else // Regular Uniform
+#endif
+		u->data[0] = (float)v0;
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;

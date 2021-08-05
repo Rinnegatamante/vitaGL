@@ -23,7 +23,7 @@ In order to build vitaGL use the following command: `make install`.
 `SHARED_RENDERTARGETS=1` Makes small framebuffers objects use shared rendertargets instead of dedicated ones.<br>
 `CIRCULAR_VERTEX_POOL=1` Makes temporary data buffers being handled with a circular pool.<br>
 `PHYCONT_ON_DEMAND=1` Makes the physically contiguous RAM be handled with separate memblocks instead of an heap.<br>
-`SAMPLER_UNIFORMS=1` When enabled, shader samplers are treated as uniforms.<br>
+`SAMPLER_UNIFORMS=1` When enabled, shader samplers are treated as uniforms and are rebindable like in regular OpenGL.<br>
 `UNPURE_TEXTURES=1` Makes legal to upload textures without base level.<br>
 `HAVE_DEBUGGER=1` Enables lightweighted on screen debugger interface.<br>
 `HAVE_RAZOR=1` Enables debugging features through Razor debugger (retail and devkit compatible).<br>
