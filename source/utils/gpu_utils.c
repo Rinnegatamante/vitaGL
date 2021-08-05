@@ -323,12 +323,14 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 		uint8_t *texture_data = (uint8_t *)base_texture_data + face_size * index;
 
 		if (data != NULL) {
+			const int tex_size = w * h * bpp;
+			void *mapped_data = gpu_alloc_mapped_temp(tex_size);
+			sceClibMemcpy(mapped_data, data, tex_size);
 			SceGxmTransferFormat dst_fmt = tex_format_to_transfer(format);
-			sceGxmMapMemory((void *)data, w * h * bpp, SCE_GXM_MEMORY_ATTRIB_RW);
 			sceGxmTransferCopy(
 				w, h, 0, 0, SCE_GXM_TRANSFER_COLORKEY_NONE,
 				src_format, SCE_GXM_TRANSFER_LINEAR,
-				data, 0, 0, w * src_bpp,
+				mapped_data, 0, 0, w * src_bpp,
 				dst_fmt, SCE_GXM_TRANSFER_SWIZZLED,
 				texture_data, 0, 0, ALIGN(w, 8) * bpp,
 				NULL, 0, NULL);
