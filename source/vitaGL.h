@@ -515,6 +515,7 @@ void glFramebufferTexture(GLenum target, GLenum attachment, GLuint texture, GLin
 void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 void glFrontFace(GLenum mode);
 void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
+void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal);
 void glGenBuffers(GLsizei n, GLuint *buffers);
 void glGenerateMipmap(GLenum target);
 void glGenFramebuffers(GLsizei n, GLuint *framebuffers);
@@ -559,6 +560,7 @@ void glNormal3f(GLfloat x, GLfloat y, GLfloat z);
 void glNormal3fv(const GLfloat *v);
 void glNormalPointer(GLenum type, GLsizei stride, const void *pointer);
 void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
+void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal);
 void glPointSize(GLfloat size);
 void glPolygonMode(GLenum face, GLenum mode);
 void glPolygonOffset(GLfloat factor, GLfloat units);
