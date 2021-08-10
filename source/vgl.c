@@ -138,11 +138,10 @@ void vglUseVramForUSSE(GLboolean usage) {
 	use_vram_for_usse = usage;
 }
 
-void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa) {
+GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa) {
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
 	sceIoMkdir("ux0:data/shader_cache", 0777);
 #endif
-
 	// Setting our display size
 	msaa_mode = msaa;
 	DISPLAY_WIDTH = width;
@@ -150,6 +149,25 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 	DISPLAY_WIDTH_FLOAT = width * 1.0f;
 	DISPLAY_HEIGHT_FLOAT = height * 1.0f;
 	DISPLAY_STRIDE = ALIGN(DISPLAY_WIDTH, 64);
+	
+	// Check framebuffer size is valid
+	GLboolean res_fallback = GL_FALSE;
+	void *fb_base = memalign(0x100, DISPLAY_STRIDE * DISPLAY_HEIGHT * 4);
+	SceDisplayFrameBuf fb = {sizeof(fb), fb_base, DISPLAY_STRIDE, SCE_DISPLAY_PIXELFORMAT_A8B8G8R8, DISPLAY_WIDTH, DISPLAY_HEIGHT};
+	
+	// If supplied resolution is invalid, falling back to 960x544
+	if (sceDisplaySetFrameBuf(&fb, SCE_DISPLAY_SETBUF_NEXTFRAME) != 0) {
+		DISPLAY_WIDTH = 960;
+		DISPLAY_HEIGHT = 544;
+		DISPLAY_WIDTH_FLOAT = 960.0f;
+		DISPLAY_HEIGHT_FLOAT = 544.0f;
+		DISPLAY_STRIDE = 960;
+		res_fallback = GL_TRUE;
+	}
+	free(fb_base);
+
+	// Set framebuffer to blank to prevent garbage from showing on screen
+	sceDisplaySetFrameBuf(NULL, SCE_DISPLAY_SETBUF_NEXTFRAME);
 
 	// Adjusting default values for internal viewport
 	x_port = DISPLAY_WIDTH_FLOAT / 2.0f;
@@ -413,9 +431,11 @@ void vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_s
 #ifdef HAVE_RAZOR_INTERFACE
 	vgl_debugger_init();
 #endif
+	
+	return res_fallback;
 }
 
-void vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, SceGxmMultisampleMode msaa) {
+GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, SceGxmMultisampleMode msaa) {
 	// Initializing sceGxm
 	initGxm();
 
@@ -424,21 +444,21 @@ void vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_th
 		SceAppMgrBudgetInfo info;
 		info.size = sizeof(SceAppMgrBudgetInfo);
 		sceAppMgrGetBudgetInfo(&info);
-		vglInitWithCustomSizes(pool_size, width, height, info.free_user_rw > ram_threshold ? info.free_user_rw - ram_threshold : info.free_user_rw, 0, 0, msaa);
+		return vglInitWithCustomSizes(pool_size, width, height, info.free_user_rw > ram_threshold ? info.free_user_rw - ram_threshold : info.free_user_rw, 0, 0, msaa);
 	} else {
 		SceKernelFreeMemorySizeInfo info;
 		info.size = sizeof(SceKernelFreeMemorySizeInfo);
 		sceKernelGetFreeMemorySize(&info);
-		vglInitWithCustomSizes(pool_size, width, height, info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram > cdram_threshold ? info.size_cdram - cdram_threshold : 0, info.size_phycont > phycont_threshold ? info.size_phycont - phycont_threshold : 0, msaa);
+		return vglInitWithCustomSizes(pool_size, width, height, info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram > cdram_threshold ? info.size_cdram - cdram_threshold : 0, info.size_phycont > phycont_threshold ? info.size_phycont - phycont_threshold : 0, msaa);
 	}
 }
 
-void vglInitExtended(int pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
-	vglInitWithCustomThreshold(pool_size, width, height, ram_threshold, 256 * 1024, 1 * 1024 * 1024, msaa);
+GLboolean vglInitExtended(int pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
+	return vglInitWithCustomThreshold(pool_size, width, height, ram_threshold, 256 * 1024, 1 * 1024 * 1024, msaa);
 }
 
-void vglInit(int pool_size) {
-	vglInitExtended(pool_size, DISPLAY_WIDTH_DEF, DISPLAY_HEIGHT_DEF, 0x1000000, SCE_GXM_MULTISAMPLE_4X);
+GLboolean vglInit(int pool_size) {
+	return vglInitExtended(pool_size, DISPLAY_WIDTH_DEF, DISPLAY_HEIGHT_DEF, 0x1000000, SCE_GXM_MULTISAMPLE_4X);
 }
 
 void vglEnd(void) {
