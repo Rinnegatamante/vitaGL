@@ -52,7 +52,9 @@ typedef struct {
 } vector4f;
 // clang-format on
 
-// 4x4 matrix
+// Matrix types
+typedef float matrix2x2[2][2];
+typedef float matrix3x3[3][3];
 typedef float matrix4x4[4][4];
 
 // Creates an identity matrix
@@ -76,6 +78,8 @@ void matrix4x4_translate(matrix4x4 m, float x, float y, float z);
 void matrix4x4_scale(matrix4x4 m, float scale_x, float scale_y, float scale_z);
 
 // Transpose a matrix
+void matrix2x2_transpose(matrix2x2 out, const matrix2x2 m);
+void matrix3x3_transpose(matrix3x3 out, const matrix3x3 m);
 void matrix4x4_transpose(matrix4x4 out, const matrix4x4 m);
 
 // Init a matrix with different settings (ortho, frustum, perspective)

@@ -1446,7 +1446,10 @@ void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, cons
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	sceClibMemcpy(u->data, value, count * 4 * sizeof(float));
+	if (transpose)
+		matrix2x2_transpose(u->data, value);
+	else
+		sceClibMemcpy(u->data, value, count * 4 * sizeof(float));
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -1463,7 +1466,10 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, cons
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	sceClibMemcpy(u->data, value, count * 9 * sizeof(float));
+	if (transpose)
+		matrix3x3_transpose(u->data, value);
+	else
+		sceClibMemcpy(u->data, value, count * 9 * sizeof(float));
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -1480,7 +1486,10 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	sceClibMemcpy(u->data, value, count * 16 * sizeof(float));
+	if (transpose)
+		matrix4x4_transpose(u->data, value);
+	else
+		sceClibMemcpy(u->data, value, count * 16 * sizeof(float));
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;

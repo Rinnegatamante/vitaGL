@@ -132,6 +132,24 @@ void matrix4x4_scale(matrix4x4 m, float scale_x, float scale_y, float scale_z) {
 	matrix4x4_copy(m, m2);
 }
 
+void matrix2x2_transpose(matrix2x2 out, const matrix2x2 m) {
+	int i, j;
+
+	for (i = 0; i < 2; i++) {
+		for (j = 0; j < 2; j++)
+			out[i][j] = m[j][i];
+	}
+}
+
+void matrix3x3_transpose(matrix3x3 out, const matrix3x3 m) {
+	int i, j;
+
+	for (i = 0; i < 3; i++) {
+		for (j = 0; j < 3; j++)
+			out[i][j] = m[j][i];
+	}
+}
+
 void matrix4x4_transpose(matrix4x4 out, const matrix4x4 m) {
 	int i, j;
 
