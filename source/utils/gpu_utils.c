@@ -265,6 +265,7 @@ SceGxmTransferFormat tex_format_to_transfer(SceGxmTextureFormat format) {
 
 int tex_format_to_alignment(SceGxmTextureFormat format) {
 	switch (format & 0x9F000000) {
+	case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
 	case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
 		return 16;
 	default:
@@ -417,6 +418,7 @@ static inline int gpu_get_compressed_mip_size(int level, int width, int height, 
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
 		return CEIL(width / 4.0) * CEIL(height / 4.0) * 8;
+	case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
 		return CEIL(width / 4.0) * CEIL(height / 4.0) * 16;
 	default:
@@ -540,6 +542,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 				case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
 					sceClibMemcpy(mip_data, data, image_size);
 					break;
+				case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 				case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
 					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, 1, 0);
 					break;

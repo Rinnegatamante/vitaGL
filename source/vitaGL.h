@@ -271,6 +271,7 @@ extern "C" {
 #define GL_MIRRORED_REPEAT                           0x8370
 #define GL_COMPRESSED_RGB_S3TC_DXT1_EXT              0x83F0
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT             0x83F1
+#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT             0x83F2
 #define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT             0x83F3
 #define GL_TEXTURE0                                  0x84C0
 #define GL_TEXTURE1                                  0x84C1
