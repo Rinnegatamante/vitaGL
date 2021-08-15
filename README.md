@@ -73,6 +73,7 @@ Direct OpenGL Usage:<br>
 [jfduke3d-vita](https://vitadb.rinnegatamante.it/#/info/711) - Port of JFDuke3D (Duke Nukem 3D sourceport)<br>
 [d3es-vita](https://github.com/Rinnegatamante/d3es-vita) - Port of Doom 3<br>
 [bc2_vita](https://vitadb.rinnegatamante.it/#/info/714) - Port of Battlefield Bad Company 2 Mobile<br>
+[JetMan 3D](https://vitadb.rinnegatamante.it/#/info/719) - Fanmade remake of Jetpac for ZX Spectrum<br>
 
 Libraries:<br>
 [sdl12_gl](https://github.com/Rinnegatamante/SDL-Vita/tree/sdl12_gl/src) - SDL 1.2 Vita port adapted to work with vitaGL as renderer<br>

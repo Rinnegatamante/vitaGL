@@ -704,6 +704,7 @@ extern SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex prog
 extern vector4f *clear_vertices; // Memblock starting address for clear screen vertices
 
 extern GLboolean fast_texture_compression; // Hints for texture compression
+extern GLboolean recompress_atitc;
 extern GLfloat point_size; // Size of points for fixed function pipeline
 
 /* gxm.c */

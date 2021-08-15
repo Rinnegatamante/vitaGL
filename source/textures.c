@@ -153,7 +153,6 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 	 * a RGBA sample that will be wrote depending on texture format
 	 * by the write callback
 	 */
-	void (*write_cb)(void *, uint32_t) = NULL;
 	uint32_t (*read_cb)(void *) = NULL;
 
 	// Detecting proper read callaback and source bpp
@@ -314,21 +313,21 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 	case GL_SRGB8:
 		gamma_correction = GL_TRUE;
 	case GL_RGB:
-		write_cb = writeRGB;
+		tex->write_cb = writeRGB;
 		if (fast_store && data_bpp == 2)
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB;
 		else
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
 		break;
 	case GL_BGR:
-		write_cb = writeBGR;
+		tex->write_cb = writeBGR;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_RGB;
 		break;
 	case GL_SRGB_ALPHA:
 	case GL_SRGB8_ALPHA8:
 		gamma_correction = GL_TRUE;
 	case GL_RGBA:
-		write_cb = writeRGBA;
+		tex->write_cb = writeRGBA;
 		if (fast_store && data_bpp == 2) {
 			if (read_cb == readRGBA5551)
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
@@ -338,51 +337,50 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
 		break;
 	case GL_BGRA:
-		write_cb = writeBGRA;
+		tex->write_cb = writeBGRA;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
 		break;
 	case GL_ABGR_EXT:
-		write_cb = writeABGR;
+		tex->write_cb = writeABGR;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_RGBA;
 		break;
 	case GL_INTENSITY:
-		write_cb = writeR;
+		tex->write_cb = writeR;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8_RRRR;
 		break;
 	case GL_ALPHA:
-		write_cb = writeR;
+		tex->write_cb = writeR;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_A8;
 		break;
 	case GL_COLOR_INDEX8_EXT:
-		write_cb = writeR; // TODO: This is a hack
+		tex->write_cb = writeR; // TODO: This is a hack
 		tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 		break;
 	case GL_SLUMINANCE:
 	case GL_SLUMINANCE8:
 		gamma_correction = GL_TRUE;
 	case GL_LUMINANCE:
-		write_cb = writeR;
+		tex->write_cb = writeR;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
 		break;
 	case GL_SLUMINANCE_ALPHA:
 	case GL_SLUMINANCE8_ALPHA8:
 		gamma_correction = GL_TRUE;
 	case GL_LUMINANCE_ALPHA:
-		write_cb = writeRA;
+		tex->write_cb = writeRA;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_A8L8;
 		break;
 	default:
-		write_cb = writeRGBA;
+		tex->write_cb = writeRGBA;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
 		break;
 	}
 
 	// Allocating texture/mipmaps depending on user call
 	tex->type = internalFormat;
-	tex->write_cb = write_cb;
 	if (level == 0)
 		if (tex->write_cb)
-			gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, write_cb, fast_store);
+			gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, tex->write_cb, fast_store);
 		else
 			gpu_alloc_compressed_texture(level, width, height, tex_format, 0, data, tex, data_bpp, read_cb);
 	else if (tex->write_cb)
@@ -786,6 +784,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 	GLboolean non_native_format = GL_FALSE;
 	void *decompressed_data;
 	uint8_t data_bpp;
+	uint32_t (*read_cb)(void *) = NULL;
 
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if texture is too big for sceGxm
@@ -845,21 +844,33 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			non_native_format = GL_TRUE;
 			decompressed_data = vgl_malloc(width * height * 4, VGL_MEM_EXTERNAL);
 			atitc_decode(data, decompressed_data, width, height, ATC_RGB);
-			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
+			if (recompress_atitc) {
+				read_cb = readBGRA;
+				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
+			} else
+				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
 			data_bpp = 4;
 			break;
 		case GL_ATC_RGBA_EXPLICIT_ALPHA_AMD:
 			non_native_format = GL_TRUE;
 			decompressed_data = vgl_malloc(width * height * 4, VGL_MEM_EXTERNAL);
 			atitc_decode(data, decompressed_data, width, height, ATC_EXPLICIT_ALPHA);
-			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
+			if (recompress_atitc) {
+				read_cb = readBGRA;
+				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
+			} else
+				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
 			data_bpp = 4;
 			break;
 		case GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD:
 			non_native_format = GL_TRUE;
 			decompressed_data = vgl_malloc(width * height * 4, VGL_MEM_EXTERNAL);
 			atitc_decode(data, decompressed_data, width, height, ATC_INTERPOLATED_ALPHA);
-			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
+			if (recompress_atitc) {
+				read_cb = readBGRA;
+				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
+			} else
+				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
 			data_bpp = 4;
 			break;
 		default:
@@ -870,7 +881,12 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		tex->type = internalFormat;
 		if (non_native_format) {
 			if (level == 0)
-				gpu_alloc_texture(width, height, tex_format, decompressed_data, tex, data_bpp, NULL, NULL, GL_TRUE);
+				if (read_cb)
+					gpu_alloc_compressed_texture(level, width, height, tex_format, 0, decompressed_data, tex, data_bpp, read_cb);
+				else
+					gpu_alloc_texture(width, height, tex_format, decompressed_data, tex, data_bpp, NULL, NULL, GL_TRUE);
+			else if (read_cb)
+				gpu_alloc_compressed_texture(level, width, height, tex_format, 0, decompressed_data, tex, data_bpp, read_cb);
 			else
 				gpu_alloc_mipmaps(level, tex);
 			vgl_free(decompressed_data);
