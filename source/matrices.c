@@ -63,8 +63,15 @@ void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat 
 	}
 #endif
 
+#ifdef MATH_SPEEDHACK
 	// Initializing ortho matrix with requested parameters
 	matrix4x4_init_orthographic(*matrix, left, right, bottom, top, nearVal, farVal);
+#else
+	matrix4x4 res, ortho_matrix;
+	matrix4x4_init_orthographic(ortho_matrix, left, right, bottom, top, nearVal, farVal);
+	matrix4x4_multiply(res, ortho_matrix, *matrix);
+	matrix4x4_copy(*matrix, res);
+#endif
 
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
@@ -86,8 +93,15 @@ void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloa
 	}
 #endif
 
+#ifdef MATH_SPEEDHACK
 	// Initializing frustum matrix with requested parameters
 	matrix4x4_init_frustum(*matrix, left, right, bottom, top, nearVal, farVal);
+#else
+	matrix4x4 res, frustum_matrix;
+	matrix4x4_init_frustum(frustum_matrix, left, right, bottom, top, nearVal, farVal);
+	matrix4x4_multiply(res, frustum_matrix, *matrix);
+	matrix4x4_copy(*matrix, res);
+#endif
 
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
@@ -109,10 +123,17 @@ void glLoadIdentity(void) {
 }
 
 void glMultMatrixf(const GLfloat *m) {
-	matrix4x4 res;
-
+	// Properly ordering matrix
+	matrix4x4 res, src;
+	int i, j;
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			src[i][j] = m[j * 4 + i];
+		}
+	}
+	
 	// Multiplicating passed matrix with in use one
-	matrix4x4_multiply(res, (const float(*)[4])m, *matrix);
+	matrix4x4_multiply(res, src, *matrix);
 
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);

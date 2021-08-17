@@ -18,6 +18,7 @@ In order to build vitaGL use the following command: `make install`.
 `NO_SHADER_CACHE=1` Disables extra shader cache layer on filesystem (ux0:data/shader_cache) for fixed function pipeline.<br>
 `SOFTFP_ABI=1` Compiles the library in soft floating point compatibility mode.<br>
 `DRAW_SPEEDHACK=1` Enables faster code for draw calls. May cause crashes.<br>
+`MATH_SPEEDHACK=1` Enables faster code for matrix math calls. May cause glitches.<br>
 `SHADER_COMPILER_SPEEDHACK=1` Enables faster code for glShaderSource. May cause errors.<br>
 `HAVE_UNFLIPPED_FBOS=1` Framebuffers objects won't be internally flipped to match OpenGL standards.<br>
 `SHARED_RENDERTARGETS=1` Makes small framebuffers objects use shared rendertargets instead of dedicated ones.<br>
