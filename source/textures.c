@@ -1282,6 +1282,10 @@ void glGenerateMipmap(GLenum target) {
 	// Checking if current texture is valid
 	if (tex->status != TEX_VALID)
 		return;
+	// Checking if current texture is compressed
+	else if (sceGxmTextureGetFormat(&tex->gxm_tex) >= 0x80000000) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
 #endif
 
 	switch (target) {
