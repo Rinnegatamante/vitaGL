@@ -901,13 +901,13 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 	// Uploading vertex streams
 	int i, j = 0;
 	float *materials = NULL, *src_materials;
-	void *ptrs[FFP_VERTEX_ATTRIBS_NUM];
 	for (i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
 		if (ffp_vertex_attrib_state & (1 << i)) {
+			void *ptr;
 			if (ffp_vertex_attrib_vbo[i]) {
 				gpubuffer *gpu_buf = (gpubuffer *)ffp_vertex_attrib_vbo[i];
 				gpu_buf->used = GL_TRUE;
-				ptrs[i] = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[i];
+				ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[i];
 			} else {
 				if (ffp_vertex_stream_config[i].stride == 0) { // Materials
 					if (!materials) {
@@ -917,19 +917,19 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 						materials += 4;
 						src_materials += 4;
 					}
-					ptrs[i] = materials;
+					ptr = materials;
 					sceClibMemcpy(materials, src_materials, 4 * sizeof(float));
 				} else {
 #ifdef DRAW_SPEEDHACK
-					ptrs[i] = (void *)ffp_vertex_attrib_offsets[i];
+					ptr = (void *)ffp_vertex_attrib_offsets[i];
 #else
 					uint32_t size = count * ffp_vertex_stream_config[i].stride;
-					ptrs[i] = gpu_alloc_mapped_temp(size);
-					sceClibMemcpy(ptrs[i], (void *)ffp_vertex_attrib_offsets[i], size);
+					ptr = gpu_alloc_mapped_temp(size);
+					sceClibMemcpy(ptr, (void *)ffp_vertex_attrib_offsets[i], size);
 #endif
 				}
 			}
-			sceGxmSetVertexStream(gxm_context, j++, ptrs[i]);
+			sceGxmSetVertexStream(gxm_context, j++, ptr);
 		}
 	}
 }
@@ -966,13 +966,13 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
 
 	// Uploading vertex streams
 	float *materials = NULL, *src_materials;
-	void *ptrs[FFP_VERTEX_ATTRIBS_NUM];
 	for (int i = 0; i < attr_num; i++) {
+		void *ptr;
 		int attr_idx = attr_idxs[i];
 		if (ffp_vertex_attrib_vbo[attr_idx]) {
 			gpubuffer *gpu_buf = (gpubuffer *)ffp_vertex_attrib_vbo[attr_idx];
 			gpu_buf->used = GL_TRUE;
-			ptrs[i] = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[attr_idx];
+			ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[attr_idx];
 		} else {
 			if (ffp_vertex_stream_config[attr_idx].stride == 0) { // Materials
 				if (!materials) {
@@ -982,19 +982,19 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
 					materials += 4;
 					src_materials += 4;
 				}
-				ptrs[i] = materials;
+				ptr = materials;
 				sceClibMemcpy(materials, src_materials, 4 * sizeof(float));
 			} else {
 #ifdef DRAW_SPEEDHACK
-				ptrs[i] = (void *)ffp_vertex_attrib_offsets[attr_idx];
+				ptr = (void *)ffp_vertex_attrib_offsets[attr_idx];
 #else
 				uint32_t size = top_idx * ffp_vertex_stream_config[attr_idx].stride;
-				ptrs[i] = gpu_alloc_mapped_temp(size);
-				sceClibMemcpy(ptrs[i], (void *)ffp_vertex_attrib_offsets[attr_idx], size);
+				ptr = gpu_alloc_mapped_temp(size);
+				sceClibMemcpy(ptr, (void *)ffp_vertex_attrib_offsets[attr_idx], size);
 #endif
 			}
 		}
-		sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
+		sceGxmSetVertexStream(gxm_context, i, ptr);
 	}
 }
 
