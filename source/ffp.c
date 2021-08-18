@@ -1754,9 +1754,7 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
 #ifndef DISABLE_TEXTURE_COMBINER
 			else if (param == GL_COMBINE)
 				tex_unit->env_mode = COMBINE;
-#endif
 			break;
-#ifndef DISABLE_TEXTURE_COMBINER
 		case GL_RGB_SCALE:
 #ifndef SKIP_ERROR_HANDLING
 			if (param != 1.0f && param != 2.0f && param != 4.0f) {
@@ -1936,8 +1934,8 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
 				tex_unit->combiner.op_mode_a_2 = SRC_ALPHA;
 			else if (param == GL_ONE_MINUS_SRC_ALPHA)
 				tex_unit->combiner.op_mode_a_2 = ONE_MINUS_SRC_ALPHA;
-			break;
 #endif
+			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 		}
@@ -1965,7 +1963,6 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 				SET_GL_ERROR(GL_INVALID_VALUE)
 			}
 #endif
-			dirty_frag_unifs = GL_TRUE;
 			tex_unit->rgb_scale = *param;
 			break;
 		case GL_ALPHA_SCALE:
@@ -1974,7 +1971,6 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 				SET_GL_ERROR(GL_INVALID_VALUE)
 			}
 #endif
-			dirty_frag_unifs = GL_TRUE;
 			tex_unit->a_scale = *param;
 			break;
 #endif
