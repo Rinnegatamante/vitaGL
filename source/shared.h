@@ -752,7 +752,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count); // glDrawArrays implem
 /* ffp.c */
 void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count); // glDrawElements implementation for rendering with ffp
 void _glDrawArrays_FixedFunctionIMPL(GLsizei count); // glDrawArrays implementation for rendering with ffp
-void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams); // Reloads current in use ffp shaders
+uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams); // Reloads current in use ffp shaders
 void upload_ffp_uniforms(); // Uploads required uniforms for the in use ffp shaders
 void update_fogging_state(); // Updates current setup for fogging
 

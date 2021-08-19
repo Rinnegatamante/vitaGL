@@ -340,7 +340,7 @@ void setup_combiner_pass(int i, char *dst) {
 }
 #endif
 
-void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams) {
+uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams) {
 	// Checking if mask changed
 	GLboolean ffp_dirty_frag_blend = ffp_blend_info.raw != blend_info.raw;
 	shader_mask mask = {.raw = 0};
@@ -352,7 +352,8 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 	mask.fog_mode = internal_fog_mode;
 	mask.shading_mode = shading_mode;
 	mask.normalize = normalize;
-
+	uint8_t draw_mask_state = ffp_vertex_attrib_state;
+	
 	// Counting number of enabled texture units
 	mask.num_textures = 0;
 	for (int i = 0; i < TEXTURE_COORDS_NUM; i++) {
@@ -376,6 +377,8 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 			default:
 				break;
 			}
+		} else {
+			draw_mask_state &= ~(1 << texcoord_idxs[i]);
 		}
 	}
 
@@ -888,10 +891,12 @@ void reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *stream
 		}
 		dirty_vert_unifs = GL_FALSE;
 	}
+	
+	return draw_mask_state;
 }
 
 void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
-	reload_ffp_shaders(NULL, NULL);
+	uint8_t mask_state = reload_ffp_shaders(NULL, NULL);
 
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
@@ -902,7 +907,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 	int i, j = 0;
 	float *materials = NULL, *src_materials;
 	for (i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
-		if (ffp_vertex_attrib_state & (1 << i)) {
+		if (mask_state & (1 << i)) {
 			void *ptr;
 			if (ffp_vertex_attrib_vbo[i]) {
 				gpubuffer *gpu_buf = (gpubuffer *)ffp_vertex_attrib_vbo[i];
@@ -935,12 +940,12 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 }
 
 void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count) {
-	reload_ffp_shaders(NULL, NULL);
+	uint8_t mask_state = reload_ffp_shaders(NULL, NULL);
 	int attr_idxs[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 	int attr_num = 0;
 	GLboolean is_full_vbo = GL_TRUE;
 	for (int i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
-		if (ffp_vertex_attrib_state & (1 << i)) {
+		if (mask_state & (1 << i)) {
 			if (!ffp_vertex_attrib_vbo[i])
 				is_full_vbo = GL_FALSE;
 			attr_idxs[attr_num++] = i;
