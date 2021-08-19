@@ -49,16 +49,15 @@ extern "C" {
 #define GLclampd      double
 #define GLvoid        void
 
-#define EGLBoolean    uint8_t
+#define EGLBoolean    int32_t
 #define EGLDisplay    void*
 #define EGLenum       uint32_t
 #define EGLSurface    void*
 #define EGLContext    void*
+#define EGLConfig     void*
 #define EGLint        int32_t
 
-#define EGL_NO_CONTEXT NULL
-#define EGL_NO_DISPLAY NULL
-#define EGL_NO_SURFACE NULL
+#define NativeDisplayType void*
 
 #define GL_FALSE                              0
 #define GL_TRUE                               1
@@ -423,6 +422,11 @@ extern "C" {
 #define EGL_OPENGL_ES_API                            0x30A0
 #define EGL_OPENGL_API                               0x30A2
 
+#define EGL_DEFAULT_DISPLAY ((NativeDisplayType)0)
+#define EGL_NO_CONTEXT      ((EGLContext)0)
+#define EGL_NO_DISPLAY      ((EGLDisplay)0)
+#define EGL_NO_SURFACE      ((EGLSurface)0)
+
 #define GL_MAX_TEXTURE_LOD_BIAS               31
 
 #define GL_POINT_BIT          0x00000002
@@ -636,6 +640,7 @@ void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFa
 
 // egl*
 EGLBoolean eglBindAPI(EGLenum api);
+EGLDisplay eglGetDisplay(NativeDisplayType native_display);
 EGLint eglGetError(void);
 void (*eglGetProcAddress(char const *procname))(void);
 EGLenum eglQueryAPI(void);

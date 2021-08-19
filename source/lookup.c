@@ -259,6 +259,7 @@ static const struct {
 	{"vglWaitVblankStart", (void *)vglWaitVblankStart},
 	// *egl
 	{"eglBindAPI", (void *)eglBindAPI},
+	{"eglGetDisplay", (void *)eglGetDisplay},
 	{"eglGetError", (void *)eglGetError},
 	{"eglGetProcAddress", (void *)eglGetProcAddress},
 	{"eglQueryAPI", (void *)eglQueryAPI},

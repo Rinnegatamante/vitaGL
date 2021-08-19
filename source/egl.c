@@ -99,3 +99,13 @@ void (*eglGetProcAddress(char const *procname))(void) {
 #endif
 	return vglGetProcAddress(procname);
 }
+
+EGLDisplay eglGetDisplay(NativeDisplayType native_display) {
+#ifdef EGL_PEDANTIC
+	egl_error = EGL_SUCCESS;
+#endif
+	if (native_display == EGL_DEFAULT_DISPLAY)
+		return ((EGLDisplay)1);
+	else
+		return EGL_NO_DISPLAY;
+}
