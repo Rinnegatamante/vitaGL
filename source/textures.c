@@ -1293,7 +1293,6 @@ void glGenerateMipmap(GLenum target) {
 
 	switch (target) {
 	case GL_TEXTURE_2D:
-
 		// Generating mipmaps to the max possible level
 		gpu_alloc_mipmaps(-1, tex);
 

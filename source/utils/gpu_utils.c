@@ -257,6 +257,10 @@ SceGxmTransferFormat tex_format_to_transfer(SceGxmTextureFormat format) {
 		return SCE_GXM_TRANSFER_FORMAT_U4U4U4U4_ABGR;
 	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
 		return SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
+		return SCE_GXM_TRANSFER_FORMAT_U8U8_GR;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+		return SCE_GXM_TRANSFER_FORMAT_U8_R;
 	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
 	default:
 		return SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR;
@@ -358,8 +362,12 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	// Allocating texture data buffer
 	int aligned_w = ALIGN(w, 8);
 	const int tex_size = aligned_w * h * bpp;
+#ifdef HAVE_SWIZZLED_TEXTURES
+	void *texture_data = gpu_alloc_mapped_temp(tex_size);
+	void *swizzled_data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+#else
 	void *texture_data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-
+#endif
 	if (texture_data != NULL) {
 		// Initializing texture data buffer
 		if (data != NULL) {
@@ -393,7 +401,19 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 
 		// Initializing texture and validating it
 		tex->mip_count = 1;
+#ifndef HAVE_SWIZZLED_TEXTURES
 		vglInitLinearTexture(&tex->gxm_tex, texture_data, format, w, h, tex->mip_count);
+#else
+		SceGxmTransferFormat fmt = tex_format_to_transfer(format);
+		sceGxmTransferCopy(
+				w, h, 0, 0, SCE_GXM_TRANSFER_COLORKEY_NONE,
+				fmt, SCE_GXM_TRANSFER_LINEAR,
+				texture_data, 0, 0, ALIGN(w, 8) * bpp,
+				fmt, SCE_GXM_TRANSFER_SWIZZLED,
+				swizzled_data, 0, 0, ALIGN(w, 8) * bpp,
+				NULL, 0, NULL);
+		vglInitSwizzledTexture(&tex->gxm_tex, swizzled_data, format, w, h, tex->mip_count);
+#endif
 		if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8)
 			tex->palette_UID = 1;
 		else
@@ -642,7 +662,11 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 
 		// Initializing texture in sceGxm
 		tex->mip_count = level + 1;
+#ifdef HAVE_SWIZZLED_TEXTURES
+		vglInitSwizzledTexture(&tex->gxm_tex, texture_data, format, orig_w, orig_h, tex->use_mips ? tex->mip_count : 0);
+#else
 		vglInitLinearTexture(&tex->gxm_tex, texture_data, format, orig_w, orig_h, tex->use_mips ? tex->mip_count : 0);
+#endif
 		tex->palette_UID = 0;
 		tex->status = TEX_VALID;
 		tex->data = texture_data;
