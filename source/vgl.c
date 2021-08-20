@@ -28,7 +28,7 @@
 #include "shaders/clear_f.h"
 #include "shaders/clear_v.h"
 
-#define MAX_IDX_NUMBER 12288 // Maximum allowed number of indices per draw call
+#define MAX_IDX_NUMBER 49152 // Maximum allowed number of indices per draw call for glDrawArrays
 
 #ifdef HAVE_SOFTFP_ABI
 __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
