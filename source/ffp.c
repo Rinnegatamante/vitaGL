@@ -35,11 +35,11 @@
 
 #define SHADER_CACHE_SIZE 256
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 6 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 7 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
-#define VERTEX_UNIFORMS_NUM 12
+#define VERTEX_UNIFORMS_NUM 13
 #define FRAGMENT_UNIFORMS_NUM 17
 
 typedef enum {
@@ -181,7 +181,8 @@ typedef enum {
 	LIGHTS_ATTENUATIONS_V_UNIF,
 	LIGHT_GLOBAL_AMBIENT_V_UNIF,
 	NORMAL_MATRIX_UNIF,
-	POINT_SIZE_UNIF
+	POINT_SIZE_UNIF,
+	AMBIENT_UNIF
 } vert_uniform_type;
 
 typedef enum {
@@ -235,6 +236,7 @@ void reload_vertex_uniforms() {
 	ffp_vertex_params[NORMAL_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "normal_mat");
 	if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) {
 		ffp_vertex_params[LIGHTS_AMBIENTS_V_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_ambients");
+		ffp_vertex_params[AMBIENT_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "ambient");
 		if (ffp_vertex_params[LIGHTS_AMBIENTS_V_UNIF]) {
 			ffp_vertex_params[LIGHTS_DIFFUSES_V_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_diffuses");
 			ffp_vertex_params[LIGHTS_SPECULARS_V_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_speculars");
@@ -348,6 +350,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	combiner_mask cmb_mask = {.raw = 0};
 #endif
 	mask.alpha_test_mode = alpha_op;
+	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
 	mask.shading_mode = shading_mode;
 	mask.normalize = normalize;
@@ -420,7 +423,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			}
 		}
 	}
-	mask.has_colors = ((ffp_vertex_attrib_state & (1 << 2)) || (mask.lights_num > 0)) ? GL_TRUE : GL_FALSE;
 #ifdef DISABLE_TEXTURE_COMBINER
 	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
 #else
@@ -493,7 +495,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode, mask.normalize);
 			uint32_t size = strlen(vshader);
 			SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
-			if (t) {
 			ffp_vertex_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
 			sceClibMemcpy((void *)ffp_vertex_program, (void *)t, size);
 			shark_clear_output();
@@ -502,7 +503,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			f = fopen(fname, "wb");
 			fwrite(ffp_vertex_program, 1, size, f);
 			fclose(f);
-			}
 #ifdef DUMP_SHADER_SOURCES
 #ifndef DISABLE_TEXTURE_COMBINER
 			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016X_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
@@ -729,7 +729,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			sprintf(fshader, ffp_frag_src, texenv_shad, alpha_op, mask.num_textures, mask.has_colors, mask.fog_mode, mask.tex_env_mode_pass0 != COMBINE ? mask.tex_env_mode_pass0 : 50, mask.tex_env_mode_pass1 != COMBINE ? mask.tex_env_mode_pass1 : 51, mask.lights_num, mask.shading_mode);
 			uint32_t size = strlen(fshader);
 			SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
-			if (t) {
 			ffp_fragment_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
 			sceClibMemcpy((void *)ffp_fragment_program, (void *)t, size);
 			shark_clear_output();
@@ -738,7 +737,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			f = fopen(fname, "wb");
 			fwrite(ffp_fragment_program, 1, size, f);
 			fclose(f);
-			}
 #ifdef DUMP_SHADER_SOURCES
 #ifndef DISABLE_TEXTURE_COMBINER
 			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016X_f.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
@@ -874,6 +872,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[POINT_SIZE_UNIF], 0, 1, &point_size);
 		if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) {
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[NORMAL_MATRIX_UNIF], 0, 16, (const float *)normal_matrix);
+			if (ffp_vertex_params[AMBIENT_UNIF]) {
+				sceGxmSetUniformDataF(buffer, ffp_vertex_params[AMBIENT_UNIF], 0, 4, (const float *)&current_vtx.amb.r);
+			}
 			if (ffp_vertex_params[LIGHTS_AMBIENTS_V_UNIF]) {
 				sceGxmSetUniformDataF(buffer, ffp_vertex_params[LIGHT_GLOBAL_AMBIENT_V_UNIF], 0, 4, (const float *)&light_global_ambient.r);
 				if (lights_aligned) {

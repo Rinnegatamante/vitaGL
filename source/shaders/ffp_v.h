@@ -90,13 +90,16 @@ void main(
 	float4 out vEmission : TEXCOORD6,
 #endif
 	float4 out vPosition : POSITION,
-#if has_colors == 1
+#if has_colors == 1 || lights_num > 0
 	float4 out vColor : COLOR,
 #endif
 	float out psize : PSIZE,
 #if clip_planes_num > 0
 	float out vClip[clip_planes_num] : CLP0,
 	uniform float4 clip_planes_eq[clip_planes_num],
+#endif
+#if has_colors == 0 && lights_num > 0
+	uniform float4 ambient,
 #endif
 	uniform float4x4 modelview,
 	uniform float4x4 wvp,
@@ -136,8 +139,10 @@ void main(
 	vTexcoord2 = mul(texmat, float4(texcoord1, 0.f, 1.f)).xy;
 #endif
 #endif
-#if has_colors == 1
 #if lights_num > 0
+#if has_colors == 0
+	float4 color = ambient;
+#endif
 #if shading_mode < 1 // GL_SMOOTH/GL_FLAT
 	vColor = emission + color * light_global_ambient;
 	vColor += Ambient * color + Diffuse * diff + Specular * spec;
@@ -155,9 +160,8 @@ void main(
 	vSpecular = spec;
 	vEmission = emission;
 #endif
-#else
+#elif has_colors == 1
 	vColor = color;
-#endif
 #endif
 	psize = point_size;
 }
