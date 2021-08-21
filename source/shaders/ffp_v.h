@@ -117,7 +117,7 @@ void main(
 	
 	// Lighting
 #if lights_num > 0
-#ifdef normalization == 1
+#if normalization == 1
 	float3 normal = normalize(mul(float3x3(normal_mat), normalize(normals)));
 #else
 	float3 normal = normalize(mul(float3x3(normal_mat), normals));
