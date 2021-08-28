@@ -419,20 +419,23 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 	
 	// Calculating texture data buffer size
 	uint32_t tex_size;
-	for (int j = 0; j < level; j++) {
+	uint32_t orig_w = w;
+	uint32_t orig_h = h;
+	for (int j = 0; j <= level; j++) {
 		tex_size += is_p8 ? (w * h) : (w * h / 2);
 		w /= 2;
 		h /= 2;
 	}
 	
 	// Allocating texture and palette data buffers
-	tex->palette_data = gpu_alloc_mapped(256 * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	int num_entries = is_p8 ? 256 : 16;
+	tex->palette_data = gpu_alloc_mapped(num_entries * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 	tex->data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 	
 	// Populating palette data
 	uint32_t *palette_data = (uint32_t *)tex->palette_data;
 	uint8_t *src = (uint8_t *)data;
-	for (int i = 0; i < 256; i++) {
+	for (int i = 0; i < num_entries; i++) {
 		palette_data[i] = read_cb(src);
 		src += src_bpp;
 	}
@@ -442,7 +445,7 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 	
 	// Initializing texture and validating it
 	tex->mip_count = level + 1;
-	vglInitLinearTexture(&tex->gxm_tex, tex->data, format, w, h, tex->mip_count);
+	vglInitLinearTexture(&tex->gxm_tex, tex->data, format, orig_w, orig_h, tex->mip_count);
 	tex->status = TEX_VALID;
 }
 
