@@ -40,6 +40,7 @@ enum {
 typedef struct {
 	SceGxmTexture gxm_tex;
 	void *data;
+	void *palette_data;
 	SceUID palette_UID;
 	SceUID depth_UID;
 	uint8_t status;
@@ -98,6 +99,9 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 
 // Alloc a compresseed texture
 void gpu_alloc_compressed_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *));
+
+// Alloc a paletted texture
+void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *));
 
 // Dealloc a texture
 void gpu_free_texture(texture *tex);

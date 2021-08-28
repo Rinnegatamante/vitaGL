@@ -782,6 +782,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 	SceGxmTextureFormat tex_format;
 	GLboolean gamma_correction = GL_FALSE;
 	GLboolean non_native_format = GL_FALSE;
+	GLboolean paletted_format = GL_FALSE;
 	void *decompressed_data;
 	uint8_t data_bpp;
 	uint32_t (*read_cb)(void *) = NULL;
@@ -807,6 +808,54 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 	case GL_TEXTURE_2D:
 		// Detecting proper write callback and texture format
 		switch (internalFormat) {
+		case GL_PALETTE4_RGB8_OES:
+			read_cb = readRGB;
+			data_bpp = 3;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
+			paletted_format = GL_TRUE;
+			break;
+		case GL_PALETTE4_RGBA8_OES:
+			read_cb = readRGBA;
+			data_bpp = 4;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
+			paletted_format = GL_TRUE;
+			break;
+		case GL_PALETTE4_R5_G6_B5_OES:
+			read_cb = readRGB565;
+			data_bpp = 2;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
+			paletted_format = GL_TRUE;
+			break;
+		case GL_PALETTE4_RGB5_A1_OES:
+			read_cb = readRGBA5551;
+			data_bpp = 2;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
+			paletted_format = GL_TRUE;
+			break;
+		case GL_PALETTE8_RGB8_OES:
+			read_cb = readRGB;
+			data_bpp = 3;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
+			paletted_format = GL_TRUE;
+			break;
+		case GL_PALETTE8_RGBA8_OES:
+			read_cb = readRGBA;
+			data_bpp = 4;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
+			paletted_format = GL_TRUE;
+			break;
+		case GL_PALETTE8_R5_G6_B5_OES:
+			read_cb = readRGB565;
+			data_bpp = 2;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
+			paletted_format = GL_TRUE;
+			break;
+		case GL_PALETTE8_RGB5_A1_OES:
+			read_cb = readRGBA5551;
+			data_bpp = 2;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
+			paletted_format = GL_TRUE;
+			break;
 		case GL_COMPRESSED_SRGB_S3TC_DXT1:
 		case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1:
 			gamma_correction = GL_TRUE;
@@ -879,20 +928,23 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 
 		// Allocating texture/mipmaps depending on user call
 		tex->type = internalFormat;
-		if (non_native_format) {
-			if (level == 0)
-				if (read_cb)
+		if (paletted_format) {
+			gpu_alloc_paletted_texture(level, width, height, tex_format, data, tex, data_bpp, read_cb);
+		} else {
+			if (non_native_format) {
+				if (level == 0)
+					if (read_cb)
+						gpu_alloc_compressed_texture(level, width, height, tex_format, 0, decompressed_data, tex, data_bpp, read_cb);
+					else
+						gpu_alloc_texture(width, height, tex_format, decompressed_data, tex, data_bpp, NULL, NULL, GL_TRUE);
+				else if (read_cb)
 					gpu_alloc_compressed_texture(level, width, height, tex_format, 0, decompressed_data, tex, data_bpp, read_cb);
 				else
-					gpu_alloc_texture(width, height, tex_format, decompressed_data, tex, data_bpp, NULL, NULL, GL_TRUE);
-			else if (read_cb)
-				gpu_alloc_compressed_texture(level, width, height, tex_format, 0, decompressed_data, tex, data_bpp, read_cb);
-			else
-				gpu_alloc_mipmaps(level, tex);
-			vgl_free(decompressed_data);
-		} else
-			gpu_alloc_compressed_texture(level, width, height, tex_format, imageSize, data, tex, 0, NULL);
-
+					gpu_alloc_mipmaps(level, tex);
+				vgl_free(decompressed_data);
+			} else
+				gpu_alloc_compressed_texture(level, width, height, tex_format, imageSize, data, tex, 0, NULL);
+		}
 		// Setting texture parameters
 		vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
 		vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
@@ -903,6 +955,10 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
 		if (gamma_correction)
 			vglSetTexGammaMode(&tex->gxm_tex, SCE_GXM_TEXTURE_GAMMA_BGR);
+		
+		// Setting palette if the format requests one
+		if (paletted_format)
+			vglSetTexPalette(&tex->gxm_tex, tex->palette_data);
 
 		break;
 	default:
