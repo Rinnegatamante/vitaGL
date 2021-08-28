@@ -221,6 +221,8 @@ void *gpu_alloc_mapped_temp(size_t size) {
 int tex_format_to_bytespp(SceGxmTextureFormat format) {
 	// Calculating bpp for the requested texture format
 	switch (format & 0x9F000000) {
+	case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
+		return 0;
 	case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
 	case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
 	case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
@@ -296,6 +298,10 @@ void gpu_free_texture_data(texture *tex) {
 	if (tex->data != NULL) {
 		markAsDirty(tex->data);
 		tex->data = NULL;
+	}
+	if (tex->palette_data != NULL) {
+		markAsDirty(tex->palette_data);
+		tex->palette_data = NULL;
 	}
 }
 
@@ -401,6 +407,43 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 		tex->status = TEX_VALID;
 		tex->data = texture_data;
 	}
+}
+
+void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *)) {
+	// If there's already a texture in passed texture object we first dealloc it
+	if (tex->status == TEX_VALID)
+		gpu_free_texture_data(tex);
+	
+	// Check if the texture is P8
+	uint8_t is_p8 = tex_format_to_bytespp(format);
+	
+	// Calculating texture data buffer size
+	uint32_t tex_size;
+	for (int j = 0; j < level; j++) {
+		tex_size += is_p8 ? (w * h) : (w * h / 2);
+		w /= 2;
+		h /= 2;
+	}
+	
+	// Allocating texture and palette data buffers
+	tex->palette_data = gpu_alloc_mapped(256 * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	tex->data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	
+	// Populating palette data
+	uint32_t *palette_data = (uint32_t *)tex->palette_data;
+	uint8_t *src = (uint8_t *)data;
+	for (int i = 0; i < 256; i++) {
+		palette_data[i] = read_cb(src);
+		src += src_bpp;
+	}
+	
+	// Populating texture data
+	sceClibMemcpy(tex->data, src, tex_size);
+	
+	// Initializing texture and validating it
+	tex->mip_count = level + 1;
+	vglInitLinearTexture(&tex->gxm_tex, tex->data, format, w, h, tex->mip_count);
+	tex->status = TEX_VALID;
 }
 
 static inline int gpu_get_compressed_mip_size(int level, int width, int height, SceGxmTextureFormat format) {
