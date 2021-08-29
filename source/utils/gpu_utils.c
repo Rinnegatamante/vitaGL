@@ -418,7 +418,7 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 	uint8_t is_p8 = tex_format_to_bytespp(format);
 	
 	// Calculating texture data buffer size
-	uint32_t tex_size;
+	uint32_t tex_size = 0;
 	uint32_t orig_w = w;
 	uint32_t orig_h = h;
 	for (int j = 0; j <= level; j++) {
@@ -441,7 +441,14 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 	}
 	
 	// Populating texture data
-	sceClibMemcpy(tex->data, src, tex_size);
+	if (is_p8)
+		sceClibMemcpy(tex->data, src, tex_size);
+	else {
+		uint8_t *dst = (uint8_t *)tex->data;
+		for (int i = 0; i < tex_size; i++) {
+			dst[i] = ((src[i] & 0x0F) << 4) | (src[i] >> 4);
+		}
+	}
 	
 	// Initializing texture and validating it
 	tex->mip_count = level + 1;
