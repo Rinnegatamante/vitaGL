@@ -941,9 +941,19 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		// Allocating texture/mipmaps depending on user call
 		tex->type = internalFormat;
 		if (paletted_format) {
-			gpu_alloc_paletted_texture(level, width, height, tex_format, data, tex, data_bpp, read_cb);
+#ifndef SKIP_ERROR_HANDLING
+			if (level > 0) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
+			gpu_alloc_paletted_texture(-level, width, height, tex_format, data, tex, data_bpp, read_cb);
 			vglSetTexPalette(&tex->gxm_tex, tex->palette_data);
 		} else {
+#ifndef SKIP_ERROR_HANDLING
+			if (level < 0) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
 			if (non_native_format) {
 				if (level == 0)
 					if (read_cb)
