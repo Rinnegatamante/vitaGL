@@ -159,7 +159,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	GLboolean res_fallback = GL_FALSE;
 
 	// If supplied resolution is invalid, falling back to 960x544
-	if (!(sceKernelIsPSVitaTV() && check_Sharpscale() >= 0) || width > 1920 || height > 1088) {
+	if (!(sceKernelIsPSVitaTV() && check_Sharpscale() >= 0) && !(width <= 960 && height <= 480) || (width > 1920 || height > 1088)) {
 		DISPLAY_WIDTH = 960;
 		DISPLAY_HEIGHT = 544;
 		DISPLAY_WIDTH_FLOAT = 960.0f;
