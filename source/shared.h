@@ -75,6 +75,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #include <psp2/razor_hud.h>
 #include <psp2/sharedfb.h>
 #include <psp2/sysmodule.h>
+#include <psp2/vshbridge.h>
 
 #include "vitaGL.h"
 
