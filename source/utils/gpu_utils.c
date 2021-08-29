@@ -465,7 +465,7 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 		uint32_t *dst = (uint32_t *)tex->data;
 		for (int i = 0; i < orig_w * orig_h; i+=2) {
 			dst[i] = palette_data[*src >> 4];
-			dst[i+1] = palette_data[(src[i] & 0x0F) << 4];
+			dst[i+1] = palette_data[(*src & 0x0F) << 4];
 			src++;
 		}
 	}

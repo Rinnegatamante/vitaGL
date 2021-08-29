@@ -25,7 +25,7 @@ extern razor_results razor_metrics;
 };
 
 #ifdef HAVE_RAZOR_INTERFACE
-#include <imgui.h>
+#include <imgui_vita.h>
 #endif
 
 #ifdef HAVE_DEBUG_INTERFACE
