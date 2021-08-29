@@ -150,24 +150,19 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	DISPLAY_HEIGHT_FLOAT = height * 1.0f;
 	DISPLAY_STRIDE = ALIGN(DISPLAY_WIDTH, 64);
 	
-	// Check framebuffer size is valid
+	// Check if framebuffer size is valid
 	GLboolean res_fallback = GL_FALSE;
-	void *fb_base = memalign(0x100, DISPLAY_STRIDE * DISPLAY_HEIGHT * 4);
-	SceDisplayFrameBuf fb = {sizeof(fb), fb_base, DISPLAY_STRIDE, SCE_DISPLAY_PIXELFORMAT_A8B8G8R8, DISPLAY_WIDTH, DISPLAY_HEIGHT};
-	
-	// If supplied resolution is invalid, falling back to 960x544
-	if (sceDisplaySetFrameBuf(&fb, SCE_DISPLAY_SETBUF_NEXTFRAME) != 0) {
-		DISPLAY_WIDTH = 960;
-		DISPLAY_HEIGHT = 544;
-		DISPLAY_WIDTH_FLOAT = 960.0f;
-		DISPLAY_HEIGHT_FLOAT = 544.0f;
-		DISPLAY_STRIDE = 960;
-		res_fallback = GL_TRUE;
+	if ((DISPLAY_WIDTH > 960 || DISPLAY_HEIGHT > 544) && sceKernelGetModel() != 0x20000) {
+		int dummy[2];
+		if (_vshKernelSearchModuleByName("Sharpscale", dummy) < 0) {
+			DISPLAY_WIDTH = 960;
+			DISPLAY_HEIGHT = 544;
+			DISPLAY_WIDTH_FLOAT = 960.0f;
+			DISPLAY_HEIGHT_FLOAT = 544.0f;
+			DISPLAY_STRIDE = 960;
+			res_fallback = GL_TRUE;
+		}
 	}
-	free(fb_base);
-
-	// Set framebuffer to blank to prevent garbage from showing on screen
-	sceDisplaySetFrameBuf(NULL, SCE_DISPLAY_SETBUF_NEXTFRAME);
 
 	// Adjusting default values for internal viewport
 	x_port = DISPLAY_WIDTH_FLOAT / 2.0f;
