@@ -26,10 +26,11 @@
 #include "shared.h"
 
 #ifndef DISABLE_TEXTURE_COMBINER
-#define NUM_EXTENSIONS 18 // Number of supported extensions
+#define NUM_EXTENSIONS 19 // Number of supported extensions
 #else
-#define NUM_EXTENSIONS 17 // Number of supported extensions
+#define NUM_EXTENSIONS 18 // Number of supported extensions
 #endif
+#define COMPRESSED_TEXTURE_FORMATS_NUM 23 // The number of supported texture formats
 
 static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_OES_vertex_half_float",
@@ -37,6 +38,7 @@ static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_OES_rgb8_rgba8",
 	"GL_OES_depth_texture",
 	"GL_OES_framebuffer_object",
+	"GL_OES_compressed_paletted_texture",
 	"GL_EXT_texture_format_BGRA8888",
 	"GL_EXT_read_format_bgra",
 	"GL_EXT_abgr",
@@ -263,6 +265,16 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[10] = GL_ATC_RGB_AMD;
 		data[11] = GL_ATC_RGBA_EXPLICIT_ALPHA_AMD;
 		data[12] = GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD;
+		data[13] = GL_PALETTE4_RGB8_OES;
+		data[14] = GL_PALETTE4_RGBA8_OES;
+		data[15] = GL_PALETTE4_R5_G6_B5_OES;
+		data[16] = GL_PALETTE4_RGBA4_OES;
+		data[17] = GL_PALETTE4_RGB5_A1_OES;
+		data[18] = GL_PALETTE8_RGB8_OES;
+		data[19] = GL_PALETTE8_RGBA8_OES;
+		data[20] = GL_PALETTE8_R5_G6_B5_OES;
+		data[21] = GL_PALETTE8_RGBA4_OES;
+		data[22] = GL_PALETTE8_RGB5_A1_OES;
 		break;
 	case GL_NUM_SHADER_BINARY_FORMATS:
 		*data = 0;

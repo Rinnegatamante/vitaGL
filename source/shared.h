@@ -30,7 +30,6 @@
 #define TEXTURE_IMAGE_UNITS_NUM 5 // Available texture image units
 #define TEXTURE_COORDS_NUM 2 // Available texture coords sets for multitexturing with ffp
 #define COMBINED_TEXTURE_IMAGE_UNITS_NUM 16 // Available combined texture image units
-#define COMPRESSED_TEXTURE_FORMATS_NUM 13 // The number of supported texture formats
 #define VERTEX_ATTRIBS_NUM 16 // Available vertex attributes
 #define MODELVIEW_STACK_DEPTH 32 // Depth of modelview matrix stack
 #define GENERIC_STACK_DEPTH 2 // Depth of generic matrix stack
