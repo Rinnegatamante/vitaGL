@@ -430,8 +430,12 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 	// Allocating texture and palette data buffers
 	int num_entries = is_p8 ? 256 : 16;
 	tex->palette_data = gpu_alloc_mapped(num_entries * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+#ifdef USE_PALETTED_TEXTURES
 	tex->data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-	
+#else
+	tex->data = gpu_alloc_mapped(orig_w * orig_h * 4, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+#endif
+
 	// Populating palette data
 	uint32_t *palette_data = (uint32_t *)tex->palette_data;
 	uint8_t *src = (uint8_t *)data;
@@ -441,6 +445,7 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 	}
 	
 	// Populating texture data
+#ifdef USE_PALETTED_TEXTURES
 	if (is_p8)
 		sceClibMemcpy(tex->data, src, tex_size);
 	else {
@@ -449,7 +454,25 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 			dst[i] = ((src[i] & 0x0F) << 4) | (src[i] >> 4);
 		}
 	}
-	
+#else
+	if (is_p8) {
+		uint32_t *dst = (uint32_t *)tex->data;
+		for (int i = 0; i < orig_w * orig_h; i++) {
+			dst[i] = palette_data[*src];
+			src++;
+		}
+	} else {
+		uint32_t *dst = (uint32_t *)tex->data;
+		for (int i = 0; i < orig_w * orig_h; i+=2) {
+			dst[i] = palette_data[*src >> 4];
+			dst[i+1] = palette_data[(src[i] & 0x0F) << 4];
+			src++;
+		}
+	}
+	format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
+	level = 0; // FIXME: Add proper mipmaps handling
+#endif
+
 	// Initializing texture and validating it
 	tex->mip_count = level + 1;
 	vglInitLinearTexture(&tex->gxm_tex, tex->data, format, orig_w, orig_h, tex->mip_count);
