@@ -416,16 +416,21 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 	
 	// Check if the texture is P8
 	uint8_t is_p8 = tex_format_to_bytespp(format);
-	
-	// Calculating texture data buffer size
-	uint32_t tex_size = 0;
 	uint32_t orig_w = w;
 	uint32_t orig_h = h;
+	
+#ifdef USE_PALETTED_TEXTURES
+	// Calculating texture data buffer size
+	uint32_t tex_size = 0;
 	for (int j = 0; j <= level; j++) {
 		tex_size += is_p8 ? (w * h) : (w * h / 2);
 		w /= 2;
 		h /= 2;
 	}
+#else
+	format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
+	level = 0; // FIXME: Add proper mipmaps handling
+#endif
 	
 	// Allocating texture and palette data buffers
 	int num_entries = is_p8 ? 256 : 16;
@@ -469,8 +474,8 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 			src++;
 		}
 	}
-	format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
-	level = 0; // FIXME: Add proper mipmaps handling
+	vgl_free(tex->palette_data);
+	tex->palette_data = NULL;
 #endif
 
 	// Initializing texture and validating it

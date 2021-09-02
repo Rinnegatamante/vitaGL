@@ -57,8 +57,6 @@ Direct OpenGL Usage:<br>
 [vitaET](https://github.com/Rinnegatamante/vitaET) - Port of ET: Legacy (Wolfenstein: Enemy Territory)<br>
 [flycast](https://github.com/Rinnegatamante/flycast) - Port of flycast (Dreamcast Emulator)<br>
 [AvP Gold](https://github.com/Rinnegatamante/AvP-Gold-Vita) - Port of Aliens versus Predator: Gold Edition<br>
-[re3-vita](https://vitadb.rinnegatamante.it/#/info/589) - Port of Grand Theft Auto III<br>
-[reVC-vita](https://vitadb.rinnegatamante.it/#/info/616) - Port of Grand Theft Auto: Vice City<br>
 [prboom-plus](https://vitadb.rinnegatamante.it/#/info/591) - Port of PrBoom Plus (Doom engine sourceport)<br>
 [VITAlbum](https://vitadb.rinnegatamante.it/#/info/566) - Filebrowser and image viewer app<br>
 [sm64-vita](https://github.com/bythos14/sm64-vita) - Port of Super Mario 64<br>
