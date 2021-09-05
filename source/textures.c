@@ -935,7 +935,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			data_bpp = 4;
 			break;
 		default:
-			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
 		}
 
 		// Allocating texture/mipmaps depending on user call
