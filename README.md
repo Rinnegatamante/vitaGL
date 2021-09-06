@@ -62,11 +62,7 @@ Direct OpenGL Usage:<br>
 [sm64-vita](https://github.com/bythos14/sm64-vita) - Port of Super Mario 64<br>
 [srb2-vita](https://github.com/Rinnegatamante/srb2-vita) - Port of Sonic Robo Blast 2<br>
 [rvm_soniccd-vitagl](https://github.com/fgsfdsfgs/rvm_soniccd/tree/vitagl) - Port of rvm_soniccd (Sonic CD decompilation)<br>
-[Max Payne](https://vitadb.rinnegatamante.it/#/info/612) - Port of Max Payne Mobile<br>
 [Hurrican](https://vitadb.rinnegatamante.it/#/info/617) - Port of Hurrican<br>
-[gtasa-vita](https://vitadb.rinnegatamante.it/#/info/618) - Port of Grand Theft Auto: San Andreas Mobile<br>
-[gtactw-vita](https://vitadb.rinnegatamante.it/#/info/625) - Port of Grand Theft Auto: Chinatown Wars Mobile<br>
-[bully-vita](https://vitadb.rinnegatamante.it/#/info/676) - Port of Bully: Anniversary Edition<br>
 [VITA Homebrew Sorter](https://vitadb.rinnegatamante.it/#/info/655) - App to sort your app.db<br>
 [jfsw-vita](https://vitadb.rinnegatamante.it/#/info/705) - Port of JFSW (Shadow Warrior Classic sourceport)<br>
 [jfduke3d-vita](https://vitadb.rinnegatamante.it/#/info/711) - Port of JFDuke3D (Duke Nukem 3D sourceport)<br>
@@ -75,6 +71,7 @@ Direct OpenGL Usage:<br>
 [JetMan 3D](https://vitadb.rinnegatamante.it/#/info/719) - Fanmade remake of Jetpac for ZX Spectrum<br>
 [FF3_Vita](https://vitadb.rinnegatamante.it/#/info/725) - Port of Final Fantasy III (3D Remake)<br>
 [FF4_Vita](https://vitadb.rinnegatamante.it/#/info/726) - Port of Final Fantasy IV (3D Remake)<br>
+[TheXTech Vita](https://vitadb.rinnegatamante.it/#/info/727) - Port of Super Mario Bros X<br>
 
 Libraries:<br>
 [sdl12_gl](https://github.com/Rinnegatamante/SDL-Vita/tree/sdl12_gl/src) - SDL 1.2 Vita port adapted to work with vitaGL as renderer<br>

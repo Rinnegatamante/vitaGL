@@ -26,10 +26,8 @@
 #define STB_DXT_IMPLEMENTATION
 #include "stb_dxt.h"
 
-#ifndef MIN
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#ifndef MAX
 #define MAX(a, b) (((a) < (b)) ? (b) : (a))
-#define CEIL(a) ceil(a)
 #endif
 
 // VRAM usage setting
@@ -493,15 +491,15 @@ static inline int gpu_get_compressed_mip_size(int level, int width, int height, 
 	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
 		return (MAX(width, 8) * MAX(height, 8) * 4 + 7) / 8;
 	case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
-		return CEIL(width / 8.0) * CEIL(height / 4.0) * 8.0;
+		return ceil(width / 8.0) * ceil(height / 4.0) * 8.0;
 	case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR:
-		return CEIL(width / 4.0) * CEIL(height / 4.0) * 8.0;
+		return ceil(width / 4.0) * ceil(height / 4.0) * 8.0;
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
-		return CEIL(width / 4.0) * CEIL(height / 4.0) * 8;
+		return ceil(width / 4.0) * ceil(height / 4.0) * 8;
 	case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-		return CEIL(width / 4.0) * CEIL(height / 4.0) * 16;
+		return ceil(width / 4.0) * ceil(height / 4.0) * 16;
 	default:
 		return 0;
 	}
@@ -669,15 +667,16 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		int j;
 		if (level > 0) {
 			for (j = 0; j < level; j++) {
-				jumps[j] = max(w, 8) * h * bpp;
+				jumps[j] = MAX(w, 8) * h * bpp;
 				size += jumps[j];
 				w /= 2;
 				h /= 2;
 			}
+			level++;
 		} else {
 			level = 0;
 			while ((w > 1) && (h > 1)) {
-				jumps[level] = max(w, 8) * h * bpp;
+				jumps[level] = MAX(w, 8) * h * bpp;
 				size += jumps[level];
 				w /= 2;
 				h /= 2;
@@ -722,7 +721,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		}
 
 		// Initializing texture in sceGxm
-		tex->mip_count = level + 1;
+		tex->mip_count = level;
 		vglInitLinearTexture(&tex->gxm_tex, texture_data, format, orig_w, orig_h, tex->use_mips ? tex->mip_count : 0);
 		tex->palette_UID = 0;
 		tex->status = TEX_VALID;
