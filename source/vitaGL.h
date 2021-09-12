@@ -410,6 +410,7 @@ extern "C" {
 #define GL_DRAW_FRAMEBUFFER                          0x8CA9
 #define GL_READ_FRAMEBUFFER_BINDING                  0x8CAA
 #define GL_COLOR_ATTACHMENT0                         0x8CE0
+#define GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE        0x8CD0
 #define GL_DEPTH_ATTACHMENT                          0x8D00
 #define GL_DEPTH_COMPONENT32F                        0x8DAB
 #define GL_DEPTH32F_STENCIL8                         0x8DAC
@@ -542,6 +543,7 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name);
 void glGetBooleanv(GLenum pname, GLboolean *params);
 void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params);
 void glGetFloatv(GLenum pname, GLfloat *data);
+void glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLenum pname, GLint *params);
 GLenum glGetError(void);
 void glGetIntegerv(GLenum pname, GLint *data);
 void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog);

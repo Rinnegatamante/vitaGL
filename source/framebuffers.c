@@ -365,6 +365,40 @@ GLenum glCheckFramebufferStatus(GLenum target) {
 		return fb->tex ? GL_FRAMEBUFFER_COMPLETE : GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT;
 }
 
+void glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLenum pname, GLint *params) {
+	// Detecting requested framebuffer
+	framebuffer *fb = NULL;
+	switch (target) {
+	case GL_DRAW_FRAMEBUFFER:
+	case GL_FRAMEBUFFER:
+		fb = active_write_fb;
+		break;
+	case GL_READ_FRAMEBUFFER:
+		fb = active_read_fb;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+	
+	// Detecting requested attachment
+	switch (attachment) {
+	case GL_COLOR_ATTACHMENT0:
+		switch (pname) {
+		case GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE:
+			if (!fb || !fb->tex)
+				*params = GL_NONE;
+			else
+				*params = GL_TEXTURE;
+			break;
+		default:
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+		}
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_OPERATION, attachment)
+	}
+}
+
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data) {
 	/*
 	 * Callbacks are actually used to just perform down/up-sampling
