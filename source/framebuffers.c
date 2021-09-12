@@ -359,10 +359,7 @@ GLenum glCheckFramebufferStatus(GLenum target) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, GL_FRAMEBUFFER_COMPLETE)
 	}
 
-	if (!fb)
-		return GL_FRAMEBUFFER_COMPLETE;
-	else
-		return fb->tex ? GL_FRAMEBUFFER_COMPLETE : GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT;
+	return (!fb || fb->tex) ? GL_FRAMEBUFFER_COMPLETE : GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT;
 }
 
 void glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLenum pname, GLint *params) {

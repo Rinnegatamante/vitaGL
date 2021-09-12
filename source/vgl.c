@@ -142,6 +142,16 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
 	sceIoMkdir("ux0:data/shader_cache", 0777);
 #endif
+	// Check if framebuffer size is valid
+	GLboolean res_fallback = GL_FALSE;
+	int max_w, max_h;
+	sceDisplayGetMaximumFrameBufResolution(&max_w, &max_h);
+	if (width > max_w || height > max_h) {
+		width = max_w;
+		height = max_h;
+		res_fallback = GL_TRUE;
+	}
+
 	// Setting our display size
 	msaa_mode = msaa;
 	DISPLAY_WIDTH = width;
@@ -149,20 +159,6 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	DISPLAY_WIDTH_FLOAT = width * 1.0f;
 	DISPLAY_HEIGHT_FLOAT = height * 1.0f;
 	DISPLAY_STRIDE = ALIGN(DISPLAY_WIDTH, 64);
-	
-	// Check if framebuffer size is valid
-	GLboolean res_fallback = GL_FALSE;
-	if ((DISPLAY_WIDTH > 960 || DISPLAY_HEIGHT > 544) && sceKernelGetModel() != 0x20000) {
-		int dummy[2];
-		if (_vshKernelSearchModuleByName("Sharpscale", dummy) < 0) {
-			DISPLAY_WIDTH = 960;
-			DISPLAY_HEIGHT = 544;
-			DISPLAY_WIDTH_FLOAT = 960.0f;
-			DISPLAY_HEIGHT_FLOAT = 544.0f;
-			DISPLAY_STRIDE = 960;
-			res_fallback = GL_TRUE;
-		}
-	}
 
 	// Adjusting default values for internal viewport
 	x_port = DISPLAY_WIDTH_FLOAT / 2.0f;
