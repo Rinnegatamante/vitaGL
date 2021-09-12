@@ -33,26 +33,23 @@ framebuffer *active_read_fb = NULL; // Current readback framebuffer in use
 framebuffer *active_write_fb = NULL; // Current write framebuffer in use
 renderbuffer *active_rb = NULL; // Current renderbuffer in use
 
-uint32_t get_color_from_texture(uint32_t type) {
+uint32_t get_color_from_texture(SceGxmTextureFormat type) {
 	uint32_t res = 0;
 	switch (type) {
-	case GL_RGB:
+	case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
 		res = SCE_GXM_COLOR_FORMAT_U8U8U8_BGR;
 		break;
-	case GL_RGBA:
+	case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
+		res = SCE_GXM_COLOR_FORMAT_U5U6U5_RGB;
+		break;
+	case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
 		res = SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR;
 		break;
-	case GL_LUMINANCE:
-		res = SCE_GXM_COLOR_FORMAT_U8_R;
+	case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
+		res = SCE_GXM_COLOR_FORMAT_U4U4U4U4_ABGR;
 		break;
-	case GL_LUMINANCE_ALPHA:
-		res = SCE_GXM_COLOR_FORMAT_U8U8_GR;
-		break;
-	case GL_INTENSITY:
-		res = SCE_GXM_COLOR_FORMAT_U8_R;
-		break;
-	case GL_ALPHA:
-		res = SCE_GXM_COLOR_FORMAT_U8_A;
+	case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
+		res = SCE_GXM_COLOR_FORMAT_U1U5U5U5_ABGR;
 		break;
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, 0)
@@ -289,9 +286,10 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 	texture *tex = &texture_slots[tex_id];
 
 	// Extracting texture data
+	SceGxmTextureFormat fmt = sceGxmTextureGetFormat(&tex->gxm_tex);
 	fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
 	fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
-	fb->stride = ALIGN(fb->width, 8) * tex_format_to_bytespp(sceGxmTextureGetFormat(&tex->gxm_tex));
+	fb->stride = ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
 	fb->data = sceGxmTextureGetData(&tex->gxm_tex);
 	fb->data_type = tex->type;
 
@@ -323,7 +321,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 		// Allocating colorbuffer
 		sceGxmColorSurfaceInit(
 			&fb->colorbuffer,
-			get_color_from_texture(tex->type),
+			get_color_from_texture(fmt),
 			SCE_GXM_COLOR_SURFACE_LINEAR,
 			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
 			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
