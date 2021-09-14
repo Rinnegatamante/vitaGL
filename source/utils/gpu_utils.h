@@ -41,8 +41,6 @@ typedef struct {
 	SceGxmTexture gxm_tex;
 	void *data;
 	void *palette_data;
-	SceUID palette_UID;
-	SceUID depth_UID;
 	uint8_t status;
 	uint32_t type;
 	void (*write_cb)(void *, uint32_t);
@@ -61,11 +59,6 @@ typedef struct {
 	int8_t mip_start;
 #endif
 } texture;
-
-// Palette object struct
-typedef struct {
-	void *data;
-} palette;
 
 // Alloc a generic memblock into sceGxm mapped memory
 void *gpu_alloc_mapped(size_t size, vglMemType type);
@@ -107,10 +100,10 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 void gpu_free_texture(texture *tex);
 
 // Alloc a palette
-palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe);
+void *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe);
 
 // Dealloc a palette
-void gpu_free_palette(palette *pal);
+void gpu_free_palette(void *pal);
 
 // Generate mipmaps for a given texture
 void gpu_alloc_mipmaps(int level, texture *tex);

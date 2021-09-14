@@ -273,10 +273,7 @@ int tex_format_to_alignment(SceGxmTextureFormat format) {
 	}
 }
 
-palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
-	// Allocating a palette object
-	palette *res = (palette *)vgl_malloc(sizeof(palette), VGL_MEM_EXTERNAL);
-
+void *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 	// Allocating palette data buffer
 	void *texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
@@ -285,10 +282,9 @@ palette *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 		sceClibMemset(texture_palette, 0, 256 * sizeof(uint32_t));
 	else if (bpe == 4)
 		sceClibMemcpy(texture_palette, data, w * sizeof(uint32_t));
-	res->data = texture_palette;
 
 	// Returning palette
-	return res;
+	return texture_palette;
 }
 
 void gpu_free_texture_data(texture *tex) {
@@ -345,7 +341,7 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 		// Initializing texture and validating it
 		tex->mip_count = 0;
 		vglInitCubeTexture(&tex->gxm_tex, base_texture_data, format, w, h, tex->mip_count);
-		tex->palette_UID = 0;
+		tex->palette_data = NULL;
 		tex->status = TEX_VALID;
 		tex->data = base_texture_data;
 	}
@@ -399,9 +395,9 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 		tex->mip_count = 1;
 		vglInitLinearTexture(&tex->gxm_tex, texture_data, format, w, h, tex->mip_count);
 		if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8)
-			tex->palette_UID = 1;
+			tex->palette_data = color_table;
 		else
-			tex->palette_UID = 0;
+			tex->palette_data = NULL;
 		tex->status = TEX_VALID;
 		tex->data = texture_data;
 	}
@@ -640,7 +636,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		// Initializing texture and validating it
 		tex->mip_count = mip_count + 1;
 		vglInitSwizzledTexture(&tex->gxm_tex, texture_data, format, tex_width, tex_height, tex->use_mips ? tex->mip_count : 0);
-		tex->palette_UID = 0;
+		tex->palette_data = NULL;
 		tex->status = TEX_VALID;
 		tex->data = texture_data;
 	}
@@ -723,16 +719,14 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		// Initializing texture in sceGxm
 		tex->mip_count = level;
 		vglInitLinearTexture(&tex->gxm_tex, texture_data, format, orig_w, orig_h, tex->use_mips ? tex->mip_count : 0);
-		tex->palette_UID = 0;
+		tex->palette_data = NULL;
 		tex->status = TEX_VALID;
 		tex->data = texture_data;
 	}
 }
 
-void gpu_free_palette(palette *pal) {
+void gpu_free_palette(void *pal) {
 	// Deallocating palette memblock and object
-	if (pal == NULL)
-		return;
-	vgl_free(pal->data);
-	vgl_free(pal);
+	if (pal != NULL)
+		vgl_free(pal);
 }

@@ -26,7 +26,7 @@
 texture_unit texture_units[COMBINED_TEXTURE_IMAGE_UNITS_NUM]; // Available texture units
 texture texture_slots[TEXTURES_NUM]; // Available texture slots
 
-palette *color_table = NULL; // Current in-use color table
+void *color_table = NULL; // Current in-use color table
 int8_t server_texture_unit = 0; // Current in use server side texture unit
 
 void _glTexImage2D_CubeIMPL(texture *tex, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *data, int index) {
@@ -400,8 +400,10 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 		vglSetTexGammaMode(&tex->gxm_tex, SCE_GXM_TEXTURE_GAMMA_BGR);
 
 	// Setting palette if the format requests one
-	if (tex->palette_UID)
-		vglSetTexPalette(&tex->gxm_tex, color_table->data);
+	if (tex->palette_data) {
+		vglSetTexPalette(&tex->gxm_tex, tex->palette_data);
+		tex->palette_data = NULL;
+	}
 }
 
 /*
