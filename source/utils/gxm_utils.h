@@ -34,8 +34,6 @@ void vglSetupUniformCircularPool(void);
 
 #ifndef PARANOID
 // Faster variants with stripped error handling
-uint32_t vglGetTexWidth(const SceGxmTexture *texture);
-uint32_t vglGetTexHeight(const SceGxmTexture *texture);
 void vglSetTexUMode(SceGxmTexture *texture, SceGxmTextureAddrMode addrMode);
 void vglSetTexVMode(SceGxmTexture *texture, SceGxmTextureAddrMode addrMode);
 void vglSetTexMinFilter(SceGxmTexture *texture, SceGxmTextureFilter minFilter);
@@ -50,8 +48,6 @@ void vglInitCubeTexture(SceGxmTexture *texture, const void *data, SceGxmTextureF
 void vglInitSwizzledTexture(SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount);
 #else
 // Default sceGxm functions
-#define vglGetTexWidth sceGxmTextureGetWidth
-#define vglGetTexHeight sceGxmTextureGetHeight
 #define vglSetTexUMode sceGxmTextureSetUAddrMode
 #define vglSetTexVMode sceGxmTextureSetVAddrMode
 #define vglSetTexMinFilter sceGxmTextureSetMinFilter

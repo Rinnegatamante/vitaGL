@@ -80,16 +80,6 @@ typedef struct {
 	uint32_t control_words[4];
 } SceGxmTextureInternal;
 
-uint32_t vglGetTexWidth(const SceGxmTexture *texture) {
-	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
-	return ((tex->control_words[1] >> 12) & 0xFFF) + 1;
-}
-
-uint32_t vglGetTexHeight(const SceGxmTexture *texture) {
-	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
-	return (tex->control_words[1] & 0xFFF) + 1;
-}
-
 void vglSetTexUMode(SceGxmTexture *texture, SceGxmTextureAddrMode addrMode) {
 	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
 	tex->control_words[0] = ((addrMode << 6) & 0x1C0) | tex->control_words[0] & 0xFFFFFE3F;

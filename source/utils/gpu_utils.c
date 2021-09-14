@@ -544,8 +544,8 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		aligned_max_width = aligned_width;
 		aligned_max_height = aligned_height;
 	} else {
-		max_width = vglGetTexWidth(&tex->gxm_tex);
-		max_height = vglGetTexHeight(&tex->gxm_tex);
+		max_width = sceGxmTextureGetWidth(&tex->gxm_tex);
+		max_height = sceGxmTextureGetHeight(&tex->gxm_tex);
 		aligned_max_width = nearest_po2(max_width);
 		aligned_max_height = nearest_po2(max_height);
 	}
@@ -656,8 +656,8 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		// Getting textures info and calculating bpp
 		SceGxmTextureFormat format = sceGxmTextureGetFormat(&tex->gxm_tex);
 		uint32_t bpp = tex_format_to_bytespp(format);
-		uint32_t orig_w = vglGetTexWidth(&tex->gxm_tex);
-		uint32_t orig_h = vglGetTexHeight(&tex->gxm_tex);
+		uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
+		uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
 		uint32_t w = nearest_po2(orig_w);
 		uint32_t h = nearest_po2(orig_h);
 

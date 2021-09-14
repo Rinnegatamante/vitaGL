@@ -563,8 +563,8 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 #endif
 
 	// Calculating implicit texture stride and start address of requested texture modification
-	uint32_t orig_w = vglGetTexWidth(&target_texture->gxm_tex);
-	uint32_t orig_h = vglGetTexHeight(&target_texture->gxm_tex);
+	uint32_t orig_w = sceGxmTextureGetWidth(&target_texture->gxm_tex);
+	uint32_t orig_h = sceGxmTextureGetHeight(&target_texture->gxm_tex);
 	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&target_texture->gxm_tex);
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
 	uint32_t stride = ALIGN(orig_w, 8) * bpp;
