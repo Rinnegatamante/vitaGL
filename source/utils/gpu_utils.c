@@ -275,7 +275,7 @@ int tex_format_to_alignment(SceGxmTextureFormat format) {
 
 void *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 	// Allocating palette data buffer
-	void *texture_palette = gpu_alloc_mapped(256 * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	void *texture_palette = gpu_alloc_mapped_aligned(64, 256 * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
 	// Initializing palette
 	if (data == NULL)
@@ -413,7 +413,6 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 	uint32_t orig_w = w;
 	uint32_t orig_h = h;
 	
-#ifdef USE_PALETTED_TEXTURES
 	// Calculating texture data buffer size
 	uint32_t tex_size = 0;
 	for (int j = 0; j <= level; j++) {
@@ -421,19 +420,11 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 		w /= 2;
 		h /= 2;
 	}
-#else
-	format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
-	level = 0; // FIXME: Add proper mipmaps handling
-#endif
 	
 	// Allocating texture and palette data buffers
 	int num_entries = is_p8 ? 256 : 16;
-	tex->palette_data = gpu_alloc_mapped(num_entries * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-#ifdef USE_PALETTED_TEXTURES
+	tex->palette_data = gpu_alloc_mapped_aligned(64, num_entries * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 	tex->data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-#else
-	tex->data = gpu_alloc_mapped(orig_w * orig_h * 4, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-#endif
 
 	// Populating palette data
 	uint32_t *palette_data = (uint32_t *)tex->palette_data;
@@ -444,7 +435,6 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 	}
 	
 	// Populating texture data
-#ifdef USE_PALETTED_TEXTURES
 	if (is_p8)
 		sceClibMemcpy(tex->data, src, tex_size);
 	else {
@@ -453,24 +443,6 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 			dst[i] = ((src[i] & 0x0F) << 4) | (src[i] >> 4);
 		}
 	}
-#else
-	if (is_p8) {
-		uint32_t *dst = (uint32_t *)tex->data;
-		for (int i = 0; i < orig_w * orig_h; i++) {
-			dst[i] = palette_data[*src];
-			src++;
-		}
-	} else {
-		uint32_t *dst = (uint32_t *)tex->data;
-		for (int i = 0; i < orig_w * orig_h; i+=2) {
-			dst[i] = palette_data[*src >> 4];
-			dst[i+1] = palette_data[(*src & 0x0F) << 4];
-			src++;
-		}
-	}
-	vgl_free(tex->palette_data);
-	tex->palette_data = NULL;
-#endif
 
 	// Initializing texture and validating it
 	tex->mip_count = level + 1;

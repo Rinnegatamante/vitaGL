@@ -949,9 +949,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			}
 #endif
 			gpu_alloc_paletted_texture(-level, width, height, tex_format, data, tex, data_bpp, read_cb);
-#ifdef USE_PALETTED_TEXTURES
 			vglSetTexPalette(&tex->gxm_tex, tex->palette_data);
-#endif
 		} else {
 #ifndef SKIP_ERROR_HANDLING
 			if (level < 0) {

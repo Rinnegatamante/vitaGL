@@ -49,13 +49,6 @@
 #define LEGACY_NT_VERTEX_STRIDE 22 // Vertex stride for GL1 immediate draw pipeline without texturing
 #define MAX_LIGHTS_NUM 8 // Maximum number of allowed light sources for ffp
 
-/* 
- * This will make paletted textures to use sceGxm paletted textures instead of uncompressed ones.
- * From testings, paletted textures suffer from huge aliasing issue and some artifacting caused by alpha channel lookup.
- * Suspect it's all caused by a palette lookup accuracy issue. Leaving this here if someone wants to attempt to fix it.
- */
-//#define USE_PALETTED_TEXTURES
-
 // Internal constants set in bootup phase
 extern int DISPLAY_WIDTH; // Display width in pixels
 extern int DISPLAY_HEIGHT; // Display height in pixels
