@@ -271,3 +271,7 @@ void vector3f_cross_product(vector3f *r, const vector3f *v1, const vector3f *v2)
     r->y = -v1->x * v2->z + v1->z * v2->x;
     r->z = v1->x * v2->y - v1->y * v2->x;
 }
+
+void vector4f_normalize(vector4f *v) {
+	normalize4_neon((float *)v, (float *)v);
+}
