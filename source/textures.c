@@ -906,7 +906,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		case GL_ATC_RGB_AMD:
 			non_native_format = GL_TRUE;
 			decompressed_data = vgl_malloc(width * height * 4, VGL_MEM_EXTERNAL);
-			atitc_decode(data, decompressed_data, width, height, ATC_RGB);
+			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_RGB);
 			if (recompress_atitc) {
 				read_cb = readBGRA;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
@@ -917,7 +917,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		case GL_ATC_RGBA_EXPLICIT_ALPHA_AMD:
 			non_native_format = GL_TRUE;
 			decompressed_data = vgl_malloc(width * height * 4, VGL_MEM_EXTERNAL);
-			atitc_decode(data, decompressed_data, width, height, ATC_EXPLICIT_ALPHA);
+			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_EXPLICIT_ALPHA);
 			if (recompress_atitc) {
 				read_cb = readBGRA;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
@@ -928,7 +928,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		case GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD:
 			non_native_format = GL_TRUE;
 			decompressed_data = vgl_malloc(width * height * 4, VGL_MEM_EXTERNAL);
-			atitc_decode(data, decompressed_data, width, height, ATC_INTERPOLATED_ALPHA);
+			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_INTERPOLATED_ALPHA);
 			if (recompress_atitc) {
 				read_cb = readBGRA;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
@@ -1386,6 +1386,17 @@ void glGenerateMipmap(GLenum target) {
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
+}
+
+void gluBuild2DMipmaps(GLenum target, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *data) {
+#ifndef SKIP_ERROR_HANDLING
+	if (target != GL_TEXTURE_2D) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+#endif
+
+	glTexImage2D(target, 0, internalFormat, width, height, 0, format, type, data);
+	glGenerateMipmap(target);
 }
 
 void *vglGetTexDataPointer(GLenum target) {

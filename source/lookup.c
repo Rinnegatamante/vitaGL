@@ -212,6 +212,7 @@ static const struct {
 	{"glVertexPointer", (void *)glVertexPointer},
 	{"glViewport", (void *)glViewport},
 	// *glu
+	{"gluBuild2DMipmaps", (void *)gluBuild2DMipmaps},
 	{"gluPerspective", (void *)gluPerspective},
 	// *vgl
 	{"vglColorPointer", (void *)vglColorPointer},
