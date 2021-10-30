@@ -265,3 +265,9 @@ void vector4f_matrix4x4_mult(vector4f *u, const matrix4x4 m, const vector4f *v) 
 	u->z = m[2][0] * v->x + m[2][1] * v->y + m[2][2] * v->z + m[2][3] * v->w;
 	u->w = m[3][0] * v->x + m[3][1] * v->y + m[3][2] * v->z + m[3][3] * v->w;
 }
+
+void vector3f_cross_product(vector3f *r, const vector3f *v1, const vector3f *v2) {
+    r->x = v1->y * v2->z - v1->z * v2->y;
+    r->y = -v1->x * v2->z + v1->z * v2->x;
+    r->z = v1->x * v2->y - v1->y * v2->x;
+}

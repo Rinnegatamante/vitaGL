@@ -93,4 +93,7 @@ int matrix4x4_invert(matrix4x4 out, const matrix4x4 m);
 // Perform a matrix per vector moltiplication
 void vector4f_matrix4x4_mult(vector4f *u, const matrix4x4 m, const vector4f *v);
 
+// Cross product between two vectors
+void vector3f_cross_product(vector3f *r, const vector3f *v1, const vector3f *v2);
+
 #endif

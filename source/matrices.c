@@ -22,6 +22,7 @@
  */
 
 #include "shared.h"
+#include <math_neon.h>
 
 matrix4x4 *matrix = NULL; // Current in-use matrix mode
 static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH]; // Modelview matrices stack
@@ -309,4 +310,46 @@ void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFa
 		mvp_modified = GL_TRUE;
 	else
 		dirty_vert_unifs = GL_TRUE;
+}
+
+void gluLookAt(GLdouble eyeX, GLdouble eyeY, GLdouble eyeZ, GLdouble centerX, GLdouble centerY, GLdouble centerZ, GLdouble upX, GLdouble upY, GLdouble upZ) {
+	float f[4], up[4];
+	f[0] = centerX - eyeX;
+	f[1] = centerY - eyeY;
+	f[2] = centerZ - eyeZ;
+	f[3] = 0.0f;
+	normalize4_neon(f, f);
+	up[0] = upX;
+	up[1] = upY;
+	up[2] = upZ;
+	up[3] = 0.0f;
+	normalize4_neon(up, up);
+	
+	matrix4x4 m, res;
+	float s[4], u[3];
+	vector3f_cross_product((vector3f *)s, (vector3f *)f, (vector3f *)up);
+	s[3] = 0;
+	m[0][0] = s[0];
+	m[0][1] = s[1];
+	m[0][2] = s[2];
+	m[0][3] = 0;
+	
+	normalize4_neon(s, s);
+	vector3f_cross_product((vector3f *)u, (vector3f *)s, (vector3f *)f);
+	m[1][0] = u[0];
+	m[1][1] = u[1];
+	m[1][2] = u[2];
+	m[1][3] = 0;
+	m[2][0] = -f[0];
+	m[2][1] = -f[1];
+	m[2][2] = -f[2];
+	m[2][3] = 0;
+	m[3][0] = 0;
+	m[3][1] = 0;
+	m[3][2] = 0;
+	m[3][3] = 1;
+	
+	matrix4x4_multiply(res, m, *matrix);
+	matrix4x4_copy(*matrix, res);
+	matrix4x4_translate(*matrix, -eyeX, -eyeY, -eyeZ);
 }
