@@ -773,9 +773,8 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		s->source = (char *)vgl_malloc(size, VGL_MEM_EXTERNAL);
 		s->source[0] = 0;
 		for (int i = 0; i < count; i++) {
-			sprintf(s->source, "%s%s", s->source, string[i]);
+			strncat(s->source, string[i], length ? length[i] : strlen(string[i]));
 		}
-
 		s->prog = (SceGxmProgram *)s->source;
 	}
 	s->size = size - 1;
