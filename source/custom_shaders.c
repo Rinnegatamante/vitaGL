@@ -808,11 +808,12 @@ void glCompileShader(GLuint handle) {
 		SceGxmProgram *res = (SceGxmProgram *)vgl_malloc(s->size, VGL_MEM_EXTERNAL);
 		sceClibMemcpy((void *)res, (void *)s->prog, s->size);
 #ifdef LOG_ERRORS
-		int r = sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
+		int r =
+#endif
+			sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
+#ifdef LOG_ERRORS
 		if (r)
 			vgl_log("glCompileShader: Program failed to register on sceGxm (%s).\n", get_gxm_error_literal(r));
-#else
-		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
 #endif
 		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
 	}
