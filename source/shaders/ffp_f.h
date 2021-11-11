@@ -163,14 +163,15 @@ float4 main(
 
 	// Fogging
 #if fog_mode < 3
+	float fog_dist = coords.z / coords.w;
 #if fog_mode == 0 // GL_LINEAR
-	float vFog = (fog_far - coords.z) / (fog_far - fog_near);
+	float vFog = (fog_far - fog_dist) / (fog_far - fog_near);
 #endif
 #if fog_mode == 1  // GL_EXP
-	float vFog = exp(-fog_density * coords.z);
+	float vFog = exp(-fog_density * fog_dist);
 #endif
 #if fog_mode == 2  // GL_EXP2
-	float vFog = exp(-fog_density * (coords.z * coords.z));
+	float vFog = exp(-fog_density * fog_density * fog_dist * fog_dist);
 #endif
 	vFog = clamp(vFog, 0.0f, 1.0f);
 	texColor.rgb = lerp(fogColor.rgb, texColor.rgb, vFog);
