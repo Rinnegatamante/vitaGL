@@ -35,7 +35,7 @@
 
 #define SHADER_CACHE_SIZE 256
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 7 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 8 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 

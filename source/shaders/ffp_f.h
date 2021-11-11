@@ -170,9 +170,7 @@ float4 main(
 	float vFog = exp(-fog_density * coords.z);
 #endif
 #if fog_mode == 2  // GL_EXP2
-	const float LOG2 = -1.442695;
-	float d = fog_density * coords.z;
-	float vFog = exp(d * d * LOG2);
+	float vFog = exp(-fog_density * (coords.z * coords.z));
 #endif
 	vFog = clamp(vFog, 0.0f, 1.0f);
 	texColor.rgb = lerp(fogColor.rgb, texColor.rgb, vFog);
