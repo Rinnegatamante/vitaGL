@@ -656,6 +656,7 @@ extern fogType internal_fog_mode; // Current fogging mode (sceGxm)
 extern GLfloat fog_density; // Current fogging density
 extern GLfloat fog_near; // Current fogging near distance
 extern GLfloat fog_far; // Current fogging far distance
+extern GLfloat fog_range; // Current fogging range (fog far - fog near)
 extern vector4f fog_color; // Current fogging color
 
 // Clipping Planes

@@ -35,7 +35,7 @@
 
 #define SHADER_CACHE_SIZE 256
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 8 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 9 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
@@ -73,6 +73,7 @@ fogType internal_fog_mode = DISABLED; // Current fogging mode (sceGxm)
 GLfloat fog_density = 1.0f; // Current fogging density
 GLfloat fog_near = 0.0f; // Current fogging near distance
 GLfloat fog_far = 1.0f; // Current fogging far distance
+GLfloat fog_range = 1.0f; // Current fogging range (fog far - fog near)
 vector4f fog_color = {0.0f, 0.0f, 0.0f, 0.0f}; // Current fogging color
 
 // Clipping Planes
@@ -190,7 +191,7 @@ typedef enum {
 	FOG_COLOR_UNIF,
 	TEX_ENV_COLOR_UNIF,
 	TINT_COLOR_UNIF,
-	FOG_NEAR_UNIF,
+	FOG_RANGE_UNIF,
 	FOG_FAR_UNIF,
 	FOG_DENSITY_UNIF,
 	LIGHTS_AMBIENTS_F_UNIF,
@@ -258,7 +259,7 @@ void reload_fragment_uniforms() {
 	ffp_fragment_params[ALPHA_SCALE_PASS_1_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass1_a_scale");
 #endif
 	ffp_fragment_params[TINT_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tintColor");
-	ffp_fragment_params[FOG_NEAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_near");
+	ffp_fragment_params[FOG_RANGE_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_range");
 	ffp_fragment_params[FOG_FAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_far");
 	ffp_fragment_params[FOG_DENSITY_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_density");
 	ffp_fragment_params[LIGHTS_AMBIENTS_F_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "lights_ambients");
@@ -831,8 +832,8 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #endif
 			if (ffp_fragment_params[TINT_COLOR_UNIF])
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[TINT_COLOR_UNIF], 0, 4, &current_vtx.clr.r);
-			if (ffp_fragment_params[FOG_NEAR_UNIF])
-				sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_NEAR_UNIF], 0, 1, (const float *)&fog_near);
+			if (ffp_fragment_params[FOG_RANGE_UNIF])
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_RANGE_UNIF], 0, 1, (const float *)&fog_range);
 			if (ffp_fragment_params[FOG_FAR_UNIF])
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_FAR_UNIF], 0, 1, (const float *)&fog_far);
 			if (ffp_fragment_params[FOG_DENSITY_UNIF])
@@ -2356,9 +2357,11 @@ void glFogf(GLenum pname, GLfloat param) {
 		break;
 	case GL_FOG_START:
 		fog_near = param;
+		fog_range = fog_far - fog_near;
 		break;
 	case GL_FOG_END:
 		fog_far = param;
+		fog_range = fog_far - fog_near;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -2377,9 +2380,11 @@ void glFogfv(GLenum pname, const GLfloat *params) {
 		break;
 	case GL_FOG_START:
 		fog_near = params[0];
+		fog_range = fog_far - fog_near;
 		break;
 	case GL_FOG_END:
 		fog_far = params[0];
+		fog_range = fog_far - fog_near;
 		break;
 	case GL_FOG_COLOR:
 		sceClibMemcpy(&fog_color.r, params, sizeof(vector4f));
@@ -2401,9 +2406,11 @@ void glFogi(GLenum pname, const GLint param) {
 		break;
 	case GL_FOG_START:
 		fog_near = param;
+		fog_range = fog_far - fog_near;
 		break;
 	case GL_FOG_END:
 		fog_far = param;
+		fog_range = fog_far - fog_near;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)

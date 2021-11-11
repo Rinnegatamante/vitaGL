@@ -886,6 +886,7 @@ void glPopAttrib(void) {
 		fog_far = setup->fog_far;
 		fog_near = setup->fog_near;
 		fog_mode = setup->fog_mode;
+		fog_range = fog_far - fog_near;
 		update_fogging_state();
 	}
 	if (setup->enabled_bits & (1 << HINT_BIT)) {
