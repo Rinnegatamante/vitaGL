@@ -293,15 +293,15 @@ typedef union combinerState {
 		uint32_t op_mode_rgb_0 : 2;
 		uint32_t op_mode_a_0 : 2;
 		uint32_t op_rgb_0 : 2;
-		uint32_t op_a_0 : 2;
+		uint32_t op_a_0 : 2; // This can be ideally reduced to 1 bit if necessary
 		uint32_t op_mode_rgb_1 : 2;
 		uint32_t op_mode_a_1 : 2;
 		uint32_t op_rgb_1 : 2;
-		uint32_t op_a_1 : 2;
+		uint32_t op_a_1 : 2; // This can be ideally reduced to 1 bit if necessary
 		uint32_t op_mode_rgb_2 : 2;
 		uint32_t op_mode_a_2 : 2;
 		uint32_t op_rgb_2 : 2;
-		uint32_t op_a_2 : 2;
+		uint32_t op_a_2 : 2; // This can be ideally reduced to 1 bit if necessary
 		uint32_t UNUSED : 2;
 	};
 	uint32_t raw;

@@ -35,7 +35,7 @@
 
 #define SHADER_CACHE_SIZE 256
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 9 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 10 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
@@ -506,7 +506,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			fclose(f);
 #ifdef DUMP_SHADER_SOURCES
 #ifndef DISABLE_TEXTURE_COMBINER
-			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016X_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
 #else
 			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-0000000000000000_v.cg", SHADER_CACHE_MAGIC, mask.raw);
 #endif
@@ -660,7 +660,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
 		char fname[256];
 #ifndef DISABLE_TEXTURE_COMBINER
-		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016X_f.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX_f.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
 #else
 		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-0000000000000000_f.gxp", SHADER_CACHE_MAGIC, mask.raw);
 #endif
@@ -1915,33 +1915,21 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
 			break;
 		case GL_OPERAND0_ALPHA:
 			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_COLOR)
-				tex_unit->combiner.op_mode_a_0 = SRC_COLOR;
-			else if (param == GL_ONE_MINUS_SRC_COLOR)
-				tex_unit->combiner.op_mode_a_0 = ONE_MINUS_SRC_COLOR;
-			else if (param == GL_SRC_ALPHA)
+			if (param == GL_SRC_ALPHA)
 				tex_unit->combiner.op_mode_a_0 = SRC_ALPHA;
 			else if (param == GL_ONE_MINUS_SRC_ALPHA)
 				tex_unit->combiner.op_mode_a_0 = ONE_MINUS_SRC_ALPHA;
 			break;
 		case GL_OPERAND1_ALPHA:
 			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_COLOR)
-				tex_unit->combiner.op_mode_a_1 = SRC_COLOR;
-			else if (param == GL_ONE_MINUS_SRC_COLOR)
-				tex_unit->combiner.op_mode_a_1 = ONE_MINUS_SRC_COLOR;
-			else if (param == GL_SRC_ALPHA)
+			if (param == GL_SRC_ALPHA)
 				tex_unit->combiner.op_mode_a_1 = SRC_ALPHA;
 			else if (param == GL_ONE_MINUS_SRC_ALPHA)
 				tex_unit->combiner.op_mode_a_1 = ONE_MINUS_SRC_ALPHA;
 			break;
 		case GL_OPERAND2_ALPHA:
 			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_COLOR)
-				tex_unit->combiner.op_mode_a_2 = SRC_COLOR;
-			else if (param == GL_ONE_MINUS_SRC_COLOR)
-				tex_unit->combiner.op_mode_a_2 = ONE_MINUS_SRC_COLOR;
-			else if (param == GL_SRC_ALPHA)
+			if (param == GL_SRC_ALPHA)
 				tex_unit->combiner.op_mode_a_2 = SRC_ALPHA;
 			else if (param == GL_ONE_MINUS_SRC_ALPHA)
 				tex_unit->combiner.op_mode_a_2 = ONE_MINUS_SRC_ALPHA;
@@ -2231,12 +2219,6 @@ void glTexEnvi(GLenum target, GLenum pname, GLint param) {
 		case GL_OPERAND0_ALPHA:
 			ffp_dirty_frag = GL_TRUE;
 			switch (param) {
-			case GL_SRC_COLOR:
-				tex_unit->combiner.op_mode_a_0 = SRC_COLOR;
-				break;
-			case GL_ONE_MINUS_SRC_COLOR:
-				tex_unit->combiner.op_mode_a_0 = ONE_MINUS_SRC_COLOR;
-				break;
 			case GL_SRC_ALPHA:
 				tex_unit->combiner.op_mode_a_0 = SRC_ALPHA;
 				break;
@@ -2248,12 +2230,6 @@ void glTexEnvi(GLenum target, GLenum pname, GLint param) {
 		case GL_OPERAND1_ALPHA:
 			ffp_dirty_frag = GL_TRUE;
 			switch (param) {
-			case GL_SRC_COLOR:
-				tex_unit->combiner.op_mode_a_1 = SRC_COLOR;
-				break;
-			case GL_ONE_MINUS_SRC_COLOR:
-				tex_unit->combiner.op_mode_a_1 = ONE_MINUS_SRC_COLOR;
-				break;
 			case GL_SRC_ALPHA:
 				tex_unit->combiner.op_mode_a_1 = SRC_ALPHA;
 				break;
@@ -2265,12 +2241,6 @@ void glTexEnvi(GLenum target, GLenum pname, GLint param) {
 		case GL_OPERAND2_ALPHA:
 			ffp_dirty_frag = GL_TRUE;
 			switch (param) {
-			case GL_SRC_COLOR:
-				tex_unit->combiner.op_mode_a_2 = SRC_COLOR;
-				break;
-			case GL_ONE_MINUS_SRC_COLOR:
-				tex_unit->combiner.op_mode_a_2 = ONE_MINUS_SRC_COLOR;
-				break;
 			case GL_SRC_ALPHA:
 				tex_unit->combiner.op_mode_a_2 = SRC_ALPHA;
 				break;
