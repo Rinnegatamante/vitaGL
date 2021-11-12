@@ -246,6 +246,17 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		texture_units[i].tex_id = 0;
 		texture_units[i].enabled = GL_FALSE;
 		texture_units[i].texture_stack_counter = 0;
+		texture_units[i].combiner.rgb_func = MODULATE;
+		texture_units[i].combiner.a_func = MODULATE;
+		texture_units[i].combiner.op_rgb_0 = TEXTURE;
+		texture_units[i].combiner.op_rgb_1 = PREVIOUS;
+		texture_units[i].combiner.op_rgb_2 = CONSTANT;
+		texture_units[i].combiner.op_a_0 = TEXTURE;
+		texture_units[i].combiner.op_a_1 = PREVIOUS;
+		texture_units[i].combiner.op_a_2 = CONSTANT;
+		texture_units[i].combiner.op_mode_rgb_0 = SRC_COLOR;
+		texture_units[i].combiner.op_mode_rgb_1 = SRC_COLOR;
+		texture_units[i].combiner.op_mode_rgb_2 = SRC_ALPHA;
 		texture_units[i].combiner.op_mode_a_0 = SRC_ALPHA;
 		texture_units[i].combiner.op_mode_a_1 = SRC_ALPHA;
 		texture_units[i].combiner.op_mode_a_2 = SRC_ALPHA;
