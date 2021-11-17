@@ -97,7 +97,7 @@ void vglSetTexMinFilter(SceGxmTexture *texture, SceGxmTextureFilter minFilter) {
 
 void vglSetTexMagFilter(SceGxmTexture *texture, SceGxmTextureFilter magFilter) {
 	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
-	tex->control_words[0] = ((magFilter << 12) & 0x3000) | tex->control_words[0];
+	tex->control_words[0] = ((magFilter << 12) & 0x3000) | tex->control_words[0] & 0xFFFFCFFF;
 }
 
 void vglSetTexMipFilter(SceGxmTexture *texture, SceGxmTextureMipFilter mipFilter) {

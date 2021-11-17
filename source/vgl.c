@@ -54,6 +54,8 @@ const SceGxmProgramParameter *clear_depth;
 const SceGxmProgramParameter *clear_color;
 SceGxmVertexProgram *clear_vertex_program_patched;
 SceGxmFragmentProgram *clear_fragment_program_patched;
+vector4f *clear_vertices = NULL; // Memblock starting address for clear screen vertices
+vector3f *depth_vertices = NULL; // Memblock starting address for depth clear screen vertices
 
 // sceGxm viewport setup (NOTE: origin is on center screen)
 float x_port = 480.0f;
@@ -78,11 +80,6 @@ static const SceGxmProgram *const gxm_program_clear_f = (SceGxmProgram *)&clear_
 
 // Disable color buffer shader
 uint16_t *depth_clear_indices = NULL; // Memblock starting address for clear screen indices
-
-// Clear shaders
-SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
-vector4f *clear_vertices = NULL; // Memblock starting address for clear screen vertices
-vector3f *depth_vertices = NULL; // Memblock starting address for depth clear screen vertices
 
 // Internal stuffs
 SceGxmMultisampleMode msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
