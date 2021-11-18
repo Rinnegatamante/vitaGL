@@ -26,6 +26,13 @@
 GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not supported natively by sceGxm is used
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
+#ifndef SKIP_ERROR_HANDLING
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	} else if (count < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
+	}
+#endif
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
 	sceneReset();
@@ -77,7 +84,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 	} else if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	} else if (count < 0) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
 	}
 #endif
 
@@ -155,7 +162,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	} else if (count < 0) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
 	}
 #endif
 
