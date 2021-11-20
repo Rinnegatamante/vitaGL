@@ -746,11 +746,11 @@ void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders
 void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
-GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count); // glDrawElements implementation for rendering with custom shaders
+GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GLboolean is_short); // glDrawElements implementation for rendering with custom shaders
 GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count); // glDrawArrays implementation for rendering with custom shaders
 
 /* ffp.c */
-void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count); // glDrawElements implementation for rendering with ffp
+void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, GLboolean is_short); // glDrawElements implementation for rendering with ffp
 void _glDrawArrays_FixedFunctionIMPL(GLsizei count); // glDrawArrays implementation for rendering with ffp
 uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams); // Reloads current in use ffp shaders
 void upload_ffp_uniforms(); // Uploads required uniforms for the in use ffp shaders

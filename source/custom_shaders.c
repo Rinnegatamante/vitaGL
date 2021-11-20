@@ -408,7 +408,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	return GL_TRUE;
 }
 
-GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
+GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GLboolean is_short) {
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required and upload fragment program
@@ -480,9 +480,17 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 	// Detecting highest index value
 	uint32_t top_idx = 0;
 	if (!is_full_vbo) {
-		for (i = 0; i < count; i++) {
-			if (idx_buf[i] > top_idx)
-				top_idx = idx_buf[i];
+		if (is_short) {
+			for (i = 0; i < count; i++) {
+				if (idx_buf[i] > top_idx)
+					top_idx = idx_buf[i];
+			}
+		} else {
+			uint32_t *_idx_buf = (uint32_t *)idx_buf;
+			for (i = 0; i < count; i++) {
+				if (_idx_buf[i] > top_idx)
+					top_idx = _idx_buf[i];
+			}
 		}
 		top_idx++;
 	}
