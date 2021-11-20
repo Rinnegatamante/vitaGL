@@ -358,7 +358,14 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer);
 		uniform *u = p->vert_uniforms;
 		while (u) {
-			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
+			if (u->ptr == p->wvp) {
+				if (mvp_modified) {
+					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+					mvp_modified = GL_FALSE;
+				}
+				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
+			} else
+				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
 		dirty_vert_unifs = GL_FALSE;
@@ -528,7 +535,14 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count) {
 		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer);
 		uniform *u = p->vert_uniforms;
 		while (u) {
-			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
+			if (u->ptr == p->wvp) {
+				if (mvp_modified) {
+					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+					mvp_modified = GL_FALSE;
+				}
+				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
+			} else
+				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
 		dirty_vert_unifs = GL_FALSE;
@@ -1054,6 +1068,8 @@ void glLinkProgram(GLuint progr) {
 
 	// Analyzing vertex shader
 	p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "wvp");
+	if (!p->wvp) // Allow to use gl_ModelViewProjectionMatrix binding
+		p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "gl_ModelViewProjectionMatrix");
 	cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
 	for (i = 0; i < cnt; i++) {
 		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, i);

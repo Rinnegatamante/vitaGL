@@ -1,10 +1,9 @@
 TARGET          := libvitaGL
 SOURCES         := source source/utils
-SHADERS         := shaders
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
 CPPFILES := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.cpp))
-CGFILES  := $(foreach dir,$(SHADERS), $(wildcard $(dir)/*.cg))
+CGFILES  := $(wildcard shaders/*.cg)
 HEADERS  := $(CGFILES:.cg=.h)
 OBJS     := $(CFILES:.c=.o) $(CPPFILES:.cpp=.o)
 
