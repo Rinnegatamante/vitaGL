@@ -676,6 +676,8 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		if (curHeight % 2)
 			curHeight--;
 		for (j = 0; j < level - 1; j++) {
+			if (curWidth <= 1 || curHeight <= 1)
+				break;
 			uint32_t curSrcStride = ALIGN(curWidth, 8);
 			uint32_t curDstStride = ALIGN(curWidth >> 1, 8);
 			uint8_t *dstPtr = curPtr + jumps[j];
