@@ -633,31 +633,34 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		uint32_t jumps[10];
 		uint32_t size = 0;
 		int j;
-		if (level > 0) {
+		if (level < 0 || count <= 0) {
+			int mips = 0;
+			while ((w > 1) && (h > 1)) {
+				jumps[mips] = MAX(w, 8) * h * bpp;
+				size += jumps[mips];
+				w /= 2;
+				h /= 2;
+				mips++;
+			}
+			if (level < 0)
+				level = mips;
+			else
+				level++;
+		} else {
 			for (j = 0; j < level; j++) {
 				jumps[j] = MAX(w, 8) * h * bpp;
-				size += jumps[j];
 				w /= 2;
 				h /= 2;
 			}
 			level++;
-		} else {
-			level = 0;
-			while ((w > 1) && (h > 1)) {
-				jumps[level] = MAX(w, 8) * h * bpp;
-				size += jumps[level];
-				w /= 2;
-				h /= 2;
-				level++;
-			}
 		}
-
+		
 		// Calculating needed sceGxmTransfer format for the downscale process
 		SceGxmTransferFormat fmt = tex_format_to_transfer(format);
 
-		// Reallocating texture
-		void *texture_data = vgl_realloc(tex->data, size);
-		if (!texture_data) {
+		// Reallocating texture with full mipchain size
+		void *texture_data = count <= 0 ? vgl_realloc(tex->data, size) : tex->data;
+		if (count <= 0 && !texture_data) {
 			// Reallocation in the same mspace failed, try manually.
 			texture_data = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 			vgl_memcpy(texture_data, tex->data, ALIGN(orig_w, 8) * orig_h * bpp);
