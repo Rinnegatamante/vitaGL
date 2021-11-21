@@ -143,7 +143,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 	gpu_buf->used = GL_FALSE;
 
 	if (data)
-		sceClibMemcpy(gpu_buf->ptr, data, size);
+		vgl_fast_memcpy(gpu_buf->ptr, data, size);
 }
 
 void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void *data) {
@@ -249,7 +249,7 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 	streams->stride = stride ? stride : bpe * size;
 
 	vertex_object = gpu_alloc_mapped_temp(count * streams->stride);
-	sceClibMemcpy(vertex_object, pointer, count * streams->stride);
+	vgl_fast_memcpy(vertex_object, pointer, count * streams->stride);
 }
 
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
@@ -291,7 +291,7 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 	streams->stride = stride ? stride : bpe * size;
 
 	color_object = gpu_alloc_mapped_temp(count * streams->stride);
-	sceClibMemcpy(color_object, pointer, count * streams->stride);
+	vgl_fast_memcpy(color_object, pointer, count * streams->stride);
 }
 
 void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
@@ -321,7 +321,7 @@ void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, c
 	streams->stride = stride ? stride : bpe * size;
 
 	texture_object = gpu_alloc_mapped_temp(count * streams->stride);
-	sceClibMemcpy(texture_object, pointer, count * streams->stride);
+	vgl_fast_memcpy(texture_object, pointer, count * streams->stride);
 }
 
 void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
@@ -340,13 +340,13 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *po
 	}
 	index_object = gpu_alloc_mapped_temp(count * bpe);
 	if (stride == 0)
-		sceClibMemcpy(index_object, pointer, count * bpe);
+		vgl_fast_memcpy(index_object, pointer, count * bpe);
 	else {
 		int i;
 		uint8_t *dst = (uint8_t *)index_object;
 		uint8_t *src = (uint8_t *)pointer;
 		for (i = 0; i < count; i++) {
-			sceClibMemcpy(dst, src, bpe);
+			vgl_fast_memcpy(dst, src, bpe);
 			dst += bpe;
 			src += stride;
 		}

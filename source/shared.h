@@ -85,6 +85,9 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 #include "texture_callbacks.h"
 
+// Debug flags
+//#define DEBUG_MEMCPY // Enable this to use newlib memcpy in order to have proper trace info in coredumps
+
 // Debugging tool
 char *get_gxm_error_literal(uint32_t code);
 #ifdef FILE_LOG
@@ -94,6 +97,11 @@ void vgl_file_log(const char *format, ...);
 #define vgl_log sceClibPrintf
 #else
 #define vgl_log(...)
+#endif
+#ifdef DEBUG_MEMCPY
+#define vgl_fast_memcpy memcpy
+#else
+#define vgl_fast_memcpy sceClibMemcpy
 #endif
 
 extern GLboolean prim_is_non_native; // Flag for when a primitive not supported natively by sceGxm is used

@@ -22,7 +22,6 @@
  */
 
 #include "../shared.h"
-
 #define VGL_MEM_TYPE_COUNT 4 // Number of type of memblocks used
 
 #ifndef HAVE_CUSTOM_HEAP
@@ -539,7 +538,7 @@ void *vgl_realloc(void *ptr, size_t size) {
 			return ptr;
 		void *res = vgl_alloc_phycont_block(size);
 		if (res) {
-			sceClibMemcpy(res, ptr, size);
+			vgl_fast_memcpy(res, ptr, size);
 			vgl_free(ptr);
 			return res;
 		}
@@ -552,8 +551,12 @@ void *vgl_realloc(void *ptr, size_t size) {
 }
 
 void vgl_memcpy(void *dst, const void *src, size_t size) {
+#ifndef DEBUG_MEMCPY
 	if (size >= 0x2000)
 		sceDmacMemcpy(dst, src, size);
 	else
-		sceClibMemcpy(dst, src, size);
+		vgl_fast_memcpy(dst, src, size);
+#else
+	memcpy(dst, src, size);
+#endif
 }

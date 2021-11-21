@@ -68,7 +68,7 @@ void d2xy_morton(uint64_t d, uint64_t *x, uint64_t *y) {
 void extract_block(const uint8_t *src, int width, uint8_t *block) {
 	int j;
 	for (j = 0; j < 4; j++) {
-		sceClibMemcpy(&block[j * 4 * 4], src, 16);
+		vgl_fast_memcpy(&block[j * 4 * 4], src, 16);
 		src += width * 4;
 	}
 }
@@ -124,7 +124,7 @@ void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width
 		dst_x = offs_x - (region_y / 4);
 		dst_y = offs_y - (region_x / blockw);
 
-		sceClibMemcpy(dst, src + dst_y * blocksize + dst_x * (region_width / blockw) * blocksize, blocksize);
+		vgl_fast_memcpy(dst, src + dst_y * blocksize + dst_x * (region_width / blockw) * blocksize, blocksize);
 		dst += blocksize;
 	}
 }
@@ -281,7 +281,7 @@ void *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 	if (data == NULL)
 		sceClibMemset(texture_palette, 0, 256 * sizeof(uint32_t));
 	else if (bpe == 4)
-		sceClibMemcpy(texture_palette, data, w * sizeof(uint32_t));
+		vgl_fast_memcpy(texture_palette, data, w * sizeof(uint32_t));
 
 	// Returning palette
 	return texture_palette;
@@ -326,7 +326,7 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 		if (data != NULL) {
 			const int tex_size = w * h * bpp;
 			void *mapped_data = gpu_alloc_mapped_temp(tex_size);
-			sceClibMemcpy(mapped_data, data, tex_size);
+			vgl_fast_memcpy(mapped_data, data, tex_size);
 			SceGxmTransferFormat dst_fmt = tex_format_to_transfer(format);
 			sceGxmTransferCopy(
 				w, h, 0, 0, SCE_GXM_TRANSFER_COLORKEY_NONE,
@@ -366,14 +366,14 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 			int i, j;
 			uint8_t *src = (uint8_t *)data;
 			uint8_t *dst;
-			if (fast_store) { // Internal Format and Data Format are the same, we can just use sceClibMemcpy for better performance
-				if (aligned_w == w) // Texture size is already aligned, we can use a single sceClibMemcpy for better performance
-					sceClibMemcpy(texture_data, src, tex_size);
+			if (fast_store) { // Internal Format and Data Format are the same, we can just use vgl_fast_memcpy for better performance
+				if (aligned_w == w) // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
+					vgl_fast_memcpy(texture_data, src, tex_size);
 				else {
 					uint32_t line_size = w * bpp;
 					for (i = 0; i < h; i++) {
 						dst = ((uint8_t *)texture_data) + (ALIGN(w, 8) * bpp) * i;
-						sceClibMemcpy(dst, src, line_size);
+						vgl_fast_memcpy(dst, src, line_size);
 						src += line_size;
 					}
 				}
@@ -436,7 +436,7 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 	
 	// Populating texture data
 	if (is_p8)
-		sceClibMemcpy(tex->data, src, tex_size);
+		vgl_fast_memcpy(tex->data, src, tex_size);
 	else {
 		uint8_t *dst = (uint8_t *)tex->data;
 		for (int i = 0; i < tex_size; i++) {
@@ -587,7 +587,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 				case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
 				case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
 				case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
-					sceClibMemcpy(mip_data, data, image_size);
+					vgl_fast_memcpy(mip_data, data, image_size);
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 				case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:

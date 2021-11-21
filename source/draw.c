@@ -62,7 +62,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 			break;
 		case GL_LINE_LOOP:
 			ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t));
-			sceClibMemcpy(ptr, default_line_strips_idx_ptr + first * 2, (count - 1) * 2 * sizeof(uint16_t));
+			vgl_fast_memcpy(ptr, default_line_strips_idx_ptr + first * 2, (count - 1) * 2 * sizeof(uint16_t));
 			ptr[(count - 1) * 2] = first + count - 1;
 			ptr[(count - 1) * 2 + 1] = first;
 			count *= 2;
@@ -148,7 +148,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 					break;
 				default:
 					ptr = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
-					sceClibMemcpy(ptr, src, count * sizeof(uint16_t));
+					vgl_fast_memcpy(ptr, src, count * sizeof(uint16_t));
 					break;
 				}
 			}
@@ -195,7 +195,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 					break;
 				default:
 					ptr = gpu_alloc_mapped_temp(count * sizeof(uint32_t));
-					sceClibMemcpy(ptr, src, count * sizeof(uint32_t));
+					vgl_fast_memcpy(ptr, src, count * sizeof(uint32_t));
 					break;
 				}
 			}

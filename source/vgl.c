@@ -386,17 +386,17 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	// Initializing lights configs
 	for (i = 0; i < MAX_LIGHTS_NUM; i++) {
 		float data[4] = {0.0f, 0.0f, 0.0f, 1.0f};
-		sceClibMemcpy(&lights_ambients[i].r, &data[0], sizeof(float) * 4);
+		vgl_fast_memcpy(&lights_ambients[i].r, &data[0], sizeof(float) * 4);
 		data[3] = 1.0f;
 		data[4] = 0.0f;
-		sceClibMemcpy(&lights_positions[i].r, &data[0], sizeof(float) * 4);
+		vgl_fast_memcpy(&lights_positions[i].r, &data[0], sizeof(float) * 4);
 		lights_attenuations[i].r = 1.0f;
 		lights_attenuations[i].g = 0.0f;
 		lights_attenuations[i].b = 0.0f;
 		if (i == 0) {
 			float data2[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-			sceClibMemcpy(&lights_diffuses[i].r, &data2[0], sizeof(float) * 4);
-			sceClibMemcpy(&lights_speculars[i].r, &data2[0], sizeof(float) * 4);
+			vgl_fast_memcpy(&lights_diffuses[i].r, &data2[0], sizeof(float) * 4);
+			vgl_fast_memcpy(&lights_speculars[i].r, &data2[0], sizeof(float) * 4);
 		} else {
 			sceClibMemset(&lights_diffuses[i].r, 0, sizeof(float) * 4);
 			sceClibMemset(&lights_speculars[i].r, 0, sizeof(float) * 4);

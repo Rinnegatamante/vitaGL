@@ -471,7 +471,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	int i;
 	if (fast_store) {
 		for (i = 0; i < height; i++) {
-			sceClibMemcpy(data_u8, &src[y + x * src_bpp], width * src_bpp);
+			vgl_fast_memcpy(data_u8, &src[y + x * src_bpp], width * src_bpp);
 			y += stride;
 #ifdef HAVE_UNFLIPPED_FBOS
 			data_u8 -= width * src_bpp;

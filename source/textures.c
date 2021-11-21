@@ -745,7 +745,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			uint8_t *data = (uint8_t *)pixels;
 			uint32_t line_size = width * data_bpp;
 			for (i = 0; i < height; i++) {
-				sceClibMemcpy(ptr, data, line_size);
+				vgl_fast_memcpy(ptr, data, line_size);
 				data += line_size;
 				ptr += stride;
 			}
