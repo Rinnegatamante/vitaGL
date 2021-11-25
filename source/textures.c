@@ -294,6 +294,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 	}
 
 	// Detecting proper write callback and texture format
+	tex->write_cb = NULL;
 	switch (internalFormat) {
 	case GL_COMPRESSED_SRGB_S3TC_DXT1:
 	case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1:
