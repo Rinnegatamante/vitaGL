@@ -1718,25 +1718,31 @@ void glVertexAttrib4f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat 
 void glVertexAttrib1fv(GLuint index, const GLfloat *v) {
 	vertex_attrib_value[index] = reserve_attrib_pool(1);
 	vertex_attrib_size[index] = 1;
-	vgl_fast_memcpy(vertex_attrib_value[index], v, sizeof(float));
+	vertex_attrib_value[index][0] = v[0];
 }
 
 void glVertexAttrib2fv(GLuint index, const GLfloat *v) {
 	vertex_attrib_value[index] = reserve_attrib_pool(2);
 	vertex_attrib_size[index] = 2;
-	vgl_fast_memcpy(vertex_attrib_value[index], v, 2 * sizeof(float));
+	vertex_attrib_value[index][0] = v[0];
+	vertex_attrib_value[index][1] = v[1];
 }
 
 void glVertexAttrib3fv(GLuint index, const GLfloat *v) {
 	vertex_attrib_value[index] = reserve_attrib_pool(3);
 	vertex_attrib_size[index] = 3;
-	vgl_fast_memcpy(vertex_attrib_value[index], v, 3 * sizeof(float));
+	vertex_attrib_value[index][0] = v[0];
+	vertex_attrib_value[index][1] = v[1];
+	vertex_attrib_value[index][2] = v[2];
 }
 
 void glVertexAttrib4fv(GLuint index, const GLfloat *v) {
 	vertex_attrib_value[index] = reserve_attrib_pool(4);
 	vertex_attrib_size[index] = 4;
-	vgl_fast_memcpy(vertex_attrib_value[index], v, 4 * sizeof(float));
+	vertex_attrib_value[index][0] = v[0];
+	vertex_attrib_value[index][1] = v[1];
+	vertex_attrib_value[index][2] = v[2];
+	vertex_attrib_value[index][3] = v[3];
 }
 
 void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
