@@ -34,7 +34,7 @@
 	orig_size[i] = attributes[i].componentCount; \
 	streams[i].stride = 0; \
 	attributes[i].offset = 0; \
-	attributes[i].componentCount = vertex_attrib_size[real_i[i]]; \
+	attributes[i].componentCount = vertex_attrib_size[p->attr_map[i]]; \
 	attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 
 // Internal stuffs
@@ -106,6 +106,7 @@ typedef struct {
 #endif
 	SceGxmVertexAttribute attr[VERTEX_ATTRIBS_NUM];
 	SceGxmVertexStream stream[VERTEX_ATTRIBS_NUM];
+	uint8_t attr_map[VERTEX_ATTRIBS_NUM];
 	SceGxmVertexProgram *vprog;
 	SceGxmFragmentProgram *fprog;
 	blend_config blend_info;
@@ -277,19 +278,13 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	// Aligning attributes
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
-	uint8_t real_i[VERTEX_ATTRIBS_NUM] = {0, 1, 2, 3, 4, 5, 6, 7};
 	if (p->has_unaligned_attrs) {
 		attributes = temp_attributes;
 		streams = temp_streams;
-		int j = 0;
-		for (i = 0; i < p->attr_highest_idx; i++) {
-			if (p->attr[i].regIndex != 0xDEAD) {
-				vgl_fast_memcpy(&temp_attributes[j], &vertex_attrib_config[i], sizeof(SceGxmVertexAttribute));
-				vgl_fast_memcpy(&temp_streams[j], &vertex_stream_config[i], sizeof(SceGxmVertexStream));
-				attributes[j].streamIndex = j;
-				real_i[j] = attributes[j].regIndex;
-				j++;
-			}
+		for (i = 0; i < p->attr_num; i++) {
+			vgl_fast_memcpy(&temp_attributes[i], &vertex_attrib_config[p->attr_map[i]], sizeof(SceGxmVertexAttribute));
+			vgl_fast_memcpy(&temp_streams[i], &vertex_stream_config[p->attr_map[i]], sizeof(SceGxmVertexStream));
+			attributes[i].streamIndex = i;
 		}
 	} else {
 		attributes = vertex_attrib_config;
@@ -301,23 +296,23 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
 		for (i = 0; i < p->attr_num; i++) {
-			if (vertex_attrib_vbo[real_i[i]]) {
+			if (vertex_attrib_vbo[p->attr_map[i]]) {
 				is_packed = GL_FALSE;
 				break;
 			}
 		}
-		if (is_packed && (!(vertex_attrib_offsets[real_i[0]] + streams[0].stride > vertex_attrib_offsets[real_i[1]] && vertex_attrib_offsets[real_i[1]] > vertex_attrib_offsets[real_i[0]])))
+		if (is_packed && (!(vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > vertex_attrib_offsets[p->attr_map[1]] && vertex_attrib_offsets[p->attr_map[1]] > vertex_attrib_offsets[p->attr_map[0]])))
 			is_packed = GL_FALSE;
 	}
 
 	// Gathering real attribute data pointers
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
-		vgl_fast_memcpy(ptrs[0], (void *)vertex_attrib_offsets[real_i[0]], count * streams[0].stride);
+		vgl_fast_memcpy(ptrs[0], (void *)vertex_attrib_offsets[p->attr_map[0]], count * streams[0].stride);
 		for (i = 0; i < p->attr_num; i++) {
-			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
-			if (vertex_attrib_state & (1 << real_i[i])) {
-				attributes[i].offset = vertex_attrib_offsets[real_i[i]] - vertex_attrib_offsets[real_i[0]];
+			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
+			if (vertex_attrib_state & (1 << p->attr_map[i])) {
+				attributes[i].offset = vertex_attrib_offsets[p->attr_map[i]] - vertex_attrib_offsets[p->attr_map[0]];
 			} else {
 				disableDrawAttrib(i)
 			}
@@ -326,19 +321,19 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 #endif
 	{
 		for (i = 0; i < p->attr_num; i++) {
-			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
-			if (vertex_attrib_state & (1 << real_i[i])) {
-				if (vertex_attrib_vbo[real_i[i]]) {
-					gpubuffer *gpu_buf = (gpubuffer *)vertex_attrib_vbo[real_i[i]];
-					ptrs[i] = (uint8_t *)gpu_buf->ptr + vertex_attrib_offsets[real_i[i]];
+			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
+			if (vertex_attrib_state & (1 << p->attr_map[i])) {
+				if (vertex_attrib_vbo[p->attr_map[i]]) {
+					gpubuffer *gpu_buf = (gpubuffer *)vertex_attrib_vbo[p->attr_map[i]];
+					ptrs[i] = (uint8_t *)gpu_buf->ptr + vertex_attrib_offsets[p->attr_map[i]];
 					gpu_buf->used = GL_TRUE;
 					attributes[i].offset = 0;
 				} else {
 #ifdef DRAW_SPEEDHACK
-					ptrs[i] = (void *)vertex_attrib_offsets[real_i[i]];
+					ptrs[i] = (void *)vertex_attrib_offsets[p->attr_map[i]];
 #else
 					ptrs[i] = gpu_alloc_mapped_temp(count * streams[i].stride);
-					vgl_fast_memcpy(ptrs[i], (void *)vertex_attrib_offsets[real_i[i]], count * streams[i].stride);
+					vgl_fast_memcpy(ptrs[i], (void *)vertex_attrib_offsets[p->attr_map[i]], count * streams[i].stride);
 #endif
 					attributes[i].offset = 0;
 				}
@@ -385,7 +380,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 
 	// Uploading vertex streams
 	for (i = 0; i < p->attr_num; i++) {
-		GLboolean is_active = vertex_attrib_state & (1 << real_i[i]);
+		GLboolean is_active = vertex_attrib_state & (1 << p->attr_map[i]);
 		if (is_active) {
 #ifdef DRAW_SPEEDHACK
 			sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
@@ -393,7 +388,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
 #endif
 		} else {
-			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[real_i[i]]);
+			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[p->attr_map[i]]);
 		}
 		if (!p->has_unaligned_attrs) {
 			attributes[i].regIndex = i;
@@ -441,19 +436,13 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 	// Aligning attributes
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
-	uint8_t real_i[VERTEX_ATTRIBS_NUM] = {0, 1, 2, 3, 4, 5, 6, 7};
 	if (p->has_unaligned_attrs) {
 		attributes = temp_attributes;
 		streams = temp_streams;
-		int j = 0;
-		for (i = 0; i < p->attr_highest_idx; i++) {
-			if (p->attr[i].regIndex != 0xDEAD) {
-				vgl_fast_memcpy(&temp_attributes[j], &vertex_attrib_config[i], sizeof(SceGxmVertexAttribute));
-				vgl_fast_memcpy(&temp_streams[j], &vertex_stream_config[i], sizeof(SceGxmVertexStream));
-				attributes[j].streamIndex = j;
-				real_i[j] = attributes[j].regIndex;
-				j++;
-			}
+		for (i = 0; i < p->attr_num; i++) {
+			vgl_fast_memcpy(&temp_attributes[i], &vertex_attrib_config[p->attr_map[i]], sizeof(SceGxmVertexAttribute));
+			vgl_fast_memcpy(&temp_streams[i], &vertex_stream_config[p->attr_map[i]], sizeof(SceGxmVertexStream));
+			attributes[i].streamIndex = i;
 		}
 	} else {
 		attributes = vertex_attrib_config;
@@ -466,15 +455,15 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 	GLboolean is_full_vbo = GL_TRUE;
 	if (is_packed) {
 		for (i = 0; i < p->attr_num; i++) {
-			if (vertex_attrib_vbo[real_i[i]]) {
+			if (vertex_attrib_vbo[p->attr_map[i]]) {
 				is_packed = GL_FALSE;
 			} else {
 				is_full_vbo = GL_FALSE;
 			}
 		}
-		if (is_packed && (!(vertex_attrib_offsets[real_i[0]] + streams[0].stride > vertex_attrib_offsets[real_i[1]] && vertex_attrib_offsets[real_i[1]] > vertex_attrib_offsets[real_i[0]])))
+		if (is_packed && (!(vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > vertex_attrib_offsets[p->attr_map[1]] && vertex_attrib_offsets[p->attr_map[1]] > vertex_attrib_offsets[p->attr_map[0]])))
 			is_packed = GL_FALSE;
-	} else if (!vertex_attrib_vbo[real_i[0]])
+	} else if (!vertex_attrib_vbo[p->attr_map[0]])
 		is_full_vbo = GL_FALSE;
 
 	// Detecting highest index value
@@ -498,11 +487,11 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 	// Gathering real attribute data pointers
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(top_idx * streams[0].stride);
-		vgl_fast_memcpy(ptrs[0], (void *)vertex_attrib_offsets[real_i[0]], top_idx * streams[0].stride);
+		vgl_fast_memcpy(ptrs[0], (void *)vertex_attrib_offsets[p->attr_map[0]], top_idx * streams[0].stride);
 		for (i = 0; i < p->attr_num; i++) {
-			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
-			if (vertex_attrib_state & (1 << real_i[i])) {
-				attributes[i].offset = vertex_attrib_offsets[real_i[i]] - vertex_attrib_offsets[real_i[0]];
+			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
+			if (vertex_attrib_state & (1 << p->attr_map[i])) {
+				attributes[i].offset = vertex_attrib_offsets[p->attr_map[i]] - vertex_attrib_offsets[p->attr_map[0]];
 			} else {
 				disableDrawAttrib(i)
 			}
@@ -511,19 +500,19 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 #endif
 	{
 		for (i = 0; i < p->attr_num; i++) {
-			attributes[i].regIndex = p->attr[real_i[i]].regIndex;
-			if (vertex_attrib_state & (1 << real_i[i])) {
-				if (vertex_attrib_vbo[real_i[i]]) {
-					gpubuffer *gpu_buf = (gpubuffer *)vertex_attrib_vbo[real_i[i]];
-					ptrs[i] = (uint8_t *)gpu_buf->ptr + vertex_attrib_offsets[real_i[i]];
+			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
+			if (vertex_attrib_state & (1 << p->attr_map[i])) {
+				if (vertex_attrib_vbo[p->attr_map[i]]) {
+					gpubuffer *gpu_buf = (gpubuffer *)vertex_attrib_vbo[p->attr_map[i]];
+					ptrs[i] = (uint8_t *)gpu_buf->ptr + vertex_attrib_offsets[p->attr_map[i]];
 					gpu_buf->used = GL_TRUE;
 					attributes[i].offset = 0;
 				} else {
 #ifdef DRAW_SPEEDHACK
-					ptrs[i] = (void *)vertex_attrib_offsets[real_i[i]];
+					ptrs[i] = (void *)vertex_attrib_offsets[p->attr_map[i]];
 #else
 					ptrs[i] = gpu_alloc_mapped_temp(top_idx * streams[i].stride);
-					vgl_fast_memcpy(ptrs[i], (void *)vertex_attrib_offsets[real_i[i]], top_idx * streams[i].stride);
+					vgl_fast_memcpy(ptrs[i], (void *)vertex_attrib_offsets[p->attr_map[i]], top_idx * streams[i].stride);
 #endif
 					attributes[i].offset = 0;
 				}
@@ -570,7 +559,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 
 	// Uploading vertex streams
 	for (i = 0; i < p->attr_num; i++) {
-		GLboolean is_active = vertex_attrib_state & (1 << real_i[i]);
+		GLboolean is_active = vertex_attrib_state & (1 << p->attr_map[i]);
 		if (is_active) {
 #ifdef DRAW_SPEEDHACK
 			sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
@@ -578,7 +567,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
 #endif
 		} else {
-			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[real_i[i]]);
+			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[p->attr_map[i]]);
 		}
 		if (!p->has_unaligned_attrs) {
 			attributes[i].regIndex = i;
@@ -1118,10 +1107,23 @@ void glLinkProgram(GLuint progr) {
 	} else {
 		// Checking if bound attributes are aligned
 		p->has_unaligned_attrs = GL_FALSE;
+		
 		for (i = 0; i < p->attr_num; i++) {
+			p->attr_map[i] = i;
 			if (p->attr[i].regIndex == 0xDEAD) {
 				p->has_unaligned_attrs = GL_TRUE;
 				break;
+			}
+		}
+		
+		// Fixing attributes mapping cache if in presence of unaligned attributes
+		if (p->has_unaligned_attrs) {
+			int j = 0;
+			for (i = 0; i < p->attr_highest_idx; i++) {
+				if (p->attr[i].regIndex != 0xDEAD) {
+					p->attr_map[j] = p->attr[i].regIndex;
+					j++;
+				}
 			}
 		}
 	}
@@ -1785,11 +1787,24 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 			p->has_unaligned_attrs = GL_FALSE;
 			int j;
 			for (j = 0; j < p->attr_num; j++) {
+				p->attr_map[j] = j;
 				if (p->attr[j].regIndex == 0xDEAD) {
 					p->has_unaligned_attrs = GL_TRUE;
 					break;
 				}
 			}
+			
+			// Fixing attributes mapping cache if in presence of unaligned attributes
+			if (p->has_unaligned_attrs) {
+				int k = 0;
+				for (j = 0; j < p->attr_highest_idx; j++) {
+					if (p->attr[j].regIndex != 0xDEAD) {
+						p->attr_map[k] = p->attr[j].regIndex;
+						k++;
+					}
+				}
+			}
+			
 			return i;
 		}
 	}
