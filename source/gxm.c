@@ -200,10 +200,11 @@ static void display_queue_callback(const void *callbackData) {
 
 // Garbage collector
 static int garbage_collector(unsigned int args, void *arg) {
+#ifndef HAVE_SINGLE_THREADED_GC
 	for (;;) {
 		// Waiting for garbage collection request
 		sceKernelWaitSema(gc_mutex, 1, NULL);
-
+#endif
 		// Purging all elements marked for deletion
 		int i;
 		for (i = 0; i < FRAME_PURGE_LIST_SIZE; i++) {
@@ -224,8 +225,10 @@ static int garbage_collector(unsigned int args, void *arg) {
 		frame_purge_idx = (frame_purge_idx + 1) % FRAME_PURGE_FREQ;
 		frame_elem_purge_idx = 0;
 		frame_rt_purge_idx = 0;
+#ifndef HAVE_SINGLE_THREADED_GC
 	}
 	return sceKernelExitDeleteThread(0);
+#endif
 }
 
 GLboolean startShaderCompiler(void) {
@@ -268,12 +271,12 @@ void initGxm(void) {
 #endif
 		}
 	}
-
+#ifndef HAVE_SINGLE_THREADED_GC
 	// Initializing garbage collector
 	gc_mutex = sceKernelCreateSema("Garbage Collector Sema", 0, 0, FRAME_PURGE_FREQ, NULL);
 	gc_thread = sceKernelCreateThread("Garbage Collector", &garbage_collector, gc_thread_priority, 0x10000, 0, gc_thread_affinity, NULL);
 	sceKernelStartThread(gc_thread, 0, NULL);
-
+#endif
 	// Checking if the running application is a system one
 	SceAppMgrBudgetInfo info;
 	info.size = sizeof(SceAppMgrBudgetInfo);
@@ -819,7 +822,11 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 	needs_scene_reset = GL_TRUE;
 
 	// Starting garbage collector job
+#ifdef HAVE_SINGLE_THREADED_GC
+	garbage_collector(0, NULL);
+#else
 	sceKernelSignalSema(gc_mutex, 1);
+#endif
 }
 
 void glFinish(void) {
