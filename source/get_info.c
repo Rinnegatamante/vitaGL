@@ -204,6 +204,9 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 	case GL_STENCIL_BITS:
 		*data = 8;
 		break;
+	case GL_PACK_ALIGNMENT:
+		*data = 1;
+		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
@@ -319,6 +322,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		break;
 	case GL_MAX_TEXTURE_UNITS:
 		*data = TEXTURE_COORDS_NUM;
+		break;
+	case GL_PACK_ALIGNMENT:
+		*data = 1;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
