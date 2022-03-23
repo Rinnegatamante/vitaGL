@@ -217,6 +217,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_CULL_FACE:
+		*data = cull_face_state;
+		break;
 	case GL_PROGRAM_ERROR_POSITION_ARB:
 		*data = -1;
 		break;
