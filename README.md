@@ -29,6 +29,7 @@ In order to build vitaGL use the following command: `make install`.
 `SAMPLER_UNIFORMS=1` When enabled, shader samplers are treated as uniforms and are rebindable like in regular OpenGL.<br>
 `UNPURE_TEXTURES=1` Makes legal to upload textures without base level.<br>
 `HAVE_DEBUGGER=1` Enables lightweighted on screen debugger interface.<br>
+`HAVE_DEBUGGER=2` Enables lightweighted on screen debugger interface with extra information (devkit only).<br>
 `HAVE_RAZOR=1` Enables debugging features through Razor debugger (retail and devkit compatible).<br>
 `HAVE_RAZOR=2` Enables debugging features through Razor debugger (retail and devkit compatible) with ImGui interface.<br>
 `HAVE_DEVKIT=1` Enables extra debugging features through Razor debugger available only for devkit users.<br>

@@ -185,7 +185,7 @@ static void display_queue_callback(const void *callbackData) {
 	display_fb.width = DISPLAY_WIDTH;
 	display_fb.height = DISPLAY_HEIGHT;
 
-#if defined(HAVE_DEBUG_INTERFACE) && !defined(HAVE_RAZOR_INTERFACE)
+#if (defined(HAVE_DEBUG_INTERFACE) && !defined(HAVE_RAZOR_INTERFACE)) || defined(HAVE_LIGHT_RAZOR)
 	// Drawing lightweighted debugger info
 	vgl_debugger_light_draw(cb_data->addr);
 #endif
@@ -680,7 +680,7 @@ void vglUseTripleBuffering(GLboolean usage) {
 }
 
 void vglSwapBuffers(GLboolean has_commondialog) {
-#ifdef HAVE_RAZOR_INTERFACE
+#if defined(HAVE_RAZOR_INTERFACE) && !defined(HAVE_LIGHT_RAZOR)
 	if (!in_use_framebuffer) {
 		vgl_debugger_draw();
 	}

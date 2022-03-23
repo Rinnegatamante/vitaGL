@@ -29,7 +29,7 @@ extern razor_results razor_metrics;
 #endif
 
 #ifdef HAVE_DEBUG_INTERFACE
-#ifndef HAVE_RAZOR_INTERFACE
+#if !defined(HAVE_RAZOR_INTERFACE) || defined(HAVE_LIGHT_RAZOR)
 #include "utils/font_utils.h"
 int dbg_y = 8;
 uint32_t *frame_buf;
@@ -74,7 +74,7 @@ void vgl_debugger_draw_mem_usage(const char *str, vglMemType type) {
 	uint32_t tot = vgl_mem_get_total_space(type) / (1024 * 1024);
 	uint32_t used = tot - (vgl_mem_get_free_space(type) / (1024 * 1024));
 	float ratio = ((float)used / (float)tot) * 100.0f;
-#ifdef HAVE_RAZOR_INTERFACE
+#if defined(HAVE_RAZOR_INTERFACE) && !defined(HAVE_LIGHT_RAZOR)
 	ImGui::Text("%s: %luMBs / %luMBs (%.2f%%)", str, used, tot, ratio);
 #else
 	vgl_debugger_draw_string_format(5, dbg_y, "%s: %luMBs / %luMBs (%.2f%%)", str, used, tot, ratio);
@@ -82,13 +82,19 @@ void vgl_debugger_draw_mem_usage(const char *str, vglMemType type) {
 #endif
 }
 
-#ifndef HAVE_RAZOR_INTERFACE
+#if !defined(HAVE_RAZOR_INTERFACE) || defined(HAVE_LIGHT_RAZOR)
 void vgl_debugger_light_draw(uint32_t *fb) {
 	frame_buf = fb;
 	dbg_y = 8;
 	vgl_debugger_draw_mem_usage("RAM Usage", VGL_MEM_RAM);
 	vgl_debugger_draw_mem_usage("VRAM Usage", VGL_MEM_VRAM);
 	vgl_debugger_draw_mem_usage("Phycont RAM Usage", VGL_MEM_SLOW);
+#ifdef HAVE_LIGHT_RAZOR
+	vgl_debugger_draw_string_format(5, dbg_y, "GPU activity: %dus (%.0f%%)", razor_metrics.frameGpuActive, 100.f * razor_metrics.frameGpuActive / razor_metrics.frameDuration);
+	vgl_debugger_draw_string_format(5, dbg_y + 20, "Partial Rendering: %s", razor_metrics.partialRender ? "Yes" : "No");
+	vgl_debugger_draw_string_format(5, dbg_y + 40, "Param Buffer Outage: %s", razor_metrics.vertexJobPaused ? "Yes" : "No");
+	vgl_debugger_draw_string_format(5, dbg_y + 60, "Param Buffer Peak Usage: %lu Bytes", razor_metrics.peakUsage);
+#endif
 }
 #endif
 #endif
@@ -108,15 +114,18 @@ void vgl_debugger_set_metrics(int mode) {
 #endif
 
 void vgl_debugger_init() {
+#ifndef HAVE_LIGHT_RAZOR
 	// Initializing dear ImGui
 	ImGui::CreateContext();
 	ImGui_ImplVitaGL_Init();
 	ImGui_ImplVitaGL_TouchUsage(GL_TRUE);
 	ImGui_ImplVitaGL_UseIndirectFrontTouch(GL_TRUE);
 	ImGui::StyleColorsDark();
+#endif
 }
 
 void vgl_debugger_draw() {
+#ifndef HAVE_LIGHT_RAZOR
 	// Initializing a new ImGui frame
 	ImGui_ImplVitaGL_NewFrame();
 		
@@ -245,6 +254,7 @@ void vgl_debugger_draw() {
 		glEnable(GL_DEPTH_TEST);
 	if (cull_face_state_bkp)
 		glEnable(GL_CULL_FACE);
+#endif
 }
 #endif
 
