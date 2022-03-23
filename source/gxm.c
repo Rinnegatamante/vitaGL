@@ -80,6 +80,9 @@ GLboolean is_rendering_display = GL_TRUE; // Flag for when drawing without fbo i
 
 float *legacy_pool = NULL; // Mempool for GL1 immediate draw pipeline
 float *legacy_pool_ptr = NULL; // Current address for vertices population for GL1 immediate draw pipeline
+#ifndef SKIP_ERROR_HANDLING
+float *legacy_pool_end = NULL; // Address of the end of the GL1 immediate draw pipeline vertex pool
+#endif
 
 void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
 void *frame_rt_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_RENDERTARGETS_LIST_SIZE]; // Purge list for rendertargets
@@ -550,6 +553,7 @@ void sceneReset(void) {
 			if (legacy_pool_size) {
 				legacy_pool = (float *)gpu_alloc_mapped_temp(legacy_pool_size);
 				legacy_pool_ptr = legacy_pool;
+				legacy_pool_end = (float *)((uint8_t *)legacy_pool + legacy_pool_size);
 			}
 			needs_end_scene = GL_TRUE;
 		}

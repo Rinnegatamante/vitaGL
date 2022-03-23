@@ -432,6 +432,9 @@ extern uint16_t *default_line_strips_idx_ptr; // sceGxm mapped progressive indic
 extern int legacy_pool_size; // Mempool size for GL1 immediate draw pipeline
 extern float *legacy_pool; // Mempool for GL1 immediate draw pipeline
 extern float *legacy_pool_ptr; // Current address for vertices population for GL1 immediate draw pipeline
+#ifndef SKIP_ERROR_HANDLING
+extern float *legacy_pool_end; // Address of the end of the GL1 immediate draw pipeline vertex pool
+#endif
 extern SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 1];
 extern SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 1];
 extern SceGxmVertexAttribute legacy_mt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];

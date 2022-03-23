@@ -1746,6 +1746,13 @@ void glEnd(void) {
 	else
 		legacy_pool += vertex_count * LEGACY_NT_VERTEX_STRIDE;
 
+#ifndef SKIP_ERROR_HANDLING
+	// Checking for out of bounds of the immediate mode vertex pool
+	if (legacy_pool >= legacy_pool_end) {
+		vgl_log("glEnd: Legacy pool outbounded! Consider increasing its size...\n");
+	}
+#endif
+
 	// Restore polygon mode if a GL_LINES/GL_POINTS has been rendered
 	restore_polygon_mode(prim);
 }
