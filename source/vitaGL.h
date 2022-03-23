@@ -206,6 +206,7 @@ extern "C" {
 #define GL_TEXTURE_MIN_FILTER                        0x2801
 #define GL_TEXTURE_WRAP_S                            0x2802
 #define GL_TEXTURE_WRAP_T                            0x2803
+#define GL_CLAMP                                     0x2900
 #define GL_REPEAT                                    0x2901
 #define GL_POLYGON_OFFSET_UNITS                      0x2A00
 #define GL_POLYGON_OFFSET_POINT                      0x2A01
@@ -458,7 +459,6 @@ extern "C" {
 #define GL_ALL_ATTRIB_BITS    0xFFFFFFFF
 
 // Aliases
-#define GL_CLAMP GL_CLAMP_TO_EDGE
 #define GL_DRAW_FRAMEBUFFER_BINDING GL_FRAMEBUFFER_BINDING
 
 // clang-format on

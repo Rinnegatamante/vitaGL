@@ -1027,7 +1027,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 		case GL_TEXTURE_WRAP_S: 
 		case GL_TEXTURE_WRAP_T:
 #ifndef SKIP_ERROR_HANDLING
-			if (param != GL_CLAMP_TO_EDGE) {
+			if (param != GL_CLAMP_TO_EDGE && param != GL_CLAMP) {
 				SET_GL_ERROR(GL_INVALID_VALUE)
 			}
 #endif
@@ -1150,6 +1150,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 		case GL_TEXTURE_WRAP_S: // U Mode
 			switch (param) {
 			case GL_CLAMP_TO_EDGE: // Clamp
+			case GL_CLAMP:
 				tex->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
 				break;
 			case GL_REPEAT: // Repeat
@@ -1170,6 +1171,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 		case GL_TEXTURE_WRAP_T: // V Mode
 			switch (param) {
 			case GL_CLAMP_TO_EDGE: // Clamp
+			case GL_CLAMP:
 				tex->v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
 				break;
 			case GL_REPEAT: // Repeat
@@ -1303,7 +1305,7 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
 			break;
 		case GL_TEXTURE_WRAP_S: // U Mode
-			if (param == GL_CLAMP_TO_EDGE)
+			if (param == GL_CLAMP_TO_EDGE || param == GL_CLAMP)
 				tex->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP; // Clamp
 			else if (param == GL_REPEAT)
 				tex->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT; // Repeat
@@ -1315,7 +1317,7 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
 			break;
 		case GL_TEXTURE_WRAP_T: // V Mode
-			if (param == GL_CLAMP_TO_EDGE)
+			if (param == GL_CLAMP_TO_EDGE || param == GL_CLAMP)
 				tex->v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP; // Clamp
 			else if (param == GL_REPEAT)
 				tex->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT; // Repeat
