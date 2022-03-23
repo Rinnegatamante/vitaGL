@@ -1749,7 +1749,7 @@ void glEnd(void) {
 #ifndef SKIP_ERROR_HANDLING
 	// Checking for out of bounds of the immediate mode vertex pool
 	if (legacy_pool >= legacy_pool_end) {
-		vgl_log("glEnd: Legacy pool outbounded! Consider increasing its size...\n");
+		vgl_log("glEnd: Legacy pool outbounded by %d bytes! Consider increasing its size...\n", legacy_pool - legacy_pool_end);
 	}
 #endif
 

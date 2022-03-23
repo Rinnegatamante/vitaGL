@@ -553,7 +553,9 @@ void sceneReset(void) {
 			if (legacy_pool_size) {
 				legacy_pool = (float *)gpu_alloc_mapped_temp(legacy_pool_size);
 				legacy_pool_ptr = legacy_pool;
+#ifndef SKIP_ERROR_HANDLING
 				legacy_pool_end = (float *)((uint8_t *)legacy_pool + legacy_pool_size);
+#endif
 			}
 			needs_end_scene = GL_TRUE;
 		}
