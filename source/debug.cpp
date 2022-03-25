@@ -89,6 +89,13 @@ void vgl_debugger_light_draw(uint32_t *fb) {
 	vgl_debugger_draw_mem_usage("RAM Usage", VGL_MEM_RAM);
 	vgl_debugger_draw_mem_usage("VRAM Usage", VGL_MEM_VRAM);
 	vgl_debugger_draw_mem_usage("Phycont RAM Usage", VGL_MEM_SLOW);
+#ifndef SKIP_ERROR_HANDLING
+	vgl_debugger_draw_string_format(5, dbg_y, "Frame Number: %lu", vgl_debugger_framecount);
+	dbg_y += 20;
+#elif defined(HAVE_LIGHT_RAZOR)
+	vgl_debugger_draw_string_format(5, dbg_y, "Frame Number: %lu", razor_metrics.frameNumber);
+	dbg_y += 20;
+#endif
 #ifdef HAVE_LIGHT_RAZOR
 	vgl_debugger_draw_string_format(5, dbg_y, "GPU activity: %dus (%.0f%%)", razor_metrics.frameGpuActive, 100.f * razor_metrics.frameGpuActive / razor_metrics.frameDuration);
 	vgl_debugger_draw_string_format(5, dbg_y + 20, "Partial Rendering: %s", razor_metrics.partialRender ? "Yes" : "No");

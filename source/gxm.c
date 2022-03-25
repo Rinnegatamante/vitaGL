@@ -82,6 +82,8 @@ float *legacy_pool = NULL; // Mempool for GL1 immediate draw pipeline
 float *legacy_pool_ptr = NULL; // Current address for vertices population for GL1 immediate draw pipeline
 #ifndef SKIP_ERROR_HANDLING
 float *legacy_pool_end = NULL; // Address of the end of the GL1 immediate draw pipeline vertex pool
+
+uint32_t vgl_debugger_framecount = 0; // Current frame number since application started
 #endif
 
 void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
@@ -686,6 +688,10 @@ void vglUseTripleBuffering(GLboolean usage) {
 }
 
 void vglSwapBuffers(GLboolean has_commondialog) {
+#ifndef SKIP_ERROR_HANDLING
+	vgl_debugger_framecount++;
+#endif	
+	
 #if defined(HAVE_RAZOR_INTERFACE) && !defined(HAVE_LIGHT_RAZOR)
 	if (!in_use_framebuffer) {
 		vgl_debugger_draw();
