@@ -1121,7 +1121,7 @@ void glLinkProgram(GLuint progr) {
 			int j = 0;
 			for (i = 0; i < p->attr_highest_idx; i++) {
 				if (p->attr[i].regIndex != 0xDEAD) {
-					p->attr_map[j] = p->attr[i].regIndex;
+					p->attr_map[j] = i;
 					j++;
 				}
 			}
@@ -1799,7 +1799,7 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 				int k = 0;
 				for (j = 0; j < p->attr_highest_idx; j++) {
 					if (p->attr[j].regIndex != 0xDEAD) {
-						p->attr_map[k] = p->attr[j].regIndex;
+						p->attr_map[k] = j;
 						k++;
 					}
 				}
