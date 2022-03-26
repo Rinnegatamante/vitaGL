@@ -27,7 +27,7 @@
 
 // Internal constants
 #define TEXTURES_NUM 16384 // Available textures
-#define TEXTURE_IMAGE_UNITS_NUM 5 // Available texture image units
+#define TEXTURE_IMAGE_UNITS_NUM 16 // Available texture image units
 #define TEXTURE_COORDS_NUM 2 // Available texture coords sets for multitexturing with ffp
 #define COMBINED_TEXTURE_IMAGE_UNITS_NUM 16 // Available combined texture image units
 #define VERTEX_ATTRIBS_NUM 16 // Available vertex attributes

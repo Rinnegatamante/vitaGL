@@ -104,6 +104,7 @@ typedef struct {
 #else
 	GLboolean texunits[TEXTURE_IMAGE_UNITS_NUM];
 #endif
+	uint8_t max_texunit_idx;
 	SceGxmVertexAttribute attr[VERTEX_ATTRIBS_NUM];
 	SceGxmVertexStream stream[VERTEX_ATTRIBS_NUM];
 	uint8_t attr_map[VERTEX_ATTRIBS_NUM];
@@ -256,8 +257,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 
 	// Uploading textures on relative texture units
-	int i;
-	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
+	for (int i = 0; i < p->max_texunit_idx; i++) {
 		if (p->texunits[i]) {
 #ifdef HAVE_SAMPLERS_AS_UNIFORMS
 			texture_unit *tex_unit = &texture_units[(int)p->texunits[i]->data];
@@ -281,7 +281,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	if (p->has_unaligned_attrs) {
 		attributes = temp_attributes;
 		streams = temp_streams;
-		for (i = 0; i < p->attr_num; i++) {
+		for (int i = 0; i < p->attr_num; i++) {
 			vgl_fast_memcpy(&temp_attributes[i], &vertex_attrib_config[p->attr_map[i]], sizeof(SceGxmVertexAttribute));
 			vgl_fast_memcpy(&temp_streams[i], &vertex_stream_config[p->attr_map[i]], sizeof(SceGxmVertexStream));
 			attributes[i].streamIndex = i;
@@ -295,7 +295,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 #ifndef DRAW_SPEEDHACK
 	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
-		for (i = 0; i < p->attr_num; i++) {
+		for (int i = 0; i < p->attr_num; i++) {
 			if (vertex_attrib_vbo[p->attr_map[i]]) {
 				is_packed = GL_FALSE;
 				break;
@@ -309,7 +309,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
 		vgl_fast_memcpy(ptrs[0], (void *)vertex_attrib_offsets[p->attr_map[0]], count * streams[0].stride);
-		for (i = 0; i < p->attr_num; i++) {
+		for (int i = 0; i < p->attr_num; i++) {
 			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
 			if (vertex_attrib_state & (1 << p->attr_map[i])) {
 				attributes[i].offset = vertex_attrib_offsets[p->attr_map[i]] - vertex_attrib_offsets[p->attr_map[0]];
@@ -320,7 +320,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	} else
 #endif
 	{
-		for (i = 0; i < p->attr_num; i++) {
+		for (int i = 0; i < p->attr_num; i++) {
 			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
 			if (vertex_attrib_state & (1 << p->attr_map[i])) {
 				if (vertex_attrib_vbo[p->attr_map[i]]) {
@@ -379,7 +379,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	}
 
 	// Uploading vertex streams
-	for (i = 0; i < p->attr_num; i++) {
+	for (int i = 0; i < p->attr_num; i++) {
 		GLboolean is_active = vertex_attrib_state & (1 << p->attr_map[i]);
 		if (is_active) {
 #ifdef DRAW_SPEEDHACK
@@ -414,8 +414,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 
 	// Uploading textures on relative texture units
-	int i;
-	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
+	for (int i = 0; i < p->max_texunit_idx; i++) {
 		if (p->texunits[i]) {
 #ifdef HAVE_SAMPLERS_AS_UNIFORMS
 			texture_unit *tex_unit = &texture_units[(int)p->texunits[i]->data];
@@ -439,7 +438,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 	if (p->has_unaligned_attrs) {
 		attributes = temp_attributes;
 		streams = temp_streams;
-		for (i = 0; i < p->attr_num; i++) {
+		for (int i = 0; i < p->attr_num; i++) {
 			vgl_fast_memcpy(&temp_attributes[i], &vertex_attrib_config[p->attr_map[i]], sizeof(SceGxmVertexAttribute));
 			vgl_fast_memcpy(&temp_streams[i], &vertex_stream_config[p->attr_map[i]], sizeof(SceGxmVertexStream));
 			attributes[i].streamIndex = i;
@@ -454,7 +453,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 	GLboolean is_packed = p->attr_num > 1;
 	GLboolean is_full_vbo = GL_TRUE;
 	if (is_packed) {
-		for (i = 0; i < p->attr_num; i++) {
+		for (int i = 0; i < p->attr_num; i++) {
 			if (vertex_attrib_vbo[p->attr_map[i]]) {
 				is_packed = GL_FALSE;
 			} else {
@@ -470,13 +469,13 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 	uint32_t top_idx = 0;
 	if (!is_full_vbo) {
 		if (is_short) {
-			for (i = 0; i < count; i++) {
+			for (int i = 0; i < count; i++) {
 				if (idx_buf[i] > top_idx)
 					top_idx = idx_buf[i];
 			}
 		} else {
 			uint32_t *_idx_buf = (uint32_t *)idx_buf;
-			for (i = 0; i < count; i++) {
+			for (int i = 0; i < count; i++) {
 				if (_idx_buf[i] > top_idx)
 					top_idx = _idx_buf[i];
 			}
@@ -488,7 +487,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(top_idx * streams[0].stride);
 		vgl_fast_memcpy(ptrs[0], (void *)vertex_attrib_offsets[p->attr_map[0]], top_idx * streams[0].stride);
-		for (i = 0; i < p->attr_num; i++) {
+		for (int i = 0; i < p->attr_num; i++) {
 			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
 			if (vertex_attrib_state & (1 << p->attr_map[i])) {
 				attributes[i].offset = vertex_attrib_offsets[p->attr_map[i]] - vertex_attrib_offsets[p->attr_map[0]];
@@ -499,7 +498,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 	} else
 #endif
 	{
-		for (i = 0; i < p->attr_num; i++) {
+		for (int i = 0; i < p->attr_num; i++) {
 			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
 			if (vertex_attrib_state & (1 << p->attr_map[i])) {
 				if (vertex_attrib_vbo[p->attr_map[i]]) {
@@ -558,7 +557,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 	}
 
 	// Uploading vertex streams
-	for (i = 0; i < p->attr_num; i++) {
+	for (int i = 0; i < p->attr_num; i++) {
 		GLboolean is_active = vertex_attrib_state & (1 << p->attr_map[i]);
 		if (is_active) {
 #ifdef DRAW_SPEEDHACK
@@ -889,6 +888,7 @@ GLuint glCreateProgram(void) {
 			progs[i].attr_num = 0;
 			progs[i].stream_num = 0;
 			progs[i].attr_idx = 0;
+			progs[i].max_texunit_idx = 0;
 			progs[i].wvp = NULL;
 			progs[i].vshader = NULL;
 			progs[i].fshader = NULL;
@@ -1039,6 +1039,9 @@ void glLinkProgram(GLuint progr) {
 		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->fshader->prog, i);
 		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+			uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
+			if (p->max_texunit_idx < texunit_idx)
+				p->max_texunit_idx = texunit_idx;
 #ifdef HAVE_SAMPLERS_AS_UNIFORMS
 			uniform *u = (uniform *)vgl_malloc(sizeof(uniform), VGL_MEM_EXTERNAL);
 			u->chain = p->frag_uniforms;
@@ -1046,9 +1049,9 @@ void glLinkProgram(GLuint progr) {
 			u->size = 0;
 			u->data = NULL;
 			p->frag_uniforms = u;
-			p->texunits[sceGxmProgramParameterGetResourceIndex(param)] = u;
+			p->texunits[texunit_idx - 1] = u;
 #else
-			p->texunits[sceGxmProgramParameterGetResourceIndex(param)] = GL_TRUE;
+			p->texunits[texunit_idx - 1] = GL_TRUE;
 #endif
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
 			uniform *u = (uniform *)vgl_malloc(sizeof(uniform), VGL_MEM_EXTERNAL);
