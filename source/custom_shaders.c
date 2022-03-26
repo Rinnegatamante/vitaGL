@@ -258,7 +258,9 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 
 	// Uploading textures on relative texture units
 	for (int i = 0; i < p->max_texunit_idx; i++) {
+#ifndef SAMPLERS_SPEEDHACK
 		if (p->texunits[i]) {
+#endif
 #ifdef HAVE_SAMPLERS_AS_UNIFORMS
 			texture_unit *tex_unit = &texture_units[(int)p->texunits[i]->data];
 #else
@@ -272,7 +274,9 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			}
 #endif
 			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
+#ifndef SAMPLERS_SPEEDHACK		
 		}
+#endif
 	}
 
 	// Aligning attributes
@@ -415,7 +419,9 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 
 	// Uploading textures on relative texture units
 	for (int i = 0; i < p->max_texunit_idx; i++) {
+#ifndef SAMPLERS_SPEEDHACK
 		if (p->texunits[i]) {
+#endif
 #ifdef HAVE_SAMPLERS_AS_UNIFORMS
 			texture_unit *tex_unit = &texture_units[(int)p->texunits[i]->data];
 #else
@@ -429,7 +435,9 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 			}
 #endif
 			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
+#ifndef SAMPLERS_SPEEDHACK
 		}
+#endif
 	}
 
 	// Aligning attributes

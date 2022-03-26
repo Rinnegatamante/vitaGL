@@ -113,6 +113,10 @@ ifeq ($(HAVE_DEVKIT),2)
 CFLAGS += -DHAVE_DEVKIT -DHAVE_RAZOR -DHAVE_RAZOR_INTERFACE -DHAVE_DEBUG_INTERFACE
 endif
 
+ifeq ($(SAMPLERS_SPEEDHACK),1)
+CFLAGS += -DSAMPLERS_SPEEDHACK
+endif
+
 CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a
