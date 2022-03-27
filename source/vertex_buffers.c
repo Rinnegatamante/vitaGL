@@ -258,7 +258,7 @@ void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length)
 	}
 
 #ifndef SKIP_ERROR_HANDLING
-	if (!gpu_buf || gpu_buf->mapped) {
+	if (!gpu_buf || !gpu_buf->mapped) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	} else if (offset < 0 || length < 0 || offset + length > gpu_buf->size) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
