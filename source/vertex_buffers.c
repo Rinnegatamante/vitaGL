@@ -216,6 +216,7 @@ void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitf
 #endif
 	
 	// TODO: Current implementation doesn't take into account 'used' state
+	gpu_buf->mapped = GL_TRUE;
 	return (void *)((uint8_t *)gpu_buf->ptr + offset);
 }
 
@@ -233,12 +234,13 @@ GLboolean glUnmapBuffer(GLenum target) {
 	}
 
 #ifndef SKIP_ERROR_HANDLING
-	if (!gpu_buf || gpu_buf->mapped) {
+	if (!gpu_buf || !gpu_buf->mapped) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_OPERATION, GL_TRUE)
 	}
 #endif
 	
 	gpu_buf->used = GL_FALSE;
+	gpu_buf->mapped = GL_FALSE;
 	return GL_TRUE;
 }
 
