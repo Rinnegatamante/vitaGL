@@ -389,6 +389,7 @@ typedef struct {
 	int32_t size;
 	vglMemType type;
 	GLboolean used;
+	GLboolean mapped;
 } gpubuffer;
 
 // 3D vertex for position + 4D vertex for RGBA color struct

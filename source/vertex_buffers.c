@@ -159,10 +159,10 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 #ifndef SKIP_ERROR_HANDLING
-	if ((size < 0) || (offset < 0) || ((offset + size) > gpu_buf->size)) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
-	} else if (!gpu_buf) {
+	if (!gpu_buf) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
+	} else if (size < 0 || offset < 0 || offset + size > gpu_buf->size) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 
@@ -191,6 +191,75 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 
 	gpu_buf->ptr = ptr;
 	gpu_buf->used = GL_FALSE;
+}
+
+void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access) {
+	gpubuffer *gpu_buf;
+	switch (target) {
+	case GL_ARRAY_BUFFER:
+		gpu_buf = (gpubuffer *)vertex_array_unit;
+		break;
+	case GL_ELEMENT_ARRAY_BUFFER:
+		gpu_buf = (gpubuffer *)index_array_unit;
+		break;
+	default:
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
+	}
+	
+#ifndef SKIP_ERROR_HANDLING
+	if (!gpu_buf || gpu_buf->mapped) {
+		SET_GL_ERROR_WITH_RET(GL_INVALID_OPERATION, NULL)
+	} else if (offset < 0 || length < 0 || offset + length > gpu_buf->size) {
+		SET_GL_ERROR_WITH_RET(GL_INVALID_VALUE, NULL)
+	}
+#endif
+
+	return (void *)((uint8_t *)gpu_buf->ptr + offset);
+}
+
+GLboolean glUnmapBuffer(GLenum target) {
+	gpubuffer *gpu_buf;
+	switch (target) {
+	case GL_ARRAY_BUFFER:
+		gpu_buf = (gpubuffer *)vertex_array_unit;
+		break;
+	case GL_ELEMENT_ARRAY_BUFFER:
+		gpu_buf = (gpubuffer *)index_array_unit;
+		break;
+	default:
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, GL_TRUE)
+	}
+
+#ifndef SKIP_ERROR_HANDLING
+	if (!gpu_buf || gpu_buf->mapped) {
+		SET_GL_ERROR_WITH_RET(GL_INVALID_OPERATION, GL_TRUE)
+	}
+#endif
+	
+	gpu_buf->used = GL_FALSE;
+	return GL_TRUE;
+}
+
+void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length) {
+	gpubuffer *gpu_buf;
+	switch (target) {
+	case GL_ARRAY_BUFFER:
+		gpu_buf = (gpubuffer *)vertex_array_unit;
+		break;
+	case GL_ELEMENT_ARRAY_BUFFER:
+		gpu_buf = (gpubuffer *)index_array_unit;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+
+#ifndef SKIP_ERROR_HANDLING
+	if (!gpu_buf || gpu_buf->mapped) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	} else if (offset < 0 || length < 0 || offset + length > gpu_buf->size) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
 }
 
 void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params) {

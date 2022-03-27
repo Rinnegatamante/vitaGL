@@ -458,6 +458,13 @@ extern "C" {
 #define GL_SCISSOR_BIT        0x00080000
 #define GL_ALL_ATTRIB_BITS    0xFFFFFFFF
 
+#define GL_MAP_READ_BIT                   0x0001
+#define GL_MAP_WRITE_BIT                  0x0002
+#define GL_MAP_INVALIDATE_RANGE_BIT       0x0004
+#define GL_MAP_INVALIDATE_BUFFER_BIT      0x0008
+#define GL_MAP_FLUSH_EXPLICIT_BIT         0x0010
+#define GL_MAP_UNSYNCHRONIZED_BIT         0x0020
+
 // Aliases
 #define GL_DRAW_FRAMEBUFFER_BINDING GL_FRAMEBUFFER_BINDING
 
@@ -525,6 +532,7 @@ void glEnableVertexAttribArray(GLuint index);
 void glEnd(void);
 void glFinish(void);
 void glFlush(void);
+void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length);
 void glFogf(GLenum pname, GLfloat param);
 void glFogfv(GLenum pname, const GLfloat *params);
 void glFogi(GLenum pname, const GLint param);
@@ -569,6 +577,7 @@ void glLineWidth(GLfloat width);
 void glLinkProgram(GLuint progr);
 void glLoadIdentity(void);
 void glLoadMatrixf(const GLfloat *m);
+void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
 void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params);
 void glMatrixMode(GLenum mode);
 void glMultiTexCoord2f(GLenum target, GLfloat s, GLfloat t);
@@ -633,6 +642,7 @@ void glUniform4iv(GLint location, GLsizei count, const GLint *value);
 void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
+GLboolean glUnmapBuffer(GLenum target);
 void glUseProgram(GLuint program);
 void glVertex2f(GLfloat x, GLfloat y);
 void glVertex3f(GLfloat x, GLfloat y, GLfloat z);
