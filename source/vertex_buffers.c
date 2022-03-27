@@ -167,30 +167,31 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 #endif
 
 	// Allocating a new buffer
-	uint8_t *ptr = gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
+	if (gpu_buf->used) {
+		uint8_t *ptr = gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
 
 #ifdef LOG_ERRORS
-	if (!ptr) {
-		vgl_log("%s:%d glBufferSubData failed to alloc a buffer of %ld bytes. Buffer content won't be updated.\n", __FILE__, __LINE__, gpu_buf->size);
-		return;
-	}
+		if (!ptr) {
+			vgl_log("%s:%d glBufferSubData failed to alloc a buffer of %ld bytes. Buffer content won't be updated.\n", __FILE__, __LINE__, gpu_buf->size);
+			return;
+		}
 #endif
+		
+		// Copying up previous data combined to modified data
+		if (offset > 0)
+			vgl_memcpy(ptr, gpu_buf->ptr, offset);
+		vgl_memcpy(ptr + offset, data, size);
+		if (gpu_buf->size - size - offset > 0)
+			vgl_memcpy(ptr + offset + size, (uint8_t *)gpu_buf->ptr + offset + size, gpu_buf->size - size - offset);
 
-	// Copying up previous data combined to modified data
-	if (offset > 0)
-		vgl_memcpy(ptr, gpu_buf->ptr, offset);
-	vgl_memcpy(ptr + offset, data, size);
-	if (gpu_buf->size - size - offset > 0)
-		vgl_memcpy(ptr + offset + size, (uint8_t *)gpu_buf->ptr + offset + size, gpu_buf->size - size - offset);
-
-	// Marking previous content for deletion
-	if (gpu_buf->used)
+		// Marking previous content for deletion
 		markAsDirty(gpu_buf->ptr);
-	else
-		vgl_free(gpu_buf->ptr);
-
-	gpu_buf->ptr = ptr;
-	gpu_buf->used = GL_FALSE;
+		
+		gpu_buf->ptr = ptr;
+		gpu_buf->used = GL_FALSE;
+	} else {
+		vgl_memcpy((uint8_t *)gpu_buf->ptr + offset, data, size);
+	}	
 }
 
 void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access) {
@@ -213,7 +214,8 @@ void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitf
 		SET_GL_ERROR_WITH_RET(GL_INVALID_VALUE, NULL)
 	}
 #endif
-
+	
+	// TODO: Current implementation doesn't take into account 'used' state
 	return (void *)((uint8_t *)gpu_buf->ptr + offset);
 }
 
