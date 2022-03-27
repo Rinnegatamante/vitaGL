@@ -188,7 +188,7 @@ static void heap_blk_free(uintptr_t base) {
 
 	if (!curblk) {
 #ifndef SKIP_ERROR_HANDLING
-		vgl_log("An internal free failed (possible double free call) on pointer: 0x%08X!\n", base);
+		vgl_log("%s:%d An internal free failed (possible double free call) on pointer: 0x%08X!\n", __FILE__, __LINE__, base);
 #endif
 		return;
 	}

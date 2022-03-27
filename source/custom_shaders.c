@@ -269,7 +269,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex);
 			if (r) {
-				vgl_log("glDrawArrays: Texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", i, get_gxm_error_literal(r));
+				vgl_log("%s:%d glDrawArrays: Texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
@@ -430,7 +430,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex);
 			if (r) {
-				vgl_log("glDrawElements: Texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", i, get_gxm_error_literal(r));
+				vgl_log("%s:%d glDrawElements: Texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
@@ -631,12 +631,15 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	}
 
 	// Uploading textures on relative texture units
-	int i;
-	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
+	for (int i = 0; i < p->max_texunit_idx; i++) {
+#ifndef SAMPLERS_SPEEDHACK
 		if (p->texunits[i]) {
+#endif
 			texture_unit *tex_unit = &texture_units[i];
 			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
+#ifndef SAMPLERS_SPEEDHACK
 		}
+#endif
 	}
 }
 
@@ -831,7 +834,7 @@ void glCompileShader(GLuint handle) {
 			sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
 #ifdef LOG_ERRORS
 		if (r)
-			vgl_log("glCompileShader: Program failed to register on sceGxm (%s).\n", get_gxm_error_literal(r));
+			vgl_log("%s:%d glCompileShader: Program failed to register on sceGxm (%s).\n", __FILE__, __LINE__, get_gxm_error_literal(r));
 #endif
 		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
 	}

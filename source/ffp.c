@@ -1749,7 +1749,7 @@ void glEnd(void) {
 #ifndef SKIP_ERROR_HANDLING
 	// Checking for out of bounds of the immediate mode vertex pool
 	if (legacy_pool >= legacy_pool_end) {
-		vgl_log("glEnd: Legacy pool outbounded by %d bytes! Consider increasing its size...\n", legacy_pool - legacy_pool_end);
+		vgl_log("%s:%d glEnd: Legacy pool outbounded by %d bytes! Consider increasing its size...\n", __FILE__, __LINE__, legacy_pool - legacy_pool_end);
 	}
 #endif
 
@@ -2435,7 +2435,7 @@ void glShadeModel(GLenum mode) {
 	case GL_FLAT:
 		//shading_mode = FLAT;
 		shading_mode = SMOOTH;
-		vgl_log("GL_FLAT as shading model is not supported. GL_SMOOTH will be used instead.\n");
+		vgl_log("%s:%d glShadeModel: GL_FLAT as shading model is not supported. GL_SMOOTH will be used instead.\n", __FILE__, __LINE__);
 		break;
 	case GL_SMOOTH:
 		shading_mode = SMOOTH;

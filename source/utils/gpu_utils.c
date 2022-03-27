@@ -151,7 +151,7 @@ void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type) {
 
 #ifdef LOG_ERRORS
 	if (!res)
-		vgl_log("gpu_alloc_mapped_aligned failed with a requested size of 0x%08X\n", size);
+		vgl_log("%s:%d gpu_alloc_mapped_aligned failed with a requested size of 0x%08X\n", __FILE__, __LINE__, size);
 #endif
 
 	return res;
@@ -206,7 +206,7 @@ void *gpu_alloc_mapped_temp(size_t size) {
 
 #ifdef LOG_ERRORS
 	if (!res)
-		vgl_log("gpu_alloc_mapped_temp failed with a requested size of 0x%08X\n", size);
+		vgl_log("%s:%d gpu_alloc_mapped_temp failed with a requested size of 0x%08X\n", __FILE__, __LINE__, size);
 #endif
 
 	markAsDirty(res);

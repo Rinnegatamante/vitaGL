@@ -577,7 +577,7 @@ void sceneReset(void) {
 				&gxm_color_surfaces[gxm_back_buffer_index],
 				&gxm_depth_stencil_surface);
 			if (r)
-				vgl_log("Scene reset failed due to sceGxmBeginScene erroring (%s) on display.\n", get_gxm_error_literal(r));
+				vgl_log("%s:%d Scene reset failed due to sceGxmBeginScene erroring (%s) on display.\n", __FILE__, __LINE__, get_gxm_error_literal(r));
 #else
 			sceGxmBeginScene(gxm_context, 0, gxm_render_target,
 				NULL, NULL,
@@ -620,7 +620,7 @@ void sceneReset(void) {
 					active_write_fb->depthbuffer_ptr);
 #ifdef LOG_ERRORS
 			if (r)
-				vgl_log("Scene reset failed due to sceGxmBeginScene erroring (%s) on framebuffer 0x%08X.\n", get_gxm_error_literal(r), active_write_fb);
+				vgl_log("%s:%d Scene reset failed due to sceGxmBeginScene erroring (%s) on framebuffer 0x%08X.\n", __FILE__, __LINE__, get_gxm_error_literal(r), active_write_fb);
 #endif
 		}
 

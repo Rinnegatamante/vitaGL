@@ -48,7 +48,7 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 		res[i] = (GLuint)(vgl_malloc(sizeof(gpubuffer), VGL_MEM_EXTERNAL));
 #ifdef LOG_ERRORS
 		if (!res[i])
-			vgl_log("glGenBuffers failed to alloc a buffer (%d/%lu).\n", i, n);
+			vgl_log("%s:%d glGenBuffers failed to alloc a buffer (%d/%lu).\n", __FILE__, __LINE__, i, n);
 #endif
 		sceClibMemset((void *)res[i], 0, sizeof(gpubuffer));
 	}
@@ -171,7 +171,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 
 #ifdef LOG_ERRORS
 	if (!ptr) {
-		vgl_log("glBufferSubData failed to alloc a buffer of %ld bytes. Buffer content won't be updated.\n", gpu_buf->size);
+		vgl_log("%s:%d glBufferSubData failed to alloc a buffer of %ld bytes. Buffer content won't be updated.\n", __FILE__, __LINE__, gpu_buf->size);
 		return;
 	}
 #endif

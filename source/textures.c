@@ -448,7 +448,7 @@ void glGenTextures(GLsizei n, GLuint *res) {
 			return;
 	}
 
-	vgl_log("glGenTextures: Texture slots limit reached (%d textures hadn't been generated).\n", n - j);
+	vgl_log("%s:%d glGenTextures: Texture slots limit reached (%d textures hadn't been generated).\n", __FILE__, __LINE__, n - j);
 }
 
 void glBindTexture(GLenum target, GLuint texture) {
