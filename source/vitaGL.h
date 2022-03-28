@@ -57,6 +57,9 @@ extern "C" {
 #define EGLConfig     void*
 #define EGLint        int32_t
 
+#define EGLint64      int64_t
+#define EGLuint64     uint64_t
+
 #define NativeDisplayType void*
 
 #define GL_FALSE                              0
@@ -669,6 +672,8 @@ EGLBoolean eglBindAPI(EGLenum api);
 EGLDisplay eglGetDisplay(NativeDisplayType native_display);
 EGLint eglGetError(void);
 void (*eglGetProcAddress(char const *procname))(void);
+EGLuint64 eglGetSystemTimeFrequencyNV(void);
+EGLuint64 eglGetSystemTimeNV(void);
 EGLenum eglQueryAPI(void);
 EGLBoolean eglSwapInterval(EGLDisplay display, EGLint interval);
 EGLBoolean eglSwapBuffers(EGLDisplay display, EGLSurface surface);

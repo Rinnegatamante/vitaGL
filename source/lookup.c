@@ -267,6 +267,8 @@ static const struct {
 	{"eglGetDisplay", (void *)eglGetDisplay},
 	{"eglGetError", (void *)eglGetError},
 	{"eglGetProcAddress", (void *)eglGetProcAddress},
+	{"eglGetSystemTimeFrequencyNV", (void *)eglGetSystemTimeFrequencyNV},
+	{"eglGetSystemTimeNV", (void *)eglGetSystemTimeNV},
 	{"eglQueryAPI", (void *)eglQueryAPI},
 	{"eglSwapInterval", (void *)eglSwapInterval},
 	{"eglSwapBuffers", (void *)eglSwapBuffers},

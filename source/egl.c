@@ -109,3 +109,19 @@ EGLDisplay eglGetDisplay(NativeDisplayType native_display) {
 	else
 		return EGL_NO_DISPLAY;
 }
+
+EGLuint64 eglGetSystemTimeFrequencyNV(void) {
+#ifdef EGL_PEDANTIC
+	egl_error = EGL_SUCCESS;
+#endif
+	return (EGLuint64)sceRtcGetTickResolution();
+}
+
+EGLuint64 eglGetSystemTimeNV(void) {
+#ifdef EGL_PEDANTIC
+	egl_error = EGL_SUCCESS;
+#endif
+	SceRtcTick t;
+	sceRtcGetCurrentTick(&t);
+	return t.tick;
+}
