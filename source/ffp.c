@@ -1489,6 +1489,44 @@ void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
 	}
 }
 
+void glMaterialxv(GLenum face, GLenum pname, const GLfixed *params) {
+	switch (pname) {
+	case GL_AMBIENT:
+		current_vtx.amb.x = (float)params[0] / 65536.0f;
+		current_vtx.amb.y = (float)params[1] / 65536.0f;
+		current_vtx.amb.z = (float)params[2] / 65536.0f;
+		current_vtx.amb.w = (float)params[3] / 65536.0f;
+		break;
+	case GL_DIFFUSE:
+		current_vtx.diff.x = (float)params[0] / 65536.0f;
+		current_vtx.diff.y = (float)params[1] / 65536.0f;
+		current_vtx.diff.z = (float)params[2] / 65536.0f;
+		current_vtx.diff.w = (float)params[3] / 65536.0f;
+		break;
+	case GL_SPECULAR:
+		current_vtx.spec.x = (float)params[0] / 65536.0f;
+		current_vtx.spec.y = (float)params[1] / 65536.0f;
+		current_vtx.spec.z = (float)params[2] / 65536.0f;
+		current_vtx.spec.w = (float)params[3] / 65536.0f;
+		break;
+	case GL_EMISSION:
+		current_vtx.emiss.x = (float)params[0] / 65536.0f;
+		current_vtx.emiss.y = (float)params[1] / 65536.0f;
+		current_vtx.emiss.z = (float)params[2] / 65536.0f;
+		current_vtx.emiss.w = (float)params[3] / 65536.0f;
+		break;
+	case GL_AMBIENT_AND_DIFFUSE:
+		current_vtx.amb.x = (float)params[0] / 65536.0f;
+		current_vtx.amb.y = (float)params[1] / 65536.0f;
+		current_vtx.amb.z = (float)params[2] / 65536.0f;
+		current_vtx.amb.w = (float)params[3] / 65536.0f;
+		vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.amb.x, sizeof(float) * 4);
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
+}
+
 void glColor3f(GLfloat red, GLfloat green, GLfloat blue) {
 	// Setting current color value
 	current_vtx.clr.r = red;
@@ -1507,18 +1545,18 @@ void glColor3fv(const GLfloat *v) {
 
 void glColor3ub(GLubyte red, GLubyte green, GLubyte blue) {
 	// Setting current color value
-	current_vtx.clr.r = (1.0f * red) / 255.0f;
-	current_vtx.clr.g = (1.0f * green) / 255.0f;
-	current_vtx.clr.b = (1.0f * blue) / 255.0f;
+	current_vtx.clr.r = (float)red / 255.0f;
+	current_vtx.clr.g = (float)green / 255.0f;
+	current_vtx.clr.b = (float)blue / 255.0f;
 	current_vtx.clr.a = 1.0f;
 	dirty_frag_unifs = GL_TRUE;
 }
 
 void glColor3ubv(const GLubyte *c) {
 	// Setting current color value
-	current_vtx.clr.r = (1.0f * c[0]) / 255.0f;
-	current_vtx.clr.g = (1.0f * c[1]) / 255.0f;
-	current_vtx.clr.b = (1.0f * c[2]) / 255.0f;
+	current_vtx.clr.r = (float)c[0] / 255.0f;
+	current_vtx.clr.g = (float)c[1] / 255.0f;
+	current_vtx.clr.b = (float)c[2] / 255.0f;
 	current_vtx.clr.a = 1.0f;
 	dirty_frag_unifs = GL_TRUE;
 }
@@ -1539,19 +1577,19 @@ void glColor4fv(const GLfloat *v) {
 }
 
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha) {
-	current_vtx.clr.r = (1.0f * red) / 255.0f;
-	current_vtx.clr.g = (1.0f * green) / 255.0f;
-	current_vtx.clr.b = (1.0f * blue) / 255.0f;
-	current_vtx.clr.a = (1.0f * alpha) / 255.0f;
+	current_vtx.clr.r = (float)red / 255.0f;
+	current_vtx.clr.g = (float)green / 255.0f;
+	current_vtx.clr.b = (float)blue / 255.0f;
+	current_vtx.clr.a = (float)alpha / 255.0f;
 	dirty_frag_unifs = GL_TRUE;
 }
 
 void glColor4ubv(const GLubyte *c) {
 	// Setting current color value
-	current_vtx.clr.r = (1.0f * c[0]) / 255.0f;
-	current_vtx.clr.g = (1.0f * c[1]) / 255.0f;
-	current_vtx.clr.b = (1.0f * c[2]) / 255.0f;
-	current_vtx.clr.a = (1.0f * c[3]) / 255.0f;
+	current_vtx.clr.r = (float)c[0] / 255.0f;
+	current_vtx.clr.g = (float)c[1] / 255.0f;
+	current_vtx.clr.b = (float)c[2] / 255.0f;
+	current_vtx.clr.a = (float)c[3] / 255.0f;
 	dirty_frag_unifs = GL_TRUE;
 }
 
@@ -1564,10 +1602,10 @@ void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha) {
 #endif
 
 	// Setting current color value
-	current_vtx.clr.r = (1.0f * red) / 65536.0f;
-	current_vtx.clr.g = (1.0f * green) / 65536.0f;
-	current_vtx.clr.b = (1.0f * blue) / 65536.0f;
-	current_vtx.clr.a = (1.0f * alpha) / 65536.0f;
+	current_vtx.clr.r = (float)red / 65536.0f;
+	current_vtx.clr.g = (float)green / 65536.0f;
+	current_vtx.clr.b = (float)blue / 65536.0f;
+	current_vtx.clr.a = (float)alpha / 65536.0f;
 	dirty_frag_unifs = GL_TRUE;
 }
 
@@ -1959,6 +1997,10 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
 	}
 }
 
+void glTexEnvx(GLenum target, GLenum pname, GLfixed param) {
+	glTexEnvf(target, pname, (float)param / 65536.0f);
+}
+
 void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
@@ -1986,6 +2028,48 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 			}
 #endif
 			tex_unit->a_scale = *param;
+			break;
+#endif
+		default:
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+		}
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+	dirty_frag_unifs = GL_TRUE;
+}
+
+void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param) {
+	// Aliasing texture unit for cleaner code
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+
+	// Properly changing texture environment settings as per request
+	switch (target) {
+	case GL_TEXTURE_ENV:
+		switch (pname) {
+		case GL_TEXTURE_ENV_COLOR:
+			texture_units[server_texture_unit].env_color.r = (float)param[0] / 65536.0f;
+			texture_units[server_texture_unit].env_color.g = (float)param[1] / 65536.0f;
+			texture_units[server_texture_unit].env_color.b = (float)param[2] / 65536.0f;
+			texture_units[server_texture_unit].env_color.a = (float)param[3] / 65536.0f;
+			break;
+#ifndef DISABLE_TEXTURE_COMBINER
+		case GL_RGB_SCALE:
+#ifndef SKIP_ERROR_HANDLING
+			if (*param != 65536 && *param != 131072 && *param != 262144) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
+			tex_unit->rgb_scale = (float)param[0] / 65536.0f;
+			break;
+		case GL_ALPHA_SCALE:
+#ifndef SKIP_ERROR_HANDLING
+			if (*param != 65536 && *param != 131072 && *param != 262144) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
+			tex_unit->a_scale = (float)param[0] / 65536.0f;
 			break;
 #endif
 		default:
@@ -2310,6 +2394,54 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 	dirty_vert_unifs = GL_TRUE;
 }
 
+void glLightxv(GLenum light, GLenum pname, const GLfixed *params) {
+#ifndef SKIP_ERROR_HANDLING
+	if (light < GL_LIGHT0 && light > GL_LIGHT7) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, light)
+	}
+#endif
+
+	switch (pname) {
+	case GL_AMBIENT:
+		lights_ambients[light - GL_LIGHT0].r = (float)params[0] / 65536.0f;
+		lights_ambients[light - GL_LIGHT0].g = (float)params[1] / 65536.0f;
+		lights_ambients[light - GL_LIGHT0].b = (float)params[2] / 65536.0f;
+		lights_ambients[light - GL_LIGHT0].a = (float)params[3] / 65536.0f;
+		break;
+	case GL_DIFFUSE:
+		lights_diffuses[light - GL_LIGHT0].r = (float)params[0] / 65536.0f;
+		lights_diffuses[light - GL_LIGHT0].g = (float)params[1] / 65536.0f;
+		lights_diffuses[light - GL_LIGHT0].b = (float)params[2] / 65536.0f;
+		lights_diffuses[light - GL_LIGHT0].a = (float)params[3] / 65536.0f;
+		break;
+	case GL_SPECULAR:
+		lights_speculars[light - GL_LIGHT0].r = (float)params[0] / 65536.0f;
+		lights_speculars[light - GL_LIGHT0].g = (float)params[1] / 65536.0f;
+		lights_speculars[light - GL_LIGHT0].b = (float)params[2] / 65536.0f;
+		lights_speculars[light - GL_LIGHT0].a = (float)params[3] / 65536.0f;
+		break;
+	case GL_POSITION:
+		lights_positions[light - GL_LIGHT0].r = (float)params[0] / 65536.0f;
+		lights_positions[light - GL_LIGHT0].g = (float)params[1] / 65536.0f;
+		lights_positions[light - GL_LIGHT0].b = (float)params[2] / 65536.0f;
+		lights_positions[light - GL_LIGHT0].a = (float)params[3] / 65536.0f;
+		break;
+	case GL_CONSTANT_ATTENUATION:
+		lights_attenuations[light - GL_LIGHT0].r = (float)params[0] / 65536.0f;
+		break;
+	case GL_LINEAR_ATTENUATION:
+		lights_attenuations[light - GL_LIGHT0].g = (float)params[0] / 65536.0f;
+		break;
+	case GL_QUADRATIC_ATTENUATION:
+		lights_attenuations[light - GL_LIGHT0].b = (float)params[0] / 65536.0f;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
+
+	dirty_vert_unifs = GL_TRUE;
+}
+
 void glLightModelfv(GLenum pname, const GLfloat *params) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -2321,6 +2453,30 @@ void glLightModelfv(GLenum pname, const GLfloat *params) {
 	switch (pname) {
 	case GL_LIGHT_MODEL_AMBIENT:
 		vgl_fast_memcpy(&light_global_ambient.r, params, sizeof(float) * 4);
+		if (shading_mode == SMOOTH)
+			dirty_vert_unifs = GL_TRUE;
+		else
+			dirty_frag_unifs = GL_TRUE;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
+}
+
+void glLightModelxv(GLenum pname, const GLfixed *params) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
+	switch (pname) {
+	case GL_LIGHT_MODEL_AMBIENT:
+		light_global_ambient.r = (float)params[0] / 65536.0f;
+		light_global_ambient.g = (float)params[1] / 65536.0f;
+		light_global_ambient.b = (float)params[2] / 65536.0f;
+		light_global_ambient.a = (float)params[3] / 65536.0f;
 		if (shading_mode == SMOOTH)
 			dirty_vert_unifs = GL_TRUE;
 		else

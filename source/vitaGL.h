@@ -48,6 +48,7 @@ extern "C" {
 #define GLdouble      double
 #define GLclampd      double
 #define GLvoid        void
+#define GLclampx      int32_t
 
 #define EGLBoolean    int32_t
 #define EGLDisplay    void*
@@ -492,8 +493,10 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 GLenum glCheckFramebufferStatus(GLenum target);
 void glClear(GLbitfield mask);
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+void glClearColorx(GLclampx red, GLclampx green, GLclampx blue, GLclampx alpha);
 void glClearDepth(GLdouble depth);
 void glClearDepthf(GLclampf depth);
+void glClearDepthx(GLclampx depth);
 void glClearStencil(GLint s);
 void glClientActiveTexture(GLenum texture);
 void glClipPlane(GLenum plane, const GLdouble *equation);
@@ -576,12 +579,15 @@ GLboolean glIsFramebuffer(GLuint fb);
 GLboolean glIsTexture(GLuint texture);
 void glLightfv(GLenum light, GLenum pname, const GLfloat *params);
 void glLightModelfv(GLenum pname, const GLfloat *params);
+void glLightModelxv(GLenum pname, const GLfixed *params);
+void glLightxv(GLenum light, GLenum pname, const GLfixed *params);
 void glLineWidth(GLfloat width);
 void glLinkProgram(GLuint progr);
 void glLoadIdentity(void);
 void glLoadMatrixf(const GLfloat *m);
 void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
 void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params);
+void glMaterialxv(GLenum face, GLenum pname, const GLfixed *params);
 void glMatrixMode(GLenum mode);
 void glMultiTexCoord2f(GLenum target, GLfloat s, GLfloat t);
 void glMultiTexCoord2fv(GLenum target, GLfloat *f);
@@ -621,6 +627,8 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *po
 void glTexEnvf(GLenum target, GLenum pname, GLfloat param);
 void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param);
 void glTexEnvi(GLenum target, GLenum pname, GLint param);
+void glTexEnvx(GLenum target, GLenum pname, GLfixed param);
+void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param);
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *data);
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param);
 void glTexParameteri(GLenum target, GLenum pname, GLint param);

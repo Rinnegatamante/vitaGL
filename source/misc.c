@@ -636,6 +636,13 @@ void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
 	clear_rgba_val.a = alpha;
 }
 
+void glClearColorx(GLclampx red, GLclampx green, GLclampx blue, GLclampx alpha) {
+	clear_rgba_val.r = (float)red / 65536.0f;
+	clear_rgba_val.g = (float)green / 65536.0f;
+	clear_rgba_val.b = (float)blue / 65536.0f;
+	clear_rgba_val.a = (float)alpha / 65536.0f;
+}
+
 void glLineWidth(GLfloat width) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling

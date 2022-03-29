@@ -423,6 +423,11 @@ void glClearDepthf(GLclampf depth) {
 	depth_value = depth;
 }
 
+void glClearDepthx(GLclampx depth) {
+	// Set current in use depth test depth value
+	depth_value = (float)depth / 65536.0f;
+}
+
 void glDepthMask(GLboolean flag) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
