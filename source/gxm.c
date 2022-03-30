@@ -143,7 +143,13 @@ render_target *getFreeRenderTarget(int w, int h) {
 			renderTargetParams.scenesPerFrame = rt_list[i].max_refs;
 			renderTargetParams.multisampleMode = msaa_mode;
 			renderTargetParams.driverMemBlock = -1;
+#ifdef LOG_ERRORS
+			int r = sceGxmCreateRenderTarget(&renderTargetParams, &rt_list[i].rt);
+			if (r)
+				vgl_log("%s:%d Failed to create a shared rendertarget of size %dx%d (%s).\n", __FILE__, __LINE__, w, h, get_gxm_error_literal(r));
+#else
 			sceGxmCreateRenderTarget(&renderTargetParams, &rt_list[i].rt);
+#endif
 			rt_list[i].w = w;
 			rt_list[i].h = h;
 			rt_list[i].ref_count = 1;
@@ -600,7 +606,13 @@ void sceneReset(void) {
 				renderTargetParams.multisampleMode = msaa_mode;
 				renderTargetParams.multisampleLocations = 0;
 				renderTargetParams.driverMemBlock = -1;
+#ifdef LOG_ERRORS
+				int r = sceGxmCreateRenderTarget(&renderTargetParams, &active_write_fb->target);
+				if (r)
+					vgl_log("%s:%d Failed to create a rendertarget of size %dx%d for framebuffer 0x%08X (%s).\n", __FILE__, __LINE__, active_write_fb->width, active_write_fb->height, active_write_fb, get_gxm_error_literal(r));
+#else
 				sceGxmCreateRenderTarget(&renderTargetParams, &active_write_fb->target);
+#endif
 #endif
 			}
 #ifdef HAVE_SHARED_RENDERTARGETS
