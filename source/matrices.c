@@ -144,6 +144,28 @@ void glMultMatrixf(const GLfloat *m) {
 		dirty_vert_unifs = GL_TRUE;
 }
 
+void glMultMatrixx(const GLfixed *m) {
+	// Properly ordering matrix
+	matrix4x4 res, src;
+	int i, j;
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			src[i][j] = (float)m[j * 4 + i] / 65536.0f;
+		}
+	}
+	
+	// Multiplicating passed matrix with in use one
+	matrix4x4_multiply(res, src, *matrix);
+
+	// Copying result to in use matrix
+	matrix4x4_copy(*matrix, res);
+
+	if (matrix != &texture_matrix)
+		mvp_modified = GL_TRUE;
+	else
+		dirty_vert_unifs = GL_TRUE;
+}
+
 void glLoadMatrixf(const GLfloat *m) {
 	// Properly ordering matrix
 	int i, j;
@@ -168,9 +190,27 @@ void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
 		dirty_vert_unifs = GL_TRUE;
 }
 
+void glTranslatex(GLfixed x, GLfixed y, GLfixed z) {
+	// Translating in use matrix
+	matrix4x4_translate(*matrix, (float)x / 65536.0f, (float)y / 65536.0f, (float)z / 65536.0f);
+	if (matrix != &texture_matrix)
+		mvp_modified = GL_TRUE;
+	else
+		dirty_vert_unifs = GL_TRUE;
+}
+
 void glScalef(GLfloat x, GLfloat y, GLfloat z) {
 	// Scaling in use matrix
 	matrix4x4_scale(*matrix, x, y, z);
+	if (matrix != &texture_matrix)
+		mvp_modified = GL_TRUE;
+	else
+		dirty_vert_unifs = GL_TRUE;
+}
+
+void glScalex(GLfixed x, GLfixed y, GLfixed z) {
+	// Scaling in use matrix
+	matrix4x4_scale(*matrix, (float)x / 65536.0f, (float)y / 65536.0f, (float)z / 65536.0f);
 	if (matrix != &texture_matrix)
 		mvp_modified = GL_TRUE;
 	else
@@ -194,6 +234,32 @@ void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 		matrix4x4_rotate_y(*matrix, rad);
 	}
 	if (z == 1.0f) {
+		matrix4x4_rotate_z(*matrix, rad);
+	}
+
+	if (matrix != &texture_matrix)
+		mvp_modified = GL_TRUE;
+	else
+		dirty_vert_unifs = GL_TRUE;
+}
+
+void glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
+	// Performing rotation on in use matrix depending on user call
+	float rad = DEG_TO_RAD((float)angle / 65536.0f);
+	if (x == 65536) {
+		matrix4x4_rotate_x(*matrix, rad);
+	}
+	if (y == 65536) {
+		matrix4x4_rotate_y(*matrix, rad);
+	}
+	if (z == 65536) {
 		matrix4x4_rotate_z(*matrix, rad);
 	}
 

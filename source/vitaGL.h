@@ -593,6 +593,7 @@ void glMultiTexCoord2f(GLenum target, GLfloat s, GLfloat t);
 void glMultiTexCoord2fv(GLenum target, GLfloat *f);
 void glMultiTexCoord2i(GLenum target, GLint s, GLint t);
 void glMultMatrixf(const GLfloat *m);
+void glMultMatrixx(const GLfixed *m);
 void glNormal3f(GLfloat x, GLfloat y, GLfloat z);
 void glNormal3fv(const GLfloat *v);
 void glNormalPointer(GLenum type, GLsizei stride, const void *pointer);
@@ -609,7 +610,9 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 void glReleaseShaderCompiler(void);
 void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
+void glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
+void glScalex(GLfixed x, GLfixed y, GLfixed z);
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);
 void glShadeModel(GLenum mode);
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length); // NOTE: Uses GXP shaders
@@ -634,6 +637,7 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param);
 void glTexParameteri(GLenum target, GLenum pname, GLint param);
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z);
+void glTranslatex(GLfixed x, GLfixed y, GLfixed z);
 void glUniform1f(GLint location, GLfloat v0);
 void glUniform1fv(GLint location, GLsizei count, const GLfloat *value);
 void glUniform1i(GLint location, GLint v0);
