@@ -109,6 +109,32 @@ void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloa
 		dirty_vert_unifs = GL_TRUE;
 }
 
+void glFrustumx(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed nearVal, GLfixed farVal) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	} else if ((left == right) || (bottom == top) || (nearVal < 0) || (farVal < 0)) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+#ifdef MATH_SPEEDHACK
+	// Initializing frustum matrix with requested parameters
+	matrix4x4_init_frustum(*matrix, (float)left / 65536.0f, (float)right / 65536.0f, (float)bottom / 65536.0f, (float)top / 65536.0f, (float)nearVal / 65536.0f, (float)farVal / 65536.0f);
+#else
+	matrix4x4 res, frustum_matrix;
+	matrix4x4_init_frustum(frustum_matrix, (float)left / 65536.0f, (float)right / 65536.0f, (float)bottom / 65536.0f, (float)top / 65536.0f, (float)nearVal / 65536.0f, (float)farVal / 65536.0f);
+	matrix4x4_multiply(res, frustum_matrix, *matrix);
+	matrix4x4_copy(*matrix, res);
+#endif
+
+	if (matrix != &texture_matrix)
+		mvp_modified = GL_TRUE;
+	else
+		dirty_vert_unifs = GL_TRUE;
+}
+
 void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal) {
 	glFrustumf(left, right, bottom, top, nearVal, farVal);
 }
