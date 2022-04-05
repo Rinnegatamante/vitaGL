@@ -26,9 +26,9 @@
 #include "shared.h"
 
 #ifndef DISABLE_TEXTURE_COMBINER
-#define NUM_EXTENSIONS 21 // Number of supported extensions
+#define NUM_EXTENSIONS 23 // Number of supported extensions
 #else
-#define NUM_EXTENSIONS 20 // Number of supported extensions
+#define NUM_EXTENSIONS 22 // Number of supported extensions
 #endif
 #define COMPRESSED_TEXTURE_FORMATS_NUM 23 // The number of supported texture formats
 
@@ -53,6 +53,8 @@ static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_ARB_multitexture",
 	"GL_EXT_map_buffer_range",
 	"GL_OES_mapbuffer",
+	"GL_OES_depth24",
+	"GL_OES_packed_depth_stencil",
 #ifndef DISABLE_TEXTURE_COMBINER
 	"GL_EXT_texture_env_combine"
 #endif
