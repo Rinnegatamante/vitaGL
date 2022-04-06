@@ -120,6 +120,7 @@ static const struct {
 	{"glGetProgramiv", (void *)glGetProgramiv},
 	{"glGetShaderInfoLog", (void *)glGetShaderInfoLog},
 	{"glGetShaderiv", (void *)glGetShaderiv},
+	{"glGetShaderSource", (void *)glGetShaderSource},
 	{"glGetString", (void *)glGetString},
 	{"glGetStringi", (void *)glGetStringi},
 	{"glGetUniformLocation", (void *)glGetUniformLocation},

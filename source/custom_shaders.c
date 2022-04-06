@@ -744,6 +744,9 @@ void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
 		*params = 0;
 #endif
 		break;
+	case GL_SHADER_SOURCE_LENGTH:
+		*params = s->source ? (strlen(s->source) + 1) : 0;
+		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
@@ -769,6 +772,27 @@ void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLcha
 #endif
 	if (length)
 		*length = len;
+}
+
+void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *source) {
+#ifndef SKIP_ERROR_HANDLING
+	if (bufSize < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+	// Grabbing passed shader
+	shader *s = &shaders[handle - 1];
+	
+	GLsizei size = 0;
+	if (s->source) {
+		GLsizei src_len = strlen(s->source);
+		src_len = bufSize > src_len ? src_len : (bufSize - 1);
+		strncpy(source, s->source, src_len);
+		size = src_len;
+	}
+	if (length)
+		*length = size;
 }
 
 void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length) {
@@ -824,8 +848,10 @@ void glCompileShader(GLuint handle) {
 	// Compiling shader source
 	s->prog = shark_compile_shader_extended((const char *)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 	if (s->prog) {
-		if (s->source)
+		if (s->source) {
 			vgl_free(s->source);
+			s->source = NULL;
+		}
 		SceGxmProgram *res = (SceGxmProgram *)vgl_malloc(s->size, VGL_MEM_EXTERNAL);
 		vgl_fast_memcpy((void *)res, (void *)s->prog, s->size);
 #ifdef LOG_ERRORS

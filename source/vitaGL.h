@@ -379,6 +379,7 @@ extern "C" {
 #define GL_ATTACHED_SHADERS                          0x8B85
 #define GL_ACTIVE_UNIFORMS                           0x8B86
 #define GL_ACTIVE_UNIFORM_MAX_LENGTH                 0x8B87
+#define GL_SHADER_SOURCE_LENGTH                      0x8B88
 #define GL_ACTIVE_ATTRIBUTES                         0x8B89
 #define GL_ACTIVE_ATTRIBUTE_MAX_LENGTH               0x8B8A
 #define GL_SHADING_LANGUAGE_VERSION                  0x8B8C
@@ -567,6 +568,7 @@ void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLc
 void glGetProgramiv(GLuint program, GLenum pname, GLint *params);
 void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 void glGetShaderiv(GLuint handle, GLenum pname, GLint *params);
+void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *source);
 const GLubyte *glGetString(GLenum name);
 const GLubyte *glGetStringi(GLenum name, GLuint index);
 GLint glGetUniformLocation(GLuint prog, const GLchar *name);
