@@ -787,7 +787,8 @@ void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *
 	GLsizei size = 0;
 	if (s->source) {
 		GLsizei src_len = strlen(s->source);
-		src_len = bufSize > src_len ? src_len : (bufSize - 1);
+		if (bufSize <= src_len)
+			src_len = bufSize - 1;
 		strncpy(source, s->source, src_len);
 		size = src_len;
 	}
@@ -2052,4 +2053,26 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 void vglVertexAttribPointerMapped(GLuint index, const GLvoid *pointer) {
 	// Setting vertex stream to passed index in sceGxm
 	sceGxmSetVertexStream(gxm_context, index, pointer);
+}
+
+void vglGetShaderBinary(GLuint handle, GLsizei bufSize, GLsizei *length, void *binary) {
+#ifndef SKIP_ERROR_HANDLING
+	if (bufSize < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+	// Grabbing passed shader
+	shader *s = &shaders[handle - 1];
+	
+	GLsizei size = 0;
+	if (s->prog) {
+		GLsizei bin_len = sceGxmProgramGetSize(s->prog);
+		if (bufSize <= bin_len)
+			bin_len = bufSize;
+		vgl_fast_memcpy(binary, s->prog, bin_len);
+		size = bin_len;
+	}
+	if (length)
+		*length = size;
 }

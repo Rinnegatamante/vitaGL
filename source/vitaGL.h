@@ -709,6 +709,7 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 GLint vglBindPackedAttribLocation(GLuint prog, const GLchar *name, const GLuint num, const GLenum type, GLuint offset, GLint stride);
 void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLuint count, const GLvoid *pointer);
 void vglVertexAttribPointerMapped(GLuint index, const GLvoid *pointer);
+void vglGetShaderBinary(GLuint index, GLsizei bufSize, GLsizei *length, void *binary);
 
 typedef enum {
 	VGL_MEM_VRAM, // CDRAM

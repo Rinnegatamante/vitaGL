@@ -253,6 +253,7 @@ static const struct {
 	{"vglFree", (void *)vglFree},
 	{"vglGetGxmTexture", (void *)vglGetGxmTexture},
 	{"vglGetProcAddress", (void *)vglGetProcAddress},
+	{"vglGetShaderBinary", (void *)vglGetShaderBinary},
 	{"vglGetTexDataPointer", (void *)vglGetTexDataPointer},
 	{"vglHasRuntimeShaderCompiler", (void *)vglHasRuntimeShaderCompiler},
 	{"vglInit", (void *)vglInit},
