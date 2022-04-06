@@ -290,9 +290,12 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 	y_scale = -(height >> 1);
 	y_port = (is_rendering_display ? DISPLAY_HEIGHT : in_use_framebuffer->height) - y + y_scale;
 #ifndef HAVE_UNFLIPPED_FBOS
-	if (!is_rendering_display)
+	if (!is_rendering_display) {
+		y_port = in_use_framebuffer->height - y_port;
 		y_scale = -y_scale;
+	}
 #endif
+
 	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 	gl_viewport.x = x;
 	gl_viewport.y = y;
