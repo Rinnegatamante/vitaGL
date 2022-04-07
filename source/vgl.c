@@ -108,17 +108,10 @@ uint8_t *reserve_data_pool(uint32_t size) {
 #endif
 
 void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height) {
-	if (is_rendering_display) {
-		out->x = (float)(2 * x) / DISPLAY_WIDTH_FLOAT - 1.0f;
-		out->y = (float)(2 * (x + width)) / DISPLAY_WIDTH_FLOAT - 1.0f;
-		out->z = 1.0f - (float)(2 * y) / DISPLAY_HEIGHT_FLOAT;
-		out->w = 1.0f - (float)(2 * (y + height)) / DISPLAY_HEIGHT_FLOAT;
-	} else {
-		out->x = (float)(2 * x) / (float)in_use_framebuffer->width - 1.0f;
-		out->y = (float)(2 * (x + width)) / (float)in_use_framebuffer->width - 1.0f;
-		out->z = 1.0f - (float)(2 * y) / (float)in_use_framebuffer->height;
-		out->w = 1.0f - (float)(2 * (y + height)) / (float)in_use_framebuffer->height;
-	}
+	out->x = (float)(2 * x) / DISPLAY_WIDTH_FLOAT - 1.0f;
+	out->y = (float)(2 * (x + width)) / DISPLAY_WIDTH_FLOAT - 1.0f;
+	out->z = 1.0f - (float)(2 * y) / DISPLAY_HEIGHT_FLOAT;
+	out->w = 1.0f - (float)(2 * (y + height)) / DISPLAY_HEIGHT_FLOAT;
 }
 
 /*
