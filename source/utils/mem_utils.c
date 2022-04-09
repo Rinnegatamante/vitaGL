@@ -324,7 +324,7 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_
 	if (mempool_size[VGL_MEM_SLOW])
 		mempool_id[VGL_MEM_SLOW] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW, mempool_size[VGL_MEM_SLOW], NULL);
 	if (mempool_size[VGL_MEM_BUDGET])
-		mempool_id[VGL_MEM_BUDGET] = sceKernelAllocMemBlock("cdlg_mempool", SCE_KERNEL_MEMBLOCK_TYPE_GAME_CDLG_NC_RW, mempool_size[VGL_MEM_BUDGET], NULL);
+		mempool_id[VGL_MEM_BUDGET] = sceKernelAllocMemBlock("cdlg_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_NC_RW, mempool_size[VGL_MEM_BUDGET], NULL);
 
 	for (int i = 0; i < VGL_MEM_EXTERNAL; i++) {
 		if (mempool_size[i]) {

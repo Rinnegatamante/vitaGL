@@ -447,12 +447,16 @@ GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int r
 		SceKernelFreeMemorySizeInfo info;
 		info.size = sizeof(SceKernelFreeMemorySizeInfo);
 		sceKernelGetFreeMemorySize(&info);
-		return vglInitWithCustomSizes(pool_size, width, height, info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram > cdram_threshold ? info.size_cdram - cdram_threshold : 0, info.size_phycont > phycont_threshold ? info.size_phycont - phycont_threshold : 0, SCE_KERNEL_MAX_GAME_CDLG_MEM_SIZE > cdlg_threshold ? SCE_KERNEL_MAX_GAME_CDLG_MEM_SIZE - cdlg_threshold : 0, msaa);
+		return vglInitWithCustomSizes(pool_size, width, height,
+			info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user,
+			info.size_cdram > cdram_threshold ? info.size_cdram - cdram_threshold : 0,
+			info.size_phycont > phycont_threshold ? info.size_phycont - phycont_threshold : 0,
+			SCE_KERNEL_MAX_MAIN_CDIALOG_MEM_SIZE > cdlg_threshold ? SCE_KERNEL_MAX_MAIN_CDIALOG_MEM_SIZE - cdlg_threshold : 0, msaa);
 	}
 }
 
 GLboolean vglInitExtended(int pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
-	return vglInitWithCustomThreshold(pool_size, width, height, ram_threshold, 256 * 1024, 1 * 1024 * 1024, 0, msaa);
+	return vglInitWithCustomThreshold(pool_size, width, height, ram_threshold, 256 * 1024, 1 * 1024 * 1024, SCE_KERNEL_MAX_MAIN_CDIALOG_MEM_SIZE, msaa);
 }
 
 GLboolean vglInit(int pool_size) {
