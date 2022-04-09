@@ -26,6 +26,11 @@
 
 #define SCE_KERNEL_MAX_MAIN_CDIALOG_MEM_SIZE 0x8C6000
 
+// Support for older vitasdk versions for CI based on ancient builds
+#ifndef SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_NC_RW
+#define SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_NC_RW 0x0CA08060
+#endif
+
 void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_t size_cdlg);
 void vgl_mem_term(void);
 size_t vgl_mem_get_free_space(vglMemType type);
