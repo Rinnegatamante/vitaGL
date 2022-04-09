@@ -24,7 +24,10 @@
 #ifndef _MEM_UTILS_H_
 #define _MEM_UTILS_H_
 
-void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont);
+#define SCE_KERNEL_MEMBLOCK_TYPE_GAME_CDLG_NC_RW 0xCA0D060
+#define SCE_KERNEL_MAX_GAME_CDLG_MEM_SIZE 0x8C6000
+
+void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_t size_cdlg);
 void vgl_mem_term(void);
 size_t vgl_mem_get_free_space(vglMemType type);
 size_t vgl_mem_get_total_space(vglMemType type);

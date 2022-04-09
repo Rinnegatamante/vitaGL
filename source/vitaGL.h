@@ -715,6 +715,7 @@ typedef enum {
 	VGL_MEM_VRAM, // CDRAM
 	VGL_MEM_RAM, // USER_RW RAM
 	VGL_MEM_SLOW, // PHYCONT_USER_RW RAM
+	VGL_MEM_BUDGET, // CDLG RAM
 	VGL_MEM_EXTERNAL, // newlib mem
 	VGL_MEM_ALL
 } vglMemType;
@@ -731,8 +732,8 @@ void *vglGetTexDataPointer(GLenum target);
 GLboolean vglHasRuntimeShaderCompiler(void);
 GLboolean vglInit(int legacy_pool_size);
 GLboolean vglInitExtended(int legacy_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa);
-GLboolean vglInitWithCustomSizes(int legacy_pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa);
-GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, SceGxmMultisampleMode msaa);
+GLboolean vglInitWithCustomSizes(int legacy_pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, int cdlg_pool_size, SceGxmMultisampleMode msaa);
+GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, int cdlg_threshold, SceGxmMultisampleMode msaa);
 size_t vglMemFree(vglMemType type);
 void vglSetFragmentBufferSize(uint32_t size);
 void vglSetParamBufferSize(uint32_t size);

@@ -128,7 +128,7 @@ void vglUseVramForUSSE(GLboolean usage) {
 	use_vram_for_usse = usage;
 }
 
-GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, SceGxmMultisampleMode msaa) {
+GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, int cdlg_pool_size, SceGxmMultisampleMode msaa) {
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
 	sceIoMkdir("ux0:data/shader_cache", 0777);
 #endif
@@ -170,7 +170,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	initGxm();
 
 	// Initializing memory heaps for CDRAM and RAM memory (both standard and physically contiguous)
-	vgl_mem_init(ram_pool_size, cdram_pool_size, phycont_pool_size);
+	vgl_mem_init(ram_pool_size, cdram_pool_size, phycont_pool_size, cdlg_pool_size);
 
 	// Initializing sceGxm context
 	initGxmContext();
@@ -433,7 +433,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	return res_fallback;
 }
 
-GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, SceGxmMultisampleMode msaa) {
+GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, int cdlg_threshold, SceGxmMultisampleMode msaa) {
 	// Initializing sceGxm
 	initGxm();
 
@@ -442,17 +442,17 @@ GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int r
 		SceAppMgrBudgetInfo info;
 		info.size = sizeof(SceAppMgrBudgetInfo);
 		sceAppMgrGetBudgetInfo(&info);
-		return vglInitWithCustomSizes(pool_size, width, height, info.free_user_rw > ram_threshold ? info.free_user_rw - ram_threshold : info.free_user_rw, 0, 0, msaa);
+		return vglInitWithCustomSizes(pool_size, width, height, info.free_user_rw > ram_threshold ? info.free_user_rw - ram_threshold : info.free_user_rw, 0, 0, 0, msaa);
 	} else {
 		SceKernelFreeMemorySizeInfo info;
 		info.size = sizeof(SceKernelFreeMemorySizeInfo);
 		sceKernelGetFreeMemorySize(&info);
-		return vglInitWithCustomSizes(pool_size, width, height, info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram > cdram_threshold ? info.size_cdram - cdram_threshold : 0, info.size_phycont > phycont_threshold ? info.size_phycont - phycont_threshold : 0, msaa);
+		return vglInitWithCustomSizes(pool_size, width, height, info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user, info.size_cdram > cdram_threshold ? info.size_cdram - cdram_threshold : 0, info.size_phycont > phycont_threshold ? info.size_phycont - phycont_threshold : 0, SCE_KERNEL_MAX_GAME_CDLG_MEM_SIZE > cdlg_threshold ? SCE_KERNEL_MAX_GAME_CDLG_MEM_SIZE - cdlg_threshold : 0, msaa);
 	}
 }
 
 GLboolean vglInitExtended(int pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
-	return vglInitWithCustomThreshold(pool_size, width, height, ram_threshold, 256 * 1024, 1 * 1024 * 1024, msaa);
+	return vglInitWithCustomThreshold(pool_size, width, height, ram_threshold, 256 * 1024, 1 * 1024 * 1024, 0, msaa);
 }
 
 GLboolean vglInit(int pool_size) {

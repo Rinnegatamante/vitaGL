@@ -22,14 +22,14 @@
  */
 
 #include "../shared.h"
-#define VGL_MEM_TYPE_COUNT 4 // Number of type of memblocks used
+#define VGL_MEM_TYPE_COUNT 5 // Number of type of memblocks used
 
 #ifndef HAVE_CUSTOM_HEAP
-static void *mempool_mspace[VGL_MEM_TYPE_COUNT] = {NULL, NULL, NULL, NULL}; // mspace creations (VRAM, RAM, PHYCONT RAM, EXTERNAL)
+static void *mempool_mspace[VGL_MEM_TYPE_COUNT] = {NULL, NULL, NULL, NULL, NULL}; // mspace creations (VRAM, RAM, PHYCONT RAM, CDLG, EXTERNAL)
 #endif
-static void *mempool_addr[VGL_MEM_TYPE_COUNT] = {NULL, NULL, NULL, NULL}; // addresses of heap memblocks (VRAM, RAM, PHYCONT RAM, EXTERNAL)
-static SceUID mempool_id[VGL_MEM_TYPE_COUNT] = {0, 0, 0, 0}; // UIDs of heap memblocks (VRAM, RAM, PHYCONT RAM, EXTERNAL)
-static size_t mempool_size[VGL_MEM_TYPE_COUNT] = {0, 0, 0, 0}; // sizes of heap memlbocks (VRAM, RAM, PHYCONT RAM, EXTERNAL)
+static void *mempool_addr[VGL_MEM_TYPE_COUNT] = {NULL, NULL, NULL, NULL, NULL}; // addresses of heap memblocks (VRAM, RAM, PHYCONT RAM, CDLG, EXTERNAL)
+static SceUID mempool_id[VGL_MEM_TYPE_COUNT] = {0, 0, 0, 0, 0}; // UIDs of heap memblocks (VRAM, RAM, PHYCONT RAM, EXTERNAL)
+static size_t mempool_size[VGL_MEM_TYPE_COUNT] = {0, 0, 0, 0, 0}; // sizes of heap memlbocks (VRAM, RAM, PHYCONT RAM, EXTERNAL)
 
 static int mempool_initialized = 0;
 
@@ -296,7 +296,7 @@ void vgl_mem_term(void) {
 	mempool_initialized = 0;
 }
 
-void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
+void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_t size_cdlg) {
 	if (mempool_initialized)
 		vgl_mem_term();
 
@@ -310,6 +310,7 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
 #else
 	mempool_size[VGL_MEM_SLOW] = ALIGN(size_phycont, 1024 * 1024);
 #endif
+	mempool_size[VGL_MEM_BUDGET] = ALIGN(size_cdlg, 4 * 1024);
 
 #ifdef HAVE_CUSTOM_HEAP
 	// Initialize heap
@@ -322,6 +323,8 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont) {
 		mempool_id[VGL_MEM_RAM] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, mempool_size[VGL_MEM_RAM], NULL);
 	if (mempool_size[VGL_MEM_SLOW])
 		mempool_id[VGL_MEM_SLOW] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW, mempool_size[VGL_MEM_SLOW], NULL);
+	if (mempool_size[VGL_MEM_BUDGET])
+		mempool_id[VGL_MEM_BUDGET] = sceKernelAllocMemBlock("cdlg_mempool", SCE_KERNEL_MEMBLOCK_TYPE_GAME_CDLG_NC_RW, mempool_size[VGL_MEM_BUDGET], NULL);
 
 	for (int i = 0; i < VGL_MEM_EXTERNAL; i++) {
 		if (mempool_size[i]) {
@@ -383,6 +386,8 @@ vglMemType vgl_mem_get_type_by_addr(void *addr) {
 	else if (addr >= mempool_addr[VGL_MEM_SLOW] && (addr < mempool_addr[VGL_MEM_SLOW] + mempool_size[VGL_MEM_SLOW]))
 		return VGL_MEM_SLOW;
 #endif
+	else if (addr >= mempool_addr[VGL_MEM_BUDGET] && (addr < mempool_addr[VGL_MEM_BUDGET] + mempool_size[VGL_MEM_BUDGET]))
+		return VGL_MEM_BUDGET;
 	else if (addr >= mempool_addr[VGL_MEM_EXTERNAL] && (addr < mempool_addr[VGL_MEM_EXTERNAL] + mempool_size[VGL_MEM_EXTERNAL]))
 		return VGL_MEM_EXTERNAL;
 #ifdef PHYCONT_ON_DEMAND

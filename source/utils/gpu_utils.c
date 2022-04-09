@@ -140,12 +140,17 @@ void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type) {
 	if (res)
 		return res;
 
-	// Even the other one failed, using our last resort
+	// Even the other one failed, trying with physically contiguous RAM
 	res = vgl_memalign(alignment, size, VGL_MEM_SLOW);
 	if (res)
 		return res;
+	
+	// Even this failed, attempting with game common dialog RAM
+	res = vgl_memalign(alignment, size, VGL_MEM_BUDGET);
+	if (res)
+		return res;
 
-	// Internal mempool finished, using newlib mem
+	// Internal mempools finished, using newlib mem
 	if (use_extra_mem)
 		res = vgl_memalign(alignment, size, VGL_MEM_EXTERNAL);
 
