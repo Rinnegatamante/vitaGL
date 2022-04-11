@@ -224,7 +224,7 @@ void *glMapBuffer(GLenum target, GLenum access) {
 
 	// TODO: Current implementation doesn't take into account 'used' state
 	gpu_buf->mapped = GL_TRUE;
-	return (void *)((uint8_t *)gpu_buf->ptr);
+	return gpu_buf->ptr;
 }
 
 void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access) {
