@@ -194,6 +194,39 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 	}	
 }
 
+void *glMapBuffer(GLenum target, GLenum access) {
+	gpubuffer *gpu_buf;
+	switch (target) {
+	case GL_ARRAY_BUFFER:
+		gpu_buf = (gpubuffer *)vertex_array_unit;
+		break;
+	case GL_ELEMENT_ARRAY_BUFFER:
+		gpu_buf = (gpubuffer *)index_array_unit;
+		break;
+	default:
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
+	}
+
+#ifndef SKIP_ERROR_HANDLING
+	switch (access) {
+	case GL_READ_WRITE:
+	case GL_READ_ONLY:
+	case GL_WRITE_ONLY:
+		break;
+	default:
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL);
+	}
+	
+	if (!gpu_buf || gpu_buf->mapped) {
+		SET_GL_ERROR_WITH_RET(GL_INVALID_OPERATION, NULL)
+	}
+#endif
+
+	// TODO: Current implementation doesn't take into account 'used' state
+	gpu_buf->mapped = GL_TRUE;
+	return (void *)((uint8_t *)gpu_buf->ptr);
+}
+
 void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access) {
 	gpubuffer *gpu_buf;
 	switch (target) {

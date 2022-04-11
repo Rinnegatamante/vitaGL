@@ -140,6 +140,7 @@ static const struct {
 	{"glLinkProgram", (void *)glLinkProgram},
 	{"glLoadIdentity", (void *)glLoadIdentity},
 	{"glLoadMatrixf", (void *)glLoadMatrixf},
+	{"glMapBuffer", (void *)glMapBuffer},
 	{"glMapBufferRange", (void *)glMapBufferRange},
 	{"glMaterialfv", (void *)glMaterialfv},
 	{"glMaterialxv", (void *)glMaterialxv},

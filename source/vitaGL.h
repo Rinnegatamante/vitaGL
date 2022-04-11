@@ -351,6 +351,9 @@ extern "C" {
 #define GL_ARRAY_BUFFER                              0x8892
 #define GL_ELEMENT_ARRAY_BUFFER                      0x8893
 #define GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING        0x889F
+#define GL_READ_ONLY                                 0x88B8
+#define GL_WRITE_ONLY                                0x88B9
+#define GL_READ_WRITE                                0x88BA
 #define GL_STREAM_DRAW                               0x88E0
 #define GL_STREAM_READ                               0x88E1
 #define GL_STREAM_COPY                               0x88E2
@@ -588,6 +591,7 @@ void glLineWidth(GLfloat width);
 void glLinkProgram(GLuint progr);
 void glLoadIdentity(void);
 void glLoadMatrixf(const GLfloat *m);
+void *glMapBuffer(GLenum target, GLbitfield access);
 void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
 void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params);
 void glMaterialxv(GLenum face, GLenum pname, const GLfixed *params);
