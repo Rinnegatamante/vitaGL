@@ -262,6 +262,7 @@ static const struct {
 	{"vglInitExtended", (void *)vglInitExtended},
 	{"vglInitWithCustomSizes", (void *)vglInitWithCustomSizes},
 	{"vglInitWithCustomThreshold", (void *)vglInitWithCustomThreshold},
+	{"vglMalloc", (void *)vglMalloc},
 	{"vglMemFree", (void *)vglMemFree},
 	{"vglSetFragmentBufferSize", (void *)vglSetFragmentBufferSize},
 	{"vglSetParamBufferSize", (void *)vglSetParamBufferSize},

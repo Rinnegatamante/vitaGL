@@ -319,13 +319,21 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_
 
 	if (mempool_size[VGL_MEM_VRAM])
 		mempool_id[VGL_MEM_VRAM] = sceKernelAllocMemBlock("cdram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW, mempool_size[VGL_MEM_VRAM], NULL);
+#ifdef HAVE_CACHED_MEM
+	if (mempool_size[VGL_MEM_RAM])
+		mempool_id[VGL_MEM_RAM] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, mempool_size[VGL_MEM_RAM], NULL);
+	if (mempool_size[VGL_MEM_SLOW])
+		mempool_id[VGL_MEM_SLOW] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW, mempool_size[VGL_MEM_SLOW], NULL);
+	if (mempool_size[VGL_MEM_BUDGET])
+		mempool_id[VGL_MEM_BUDGET] = sceKernelAllocMemBlock("cdlg_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_RW, mempool_size[VGL_MEM_BUDGET], NULL);
+#else	
 	if (mempool_size[VGL_MEM_RAM])
 		mempool_id[VGL_MEM_RAM] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, mempool_size[VGL_MEM_RAM], NULL);
 	if (mempool_size[VGL_MEM_SLOW])
 		mempool_id[VGL_MEM_SLOW] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW, mempool_size[VGL_MEM_SLOW], NULL);
 	if (mempool_size[VGL_MEM_BUDGET])
 		mempool_id[VGL_MEM_BUDGET] = sceKernelAllocMemBlock("cdlg_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_NC_RW, mempool_size[VGL_MEM_BUDGET], NULL);
-
+#endif
 	for (int i = 0; i < VGL_MEM_EXTERNAL; i++) {
 		if (mempool_size[i]) {
 			mempool_addr[i] = NULL;
@@ -426,11 +434,12 @@ size_t vgl_mem_get_free_space(vglMemType type) {
 		return tm_free[type];
 	}
 #else
-	} else {
+	} else if (mempool_size[type]) {
 		SceClibMspaceStats stats;
 		sceClibMspaceMallocStats(mempool_mspace[type], &stats);
 		return stats.capacity - stats.current_in_use;
-	}
+	} else
+		return 0;
 #endif
 }
 

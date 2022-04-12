@@ -535,6 +535,31 @@ void *vglForceAlloc(uint32_t size) {
 	return gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 }
 
+void *vglMalloc(uint32_t size) {
+	// First we try to use newlib mem
+	void *res = vgl_malloc(size, VGL_MEM_EXTERNAL);
+	if (res)
+		return res;
+	
+	// If it fails, we try with standard RAM mem pool
+	res = vgl_malloc(size, VGL_MEM_RAM);
+	if (res)
+		return res;
+
+	// If it fails, we try with physically contiguous RAM
+	res = vgl_malloc(size, VGL_MEM_SLOW);
+	if (res)
+		return res;
+	
+	// If it fails, we try with common dialog mem
+	res = vgl_malloc(size, VGL_MEM_BUDGET);
+	if (res)
+		return res;
+
+	// If it fails, as last resort, we try VRAM
+	return vgl_malloc(size, VGL_MEM_VRAM);
+}
+
 void vglFree(void *addr) {
 	vgl_free(addr);
 }
