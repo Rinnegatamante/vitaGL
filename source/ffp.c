@@ -20,9 +20,13 @@
  * ffp.c:
  * Implementation for fixed function pipeline (GL1)
  */
-
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+#include "shaders/ffp_ext_f.h"
+#include "shaders/ffp_ext_v.h"
+#else
 #include "shaders/ffp_f.h"
 #include "shaders/ffp_v.h"
+#endif
 #include "shaders/texture_combiners/add.h"
 #include "shaders/texture_combiners/blend.h"
 #include "shaders/texture_combiners/decal.h"
@@ -40,7 +44,11 @@
 #endif
 
 #define VERTEX_UNIFORMS_NUM 13
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+#define FRAGMENT_UNIFORMS_NUM 19
+#else
 #define FRAGMENT_UNIFORMS_NUM 17
+#endif
 
 typedef enum {
 	//FLAT, // FIXME: Not easy to implement with ShaccCg constraints
@@ -126,10 +134,14 @@ SceGxmVertexStream legacy_nt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 2];
 
 static uint32_t ffp_vertex_attrib_offsets[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 static uint32_t ffp_vertex_attrib_vbo[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
-uint8_t ffp_vertex_attrib_state = 0x00;
 static GLenum ffp_mode;
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+uint16_t ffp_vertex_attrib_state = 0;
+static uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 2, FFP_VERTEX_ATTRIBS_NUM - 1};
+#else
+uint8_t ffp_vertex_attrib_state = 0;
 static uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 1};
-
+#endif
 typedef union shader_mask {
 	struct {
 		uint32_t alpha_test_mode : 3;
@@ -142,7 +154,12 @@ typedef union shader_mask {
 		uint32_t tex_env_mode_pass1 : 3;
 		uint32_t shading_mode : 1;
 		uint32_t normalize : 1;
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+		uint32_t tex_env_mode_pass2 : 3;
+		uint32_t UNUSED : 6;
+#else
 		uint32_t UNUSED : 9;
+#endif
 	};
 	uint32_t raw;
 } shader_mask;
@@ -151,8 +168,18 @@ typedef union combiner_mask {
 	struct {
 		combinerState pass0;
 		combinerState pass1;
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+		combinerState pass2;
+#endif
 	};
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+	struct {
+		uint64_t raw_high;
+		uint32_t raw_low;
+	};
+#else
 	uint64_t raw;
+#endif
 } combiner_mask;
 #endif
 
@@ -203,7 +230,11 @@ typedef enum {
 	RGB_SCALE_PASS_0_UNIF,
 	ALPHA_SCALE_PASS_0_UNIF,
 	RGB_SCALE_PASS_1_UNIF,
-	ALPHA_SCALE_PASS_1_UNIF
+	ALPHA_SCALE_PASS_1_UNIF,
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+	RGB_SCALE_PASS_2_UNIF,
+	ALPHA_SCALE_PASS_2_UNIF
+#endif
 } frag_uniform_type;
 
 uint8_t ffp_vertex_num_params = 1;
@@ -222,7 +253,11 @@ GLboolean dirty_vert_unifs = GL_TRUE;
 blend_config ffp_blend_info;
 shader_mask ffp_mask = {.raw = 0};
 #ifndef DISABLE_TEXTURE_COMBINER
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+combiner_mask ffp_combiner_mask = {.raw_high = 0, .raw_low = 0};
+#else
 combiner_mask ffp_combiner_mask = {.raw = 0};
+#endif
 #endif
 
 SceGxmVertexAttribute ffp_vertex_attribute[FFP_VERTEX_ATTRIBS_NUM];
@@ -257,6 +292,10 @@ void reload_fragment_uniforms() {
 	ffp_fragment_params[ALPHA_SCALE_PASS_0_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass0_a_scale");
 	ffp_fragment_params[RGB_SCALE_PASS_1_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass1_rgb_scale");
 	ffp_fragment_params[ALPHA_SCALE_PASS_1_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass1_a_scale");
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+	ffp_fragment_params[RGB_SCALE_PASS_2_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass2_rgb_scale");
+	ffp_fragment_params[ALPHA_SCALE_PASS_2_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass2_a_scale");
+#endif
 #endif
 	ffp_fragment_params[TINT_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tintColor");
 	ffp_fragment_params[FOG_RANGE_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_range");
@@ -348,7 +387,11 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	GLboolean ffp_dirty_frag_blend = ffp_blend_info.raw != blend_info.raw;
 	shader_mask mask = {.raw = 0};
 #ifndef DISABLE_TEXTURE_COMBINER
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+	combiner_mask cmb_mask = {.raw_low = 0, .raw_high = 0};
+#else
 	combiner_mask cmb_mask = {.raw = 0};
+#endif
 #endif
 	mask.alpha_test_mode = alpha_op;
 	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
@@ -377,6 +420,15 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 					cmb_mask.pass1.raw = texture_units[1].combiner.raw;
 #endif
 				break;
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+			case 2:
+				mask.tex_env_mode_pass2 = texture_units[2].env_mode;
+#ifndef DISABLE_TEXTURE_COMBINER
+				if (mask.tex_env_mode_pass2 == COMBINE)
+					cmb_mask.pass2.raw = texture_units[2].combiner.raw;
+#endif
+				break;
+#endif
 			default:
 				break;
 			}
@@ -427,7 +479,11 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifdef DISABLE_TEXTURE_COMBINER
 	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
 #else
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+	if (ffp_mask.raw == mask.raw && ffp_combiner_mask.raw_high == cmb_mask.raw_high && ffp_combiner_mask.raw_low == cmb_mask.raw_low) { // Fixed function pipeline config didn't change
+#else
 	if (ffp_mask.raw == mask.raw && ffp_combiner_mask.raw == cmb_mask.raw) { // Fixed function pipeline config didn't change
+#endif
 #endif
 		ffp_dirty_vert = GL_FALSE;
 		ffp_dirty_frag = GL_FALSE;
@@ -437,7 +493,11 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifdef DISABLE_TEXTURE_COMBINER
 			if (shader_cache[i].mask.raw == mask.raw) {
 #else
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+			if (shader_cache[i].mask.raw == mask.raw && shader_cache[i].cmb_mask.raw_high == cmb_mask.raw_high && shader_cache[i].cmb_mask.raw_low == cmb_mask.raw_low) { // Fixed function pipeline config didn't change
+#else
 			if (shader_cache[i].mask.raw == mask.raw && shader_cache[i].cmb_mask.raw == cmb_mask.raw) {
+#endif
 #endif
 				ffp_vertex_program = shader_cache[i].vert;
 				ffp_fragment_program = shader_cache[i].frag;
@@ -460,7 +520,12 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		dirty_vert_unifs = GL_TRUE;
 		ffp_mask.raw = mask.raw;
 #ifndef DISABLE_TEXTURE_COMBINER
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+		ffp_combiner_mask.raw_high = cmb_mask.raw_high;
+		ffp_combiner_mask.raw_low = cmb_mask.raw_low;
+#else
 		ffp_combiner_mask.raw = cmb_mask.raw;
+#endif
 #endif
 	}
 
@@ -471,7 +536,11 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
 		char fname[256];
 #ifndef DISABLE_TEXTURE_COMBINER
-		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016X_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX-%08X_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
+#else
+		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+#endif
 #else
 		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-0000000000000000_v.gxp", SHADER_CACHE_MAGIC, mask.raw);
 #endif
@@ -506,7 +575,11 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			fclose(f);
 #ifdef DUMP_SHADER_SOURCES
 #ifndef DISABLE_TEXTURE_COMBINER
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX-%08X_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
+#else
 			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+#endif
 #else
 			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-0000000000000000_v.cg", SHADER_CACHE_MAGIC, mask.raw);
 #endif
@@ -646,8 +719,19 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[texcoord_idxs[1]].stride;
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+			// Vertex texture coordinates (Third pass)
+			if (mask.num_textures > 2) {
+				param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord2");
+				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[texcoord_idxs[2]], sizeof(SceGxmVertexAttribute));
+				ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[texcoord_idxs[2]].stride;
+				ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+				ffp_vertex_num_params++;
+			}
+#endif	
 		}
-
 		streams = ffp_vertex_stream;
 		attrs = ffp_vertex_attribute;
 	}
@@ -660,7 +744,11 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
 		char fname[256];
 #ifndef DISABLE_TEXTURE_COMBINER
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX-%08X_f.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
+#else
 		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX_f.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+#endif
 #else
 		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-0000000000000000_f.gxp", SHADER_CACHE_MAGIC, mask.raw);
 #endif
@@ -727,7 +815,20 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 					break;
 				}
 			}
-			sprintf(fshader, ffp_frag_src, texenv_shad, alpha_op, mask.num_textures, mask.has_colors, mask.fog_mode, mask.tex_env_mode_pass0 != COMBINE ? mask.tex_env_mode_pass0 : 50, mask.tex_env_mode_pass1 != COMBINE ? mask.tex_env_mode_pass1 : 51, mask.lights_num, mask.shading_mode);
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+						sprintf(fshader, ffp_frag_src, texenv_shad, alpha_op,
+				mask.num_textures, mask.has_colors, mask.fog_mode,
+				mask.tex_env_mode_pass0 != COMBINE ? mask.tex_env_mode_pass0 : 50,
+				mask.tex_env_mode_pass1 != COMBINE ? mask.tex_env_mode_pass1 : 51,
+				mask.tex_env_mode_pass2 != COMBINE ? mask.tex_env_mode_pass2 : 52,
+				mask.lights_num, mask.shading_mode);
+#else
+			sprintf(fshader, ffp_frag_src, texenv_shad, alpha_op,
+				mask.num_textures, mask.has_colors, mask.fog_mode,
+				mask.tex_env_mode_pass0 != COMBINE ? mask.tex_env_mode_pass0 : 50,
+				mask.tex_env_mode_pass1 != COMBINE ? mask.tex_env_mode_pass1 : 51,
+				mask.lights_num, mask.shading_mode);
+#endif
 			uint32_t size = strlen(fshader);
 			SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 			ffp_fragment_program = (SceGxmProgram *)vgl_malloc(size, VGL_MEM_EXTERNAL);
@@ -740,7 +841,11 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			fclose(f);
 #ifdef DUMP_SHADER_SOURCES
 #ifndef DISABLE_TEXTURE_COMBINER
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX-%08X_f.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
+#else
 			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016X_f.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+#endif
 #else
 			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-0000000000000000_f.cg", SHADER_CACHE_MAGIC, mask.raw);
 #endif
@@ -781,7 +886,12 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		}
 		shader_cache[shader_cache_idx].mask.raw = mask.raw;
 #ifndef DISABLE_TEXTURE_COMBINER
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+		shader_cache[shader_cache_idx].cmb_mask.raw_low = cmb_mask.raw_low;
+		shader_cache[shader_cache_idx].cmb_mask.raw_high = cmb_mask.raw_high;
+#else
 		shader_cache[shader_cache_idx].cmb_mask.raw = cmb_mask.raw;
+#endif
 #endif
 		shader_cache[shader_cache_idx].frag = ffp_fragment_program;
 		shader_cache[shader_cache_idx].vert = ffp_vertex_program;
@@ -829,6 +939,12 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[RGB_SCALE_PASS_1_UNIF], 0, 1, &texture_units[1].rgb_scale);
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_SCALE_PASS_1_UNIF], 0, 1, &texture_units[1].a_scale);
 			}
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+			if (ffp_fragment_params[RGB_SCALE_PASS_2_UNIF]) {
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[RGB_SCALE_PASS_2_UNIF], 0, 1, &texture_units[2].rgb_scale);
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_SCALE_PASS_2_UNIF], 0, 1, &texture_units[2].a_scale);
+			}
+#endif
 #endif
 			if (ffp_fragment_params[TINT_COLOR_UNIF])
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[TINT_COLOR_UNIF], 0, 4, &current_vtx.clr.r);

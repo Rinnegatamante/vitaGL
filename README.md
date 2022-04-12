@@ -22,6 +22,7 @@ In order to build vitaGL use the following command: `make install`.
 `MATH_SPEEDHACK=1` Enables faster code for matrix math calls. May cause glitches.<br>
 `SAMPLERS_SPEEDHACK=1` Enables faster code for samplers resolution during shaders usage. May cause glitches.<br>
 `SHADER_COMPILER_SPEEDHACK=1` Enables faster code for glShaderSource. May cause errors.<br>
+`HAVE_HIGH_FFP_TEXUNITS=1` Enables support for more than 2 texunits for fixed function pipeline at the cost of some performance loss.<br>
 `HAVE_UNFLIPPED_FBOS=1` Framebuffers objects won't be internally flipped to match OpenGL standards.<br>
 `SHARED_RENDERTARGETS=1` Makes small framebuffers objects use shared rendertargets instead of dedicated ones.<br>
 `CIRCULAR_VERTEX_POOL=1` Makes temporary data buffers being handled with a circular pool.<br>

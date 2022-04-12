@@ -117,6 +117,10 @@ ifeq ($(SAMPLERS_SPEEDHACK),1)
 CFLAGS += -DSAMPLERS_SPEEDHACK
 endif
 
+ifeq ($(HAVE_HIGH_FFP_TEXUNITS),1)
+CFLAGS += -DHAVE_HIGH_FFP_TEXUNITS
+endif
+
 CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a

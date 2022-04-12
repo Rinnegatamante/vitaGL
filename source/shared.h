@@ -28,7 +28,11 @@
 // Internal constants
 #define TEXTURES_NUM 16384 // Available textures
 #define TEXTURE_IMAGE_UNITS_NUM 16 // Available texture image units
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+#define TEXTURE_COORDS_NUM 3 // Available texture coords sets for multitexturing with ffp
+#else
 #define TEXTURE_COORDS_NUM 2 // Available texture coords sets for multitexturing with ffp
+#endif
 #define COMBINED_TEXTURE_IMAGE_UNITS_NUM 16 // Available combined texture image units
 #define VERTEX_ATTRIBS_NUM 16 // Available vertex attributes
 #define MODELVIEW_STACK_DEPTH 32 // Depth of modelview matrix stack
@@ -41,7 +45,11 @@
 #define FRAME_PURGE_RENDERTARGETS_LIST_SIZE 128 // Number of rendertargets a single frame can hold
 #define FRAME_PURGE_FREQ 5 // Frequency in frames for garbage collection
 #define BUFFERS_NUM 256 // Maximum amount of framebuffers objects usable
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+#define FFP_VERTEX_ATTRIBS_NUM 9 // Number of attributes used in ffp shaders
+#else
 #define FFP_VERTEX_ATTRIBS_NUM 8 // Number of attributes used in ffp shaders
+#endif
 #define MEM_ALIGNMENT 16 // Memory alignment
 #define MAX_CLIP_PLANES_NUM 7 // Maximum number of allowed user defined clip planes for ffp
 #define LEGACY_VERTEX_STRIDE 24 // Vertex stride for GL1 immediate draw pipeline
@@ -517,7 +525,11 @@ extern GLboolean dirty_vert_unifs;
 // Internal fixed function pipeline dirty flags and variables
 extern GLboolean ffp_dirty_frag;
 extern GLboolean ffp_dirty_vert;
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+extern uint16_t ffp_vertex_attrib_state;
+#else
 extern uint8_t ffp_vertex_attrib_state;
+#endif
 extern uint8_t ffp_vertex_num_params;
 
 // Internal runtime shader compiler settings
