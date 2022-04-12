@@ -455,7 +455,7 @@ size_t vgl_mem_get_total_space(vglMemType type) {
 size_t vgl_malloc_usable_size(void *ptr) {
 	vglMemType type = vgl_mem_get_type_by_addr(ptr);
 	if (type == VGL_MEM_EXTERNAL)
-		return 0;
+		return malloc_usable_size(ptr);
 #ifdef PHYCONT_ON_DEMAND
 	else if (type == VGL_MEM_SLOW) {
 		SceKernelMemBlockInfo info;

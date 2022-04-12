@@ -611,10 +611,27 @@ void *vglCalloc(uint32_t nmember, uint32_t size) {
 }
 
 void *vglRealloc(void *ptr, uint32_t size) {
-	return vgl_realloc(ptr, size);
+	if (!ptr)
+		return vglMalloc(size);
+
+	void *res = vgl_realloc(ptr, size);
+	if (res)
+		return res;
+
+	res = vglMalloc(size);
+	if (res) {
+		size_t old_size = vgl_malloc_usable_size(ptr);
+		vgl_fast_memcpy(res, ptr, old_size);
+		vglFree(ptr);
+	}
+		
+	return res;
 }
 
 void vglFree(void *addr) {
+	if (!addr)
+		return;
+
 	vgl_free(addr);
 }
 
