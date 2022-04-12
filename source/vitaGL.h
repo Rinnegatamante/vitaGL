@@ -726,6 +726,7 @@ typedef enum {
 
 // vgl*
 void *vglAlloc(uint32_t size, vglMemType type);
+void *vglCalloc(uint32_t nmember, uint32_t size);
 void vglEnableRuntimeShaderCompiler(GLboolean usage);
 void vglEnd(void);
 void *vglForceAlloc(uint32_t size);
@@ -739,7 +740,9 @@ GLboolean vglInitExtended(int legacy_pool_size, int width, int height, int ram_t
 GLboolean vglInitWithCustomSizes(int legacy_pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, int cdlg_pool_size, SceGxmMultisampleMode msaa);
 GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, int cdlg_threshold, SceGxmMultisampleMode msaa);
 void *vglMalloc(uint32_t size);
+void *vglMemalign(uint32_t alignment, uint32_t size);
 size_t vglMemFree(vglMemType type);
+void *vglRealloc(void *ptr, uint32_t size);
 void vglSetFragmentBufferSize(uint32_t size);
 void vglSetParamBufferSize(uint32_t size);
 void vglSetUSSEBufferSize(uint32_t size);

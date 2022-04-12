@@ -560,6 +560,60 @@ void *vglMalloc(uint32_t size) {
 	return vgl_malloc(size, VGL_MEM_VRAM);
 }
 
+void *vglMemalign(uint32_t alignment, uint32_t size) {
+	// First we try to use newlib mem
+	void *res = vgl_memalign(alignment, size, VGL_MEM_EXTERNAL);
+	if (res)
+		return res;
+	
+	// If it fails, we try with standard RAM mem pool
+	res = vgl_memalign(alignment, size, VGL_MEM_RAM);
+	if (res)
+		return res;
+
+	// If it fails, we try with physically contiguous RAM
+	res = vgl_memalign(alignment, size, VGL_MEM_SLOW);
+	if (res)
+		return res;
+	
+	// If it fails, we try with common dialog mem
+	res = vgl_memalign(alignment, size, VGL_MEM_BUDGET);
+	if (res)
+		return res;
+
+	// If it fails, as last resort, we try VRAM
+	return vgl_memalign(alignment, size, VGL_MEM_VRAM);
+}
+
+void *vglCalloc(uint32_t nmember, uint32_t size) {
+	// First we try to use newlib mem
+	void *res = vgl_calloc(nmember, size, VGL_MEM_EXTERNAL);
+	if (res)
+		return res;
+	
+	// If it fails, we try with standard RAM mem pool
+	res = vgl_calloc(nmember, size, VGL_MEM_RAM);
+	if (res)
+		return res;
+
+	// If it fails, we try with physically contiguous RAM
+	res = vgl_calloc(nmember, size, VGL_MEM_SLOW);
+	if (res)
+		return res;
+	
+	// If it fails, we try with common dialog mem
+	res = vgl_calloc(nmember, size, VGL_MEM_BUDGET);
+	if (res)
+		return res;
+
+	// If it fails, as last resort, we try VRAM
+	return vgl_calloc(nmember, size, VGL_MEM_VRAM);
+}
+
+void *vglRealloc(void *ptr, uint32_t size) {
+	return vgl_realloc(ptr, size);
+}
+
 void vglFree(void *addr) {
 	vgl_free(addr);
 }
