@@ -339,6 +339,9 @@ void glEnable(GLenum cap) {
 			change_blend_factor();
 		blend_state = GL_TRUE;
 		break;
+	case GL_COLOR_MATERIAL:
+		color_material_state = GL_TRUE;
+		break;
 	case GL_SCISSOR_TEST:
 		scissor_test_state = GL_TRUE;
 		sceneReset();
@@ -434,6 +437,9 @@ void glDisable(GLenum cap) {
 		ffp_dirty_vert = GL_TRUE;
 		ffp_dirty_frag = GL_TRUE;
 		lighting_state = GL_FALSE;
+		break;
+	case GL_COLOR_MATERIAL:
+		color_material_state = GL_FALSE;
 		break;
 	case GL_DEPTH_TEST:
 		depth_test_state = GL_FALSE;

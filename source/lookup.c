@@ -64,6 +64,7 @@ static const struct {
 	{"glColor4ubv", (void *)glColor4ubv},
 	{"glColor4x", (void *)glColor4x},
 	{"glColorMask", (void *)glColorMask},
+	{"glColorMaterial", (void *)glColorMaterial},
 	{"glColorPointer", (void *)glColorPointer},
 	{"glColorTable", (void *)glColorTable},
 	{"glCompileShader", (void *)glCompileShader},

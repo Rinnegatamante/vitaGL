@@ -119,6 +119,7 @@ extern "C" {
 #define GL_CULL_FACE                                 0x0B44
 #define GL_LIGHTING                                  0x0B50
 #define GL_LIGHT_MODEL_AMBIENT                       0x0B53
+#define GL_COLOR_MATERIAL                            0x0B57
 #define GL_FOG                                       0x0B60
 #define GL_FOG_DENSITY                               0x0B62
 #define GL_FOG_START                                 0x0B63
@@ -514,6 +515,7 @@ void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
 void glColor4ubv(const GLubyte *v);
 void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha);
 void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha);
+void glColorMaterial(GLenum face, GLenum mode);
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid *data);
 void glCompileShader(GLuint shader);
