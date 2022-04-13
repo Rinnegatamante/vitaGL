@@ -22,14 +22,13 @@
  */
 
 #include "../shared.h"
-#define VGL_MEM_TYPE_COUNT 5 // Number of type of memblocks used
 
 #ifndef HAVE_CUSTOM_HEAP
-static void *mempool_mspace[VGL_MEM_TYPE_COUNT] = {NULL, NULL, NULL, NULL, NULL}; // mspace creations (VRAM, RAM, PHYCONT RAM, CDLG, EXTERNAL)
+static void *mempool_mspace[VGL_MEM_ALL] = {NULL, NULL, NULL, NULL, NULL}; // mspace creations (VRAM, RAM, PHYCONT RAM, CDLG, EXTERNAL)
 #endif
-static void *mempool_addr[VGL_MEM_TYPE_COUNT] = {NULL, NULL, NULL, NULL, NULL}; // addresses of heap memblocks (VRAM, RAM, PHYCONT RAM, CDLG, EXTERNAL)
-static SceUID mempool_id[VGL_MEM_TYPE_COUNT] = {0, 0, 0, 0, 0}; // UIDs of heap memblocks (VRAM, RAM, PHYCONT RAM, EXTERNAL)
-static size_t mempool_size[VGL_MEM_TYPE_COUNT] = {0, 0, 0, 0, 0}; // sizes of heap memlbocks (VRAM, RAM, PHYCONT RAM, EXTERNAL)
+static void *mempool_addr[VGL_MEM_ALL] = {NULL, NULL, NULL, NULL, NULL}; // addresses of heap memblocks (VRAM, RAM, PHYCONT RAM, CDLG, EXTERNAL)
+static SceUID mempool_id[VGL_MEM_ALL] = {0, 0, 0, 0, 0}; // UIDs of heap memblocks (VRAM, RAM, PHYCONT RAM, EXTERNAL)
+static size_t mempool_size[VGL_MEM_ALL] = {0, 0, 0, 0, 0}; // sizes of heap memlbocks (VRAM, RAM, PHYCONT RAM, EXTERNAL)
 
 static int mempool_initialized = 0;
 
@@ -45,7 +44,7 @@ typedef struct tm_block_s {
 static tm_block_t *tm_alloclist; // list of allocated blocks
 static tm_block_t *tm_freelist; // list of free blocks
 
-static uint32_t tm_free[VGL_MEM_TYPE_COUNT]; // see enum vglMemType
+static uint32_t tm_free[VGL_MEM_ALL]; // see enum vglMemType
 
 // get new block header
 static inline tm_block_t *heap_blk_new(void) {
@@ -84,7 +83,6 @@ static void heap_blk_insert_free(tm_block_t *block) {
 
 	block->next = curblk;
 	tm_free[block->type] += block->size;
-	tm_free[0] += block->size;
 
 	if (curblk && heap_blk_mergeable(block, curblk)) {
 		block->size += curblk->size;
@@ -164,7 +162,6 @@ static tm_block_t *heap_blk_alloc(int32_t type, uint32_t size, uint32_t alignmen
 			curblk->next = tm_alloclist;
 			tm_alloclist = curblk;
 			tm_free[type] -= size;
-			tm_free[0] -= size;
 			return curblk;
 		}
 
@@ -208,7 +205,7 @@ static void heap_init(void) {
 	tm_alloclist = NULL;
 	tm_freelist = NULL;
 
-	for (int i = 0; i < VGL_MEM_TYPE_COUNT; i++)
+	for (int i = 0; i < VGL_MEM_ALL; i++)
 		tm_free[i] = 0;
 }
 
