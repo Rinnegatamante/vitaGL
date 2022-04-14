@@ -25,6 +25,91 @@
 
 GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not supported natively by sceGxm is used
 
+#define setup_elements_indices(type_t) \
+	type_t *ptr; \
+	if (gpu_buf != NULL && !prim_is_non_native) { \
+		ptr = (type_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices); \
+		gpu_buf->used = GL_TRUE; \
+	} else { \
+		switch (mode) { \
+		case GL_QUADS: \
+			ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(type_t)); \
+			for (int i = 0; i < count / 4; i++) { \
+				ptr[i * 6] = src[i * 4]; \
+				ptr[i * 6 + 1] = src[i * 4 + 1]; \
+				ptr[i * 6 + 2] = src[i * 4 + 3]; \
+				ptr[i * 6 + 3] = src[i * 4 + 1]; \
+				ptr[i * 6 + 4] = src[i * 4 + 2]; \
+				ptr[i * 6 + 5] = src[i * 4 + 3]; \
+			} \
+			count = (count / 2) * 3; \
+			break; \
+		case GL_LINE_STRIP: \
+			ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(type_t)); \
+			for (int i = 0; i < count - 1; i++) { \
+				ptr[i * 2] = src[i]; \
+				ptr[i * 2 + 1] = src[i + 1]; \
+			} \
+			count = (count - 1) * 2; \
+			break; \
+		case GL_LINE_LOOP: \
+			ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(type_t)); \
+			for (int i = 0; i < count - 1; i++) { \
+				ptr[i * 2] = src[i]; \
+				ptr[i * 2 + 1] = src[i + 1]; \
+			} \
+			ptr[(count - 1) * 2] = src[count - 1]; \
+			ptr[(count - 1) * 2 + 1] = src[0]; \
+			count = count * 2; \
+			break; \
+		default: \
+			ptr = gpu_alloc_mapped_temp(count * sizeof(type_t)); \
+			vgl_fast_memcpy(ptr, src, count * sizeof(type_t)); \
+			break; \
+		} \
+	}
+	
+#define setup_elements_indices_with_base(type_t) \
+	type_t *ptr; \
+	switch (mode) { \
+	case GL_QUADS: \
+		ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(type_t)); \
+		for (int i = 0; i < count / 4; i++) { \
+			ptr[i * 6] = src[i * 4] + baseVertex; \
+			ptr[i * 6 + 1] = src[i * 4 + 1] + baseVertex; \
+			ptr[i * 6 + 2] = src[i * 4 + 3] + baseVertex; \
+			ptr[i * 6 + 3] = src[i * 4 + 1] + baseVertex; \
+			ptr[i * 6 + 4] = src[i * 4 + 2] + baseVertex; \
+			ptr[i * 6 + 5] = src[i * 4 + 3] + baseVertex; \
+		} \
+		count = (count / 2) * 3; \
+		break; \
+	case GL_LINE_STRIP: \
+		ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(type_t)); \
+		for (int i = 0; i < count - 1; i++) { \
+			ptr[i * 2] = src[i] + baseVertex; \
+			ptr[i * 2 + 1] = src[i + 1] + baseVertex; \
+		} \
+		count = (count - 1) * 2; \
+		break; \
+	case GL_LINE_LOOP: \
+		ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(type_t)); \
+		for (int i = 0; i < count - 1; i++) { \
+			ptr[i * 2] = src[i] + baseVertex; \
+			ptr[i * 2 + 1] = src[i + 1] + baseVertex; \
+		} \
+		ptr[(count - 1) * 2] = src[count - 1] + baseVertex; \
+		ptr[(count - 1) * 2 + 1] = src[0] + baseVertex; \
+		count = count * 2; \
+		break; \
+	default: \
+		ptr = gpu_alloc_mapped_temp(count * sizeof(type_t)); \
+		for (int i = 0; i < count; i++) { \
+			ptr[i] = src[i] + baseVertex; \
+		} \
+		break; \
+	}
+
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
@@ -108,96 +193,10 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 #endif
 	{
 		if (type == GL_UNSIGNED_SHORT) {
-			uint16_t *ptr;
-			// Directly use the current IBO if there is no need for a temporary index buffer.
-			if (gpu_buf != NULL && !prim_is_non_native) {
-				ptr = (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices);
-				gpu_buf->used = GL_TRUE;
-			} else {
-				switch (mode) {
-				case GL_QUADS:
-					ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(uint16_t));
-					for (int i = 0; i < count / 4; i++) {
-						ptr[i * 6] = src[i * 4];
-						ptr[i * 6 + 1] = src[i * 4 + 1];
-						ptr[i * 6 + 2] = src[i * 4 + 3];
-						ptr[i * 6 + 3] = src[i * 4 + 1];
-						ptr[i * 6 + 4] = src[i * 4 + 2];
-						ptr[i * 6 + 5] = src[i * 4 + 3];
-					}
-					count = (count / 2) * 3;
-					break;
-				case GL_LINE_STRIP:
-					ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(uint16_t));
-					for (int i = 0; i < count - 1; i++) {
-						ptr[i * 2] = src[i];
-						ptr[i * 2 + 1] = src[i + 1];
-					}
-					count = (count - 1) * 2;
-					break;
-				case GL_LINE_LOOP:
-					ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t));
-					for (int i = 0; i < count - 1; i++) {
-						ptr[i * 2] = src[i];
-						ptr[i * 2 + 1] = src[i + 1];
-					}
-					ptr[(count - 1) * 2] = src[count - 1];
-					ptr[(count - 1) * 2 + 1] = src[0];
-					count = count * 2;
-					break;
-				default:
-					ptr = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
-					vgl_fast_memcpy(ptr, src, count * sizeof(uint16_t));
-					break;
-				}
-			}
-
+			setup_elements_indices(uint16_t)
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		} else {
-			uint32_t *ptr;
-			// Directly use the current IBO if there is no need for a temporary index buffer.
-			if (gpu_buf != NULL && !prim_is_non_native) {
-				ptr = (uint32_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices);
-				gpu_buf->used = GL_TRUE;
-			} else {
-				switch (mode) {
-				case GL_QUADS:
-					ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(uint32_t));
-					for (int i = 0; i < count / 4; i++) {
-						ptr[i * 6] = src[i * 4];
-						ptr[i * 6 + 1] = src[i * 4 + 1];
-						ptr[i * 6 + 2] = src[i * 4 + 3];
-						ptr[i * 6 + 3] = src[i * 4 + 1];
-						ptr[i * 6 + 4] = src[i * 4 + 2];
-						ptr[i * 6 + 5] = src[i * 4 + 3];
-					}
-					count = (count / 2) * 3;
-					break;
-				case GL_LINE_STRIP:
-					ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(uint32_t));
-					for (int i = 0; i < count - 1; i++) {
-						ptr[i * 2] = src[i];
-						ptr[i * 2 + 1] = src[i + 1];
-					}
-					count = (count - 1) * 2;
-					break;
-				case GL_LINE_LOOP:
-					ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint32_t));
-					for (int i = 0; i < count - 1; i++) {
-						ptr[i * 2] = src[i];
-						ptr[i * 2 + 1] = src[i + 1];
-					}
-					ptr[(count - 1) * 2] = src[count - 1];
-					ptr[(count - 1) * 2 + 1] = src[0];
-					count = count * 2;
-					break;
-				default:
-					ptr = gpu_alloc_mapped_temp(count * sizeof(uint32_t));
-					vgl_fast_memcpy(ptr, src, count * sizeof(uint32_t));
-					break;
-				}
-			}
-
+			setup_elements_indices(uint32_t)
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
 		}
 	}
@@ -235,88 +234,10 @@ void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLv
 #endif
 	{
 		if (type == GL_UNSIGNED_SHORT) {
-			uint16_t *ptr;
-			switch (mode) {
-			case GL_QUADS:
-				ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(uint16_t));
-				for (int i = 0; i < count / 4; i++) {
-					ptr[i * 6] = src[i * 4] + baseVertex;
-					ptr[i * 6 + 1] = src[i * 4 + 1] + baseVertex;
-					ptr[i * 6 + 2] = src[i * 4 + 3] + baseVertex;
-					ptr[i * 6 + 3] = src[i * 4 + 1] + baseVertex;
-					ptr[i * 6 + 4] = src[i * 4 + 2] + baseVertex;
-					ptr[i * 6 + 5] = src[i * 4 + 3] + baseVertex;
-				}
-				count = (count / 2) * 3;
-				break;
-			case GL_LINE_STRIP:
-				ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(uint16_t));
-				for (int i = 0; i < count - 1; i++) {
-					ptr[i * 2] = src[i] + baseVertex;
-					ptr[i * 2 + 1] = src[i + 1] + baseVertex;
-				}
-				count = (count - 1) * 2;
-				break;
-			case GL_LINE_LOOP:
-				ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t));
-				for (int i = 0; i < count - 1; i++) {
-					ptr[i * 2] = src[i] + baseVertex;
-					ptr[i * 2 + 1] = src[i + 1] + baseVertex;
-				}
-				ptr[(count - 1) * 2] = src[count - 1] + baseVertex;
-				ptr[(count - 1) * 2 + 1] = src[0] + baseVertex;
-				count = count * 2;
-				break;
-			default:
-				ptr = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
-				for (int i = 0; i < count; i++) {
-					ptr[i] = src[i] + baseVertex;
-				}
-				break;
-			}
-
+			setup_elements_indices_with_base(uint16_t)
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		} else {
-			uint32_t *ptr;
-			switch (mode) {
-			case GL_QUADS:
-				ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(uint32_t));
-				for (int i = 0; i < count / 4; i++) {
-					ptr[i * 6] = src[i * 4] + baseVertex;
-					ptr[i * 6 + 1] = src[i * 4 + 1] + baseVertex;
-					ptr[i * 6 + 2] = src[i * 4 + 3] + baseVertex;
-					ptr[i * 6 + 3] = src[i * 4 + 1] + baseVertex;
-					ptr[i * 6 + 4] = src[i * 4 + 2] + baseVertex;
-					ptr[i * 6 + 5] = src[i * 4 + 3] + baseVertex;
-				}
-				count = (count / 2) * 3;
-				break;
-			case GL_LINE_STRIP:
-				ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(uint32_t));
-				for (int i = 0; i < count - 1; i++) {
-					ptr[i * 2] = src[i] + baseVertex;
-					ptr[i * 2 + 1] = src[i + 1] + baseVertex;
-				}
-				count = (count - 1) * 2;
-				break;
-			case GL_LINE_LOOP:
-				ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint32_t));
-				for (int i = 0; i < count - 1; i++) {
-					ptr[i * 2] = src[i] + baseVertex;
-					ptr[i * 2 + 1] = src[i + 1] + baseVertex;
-				}
-				ptr[(count - 1) * 2] = src[count - 1] + baseVertex;
-				ptr[(count - 1) * 2 + 1] = src[0] + baseVertex;
-				count = count * 2;
-				break;
-			default:
-				ptr = gpu_alloc_mapped_temp(count * sizeof(uint32_t));
-				for (int i = 0; i < count; i++) {
-					ptr[i] = src[i] + baseVertex;
-				}
-				break;
-			}
-
+			setup_elements_indices_with_base(uint32_t)
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
 		}
 	}
