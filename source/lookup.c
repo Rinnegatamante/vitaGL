@@ -87,6 +87,7 @@ static const struct {
 	{"glDisableVertexAttribArray", (void *)glDisableVertexAttribArray},
 	{"glDrawArrays", (void *)glDrawArrays},
 	{"glDrawElements", (void *)glDrawElements},
+	{"glDrawElementsBaseVertex", (void *)glDrawElementsBaseVertex},
 	{"glEnable", (void *)glEnable},
 	{"glEnableClientState", (void *)glEnableClientState},
 	{"glEnableVertexAttribArray", (void *)glEnableVertexAttribArray},
