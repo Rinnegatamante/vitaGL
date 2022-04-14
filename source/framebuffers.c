@@ -444,6 +444,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			switch (type) {
 			case GL_UNSIGNED_BYTE:
 				write_cb = writeRGBA;
+				dst_bpp = 4;
 				break;
 			default:
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -453,6 +454,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			switch (type) {
 			case GL_UNSIGNED_BYTE:
 				write_cb = writeRGB;
+				dst_bpp = 3;
 				break;
 			default:
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -482,18 +484,18 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	} else {
 		int j;
 		for (i = 0; i < height; i++) {
-			src = &src[y + i * stride + x * src_bpp];
-			uint8_t *line_u8 = data_u8;
+			uint8_t *line_src = &src[y + i * stride + x * src_bpp];
+			uint8_t *line_dst = data_u8;
 			for (j = 0; j < width; j++) {
-				uint32_t clr = read_cb(src);
-				write_cb(line_u8, clr);
-				src += src_bpp;
-				line_u8 += dst_bpp;
+				uint32_t clr = read_cb(line_src);
+				write_cb(line_dst, clr);
+				line_src += src_bpp;
+				line_dst += dst_bpp;
 			}
 #ifdef HAVE_UNFLIPPED_FBOS
-			data_u8 -= width * src_bpp;
+			data_u8 -= width * dst_bpp;
 #else
-			data_u8 -= (active_read_fb ? -width : width) * src_bpp;
+			data_u8 -= (active_read_fb ? -width : width) * dst_bpp;
 #endif
 		}
 	}
