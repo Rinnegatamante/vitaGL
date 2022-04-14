@@ -422,8 +422,10 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		default:
 			break;
 		}
-		if (format == active_read_fb->data_type)
+		if (format == active_read_fb->data_type) {
 			fast_store = GL_TRUE;
+			dst_bpp = src_bpp;
+		}
 		src = (uint8_t *)active_read_fb->data;
 		stride = active_read_fb->stride;
 		y = (active_read_fb->height - (height + y)) * stride;
@@ -432,9 +434,10 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		stride = DISPLAY_STRIDE * 4;
 		y = (DISPLAY_HEIGHT - (height + y)) * stride;
 		src_bpp = 4;
-		if (format == GL_RGBA)
+		if (format == GL_RGBA) {
 			fast_store = GL_TRUE;
-		else
+			dst_bpp = src_bpp;
+		} else
 			read_cb = readRGBA;
 	}
 
@@ -466,14 +469,14 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	}
 
 #ifdef HAVE_UNFLIPPED_FBOS
-	uint8_t *data_u8 = data + (width * src_bpp * (height - 1));
+	uint8_t *data_u8 = data + (width * dst_bpp * (height - 1));
 #else
-	uint8_t *data_u8 = active_read_fb ? data : (data + (width * src_bpp * (height - 1)));
+	uint8_t *data_u8 = active_read_fb ? data : (data + (width * dst_bpp * (height - 1)));
 #endif
 	int i;
 	if (fast_store) {
 		for (i = 0; i < height; i++) {
-			vgl_fast_memcpy(data_u8, &src[y + x * src_bpp], width * src_bpp);
+			vgl_fast_memcpy(data_u8, &src[y * stride + x * src_bpp], width * src_bpp);
 			y += stride;
 #ifdef HAVE_UNFLIPPED_FBOS
 			data_u8 -= width * src_bpp;
@@ -484,7 +487,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	} else {
 		int j;
 		for (i = 0; i < height; i++) {
-			uint8_t *line_src = &src[y + i * stride + x * src_bpp];
+			uint8_t *line_src = &src[(y + i) * stride + x * src_bpp];
 			uint8_t *line_dst = data_u8;
 			for (j = 0; j < width; j++) {
 				uint32_t clr = read_cb(line_src);
