@@ -297,6 +297,11 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_
 	if (mempool_initialized)
 		vgl_mem_term();
 
+#ifndef HAVE_CACHED_MEM
+	if (size_ram > 0xC800000) // Vita has a smaller address mapping for uncached mem
+		size_ram = 0xC800000;
+#endif
+
 	mempool_size[VGL_MEM_VRAM] = ALIGN(size_cdram, 256 * 1024);
 	mempool_size[VGL_MEM_RAM] = ALIGN(size_ram, 4 * 1024);
 #ifdef PHYCONT_ON_DEMAND
