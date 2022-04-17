@@ -60,7 +60,7 @@ void calculate_light(int i, float3 ecPosition, float3 N) {
 #endif
 
 void main(
-	float3 position,
+	float4 position,
 #if num_textures > 0
 	float2 texcoord0,
 #if num_textures > 1
@@ -113,8 +113,7 @@ void main(
 	uniform float point_size,
 	uniform float4x4 normal_mat
 ) {
-	float4 pos4 = float4(position, 1.f);
-	float4 modelpos = mul(modelview, pos4);
+	float4 modelpos = mul(modelview, position);
 	
 	// User clip planes
 #if clip_planes_num > 0
@@ -122,7 +121,7 @@ void main(
 		vClip[i] = dot(modelpos, clip_planes_eq[i]);
 	}
 #endif
-	vPosition = mul(wvp, pos4);
+	vPosition = mul(wvp, position);
 	
 	// Lighting
 #if lights_num > 0
