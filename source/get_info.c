@@ -26,9 +26,9 @@
 #include "shared.h"
 
 #ifndef DISABLE_TEXTURE_COMBINER
-#define NUM_EXTENSIONS 23 // Number of supported extensions
+#define NUM_EXTENSIONS 24 // Number of supported extensions
 #else
-#define NUM_EXTENSIONS 22 // Number of supported extensions
+#define NUM_EXTENSIONS 23 // Number of supported extensions
 #endif
 #define COMPRESSED_TEXTURE_FORMATS_NUM 23 // The number of supported texture formats
 
@@ -55,6 +55,7 @@ static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_OES_mapbuffer",
 	"GL_OES_depth24",
 	"GL_OES_packed_depth_stencil",
+	"GL_NVX_gpu_memory_info",
 #ifndef DISABLE_TEXTURE_COMBINER
 	"GL_EXT_texture_env_combine"
 #endif
@@ -221,6 +222,15 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX:
+		*data = vgl_mem_get_total_space(VGL_MEM_VRAM) / 1024;
+		break;
+	case GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX:
+		*data = vgl_mem_get_total_space(VGL_MEM_ALL) / 1024;
+		break;
+	case GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX:
+		*data = vgl_mem_get_free_space(VGL_MEM_VRAM) / 1024;
+		break;
 	case GL_CULL_FACE:
 		*data = cull_face_state;
 		break;
