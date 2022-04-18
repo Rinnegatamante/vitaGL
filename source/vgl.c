@@ -456,7 +456,7 @@ GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int r
 }
 
 GLboolean vglInitExtended(int pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa) {
-	return vglInitWithCustomThreshold(pool_size, width, height, ram_threshold, 256 * 1024, 1 * 1024 * 1024, SCE_KERNEL_MAX_MAIN_CDIALOG_MEM_SIZE, msaa);
+	return vglInitWithCustomThreshold(pool_size, width, height, ram_threshold, 0, 0, SCE_KERNEL_MAX_MAIN_CDIALOG_MEM_SIZE, msaa);
 }
 
 GLboolean vglInit(int pool_size) {
