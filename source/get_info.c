@@ -222,6 +222,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_CURRENT_PROGRAM:
+		*data = cur_program;
+		break;
 	case GL_GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX:
 		*data = vgl_mem_get_total_space(VGL_MEM_VRAM) / 1024;
 		break;

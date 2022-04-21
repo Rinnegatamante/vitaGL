@@ -387,6 +387,7 @@ extern "C" {
 #define GL_ACTIVE_ATTRIBUTES                            0X8B89
 #define GL_ACTIVE_ATTRIBUTE_MAX_LENGTH                  0X8B8A
 #define GL_SHADING_LANGUAGE_VERSION                     0X8B8C
+#define GL_CURRENT_PROGRAM                              0x8B8D
 #define GL_PALETTE4_RGB8_OES                            0X8B90
 #define GL_PALETTE4_RGBA8_OES                           0X8B91
 #define GL_PALETTE4_R5_G6_B5_OES                        0X8B92
