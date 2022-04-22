@@ -222,6 +222,18 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_BLEND_DST_RGB:
+		*data = gxm_blend_to_gl(blend_dfactor_rgb);
+		break;
+	case GL_BLEND_SRC_RGB:
+		*data = gxm_blend_to_gl(blend_sfactor_rgb);
+		break;
+	case GL_BLEND_DST_ALPHA:
+		*data = gxm_blend_to_gl(blend_dfactor_a);
+		break;
+	case GL_BLEND_SRC_ALPHA:
+		*data = gxm_blend_to_gl(blend_sfactor_a);
+		break;
 	case GL_CURRENT_PROGRAM:
 		*data = cur_program;
 		break;
@@ -306,6 +318,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		break;
 	case GL_FRAMEBUFFER_BINDING:
 		*data = (GLint)active_write_fb;
+		break;
+	case GL_RENDERBUFFER_BINDING:
+		*data = (GLint)active_rb;
 		break;
 	case GL_READ_FRAMEBUFFER_BINDING:
 		*data = (GLint)active_read_fb;

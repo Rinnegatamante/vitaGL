@@ -419,6 +419,7 @@ extern "C" {
 #define GL_ATC_RGB_AMD                                  0X8C92
 #define GL_ATC_RGBA_EXPLICIT_ALPHA_AMD                  0X8C93
 #define GL_FRAMEBUFFER_BINDING                          0X8CA6
+#define GL_RENDERBUFFER_BINDING                         0X8CA7
 #define GL_READ_FRAMEBUFFER                             0X8CA8
 #define GL_DRAW_FRAMEBUFFER                             0X8CA9
 #define GL_READ_FRAMEBUFFER_BINDING                     0X8CAA

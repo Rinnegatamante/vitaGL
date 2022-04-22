@@ -35,6 +35,37 @@ SceGxmColorMask blend_color_mask = SCE_GXM_COLOR_MASK_ALL; // Current in-use col
 SceGxmBlendFunc blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD; // Current in-use RGB blend func
 SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use A blend func
 
+GLenum gxm_blend_to_gl(SceGxmBlendFactor factor) {
+	switch (factor) {
+	case SCE_GXM_BLEND_FACTOR_ZERO:
+		return GL_ZERO;
+	case SCE_GXM_BLEND_FACTOR_ONE:
+		return GL_ONE;
+	case SCE_GXM_BLEND_FACTOR_SRC_COLOR:
+		return GL_SRC_COLOR;
+	case SCE_GXM_BLEND_FACTOR_DST_COLOR:
+		return GL_DST_COLOR;
+	case SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_COLOR:
+		return GL_ONE_MINUS_SRC_COLOR;
+	case SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_COLOR:
+		return GL_ONE_MINUS_DST_COLOR;
+	case SCE_GXM_BLEND_FACTOR_SRC_ALPHA:
+		return GL_SRC_ALPHA;
+	case SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA:
+		return GL_ONE_MINUS_SRC_ALPHA;
+	case SCE_GXM_BLEND_FACTOR_DST_ALPHA:
+		return GL_DST_ALPHA;
+	case SCE_GXM_BLEND_FACTOR_ONE_MINUS_DST_ALPHA:
+		return GL_ONE_MINUS_DST_ALPHA;
+	case SCE_GXM_BLEND_FACTOR_SRC_ALPHA_SATURATE:
+		return GL_SRC_ALPHA_SATURATE;
+	default:
+		break;
+	}
+	
+	return 0;
+}
+
 void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, SceGxmProgram *vprog) {
 	patchFragmentProgram(gxm_shader_patcher,
 		pid, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,

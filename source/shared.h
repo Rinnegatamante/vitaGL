@@ -695,6 +695,7 @@ extern vector4f clip_planes_eq[MAX_CLIP_PLANES_NUM]; // Current equation for use
 // Framebuffers
 extern framebuffer *active_read_fb; // Current readback framebuffer in use
 extern framebuffer *active_write_fb; // Current write framebuffer in use
+extern renderbuffer *active_rb; // Current renderbuffer in use
 
 // vgl* Draw Pipeline
 extern void *vertex_object;
@@ -769,6 +770,7 @@ void validate_viewport(void); // Restores previously invalidated viewport
 void change_blend_factor(void); // Changes current blending settings for all used shaders
 void change_blend_mask(void); // Changes color mask when blending is disabled for all used shaders
 void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, SceGxmProgram *vprog); // Creates a new patched fragment program with proper blend settings
+GLenum gxm_blend_to_gl(SceGxmBlendFactor factor);
 
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders
