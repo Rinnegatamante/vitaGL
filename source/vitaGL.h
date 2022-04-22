@@ -433,6 +433,7 @@ extern "C" {
 #define GL_FRAMEBUFFER                                  0X8D40
 #define GL_RENDERBUFFER                                 0X8D41
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS             0X8B4D
+#define GL_ETC1_RGB8_OES                                0x8D64
 #define GL_SHADER_BINARY_FORMATS                        0X8DF8
 #define GL_NUM_SHADER_BINARY_FORMATS                    0X8DF9
 #define GL_SHADER_COMPILER                              0X8DFA

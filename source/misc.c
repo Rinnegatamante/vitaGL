@@ -78,7 +78,7 @@ typedef struct {
 	GLint fog_mode;
 	// GL_HINT_BIT
 	GLboolean fast_texture_compression;
-	GLboolean recompress_atitc;
+	GLboolean recompress_non_native;
 	// GL_LINE_BIT
 	GLfloat line_width;
 	// GL_POINT_BIT
@@ -121,7 +121,7 @@ uint8_t attrib_stack_counter = 0;
 GLfloat line_width = 1.0f;
 GLfloat point_size = 1.0f;
 GLboolean fast_texture_compression = GL_FALSE; // Hints for texture compression
-GLboolean recompress_atitc = GL_FALSE;
+GLboolean recompress_non_native = GL_FALSE;
 vector4f clear_rgba_val; // Current clear color for glClear
 
 // Polygon Mode
@@ -691,14 +691,14 @@ void glHint(GLenum target, GLenum mode) {
 		switch (mode) {
 		case GL_FASTEST:
 			fast_texture_compression = GL_TRUE;
-			recompress_atitc = GL_FALSE;
+			recompress_non_native = GL_FALSE;
 			break;
 		case GL_DONT_CARE:
 			fast_texture_compression = GL_FALSE;
-			recompress_atitc = GL_FALSE;
+			recompress_non_native = GL_FALSE;
 			break;
 		default:
-			recompress_atitc = GL_TRUE;
+			recompress_non_native = GL_TRUE;
 			fast_texture_compression = GL_FALSE;
 			break;
 		}
@@ -769,7 +769,7 @@ void glPushAttrib(GLbitfield mask) {
 	if (mask & GL_HINT_BIT) {
 		setup->enabled_bits += (1 << HINT_BIT);
 		setup->fast_texture_compression = fast_texture_compression;
-		setup->recompress_atitc = recompress_atitc;
+		setup->recompress_non_native = recompress_non_native;
 	}
 	if (mask & GL_LINE_BIT) {
 		setup->enabled_bits += (1 << LINE_BIT);
@@ -907,7 +907,7 @@ void glPopAttrib(void) {
 	}
 	if (setup->enabled_bits & (1 << HINT_BIT)) {
 		fast_texture_compression = setup->fast_texture_compression;
-		recompress_atitc = setup->recompress_atitc;
+		recompress_non_native = setup->recompress_non_native;
 	}
 	if (setup->enabled_bits & (1 << LINE_BIT)) {
 		line_width = setup->line_width;

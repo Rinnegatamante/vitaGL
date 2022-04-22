@@ -87,6 +87,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #include "vitaGL.h"
 
 #include "utils/atitc_utils.h"
+#include "utils/etc1_utils.h"
 #include "utils/gpu_utils.h"
 #include "utils/gxm_utils.h"
 #include "utils/math_utils.h"
@@ -732,7 +733,7 @@ extern SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex prog
 extern vector4f *clear_vertices; // Memblock starting address for clear screen vertices
 
 extern GLboolean fast_texture_compression; // Hints for texture compression
-extern GLboolean recompress_atitc;
+extern GLboolean recompress_non_native;
 extern GLfloat point_size; // Size of points for fixed function pipeline
 
 /* gxm.c */

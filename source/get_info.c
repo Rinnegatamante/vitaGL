@@ -26,9 +26,9 @@
 #include "shared.h"
 
 #ifndef DISABLE_TEXTURE_COMBINER
-#define NUM_EXTENSIONS 24 // Number of supported extensions
+#define NUM_EXTENSIONS 25 // Number of supported extensions
 #else
-#define NUM_EXTENSIONS 23 // Number of supported extensions
+#define NUM_EXTENSIONS 24 // Number of supported extensions
 #endif
 #define COMPRESSED_TEXTURE_FORMATS_NUM 23 // The number of supported texture formats
 
@@ -47,6 +47,7 @@ static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_EXT_texture_compression_dxt5",
 	"GL_EXT_texture_compression_s3tc",
 	"GL_IMG_texture_compression_pvrtc",
+	"GL_OES_compressed_ETC1_RGB8_texture",
 	"GL_EXT_texture_env_add",
 	"GL_WIN_phong_shading",
 	"GL_AMD_compressed_ATC_texture",
