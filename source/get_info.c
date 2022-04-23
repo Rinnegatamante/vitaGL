@@ -30,7 +30,7 @@
 #else
 #define NUM_EXTENSIONS 24 // Number of supported extensions
 #endif
-#define COMPRESSED_TEXTURE_FORMATS_NUM 23 // The number of supported texture formats
+#define COMPRESSED_TEXTURE_FORMATS_NUM 24 // The number of supported texture formats
 
 static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_OES_vertex_half_float",
@@ -311,6 +311,7 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[20] = GL_PALETTE8_R5_G6_B5_OES;
 		data[21] = GL_PALETTE8_RGBA4_OES;
 		data[22] = GL_PALETTE8_RGB5_A1_OES;
+		data[23] = GL_ETC1_RGB8_OES;
 		break;
 	case GL_NUM_SHADER_BINARY_FORMATS:
 		*data = 0;
