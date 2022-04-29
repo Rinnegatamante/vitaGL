@@ -266,9 +266,9 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 #endif
 
 	// Init constant index buffers
-	default_idx_ptr = (uint16_t *)vgl_malloc(MAX_IDX_NUMBER * sizeof(uint16_t), VGL_MEM_EXTERNAL);
-	default_quads_idx_ptr = (uint16_t *)vgl_malloc(MAX_IDX_NUMBER * sizeof(uint16_t), VGL_MEM_EXTERNAL);
-	default_line_strips_idx_ptr = (uint16_t *)vgl_malloc(MAX_IDX_NUMBER * sizeof(uint16_t), VGL_MEM_EXTERNAL);
+	default_idx_ptr = (uint16_t *)vglMalloc(MAX_IDX_NUMBER * sizeof(uint16_t));
+	default_quads_idx_ptr = (uint16_t *)vglMalloc(MAX_IDX_NUMBER * sizeof(uint16_t));
+	default_line_strips_idx_ptr = (uint16_t *)vglMalloc(MAX_IDX_NUMBER * sizeof(uint16_t));
 	for (i = 0; i < MAX_IDX_NUMBER / 6; i++) {
 		default_idx_ptr[i * 6] = i * 6;
 		default_idx_ptr[i * 6 + 1] = i * 6 + 1;
@@ -468,10 +468,10 @@ void vglEnd(void) {
 	waitRenderingDone();
 
 	// Deallocating default vertices buffers
-	vgl_free(clear_vertices);
-	vgl_free(depth_vertices);
-	vgl_free(depth_clear_indices);
-	vgl_free(scissor_test_vertices);
+	vglFree(clear_vertices);
+	vglFree(depth_vertices);
+	vglFree(depth_clear_indices);
+	vglFree(scissor_test_vertices);
 
 	// Releasing shader programs from sceGxmShaderPatcher
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, scissor_test_fragment_program);

@@ -83,7 +83,7 @@ const GLubyte *glGetString(GLenum name) {
 			for (i = 0; i < NUM_EXTENSIONS; i++) {
 				size += strlen(extensions[i]) + 1;
 			}
-			extension = vgl_malloc(size + 1, VGL_MEM_EXTERNAL);
+			extension = vglMalloc(size + 1);
 			extension[0] = 0;
 			for (i = 0; i < NUM_EXTENSIONS; i++) {
 				sprintf(extension, "%s%s ", extension, extensions[i]);

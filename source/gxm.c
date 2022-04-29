@@ -175,7 +175,7 @@ struct display_queue_callback_data {
 
 // sceGxmShaderPatcher custom allocator
 static void *shader_patcher_host_alloc_cb(void *user_data, unsigned int size) {
-	return vgl_malloc(size, VGL_MEM_EXTERNAL);
+	return vglMalloc(size);
 }
 
 // sceGxmShaderPatcher custom deallocator
@@ -243,6 +243,7 @@ static int garbage_collector(unsigned int args, void *arg) {
 }
 
 GLboolean startShaderCompiler(void) {
+	shark_set_allocators(vglMalloc, vglFree);
 	is_shark_online = shark_init(NULL) >= 0;
 
 	// If standard path failed to init we try to init it with ScePiglet path
@@ -337,7 +338,7 @@ void initGxmContext(void) {
 	// Setting sceGxm context parameters
 	SceGxmContextParams gxm_context_params;
 	sceClibMemset(&gxm_context_params, 0, sizeof(SceGxmContextParams));
-	gxm_context_params.hostMem = vgl_malloc(SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE, VGL_MEM_EXTERNAL);
+	gxm_context_params.hostMem = vglMalloc(SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
 	gxm_context_params.hostMemSize = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
 	gxm_context_params.vdmRingBufferMem = vdm_ring_buffer_addr;
 	gxm_context_params.vdmRingBufferMemSize = gxm_vdm_buf_size;

@@ -659,7 +659,7 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 		break;
 	}
 	uint32_t size = (shark_log ? strlen(shark_log) : 0) + strlen(newline);
-	shark_log = shark_log ? vgl_realloc(shark_log, size + 1) : vgl_malloc(size + 1, VGL_MEM_EXTERNAL);
+	shark_log = shark_log ? vglRealloc(shark_log, size + 1) : vglMalloc(size + 1);
 	if (shark_log)
 		sprintf(shark_log, "%s%s", shark_log, newline);
 	else
@@ -816,7 +816,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	else
 #endif
 	{
-		s->source = (char *)vgl_malloc(size, VGL_MEM_EXTERNAL);
+		s->source = (char *)vglMalloc(size);
 		s->source[0] = 0;
 		for (int i = 0; i < count; i++) {
 			strncat(s->source, string[i], length ? length[i] : strlen(string[i]));
@@ -831,7 +831,7 @@ void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, c
 	shader *s = &shaders[handles[0] - 1];
 
 	// Allocating compiled shader on RAM and registering it into sceGxmShaderPatcher
-	s->prog = (SceGxmProgram *)vgl_malloc(length, VGL_MEM_EXTERNAL);
+	s->prog = (SceGxmProgram *)vglMalloc(length);
 	vgl_fast_memcpy((void *)s->prog, binary, length);
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
 	s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
@@ -853,7 +853,7 @@ void glCompileShader(GLuint handle) {
 			vgl_free(s->source);
 			s->source = NULL;
 		}
-		SceGxmProgram *res = (SceGxmProgram *)vgl_malloc(s->size, VGL_MEM_EXTERNAL);
+		SceGxmProgram *res = (SceGxmProgram *)vglMalloc(s->size);
 		vgl_fast_memcpy((void *)res, (void *)s->prog, s->size);
 #ifdef LOG_ERRORS
 		int r =
@@ -1081,7 +1081,7 @@ void glLinkProgram(GLuint progr) {
 			if (p->max_texunit_idx < texunit_idx)
 				p->max_texunit_idx = texunit_idx;
 #ifdef HAVE_SAMPLERS_AS_UNIFORMS
-			uniform *u = (uniform *)vgl_malloc(sizeof(uniform), VGL_MEM_EXTERNAL);
+			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
 			u->chain = p->frag_uniforms;
 			u->ptr = param;
 			u->size = 0;
@@ -1092,13 +1092,13 @@ void glLinkProgram(GLuint progr) {
 			p->texunits[texunit_idx - 1] = GL_TRUE;
 #endif
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
-			uniform *u = (uniform *)vgl_malloc(sizeof(uniform), VGL_MEM_EXTERNAL);
+			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
 			u->chain = p->frag_uniforms;
 			u->ptr = param;
 			u->is_vertex = GL_FALSE;
 			u->is_fragment = GL_TRUE;
 			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
-			u->data = (float *)vgl_malloc(u->size * sizeof(float), VGL_MEM_EXTERNAL);
+			u->data = (float *)vglMalloc(u->size * sizeof(float));
 			sceClibMemset(u->data, 0, u->size * sizeof(float));
 			p->frag_uniforms = u;
 		}
@@ -1115,7 +1115,7 @@ void glLinkProgram(GLuint progr) {
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
 			p->attr_num++;
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
-			uniform *u = (uniform *)vgl_malloc(sizeof(uniform), VGL_MEM_EXTERNAL);
+			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
 			u->chain = p->vert_uniforms;
 			u->ptr = param;
 			u->is_vertex = GL_TRUE;
@@ -1125,7 +1125,7 @@ void glLinkProgram(GLuint progr) {
 				u->is_fragment = GL_TRUE;
 			} else {
 				u->is_fragment = GL_FALSE;
-				u->data = (float *)vgl_malloc(u->size * sizeof(float), VGL_MEM_EXTERNAL);
+				u->data = (float *)vglMalloc(u->size * sizeof(float));
 				sceClibMemset(u->data, 0, u->size * sizeof(float));
 			}
 			p->vert_uniforms = u;

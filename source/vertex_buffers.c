@@ -45,7 +45,7 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 	}
 #endif
 	for (i = 0; i < n; i++) {
-		res[i] = (GLuint)(vgl_malloc(sizeof(gpubuffer), VGL_MEM_EXTERNAL));
+		res[i] = (GLuint)(vglMalloc(sizeof(gpubuffer)));
 #ifdef LOG_ERRORS
 		if (!res[i])
 			vgl_log("%s:%d glGenBuffers failed to alloc a buffer (%d/%lu).\n", __FILE__, __LINE__, i, n);
@@ -82,9 +82,9 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 				if (gpu_buf->used)
 					markAsDirty(gpu_buf->ptr);
 				else
-					vgl_free(gpu_buf->ptr);
+					vglFree(gpu_buf->ptr);
 			}
-			vgl_free(gpu_buf);
+			vglFree(gpu_buf);
 		}
 	}
 }
@@ -127,7 +127,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		if (gpu_buf->used)
 			markAsDirty(gpu_buf->ptr);
 		else
-			vgl_free(gpu_buf->ptr);
+			vglFree(gpu_buf->ptr);
 	}
 
 	// Allocating a new buffer

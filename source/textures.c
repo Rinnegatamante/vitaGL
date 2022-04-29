@@ -906,7 +906,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			break;
 		case GL_ETC1_RGB8_OES:
 			non_native_format = GL_TRUE;
-			decompressed_data = vgl_malloc(width * height * 3, VGL_MEM_EXTERNAL);
+			decompressed_data = vglMalloc(width * height * 3);
 			etc1_decode_image((etc1_byte *)data, (etc1_byte *)decompressed_data, width, height, 3, width * 3);
 			if (recompress_non_native) {
 				read_cb = readRGB;
@@ -917,7 +917,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			break;
 		case GL_ATC_RGB_AMD:
 			non_native_format = GL_TRUE;
-			decompressed_data = vgl_malloc(width * height * 4, VGL_MEM_EXTERNAL);
+			decompressed_data = vglMalloc(width * height * 4);
 			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_RGB);
 			if (recompress_non_native) {
 				read_cb = readBGRA;
@@ -928,7 +928,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			break;
 		case GL_ATC_RGBA_EXPLICIT_ALPHA_AMD:
 			non_native_format = GL_TRUE;
-			decompressed_data = vgl_malloc(width * height * 4, VGL_MEM_EXTERNAL);
+			decompressed_data = vglMalloc(width * height * 4);
 			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_EXPLICIT_ALPHA);
 			if (recompress_non_native) {
 				read_cb = readBGRA;
@@ -939,7 +939,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			break;
 		case GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD:
 			non_native_format = GL_TRUE;
-			decompressed_data = vgl_malloc(width * height * 4, VGL_MEM_EXTERNAL);
+			decompressed_data = vglMalloc(width * height * 4);
 			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_INTERPOLATED_ALPHA);
 			if (recompress_non_native) {
 				read_cb = readBGRA;
