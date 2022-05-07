@@ -76,7 +76,7 @@ const GLubyte *glGetString(GLenum name) {
 	case GL_RENDERER: // Renderer
 		return "SGX543MP4+";
 	case GL_VERSION: // openGL Version
-		return "OpenGL ES 2 VitaGL";
+		return "OpenGL ES 2.0 VitaGL";
 	case GL_EXTENSIONS: // Supported extensions
 		if (!extension) {
 			int i, size = 0;
