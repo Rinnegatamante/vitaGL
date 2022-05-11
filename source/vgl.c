@@ -523,6 +523,14 @@ size_t vglMemFree(vglMemType type) {
 	return vgl_mem_get_free_space(type);
 }
 
+size_t vglMemTotal(vglMemType type) {
+#ifndef SKIP_ERROR_HANDLING
+	if (type >= VGL_MEM_ALL)
+		return 0;
+#endif
+	return vgl_mem_get_total_space(type);
+}
+
 void *vglAlloc(uint32_t size, vglMemType type) {
 #ifndef SKIP_ERROR_HANDLING
 	if (type >= VGL_MEM_ALL)

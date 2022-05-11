@@ -753,6 +753,7 @@ GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int r
 void *vglMalloc(uint32_t size);
 void *vglMemalign(uint32_t alignment, uint32_t size);
 size_t vglMemFree(vglMemType type);
+size_t vglMemTotal(vglMemType type);
 void *vglRealloc(void *ptr, uint32_t size);
 void vglSetDisplayCallback(void (*cb)(void *framebuf));
 void vglSetFragmentBufferSize(uint32_t size);
