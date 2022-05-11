@@ -42,6 +42,7 @@ void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfac
 static SceGxmSyncObject *gxm_sync_objects[DISPLAY_MAX_BUFFER_COUNT]; // Display sync objects
 unsigned int gxm_front_buffer_index; // Display front buffer id
 unsigned int gxm_back_buffer_index; // Display back buffer id
+static void (*vgl_display_cb) (void *framebuf) = NULL; // Additional custom caallback used inside display queue callback
 
 static void *gxm_shader_patcher_buffer_addr; // Shader PAtcher buffer memblock starting address
 static void *gxm_shader_patcher_vertex_usse_addr; // Shader Patcher vertex USSE memblock starting address
@@ -200,6 +201,9 @@ static void display_queue_callback(const void *callbackData) {
 	// Drawing lightweighted debugger info
 	vgl_debugger_light_draw(cb_data->addr);
 #endif
+
+	if (vgl_display_cb)
+		vgl_display_cb(cb_data->addr);
 
 	// Setting sceDisplay framebuffer
 	sceDisplaySetFrameBuf(&display_fb, SCE_DISPLAY_SETBUF_NEXTFRAME);
@@ -866,4 +870,8 @@ void glFlush(void) {
 		sceneEnd();
 
 	needs_scene_reset = GL_TRUE;
+}
+
+void vglSetDisplayCallback(void (*cb)(void *framebuf)) {
+	vgl_display_cb = cb;
 }

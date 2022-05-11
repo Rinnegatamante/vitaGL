@@ -754,6 +754,7 @@ void *vglMalloc(uint32_t size);
 void *vglMemalign(uint32_t alignment, uint32_t size);
 size_t vglMemFree(vglMemType type);
 void *vglRealloc(void *ptr, uint32_t size);
+void vglSetDisplayCallback(void (*cb)(void *framebuf));
 void vglSetFragmentBufferSize(uint32_t size);
 void vglSetParamBufferSize(uint32_t size);
 void vglSetUSSEBufferSize(uint32_t size);
