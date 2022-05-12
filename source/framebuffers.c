@@ -320,14 +320,17 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 		// Increasing texture reference counter
 		fb->tex = tex;
 		tex->ref_counter++;
-
+		
+		// Checking if the framebuffer requires extended register size
+		fb->is_float = fmt == SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
+		
 		// Allocating colorbuffer
 		sceGxmColorSurfaceInit(
 			&fb->colorbuffer,
 			get_color_from_texture(fmt),
 			SCE_GXM_COLOR_SURFACE_LINEAR,
 			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
-			SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
+			fb->is_float ? SCE_GXM_OUTPUT_REGISTER_SIZE_64BIT : SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
 			fb->width, fb->height, ALIGN(fb->width, 8), fb->data);
 
 		// Allocating temporary depth and stencil buffers (if necessary) to ensure scissoring works

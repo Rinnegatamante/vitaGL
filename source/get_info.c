@@ -26,9 +26,9 @@
 #include "shared.h"
 
 #ifndef DISABLE_TEXTURE_COMBINER
-#define NUM_EXTENSIONS 27 // Number of supported extensions
+#define NUM_EXTENSIONS 28 // Number of supported extensions
 #else
-#define NUM_EXTENSIONS 26 // Number of supported extensions
+#define NUM_EXTENSIONS 27 // Number of supported extensions
 #endif
 #define COMPRESSED_TEXTURE_FORMATS_NUM 24 // The number of supported texture formats
 
@@ -59,6 +59,7 @@ static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_NVX_gpu_memory_info",
 	"GL_EXT_color_buffer_half_float",
 	"GL_OES_texture_half_float",
+	"GL_OES_texture_half_float_linear",
 #ifndef DISABLE_TEXTURE_COMBINER
 	"GL_EXT_texture_env_combine"
 #endif

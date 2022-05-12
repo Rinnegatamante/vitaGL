@@ -873,7 +873,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 	// Checking if fragment shader requires a blend settings change
 	if (ffp_dirty_frag_blend) {
-		rebuild_frag_shader(ffp_fragment_program_id, &ffp_fragment_program_patched, ffp_vertex_program);
+		rebuild_frag_shader(ffp_fragment_program_id, &ffp_fragment_program_patched, ffp_vertex_program, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
 
 		// Updating current fixed function pipeline blend config
 		ffp_blend_info.raw = blend_info.raw;

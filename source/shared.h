@@ -254,6 +254,8 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 #define patchFragmentProgram sceGxmShaderPatcherCreateFragmentProgram
 #endif
 
+#define rebuild_frag_shader(x, y, z, w) patchFragmentProgram(gxm_shader_patcher, x, w, msaa_mode, &blend_info.info, z, y) // Creates a new patched fragment program with proper blend settings
+
 #ifdef HAVE_SOFTFP_ABI
 extern __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale);
 #define setViewport sceGxmSetViewport_sfp
@@ -353,6 +355,7 @@ typedef struct {
 	void *data;
 	uint32_t data_type;
 	texture *tex;
+	GLboolean is_float;
 } framebuffer;
 
 // Renderbuffer struct
@@ -648,6 +651,7 @@ extern glPhase phase; // Current drawing phase for legacy openGL
 extern vector4f current_color; // Current in use color
 extern vector4f clear_rgba_val; // Current clear color for glClear
 extern viewport gl_viewport; // Current viewport state
+extern GLboolean is_fbo_float; // Current framebuffer mode
 
 // Culling
 extern GLboolean no_polygons_mode; // GL_TRUE when cull mode is set to GL_FRONT_AND_BACK
@@ -770,8 +774,6 @@ void validate_viewport(void); // Restores previously invalidated viewport
 /* blending.c (TODO) */
 void change_blend_factor(void); // Changes current blending settings for all used shaders
 void change_blend_mask(void); // Changes color mask when blending is disabled for all used shaders
-void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, SceGxmProgram *vprog); // Creates a new patched fragment program with proper blend settings
-GLenum gxm_blend_to_gl(SceGxmBlendFactor factor);
 
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders

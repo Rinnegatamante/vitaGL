@@ -62,6 +62,7 @@ static GLboolean needs_scene_reset = GL_TRUE; // Flag for when a scene reset is 
 SceGxmContext *gxm_context; // sceGxm context instance
 GLenum vgl_error = GL_NO_ERROR; // Error returned by glGetError
 SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
+GLboolean is_fbo_float = GL_FALSE; // Current framebuffer mode
 
 matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 matrix4x4 projection_matrix; // Projection Matrix
@@ -558,6 +559,7 @@ void sceneReset(void) {
 	if (in_use_framebuffer != active_write_fb || needs_scene_reset) {
 		needs_scene_reset = GL_FALSE;
 		in_use_framebuffer = active_write_fb;
+		is_fbo_float = in_use_framebuffer ? in_use_framebuffer->is_float : GL_FALSE;
 
 		// Ending drawing scene
 		if (needs_end_scene)

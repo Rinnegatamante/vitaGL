@@ -119,6 +119,7 @@ typedef struct {
 	uniform *frag_uniforms;
 	GLuint attr_highest_idx;
 	GLboolean has_unaligned_attrs;
+	GLboolean is_fbo_float;
 } program;
 
 // Internal shaders and array
@@ -250,9 +251,10 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required and upload fragment program
-	if (p->blend_info.raw != blend_info.raw) {
+	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float)) {
+		p->is_fbo_float = is_fbo_float;
 		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog);
+		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
 	}
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 
@@ -411,9 +413,10 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required and upload fragment program
-	if (p->blend_info.raw != blend_info.raw) {
+	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float)) {
+		p->is_fbo_float = is_fbo_float;
 		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog);
+		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
 	}
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 
@@ -593,9 +596,10 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required
-	if (p->blend_info.raw != blend_info.raw) {
+	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float)) {
+		p->is_fbo_float = is_fbo_float;
 		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog);
+		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
 	}
 
 	// Setting up required shader
@@ -933,6 +937,7 @@ GLuint glCreateProgram(void) {
 			progs[i].vert_uniforms = NULL;
 			progs[i].frag_uniforms = NULL;
 			progs[i].attr_highest_idx = 0;
+			progs[i].is_fbo_float = 0xFF;
 			for (j = 0; j < VERTEX_ATTRIBS_NUM; j++) {
 				progs[i].attr[j].regIndex = 0xDEAD;
 			}
@@ -1139,9 +1144,8 @@ void glLinkProgram(GLuint progr) {
 		patchVertexProgram(gxm_shader_patcher,
 			p->vshader->id, p->attr, p->attr_num,
 			p->stream, p->stream_num, &p->vprog);
-		patchFragmentProgram(gxm_shader_patcher,
-			p->fshader->id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-			msaa_mode, &blend_info.info, NULL, &p->fprog);
+		rebuild_frag_shader(p->fshader->id, &p->fprog, NULL, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
+		p->is_fbo_float = is_fbo_float;
 
 		// Populating current blend settings
 		p->blend_info.raw = blend_info.raw;

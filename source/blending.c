@@ -66,12 +66,6 @@ GLenum gxm_blend_to_gl(SceGxmBlendFactor factor) {
 	return 0;
 }
 
-void rebuild_frag_shader(SceGxmShaderPatcherId pid, SceGxmFragmentProgram **prog, SceGxmProgram *vprog) {
-	patchFragmentProgram(gxm_shader_patcher,
-		pid, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa_mode, &blend_info.info, vprog, prog);
-}
-
 void change_blend_factor() {
 	blend_info.info.colorMask = blend_color_mask;
 	blend_info.info.colorFunc = blend_func_rgb;
