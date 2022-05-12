@@ -1616,6 +1616,7 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 	unsigned short bpe;
 	switch (type) {
 	case GL_HALF_FLOAT:
+	case GL_HALF_FLOAT_OES:
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F16;
 		bpe = 2;
 		break;

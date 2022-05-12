@@ -265,6 +265,11 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 		break;
 	case GL_RGBA:
 		switch (type) {
+		case GL_HALF_FLOAT:
+		case GL_HALF_FLOAT_OES:
+			data_bpp = 8;
+			fast_store = GL_TRUE; // TODO: For now we assume half float textures are always stored with same internalformat
+			break;
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 4;
 			if (internalFormat == GL_RGBA)
@@ -296,6 +301,9 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 	// Detecting proper write callback and texture format
 	tex->write_cb = NULL;
 	switch (internalFormat) {
+	case GL_RGBA16F:
+		tex_format = SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
+		break;
 	case GL_COMPRESSED_SRGB_S3TC_DXT1:
 	case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1:
 	case GL_COMPRESSED_SRGB:
