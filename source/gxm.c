@@ -48,9 +48,7 @@ static void *gxm_shader_patcher_buffer_addr; // Shader PAtcher buffer memblock s
 static void *gxm_shader_patcher_vertex_usse_addr; // Shader Patcher vertex USSE memblock starting address
 static void *gxm_shader_patcher_fragment_usse_addr; // Shader Patcher fragment USSE memblock starting address
 
-void *gxm_depth_surface_addr; // Depth surface memblock starting address
-static void *gxm_stencil_surface_addr; // Stencil surface memblock starting address
-static SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil surfaces setup for sceGxm
+SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil surfaces setup for sceGxm
 
 static SceUID shared_fb; // In-use hared framebuffer identifier
 static SceSharedFbInfo shared_fb_info; // In-use shared framebuffer info struct
@@ -454,7 +452,7 @@ void termDisplayColorSurfaces(void) {
 	}
 }
 
-void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, void **depth_buffer, void **stencil_buffer) {
+void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, GLboolean has_stencil) {
 	// Calculating sizes for depth and stencil surfaces
 	unsigned int depth_stencil_width = ALIGN(w, SCE_GXM_TILE_SIZEX);
 	unsigned int depth_stencil_height = ALIGN(h, SCE_GXM_TILE_SIZEY);
@@ -465,29 +463,30 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 		depth_stencil_samples *= 4;
 
 	// Allocating depth surface
-	*depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, VGL_MEM_VRAM);
+	void *depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, VGL_MEM_VRAM);
 
 	// Allocating stencil surface
-	if (stencil_buffer)
-		*stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, VGL_MEM_VRAM);
+	void *stencil_buffer = NULL;
+	if (has_stencil)
+		stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, VGL_MEM_VRAM);
 
 	// Initializing depth and stencil surfaces
 	sceGxmDepthStencilSurfaceInit(surface,
 		stencil_buffer ? SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M_S8 : SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M,
 		SCE_GXM_DEPTH_STENCIL_SURFACE_LINEAR,
 		msaa_mode == SCE_GXM_MULTISAMPLE_4X ? depth_stencil_width * 2 : depth_stencil_width,
-		*depth_buffer,
-		stencil_buffer ? *stencil_buffer : NULL);
+		depth_buffer,
+		stencil_buffer ? stencil_buffer : NULL);
 }
 
 void initDepthStencilSurfaces(void) {
-	initDepthStencilBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, &gxm_depth_stencil_surface, &gxm_depth_surface_addr, &gxm_stencil_surface_addr);
+	initDepthStencilBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, &gxm_depth_stencil_surface, GL_TRUE);
 }
 
 void termDepthStencilSurfaces(void) {
 	// Deallocating depth and stencil surfaces memblocks
-	vgl_free(gxm_depth_surface_addr);
-	vgl_free(gxm_stencil_surface_addr);
+	vgl_free(gxm_depth_stencil_surface.depthData);
+	vgl_free(gxm_depth_stencil_surface.stencilData);
 }
 
 void startShaderPatcher(void) {
@@ -599,6 +598,13 @@ void sceneReset(void) {
 				&gxm_depth_stencil_surface);
 #endif
 		} else {
+			// If a depthstencil surface is not bound to the in use framebuffer, we get one for it to ensure scissor testing compatibility
+			if (!active_write_fb->depthbuffer_ptr) {
+				initDepthStencilBuffer(active_write_fb->width, active_write_fb->height, &active_write_fb->depthbuffer, GL_FALSE);
+				active_write_fb->depthbuffer_ptr = &active_write_fb->depthbuffer;
+				active_write_fb->is_depth_hidden = GL_TRUE;
+			}
+			
 			// If a rendertarget is not bound to the in use framebuffer, we get one for it
 			if (!active_write_fb->target) {
 #ifdef HAVE_SHARED_RENDERTARGETS
@@ -726,7 +732,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		updateParam.renderTarget.height = DISPLAY_HEIGHT;
 		updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE;
 		updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_back_buffer_index];
-		updateParam.renderTarget.depthSurfaceData = gxm_depth_surface_addr;
+		updateParam.renderTarget.depthSurfaceData = gxm_depth_stencil_surface.depthData;
 		updateParam.displaySyncObject = gxm_sync_objects[gxm_back_buffer_index];
 
 		// Updating sceCommonDialog

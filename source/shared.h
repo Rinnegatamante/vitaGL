@@ -347,8 +347,6 @@ typedef struct {
 	SceGxmColorSurface colorbuffer;
 	SceGxmDepthStencilSurface depthbuffer;
 	SceGxmDepthStencilSurface *depthbuffer_ptr;
-	void *depth_buffer_addr;
-	void *stencil_buffer_addr;
 	int width;
 	int height;
 	int stride;
@@ -356,6 +354,7 @@ typedef struct {
 	uint32_t data_type;
 	texture *tex;
 	GLboolean is_float;
+	GLboolean is_depth_hidden;
 } framebuffer;
 
 // Renderbuffer struct
@@ -363,8 +362,6 @@ typedef struct {
 	GLboolean active;
 	SceGxmDepthStencilSurface depthbuffer;
 	SceGxmDepthStencilSurface *depthbuffer_ptr;
-	void *depth_buffer_addr;
-	void *stencil_buffer_addr;
 } renderbuffer;
 
 // Texture environment mode
@@ -561,7 +558,7 @@ extern float fullscreen_z_scale;
 extern SceGxmContext *gxm_context; // sceGxm context instance
 extern GLenum vgl_error; // Error returned by glGetError
 extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
-extern void *gxm_depth_surface_addr; // Depth surface memblock starting address
+extern SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil surfaces setup for sceGxm
 extern GLboolean system_app_mode; // Flag for system app mode usage
 extern void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
 extern void *frame_rt_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_RENDERTARGETS_LIST_SIZE]; // Purge list for rendertargets
@@ -748,7 +745,7 @@ void createDisplayRenderTarget(void); // Creates render target for the display
 void destroyDisplayRenderTarget(void); // Destroys render target for the display
 void initDisplayColorSurfaces(void); // Creates color surfaces for the display
 void termDisplayColorSurfaces(void); // Destroys color surfaces for the display
-void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, void **depth_buffer, void **stencil_buffer); // Creates depth and stencil surfaces
+void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, GLboolean has_stencil); // Creates depth and stencil surfaces
 void initDepthStencilSurfaces(void); // Creates depth and stencil surfaces for the display
 void termDepthStencilSurfaces(void); // Destroys depth and stencil surfaces for the display
 void startShaderPatcher(void); // Creates a shader patcher instance
