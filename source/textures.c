@@ -1435,6 +1435,21 @@ void *vglGetTexDataPointer(GLenum target) {
 	}
 }
 
+void vglOverloadTexDataPointer(GLenum target, void *data) {
+		// Aliasing texture unit for cleaner code
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = tex_unit->tex_id;
+	texture *tex = &texture_slots[texture2d_idx];
+
+	switch (target) {
+	case GL_TEXTURE_2D:
+		tex->data = data;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+}
+
 SceGxmTexture *vglGetGxmTexture(GLenum target) {
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];

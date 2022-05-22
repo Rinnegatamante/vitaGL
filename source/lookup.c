@@ -271,6 +271,7 @@ static const struct {
 	{"vglMemalign", (void *)vglMemalign},
 	{"vglMemFree", (void *)vglMemFree},
 	{"vglMemTotal", (void *)vglMemTotal},
+	{"vglOverloadTexDataPointer", (void *)vglOverloadTexDataPointer},
 	{"vglRealloc", (void *)vglRealloc},
 	{"vglSetDisplayCallback", (void *)vglSetDisplayCallback},
 	{"vglSetFragmentBufferSize", (void *)vglSetFragmentBufferSize},
