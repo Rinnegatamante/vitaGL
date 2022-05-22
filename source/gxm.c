@@ -475,8 +475,7 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 		stencil_buffer ? SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M_S8 : SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M,
 		SCE_GXM_DEPTH_STENCIL_SURFACE_LINEAR,
 		msaa_mode == SCE_GXM_MULTISAMPLE_4X ? depth_stencil_width * 2 : depth_stencil_width,
-		depth_buffer,
-		stencil_buffer ? stencil_buffer : NULL);
+		depth_buffer, stencil_buffer);
 }
 
 void initDepthStencilSurfaces(void) {
