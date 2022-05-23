@@ -490,6 +490,7 @@ extern "C" {
 // gl*
 void glActiveTexture(GLenum texture);
 void glAlphaFunc(GLenum func, GLfloat ref);
+void glAlphaFuncx(GLenum func, GLfixed ref);
 void glAttachShader(GLuint prog, GLuint shad);
 void glBegin(GLenum mode);
 void glBindAttribLocation(GLuint program, GLuint index, const GLchar *name);

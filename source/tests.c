@@ -448,6 +448,13 @@ void glAlphaFunc(GLenum func, GLfloat ref) {
 	update_alpha_test_settings();
 }
 
+void glAlphaFuncx(GLenum func, GLfixed ref) {
+	// Updating in use alpha test parameters
+	alpha_func = func;
+	alpha_ref = (float)ref / 65536.0f;
+	update_alpha_test_settings();
+}
+
 void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass) {
 	// Properly updating stencil operation settings
 	switch (face) {

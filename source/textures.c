@@ -486,8 +486,11 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 							fb = active_write_fb;
 						if (fb) {
 							gpu_free_texture(&texture_slots[i]);
-							if (fb->depthbuffer_ptr && fb->is_depth_hidden)
+							if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
 								markAsDirty(fb->depthbuffer_ptr->depthData);
+								fb->depthbuffer_ptr = NULL;
+								fb->is_depth_hidden = GL_FALSE;
+							}
 							if (fb->target) {
 								markRtAsDirty(fb->target);
 								fb->target = NULL;
