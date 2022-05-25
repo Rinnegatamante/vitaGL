@@ -302,6 +302,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 	tex->write_cb = NULL;
 	switch (internalFormat) {
 	case GL_RGBA16F:
+		tex->write_cb = (void *)GL_TRUE; // Avoid to let this case fall in compressed texture case
 		tex_format = SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
 		break;
 	case GL_COMPRESSED_SRGB_S3TC_DXT1:
