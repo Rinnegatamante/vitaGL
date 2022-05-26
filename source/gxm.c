@@ -92,7 +92,7 @@ int frame_purge_idx = 0; // Index for currently populatable purge list
 int frame_elem_purge_idx = 0; // Index for currently populatable purge list element
 int frame_rt_purge_idx = 0; // Index for currently populatable purge list rendetarget
 static int frame_purge_clean_idx = 1;
-static SceUID gc_mutex, gc_thread;
+SceUID gc_mutex, gc_thread;
 static int gc_thread_priority = 0x10000100;
 static int gc_thread_affinity = 0;
 static uint32_t display_queue_cb_flags = 0;
@@ -213,7 +213,7 @@ static void display_queue_callback(const void *callbackData) {
 }
 
 // Garbage collector
-static int garbage_collector(unsigned int args, void *arg) {
+int garbage_collector(unsigned int args, void *arg) {
 #ifndef HAVE_SINGLE_THREADED_GC
 	for (;;) {
 		// Waiting for garbage collection request

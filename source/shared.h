@@ -439,6 +439,8 @@ extern GLboolean is_rendering_display; // Flag for when we're rendering without 
 extern uint16_t *default_idx_ptr; // sceGxm mapped progressive indices buffer
 extern uint16_t *default_quads_idx_ptr; // sceGxm mapped progressive indices buffer for quads
 extern uint16_t *default_line_strips_idx_ptr; // sceGxm mapped progressive indices buffer for line strips
+extern int garbage_collector(unsigned int args, void *arg); // Garbage collector function
+extern SceUID gc_mutex; // Garbage collector mutex
 
 extern int legacy_pool_size; // Mempool size for GL1 immediate draw pipeline
 extern float *legacy_pool; // Mempool for GL1 immediate draw pipeline

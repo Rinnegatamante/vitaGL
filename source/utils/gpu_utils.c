@@ -129,6 +129,48 @@ void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width
 	}
 }
 
+static int unsafe_allocator_counter = 0;
+void *gpu_alloc_mapped_aligned_unsafe(size_t alignment, size_t size, vglMemType type) {
+	// Performing a garbage collection cycle prior to attempting to allocate the memory again
+	unsafe_allocator_counter++;
+#ifdef HAVE_SINGLE_THREADED_GC
+	garbage_collector(0, NULL);
+#else
+	sceKernelSignalSema(gc_mutex, 1);
+	sceKernelDelayThread(1000000);
+#endif
+	
+	// Allocating requested memblock
+	void *res = vgl_memalign(alignment, size, type);
+	if (res)
+		return res;
+
+	// Requested memory type finished, using other one
+	res = vgl_memalign(alignment, size, type == VGL_MEM_VRAM ? VGL_MEM_RAM : VGL_MEM_VRAM);
+	if (res)
+		return res;
+
+	// Even the other one failed, trying with physically contiguous RAM
+	res = vgl_memalign(alignment, size, VGL_MEM_SLOW);
+	if (res)
+		return res;
+	
+	// Even this failed, attempting with game common dialog RAM
+	res = vgl_memalign(alignment, size, VGL_MEM_BUDGET);
+	if (res)
+		return res;
+
+	// Internal mempools finished, using newlib mem
+	if (use_extra_mem)
+		res = vgl_memalign(alignment, size, VGL_MEM_EXTERNAL);
+
+	// Iterating for as many as possible max pending garbage collector cycles
+	if (!res && unsafe_allocator_counter < FRAME_PURGE_FREQ)
+		res = gpu_alloc_mapped_aligned_unsafe(alignment, size, type);
+	
+	return res;
+}
+
 void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type) {
 	// Allocating requested memblock
 	void *res = vgl_memalign(alignment, size, type);
@@ -154,11 +196,22 @@ void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type) {
 	if (use_extra_mem)
 		res = vgl_memalign(alignment, size, VGL_MEM_EXTERNAL);
 
+	if (!res) {
+		// Attempt to force garbage collector in order to try to free some mem in an unsafe way
 #ifdef LOG_ERRORS
-	if (!res)
-		vgl_log("%s:%d gpu_alloc_mapped_aligned failed with a requested size of 0x%08X\n", __FILE__, __LINE__, size);
+		vgl_log("%s:%d gpu_alloc_mapped_aligned failed with a requested size of 0x%08X, attempting to forcefully free required memory.\n", __FILE__, __LINE__, size);
 #endif
+		unsafe_allocator_counter = 0;
+		res = gpu_alloc_mapped_aligned_unsafe(alignment, size, type);
 
+#ifdef LOG_ERRORS
+		if (!res)
+			vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe failed with a requested size of 0x%08X.\n", __FILE__, __LINE__, size);
+		else
+			vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe successfully allocated the requested memory after forcing %d garbage collection cycles.\n", __FILE__, __LINE__, unsafe_allocator_counter);
+#endif
+	}
+	
 	return res;
 }
 
