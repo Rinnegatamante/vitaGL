@@ -771,6 +771,7 @@ void vglSetupGarbageCollector(int priority, int affinity);
 void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, int32_t use_fastprecision, int32_t use_fastint);
 void vglSwapBuffers(GLboolean has_commondialog);
 void vglTexImageDepthBuffer(GLenum target);
+void vglUseCachedMem(GLboolean use);
 void vglUseTripleBuffering(GLboolean usage);
 void vglUseVram(GLboolean usage);
 void vglUseVramForUSSE(GLboolean usage);

@@ -656,3 +656,7 @@ void vglSetVertexPoolSize(uint32_t size) {
 	vertex_data_pool_size = size;
 #endif
 }
+
+void vglUseCachedMem(GLboolean use) {
+	has_cached_mem = use;
+}

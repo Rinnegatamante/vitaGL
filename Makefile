@@ -121,10 +121,6 @@ ifeq ($(HAVE_HIGH_FFP_TEXUNITS),1)
 CFLAGS += -DHAVE_HIGH_FFP_TEXUNITS
 endif
 
-ifeq ($(CACHED_MEM),1)
-CFLAGS += -DHAVE_CACHED_MEM
-endif
-
 CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a

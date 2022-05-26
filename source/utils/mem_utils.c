@@ -23,6 +23,8 @@
 
 #include "../shared.h"
 
+GLboolean has_cached_mem = GL_FALSE; // Flag for wether to use cached memory for mempools or not
+
 #ifndef HAVE_CUSTOM_HEAP
 static void *mempool_mspace[VGL_MEM_ALL] = {NULL, NULL, NULL, NULL, NULL}; // mspace creations (VRAM, RAM, PHYCONT RAM, CDLG, EXTERNAL)
 #endif
@@ -30,7 +32,7 @@ static void *mempool_addr[VGL_MEM_ALL] = {NULL, NULL, NULL, NULL, NULL}; // addr
 static SceUID mempool_id[VGL_MEM_ALL] = {0, 0, 0, 0, 0}; // UIDs of heap memblocks (VRAM, RAM, PHYCONT RAM, EXTERNAL)
 static size_t mempool_size[VGL_MEM_ALL] = {0, 0, 0, 0, 0}; // sizes of heap memlbocks (VRAM, RAM, PHYCONT RAM, EXTERNAL)
 
-static int mempool_initialized = 0;
+static int mempool_initialized = GL_FALSE;
 
 #ifdef HAVE_CUSTOM_HEAP
 typedef struct tm_block_s {
@@ -297,10 +299,8 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_
 	if (mempool_initialized)
 		vgl_mem_term();
 
-#ifndef HAVE_CACHED_MEM
-	if (size_ram > 0xC800000) // Vita has a smaller address mapping for uncached mem
+	if (has_cached_mem && size_ram > 0xC800000) // Vita has a smaller address mapping for uncached mem
 		size_ram = 0xC800000;
-#endif
 
 	mempool_size[VGL_MEM_VRAM] = ALIGN(size_cdram, 256 * 1024);
 	mempool_size[VGL_MEM_RAM] = ALIGN(size_ram, 4 * 1024);
@@ -318,21 +318,21 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_
 
 	if (mempool_size[VGL_MEM_VRAM])
 		mempool_id[VGL_MEM_VRAM] = sceKernelAllocMemBlock("cdram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW, mempool_size[VGL_MEM_VRAM], NULL);
-#ifdef HAVE_CACHED_MEM
-	if (mempool_size[VGL_MEM_RAM])
-		mempool_id[VGL_MEM_RAM] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, mempool_size[VGL_MEM_RAM], NULL);
-	if (mempool_size[VGL_MEM_SLOW])
-		mempool_id[VGL_MEM_SLOW] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW, mempool_size[VGL_MEM_SLOW], NULL);
-	if (mempool_size[VGL_MEM_BUDGET])
-		mempool_id[VGL_MEM_BUDGET] = sceKernelAllocMemBlock("cdlg_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_RW, mempool_size[VGL_MEM_BUDGET], NULL);
-#else	
-	if (mempool_size[VGL_MEM_RAM])
-		mempool_id[VGL_MEM_RAM] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, mempool_size[VGL_MEM_RAM], NULL);
-	if (mempool_size[VGL_MEM_SLOW])
-		mempool_id[VGL_MEM_SLOW] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW, mempool_size[VGL_MEM_SLOW], NULL);
-	if (mempool_size[VGL_MEM_BUDGET])
-		mempool_id[VGL_MEM_BUDGET] = sceKernelAllocMemBlock("cdlg_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_NC_RW, mempool_size[VGL_MEM_BUDGET], NULL);
-#endif
+	if (has_cached_mem) {
+		if (mempool_size[VGL_MEM_RAM])
+			mempool_id[VGL_MEM_RAM] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, mempool_size[VGL_MEM_RAM], NULL);
+		if (mempool_size[VGL_MEM_SLOW])
+			mempool_id[VGL_MEM_SLOW] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW, mempool_size[VGL_MEM_SLOW], NULL);
+		if (mempool_size[VGL_MEM_BUDGET])
+			mempool_id[VGL_MEM_BUDGET] = sceKernelAllocMemBlock("cdlg_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_RW, mempool_size[VGL_MEM_BUDGET], NULL);
+	} else {
+		if (mempool_size[VGL_MEM_RAM])
+			mempool_id[VGL_MEM_RAM] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, mempool_size[VGL_MEM_RAM], NULL);
+		if (mempool_size[VGL_MEM_SLOW])
+			mempool_id[VGL_MEM_SLOW] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW, mempool_size[VGL_MEM_SLOW], NULL);
+		if (mempool_size[VGL_MEM_BUDGET])
+			mempool_id[VGL_MEM_BUDGET] = sceKernelAllocMemBlock("cdlg_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_NC_RW, mempool_size[VGL_MEM_BUDGET], NULL);
+	}
 	for (int i = 0; i < VGL_MEM_EXTERNAL; i++) {
 		if (mempool_size[i]) {
 			mempool_addr[i] = NULL;
@@ -565,11 +565,9 @@ void *vgl_realloc(void *ptr, size_t size) {
 
 void vgl_memcpy(void *dst, const void *src, size_t size) {
 #ifndef DEBUG_MEMCPY
-#ifndef HAVE_CACHED_MEM
-	if (size >= 0x2000)
+	if (size >= 0x2000 && !has_cached_mem)
 		sceDmacMemcpy(dst, src, size);
 	else
-#endif
 		vgl_fast_memcpy(dst, src, size);
 #else
 	memcpy(dst, src, size);

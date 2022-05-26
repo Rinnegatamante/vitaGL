@@ -24,6 +24,8 @@
 #include "shared.h"
 #include "vitaGL.h"
 
+//#define EXPOSE_VGL_FUNCS // Define this to enable exposure of vgl* functions in vglGetProcAddress/eglGetProcAddress
+
 static const struct {
 	const char *name;
 	void *proc;
@@ -239,6 +241,7 @@ static const struct {
 	{"gluBuild2DMipmaps", (void *)gluBuild2DMipmaps},
 	{"gluLookAt", (void *)gluLookAt},
 	{"gluPerspective", (void *)gluPerspective},
+#ifdef EXPOSE_VGL_FUNCS
 	// *vgl
 	{"vglColorPointer", (void *)vglColorPointer},
 	{"vglColorPointerMapped", (void *)vglColorPointerMapped},
@@ -286,11 +289,13 @@ static const struct {
 	{"vglSetupRuntimeShaderCompiler", (void *)vglSetupRuntimeShaderCompiler},
 	{"vglSwapBuffers", (void *)vglSwapBuffers},
 	{"vglTexImageDepthBuffer", (void *)vglTexImageDepthBuffer},
+	{"vglUseCachedMem", (void *)vglUseCachedMem},
 	{"vglUseTripleBuffering", (void *)vglUseTripleBuffering},
 	{"vglUseVram", (void *)vglUseVram},
 	{"vglUseVramForUSSE", (void *)vglUseVramForUSSE},
 	{"vglUseExtraMem", (void *)vglUseExtraMem},
 	{"vglWaitVblankStart", (void *)vglWaitVblankStart},
+#endif
 	// *egl
 	{"eglBindAPI", (void *)eglBindAPI},
 	{"eglGetDisplay", (void *)eglGetDisplay},

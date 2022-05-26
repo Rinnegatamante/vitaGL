@@ -441,6 +441,7 @@ extern uint16_t *default_quads_idx_ptr; // sceGxm mapped progressive indices buf
 extern uint16_t *default_line_strips_idx_ptr; // sceGxm mapped progressive indices buffer for line strips
 extern int garbage_collector(unsigned int args, void *arg); // Garbage collector function
 extern SceUID gc_mutex; // Garbage collector mutex
+extern GLboolean has_cached_mem; // Flag for wether to use cached memory for mempools or not
 
 extern int legacy_pool_size; // Mempool size for GL1 immediate draw pipeline
 extern float *legacy_pool; // Mempool for GL1 immediate draw pipeline
