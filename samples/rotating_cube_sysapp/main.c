@@ -25,7 +25,7 @@ int main(){
 	
 	// Initializing graphics device
 	vglSetParamBufferSize(2 * 1024 * 1024);
-	vglInitWithCustomSizes(0x1000, 960, 544, 16 * 1024 * 1024, 0, 0, SCE_GXM_MULTISAMPLE_4X);
+	vglInitWithCustomSizes(0x1000, 960, 544, 16 * 1024 * 1024, 0, 0, 0, SCE_GXM_MULTISAMPLE_4X);
 	vglWaitVblankStart(GL_TRUE);
 	
 	// Creating colors array

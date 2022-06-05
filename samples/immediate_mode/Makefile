@@ -1,6 +1,5 @@
-SAMPLE_NUM	:= 3
-SAMPLE_NUM_ID := 003
-TARGET		:= vitaGL-Sample$(SAMPLE_NUM)
+TITLEID     := VGLIMMMDE
+TARGET		:= immediate_mode
 SOURCES		:= .
 			
 INCLUDES	:= include
@@ -24,7 +23,7 @@ ASFLAGS = $(CFLAGS)
 all: $(TARGET).vpk
 
 $(TARGET).vpk: eboot.bin
-	vita-mksfoex -s TITLE_ID=VITAGL$(SAMPLE_NUM_ID) "$(TARGET)" param.sfo
+	vita-mksfoex -s TITLE_ID=$(TITLEID) "$(TARGET)" param.sfo
 	vita-pack-vpk -s param.sfo -b eboot.bin $@
 
 eboot.bin: $(TARGET).velf

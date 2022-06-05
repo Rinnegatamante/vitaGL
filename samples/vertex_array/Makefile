@@ -1,14 +1,10 @@
-SAMPLE_NUM	:= 7
-SAMPLE_NUM_ID := 007
-TARGET		:= vitaGL-Sample$(SAMPLE_NUM)
+TITLEID     := VGLVTXARR
+TARGET		:= vertex_array
 SOURCES		:= .
 			
 INCLUDES	:= include
 
-LIBS = -lvitaGL -lSceLibKernel_stub -lScePvf_stub \
-	-lSceAppMgr_stub -lSceAppUtil_stub -lScePgf_stub \
-	-ljpeg -lfreetype -lc -lSceCommonDialog_stub -lpng16 -lm -lz \
-	-lSceGxm_stub -lSceDisplay_stub -lSceSysmodule_stub -lmathneon \
+LIBS = -lvitaGL -lc -lSceCommonDialog_stub -lm -lSceGxm_stub -lSceDisplay_stub -lmathneon -lSceAppMgr_stub \
 	-lvitashark -lSceShaccCg_stub -lSceKernelDmacMgr_stub
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
@@ -26,13 +22,14 @@ ASFLAGS = $(CFLAGS)
 all: $(TARGET).vpk
 
 $(TARGET).vpk: eboot.bin
-	vita-mksfoex -s TITLE_ID=VITAGL$(SAMPLE_NUM_ID) "$(TARGET)" param.sfo
-	vita-pack-vpk -s param.sfo -b eboot.bin -a texture.bmp=texture.bmp $@
+	vita-mksfoex -s TITLE_ID=$(TITLEID) "$(TARGET)" param.sfo
+	vita-pack-vpk -s param.sfo -b eboot.bin $@
 
 eboot.bin: $(TARGET).velf
 	vita-make-fself -s $< eboot.bin	
 	
 %.velf: %.elf
+	cp $< $<.unstripped.elf
 	vita-elf-create $< $@
 	
 $(TARGET).elf: $(OBJS)
@@ -40,3 +37,4 @@ $(TARGET).elf: $(OBJS)
 	
 clean:
 	@rm -rf *.velf *.elf *.vpk $(OBJS) param.sfo eboot.bin
+	

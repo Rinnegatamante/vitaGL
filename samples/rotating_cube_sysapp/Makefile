@@ -1,15 +1,11 @@
-SAMPLE_NUM	:= 10
-SAMPLE_NUM_ID := 010
-TARGET		:= vitaGL-Sample$(SAMPLE_NUM)
+TITLEID     := VGLSROTCB
+TARGET		:= rotating_cube_sysapp
 SOURCES		:= .
 			
 INCLUDES	:= include
 
-LIBS = -lvitaGL -lSceLibKernel_stub -lScePvf_stub -lmathneon \
-	-lSceAppMgr_stub -lSceAppUtil_stub -lScePgf_stub \
-	-ljpeg -lfreetype -lc -lSceCommonDialog_stub -lpng16 -lm -lz \
-	-lSceGxm_stub -lSceDisplay_stub -lSceSysmodule_stub \
-	-lvitashark -lSceShaccCg_stub -lSceCtrl_stub -lSceKernelDmacMgr_stub
+LIBS = -lvitaGL -lc -lSceCommonDialog_stub -lm -lSceGxm_stub -lSceDisplay_stub -lSceAppMgr_stub -lmathneon \
+	-lvitashark -lSceShaccCg_stub -lSceKernelDmacMgr_stub
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
 CPPFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.cpp))
@@ -26,11 +22,11 @@ ASFLAGS = $(CFLAGS)
 all: $(TARGET).vpk
 
 $(TARGET).vpk: eboot.bin
-	vita-mksfoex -s TITLE_ID=VITAGL$(SAMPLE_NUM_ID) "$(TARGET)" param.sfo
+	vita-mksfoex -s TITLE_ID=$(TITLEID) "$(TARGET)" param.sfo
 	vita-pack-vpk -s param.sfo -b eboot.bin $@
 
 eboot.bin: $(TARGET).velf
-	vita-make-fself -s $< eboot.bin	
+	vita-make-fself -at 0x0E -m 0x10000 $< eboot.bin	
 	
 %.velf: %.elf
 	vita-elf-create $< $@

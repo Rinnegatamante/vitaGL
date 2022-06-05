@@ -1,6 +1,5 @@
-SAMPLE_NUM	:= 2
-SAMPLE_NUM_ID := 002
-TARGET		:= vitaGL-Sample$(SAMPLE_NUM)
+TITLEID     := VGLDRWELE
+TARGET		:= draw_elements
 SOURCES		:= .
 			
 INCLUDES	:= include
@@ -22,18 +21,14 @@ ASFLAGS = $(CFLAGS)
 
 all: $(TARGET).vpk
 
-debug: CFLAGS += -DDEBUG_BUILD
-debug: all
-
 $(TARGET).vpk: eboot.bin
-	vita-mksfoex -s TITLE_ID=VITAGL$(SAMPLE_NUM_ID) "$(TARGET)" param.sfo
+	vita-mksfoex -s TITLE_ID=$(TITLEID) "$(TARGET)" param.sfo
 	vita-pack-vpk -s param.sfo -b eboot.bin $@
 
 eboot.bin: $(TARGET).velf
 	vita-make-fself -s $< eboot.bin	
 	
 %.velf: %.elf
-	cp $< $<.unstripped.elf
 	vita-elf-create $< $@
 	
 $(TARGET).elf: $(OBJS)
@@ -41,4 +36,3 @@ $(TARGET).elf: $(OBJS)
 	
 clean:
 	@rm -rf *.velf *.elf *.vpk $(OBJS) param.sfo eboot.bin
-	
