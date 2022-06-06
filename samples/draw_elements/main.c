@@ -1,5 +1,4 @@
 // Drawing a quad on screen with glDrawElements
-
 #include <vitaGL.h>
 
 float colors[] = {1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0};
@@ -7,7 +6,6 @@ float vertices[] = {100, 100, 0, 150, 100, 0, 100, 150, 0, 150, 150, 0};
 uint16_t indices[] = {0, 1, 2, 1, 2, 3};
 
 int main(){
-	
 	// Initializing graphics device
 	vglInit(0x800000);
 	
