@@ -31,12 +31,12 @@ $(TARGET).vpk: eboot.bin
 		-a plane.obj=plane.obj \
 		-a phong.frag=phong.frag \
 		-a phong.vert=phong.vert \
-		-a phong.frag=blinn.frag \
-		-a phong.vert=blinn.vert \
-		-a phong.frag=lambertian.frag \
-		-a phong.vert=lambertian.vert \
-		-a phong.frag=fdg.frag \
-		-a phong.vert=fdg.vert $@
+		-a blinn.frag=blinn.frag \
+		-a blinn.vert=blinn.vert \
+		-a lambertian.frag=lambertian.frag \
+		-a lambertian.vert=lambertian.vert \
+		-a fdg.frag=fdg.frag \
+		-a fdg.vert=fdg.vert $@
 
 eboot.bin: $(TARGET).velf
 	vita-make-fself -s $< eboot.bin	
