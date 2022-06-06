@@ -1,8 +1,6 @@
 // Drawing a fullscreen image on screen with glBegin/glEnd
-
 #include <vitasdk.h>
 #include <vitaGL.h>
-#include <vita2d.h>
 #include <stdlib.h>
 
 GLenum texture_format = GL_RGB;
@@ -25,6 +23,7 @@ int main(){
 	sceIoRead(fd, buffer, w * h * 3);
 	sceIoClose(fd);
 	
+	// Setting screen clear color
 	glClearColor(0.50, 0, 0, 0);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -32,22 +31,30 @@ int main(){
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	
-	// Initializing openGL texture
+	// Initializing an openGL texture
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	
+	// Uploading the loaded image as texture
 	glTexImage2D(GL_TEXTURE_2D, 0, texture_format, w, h, 0, texture_format, GL_UNSIGNED_BYTE, buffer);
 	
+	// Enabling linear filtering on the texture
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	
+	// Enabling texturing
 	glEnable(GL_TEXTURE_2D);
 	
-	for (;;){
+	// Main loop
+	for (;;) {
+		// Clearing screen
 		glClear(GL_COLOR_BUFFER_BIT);
-		glBindTexture(GL_TEXTURE_2D, texture);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glBegin(GL_QUADS);
 		
-		// Note: BMP images are vertically flipped
+		// Binding texture to use for the draw
+		glBindTexture(GL_TEXTURE_2D, texture);
+		
+		// Drawing the texture with immediate mode (Note: BMP images are vertically flipped)
+		glBegin(GL_QUADS);
 		glTexCoord2i(0, 1);
 		glVertex3f(0, 0, 0);
 		glTexCoord2i(1, 1);
@@ -56,12 +63,13 @@ int main(){
 		glVertex3f(960, 544, 0);
 		glTexCoord2i(0, 0);
 		glVertex3f(0, 544, 0);
-		
 		glEnd();
+		
+		// Performing buffer swap
 		vglSwapBuffers(GL_FALSE);
-		glLoadIdentity();
 	}
 	
+	// Terminating graphics device
 	vglEnd();
 	
 }
