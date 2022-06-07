@@ -1,6 +1,6 @@
 #include <vitasdk.h>
 #include <vitaGL.h>
-#include <tiniest_obj_loader.h>
+#include <libtoloader.h>
 
 int main() {
 	// Initializing graphics device
@@ -25,19 +25,18 @@ int main() {
 	to_loadObj("app0:bunny.obj", &bunny);
 	
 	// Main loop
-	for (;;){
+	for (;;) {
 		// Clear color and depth buffers
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
-		// Drawing our cube with vertex arrays
+		// Drawing our model with vertex arrays
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glVertexPointer(3, GL_FLOAT, 0, bunny.pos);
 		glRotatef(1.0f, 0.0f, 0.0f, 1.0f); // Rotating model at each frame by 1 on axis x and axis w
 		glRotatef(0.5f, 0.0f, 1.0f, 0.0f); // Rotating model at each frame by 0.5 on axis x and 1.0 on axis z
 		glDrawArrays(GL_TRIANGLES, 0, bunny.num_vertices);
 		glDisableClientState(GL_VERTEX_ARRAY);
-		
-		
+
 		// Performing buffer swap
 		vglSwapBuffers(GL_FALSE);
 	}
