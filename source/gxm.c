@@ -708,7 +708,11 @@ void vglUseTripleBuffering(GLboolean usage) {
 void vglSwapBuffers(GLboolean has_commondialog) {
 #ifndef SKIP_ERROR_HANDLING
 	vgl_debugger_framecount++;
-#endif	
+#endif
+
+	// Marking uniform values as dirty at each frame end just to be safe
+	dirty_frag_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 	
 #if defined(HAVE_RAZOR_INTERFACE) && !defined(HAVE_LIGHT_RAZOR)
 	if (!in_use_framebuffer) {
