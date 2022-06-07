@@ -56,6 +56,7 @@
 #define LEGACY_MT_VERTEX_STRIDE 26 // Vertex stride for GL1 immediate draw pipeline with multitexturing
 #define LEGACY_NT_VERTEX_STRIDE 22 // Vertex stride for GL1 immediate draw pipeline without texturing
 #define MAX_LIGHTS_NUM 8 // Maximum number of allowed light sources for ffp
+#define MAX_IDX_NUMBER 0xC000 // Maximum allowed number of indices per draw call for glDrawArrays
 
 // Internal constants set in bootup phase
 extern int DISPLAY_WIDTH; // Display width in pixels

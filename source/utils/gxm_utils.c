@@ -35,7 +35,7 @@ void vglSetupUniformCircularPool() {
 
 void *vglReserveUniformCircularPoolBuffer(uint32_t size) {
 	void *r;
-	if (unif_idx + size > UNIFORM_CIRCULAR_POOL_SIZE) {
+	if (unif_idx + size >= UNIFORM_CIRCULAR_POOL_SIZE) {
 #ifndef SKIP_ERROR_HANDLING
 		static uint32_t last_frame_swap = 0;
 		if (last_frame_swap == vgl_debugger_framecount) {

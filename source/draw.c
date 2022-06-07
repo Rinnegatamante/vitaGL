@@ -157,6 +157,11 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 			break;
 		}
 
+#ifndef SKIP_ERROR_HANDLING
+		if (first + count > MAX_IDX_NUMBER) {
+			vgl_log("%s:%d Attempting to draw a model with glDrawArrays which is too big! Consider increasing MAX_IDX_NUMBER value...\n", __FILE__, __LINE__);
+		}	
+#endif
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 	}
 	restore_polygon_mode(gxm_p);
