@@ -6,6 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <tinyiest_obj_loader.h>
 
 // Number of shader sets available
 #define SHADERS_NUM 4
@@ -180,99 +181,13 @@ void loadShader(const char *name, int type) {
 	free(vshader);
 }
 
-struct RawMesh {
-	std::vector<glm::vec3> pos;
-	std::vector<glm::vec2> texcoord;
-	std::vector<glm::vec3> normals;
-	std::vector<glm::ivec3> faces;
-};
-
-struct Model {
-	std::vector<GLfloat> pos;
-	std::vector<GLfloat> texcoord;
-	std::vector<GLfloat> normals;
-};
-
-// Loads an obj model from filesystem (Note: It supports only triangle meshes and it's quite unefficient as is right now)
-Model loadModel(const char *fname) {
-	// Opening model file from filesystem
-	FILE *f = fopen(fname, "r");
-	if (!f)
-		fatal_error("Cannot open %s", fname);
-	fseek(f, 0, SEEK_END);
-	int32_t msize = ftell(f);
-	fseek(f, 0, SEEK_SET);
-	char *mdl = (char *)malloc(msize);
-	fread(mdl, 1, msize, f);
-	fclose(f);
-	
-	// Initializing internal data struct
-	RawMesh m;
-	
-	// Parsing the file
-	char *line, *p = mdl, *end = mdl + msize;
-	char *s = strstr(mdl, "\n");
-	for (;;) {
-		line = p;
-		if (s)
-			s[0] = 0;
-		if (line[0] == 'v') {
-			if (line[1] == 't') { // Texture coord
-				float f[2];
-				sscanf(line, "vt %f %f", &f[0], &f[1]);
-				m.texcoord.emplace_back(f[0], f[1]);
-			} else if (line[1] == 'n') { // Normal
-				float f[3];
-				sscanf(line, "vn %f %f %f", &f[0], &f[1], &f[2]);
-				m.normals.emplace_back(f[0], f[1], f[2]);
-			} else if (line[1] == ' ') { // Position
-				float f[3];
-				sscanf(line, "v %f %f %f", &f[0], &f[1], &f[2]);
-				m.pos.emplace_back(f[0], f[1], f[2]);
-			}
-		} else if (line[0] == 'f') { // Face
-			int f0[3], f1[3], f2[3];
-			sscanf(line, "f %d/%d/%d %d/%d/%d %d/%d/%d", &f0[0], &f0[1], &f0[2], &f1[0], &f1[1], &f1[2], &f2[0], &f2[1], &f2[2]);
-			m.faces.emplace_back(f0[0], f0[1], f0[2]);
-			m.faces.emplace_back(f1[0], f1[1], f1[2]);
-			m.faces.emplace_back(f2[0], f2[1], f2[2]);
-		}
-		if (!s)
-			break;
-		if (s[1] == '\r')
-			s++;
-		p = s + 1;
-		s = strstr(s + 1, "\n");
-	}
-	
-	// Constructing final model data
-	Model res;
-	for (int i = 0; i < m.faces.size(); i++) {
-		int pos_idx = m.faces[i].x - 1;
-		int tex_idx = m.faces[i].y - 1;
-		int nor_idx = m.faces[i].z - 1;
-		res.pos.emplace_back(m.pos[pos_idx].x);
-		res.pos.emplace_back(m.pos[pos_idx].y);
-		res.pos.emplace_back(m.pos[pos_idx].z);
-		res.texcoord.emplace_back(m.texcoord[tex_idx].x);
-		res.texcoord.emplace_back(m.texcoord[tex_idx].y);
-		res.normals.emplace_back(m.normals[nor_idx].x);
-		res.normals.emplace_back(m.normals[nor_idx].y);
-		res.normals.emplace_back(m.normals[nor_idx].z);
-	}
-	
-	// Freeing temp data and returning loaded model
-	free(mdl);
-	return res;
-}
-
 // Draws a model
-void drawModel(Model mdl) {
+void drawModel(to_model *mdl) {
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, &mdl.pos[0]);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, &mdl.normals[0]);
-	glDrawArrays(GL_TRIANGLES, 0, mdl.pos.size() / 3);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, mdl->pos);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, mdl->normals);
+	glDrawArrays(GL_TRIANGLES, 0, mdl->num_vertices);
 }
 
 int main() {
@@ -353,10 +268,15 @@ int main() {
 	glUseProgram(programs[shader_idx]);
 	
 	// Loading our models
-	Model plane = loadModel("app0:plane.obj");
-	Model bunny = loadModel("app0:bunny.obj");
-	Model sphere = loadModel("app0:sphere.obj");
-	Model cube = loadModel("app0:cube.obj");
+	to_model plane, bunny, sphere, cube;
+	if (to_loadObj("app0:plane.obj", &plane))
+		fatal_error("Cannot open app0:plane.obj");
+	if (to_loadObj("app0:bunny.obj", &bunny))
+		fatal_error("Cannot open app0:bunny.obj");
+	if (to_loadObj("app0:sphere.obj", &sphere))
+		fatal_error("Cannot open app0:sphere.obj");
+	if (to_loadObj("app0:cube.obj", &cube))
+		fatal_error("Cannot open app0:cube.obj");
 	
 	// Main loop
 	for (;;){
@@ -404,7 +324,7 @@ int main() {
 		// Drawing plane
 		glUniformMatrix4fv(modelMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(planeModelMatrix));
 		glUniformMatrix3fv(normalMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(planeNormalMatrix));
-		drawModel(plane);
+		drawModel(&plane);
 		
 		// Drawing cube
 		cubeModelMatrix = glm::mat4(1.0f);
@@ -415,7 +335,7 @@ int main() {
         cubeNormalMatrix = glm::inverseTranspose(glm::mat3(view*cubeModelMatrix));
         glUniformMatrix4fv(modelMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(cubeModelMatrix));
         glUniformMatrix3fv(normalMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(cubeNormalMatrix));
-		drawModel(cube);
+		drawModel(&cube);
 
 		// Drawing sphere
 		sphereModelMatrix = glm::mat4(1.0f);
@@ -426,7 +346,7 @@ int main() {
         sphereNormalMatrix = glm::inverseTranspose(glm::mat3(view*sphereModelMatrix));
         glUniformMatrix4fv(modelMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(sphereModelMatrix));
         glUniformMatrix3fv(normalMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(sphereNormalMatrix));
-		drawModel(sphere);
+		drawModel(&sphere);
 		
 		// Drawing bunny
 		bunnyModelMatrix = glm::mat4(1.0f);
@@ -437,7 +357,7 @@ int main() {
         bunnyNormalMatrix = glm::inverseTranspose(glm::mat3(view*bunnyModelMatrix));
         glUniformMatrix4fv(modelMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(bunnyModelMatrix));
         glUniformMatrix3fv(normalMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(bunnyNormalMatrix));
-		drawModel(bunny);
+		drawModel(&bunny);
 		
 		// Performing buffer swap
 		vglSwapBuffers(GL_FALSE);
