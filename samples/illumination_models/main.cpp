@@ -6,7 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <tinyiest_obj_loader.h>
+#include <tiniest_obj_loader.h>
 
 // Number of shader sets available
 #define SHADERS_NUM 4

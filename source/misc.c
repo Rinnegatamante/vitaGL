@@ -593,13 +593,13 @@ void glClear(GLbitfield mask) {
 		0xFF, stencil_mask_back_write & 0xFF);
 	sceGxmSetBackStencilRef(gxm_context, stencil_value & 0xFF);
 
-	if ((mask & GL_COLOR_BUFFER_BIT) == 0) {
+	if (!(mask & GL_COLOR_BUFFER_BIT)) {
 		// Disable fragment program if not clearing color buffer. Depth and stencil clears are unaffected.
 		sceGxmSetFrontFragmentProgramEnable(gxm_context, SCE_GXM_FRAGMENT_PROGRAM_DISABLED);
 		sceGxmSetBackFragmentProgramEnable(gxm_context, SCE_GXM_FRAGMENT_PROGRAM_DISABLED);
 	}
 
-	if ((mask & GL_STENCIL_BUFFER_BIT) == 0) {
+	if (!(mask & GL_STENCIL_BUFFER_BIT)) {
 		// Set stencil functions to KEEP if not clearing stencil buffer.
 		sceGxmSetFrontStencilFunc(gxm_context,
 			SCE_GXM_STENCIL_FUNC_ALWAYS,
