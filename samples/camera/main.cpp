@@ -202,17 +202,13 @@ int main() {
 	glEnable(GL_DEPTH_TEST);
 	
 	// Projection matrix: FOV angle, aspect ratio, near and far planes
-    glm::mat4 projection = glm::perspective(45.0f, 960.0f / 544.0f, 0.1f, 10000.0f);
+	glm::mat4 projection = glm::perspective(45.0f, 960.0f / 544.0f, 0.1f, 10000.0f);
 	
 	// Initializing model and normal matrices for our objects to identity
-	glm::mat4 sphereModelMatrix = glm::mat4(1.0f);
-    glm::mat3 sphereNormalMatrix = glm::mat3(1.0f);
-    glm::mat4 cubeModelMatrix = glm::mat4(1.0f);
-    glm::mat3 cubeNormalMatrix = glm::mat3(1.0f);
-    glm::mat4 bunnyModelMatrix = glm::mat4(1.0f);
-    glm::mat3 bunnyNormalMatrix = glm::mat3(1.0f);
-    glm::mat4 planeModelMatrix = glm::mat4(1.0f);
-    glm::mat3 planeNormalMatrix = glm::mat3(1.0f);
+	glm::mat4 bunnyModelMatrix = glm::mat4(1.0f);
+	glm::mat3 bunnyNormalMatrix = glm::mat3(1.0f);
+	glm::mat4 planeModelMatrix = glm::mat4(1.0f);
+	glm::mat3 planeNormalMatrix = glm::mat3(1.0f);
 	
 	// Default values for spinning state, wireframe mode and pressed buttons bitmask
 	uint32_t old_buttons = 0;
@@ -349,13 +345,13 @@ int main() {
 		
 		// Drawing bunny
 		bunnyModelMatrix = glm::mat4(1.0f);
-        bunnyNormalMatrix = glm::mat3(1.0f);
-        bunnyModelMatrix = glm::translate(bunnyModelMatrix, glm::vec3(0.0f, 0.0f, 0.0f));
-        bunnyModelMatrix = glm::rotate(bunnyModelMatrix, glm::radians(orientationY), glm::vec3(0.0f, 1.0f, 0.0f));
-        bunnyModelMatrix = glm::scale(bunnyModelMatrix, glm::vec3(0.3f, 0.3f, 0.3f));
-        bunnyNormalMatrix = glm::inverseTranspose(glm::mat3(view * bunnyModelMatrix));
-        glUniformMatrix4fv(modelMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(bunnyModelMatrix));
-        glUniformMatrix3fv(normalMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(bunnyNormalMatrix));
+		bunnyNormalMatrix = glm::mat3(1.0f);
+		bunnyModelMatrix = glm::translate(bunnyModelMatrix, glm::vec3(0.0f, 0.0f, 0.0f));
+		bunnyModelMatrix = glm::rotate(bunnyModelMatrix, glm::radians(orientationY), glm::vec3(0.0f, 1.0f, 0.0f));
+		bunnyModelMatrix = glm::scale(bunnyModelMatrix, glm::vec3(0.3f, 0.3f, 0.3f));
+		bunnyNormalMatrix = glm::inverseTranspose(glm::mat3(view * bunnyModelMatrix));
+		glUniformMatrix4fv(modelMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(bunnyModelMatrix));
+		glUniformMatrix3fv(normalMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(bunnyNormalMatrix));
 		drawModel(&bunny);
 		
 		// Performing buffer swap

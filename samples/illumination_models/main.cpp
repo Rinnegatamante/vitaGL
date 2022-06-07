@@ -201,20 +201,20 @@ int main() {
 	glEnable(GL_DEPTH_TEST);
 	
 	// Projection matrix: FOV angle, aspect ratio, near and far planes
-    glm::mat4 projection = glm::perspective(45.0f, 960.0f / 544.0f, 0.1f, 10000.0f);
+	glm::mat4 projection = glm::perspective(45.0f, 960.0f / 544.0f, 0.1f, 10000.0f);
 	
 	// View matrix: position, view direction, camera "up" vector
-    glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 7.0f), glm::vec3(0.0f, 0.0f, -7.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 7.0f), glm::vec3(0.0f, 0.0f, -7.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	
 	// Initializing model and normal matrices for our objects to identity
 	glm::mat4 sphereModelMatrix = glm::mat4(1.0f);
-    glm::mat3 sphereNormalMatrix = glm::mat3(1.0f);
-    glm::mat4 cubeModelMatrix = glm::mat4(1.0f);
-    glm::mat3 cubeNormalMatrix = glm::mat3(1.0f);
-    glm::mat4 bunnyModelMatrix = glm::mat4(1.0f);
-    glm::mat3 bunnyNormalMatrix = glm::mat3(1.0f);
-    glm::mat4 planeModelMatrix = glm::mat4(1.0f);
-    glm::mat3 planeNormalMatrix = glm::mat3(1.0f);
+	glm::mat3 sphereNormalMatrix = glm::mat3(1.0f);
+	glm::mat4 cubeModelMatrix = glm::mat4(1.0f);
+	glm::mat3 cubeNormalMatrix = glm::mat3(1.0f);
+	glm::mat4 bunnyModelMatrix = glm::mat4(1.0f);
+	glm::mat3 bunnyNormalMatrix = glm::mat3(1.0f);
+	glm::mat4 planeModelMatrix = glm::mat4(1.0f);
+	glm::mat3 planeNormalMatrix = glm::mat3(1.0f);
 	
 	// Calculating plane model and normal matrices since static
 	planeModelMatrix = glm::mat4(1.0f);
@@ -328,35 +328,35 @@ int main() {
 		
 		// Drawing cube
 		cubeModelMatrix = glm::mat4(1.0f);
-        cubeNormalMatrix = glm::mat3(1.0f);
-        cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(0.0f, 0.0f, 0.0f));
-        cubeModelMatrix = glm::rotate(cubeModelMatrix, glm::radians(orientationY), glm::vec3(0.0f, 1.0f, 0.0f));
-        cubeModelMatrix = glm::scale(cubeModelMatrix, glm::vec3(0.8f, 0.8f, 0.8f));
-        cubeNormalMatrix = glm::inverseTranspose(glm::mat3(view*cubeModelMatrix));
-        glUniformMatrix4fv(modelMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(cubeModelMatrix));
-        glUniformMatrix3fv(normalMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(cubeNormalMatrix));
+		cubeNormalMatrix = glm::mat3(1.0f);
+		cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(0.0f, 0.0f, 0.0f));
+		cubeModelMatrix = glm::rotate(cubeModelMatrix, glm::radians(orientationY), glm::vec3(0.0f, 1.0f, 0.0f));
+		cubeModelMatrix = glm::scale(cubeModelMatrix, glm::vec3(0.8f, 0.8f, 0.8f));
+		cubeNormalMatrix = glm::inverseTranspose(glm::mat3(view*cubeModelMatrix));
+		glUniformMatrix4fv(modelMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(cubeModelMatrix));
+		glUniformMatrix3fv(normalMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(cubeNormalMatrix));
 		drawModel(&cube);
 
 		// Drawing sphere
 		sphereModelMatrix = glm::mat4(1.0f);
-        sphereNormalMatrix = glm::mat3(1.0f);
-        sphereModelMatrix = glm::translate(sphereModelMatrix, glm::vec3(-3.0f, 0.0f, 0.0f));
-        sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(orientationY), glm::vec3(0.0f, 1.0f, 0.0f));
-        sphereModelMatrix = glm::scale(sphereModelMatrix, glm::vec3(0.8f, 0.8f, 0.8f));
-        sphereNormalMatrix = glm::inverseTranspose(glm::mat3(view*sphereModelMatrix));
-        glUniformMatrix4fv(modelMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(sphereModelMatrix));
-        glUniformMatrix3fv(normalMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(sphereNormalMatrix));
+		sphereNormalMatrix = glm::mat3(1.0f);
+		sphereModelMatrix = glm::translate(sphereModelMatrix, glm::vec3(-3.0f, 0.0f, 0.0f));
+		sphereModelMatrix = glm::rotate(sphereModelMatrix, glm::radians(orientationY), glm::vec3(0.0f, 1.0f, 0.0f));
+		sphereModelMatrix = glm::scale(sphereModelMatrix, glm::vec3(0.8f, 0.8f, 0.8f));
+		sphereNormalMatrix = glm::inverseTranspose(glm::mat3(view*sphereModelMatrix));
+		glUniformMatrix4fv(modelMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(sphereModelMatrix));
+		glUniformMatrix3fv(normalMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(sphereNormalMatrix));
 		drawModel(&sphere);
 		
 		// Drawing bunny
 		bunnyModelMatrix = glm::mat4(1.0f);
-        bunnyNormalMatrix = glm::mat3(1.0f);
-        bunnyModelMatrix = glm::translate(bunnyModelMatrix, glm::vec3(3.0f, 0.0f, 0.0f));
-        bunnyModelMatrix = glm::rotate(bunnyModelMatrix, glm::radians(orientationY), glm::vec3(0.0f, 1.0f, 0.0f));
-        bunnyModelMatrix = glm::scale(bunnyModelMatrix, glm::vec3(0.3f, 0.3f, 0.3f));
-        bunnyNormalMatrix = glm::inverseTranspose(glm::mat3(view*bunnyModelMatrix));
-        glUniformMatrix4fv(modelMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(bunnyModelMatrix));
-        glUniformMatrix3fv(normalMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(bunnyNormalMatrix));
+		bunnyNormalMatrix = glm::mat3(1.0f);
+		bunnyModelMatrix = glm::translate(bunnyModelMatrix, glm::vec3(3.0f, 0.0f, 0.0f));
+		bunnyModelMatrix = glm::rotate(bunnyModelMatrix, glm::radians(orientationY), glm::vec3(0.0f, 1.0f, 0.0f));
+		bunnyModelMatrix = glm::scale(bunnyModelMatrix, glm::vec3(0.3f, 0.3f, 0.3f));
+		bunnyNormalMatrix = glm::inverseTranspose(glm::mat3(view*bunnyModelMatrix));
+		glUniformMatrix4fv(modelMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(bunnyModelMatrix));
+		glUniformMatrix3fv(normalMatrixLoc[shader_idx], 1, GL_FALSE, glm::value_ptr(bunnyNormalMatrix));
 		drawModel(&bunny);
 		
 		// Performing buffer swap
