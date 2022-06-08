@@ -21,15 +21,6 @@
 // Macro to check if a button has been pressed
 #define CHECK_BTN(x) ((pad.buttons & x) && (!(old_buttons & x)))
 
-// Position of our point light source
-glm::vec3 lightPos0 = glm::vec3(5.0f, 10.0f, 10.0f);
-
-// Setup for our point light source
-GLfloat diffuseColor[] = {1.0f,0.0f,0.0f};
-
-// Weights for the diffusive component
-GLfloat Kd = 0.5f;
-
 // Global Up and Front vectors
 glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec3 front = glm::vec3(0.0f, 1.0f, 0.0f);
