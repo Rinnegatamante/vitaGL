@@ -36,6 +36,9 @@ renderbuffer *active_rb = NULL; // Current renderbuffer in use
 uint32_t get_color_from_texture(SceGxmTextureFormat type) {
 	uint32_t res = 0;
 	switch (type) {
+	case SCE_GXM_TEXTURE_FORMAT_U8_R:
+		res = SCE_GXM_COLOR_FORMAT_U8_R;
+		break;
 	case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
 		res = SCE_GXM_COLOR_FORMAT_U8U8U8_BGR;
 		break;
@@ -190,8 +193,9 @@ void glBindRenderbuffer(GLenum target, GLuint rb) {
 
 void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer) {
 #ifndef SKIP_ERROR_HANDLING
-	if (renderbuffertarget != GL_RENDERBUFFER)
+	if (renderbuffertarget != GL_RENDERBUFFER) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, renderbuffertarget)
+	}
 #endif
 
 	framebuffer *fb;
@@ -521,10 +525,13 @@ void vglTexImageDepthBuffer(GLenum target) {
 
 	switch (target) {
 	case GL_TEXTURE_2D: {
-		if (active_read_fb)
+		if (active_read_fb) {
+			sceGxmDepthStencilSurfaceSetForceStoreMode(active_read_fb->depthbuffer_ptr, SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED);
 			sceGxmTextureInitLinear(&tex->gxm_tex, active_read_fb->depthbuffer_ptr->depthData, SCE_GXM_TEXTURE_FORMAT_DF32M, active_read_fb->width, active_read_fb->height, 0);
-		else
+		} else {
+			sceGxmDepthStencilSurfaceSetForceStoreMode(&gxm_depth_stencil_surface, SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED);
 			sceGxmTextureInitLinear(&tex->gxm_tex, gxm_depth_stencil_surface.depthData, SCE_GXM_TEXTURE_FORMAT_DF32M, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0);
+		}
 		tex->status = TEX_VALID;
 	} break;
 	default:
