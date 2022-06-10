@@ -735,6 +735,7 @@ extern uint16_t *depth_clear_indices; // Memblock starting address for clear scr
 
 // Clear screen shaders
 extern SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
+extern SceGxmFragmentProgram *clear_fragment_program_float_patched; // Patched fragment program for clearing screen on float fbos
 extern vector4f *clear_vertices; // Memblock starting address for clear screen vertices
 
 extern GLboolean fast_texture_compression; // Hints for texture compression

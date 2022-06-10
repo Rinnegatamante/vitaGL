@@ -52,6 +52,7 @@ const SceGxmProgramParameter *clear_depth;
 const SceGxmProgramParameter *clear_color;
 SceGxmVertexProgram *clear_vertex_program_patched;
 SceGxmFragmentProgram *clear_fragment_program_patched;
+SceGxmFragmentProgram *clear_fragment_program_float_patched;
 vector4f *clear_vertices = NULL; // Memblock starting address for clear screen vertices
 vector3f *depth_vertices = NULL; // Memblock starting address for depth clear screen vertices
 
@@ -213,12 +214,18 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 
 	patchVertexProgram(gxm_shader_patcher,
 		clear_vertex_id, NULL, 0, NULL, 0, &clear_vertex_program_patched);
-
-	patchFragmentProgram(gxm_shader_patcher,
-		clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa_mode, NULL, NULL,
-		&clear_fragment_program_patched);
-
+	{
+		patchFragmentProgram(gxm_shader_patcher,
+			clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+			msaa_mode, NULL, NULL,
+			&clear_fragment_program_patched);
+	}
+	{
+		patchFragmentProgram(gxm_shader_patcher,
+			clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4,
+			msaa_mode, NULL, NULL,
+			&clear_fragment_program_float_patched);
+	}
 	sceGxmSetTwoSidedEnable(gxm_context, SCE_GXM_TWO_SIDED_ENABLED);
 
 	// Scissor Test shader register

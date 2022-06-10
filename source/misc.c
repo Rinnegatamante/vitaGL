@@ -568,7 +568,10 @@ void glClear(GLbitfield mask) {
 	sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
 
 	sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
-	sceGxmSetFragmentProgram(gxm_context, clear_fragment_program_patched);
+	if (is_fbo_float)
+		sceGxmSetFragmentProgram(gxm_context, clear_fragment_program_float_patched);
+	else
+		sceGxmSetFragmentProgram(gxm_context, clear_fragment_program_patched);
 
 	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
 	sceGxmSetUniformDataF(vbuffer, clear_position, 0, 4, &clear_vertices->x);
