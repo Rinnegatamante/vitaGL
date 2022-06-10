@@ -76,10 +76,20 @@ Direct OpenGL Usage:<br>
 [JetMan 3D](https://vitadb.rinnegatamante.it/#/info/719) - Fanmade remake of Jetpac for ZX Spectrum<br>
 [FF3_Vita](https://vitadb.rinnegatamante.it/#/info/725) - Port of Final Fantasy III (3D Remake)<br>
 [FF4_Vita](https://vitadb.rinnegatamante.it/#/info/726) - Port of Final Fantasy IV (3D Remake)<br>
+[FF5_Vita](https://vitadb.rinnegatamante.it/#/info/733) - Port of Final Fantasy V<br>
 [TheXTech Vita](https://vitadb.rinnegatamante.it/#/info/727) - Port of Super Mario Bros X<br>
+[World of Goo Vita](https://vitadb.rinnegatamante.it/#/info/806) - Port of World of Goo<br>
+[Baba Is You Vita](https://vitadb.rinnegatamante.it/#/info/828) - Port of Baba Is You<br>
+[Crazy Taxi Vita](https://vitadb.rinnegatamante.it/#/info/728) - Port of Crazy Taxi Classic<br>
+[YoYo Loader](https://vitadb.rinnegatamante.it/#/info/815) - Loader for Game Maker Studio made games<br>
+[TWoM Vita](https://vitadb.rinnegatamante.it/#/info/802) - Port of This War of Mine and This War of Mine: Stories - Father's Promise<br>
+[StaticJK](https://github.com/Rinnegatamante/StaticJK) - Port of Star Wars: Jedi Academy<br>
+[Nazi Zombies Portable](https://vitadb.rinnegatamante.it/#/info/757) - Port of Nazi Zombies Portable<br>
+[Quakespasm-Spiked](https://vitadb.rinnegatamante.it/#/info/716) - Port of Quakespasm Spiked (Limit removed Quake Engine sourceport)<br>
 
 Libraries:<br>
-[sdl12_gl](https://github.com/Rinnegatamante/SDL-Vita/tree/sdl12_gl/src) - SDL 1.2 Vita port adapted to work with vitaGL as renderer<br>
+[sdl12_gl](https://github.com/Rinnegatamante/SDL-Vita/tree/sdl12_gl/src) - SDL 1.2 Vita port adapted to work with vitaGL as renderer backend<br>
+[SDL2_vitagl](https://github.com/Northfear/SDL/tree/vitagl) - SDL2 Vita port adapted to work with vitaGL as renderer backend<br>
 [imgui_vita](https://github.com/Rinnegatamante/imgui-vita) - Port of dear imGui <br>
 
 sdl12_gl Apps:<br>
