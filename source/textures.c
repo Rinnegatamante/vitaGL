@@ -813,11 +813,6 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 
-	// Checking if texture dimensions are not a power of two
-	if (((width & (width - 1)) != 0) || ((height & (height - 1)) != 0)) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-
 	// Ensure imageSize isn't zero.
 	if (imageSize == 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -922,15 +917,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR;
 			break;
 		case GL_ETC1_RGB8_OES:
-			non_native_format = GL_TRUE;
-			decompressed_data = vglMalloc(width * height * 3);
-			etc1_decode_image((etc1_byte *)data, (etc1_byte *)decompressed_data, width, height, 3, width * 3);
-			if (recompress_non_native) {
-				read_cb = readRGB;
-				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
-			} else
-				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
-			data_bpp = 3;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_ETC1_RGB;
 			break;
 		case GL_ATC_RGB_AMD:
 			non_native_format = GL_TRUE;

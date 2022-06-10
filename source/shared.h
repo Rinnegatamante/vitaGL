@@ -25,6 +25,9 @@
 #ifndef _SHARED_H_
 #define _SHARED_H_
 
+// Undocumented texture format for ETC1 textures (Thanks to Bythos)
+#define SCE_GXM_TEXTURE_FORMAT_ETC1_RGB 0x84000000
+
 // Internal constants
 #define TEXTURES_NUM 16384 // Available textures
 #define TEXTURE_IMAGE_UNITS_NUM 16 // Available texture image units
@@ -88,7 +91,6 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #include "vitaGL.h"
 
 #include "utils/atitc_utils.h"
-#include "utils/etc1_utils.h"
 #include "utils/gpu_utils.h"
 #include "utils/gxm_utils.h"
 #include "utils/math_utils.h"

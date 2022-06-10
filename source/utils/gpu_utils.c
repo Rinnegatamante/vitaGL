@@ -90,9 +90,16 @@ void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
 	}
 }
 
-void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width, int tex_height, int region_x, int region_y, int region_width, int region_height, int isdxt5, int ispvrt2bpp) {
-	const int blocksize = isdxt5 ? 16 : 8;
-	const uint32_t blockw = (ispvrt2bpp ? 8 : 4);
+enum {
+	SWIZZLER_DEFAULT = 0x00,
+	SWIZZLER_LARGE_BLOCK = 0x01,
+	SWIZZLER_WIDE_BLOCK = 0x02,
+	SWIZZLER_ENDIANESS_SWAP = 0x04
+};
+
+void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width, int tex_height, int region_x, int region_y, int region_width, int region_height, int mode) {
+	const int blocksize = (mode & SWIZZLER_LARGE_BLOCK) ? 16 : 8;
+	const uint32_t blockw = (mode & SWIZZLER_WIDE_BLOCK) ? 8 : 4;
 
 	// round sizes up to block size
 	tex_width = ALIGN(tex_width, blockw);
@@ -123,8 +130,15 @@ void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width
 
 		dst_x = offs_x - (region_y / 4);
 		dst_y = offs_y - (region_x / blockw);
-
-		vgl_fast_memcpy(dst, src + dst_y * blocksize + dst_x * (region_width / blockw) * blocksize, blocksize);
+		
+		if (mode & SWIZZLER_ENDIANESS_SWAP) {
+			uint32_t *block_src = (uint32_t *)(src + dst_y * blocksize + dst_x * (region_width / blockw) * blocksize);
+			uint32_t *block_dst = dst;
+			for (int i = 0; i < blocksize / 4; i++) {
+				block_dst[i] = __builtin_bswap32(block_src[i]);
+			}
+		} else
+			vgl_fast_memcpy(dst, src + dst_y * blocksize + dst_x * (region_width / blockw) * blocksize, blocksize);
 		dst += blocksize;
 	}
 }
@@ -524,6 +538,7 @@ static inline int gpu_get_compressed_mip_size(int level, int width, int height, 
 		return ceil(width / 4.0) * ceil(height / 4.0) * 8.0;
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
+	case SCE_GXM_TEXTURE_FORMAT_ETC1_RGB:
 		return ceil(width / 4.0) * ceil(height / 4.0) * 8;
 	case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
@@ -651,13 +666,16 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 				case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, 1, 0);
+					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_LARGE_BLOCK);
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
-					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, 0, 1);
+					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_WIDE_BLOCK);
+					break;
+				case SCE_GXM_TEXTURE_FORMAT_ETC1_RGB:
+					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_ENDIANESS_SWAP);
 					break;
 				default:
-					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, 0, 0);
+					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_DEFAULT);
 					break;
 				}
 			}

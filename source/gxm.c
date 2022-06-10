@@ -23,6 +23,11 @@
 
 #include "shared.h"
 
+static enum {
+	GXM_FLAG_SYSAPP = 0x0A,
+	GXM_FLAG_TEXFORMAT_EXT = 0x10
+};
+
 // FIXME: Since we use our own default uniform buffers circular pool, fragment and vertex buffer rings can likely be reduced in size
 static uint32_t gxm_param_buf_size = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE; // Param buffer size for sceGxm
 static uint32_t gxm_vdm_buf_size = SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE; // VDM ring buffer size for sceGxm
@@ -305,17 +310,14 @@ void initGxm(void) {
 	// Initializing sceGxm init parameters
 	SceGxmInitializeParams gxm_init_params;
 	sceClibMemset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
-	gxm_init_params.flags = system_app_mode ? 0x0A : display_queue_cb_flags;
+	gxm_init_params.flags = GXM_FLAG_TEXFORMAT_EXT | (system_app_mode ? GXM_FLAG_SYSAPP : display_queue_cb_flags);
 	gxm_init_params.displayQueueMaxPendingCount = gxm_display_buffer_count - 1;
 	gxm_init_params.displayQueueCallback = display_queue_callback;
 	gxm_init_params.displayQueueCallbackDataSize = sizeof(struct display_queue_callback_data);
 	gxm_init_params.parameterBufferSize = gxm_param_buf_size;
 
 	// Initializing sceGxm
-	if (system_app_mode)
-		sceGxmVshInitialize(&gxm_init_params);
-	else
-		sceGxmInitialize(&gxm_init_params);
+	sceGxmVshInitialize(&gxm_init_params);
 	gxm_initialized = GL_TRUE;
 
 #ifdef HAVE_DEVKIT
