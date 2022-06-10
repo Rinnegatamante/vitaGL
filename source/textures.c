@@ -302,6 +302,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 	tex->write_cb = NULL;
 	switch (internalFormat) {
 	case GL_RGBA16F:
+		fast_store = GL_TRUE;
 		tex->write_cb = (void *)GL_TRUE; // Avoid to let this case fall in compressed texture case
 		tex_format = SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
 		break;
@@ -361,6 +362,10 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 	case GL_ALPHA:
 		tex->write_cb = writeR;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_A8;
+		break;
+	case GL_RED:
+		tex->write_cb = writeR;
+		tex_format = SCE_GXM_TEXTURE_FORMAT_U8_R;
 		break;
 	case GL_COLOR_INDEX8_EXT:
 		tex->write_cb = writeR; // TODO: This is a hack
