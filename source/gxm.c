@@ -23,7 +23,9 @@
 
 #include "shared.h"
 
+// Flags available for sceGxmVshInitialize
 static enum {
+	GXM_FLAG_DEFAULT = 0x00,
 	GXM_FLAG_SYSAPP = 0x0A,
 	GXM_FLAG_TEXFORMAT_EXT = 0x10
 };
@@ -100,7 +102,6 @@ static int frame_purge_clean_idx = 1;
 SceUID gc_mutex, gc_thread;
 static int gc_thread_priority = 0x10000100;
 static int gc_thread_affinity = 0;
-static uint32_t display_queue_cb_flags = 0;
 
 #ifdef HAVE_RAZOR
 #define RAZOR_BUF_SIZE (256 * 1024) // Size in bytes for a live metrics data buffer
@@ -310,7 +311,7 @@ void initGxm(void) {
 	// Initializing sceGxm init parameters
 	SceGxmInitializeParams gxm_init_params;
 	sceClibMemset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
-	gxm_init_params.flags = GXM_FLAG_TEXFORMAT_EXT | (system_app_mode ? GXM_FLAG_SYSAPP : display_queue_cb_flags);
+	gxm_init_params.flags = GXM_FLAG_TEXFORMAT_EXT | (system_app_mode ? GXM_FLAG_SYSAPP : GXM_FLAG_DEFAULT);
 	gxm_init_params.displayQueueMaxPendingCount = gxm_display_buffer_count - 1;
 	gxm_init_params.displayQueueCallback = display_queue_callback;
 	gxm_init_params.displayQueueCallbackDataSize = sizeof(struct display_queue_callback_data);
@@ -673,10 +674,6 @@ void sceneReset(void) {
  * - IMPLEMENTATION STARTS HERE -
  * ------------------------------
  */
-
-void vglSetupDisplayQueue(uint32_t flags) {
-	display_queue_cb_flags = flags;
-}
 
 void vglSetupGarbageCollector(int priority, int affinity) {
 	gc_thread_priority = priority;

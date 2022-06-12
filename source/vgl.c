@@ -24,10 +24,6 @@
 #include "texture_callbacks.h"
 #include "vitaGL.h"
 
-// Shaders
-#include "shaders/clear_f.h"
-#include "shaders/clear_v.h"
-
 #ifdef HAVE_SOFTFP_ABI
 __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
 	asm volatile(
@@ -45,6 +41,18 @@ __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float 
 #endif
 
 // Clear shader
+const char clear_f[] = " \
+	float4 main(uniform float4 u_clear_color) : COLOR \
+	{ \
+		return u_clear_color; \
+	}";
+const char clear_v[] = " \
+	float4 main(unsigned int idx : INDEX, uniform float4 position, uniform float u_clear_depth) : POSITION \
+	{ \
+		float x = (idx == 1 || idx == 2) ? position[1] : position[0]; \
+		float y = (idx == 2 || idx == 3) ? position[3] : position[2]; \
+		return float4(x, y, u_clear_depth, 1.f); \
+	}";
 SceGxmShaderPatcherId clear_vertex_id;
 SceGxmShaderPatcherId clear_fragment_id;
 const SceGxmProgramParameter *clear_position;
@@ -73,9 +81,6 @@ float fullscreen_y_scale = -272.0f;
 float fullscreen_z_scale = 0.5f;
 
 uint32_t vsync_interval = 1; // Current setting for VSync
-
-static const SceGxmProgram *const gxm_program_clear_v = (SceGxmProgram *)&clear_v;
-static const SceGxmProgram *const gxm_program_clear_f = (SceGxmProgram *)&clear_f;
 
 // Disable color buffer shader
 uint16_t *depth_clear_indices = NULL; // Memblock starting address for clear screen indices
@@ -198,6 +203,14 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	depth_clear_indices[1] = 1;
 	depth_clear_indices[2] = 2;
 	depth_clear_indices[3] = 3;
+	
+	// Start the shader compiler and compile clear shaders
+	if (!is_shark_online)
+		startShaderCompiler();
+	uint32_t size = strlen(clear_v);
+	SceGxmProgram *gxm_program_clear_v = shark_compile_shader_extended(clear_v, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
+	size = strlen(clear_f);
+	SceGxmProgram *gxm_program_clear_f = shark_compile_shader_extended(clear_f, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 
 	// Clear shader register
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_clear_v,

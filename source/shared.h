@@ -247,11 +247,11 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 #define patchVertexProgram(patcher, id, attr, attr_num, stream, stream_num, prog) \
 	int __v = sceGxmShaderPatcherCreateVertexProgram(patcher, id, attr, attr_num, stream, stream_num, prog); \
 	if (__v) \
-		vgl_log("Vertex shader patching failed (%s) on shader %d with %d attributes and %d streams.\n", get_gxm_error_literal(__v), id, attr_num, stream_num);
+		vgl_log("Vertex shader patching failed (%s) on shader 0x%X with %d attributes and %d streams.\n", get_gxm_error_literal(__v), id, attr_num, stream_num);
 #define patchFragmentProgram(patcher, id, fmt, msaa_mode, blend_cfg, vertex_link, prog) \
 	int __f = sceGxmShaderPatcherCreateFragmentProgram(patcher, id, fmt, msaa_mode, blend_cfg, vertex_link, prog); \
 	if (__f) \
-		vgl_log("Fragment shader patching failed (%s) on shader %d.\n", get_gxm_error_literal(__f), id);
+		vgl_log("Fragment shader patching failed (%s) on shader 0x%X.\n", get_gxm_error_literal(__f), id);
 #else
 #define patchVertexProgram sceGxmShaderPatcherCreateVertexProgram
 #define patchFragmentProgram sceGxmShaderPatcherCreateFragmentProgram

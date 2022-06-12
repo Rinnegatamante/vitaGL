@@ -3,8 +3,6 @@ SOURCES         := source source/utils
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
 CPPFILES := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.cpp))
-CGFILES  := $(wildcard shaders/*.cg)
-HEADERS  := $(CGFILES:.cg=.h)
 OBJS     := $(CFILES:.c=.o) $(CPPFILES:.cpp=.o)
 
 SAMPLES     := $(foreach dir,$(wildcard samples/*), $(dir).smp)
@@ -127,18 +125,6 @@ all: $(TARGET).a
 
 $(TARGET).a: $(OBJS)
 	$(AR) -rc $@ $^
-
-%_f.h:
-	psp2cgc -profile sce_fp_psp2 $(@:_f.h=_f.cg) -Wperf -o $(@:_f.h=_f.gxp)
-	bin2c $(@:_f.h=_f.gxp) source/shaders/$(notdir $(@)) $(notdir $(@:_f.h=_f))
-	@rm -rf $(@:_f.h=_f.gxp)
-	
-%_v.h:
-	psp2cgc -profile sce_vp_psp2 $(@:_v.h=_v.cg) -Wperf -o $(@:_v.h=_v.gxp)
-	bin2c $(@:_v.h=_v.gxp) source/shaders/$(notdir $(@:_v.h=_v.h)) $(notdir $(@:_v.h=_v))
-	@rm -rf $(@:_v.h=_v.gxp)
-
-shaders: $(HEADERS)
 	
 %.smpc:
 	@make -C $(@:.smpc=) clean

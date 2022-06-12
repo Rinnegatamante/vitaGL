@@ -6,7 +6,7 @@ SOURCES		:= .
 INCLUDES	:= include
 
 LIBS = -lvitaGL -lc -lSceCommonDialog_stub -lm -lSceGxm_stub -lSceDisplay_stub -lSceAppMgr_stub -lmathneon \
-	-lvitashark -lSceShaccCg_stub -lSceKernelDmacMgr_stub
+	-lvitashark -lSceShaccCg_stub -lSceKernelDmacMgr_stub -lSceShaccCgExt -ltaihen_stub
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
 CPPFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.cpp))
