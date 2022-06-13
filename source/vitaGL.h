@@ -427,6 +427,7 @@ extern "C" {
 #define GL_COLOR_ATTACHMENT0                            0x8CE0
 #define GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE           0x8CD0
 #define GL_DEPTH_ATTACHMENT                             0x8D00
+#define GL_STENCIL_ATTACHMENT                           0x8D20
 #define GL_DEPTH_COMPONENT32F                           0x8DAB
 #define GL_DEPTH32F_STENCIL8                            0x8DAC
 #define GL_FRAMEBUFFER_COMPLETE                         0x8CD5

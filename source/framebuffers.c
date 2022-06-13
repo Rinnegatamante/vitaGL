@@ -221,6 +221,7 @@ void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbu
 	switch (attachment) {
 	case GL_DEPTH_STENCIL_ATTACHMENT:
 	case GL_DEPTH_ATTACHMENT:
+	case GL_STENCIL_ATTACHMENT:
 		if (active_rb)
 			fb->depthbuffer_ptr = active_rb->depthbuffer_ptr;
 		else

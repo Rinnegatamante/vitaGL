@@ -11,7 +11,7 @@ int main(){
 	// Initializing graphics device
 	vglInit(0x100000);
 	
-	// Loading BMP image to use as texture
+	// Loading PVR image to use as texture
 	uint32_t *ext_data;
 	int width, height;
 	FILE *f = fopen("app0:texture.pvr", "rb");
