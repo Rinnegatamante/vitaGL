@@ -99,12 +99,10 @@ typedef struct {
 	shader *vshader;
 	shader *fshader;
 	uint8_t status;
-#ifdef HAVE_SAMPLERS_AS_UNIFORMS
-	uniform *texunits[TEXTURE_IMAGE_UNITS_NUM];
-#else
-	GLboolean texunits[TEXTURE_IMAGE_UNITS_NUM];
-#endif
-	uint8_t max_texunit_idx;
+	uniform *vert_texunits[TEXTURE_IMAGE_UNITS_NUM];
+	uniform *frag_texunits[TEXTURE_IMAGE_UNITS_NUM];
+	uint8_t max_frag_texunit_idx;
+	uint8_t max_vert_texunit_idx;
 	SceGxmVertexAttribute attr[VERTEX_ATTRIBS_NUM];
 	SceGxmVertexStream stream[VERTEX_ATTRIBS_NUM];
 	uint8_t attr_map[VERTEX_ATTRIBS_NUM];
@@ -258,24 +256,39 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	}
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 
-	// Uploading textures on relative texture units
-	for (int i = 0; i < p->max_texunit_idx; i++) {
+	// Uploading fragment textures on relative texture units
+	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
 #ifndef SAMPLERS_SPEEDHACK
-		if (p->texunits[i]) {
+		if (p->frag_texunits[i]) {
 #endif
-#ifdef HAVE_SAMPLERS_AS_UNIFORMS
-			texture_unit *tex_unit = &texture_units[(int)p->texunits[i]->data];
-#else
-			texture_unit *tex_unit = &texture_units[i];
-#endif
+			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex);
 			if (r) {
-				vgl_log("%s:%d glDrawArrays: Texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
+				vgl_log("%s:%d glDrawArrays: Fragment texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
 			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
+#ifndef SAMPLERS_SPEEDHACK		
+		}
+#endif
+	}
+	
+	// Uploading vertex textures on relative texture units
+	for (int i = 0; i < p->max_vert_texunit_idx; i++) {
+#ifndef SAMPLERS_SPEEDHACK
+		if (p->vert_texunits[i]) {
+#endif
+			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
+#ifndef SKIP_ERROR_HANDLING
+			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex);
+			if (r) {
+				vgl_log("%s:%d glDrawArrays: Vertex texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
+				return GL_FALSE;
+			}
+#endif
+			sceGxmSetVertexTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK		
 		}
 #endif
@@ -365,7 +378,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 					mvp_modified = GL_FALSE;
 				}
 				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
-			} else
+			} else if (u->size)
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
@@ -375,9 +388,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
-#ifdef HAVE_SAMPLERS_AS_UNIFORMS
 			if (u->size)
-#endif
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
@@ -421,24 +432,39 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 
 	// Uploading textures on relative texture units
-	for (int i = 0; i < p->max_texunit_idx; i++) {
+	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
 #ifndef SAMPLERS_SPEEDHACK
-		if (p->texunits[i]) {
+		if (p->frag_texunits[i]) {
 #endif
-#ifdef HAVE_SAMPLERS_AS_UNIFORMS
-			texture_unit *tex_unit = &texture_units[(int)p->texunits[i]->data];
-#else
-			texture_unit *tex_unit = &texture_units[i];
-#endif
+			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex);
 			if (r) {
-				vgl_log("%s:%d glDrawElements: Texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
+				vgl_log("%s:%d glDrawElements: Fragment texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
 			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK
+		}
+#endif
+	}
+	
+	// Uploading vertex textures on relative texture units
+	for (int i = 0; i < p->max_vert_texunit_idx; i++) {
+#ifndef SAMPLERS_SPEEDHACK
+		if (p->vert_texunits[i]) {
+#endif
+			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
+#ifndef SKIP_ERROR_HANDLING
+			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex);
+			if (r) {
+				vgl_log("%s:%d glDrawElements: Vertex texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
+				return GL_FALSE;
+			}
+#endif
+			sceGxmSetVertexTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
+#ifndef SAMPLERS_SPEEDHACK		
 		}
 #endif
 	}
@@ -548,7 +574,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 					mvp_modified = GL_FALSE;
 				}
 				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
-			} else
+			} else if (u->size)
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
@@ -558,9 +584,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, GL
 		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
-#ifdef HAVE_SAMPLERS_AS_UNIFORMS
 			if (u->size)
-#endif
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
@@ -618,7 +642,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 					mvp_modified = GL_FALSE;
 				}
 				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
-			} else
+			} else if (u->size)
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
@@ -628,16 +652,17 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
-			sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
+			if (u->size)
+				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
 		dirty_frag_unifs = GL_FALSE;
 	}
 
 	// Uploading textures on relative texture units
-	for (int i = 0; i < p->max_texunit_idx; i++) {
+	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
 #ifndef SAMPLERS_SPEEDHACK
-		if (p->texunits[i]) {
+		if (p->frag_texunits[i]) {
 #endif
 			texture_unit *tex_unit = &texture_units[i];
 			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
@@ -930,7 +955,8 @@ GLuint glCreateProgram(void) {
 			progs[i].attr_num = 0;
 			progs[i].stream_num = 0;
 			progs[i].attr_idx = 0;
-			progs[i].max_texunit_idx = 0;
+			progs[i].max_frag_texunit_idx = 0;
+			progs[i].max_vert_texunit_idx = 0;
 			progs[i].wvp = NULL;
 			progs[i].vshader = NULL;
 			progs[i].fshader = NULL;
@@ -1075,7 +1101,8 @@ void glLinkProgram(GLuint progr) {
 	// Analyzing fragment shader
 	uint32_t i, cnt;
 	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
-		p->texunits[i] = GL_FALSE;
+		p->frag_texunits[i] = GL_FALSE;
+		p->vert_texunits[i] = GL_FALSE;
 	}
 	cnt = sceGxmProgramGetParameterCount(p->fshader->prog);
 	for (i = 0; i < cnt; i++) {
@@ -1083,19 +1110,15 @@ void glLinkProgram(GLuint progr) {
 		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
 			uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
-			if (p->max_texunit_idx < texunit_idx)
-				p->max_texunit_idx = texunit_idx;
-#ifdef HAVE_SAMPLERS_AS_UNIFORMS
+			if (p->max_frag_texunit_idx < texunit_idx)
+				p->max_frag_texunit_idx = texunit_idx;
 			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
 			u->chain = p->frag_uniforms;
 			u->ptr = param;
 			u->size = 0;
 			u->data = NULL;
 			p->frag_uniforms = u;
-			p->texunits[texunit_idx - 1] = u;
-#else
-			p->texunits[texunit_idx - 1] = GL_TRUE;
-#endif
+			p->frag_texunits[texunit_idx - 1] = u;
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
 			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
 			u->chain = p->frag_uniforms;
@@ -1119,6 +1142,17 @@ void glLinkProgram(GLuint progr) {
 		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
 			p->attr_num++;
+		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+			uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
+			if (p->max_vert_texunit_idx < texunit_idx)
+				p->max_vert_texunit_idx = texunit_idx;
+			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
+			u->chain = p->vert_uniforms;
+			u->ptr = param;
+			u->size = 0;
+			u->data = NULL;
+			p->vert_uniforms = u;
+			p->vert_texunits[texunit_idx - 1] = u;
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
 			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
 			u->chain = p->vert_uniforms;
@@ -1216,11 +1250,9 @@ void glUniform1i(GLint location, GLint v0) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-#ifdef HAVE_SAMPLERS_AS_UNIFORMS
 	if (u->size == 0) // Sampler
 		u->data = (float *)v0;
 	else // Regular Uniform
-#endif
 		u->data[0] = (float)v0;
 
 	if (u->is_vertex)

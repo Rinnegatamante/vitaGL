@@ -28,7 +28,6 @@ In order to build vitaGL use the following command: `make install`.
 `CIRCULAR_VERTEX_POOL=1` Makes temporary data buffers being handled with a circular pool.<br>
 `SINGLE_THREADED_GC=1` Makes the garbage collector run on main thread.<br>
 `PHYCONT_ON_DEMAND=1` Makes the physically contiguous RAM be handled with separate memblocks instead of an heap.<br>
-`SAMPLER_UNIFORMS=1` When enabled, shader samplers are treated as uniforms and are rebindable like in regular OpenGL.<br>
 `UNPURE_TEXTURES=1` Makes legal to upload textures without base level.<br>
 `HAVE_DEBUGGER=1` Enables lightweighted on screen debugger interface.<br>
 `HAVE_DEBUGGER=2` Enables lightweighted on screen debugger interface with extra information (devkit only).<br>
