@@ -755,6 +755,7 @@ GLboolean vglInitExtended(int legacy_pool_size, int width, int height, int ram_t
 GLboolean vglInitWithCustomSizes(int legacy_pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, int cdlg_pool_size, SceGxmMultisampleMode msaa);
 GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, int cdlg_threshold, SceGxmMultisampleMode msaa);
 void *vglMalloc(uint32_t size);
+size_t vglMallocUsableSize(void *ptr);
 void *vglMemalign(uint32_t alignment, uint32_t size);
 size_t vglMemFree(vglMemType type);
 size_t vglMemTotal(vglMemType type);

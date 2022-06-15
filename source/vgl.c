@@ -24,6 +24,8 @@
 #include "texture_callbacks.h"
 #include "vitaGL.h"
 
+static GLboolean vgl_inited = GL_FALSE;
+
 #ifdef HAVE_SOFTFP_ABI
 __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
 	asm volatile(
@@ -133,6 +135,12 @@ void vglUseVramForUSSE(GLboolean usage) {
 }
 
 GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, int cdlg_pool_size, SceGxmMultisampleMode msaa) {
+	// Check if vitaGL has been already inited
+	if (vgl_inited) {
+		vgl_log("%s:%d Suppressed an attempt at initing vitaGL while it's already inited.\n", __FILE__, __LINE__);
+		return GL_FALSE;
+	}
+
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
 	sceIoMkdir("ux0:data/shader_cache", 0777);
 #endif
@@ -448,6 +456,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	vgl_debugger_init();
 #endif
 	
+	vgl_inited = GL_TRUE;
 	return res_fallback;
 }
 
@@ -527,6 +536,8 @@ void vglEnd(void) {
 	sceKernelStopUnloadModule(razor_modid, 0, NULL, 0, NULL, NULL);
 #endif
 #endif
+
+	vgl_inited = GL_FALSE;
 }
 
 void vglWaitVblankStart(GLboolean enable) {
@@ -584,6 +595,10 @@ void *vglMalloc(uint32_t size) {
 
 	// If it fails, as last resort, we try VRAM
 	return vgl_malloc(size, VGL_MEM_VRAM);
+}
+
+size_t vglMallocUsableSize(void *ptr) {
+	return vgl_malloc_usable_size(ptr);
 }
 
 void *vglMemalign(uint32_t alignment, uint32_t size) {
