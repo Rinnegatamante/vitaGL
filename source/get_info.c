@@ -226,6 +226,11 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_RED_BITS:
+	case GL_GREEN_BITS:
+	case GL_BLUE_BITS:
+		*data = 8;
+		break;
 	case GL_BLEND_DST_RGB:
 		*data = gxm_blend_to_gl(blend_dfactor_rgb);
 		break;

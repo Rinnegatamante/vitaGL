@@ -145,6 +145,9 @@ extern "C" {
 #define GL_MAX_MODELVIEW_STACK_DEPTH                    0x0D36
 #define GL_MAX_PROJECTION_STACK_DEPTH                   0x0D38
 #define GL_MAX_TEXTURE_STACK_DEPTH                      0x0D39
+#define GL_RED_BITS                                     0x0D52
+#define GL_GREEN_BITS                                   0x0D53
+#define GL_BLUE_BITS                                    0x0D54
 #define GL_DEPTH_BITS                                   0x0D56
 #define GL_STENCIL_BITS                                 0x0D57
 #define GL_TEXTURE_2D                                   0x0DE1
