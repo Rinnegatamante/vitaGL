@@ -145,6 +145,7 @@ extern "C" {
 #define GL_MAX_MODELVIEW_STACK_DEPTH                    0x0D36
 #define GL_MAX_PROJECTION_STACK_DEPTH                   0x0D38
 #define GL_MAX_TEXTURE_STACK_DEPTH                      0x0D39
+#define GL_MAX_VIEWPORT_DIMS                            0x0D3A
 #define GL_RED_BITS                                     0x0D52
 #define GL_GREEN_BITS                                   0x0D53
 #define GL_BLUE_BITS                                    0x0D54
@@ -302,6 +303,7 @@ extern "C" {
 #define GL_ACTIVE_TEXTURE                               0x84E0
 #define GL_MAX_TEXTURE_UNITS                            0x84E2
 #define GL_SUBTRACT                                     0x84E7
+#define GL_MAX_RENDERBUFFER_SIZE                        0x84E8
 #define GL_TEXTURE_COMPRESSION_HINT                     0x84EF
 #define GL_TEXTURE_MAX_ANISOTROPY_EXT                   0x84FE
 #define GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT               0x84FF
@@ -315,6 +317,7 @@ extern "C" {
 #define GL_TEXTURE_CUBE_MAP_NEGATIVE_Y                  0x8518
 #define GL_TEXTURE_CUBE_MAP_POSITIVE_Z                  0x8519
 #define GL_TEXTURE_CUBE_MAP_NEGATIVE_Z                  0x851A
+#define GL_MAX_CUBE_MAP_TEXTURE_SIZE                    0x851C
 #define GL_COMBINE                                      0x8570
 #define GL_COMBINE_RGB                                  0x8571
 #define GL_COMBINE_ALPHA                                0x8572
@@ -371,6 +374,7 @@ extern "C" {
 #define GL_DEPTH24_STENCIL8                             0x88F0
 #define GL_FRAGMENT_SHADER                              0x8B30
 #define GL_VERTEX_SHADER                                0x8B31
+#define GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS               0x8B4C
 #define GL_SHADER_TYPE                                  0x8B4F
 #define GL_FLOAT_VEC2                                   0x8B50
 #define GL_FLOAT_VEC3                                   0x8B51

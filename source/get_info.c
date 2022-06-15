@@ -274,8 +274,13 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	case GL_TEXTURE_BINDING_2D:
 		*data = server_tex_unit->tex_id;
 		break;
+	case GL_MAX_VIEWPORT_DIMS:
 	case GL_MAX_TEXTURE_SIZE:
+	case GL_MAX_RENDERBUFFER_SIZE:
 		*data = GXM_TEX_MAX_SIZE;
+		break;
+	case GL_MAX_CUBE_MAP_TEXTURE_SIZE:
+		*data = GXM_TEX_MAX_SIZE / 4;
 		break;
 	case GL_MAX_CLIP_PLANES:
 		*data = MAX_CLIP_PLANES_NUM;
@@ -357,6 +362,7 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		*data = NUM_EXTENSIONS;
 		break;
 	case GL_MAX_TEXTURE_IMAGE_UNITS:
+	case GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS:
 		*data = TEXTURE_IMAGE_UNITS_NUM;
 		break;
 	case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
