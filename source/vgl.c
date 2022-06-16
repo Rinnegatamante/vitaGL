@@ -216,9 +216,15 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	if (!is_shark_online)
 		startShaderCompiler();
 	uint32_t size = strlen(clear_v);
-	SceGxmProgram *gxm_program_clear_v = shark_compile_shader_extended(clear_v, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
+	SceGxmProgram *p = shark_compile_shader_extended(clear_v, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
+	SceGxmProgram *gxm_program_clear_v = (SceGxmProgram *)vglMalloc(size);
+	vgl_fast_memcpy((void *)gxm_program_clear_v, (void *)p, size);
+	shark_clear_output();
 	size = strlen(clear_f);
-	SceGxmProgram *gxm_program_clear_f = shark_compile_shader_extended(clear_f, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
+	p = shark_compile_shader_extended(clear_f, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
+	SceGxmProgram *gxm_program_clear_f = (SceGxmProgram *)vglMalloc(size);
+	vgl_fast_memcpy((void *)gxm_program_clear_f, (void *)p, size);
+	shark_clear_output();
 
 	// Clear shader register
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_clear_v,
