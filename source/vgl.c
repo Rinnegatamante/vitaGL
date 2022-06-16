@@ -686,10 +686,6 @@ void vglUseExtraMem(GLboolean use) {
 	use_extra_mem = use;
 }
 
-GLboolean vglHasRuntimeShaderCompiler(void) {
-	return is_shark_online;
-}
-
 void vglSetVertexPoolSize(uint32_t size) {
 #ifdef HAVE_CIRCULAR_VERTEX_POOL
 	vertex_data_pool_size = size;

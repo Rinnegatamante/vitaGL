@@ -756,7 +756,6 @@ void vglFree(void *addr);
 SceGxmTexture *vglGetGxmTexture(GLenum target);
 void *vglGetProcAddress(const char *name);
 void *vglGetTexDataPointer(GLenum target);
-GLboolean vglHasRuntimeShaderCompiler(void);
 GLboolean vglInit(int legacy_pool_size);
 GLboolean vglInitExtended(int legacy_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa);
 GLboolean vglInitWithCustomSizes(int legacy_pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, int cdlg_pool_size, SceGxmMultisampleMode msaa);

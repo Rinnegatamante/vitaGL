@@ -266,7 +266,6 @@ static const struct {
 	{"vglGetProcAddress", (void *)vglGetProcAddress},
 	{"vglGetShaderBinary", (void *)vglGetShaderBinary},
 	{"vglGetTexDataPointer", (void *)vglGetTexDataPointer},
-	{"vglHasRuntimeShaderCompiler", (void *)vglHasRuntimeShaderCompiler},
 	{"vglInit", (void *)vglInit},
 	{"vglInitExtended", (void *)vglInitExtended},
 	{"vglInitWithCustomSizes", (void *)vglInitWithCustomSizes},
