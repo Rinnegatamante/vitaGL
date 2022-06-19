@@ -169,52 +169,52 @@ void vgl_debugger_draw() {
 		}
 		ImGui::Separator();
 	
-		ImGui::Text("Frame number: %d", razor_metrics.frameNumber);
-		ImGui::Text("Frame duration: %dus", razor_metrics.frameDuration);
-		ImGui::Text("GPU activity: %dus (%.0f%%)", razor_metrics.frameGpuActive, 100.f * razor_metrics.frameGpuActive / razor_metrics.frameDuration);
-		ImGui::Text("Scenes per frame: %lu", razor_metrics.sceneCount);
+		ImGui::Text("Frame number: %d", razor_metrics.frame_number);
+		ImGui::Text("Frame duration: %dus", razor_metrics.frame_duration);
+		ImGui::Text("GPU activity: %dus (%.0f%%)", razor_metrics.gpu_activity_duration_time, 100.f * razor_metrics.gpu_activity_duration_time / razor_metrics.frame_duration);
+		ImGui::Text("Scenes per frame: %lu", razor_metrics.scene_count);
 		ImGui::Separator();
 	
 		switch (metrics_mode) {
 		case SCE_RAZOR_GPU_LIVE_METRICS_GROUP_PBUFFER_USAGE:
-			ImGui::Text("Partial Rendering: %s", razor_metrics.partialRender ? "Yes" : "No");
-			ImGui::Text("Param Buffer Outage: %s", razor_metrics.vertexJobPaused ? "Yes" : "No");
-			ImGui::Text("Param Buffer Peak Usage: %lu Bytes", razor_metrics.peakUsage);
+			ImGui::Text("Partial Rendering: %s", razor_metrics.partial_render ? "Yes" : "No");
+			ImGui::Text("Param Buffer Outage: %s", razor_metrics.vertex_job_paused ? "Yes" : "No");
+			ImGui::Text("Param Buffer Peak Usage: %lu Bytes", razor_metrics.peak_usage_value);
 			break;
 		case SCE_RAZOR_GPU_LIVE_METRICS_GROUP_OVERVIEW_1:
-			ImGui::Text("Vertex jobs: %d (Time: %lluus)", razor_metrics.vertexJobCount, razor_metrics.vertexJobTime / 4);
-			ImGui::Text("USSE Vertex Processing: %.2f%%", razor_metrics.usseVertexProcessing / razor_metrics.vertexJobCount);
+			ImGui::Text("Vertex jobs: %d (Time: %lluus)", razor_metrics.vertex_job_count, razor_metrics.vertex_job_time / 4);
+			ImGui::Text("USSE Vertex Processing: %.2f%%", razor_metrics.usse_vertex_processing_percent / razor_metrics.vertex_job_count);
 			ImGui::Separator();
-			ImGui::Text("Fragment jobs: %d (Time: %lluus)", razor_metrics.fragmentJobCount, razor_metrics.fragmentJobTime / 4);
-			ImGui::Text("USSE Fragment Processing: %.2f%%", razor_metrics.usseFragmentProcessing / razor_metrics.fragmentJobCount);
+			ImGui::Text("Fragment jobs: %d (Time: %lluus)", razor_metrics.fragment_job_count, razor_metrics.fragment_job_time / 4);
+			ImGui::Text("USSE Fragment Processing: %.2f%%", razor_metrics.usse_fragment_processing_percent / razor_metrics.fragment_job_count);
 			ImGui::Separator();
-			ImGui::Text("USSE Dependent Texture Read: %.2f%%", razor_metrics.usseDependentTextureReadRequest / razor_metrics.fragmentJobCount);
-			ImGui::Text("USSE Non-Dependent Texture Read: %.2f%%", razor_metrics.usseNonDependentTextureReadRequest / razor_metrics.fragmentJobCount);
+			ImGui::Text("USSE Dependent Texture Read: %.2f%%", razor_metrics.usse_dependent_texture_reads_percent / razor_metrics.fragment_job_count);
+			ImGui::Text("USSE Non-Dependent Texture Read: %.2f%%", razor_metrics.usse_non_dependent_texture_reads_percent / razor_metrics.fragment_job_count);
 			ImGui::Separator();
-			ImGui::Text("Firmware jobs: %d (Time: %lluus)", razor_metrics.firmwareJobCount, razor_metrics.firmwareJobTime / 4);
+			ImGui::Text("Firmware jobs: %d (Time: %lluus)", razor_metrics.firmware_job_count, razor_metrics.firmware_job_time / 4);
 			break;
 		case SCE_RAZOR_GPU_LIVE_METRICS_GROUP_OVERVIEW_2:
-			ImGui::Text("Vertex jobs: %d (Time: %lluus)", razor_metrics.vertexJobCount, razor_metrics.vertexJobTime / 4);
-			ImGui::Text("VDM primitives (Input): %d", razor_metrics.vdmPrimitivesInput);
-			ImGui::Text("MTE primitives (Output): %d", razor_metrics.mtePrimitivesOutput);
-			ImGui::Text("VDM vertices (Input): %d", razor_metrics.vdmVerticesInput);
-			ImGui::Text("MTE vertices (Output): %d", razor_metrics.mteVerticesOutput);
+			ImGui::Text("Vertex jobs: %d (Time: %lluus)", razor_metrics.vertex_job_count, razor_metrics.vertex_job_time / 4);
+			ImGui::Text("VDM primitives (Input): %d", razor_metrics.vdm_primitives_input_num);
+			ImGui::Text("MTE primitives (Output): %d", razor_metrics.mte_primitives_output_num);
+			ImGui::Text("VDM vertices (Input): %d", razor_metrics.vdm_vertices_input_num);
+			ImGui::Text("MTE vertices (Output): %d", razor_metrics.mte_vertices_output_num);
 			ImGui::Separator();
-			ImGui::Text("Fragment jobs: %d (Time: %lluus)", razor_metrics.fragmentJobCount, razor_metrics.fragmentJobTime / 4);
-			ImGui::Text("Rasterized pixels before HSR: %d", razor_metrics.rasterizedPixelsBeforeHsr);
-			ImGui::Text("Rasterized output pixels: %d", razor_metrics.rasterizedOutputPixels);
-			ImGui::Text("Rasterized output samples: %d", razor_metrics.rasterizedOutputSamples);
+			ImGui::Text("Fragment jobs: %d (Time: %lluus)", razor_metrics.fragment_job_count, razor_metrics.fragment_job_time / 4);
+			ImGui::Text("Rasterized pixels before HSR: %d", razor_metrics.rasterized_pixels_before_hsr_num);
+			ImGui::Text("Rasterized output pixels: %d", razor_metrics.rasterized_output_pixels_num);
+			ImGui::Text("Rasterized output samples: %d", razor_metrics.rasterized_output_samples_num);
 			ImGui::Separator();
-			ImGui::Text("Firmware jobs: %d (Time: %lluus)", razor_metrics.firmwareJobCount, razor_metrics.firmwareJobTime / 4);
+			ImGui::Text("Firmware jobs: %d (Time: %lluus)", razor_metrics.firmware_job_count, razor_metrics.firmware_job_time / 4);
 			break;
 		case SCE_RAZOR_GPU_LIVE_METRICS_GROUP_OVERVIEW_3:
-			ImGui::Text("Vertex jobs: %d (Time: %lluus)", razor_metrics.vertexJobCount, razor_metrics.vertexJobTime / 4);
+			ImGui::Text("Vertex jobs: %d (Time: %lluus)", razor_metrics.vertex_job_count, razor_metrics.vertex_job_time / 4);
 			ImGui::Text("BIF: Tiling accelerated memory writes: %d bytes", razor_metrics.bifTaMemoryWrite);
 			ImGui::Separator();
-			ImGui::Text("Fragment jobs: %d (Time: %lluus)", razor_metrics.fragmentJobCount, razor_metrics.fragmentJobTime / 4);
-			ImGui::Text("BIF: ISP parameter fetch memory reads: %d bytes", razor_metrics.bifIspParameterFetchMemoryRead);
+			ImGui::Text("Fragment jobs: %d (Time: %lluus)", razor_metrics.fragment_job_count, razor_metrics.fragment_job_time / 4);
+			ImGui::Text("BIF: ISP parameter fetch memory reads: %d bytes", razor_metrics.isp_parameter_fetches_mem_reads);
 			ImGui::Separator();
-			ImGui::Text("Firmware jobs: %d (Time: %lluus)", razor_metrics.firmwareJobCount, razor_metrics.firmwareJobTime / 4);
+			ImGui::Text("Firmware jobs: %d (Time: %lluus)", razor_metrics.firmware_job_count, razor_metrics.firmware_job_time / 4);
 			break;
 		default:
 			break;

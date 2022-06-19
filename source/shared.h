@@ -484,38 +484,38 @@ extern SceUID razor_modid;
 #endif
 
 typedef struct {
-	uint32_t vertexDuration;
-	uint32_t fragmentDuration;
+	uint32_t vertex_duration;
+	uint32_t fragment_duration;
 } scene_metrics;
 
 typedef struct {
-	uint32_t vertexJobCount;
-	uint64_t vertexJobTime;
-	uint32_t fragmentJobCount;
-	uint64_t fragmentJobTime;
-	uint32_t firmwareJobCount;
-	uint64_t firmwareJobTime;
-	float usseVertexProcessing;
-	float usseFragmentProcessing;
-	float usseDependentTextureReadRequest;
-	float usseNonDependentTextureReadRequest;
-	uint32_t vdmPrimitivesInput;
-	uint32_t mtePrimitivesOutput;
-	uint32_t vdmVerticesInput;
-	uint32_t mteVerticesOutput;
-	uint32_t rasterizedPixelsBeforeHsr;
-	uint32_t rasterizedOutputPixels;
-	uint32_t rasterizedOutputSamples;
-	uint32_t bifTaMemoryWrite;
-	uint32_t bifIspParameterFetchMemoryRead;
-	uint32_t peakUsage;
-	uint8_t partialRender;
-	uint8_t vertexJobPaused;
-	uint64_t frameStartTime;
-	uint32_t frameDuration;
-	uint32_t frameNumber;
-	uint32_t frameGpuActive;
-	uint32_t sceneCount;
+	uint32_t vertex_job_count;
+	uint64_t vertex_job_time;
+	uint32_t fragment_job_count;
+	uint64_t fragment_job_time;
+	uint32_t firmware_job_count;
+	uint64_t firmware_job_time;
+	float usse_vertex_processing_percent;
+	float usse_fragment_processing_percent;
+	float usse_dependent_texture_reads_percent;
+	float usse_non_dependent_texture_reads_percent;
+	uint32_t vdm_primitives_input_num;
+	uint32_t mte_primitives_output_num;
+	uint32_t vdm_vertices_input_num;
+	uint32_t mte_vertices_output_num;
+	uint32_t rasterized_pixels_before_hsr_num;
+	uint32_t rasterized_output_pixels_num;
+	uint32_t rasterized_output_samples_num;
+	uint32_t tiling_accelerated_mem_writes;
+	uint32_t isp_parameter_fetches_mem_reads;
+	uint32_t peak_usage_value;
+	uint8_t partial_render;
+	uint8_t vertex_job_paused;
+	uint64_t frame_start_time;
+	uint32_t frame_duration;
+	uint32_t frame_number;
+	uint32_t gpu_activity_duration_time;
+	uint32_t scene_count;
 	scene_metrics scenes[RAZOR_MAX_SCENES_NUM];
 } razor_results;
 
