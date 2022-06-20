@@ -268,6 +268,8 @@ extern "C" {
 #define GL_BGR                                          0x80E0
 #define GL_BGRA                                         0x80E1
 #define GL_COLOR_INDEX8_EXT                             0x80E5
+#define GL_MAX_ELEMENTS_VERTICES                        0x80E8
+#define GL_MAX_ELEMENTS_INDICES                         0x80E9
 #define GL_PHONG_WIN                                    0x80EA
 #define GL_CLAMP_TO_EDGE                                0x812F
 #define GL_DEPTH_COMPONENT16                            0x81A5

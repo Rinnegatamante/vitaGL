@@ -226,6 +226,10 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_MAX_ELEMENTS_INDICES:
+	case GL_MAX_ELEMENTS_VERTICES:
+		*data = 0x7FFFFFFF;
+		break;
 	case GL_RED_BITS:
 	case GL_GREEN_BITS:
 	case GL_BLUE_BITS:
