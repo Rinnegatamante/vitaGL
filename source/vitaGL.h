@@ -360,6 +360,8 @@ extern "C" {
 #define GL_MAX_TEXTURE_IMAGE_UNITS                      0x8872
 #define GL_ARRAY_BUFFER                                 0x8892
 #define GL_ELEMENT_ARRAY_BUFFER                         0x8893
+#define GL_ARRAY_BUFFER_BINDING                         0x8894
+#define GL_ELEMENT_ARRAY_BUFFER_BINDING                 0x8895
 #define GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING           0x889F
 #define GL_READ_ONLY                                    0x88B8
 #define GL_WRITE_ONLY                                   0x88B9
