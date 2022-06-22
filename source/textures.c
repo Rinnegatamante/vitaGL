@@ -924,8 +924,8 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			decompressed_data = vglMalloc(width * height * 4);
 			eac_decode((uint8_t *)data, decompressed_data, width, height, EAC_ETC2);
 			if (recompress_non_native) {
-				read_cb = readBGRA;
-				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
+				read_cb = readRGBA;
+				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
 			} else
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
 			data_bpp = 4;
