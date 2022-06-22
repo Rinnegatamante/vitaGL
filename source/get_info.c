@@ -226,6 +226,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_UNPACK_ALIGNMENT:
+		*data = 1;
+		break;
 	case GL_ARRAY_BUFFER_BINDING:
 		*data = vertex_array_unit;
 		break;

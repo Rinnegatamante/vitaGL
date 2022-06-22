@@ -307,7 +307,6 @@ void eac_decode(uint8_t *encodeData,             //in_data
             {
                 case EAC_ETC2:
                 {
-					
 					detexDecompressBlockETC2_EAC(encodeData, DETEX_MODE_MASK_ALL, 0, blockData);
 					sceClibMemcpy(&decodeBlockData[y * pixelsWidth + x], blockData, 4 * sizeof(uint32_t));
 					sceClibMemcpy(&decodeBlockData[(y + 1) * pixelsWidth + x], &blockData[4], 4 * sizeof(uint32_t));

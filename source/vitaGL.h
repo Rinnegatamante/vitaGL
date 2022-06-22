@@ -138,6 +138,7 @@ extern "C" {
 #define GL_BLEND                                        0x0BE2
 #define GL_SCISSOR_BOX                                  0x0C10
 #define GL_SCISSOR_TEST                                 0x0C11
+#define GL_UNPACK_ALIGNMENT                             0x0CF5
 #define GL_PACK_ALIGNMENT                               0x0D05
 #define GL_ALPHA_SCALE                                  0x0D1C
 #define GL_MAX_CLIP_PLANES                              0x0D32
