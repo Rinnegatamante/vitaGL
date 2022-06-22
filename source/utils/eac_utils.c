@@ -69,11 +69,6 @@ const uint8_t detex_clamp0to255_table[255 + 256 + 256] = {
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
 };
 
-/* Clamp an integer value in the range -255 to 511 to the the range 0 to 255. */
-static DETEX_INLINE_ONLY uint8_t detexClamp0To255(int x) {
-	return detex_clamp0to255_table[x + 255];
-}
-
 static const int8_t eac_modifier_table[16][8] = {
 	{ -3, -6, -9, -15, 2, 5, 8, 14 },
 	{ -3, -7, -10, -13, 2, 6, 9, 12 },

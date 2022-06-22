@@ -939,6 +939,13 @@ static DETEX_INLINE_ONLY uint32_t detexGetPixelFormat(uint32_t texture_format) {
 	return texture_format & DETEX_TEXTURE_FORMAT_PIXEL_FORMAT_MASK;
 }
 
+extern const uint8_t detex_clamp0to255_table[767];
+
+/* Clamp an integer value in the range -255 to 511 to the the range 0 to 255. */
+static DETEX_INLINE_ONLY uint8_t detexClamp0To255(int x) {
+	return detex_clamp0to255_table[x + 255];
+}
+
 /* Clamp a float point value to the range 0.0 to 1.0f. */
 static DETEX_INLINE_ONLY float detexClamp0To1(float f) {
 	if (f < 0.0f)
