@@ -459,6 +459,7 @@ extern "C" {
 #define GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX 0x9049
 #define GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG             0x9137
 #define GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG             0x9138
+#define GL_COMPRESSED_RGBA8_ETC2_EAC                    0x9278
 
 #define EGL_SUCCESS                                  0x3000
 #define EGL_BAD_PARAMETER                            0x300C

@@ -76,6 +76,9 @@ int main(){
 	case 0x0B:
 		glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width, height, 0, size, ext_data);
 		break;
+	case 0x17:
+		glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA8_ETC2_EAC, width, height, 0, size, ext_data);
+		break;
 	default:
 		printf("Unsupported externalized texture format (0x%llX).\n", format);
 		break;

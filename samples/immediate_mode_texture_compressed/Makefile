@@ -27,7 +27,7 @@ all: $(TARGET).vpk
 
 $(TARGET).vpk: eboot.bin
 	vita-mksfoex -s TITLE_ID=$(TITLEID) "$(TARGET)" param.sfo
-	vita-pack-vpk -s param.sfo -b eboot.bin -a texture.bmp=texture.bmp $@
+	vita-pack-vpk -s param.sfo -b eboot.bin -a texture.pvr=texture.pvr $@
 
 eboot.bin: $(TARGET).velf
 	vita-make-fself -s $< eboot.bin	

@@ -145,7 +145,7 @@ static void atitc_decode_block(uint8_t **blockData,
     }
 }
 
-//Decode ATITC encode data to RGBA32
+//Decode ATITC encoded data to RGBA32
 void atitc_decode(uint8_t *encodeData,             //in_data
                  uint8_t *decodeData,              //out_data
                  const int pixelsWidth,
