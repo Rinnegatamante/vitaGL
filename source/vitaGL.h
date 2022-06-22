@@ -586,6 +586,7 @@ void glGenRenderbuffers(GLsizei n, GLuint *renderbuffers);
 void glGenTextures(GLsizei n, GLuint *textures);
 void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
 void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
+void glGetAttachedShaders(GLuint prog, GLsizei maxCount, GLsizei *count, GLuint *shads);
 GLint glGetAttribLocation(GLuint prog, const GLchar *name);
 void glGetBooleanv(GLenum pname, GLboolean *params);
 void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params);

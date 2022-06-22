@@ -137,7 +137,7 @@ void vglUseVramForUSSE(GLboolean usage) {
 GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, int cdlg_pool_size, SceGxmMultisampleMode msaa) {
 	// Check if vitaGL has been already inited
 	if (vgl_inited) {
-		vgl_log("%s:%d Suppressed an attempt at initing vitaGL while it's already inited.\n", __FILE__, __LINE__);
+		vgl_log("%s:%d: Suppressed an attempt at initing vitaGL while it's already inited.\n", __FILE__, __LINE__);
 		return GL_FALSE;
 	}
 

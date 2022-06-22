@@ -944,6 +944,41 @@ void glAttachShader(GLuint prog, GLuint shad) {
 	}
 }
 
+void glGetAttachedShaders(GLuint prog, GLsizei maxCount, GLsizei *count, GLuint *shads) {
+	// Grabbing passed program
+	program *p = &progs[prog - 1];
+	
+#ifndef SKIP_ERROR_HANDLING
+	if (maxCount < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, maxCount)
+	}
+#endif
+
+	// Returning attached shaders
+	GLuint shad;
+	*count = 0;
+	if (p->vshader) {
+		for (int i = 1; i <= MAX_CUSTOM_SHADERS; i++) {
+			if (p->vshader == &shaders[i - 1]) {
+				shad = i;
+				break;
+			}
+		}
+		shads[0] = shad;
+		*count = 1;
+	}
+	if (p->fshader) {
+		for (int i = 1; i <= MAX_CUSTOM_SHADERS; i++) {
+			if (p->fshader == &shaders[i - 1]) {
+				shad = i;
+				break;
+			}
+		}
+		shads[*count] = shad;
+		*count = *count + 1;
+	}
+}
+
 GLuint glCreateProgram(void) {
 	// Looking for a free program slot
 	GLuint i, j, res = 0;
