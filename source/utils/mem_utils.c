@@ -250,11 +250,6 @@ static void *heap_alloc(int32_t type, uint32_t size, uint32_t alignment) {
 
 	return (void *)block->base;
 }
-
-// frees previously allocated heap memory (basically free())
-static void heap_free(void *addr) {
-	heap_blk_free((uintptr_t)addr);
-}
 #endif
 
 #ifdef PHYCONT_ON_DEMAND
@@ -476,7 +471,7 @@ void vgl_free(void *ptr) {
 		free(ptr);
 #ifdef HAVE_CUSTOM_HEAP
 	else
-		heap_free(ptr);
+		heap_blk_free(ptr);
 #else
 #ifdef PHYCONT_ON_DEMAND
 	else if (type == VGL_MEM_SLOW) {

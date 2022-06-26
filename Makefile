@@ -115,6 +115,10 @@ ifeq ($(HAVE_HIGH_FFP_TEXUNITS),1)
 CFLAGS += -DHAVE_HIGH_FFP_TEXUNITS
 endif
 
+ifeq ($(HAVE_PTHREAD),1)
+CFLAGS += -DHAVE_PTHREAD
+endif
+
 CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a

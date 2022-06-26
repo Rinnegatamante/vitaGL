@@ -99,9 +99,14 @@ int frame_purge_idx = 0; // Index for currently populatable purge list
 int frame_elem_purge_idx = 0; // Index for currently populatable purge list element
 int frame_rt_purge_idx = 0; // Index for currently populatable purge list rendetarget
 static int frame_purge_clean_idx = 1;
-SceUID gc_mutex, gc_thread;
+SceUID gc_mutex;
 static int gc_thread_priority = 0x10000100;
 static int gc_thread_affinity = 0;
+#ifdef HAVE_PTHREAD
+pthread_t gc_thread;
+#else
+SceUID gc_thread;
+#endif
 
 #ifdef HAVE_RAZOR
 #define RAZOR_BUF_SIZE (256 * 1024) // Size in bytes for a live metrics data buffer
@@ -219,7 +224,11 @@ static void display_queue_callback(const void *callbackData) {
 }
 
 // Garbage collector
+#if defined(HAVE_PTHREAD) && !defined(HAVE_SINGLE_THREADED_GC)
+void garbage_collector(void *arg) {
+#else
 int garbage_collector(unsigned int args, void *arg) {
+#endif
 #ifndef HAVE_SINGLE_THREADED_GC
 	for (;;) {
 		// Waiting for garbage collection request
@@ -247,7 +256,9 @@ int garbage_collector(unsigned int args, void *arg) {
 		frame_rt_purge_idx = 0;
 #ifndef HAVE_SINGLE_THREADED_GC
 	}
+#ifndef HAVE_PTHREAD
 	return sceKernelExitDeleteThread(0);
+#endif
 #endif
 }
 
@@ -295,8 +306,13 @@ void initGxm(void) {
 #ifndef HAVE_SINGLE_THREADED_GC
 	// Initializing garbage collector
 	gc_mutex = sceKernelCreateSema("Garbage Collector Sema", 0, 0, FRAME_PURGE_FREQ, NULL);
+#ifdef HAVE_PTRHEAD
+	pthread_create(&gc_thread, NULL, garbage_collector, NULL);
+	pthread_setaffinity_np(gc_thread, 4, &gc_thread_affinity);
+#else
 	gc_thread = sceKernelCreateThread("Garbage Collector", &garbage_collector, gc_thread_priority, 0x10000, 0, gc_thread_affinity, NULL);
 	sceKernelStartThread(gc_thread, 0, NULL);
+#endif
 #endif
 	// Checking if the running application is a system one
 	SceAppMgrBudgetInfo info;

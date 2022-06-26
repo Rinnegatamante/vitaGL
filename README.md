@@ -26,6 +26,7 @@ In order to build vitaGL use the following command: `make install`.
 `HAVE_UNFLIPPED_FBOS=1` Framebuffers objects won't be internally flipped to match OpenGL standards.<br>
 `SHARED_RENDERTARGETS=1` Makes small framebuffers objects use shared rendertargets instead of dedicated ones.<br>
 `CIRCULAR_VERTEX_POOL=1` Makes temporary data buffers being handled with a circular pool.<br>
+`HAVE_PTHREAD=1` Use pthread instead of sceKernel for starting garbage collector thread.<br>
 `SINGLE_THREADED_GC=1` Makes the garbage collector run on main thread.<br>
 `PHYCONT_ON_DEMAND=1` Makes the physically contiguous RAM be handled with separate memblocks instead of an heap.<br>
 `UNPURE_TEXTURES=1` Makes legal to upload textures without base level.<br>
