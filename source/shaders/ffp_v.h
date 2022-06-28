@@ -101,14 +101,17 @@ void main(
 #if has_colors == 0 && lights_num > 0
 	uniform float4 ambient,
 #endif
+#if clip_planes_num > 0 || lights_num > 0
 	uniform float4x4 modelview,
+#endif
 	uniform float4x4 wvp,
 	uniform float4x4 texmat,
 	uniform float point_size,
 	uniform float4x4 normal_mat
 ) {
+#if clip_planes_num > 0 || lights_num > 0
 	float4 modelpos = mul(modelview, position);
-	
+#endif	
 	// User clip planes
 #if clip_planes_num > 0
 	for (int i = 0; i < clip_planes_num; i++) {
