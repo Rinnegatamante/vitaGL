@@ -466,7 +466,7 @@ extern SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 extern SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 
 // Logging callback for vitaShaRK
-#ifdef HAVE_SHARK_LOG
+#if defined(HAVE_SHARK_LOG) || defined(LOG_ERRORS)
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line);
 #endif
 

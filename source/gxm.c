@@ -297,7 +297,7 @@ void initGxm(void) {
 	// Initializing runtime shader compiler
 	if (use_shark) {
 		if (startShaderCompiler()) {
-#ifdef HAVE_SHARK_LOG
+#if defined(HAVE_SHARK_LOG) || defined(LOG_ERRORS)
 			shark_install_log_cb(shark_log_cb);
 			shark_set_warnings_level(SHARK_WARN_HIGH);
 #endif

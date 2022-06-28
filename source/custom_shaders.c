@@ -679,12 +679,21 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	switch (msg_level) {
 	case SHARK_LOG_INFO:
 		sprintf(newline, "%sI] %s on line %d", shark_log ? "\n" : "", msg, line);
+#ifdef LOG_ERRORS
+		vgl_log("Shader Compiler: I] %s on line %d\n", msg, line);
+#endif
 		break;
 	case SHARK_LOG_WARNING:
 		sprintf(newline, "%sW] %s on line %d", shark_log ? "\n" : "", msg, line);
+#ifdef LOG_ERRORS
+		vgl_log("Shader Compiler: W] %s on line %d\n", msg, line);
+#endif
 		break;
 	case SHARK_LOG_ERROR:
 		sprintf(newline, "%sE] %s on line %d", shark_log ? "\n" : "", msg, line);
+#ifdef LOG_ERRORS
+		vgl_log("Shader Compiler: E] %s on line %d\n", msg, line);
+#endif
 		break;
 	}
 	uint32_t size = (shark_log ? strlen(shark_log) : 0) + strlen(newline);
@@ -693,6 +702,20 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 		sprintf(shark_log, "%s%s", shark_log, newline);
 	else
 		strcpy(shark_log, newline);
+}
+#else LOG_ERRORS
+void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
+	switch (msg_level) {
+	case SHARK_LOG_INFO:
+		vgl_log("Shader Compiler: I] %s on line %d\n", msg, line);
+		break;
+	case SHARK_LOG_WARNING:
+		vgl_log("Shader Compiler: W] %s on line %d\n", msg, line);
+		break;
+	case SHARK_LOG_ERROR:
+		vgl_log("Shader Compiler: E] %s on line %d\n", msg, line);
+		break;
+	}
 }
 #endif
 
