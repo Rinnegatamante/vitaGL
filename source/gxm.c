@@ -267,8 +267,13 @@ GLboolean startShaderCompiler(void) {
 	is_shark_online = shark_init(NULL) >= 0;
 
 	// If standard path failed to init we try to init it with ScePiglet path
-	if (!is_shark_online)
+	if (!is_shark_online) {
 		is_shark_online = shark_init("ur0:data/external/libshacccg.suprx") >= 0;
+#ifdef LOG_ERRORS
+		if (!is_shark_online)
+			vgl_log("%s:%d Fatal error: SceShaccCg not found.\n", __FILE__, __LINE__);
+#endif
+	}
 
 	return is_shark_online;
 }
@@ -295,14 +300,13 @@ void initGxm(void) {
 #endif
 
 	// Initializing runtime shader compiler
-	if (use_shark) {
-		if (startShaderCompiler()) {
+	if (startShaderCompiler()) {
 #if defined(HAVE_SHARK_LOG) || defined(LOG_ERRORS)
-			shark_install_log_cb(shark_log_cb);
-			shark_set_warnings_level(SHARK_WARN_HIGH);
+		shark_install_log_cb(shark_log_cb);
+		shark_set_warnings_level(SHARK_WARN_HIGH);
 #endif
-		}
 	}
+
 #ifndef HAVE_SINGLE_THREADED_GC
 	// Initializing garbage collector
 	gc_mutex = sceKernelCreateSema("Garbage Collector Sema", 0, 0, FRAME_PURGE_FREQ, NULL);

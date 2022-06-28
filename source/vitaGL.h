@@ -756,7 +756,6 @@ typedef enum {
 // vgl*
 void *vglAlloc(uint32_t size, vglMemType type);
 void *vglCalloc(uint32_t nmember, uint32_t size);
-void vglEnableRuntimeShaderCompiler(GLboolean usage);
 void vglEnd(void);
 void *vglForceAlloc(uint32_t size);
 void vglFree(void *addr);

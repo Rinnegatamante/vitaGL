@@ -38,7 +38,6 @@
 	attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 
 // Internal stuffs
-GLboolean use_shark = GL_TRUE; // Flag to check if vitaShaRK should be initialized at vitaGL boot
 GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status
 SceGxmVertexAttribute vertex_attrib_config[VERTEX_ATTRIBS_NUM];
 static SceGxmVertexStream vertex_stream_config[VERTEX_ATTRIBS_NUM];
@@ -742,10 +741,6 @@ void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, in
 	compiler_fastmath = use_fastmath;
 	compiler_fastprecision = use_fastprecision;
 	compiler_fastint = use_fastint;
-}
-
-void vglEnableRuntimeShaderCompiler(GLboolean usage) {
-	use_shark = usage;
 }
 
 GLuint glCreateShader(GLenum shaderType) {

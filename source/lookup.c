@@ -259,7 +259,6 @@ static const struct {
 	{"vglVertexAttribPointerMapped", (void *)vglVertexAttribPointerMapped},
 	{"vglAlloc", (void *)vglAlloc},
 	{"vglCalloc", (void *)vglCalloc},
-	{"vglEnableRuntimeShaderCompiler", (void *)vglEnableRuntimeShaderCompiler},
 	{"vglEnd", (void *)vglEnd},
 	{"vglForceAlloc", (void *)vglForceAlloc},
 	{"vglFree", (void *)vglFree},
