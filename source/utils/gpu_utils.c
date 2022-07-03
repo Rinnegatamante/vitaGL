@@ -410,7 +410,7 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 				texture_data, 0, 0, ALIGN(w, 8) * bpp,
 				NULL, 0, NULL);
 		} else
-			sceClibMemset(texture_data, 0xFF, face_size);
+			sceClibMemset(texture_data, 0, face_size);
 
 		// Initializing texture and validating it
 		tex->mip_count = 0;
@@ -463,7 +463,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 				}
 			}
 		} else
-			sceClibMemset(texture_data, 0xFF, tex_size);
+			sceClibMemset(texture_data, 0, tex_size);
 
 		// Initializing texture and validating it
 		tex->mip_count = 1;
