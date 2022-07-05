@@ -587,7 +587,7 @@ void glFrustumx(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixe
 void glGenBuffers(GLsizei n, GLuint *buffers);
 void glGenerateMipmap(GLenum target);
 void glGenFramebuffers(GLsizei n, GLuint *framebuffers);
-GLuint glGenLists (GLsizei range);
+GLuint glGenLists(GLsizei range);
 void glGenRenderbuffers(GLsizei n, GLuint *renderbuffers);
 void glGenTextures(GLsizei n, GLuint *textures);
 void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);

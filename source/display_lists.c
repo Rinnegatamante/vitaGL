@@ -249,7 +249,7 @@ void glEndList(void) {
 	curr_display_list = NULL;
 }
 
-GLuint glGenLists (GLsizei range) {
+GLuint glGenLists(GLsizei range) {
 #ifndef SKIP_ERROR_HANDLING
 	if (range < 0) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_VALUE, 0)
@@ -271,6 +271,12 @@ GLuint glGenLists (GLsizei range) {
 		if (!r)
 			break;
 	}
+#ifndef SKIP_ERROR_HANDLING
+	if (r) {
+		vgl_log("%s:%d glGenLists: Not enough display lists! Consider increasing the display lists maximum number...\n", __FILE__, __LINE__);
+		return 0;
+	}
+#endif	
 	for (GLuint i = first; i < first + range; i++) {
 		display_lists[i].used = GL_TRUE;
 		display_lists[i].head = display_lists[i].tail = NULL;
