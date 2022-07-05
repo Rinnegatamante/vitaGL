@@ -37,6 +37,11 @@ GLboolean mvp_modified = GL_TRUE; // Check if ModelViewProjection matrix needs t
  */
 
 void glMatrixMode(GLenum mode) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glMatrixMode, "U", mode))
+		return;
+#endif
 	// Changing current in use matrix
 	switch (mode) {
 	case GL_MODELVIEW: // Modelview matrix
@@ -140,6 +145,11 @@ void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLd
 }
 
 void glLoadIdentity(void) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glLoadIdentity, ""))
+		return;
+#endif
 	// Set current in use matrix to identity one
 	matrix4x4_identity(*matrix);
 	if (matrix != &texture_matrix)
@@ -296,6 +306,11 @@ void glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z) {
 }
 
 void glPushMatrix(void) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glPushMatrix, ""))
+		return;
+#endif
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
@@ -337,6 +352,11 @@ void glPushMatrix(void) {
 }
 
 void glPopMatrix(void) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glPopMatrix, ""))
+		return;
+#endif
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {

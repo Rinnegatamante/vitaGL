@@ -111,6 +111,11 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 	}
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glDrawArrays, "UII", mode, first, count))
+		return;
+#endif
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
@@ -168,6 +173,11 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glDrawElements, "UIUU", mode, count, type, gl_indices))
+		return;
+#endif
 #ifndef SKIP_ERROR_HANDLING
 	if (type != GL_UNSIGNED_SHORT && type != GL_UNSIGNED_INT) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)

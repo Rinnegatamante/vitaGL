@@ -466,6 +466,11 @@ void glGenTextures(GLsizei n, GLuint *res) {
 }
 
 void glBindTexture(GLenum target, GLuint texture) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glBindTexture, "UU", target, texture))
+		return;
+#endif
 	// Setting current in use texture id for the in use server texture unit
 	texture_units[server_texture_unit].tex_id = texture;
 }

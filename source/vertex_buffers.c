@@ -55,6 +55,11 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 }
 
 void glBindBuffer(GLenum target, GLuint buffer) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glBindBuffer, "UU", target, buffer))
+		return;
+#endif
 	switch (target) {
 	case GL_ARRAY_BUFFER:
 		vertex_array_unit = buffer;

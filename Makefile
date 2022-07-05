@@ -12,7 +12,7 @@ PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
 CXX     = $(PREFIX)-g++
 AR      = $(PREFIX)-gcc-ar
-CFLAGS  = -g -Wl,-q -O3 -ffast-math -mtune=cortex-a9 -mfpu=neon
+CFLAGS  = -g -Wl,-q -O3 -ffast-math -mtune=cortex-a9 -mfpu=neon -Wno-incompatible-pointer-types
 ASFLAGS = $(CFLAGS)
 
 ifeq ($(SOFTFP_ABI),1)
@@ -113,6 +113,10 @@ endif
 
 ifeq ($(HAVE_HIGH_FFP_TEXUNITS),1)
 CFLAGS += -DHAVE_HIGH_FFP_TEXUNITS
+endif
+
+ifeq ($(HAVE_DISPLAY_LISTS),1)
+CFLAGS += -DHAVE_DLISTS
 endif
 
 ifeq ($(HAVE_PTHREAD),1)

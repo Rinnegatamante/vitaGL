@@ -316,6 +316,11 @@ void glDepthRangef(GLfloat nearVal, GLfloat farVal) {
 }
 
 void glEnable(GLenum cap) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glEnable, "U", cap))
+		return;
+#endif
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
@@ -427,6 +432,11 @@ void glEnable(GLenum cap) {
 }
 
 void glDisable(GLenum cap) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glDisable, "U", cap))
+		return;
+#endif
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)

@@ -430,6 +430,52 @@ typedef union {
 	uint32_t raw;
 } blend_config;
 
+typedef enum {
+	// No arguments
+	DLIST_FUNC_VOID,
+	// 1 argument
+	DLIST_FUNC_U32,
+	// 2 arguments
+	DLIST_FUNC_I32_I32,
+	DLIST_FUNC_U32_U32,
+	DLIST_FUNC_U32_I32,
+	DLIST_FUNC_U32_F32,
+	DLIST_FUNC_F32_F32,
+	// 3 arguments
+	DLIST_FUNC_I32_I32_I32,
+	DLIST_FUNC_U32_I32_I32,
+	DLIST_FUNC_U32_U32_I32,
+	DLIST_FUNC_U32_I32_U32,
+	DLIST_FUNC_U32_U32_U32,
+	DLIST_FUNC_U32_F32_F32,
+	DLIST_FUNC_U32_U32_F32,
+	DLIST_FUNC_F32_F32_F32,
+	DLIST_FUNC_I16_I16_I16,
+	DLIST_FUNC_U8_U8_U8,
+	// 4 arguments
+	DLIST_FUNC_U32_U32_U32_U32,
+	DLIST_FUNC_I32_I32_I32_I32,
+	DLIST_FUNC_I32_U32_I32_U32,
+	DLIST_FUNC_U32_I32_U32_U32,
+	DLIST_FUNC_F32_F32_F32_F32,
+	DLIST_FUNC_U8_U8_U8_U8,
+} dlistFuncType;
+
+// Display list function call internal struct
+typedef struct {
+	void (*func)();
+	uint8_t args[24];
+	uint32_t type;
+	void *next;
+} list_chain;
+
+// Display list internal struct
+typedef struct {
+	GLboolean used;
+	list_chain *head;
+	list_chain *tail;
+} display_list;
+
 #include "shaders.h"
 
 // Internal stuffs
@@ -705,6 +751,11 @@ extern vector4f clip_planes_eq[MAX_CLIP_PLANES_NUM]; // Current equation for use
 extern framebuffer *active_read_fb; // Current readback framebuffer in use
 extern framebuffer *active_write_fb; // Current write framebuffer in use
 extern renderbuffer *active_rb; // Current renderbuffer in use
+
+// Display Lists
+extern display_list *curr_display_list; // Current display list being generated
+extern GLboolean display_list_execute; // Flag to check if compiled function should be executed as well
+extern GLboolean _vgl_enqueue_list_func(void (*func)(), const char *type, ...);
 
 // vgl* Draw Pipeline
 extern void *vertex_object;

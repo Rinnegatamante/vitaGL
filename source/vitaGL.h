@@ -163,6 +163,8 @@ extern "C" {
 #define GL_CONSTANT_ATTENUATION                         0x1207
 #define GL_LINEAR_ATTENUATION                           0x1208
 #define GL_QUADRATIC_ATTENUATION                        0x1209
+#define GL_COMPILE                                      0x1300
+#define GL_COMPILE_AND_EXECUTE                          0x1301
 #define GL_BYTE                                         0x1400
 #define GL_UNSIGNED_BYTE                                0x1401
 #define GL_SHORT                                        0x1402
@@ -518,6 +520,7 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor);
 void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha);
 void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage);
 void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void *data);
+void glCallList(GLuint list);
 GLenum glCheckFramebufferStatus(GLenum target);
 void glClear(GLbitfield mask);
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
@@ -548,6 +551,7 @@ GLuint glCreateShader(GLenum shaderType);
 void glCullFace(GLenum mode);
 void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers);
 void glDeleteFramebuffers(GLsizei n, const GLuint *framebuffers);
+void glDeleteLists(GLuint list, GLsizei range);
 void glDeleteProgram(GLuint prog);
 void glDeleteRenderbuffers(GLsizei n, const GLuint *renderbuffers);
 void glDeleteShader(GLuint shad);
@@ -566,6 +570,7 @@ void glEnable(GLenum cap);
 void glEnableClientState(GLenum array);
 void glEnableVertexAttribArray(GLuint index);
 void glEnd(void);
+void glEndList(void);
 void glFinish(void);
 void glFlush(void);
 void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length);
@@ -582,6 +587,7 @@ void glFrustumx(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixe
 void glGenBuffers(GLsizei n, GLuint *buffers);
 void glGenerateMipmap(GLenum target);
 void glGenFramebuffers(GLsizei n, GLuint *framebuffers);
+GLuint glGenLists (GLsizei range);
 void glGenRenderbuffers(GLsizei n, GLuint *renderbuffers);
 void glGenTextures(GLsizei n, GLuint *textures);
 void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
@@ -628,8 +634,10 @@ void glMultiTexCoord2fv(GLenum target, GLfloat *f);
 void glMultiTexCoord2i(GLenum target, GLint s, GLint t);
 void glMultMatrixf(const GLfloat *m);
 void glMultMatrixx(const GLfixed *m);
+void glNewList(GLuint list, GLenum mode);
 void glNormal3f(GLfloat x, GLfloat y, GLfloat z);
 void glNormal3fv(const GLfloat *v);
+void glNormal3s(GLshort x, GLshort y, GLshort z);
 void glNormalPointer(GLenum type, GLsizei stride, const void *pointer);
 void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
 void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal);
@@ -660,6 +668,7 @@ void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass
 void glTexCoord2f(GLfloat s, GLfloat t);
 void glTexCoord2fv(GLfloat *f);
 void glTexCoord2i(GLint s, GLint t);
+void glTexCoord2s(GLshort s, GLshort t);
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glTexEnvf(GLenum target, GLenum pname, GLfloat param);
 void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param);

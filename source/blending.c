@@ -93,6 +93,11 @@ void change_blend_mask() {
  */
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glBlendFunc, "UU", sfactor, dfactor))
+		return;
+#endif
 	switch (sfactor) {
 	case GL_ZERO:
 		blend_sfactor_rgb = blend_sfactor_a = SCE_GXM_BLEND_FACTOR_ZERO;
@@ -172,6 +177,11 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 }
 
 void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glBlendFunc, "UUUU", srcRGB, dstRGB, srcAlpha, dstAlpha))
+		return;
+#endif
 	switch (srcRGB) {
 	case GL_ZERO:
 		blend_sfactor_rgb = SCE_GXM_BLEND_FACTOR_ZERO;
@@ -325,6 +335,11 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 }
 
 void glBlendEquation(GLenum mode) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glBlendEquation, "U", mode))
+		return;
+#endif
 	switch (mode) {
 	case GL_FUNC_ADD:
 		blend_func_rgb = blend_func_a = SCE_GXM_BLEND_FUNC_ADD;
@@ -349,6 +364,11 @@ void glBlendEquation(GLenum mode) {
 }
 
 void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glBlendEquationSeparate, "UU", modeRGB, modeAlpha))
+		return;
+#endif
 	switch (modeRGB) {
 	case GL_FUNC_ADD:
 		blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD;
@@ -392,6 +412,11 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
 }
 
 void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glColorMask, "XXXX", red, green, blue, alpha))
+		return;
+#endif
 	blend_color_mask = SCE_GXM_COLOR_MASK_NONE;
 	if (red)
 		blend_color_mask += SCE_GXM_COLOR_MASK_R;
