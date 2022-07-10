@@ -24,6 +24,7 @@
 #include "shared.h"
 
 matrix4x4 *matrix = NULL; // Current in-use matrix mode
+GLint current_matrix_mode = GL_MODELVIEW; // Current in-use matrix mode (for glGetIntegerv)
 static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH]; // Modelview matrices stack
 static uint8_t modelview_stack_counter = 0; // Modelview matrices stack counter
 static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH]; // Projection matrices stack
@@ -42,6 +43,9 @@ void glMatrixMode(GLenum mode) {
 	if (_vgl_enqueue_list_func(glMatrixMode, "U", mode))
 		return;
 #endif
+	// Save enum value of mode to be used by glGetIntegerv
+	current_matrix_mode = mode;
+
 	// Changing current in use matrix
 	switch (mode) {
 	case GL_MODELVIEW: // Modelview matrix

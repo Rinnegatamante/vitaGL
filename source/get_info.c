@@ -244,9 +244,11 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	case GL_BLUE_BITS:
 		*data = 8;
 		break;
+	case GL_BLEND_DST:
 	case GL_BLEND_DST_RGB:
 		*data = gxm_blend_to_gl(blend_dfactor_rgb);
 		break;
+	case GL_BLEND_SRC:
 	case GL_BLEND_SRC_RGB:
 		*data = gxm_blend_to_gl(blend_sfactor_rgb);
 		break;
@@ -391,6 +393,15 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	case GL_PACK_ALIGNMENT:
 		*data = 1;
 		break;
+	case GL_ACTIVE_TEXTURE:
+		*data = GL_TEXTURE0 + server_texture_unit;
+		break;
+	case GL_CLIENT_ACTIVE_TEXTURE:
+		*data = GL_TEXTURE0 + client_texture_unit;
+		break;
+	case GL_MATRIX_MODE:
+		*data = current_matrix_mode;
+		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
@@ -445,8 +456,20 @@ GLboolean glIsEnabled(GLenum cap) {
 	case GL_LIGHT7:
 		ret = light_mask & (1 << (cap - GL_LIGHT0)) ? GL_TRUE : GL_FALSE;
 		break;
+	case GL_VERTEX_ARRAY:
+		ret = (ffp_vertex_attrib_state & (1 << 0)) ? GL_TRUE : GL_FALSE;
+		break;
+	case GL_NORMAL_ARRAY:
+		ret = (ffp_vertex_attrib_state & (1 << 3)) ? GL_TRUE : GL_FALSE;
+		break;
+	case GL_COLOR_ARRAY:
+		ret = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
+		break;
+	case GL_FOG:
+		ret = fogging;
+		break;
 	default:
-		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, GL_FALSE)
+		SET_GL_ERROR_WITH_RET_AND_VALUE(GL_INVALID_ENUM, GL_FALSE, cap)
 	}
 	return ret;
 }

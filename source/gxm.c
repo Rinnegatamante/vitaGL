@@ -28,7 +28,7 @@ static enum {
 	GXM_FLAG_DEFAULT = 0x00,
 	GXM_FLAG_SYSAPP = 0x0A,
 	GXM_FLAG_TEXFORMAT_EXT = 0x10
-};
+} sceGxmVshInitializeFlags;
 
 // FIXME: Since we use our own default uniform buffers circular pool, fragment and vertex buffer rings can likely be reduced in size
 static uint32_t gxm_param_buf_size = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE; // Param buffer size for sceGxm

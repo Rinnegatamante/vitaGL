@@ -702,7 +702,7 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	else
 		strcpy(shark_log, newline);
 }
-#else LOG_ERRORS
+#else //LOG_ERRORS
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	switch (msg_level) {
 	case SHARK_LOG_INFO:
