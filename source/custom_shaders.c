@@ -702,7 +702,7 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	else
 		strcpy(shark_log, newline);
 }
-#else LOG_ERRORS
+#elif defined(LOG_ERRORS)
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	switch (msg_level) {
 	case SHARK_LOG_INFO:
@@ -754,8 +754,10 @@ GLuint glCreateShader(GLenum shaderType) {
 	}
 
 	// All shader slots are busy, exiting call
-	if (res == 0)
+	if (res == 0) {
+		vgl_log("%s:%d glCreateShader: Out of shaders handles. Consider increasing MAX_CUSTOM_SHADERS...\n", __FILE__, __LINE__);
 		return res;
+	}
 
 	// Reserving and initializing shader slot
 	switch (shaderType) {
@@ -999,7 +1001,7 @@ void glGetAttachedShaders(GLuint prog, GLsizei maxCount, GLsizei *count, GLuint 
 
 GLuint glCreateProgram(void) {
 	// Looking for a free program slot
-	GLuint i, j, res = 0;
+	GLuint i, j, res = 0xFFFFFFFF;
 	for (i = 1; i <= MAX_CUSTOM_PROGRAMS; i++) {
 		// Program slot found, reserving and initializing it
 		if (!(progs[i - 1].status)) {
@@ -1023,6 +1025,12 @@ GLuint glCreateProgram(void) {
 			break;
 		}
 	}
+#ifndef SKIP_ERROR_HANDLING
+	if (res == 0xFFFFFFFF) {
+		vgl_log("%s:%d glCreateProgram: Out of programs handles. Consider increasing MAX_CUSTOM_PROGRAMS...\n", __FILE__, __LINE__);
+		return 0;
+	}
+#endif	
 	return res;
 }
 
