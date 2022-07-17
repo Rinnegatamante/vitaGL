@@ -87,6 +87,9 @@ Direct OpenGL Usage:<br>
 [StaticJK](https://github.com/Rinnegatamante/StaticJK) - Port of Star Wars: Jedi Academy<br>
 [Nazi Zombies Portable](https://vitadb.rinnegatamante.it/#/info/757) - Port of Nazi Zombies Portable<br>
 [Quakespasm-Spiked](https://vitadb.rinnegatamante.it/#/info/716) - Port of Quakespasm Spiked (Limit removed Quake Engine sourceport)<br>
+[Fahrenheit Vita](https://vitadb.rinnegatamante.it/#/info/835) - Port of Fahrenheit: Indigo Prophecy<br>
+[RVGL Vita](https://vitadb.rinnegatamante.it/#/info/840) - Port of RVGL<br>
+[Bugdom](https://vitadb.rinnegatamante.it/#/info/841) - Port of Bugdom<br>
 
 Libraries:<br>
 [sdl12_gl](https://github.com/Rinnegatamante/SDL-Vita/tree/sdl12_gl/src) - SDL 1.2 Vita port adapted to work with vitaGL as renderer backend<br>

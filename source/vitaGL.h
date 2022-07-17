@@ -624,6 +624,7 @@ void glLineWidth(GLfloat width);
 void glLinkProgram(GLuint progr);
 void glLoadIdentity(void);
 void glLoadMatrixf(const GLfloat *m);
+void glLoadMatrixx(const GLfixed *m);
 void *glMapBuffer(GLenum target, GLbitfield access);
 void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
 void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params);
