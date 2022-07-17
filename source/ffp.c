@@ -39,7 +39,7 @@
 
 #define SHADER_CACHE_SIZE 256
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 12 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 13 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
@@ -138,10 +138,15 @@ static GLenum ffp_mode;
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 uint16_t ffp_vertex_attrib_state = 0;
 static uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 2, FFP_VERTEX_ATTRIBS_NUM - 1};
+static uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM] = {1, 2, 3};
 #else
 uint8_t ffp_vertex_attrib_state = 0;
 static uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 1};
+static uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM] = {1, 2};
 #endif
+uint8_t ffp_vertex_attrib_fixed_mask = 0;
+uint8_t ffp_vertex_attrib_fixed_pos_mask = 0;
+
 typedef union shader_mask {
 	struct {
 		uint32_t alpha_test_mode : 3;
@@ -156,9 +161,12 @@ typedef union shader_mask {
 		uint32_t normalize : 1;
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 		uint32_t tex_env_mode_pass2 : 3;
-		uint32_t UNUSED : 6;
+		uint32_t fixed_mask : 4;
+		uint32_t pos_fixed_mask : 2;
 #else
-		uint32_t UNUSED : 9;
+		uint32_t fixed_mask : 3;
+		uint32_t pos_fixed_mask : 2;
+		uint32_t UNUSED : 3;
 #endif
 	};
 	uint32_t raw;
@@ -400,6 +408,8 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	mask.fog_mode = internal_fog_mode;
 	mask.shading_mode = shading_mode;
 	mask.normalize = normalize;
+	mask.fixed_mask = ffp_vertex_attrib_fixed_mask;
+	mask.pos_fixed_mask = ffp_vertex_attrib_fixed_pos_mask;
 	uint8_t draw_mask_state = ffp_vertex_attrib_state;
 	
 	// Counting number of enabled texture units
@@ -564,7 +574,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 			// Compiling the new shader
 			char vshader[8192];
-			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode, mask.normalize);
+			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode, mask.normalize, mask.fixed_mask, mask.pos_fixed_mask);
 			uint32_t size = strlen(vshader);
 			SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 			ffp_vertex_program = (SceGxmProgram *)vglMalloc(size);
@@ -1241,12 +1251,19 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 	unsigned short bpe;
 	switch (type) {
 	case GL_FLOAT:
+		ffp_vertex_attrib_fixed_pos_mask = 0;
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		bpe = 4;
 		break;
 	case GL_SHORT:
+		ffp_vertex_attrib_fixed_pos_mask = 0;
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_S16;
 		bpe = 2;
+		break;
+	case GL_FIXED:
+		ffp_vertex_attrib_fixed_pos_mask = size - 1;
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		bpe = 4;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -1349,16 +1366,24 @@ void glNormalPointer(GLenum type, GLsizei stride, const void *pointer) {
 	unsigned short bpe;
 	switch (type) {
 	case GL_FLOAT:
+		ffp_vertex_attrib_fixed_mask &= ~(1 << 0);
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		bpe = 4;
 		break;
 	case GL_SHORT:
+		ffp_vertex_attrib_fixed_mask &= ~(1 << 0);
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_S16N;
 		bpe = 2;
 		break;
 	case GL_BYTE:
+		ffp_vertex_attrib_fixed_mask &= ~(1 << 0);
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_S8N;
 		bpe = 1;
+		break;
+	case GL_FIXED:
+		ffp_vertex_attrib_fixed_mask |= (1 << 0);
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		bpe = 4;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -1388,12 +1413,19 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *po
 	unsigned short bpe;
 	switch (type) {
 	case GL_FLOAT:
+		ffp_vertex_attrib_fixed_mask &= ~(1 << texcoord_fixed_idxs[client_texture_unit]);
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		bpe = 4;
 		break;
 	case GL_SHORT:
+		ffp_vertex_attrib_fixed_mask &= ~(1 << texcoord_fixed_idxs[client_texture_unit]);
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_S16;
 		bpe = 2;
+		break;
+	case GL_FIXED:
+		ffp_vertex_attrib_fixed_mask |= (1 << texcoord_fixed_idxs[client_texture_unit]);
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		bpe = 4;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)

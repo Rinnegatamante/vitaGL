@@ -1,3 +1,11 @@
+/* 
+	Fixed Masks:
+	0x01 = Normal
+	0x02 = Tex0
+	0x04 = Tex1
+	0x08 = Tex2
+*/
+
 const char *ffp_vert_src =
 R"(#define clip_planes_num %d
 #define num_textures %d
@@ -5,6 +13,13 @@ R"(#define clip_planes_num %d
 #define lights_num %d
 #define shading_mode %d
 #define normalization %d
+#define fixed_mode_mask %d
+#define fixed_mode_pos %d
+
+#define GLFixedToFloat(fx) (float(bit_cast<short2>(fx).y + (bit_cast<unsigned short2>(fx).x * (1.0f / 65536.0f))))
+#define GLFixed2ToFloat2(fx2) (float2(GLFixedToFloat(fx2.x), GLFixedToFloat(fx2.y)))
+#define GLFixed3ToFloat3(fx3) (float3(GLFixedToFloat(fx3.x), GLFixedToFloat(fx3.y), GLFixedToFloat(fx3.z)))
+#define GLFixed4ToFloat4(fx4) (float4(GLFixedToFloat(fx4.x), GLFixedToFloat(fx4.y), GLFixedToFloat(fx4.z), GLFixedToFloat(fx4.w)))
 
 #if lights_num > 0 && shading_mode < 1 // GL_SMOOTH/GL_FLAT
 static float4 Ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -113,6 +128,15 @@ void main(
 	uniform float point_size,
 	uniform float4x4 normal_mat
 ) {
+#if fixed_mode_pos == 1
+	position.xy = GLFixed2ToFloat2(position.xy);
+#endif
+#if fixed_mode_pos == 2
+	position.xyz = GLFixed3ToFloat3(position.xyz);
+#endif
+#if fixed_mode_pos == 3
+	position = GLFixed4ToFloat4(position);
+#endif
 	float4 modelpos = mul(modelview, position);
 	
 	// User clip planes
@@ -125,6 +149,9 @@ void main(
 	
 	// Lighting
 #if lights_num > 0
+#if (fixed_mode_mask & 0x01) == 0x01
+	normals = GLFixed3ToFloat3(normals);
+#endif
 #if normalization == 1
 	float3 normal = normalize(mul(float3x3(normal_mat), normalize(normals)));
 #else
@@ -139,10 +166,19 @@ void main(
 #endif
 
 #if num_textures > 0
+#if (fixed_mode_mask & 0x02) == 0x02
+	texcoord0 = GLFixed2ToFloat2(texcoord0);
+#endif
 	vTexcoord = mul(texmat, float4(texcoord0, 0.f, 1.f)).xy;
 #if num_textures > 1
+#if (fixed_mode_mask & 0x04) == 0x04
+	texcoord1 = GLFixed2ToFloat2(texcoord1);
+#endif
 	vTexcoord2 = mul(texmat, float4(texcoord1, 0.f, 1.f)).xy;
 #if num_textures > 2
+#if (fixed_mode_mask & 0x08) == 0x08
+	texcoord2 = GLFixed2ToFloat2(texcoord2);
+#endif
 	vTexcoord3 = mul(texmat, float4(texcoord2, 0.f, 1.f)).xy;
 #endif
 #endif
