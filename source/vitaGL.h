@@ -392,6 +392,7 @@ extern "C" {
 #define GL_FLOAT_MAT2                                   0x8B5A
 #define GL_FLOAT_MAT3                                   0x8B5B
 #define GL_FLOAT_MAT4                                   0x8B5C
+#define GL_DELETE_STATUS                                0x8B80
 #define GL_COMPILE_STATUS                               0x8B81
 #define GL_LINK_STATUS                                  0x8B82
 #define GL_INFO_LOG_LENGTH                              0x8B84

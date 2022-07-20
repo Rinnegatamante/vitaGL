@@ -805,6 +805,9 @@ void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
 	case GL_COMPILE_STATUS:
 		*params = s->prog ? GL_TRUE : GL_FALSE;
 		break;
+	case GL_DELETE_STATUS:
+		*params = s->dirty ? GL_TRUE : GL_FALSE;
+		break;
 	case GL_INFO_LOG_LENGTH:
 #ifdef HAVE_SHARK_LOG
 		*params = s->log ? (strlen(s->log) + 1) : 0;
