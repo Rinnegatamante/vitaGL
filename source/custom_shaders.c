@@ -77,6 +77,8 @@ typedef struct {
 typedef struct {
 	GLenum type;
 	GLboolean valid;
+	GLboolean dirty;
+	int16_t ref_counter;
 	SceGxmShaderPatcherId id;
 	const SceGxmProgram *prog;
 	uint32_t size;
@@ -122,6 +124,23 @@ typedef struct {
 // Internal shaders and array
 static shader shaders[MAX_CUSTOM_SHADERS];
 static program progs[MAX_CUSTOM_PROGRAMS];
+
+void release_shader(shader *s) {
+	// Deallocating shader and unregistering it from sceGxmShaderPatcher
+	if (s->valid) {
+		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
+		vgl_free((void *)s->prog);
+#ifdef HAVE_SHARK_LOG
+		if (s->log) {
+			vgl_free(s->log);
+			s->log = NULL;
+		}
+#endif
+	}
+	s->source = NULL;
+	s->valid = GL_FALSE;
+	s->dirty = GL_FALSE;
+}
 
 float *reserve_attrib_pool(uint8_t count) {
 	float *res = vertex_attrib_pool_ptr;
@@ -926,20 +945,12 @@ void glCompileShader(GLuint handle) {
 void glDeleteShader(GLuint shad) {
 	// Grabbing passed shader
 	shader *s = &shaders[shad - 1];
-
-	// Deallocating shader and unregistering it from sceGxmShaderPatcher
-	if (s->valid) {
-		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
-		vgl_free((void *)s->prog);
-#ifdef HAVE_SHARK_LOG
-		if (s->log) {
-			vgl_free(s->log);
-			s->log = NULL;
-		}
-#endif
-	}
-	s->source = NULL;
-	s->valid = GL_FALSE;
+	
+	// If the shader is attached to any program, we only mark it for deletion
+	if (s->ref_counter > 0)
+		s->dirty = GL_TRUE;
+	else
+		release_shader(s);
 }
 
 void glAttachShader(GLuint prog, GLuint shad) {
@@ -951,9 +962,11 @@ void glAttachShader(GLuint prog, GLuint shad) {
 	if (p->status == PROG_UNLINKED && s->valid) {
 		switch (s->type) {
 		case GL_VERTEX_SHADER:
+			s->ref_counter++;
 			p->vshader = s;
 			break;
 		case GL_FRAGMENT_SHADER:
+			s->ref_counter++;
 			p->fshader = s;
 			break;
 		default:
@@ -1066,6 +1079,18 @@ void glDeleteProgram(GLuint prog) {
 				vgl_free(old->data);
 			vgl_free(old);
 		}
+		
+		// Checking if attached shaders are marked for deletion and should be deleted
+		if (p->vshader) {
+			p->vshader->ref_counter--;
+			if (p->vshader->dirty && p->vshader->ref_counter == 0)
+				release_shader(p->vshader);
+		}	
+		if (p->fshader) {
+			p->fshader->ref_counter--;
+			if (p->fshader->dirty && p->fshader->ref_counter == 0)
+				release_shader(p->fshader);
+		}		
 	}
 	p->status = PROG_INVALID;
 }

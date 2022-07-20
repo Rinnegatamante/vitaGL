@@ -546,9 +546,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #endif
 #endif
 	}
-
+#ifndef DISABLE_RAM_SHADER_CACHE
 	GLboolean new_shader_flag = ffp_dirty_vert || ffp_dirty_frag;
-
+#endif
 	// Checking if vertex shader requires a recompilation
 	if (ffp_dirty_vert) {
 #ifndef DISABLE_FS_SHADER_CACHE
