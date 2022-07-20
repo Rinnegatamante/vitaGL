@@ -1,5 +1,5 @@
 <p align="center"><img width="50%" height="50%" src="./vitagl.png"></p>
-vitaGL is an opensource openGL driver for PSVITA development. It acts as a wrapper between openGL and sceGxm and allows to use a subset of openGL functions with fully hardware acceleration by translating the code to sceGxm equivalent.
+vitaGL is an opensource openGL driver for PSVITA development. It acts as a wrapper between openGL and sceGxm and allows to use a subset of openGL functions with full hardware acceleration by translating the code to sceGxm equivalent.
 
 # Prerequisites
 In order to run an homebrew made with vitaGL, you are going to need libshacccg.suprx extracted and decrypted on your console. You can refer to this guide for more details about its extraction: https://samilops2.gitbook.io/vita-troubleshooting-guide/shader-compiler/extract-libshacccg.suprx<br>
@@ -16,7 +16,6 @@ In order to build vitaGL use the following command: `make install`.
 `LOG_ERRORS=2` Errors will be logged to ux0:data/vitaGL.log.<br>
 `NO_DEBUG=1` Disables most of the error handling features (Faster CPU code execution but code may be non compliant to all OpenGL standards).<br>
 `NO_TEX_COMBINER=1` Disables texture combiner support (GL_COMBINE) for faster fixed function pipeline code execution.<br>
-`NO_SHADER_CACHE=1` Disables extra shader cache layer on filesystem (ux0:data/shader_cache) for fixed function pipeline.<br>
 `SOFTFP_ABI=1` Compiles the library in soft floating point compatibility mode.<br>
 `DRAW_SPEEDHACK=1` Enables faster code for draw calls. May cause crashes.<br>
 `MATH_SPEEDHACK=1` Enables faster code for matrix math calls. May cause glitches.<br>

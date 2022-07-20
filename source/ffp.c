@@ -37,8 +37,11 @@
 #endif
 #include "shared.h"
 
+//#define DISABLE_FS_SHADER_CACHE // Uncomment this to disable filesystem layer cache for ffp
+//#define DISABLE_RAM_SHADER_CACHE // Uncomment this to disable RAM layer cache for ffp
+
 #define SHADER_CACHE_SIZE 256
-#ifndef DISABLE_ADVANCED_SHADER_CACHE
+#ifndef DISABLE_FS_SHADER_CACHE
 #define SHADER_CACHE_MAGIC 13 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
@@ -191,6 +194,7 @@ typedef union combiner_mask {
 } combiner_mask;
 #endif
 
+#ifndef DISABLE_RAM_SHADER_CACHE
 typedef struct {
 	SceGxmProgram *frag;
 	SceGxmProgram *vert;
@@ -204,6 +208,7 @@ typedef struct {
 cached_shader shader_cache[SHADER_CACHE_SIZE];
 uint8_t shader_cache_size = 0;
 int shader_cache_idx = -1;
+#endif
 
 typedef enum {
 	CLIP_PLANES_EQUATION_UNIF,
@@ -500,8 +505,8 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		ffp_dirty_vert = GL_FALSE;
 		ffp_dirty_frag = GL_FALSE;
 	} else {
-		int i;
-		for (i = 0; i < shader_cache_size; i++) {
+#ifndef DISABLE_RAM_SHADER_CACHE
+		for (int i = 0; i < shader_cache_size; i++) {
 #ifdef DISABLE_TEXTURE_COMBINER
 			if (shader_cache[i].mask.raw == mask.raw) {
 #else
@@ -528,6 +533,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				break;
 			}
 		}
+#endif
 		dirty_frag_unifs = GL_TRUE;
 		dirty_vert_unifs = GL_TRUE;
 		ffp_mask.raw = mask.raw;
@@ -545,7 +551,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 	// Checking if vertex shader requires a recompilation
 	if (ffp_dirty_vert) {
-#ifndef DISABLE_ADVANCED_SHADER_CACHE
+#ifndef DISABLE_FS_SHADER_CACHE
 		char fname[256];
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
@@ -580,7 +586,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			ffp_vertex_program = (SceGxmProgram *)vglMalloc(size);
 			vgl_fast_memcpy((void *)ffp_vertex_program, (void *)t, size);
 			shark_clear_output();
-#ifndef DISABLE_ADVANCED_SHADER_CACHE
+#ifndef DISABLE_FS_SHADER_CACHE
 			// Saving compiled shader in filesystem cache
 			f = fopen(fname, "wb");
 			fwrite(ffp_vertex_program, 1, size, f);
@@ -756,7 +762,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 	// Checking if fragment shader requires a recompilation
 	if (ffp_dirty_frag) {
-#ifndef DISABLE_ADVANCED_SHADER_CACHE
+#ifndef DISABLE_FS_SHADER_CACHE
 		char fname[256];
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
@@ -849,7 +855,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			ffp_fragment_program = (SceGxmProgram *)vglMalloc(size);
 			vgl_fast_memcpy((void *)ffp_fragment_program, (void *)t, size);
 			shark_clear_output();
-#ifndef DISABLE_ADVANCED_SHADER_CACHE
+#ifndef DISABLE_FS_SHADER_CACHE
 			// Saving compiled shader in filesystem cache
 			f = fopen(fname, "wb");
 			fwrite(ffp_fragment_program, 1, size, f);
@@ -888,7 +894,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		// Updating current fixed function pipeline blend config
 		ffp_blend_info.raw = blend_info.raw;
 	}
-
+#ifndef DISABLE_RAM_SHADER_CACHE
 	if (new_shader_flag) {
 		shader_cache_idx = (shader_cache_idx + 1) % SHADER_CACHE_SIZE;
 		if (shader_cache_size < SHADER_CACHE_SIZE)
@@ -913,7 +919,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		shader_cache[shader_cache_idx].frag_id = ffp_fragment_program_id;
 		shader_cache[shader_cache_idx].vert_id = ffp_vertex_program_id;
 	}
-
+#endif
 	sceGxmSetVertexProgram(gxm_context, ffp_vertex_program_patched);
 	sceGxmSetFragmentProgram(gxm_context, ffp_fragment_program_patched);
 
