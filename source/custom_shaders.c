@@ -1050,6 +1050,67 @@ GLuint glCreateProgram(void) {
 	return res;
 }
 
+void glGetProgramBinary(GLuint prog, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary) {
+#ifndef SKIP_ERROR_HANDLING
+	if (bufSize < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+	// Grabbing passed program
+	program *p = &progs[prog - 1];
+	
+	// Saving info related to bound attributes locations
+	GLuint *b = (GLuint *)binary;
+	b[0] = p->attr_highest_idx;
+	sceClibMemcpy(&b[1], p->attr, sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM);
+	GLsizei size = sizeof(GLuint) + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM;
+
+	// Dumping binaries
+	if (p->vshader->prog) {
+		GLsizei bin_len = sceGxmProgramGetSize(p->vshader->prog);
+		uint32_t *sizeptr = (uint32_t *)((uint8_t *)binary + size);
+		sizeptr[0] = bin_len;
+		vgl_fast_memcpy(&sizeptr[1], p->vshader->prog, bin_len);
+		size += bin_len + sizeof(uint32_t);
+	}
+	if (p->fshader->prog) {
+		GLsizei bin_len = sceGxmProgramGetSize(p->fshader->prog);
+		uint32_t *sizeptr = (uint32_t *)((uint8_t *)binary + size);
+		sizeptr[0] = bin_len;
+		vgl_fast_memcpy(&sizeptr[1], p->fshader->prog, bin_len);
+		size += bin_len + sizeof(uint32_t);
+	}
+	if (length)
+		*length = size;
+}
+
+void glProgramBinary(GLuint prog, GLenum binaryFormat, const void *binary, GLsizei length) {
+	// Grabbing passed program
+	program *p = &progs[prog - 1];
+	
+	// Restoring bound attributes info
+	GLuint *b = (GLuint *)binary;
+	p->attr_highest_idx = b[0];
+	sceClibMemcpy(p->attr, &b[1], sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM);
+	GLsizei size = sizeof(GLuint) + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM;
+	
+	// Restoring shaders
+	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+	uint32_t *sizeptr = (uint32_t *)((uint8_t *)binary + size);
+	glShaderBinary(1, &vs, 0, &sizeptr[1], sizeptr[0]);
+	sizeptr = (uint32_t *)((uint8_t *)binary + size + sizeptr[0] + sizeof(uint32_t));
+	glShaderBinary(1, &fs, 0, &sizeptr[1], sizeptr[0]);
+	glAttachShader(prog, vs);
+	glAttachShader(prog, fs);
+	
+	// Linking program and marking for deletion temporary shaders
+	glLinkProgram(prog);
+	glDeleteShader(vs);
+	glDeleteShader(fs);
+}
+
 void glDeleteProgram(GLuint prog) {
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
@@ -1116,6 +1177,9 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 		break;
 	case GL_INFO_LOG_LENGTH:
 		*params = 0;
+		break;
+	case GL_PROGRAM_BINARY_LENGTH:
+		*params = sceGxmProgramGetSize(p->vshader->prog) + sceGxmProgramGetSize(p->fshader->prog) + sizeof(uint32_t) * 2 + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM + sizeof(GLuint);
 		break;
 	case GL_ATTACHED_SHADERS:
 		i = 0;

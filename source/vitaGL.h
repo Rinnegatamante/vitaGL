@@ -353,6 +353,7 @@ extern "C" {
 #define GL_PROGRAM_ERROR_POSITION_ARB                   0x864B
 #define GL_NUM_COMPRESSED_TEXTURE_FORMATS               0x86A2
 #define GL_COMPRESSED_TEXTURE_FORMATS                   0x86A3
+#define GL_PROGRAM_BINARY_LENGTH                        0x8741
 #define GL_MIRROR_CLAMP_EXT                             0x8742
 #define GL_BUFFER_SIZE                                  0x8764
 #define GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD              0x87EE
@@ -597,10 +598,11 @@ void glGetAttachedShaders(GLuint prog, GLsizei maxCount, GLsizei *count, GLuint 
 GLint glGetAttribLocation(GLuint prog, const GLchar *name);
 void glGetBooleanv(GLenum pname, GLboolean *params);
 void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params);
+GLenum glGetError(void);
 void glGetFloatv(GLenum pname, GLfloat *data);
 void glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLenum pname, GLint *params);
-GLenum glGetError(void);
 void glGetIntegerv(GLenum pname, GLint *data);
+void glGetProgramBinary(GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary);
 void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 void glGetProgramiv(GLuint program, GLenum pname, GLint *params);
 void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
@@ -648,6 +650,7 @@ void glPolygonMode(GLenum face, GLenum mode);
 void glPolygonOffset(GLfloat factor, GLfloat units);
 void glPopAttrib(void);
 void glPopMatrix(void);
+void glProgramBinary(GLuint program, GLenum binaryFormat, const void *binary, GLsizei length);
 void glPushAttrib(GLbitfield mask);
 void glPushMatrix(void);
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data);
