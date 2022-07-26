@@ -2597,7 +2597,7 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTexEnvxv, "UUF", target, pname, param))
+	if (_vgl_enqueue_list_func(glTexEnvxv, "UUU", target, pname, param))
 		return;
 #endif
 	// Aliasing texture unit for cleaner code
@@ -3117,6 +3117,11 @@ void glFogf(GLenum pname, GLfloat param) {
 	dirty_frag_unifs = GL_TRUE;
 }
 
+void glFogx(GLenum pname, GLfixed param) {
+	glFogf(pname, (float)param / 65536.0f);
+}
+
+
 void glFogfv(GLenum pname, const GLfloat *params) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
@@ -3141,6 +3146,40 @@ void glFogfv(GLenum pname, const GLfloat *params) {
 		break;
 	case GL_FOG_COLOR:
 		vgl_fast_memcpy(&fog_color.r, params, sizeof(vector4f));
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
+	dirty_frag_unifs = GL_TRUE;
+}
+
+void glFogxv(GLenum pname, const GLfixed *params) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glFogxv, "UU", pname, params))
+		return;
+#endif
+	switch (pname) {
+	case GL_FOG_MODE:
+		fog_mode = (float)params[0] / 65536.0f;
+		update_fogging_state();
+		break;
+	case GL_FOG_DENSITY:
+		fog_density = (float)params[0] / 65536.0f;
+		break;
+	case GL_FOG_START:
+		fog_near = (float)params[0] / 65536.0f;
+		fog_range = fog_far - fog_near;
+		break;
+	case GL_FOG_END:
+		fog_far = (float)params[0] / 65536.0f;
+		fog_range = fog_far - fog_near;
+		break;
+	case GL_FOG_COLOR:
+		fog_color.r = (float)params[0] / 65536.0f;
+		fog_color.g = (float)params[1] / 65536.0f;
+		fog_color.b = (float)params[2] / 65536.0f;
+		fog_color.a = (float)params[3] / 65536.0f;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -3192,6 +3231,56 @@ void glClipPlane(GLenum plane, const GLdouble *equation) {
 	clip_planes_eq[idx].y = equation[1];
 	clip_planes_eq[idx].z = equation[2];
 	clip_planes_eq[idx].w = equation[3];
+	matrix4x4 inverted, inverted_transposed;
+	matrix4x4_invert(inverted, modelview_matrix);
+	matrix4x4_transpose(inverted_transposed, inverted);
+	vector4f temp;
+	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
+	vgl_fast_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
+	dirty_vert_unifs = GL_TRUE;
+}
+
+void glClipPlanef(GLenum plane, const GLfloat *equation) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glClipPlanef, "UU", plane, equation))
+		return;
+#endif
+#ifndef SKIP_ERROR_HANDLING
+	if (plane < GL_CLIP_PLANE0 || plane > GL_CLIP_PLANE6) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, plane)
+	}
+#endif
+	int idx = plane - GL_CLIP_PLANE0;
+	clip_planes_eq[idx].x = equation[0];
+	clip_planes_eq[idx].y = equation[1];
+	clip_planes_eq[idx].z = equation[2];
+	clip_planes_eq[idx].w = equation[3];
+	matrix4x4 inverted, inverted_transposed;
+	matrix4x4_invert(inverted, modelview_matrix);
+	matrix4x4_transpose(inverted_transposed, inverted);
+	vector4f temp;
+	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
+	vgl_fast_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
+	dirty_vert_unifs = GL_TRUE;
+}
+
+void glClipPlanex(GLenum plane, const GLfixed *equation) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glClipPlanex, "UU", plane, equation))
+		return;
+#endif
+#ifndef SKIP_ERROR_HANDLING
+	if (plane < GL_CLIP_PLANE0 || plane > GL_CLIP_PLANE6) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, plane)
+	}
+#endif
+	int idx = plane - GL_CLIP_PLANE0;
+	clip_planes_eq[idx].x = (float)equation[0] / 65536.0f;
+	clip_planes_eq[idx].y = (float)equation[1] / 65536.0f;
+	clip_planes_eq[idx].z = (float)equation[2] / 65536.0f;
+	clip_planes_eq[idx].w = (float)equation[3] / 65536.0f;
 	matrix4x4 inverted, inverted_transposed;
 	matrix4x4_invert(inverted, modelview_matrix);
 	matrix4x4_transpose(inverted_transposed, inverted);

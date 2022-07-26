@@ -266,6 +266,12 @@ void glPolygonOffset(GLfloat factor, GLfloat units) {
 	update_polygon_offset();
 }
 
+void glPolygonOffsetx(GLfixed factor, GLfixed units) {
+	pol_factor = (float)factor / 65536.0f;
+	pol_units = (float)units / 65536.0f;
+	update_polygon_offset();
+}
+
 void glCullFace(GLenum mode) {
 	gl_cull_mode = mode;
 	if (cull_face_state)
@@ -310,6 +316,14 @@ void glDepthRange(GLdouble nearVal, GLdouble farVal) {
 }
 
 void glDepthRangef(GLfloat nearVal, GLfloat farVal) {
+	z_port = (farVal + nearVal) / 2.0f;
+	z_scale = (farVal - nearVal) / 2.0f;
+	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+}
+
+void glDepthRangex(GLfixed _nearVal, GLfixed _farVal) {
+	GLfloat nearVal = (float)_nearVal / 65536.0f;
+	GLfloat farVal = (float)_farVal / 65536.0f;
 	z_port = (farVal + nearVal) / 2.0f;
 	z_scale = (farVal - nearVal) / 2.0f;
 	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
@@ -696,6 +710,19 @@ void glPointSize(GLfloat size) {
 
 	// Changing point size as requested
 	point_size = size;
+}
+
+void glPointSizex(GLfixed size) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (size <= 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+	dirty_vert_unifs = GL_TRUE;
+
+	// Changing point size as requested
+	point_size = (float)size / 65536.0f;
 }
 
 void glHint(GLenum target, GLenum mode) {

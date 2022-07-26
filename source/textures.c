@@ -1234,6 +1234,10 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 	}
 }
 
+void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
+	glTexParameteri(target, pname, param / 65536);
+}
+
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];

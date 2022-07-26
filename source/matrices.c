@@ -88,6 +88,10 @@ void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdou
 	glOrthof(left, right, bottom, top, nearVal, farVal);
 }
 
+void glOrthox(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed nearVal, GLfixed farVal) {
+	glOrthof((float)left / 65536.0f, (float)right / 65536.0f, (float)bottom / 65536.0f, (float)top / 65536.0f, (float)nearVal / 65536.0f, (float)farVal / 65536.0f);
+}
+
 void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
