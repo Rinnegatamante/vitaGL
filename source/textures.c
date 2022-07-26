@@ -1440,6 +1440,10 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 	glTexParameteri(target, pname, (GLint)param);
 }
 
+void glTexParameteriv(GLenum target, GLenum pname, GLint *param) {
+	glTexParameteri(target, pname, param[0]);
+}
+
 void glActiveTexture(GLenum texture) {
 	// Changing current in use server texture unit
 #ifndef SKIP_ERROR_HANDLING

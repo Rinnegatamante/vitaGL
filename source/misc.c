@@ -699,6 +699,10 @@ void glLineWidth(GLfloat width) {
 	sceGxmSetBackPointLineWidth(gxm_context, int_width);
 }
 
+void glLineWidthx(GLfixed width) {
+	glLineWidth((float)width / 65536.0f);
+}
+
 void glPointSize(GLfloat size) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -713,16 +717,7 @@ void glPointSize(GLfloat size) {
 }
 
 void glPointSizex(GLfixed size) {
-#ifndef SKIP_ERROR_HANDLING
-	// Error handling
-	if (size <= 0) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-#endif
-	dirty_vert_unifs = GL_TRUE;
-
-	// Changing point size as requested
-	point_size = (float)size / 65536.0f;
+	glPointSize((float)size / 65536.0f);
 }
 
 void glHint(GLenum target, GLenum mode) {
