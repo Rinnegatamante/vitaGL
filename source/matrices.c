@@ -42,9 +42,6 @@ void glMatrixMode(GLenum mode) {
 	if (_vgl_enqueue_list_func(glMatrixMode, "U", mode))
 		return;
 #endif
-	// Save enum value of mode to be used by glGetIntegerv
-	current_matrix_mode = mode;
-
 	// Changing current in use matrix
 	switch (mode) {
 	case GL_MODELVIEW: // Modelview matrix
