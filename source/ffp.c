@@ -2339,217 +2339,6 @@ void glEnd(void) {
 	restore_polygon_mode(prim);
 }
 
-void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTexEnvf, "UUF", target, pname, param))
-		return;
-#endif
-	// Aliasing texture unit for cleaner code
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
-
-	// Properly changing texture environment settings as per request
-	switch (target) {
-	case GL_TEXTURE_ENV:
-		switch (pname) {
-		case GL_TEXTURE_ENV_MODE:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_MODULATE)
-				tex_unit->env_mode = MODULATE;
-			else if (param == GL_DECAL)
-				tex_unit->env_mode = DECAL;
-			else if (param == GL_REPLACE)
-				tex_unit->env_mode = REPLACE;
-			else if (param == GL_BLEND)
-				tex_unit->env_mode = BLEND;
-			else if (param == GL_ADD)
-				tex_unit->env_mode = ADD;
-#ifndef DISABLE_TEXTURE_COMBINER
-			else if (param == GL_COMBINE)
-				tex_unit->env_mode = COMBINE;
-			break;
-		case GL_RGB_SCALE:
-#ifndef SKIP_ERROR_HANDLING
-			if (param != 1.0f && param != 2.0f && param != 4.0f) {
-				SET_GL_ERROR(GL_INVALID_VALUE)
-			}
-#endif
-			dirty_frag_unifs = GL_TRUE;
-			tex_unit->rgb_scale = param;
-			break;
-		case GL_ALPHA_SCALE:
-#ifndef SKIP_ERROR_HANDLING
-			if (param != 1.0f && param != 2.0f && param != 4.0f) {
-				SET_GL_ERROR(GL_INVALID_VALUE)
-			}
-#endif
-			dirty_frag_unifs = GL_TRUE;
-			tex_unit->a_scale = param;
-			break;
-		case GL_COMBINE_RGB:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_REPLACE)
-				tex_unit->combiner.rgb_func = REPLACE;
-			else if (param == GL_MODULATE)
-				tex_unit->combiner.rgb_func = MODULATE;
-			else if (param == GL_ADD)
-				tex_unit->combiner.rgb_func = ADD;
-			else if (param == GL_ADD_SIGNED)
-				tex_unit->combiner.rgb_func = ADD_SIGNED;
-			else if (param == GL_INTERPOLATE)
-				tex_unit->combiner.rgb_func = INTERPOLATE;
-			else if (param == GL_SUBTRACT)
-				tex_unit->combiner.rgb_func = SUBTRACT;
-			break;
-		case GL_COMBINE_ALPHA:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_REPLACE)
-				tex_unit->combiner.a_func = REPLACE;
-			else if (param == GL_MODULATE)
-				tex_unit->combiner.a_func = MODULATE;
-			else if (param == GL_ADD)
-				tex_unit->combiner.a_func = ADD;
-			else if (param == GL_ADD_SIGNED)
-				tex_unit->combiner.a_func = ADD_SIGNED;
-			else if (param == GL_INTERPOLATE)
-				tex_unit->combiner.a_func = INTERPOLATE;
-			else if (param == GL_SUBTRACT)
-				tex_unit->combiner.a_func = SUBTRACT;
-			break;
-		case GL_SRC0_RGB:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_TEXTURE)
-				tex_unit->combiner.op_rgb_0 = TEXTURE;
-			else if (param == GL_CONSTANT)
-				tex_unit->combiner.op_rgb_0 = CONSTANT;
-			else if (param == GL_PRIMARY_COLOR)
-				tex_unit->combiner.op_rgb_0 = PRIMARY_COLOR;
-			else if (param == GL_PREVIOUS)
-				tex_unit->combiner.op_rgb_0 = PREVIOUS;
-			break;
-		case GL_SRC1_RGB:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_TEXTURE)
-				tex_unit->combiner.op_rgb_1 = TEXTURE;
-			else if (param == GL_CONSTANT)
-				tex_unit->combiner.op_rgb_1 = CONSTANT;
-			else if (param == GL_PRIMARY_COLOR)
-				tex_unit->combiner.op_rgb_1 = PRIMARY_COLOR;
-			else if (param == GL_PREVIOUS)
-				tex_unit->combiner.op_rgb_1 = PREVIOUS;
-			break;
-		case GL_SRC2_RGB:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_TEXTURE)
-				tex_unit->combiner.op_rgb_2 = TEXTURE;
-			else if (param == GL_CONSTANT)
-				tex_unit->combiner.op_rgb_2 = CONSTANT;
-			else if (param == GL_PRIMARY_COLOR)
-				tex_unit->combiner.op_rgb_2 = PRIMARY_COLOR;
-			else if (param == GL_PREVIOUS)
-				tex_unit->combiner.op_rgb_2 = PREVIOUS;
-			break;
-		case GL_SRC0_ALPHA:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_TEXTURE)
-				tex_unit->combiner.op_a_0 = TEXTURE;
-			else if (param == GL_CONSTANT)
-				tex_unit->combiner.op_a_0 = CONSTANT;
-			else if (param == GL_PRIMARY_COLOR)
-				tex_unit->combiner.op_a_0 = PRIMARY_COLOR;
-			else if (param == GL_PREVIOUS)
-				tex_unit->combiner.op_a_0 = PREVIOUS;
-			break;
-		case GL_SRC1_ALPHA:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_TEXTURE)
-				tex_unit->combiner.op_a_1 = TEXTURE;
-			else if (param == GL_CONSTANT)
-				tex_unit->combiner.op_a_1 = CONSTANT;
-			else if (param == GL_PRIMARY_COLOR)
-				tex_unit->combiner.op_a_1 = PRIMARY_COLOR;
-			else if (param == GL_PREVIOUS)
-				tex_unit->combiner.op_a_1 = PREVIOUS;
-			break;
-		case GL_SRC2_ALPHA:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_TEXTURE)
-				tex_unit->combiner.op_a_2 = TEXTURE;
-			else if (param == GL_CONSTANT)
-				tex_unit->combiner.op_a_2 = CONSTANT;
-			else if (param == GL_PRIMARY_COLOR)
-				tex_unit->combiner.op_a_2 = PRIMARY_COLOR;
-			else if (param == GL_PREVIOUS)
-				tex_unit->combiner.op_a_2 = PREVIOUS;
-			break;
-		case GL_OPERAND0_RGB:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_COLOR)
-				tex_unit->combiner.op_mode_rgb_0 = SRC_COLOR;
-			else if (param == GL_ONE_MINUS_SRC_COLOR)
-				tex_unit->combiner.op_mode_rgb_0 = ONE_MINUS_SRC_COLOR;
-			else if (param == GL_SRC_ALPHA)
-				tex_unit->combiner.op_mode_rgb_0 = SRC_ALPHA;
-			else if (param == GL_ONE_MINUS_SRC_ALPHA)
-				tex_unit->combiner.op_mode_rgb_0 = ONE_MINUS_SRC_ALPHA;
-			break;
-		case GL_OPERAND1_RGB:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_COLOR)
-				tex_unit->combiner.op_mode_rgb_1 = SRC_COLOR;
-			else if (param == GL_ONE_MINUS_SRC_COLOR)
-				tex_unit->combiner.op_mode_rgb_1 = ONE_MINUS_SRC_COLOR;
-			else if (param == GL_SRC_ALPHA)
-				tex_unit->combiner.op_mode_rgb_1 = SRC_ALPHA;
-			else if (param == GL_ONE_MINUS_SRC_ALPHA)
-				tex_unit->combiner.op_mode_rgb_1 = ONE_MINUS_SRC_ALPHA;
-			break;
-		case GL_OPERAND2_RGB:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_COLOR)
-				tex_unit->combiner.op_mode_rgb_2 = SRC_COLOR;
-			else if (param == GL_ONE_MINUS_SRC_COLOR)
-				tex_unit->combiner.op_mode_rgb_2 = ONE_MINUS_SRC_COLOR;
-			else if (param == GL_SRC_ALPHA)
-				tex_unit->combiner.op_mode_rgb_2 = SRC_ALPHA;
-			else if (param == GL_ONE_MINUS_SRC_ALPHA)
-				tex_unit->combiner.op_mode_rgb_2 = ONE_MINUS_SRC_ALPHA;
-			break;
-		case GL_OPERAND0_ALPHA:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_ALPHA)
-				tex_unit->combiner.op_mode_a_0 = SRC_ALPHA;
-			else if (param == GL_ONE_MINUS_SRC_ALPHA)
-				tex_unit->combiner.op_mode_a_0 = ONE_MINUS_SRC_ALPHA;
-			break;
-		case GL_OPERAND1_ALPHA:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_ALPHA)
-				tex_unit->combiner.op_mode_a_1 = SRC_ALPHA;
-			else if (param == GL_ONE_MINUS_SRC_ALPHA)
-				tex_unit->combiner.op_mode_a_1 = ONE_MINUS_SRC_ALPHA;
-			break;
-		case GL_OPERAND2_ALPHA:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_ALPHA)
-				tex_unit->combiner.op_mode_a_2 = SRC_ALPHA;
-			else if (param == GL_ONE_MINUS_SRC_ALPHA)
-				tex_unit->combiner.op_mode_a_2 = ONE_MINUS_SRC_ALPHA;
-#endif
-			break;
-		default:
-			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
-		}
-		break;
-	default:
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
-	}
-}
-
-void glTexEnvx(GLenum target, GLenum pname, GLfixed param) {
-	glTexEnvf(target, pname, (float)param / 65536.0f);
-}
-
 void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
@@ -2940,6 +2729,14 @@ void glTexEnvi(GLenum target, GLenum pname, GLint param) {
 	}
 }
 
+void glTexEnvx(GLenum target, GLenum pname, GLfixed param) {
+	glTexEnvi(target, pname, param);
+}
+
+void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
+	glTexEnvi(target, pname, (GLint)param);
+}
+
 void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
@@ -3118,7 +2915,31 @@ void glFogf(GLenum pname, GLfloat param) {
 }
 
 void glFogx(GLenum pname, GLfixed param) {
-	glFogf(pname, (float)param / 65536.0f);
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glFogx, "UI", pname, param))
+		return;
+#endif
+	switch (pname) {
+	case GL_FOG_MODE:
+		fog_mode = param;
+		update_fogging_state();
+		break;
+	case GL_FOG_DENSITY:
+		fog_density = (float)param / 65536.0f;
+		break;
+	case GL_FOG_START:
+		fog_near = (float)param / 65536.0f;
+		fog_range = fog_far - fog_near;
+		break;
+	case GL_FOG_END:
+		fog_far = (float)param / 65536.0f;
+		fog_range = fog_far - fog_near;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
+	dirty_frag_unifs = GL_TRUE;
 }
 
 
@@ -3161,7 +2982,7 @@ void glFogxv(GLenum pname, const GLfixed *params) {
 #endif
 	switch (pname) {
 	case GL_FOG_MODE:
-		fog_mode = (float)params[0] / 65536.0f;
+		fog_mode = params[0];
 		update_fogging_state();
 		break;
 	case GL_FOG_DENSITY:
