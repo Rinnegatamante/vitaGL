@@ -24,7 +24,6 @@
 #include "shared.h"
 
 matrix4x4 *matrix = NULL; // Current in-use matrix mode
-GLint current_matrix_mode = GL_MODELVIEW; // Current in-use matrix mode (for glGetIntegerv)
 static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH]; // Modelview matrices stack
 static uint8_t modelview_stack_counter = 0; // Modelview matrices stack counter
 static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH]; // Projection matrices stack
@@ -467,4 +466,16 @@ void gluLookAt(GLdouble eyeX, GLdouble eyeY, GLdouble eyeZ, GLdouble centerX, GL
 	matrix4x4_multiply(res, m, *matrix);
 	matrix4x4_copy(*matrix, res);
 	matrix4x4_translate(*matrix, -eyeX, -eyeY, -eyeZ);
+}
+
+GLint get_gl_matrix_mode() {
+	if (matrix == &texture_matrix) {
+		return GL_TEXTURE;
+	}
+
+	if (matrix == &projection_matrix) {
+		return GL_PROJECTION;
+	}
+
+	return GL_MODELVIEW;
 }

@@ -699,7 +699,7 @@ extern void *color_table; // Current in-use color table
 
 // Matrices
 extern matrix4x4 *matrix; // Current in-use matrix mode
-extern GLint current_matrix_mode; // Current in-use matrix mode (for glGetIntegerv)
+GLint get_gl_matrix_mode(); // Get current in-use matrix mode (for glGetIntegerv)
 
 // Miscellaneous
 extern glPhase phase; // Current drawing phase for legacy openGL

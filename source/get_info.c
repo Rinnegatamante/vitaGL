@@ -400,7 +400,7 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		*data = GL_TEXTURE0 + client_texture_unit;
 		break;
 	case GL_MATRIX_MODE:
-		*data = current_matrix_mode;
+		*data = get_gl_matrix_mode();
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
