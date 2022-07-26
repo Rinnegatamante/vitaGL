@@ -129,12 +129,15 @@ extern "C" {
 #define GL_DEPTH_TEST                                   0x0B71
 #define GL_DEPTH_WRITEMASK                              0x0B72
 #define GL_STENCIL_TEST                                 0x0B90
+#define GL_MATRIX_MODE                                  0x0BA0
 #define GL_NORMALIZE                                    0x0BA1
 #define GL_VIEWPORT                                     0x0BA2
 #define GL_MODELVIEW_MATRIX                             0x0BA6
 #define GL_PROJECTION_MATRIX                            0x0BA7
 #define GL_TEXTURE_MATRIX                               0x0BA8
 #define GL_ALPHA_TEST                                   0x0BC0
+#define GL_BLEND_DST                                    0x0BE0
+#define GL_BLEND_SRC                                    0x0BE1
 #define GL_BLEND                                        0x0BE2
 #define GL_SCISSOR_BOX                                  0x0C10
 #define GL_SCISSOR_TEST                                 0x0C11
@@ -306,6 +309,7 @@ extern "C" {
 #define GL_TEXTURE14                                    0x84CE
 #define GL_TEXTURE15                                    0x84CF
 #define GL_ACTIVE_TEXTURE                               0x84E0
+#define GL_CLIENT_ACTIVE_TEXTURE                        0x84E1
 #define GL_MAX_TEXTURE_UNITS                            0x84E2
 #define GL_SUBTRACT                                     0x84E7
 #define GL_MAX_RENDERBUFFER_SIZE                        0x84E8

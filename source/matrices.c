@@ -483,3 +483,15 @@ void gluLookAt(GLdouble eyeX, GLdouble eyeY, GLdouble eyeZ, GLdouble centerX, GL
 	matrix4x4_copy(*matrix, res);
 	matrix4x4_translate(*matrix, -eyeX, -eyeY, -eyeZ);
 }
+
+GLint get_gl_matrix_mode() {
+	if (matrix == &texture_matrix) {
+		return GL_TEXTURE;
+	}
+
+	if (matrix == &projection_matrix) {
+		return GL_PROJECTION;
+	}
+
+	return GL_MODELVIEW;
+}
