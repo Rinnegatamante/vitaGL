@@ -77,6 +77,8 @@ typedef struct {
 typedef struct {
 	GLenum type;
 	GLboolean valid;
+	GLboolean dirty;
+	int16_t ref_counter;
 	SceGxmShaderPatcherId id;
 	const SceGxmProgram *prog;
 	uint32_t size;
@@ -122,6 +124,23 @@ typedef struct {
 // Internal shaders and array
 static shader shaders[MAX_CUSTOM_SHADERS];
 static program progs[MAX_CUSTOM_PROGRAMS];
+
+void release_shader(shader *s) {
+	// Deallocating shader and unregistering it from sceGxmShaderPatcher
+	if (s->valid) {
+		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
+		vgl_free((void *)s->prog);
+#ifdef HAVE_SHARK_LOG
+		if (s->log) {
+			vgl_free(s->log);
+			s->log = NULL;
+		}
+#endif
+	}
+	s->source = NULL;
+	s->valid = GL_FALSE;
+	s->dirty = GL_FALSE;
+}
 
 float *reserve_attrib_pool(uint8_t count) {
 	float *res = vertex_attrib_pool_ptr;
@@ -754,8 +773,10 @@ GLuint glCreateShader(GLenum shaderType) {
 	}
 
 	// All shader slots are busy, exiting call
-	if (res == 0)
+	if (res == 0) {
+		vgl_log("%s:%d glCreateShader: Out of shaders handles. Consider increasing MAX_CUSTOM_SHADERS...\n", __FILE__, __LINE__);
 		return res;
+	}
 
 	// Reserving and initializing shader slot
 	switch (shaderType) {
@@ -783,6 +804,9 @@ void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
 		break;
 	case GL_COMPILE_STATUS:
 		*params = s->prog ? GL_TRUE : GL_FALSE;
+		break;
+	case GL_DELETE_STATUS:
+		*params = s->dirty ? GL_TRUE : GL_FALSE;
 		break;
 	case GL_INFO_LOG_LENGTH:
 #ifdef HAVE_SHARK_LOG
@@ -924,20 +948,12 @@ void glCompileShader(GLuint handle) {
 void glDeleteShader(GLuint shad) {
 	// Grabbing passed shader
 	shader *s = &shaders[shad - 1];
-
-	// Deallocating shader and unregistering it from sceGxmShaderPatcher
-	if (s->valid) {
-		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
-		vgl_free((void *)s->prog);
-#ifdef HAVE_SHARK_LOG
-		if (s->log) {
-			vgl_free(s->log);
-			s->log = NULL;
-		}
-#endif
-	}
-	s->source = NULL;
-	s->valid = GL_FALSE;
+	
+	// If the shader is attached to any program, we only mark it for deletion
+	if (s->ref_counter > 0)
+		s->dirty = GL_TRUE;
+	else
+		release_shader(s);
 }
 
 void glAttachShader(GLuint prog, GLuint shad) {
@@ -949,9 +965,11 @@ void glAttachShader(GLuint prog, GLuint shad) {
 	if (p->status == PROG_UNLINKED && s->valid) {
 		switch (s->type) {
 		case GL_VERTEX_SHADER:
+			s->ref_counter++;
 			p->vshader = s;
 			break;
 		case GL_FRAGMENT_SHADER:
+			s->ref_counter++;
 			p->fshader = s;
 			break;
 		default:
@@ -999,7 +1017,7 @@ void glGetAttachedShaders(GLuint prog, GLsizei maxCount, GLsizei *count, GLuint 
 
 GLuint glCreateProgram(void) {
 	// Looking for a free program slot
-	GLuint i, j, res = 0;
+	GLuint i, j, res = 0xFFFFFFFF;
 	for (i = 1; i <= MAX_CUSTOM_PROGRAMS; i++) {
 		// Program slot found, reserving and initializing it
 		if (!(progs[i - 1].status)) {
@@ -1023,7 +1041,74 @@ GLuint glCreateProgram(void) {
 			break;
 		}
 	}
+#ifndef SKIP_ERROR_HANDLING
+	if (res == 0xFFFFFFFF) {
+		vgl_log("%s:%d glCreateProgram: Out of programs handles. Consider increasing MAX_CUSTOM_PROGRAMS...\n", __FILE__, __LINE__);
+		return 0;
+	}
+#endif	
 	return res;
+}
+
+void glGetProgramBinary(GLuint prog, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary) {
+#ifndef SKIP_ERROR_HANDLING
+	if (bufSize < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+	// Grabbing passed program
+	program *p = &progs[prog - 1];
+	
+	// Saving info related to bound attributes locations
+	GLuint *b = (GLuint *)binary;
+	b[0] = p->attr_highest_idx;
+	sceClibMemcpy(&b[1], p->attr, sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM);
+	GLsizei size = sizeof(GLuint) + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM;
+
+	// Dumping binaries
+	if (p->vshader->prog) {
+		GLsizei bin_len = sceGxmProgramGetSize(p->vshader->prog);
+		uint32_t *sizeptr = (uint32_t *)((uint8_t *)binary + size);
+		sizeptr[0] = bin_len;
+		vgl_fast_memcpy(&sizeptr[1], p->vshader->prog, bin_len);
+		size += bin_len + sizeof(uint32_t);
+	}
+	if (p->fshader->prog) {
+		GLsizei bin_len = sceGxmProgramGetSize(p->fshader->prog);
+		uint32_t *sizeptr = (uint32_t *)((uint8_t *)binary + size);
+		sizeptr[0] = bin_len;
+		vgl_fast_memcpy(&sizeptr[1], p->fshader->prog, bin_len);
+		size += bin_len + sizeof(uint32_t);
+	}
+	if (length)
+		*length = size;
+}
+
+void glProgramBinary(GLuint prog, GLenum binaryFormat, const void *binary, GLsizei length) {
+	// Grabbing passed program
+	program *p = &progs[prog - 1];
+	
+	// Restoring bound attributes info
+	GLuint *b = (GLuint *)binary;
+	p->attr_highest_idx = b[0];
+	sceClibMemcpy(p->attr, &b[1], sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM);
+	GLsizei size = sizeof(GLuint) + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM;
+	
+	// Restoring shaders
+	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+	uint32_t *sizeptr = (uint32_t *)((uint8_t *)binary + size);
+	glShaderBinary(1, &vs, 0, &sizeptr[1], sizeptr[0]);
+	sizeptr = (uint32_t *)((uint8_t *)binary + size + sizeptr[0] + sizeof(uint32_t));
+	glShaderBinary(1, &fs, 0, &sizeptr[1], sizeptr[0]);
+	glAttachShader(prog, vs);
+	glAttachShader(prog, fs);
+	
+	// Linking program and marking for deletion temporary shaders
+	glLinkProgram(prog);
+	glDeleteShader(vs);
+	glDeleteShader(fs);
 }
 
 void glDeleteProgram(GLuint prog) {
@@ -1058,6 +1143,18 @@ void glDeleteProgram(GLuint prog) {
 				vgl_free(old->data);
 			vgl_free(old);
 		}
+		
+		// Checking if attached shaders are marked for deletion and should be deleted
+		if (p->vshader) {
+			p->vshader->ref_counter--;
+			if (p->vshader->dirty && p->vshader->ref_counter == 0)
+				release_shader(p->vshader);
+		}	
+		if (p->fshader) {
+			p->fshader->ref_counter--;
+			if (p->fshader->dirty && p->fshader->ref_counter == 0)
+				release_shader(p->fshader);
+		}		
 	}
 	p->status = PROG_INVALID;
 }
@@ -1080,6 +1177,9 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 		break;
 	case GL_INFO_LOG_LENGTH:
 		*params = 0;
+		break;
+	case GL_PROGRAM_BINARY_LENGTH:
+		*params = sceGxmProgramGetSize(p->vshader->prog) + sceGxmProgramGetSize(p->fshader->prog) + sizeof(uint32_t) * 2 + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM + sizeof(GLuint);
 		break;
 	case GL_ATTACHED_SHADERS:
 		i = 0;

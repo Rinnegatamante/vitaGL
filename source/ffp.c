@@ -37,9 +37,12 @@
 #endif
 #include "shared.h"
 
+//#define DISABLE_FS_SHADER_CACHE // Uncomment this to disable filesystem layer cache for ffp
+//#define DISABLE_RAM_SHADER_CACHE // Uncomment this to disable RAM layer cache for ffp
+
 #define SHADER_CACHE_SIZE 256
-#ifndef DISABLE_ADVANCED_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 12 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#ifndef DISABLE_FS_SHADER_CACHE
+#define SHADER_CACHE_MAGIC 13 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
@@ -138,10 +141,15 @@ static GLenum ffp_mode;
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 uint16_t ffp_vertex_attrib_state = 0;
 static uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 2, FFP_VERTEX_ATTRIBS_NUM - 1};
+static uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM] = {1, 2, 3};
 #else
 uint8_t ffp_vertex_attrib_state = 0;
 static uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 1};
+static uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM] = {1, 2};
 #endif
+uint8_t ffp_vertex_attrib_fixed_mask = 0;
+uint8_t ffp_vertex_attrib_fixed_pos_mask = 0;
+
 typedef union shader_mask {
 	struct {
 		uint32_t alpha_test_mode : 3;
@@ -156,9 +164,12 @@ typedef union shader_mask {
 		uint32_t normalize : 1;
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 		uint32_t tex_env_mode_pass2 : 3;
-		uint32_t UNUSED : 6;
+		uint32_t fixed_mask : 4;
+		uint32_t pos_fixed_mask : 2;
 #else
-		uint32_t UNUSED : 9;
+		uint32_t fixed_mask : 3;
+		uint32_t pos_fixed_mask : 2;
+		uint32_t UNUSED : 3;
 #endif
 	};
 	uint32_t raw;
@@ -183,6 +194,7 @@ typedef union combiner_mask {
 } combiner_mask;
 #endif
 
+#ifndef DISABLE_RAM_SHADER_CACHE
 typedef struct {
 	SceGxmProgram *frag;
 	SceGxmProgram *vert;
@@ -196,6 +208,7 @@ typedef struct {
 cached_shader shader_cache[SHADER_CACHE_SIZE];
 uint8_t shader_cache_size = 0;
 int shader_cache_idx = -1;
+#endif
 
 typedef enum {
 	CLIP_PLANES_EQUATION_UNIF,
@@ -400,6 +413,8 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	mask.fog_mode = internal_fog_mode;
 	mask.shading_mode = shading_mode;
 	mask.normalize = normalize;
+	mask.fixed_mask = ffp_vertex_attrib_fixed_mask;
+	mask.pos_fixed_mask = ffp_vertex_attrib_fixed_pos_mask;
 	uint8_t draw_mask_state = ffp_vertex_attrib_state;
 	
 	// Counting number of enabled texture units
@@ -490,8 +505,8 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		ffp_dirty_vert = GL_FALSE;
 		ffp_dirty_frag = GL_FALSE;
 	} else {
-		int i;
-		for (i = 0; i < shader_cache_size; i++) {
+#ifndef DISABLE_RAM_SHADER_CACHE
+		for (int i = 0; i < shader_cache_size; i++) {
 #ifdef DISABLE_TEXTURE_COMBINER
 			if (shader_cache[i].mask.raw == mask.raw) {
 #else
@@ -518,6 +533,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				break;
 			}
 		}
+#endif
 		dirty_frag_unifs = GL_TRUE;
 		dirty_vert_unifs = GL_TRUE;
 		ffp_mask.raw = mask.raw;
@@ -530,12 +546,12 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #endif
 #endif
 	}
-
+#ifndef DISABLE_RAM_SHADER_CACHE
 	GLboolean new_shader_flag = ffp_dirty_vert || ffp_dirty_frag;
-
+#endif
 	// Checking if vertex shader requires a recompilation
 	if (ffp_dirty_vert) {
-#ifndef DISABLE_ADVANCED_SHADER_CACHE
+#ifndef DISABLE_FS_SHADER_CACHE
 		char fname[256];
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
@@ -564,13 +580,13 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 			// Compiling the new shader
 			char vshader[8192];
-			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode, mask.normalize);
+			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode, mask.normalize, mask.fixed_mask, mask.pos_fixed_mask);
 			uint32_t size = strlen(vshader);
 			SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 			ffp_vertex_program = (SceGxmProgram *)vglMalloc(size);
 			vgl_fast_memcpy((void *)ffp_vertex_program, (void *)t, size);
 			shark_clear_output();
-#ifndef DISABLE_ADVANCED_SHADER_CACHE
+#ifndef DISABLE_FS_SHADER_CACHE
 			// Saving compiled shader in filesystem cache
 			f = fopen(fname, "wb");
 			fwrite(ffp_vertex_program, 1, size, f);
@@ -746,7 +762,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 	// Checking if fragment shader requires a recompilation
 	if (ffp_dirty_frag) {
-#ifndef DISABLE_ADVANCED_SHADER_CACHE
+#ifndef DISABLE_FS_SHADER_CACHE
 		char fname[256];
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
@@ -839,7 +855,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			ffp_fragment_program = (SceGxmProgram *)vglMalloc(size);
 			vgl_fast_memcpy((void *)ffp_fragment_program, (void *)t, size);
 			shark_clear_output();
-#ifndef DISABLE_ADVANCED_SHADER_CACHE
+#ifndef DISABLE_FS_SHADER_CACHE
 			// Saving compiled shader in filesystem cache
 			f = fopen(fname, "wb");
 			fwrite(ffp_fragment_program, 1, size, f);
@@ -878,7 +894,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		// Updating current fixed function pipeline blend config
 		ffp_blend_info.raw = blend_info.raw;
 	}
-
+#ifndef DISABLE_RAM_SHADER_CACHE
 	if (new_shader_flag) {
 		shader_cache_idx = (shader_cache_idx + 1) % SHADER_CACHE_SIZE;
 		if (shader_cache_size < SHADER_CACHE_SIZE)
@@ -903,7 +919,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		shader_cache[shader_cache_idx].frag_id = ffp_fragment_program_id;
 		shader_cache[shader_cache_idx].vert_id = ffp_vertex_program_id;
 	}
-
+#endif
 	sceGxmSetVertexProgram(gxm_context, ffp_vertex_program_patched);
 	sceGxmSetFragmentProgram(gxm_context, ffp_fragment_program_patched);
 
@@ -1241,12 +1257,19 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 	unsigned short bpe;
 	switch (type) {
 	case GL_FLOAT:
+		ffp_vertex_attrib_fixed_pos_mask = 0;
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		bpe = 4;
 		break;
 	case GL_SHORT:
+		ffp_vertex_attrib_fixed_pos_mask = 0;
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_S16;
 		bpe = 2;
+		break;
+	case GL_FIXED:
+		ffp_vertex_attrib_fixed_pos_mask = size - 1;
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		bpe = 4;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -1349,16 +1372,24 @@ void glNormalPointer(GLenum type, GLsizei stride, const void *pointer) {
 	unsigned short bpe;
 	switch (type) {
 	case GL_FLOAT:
+		ffp_vertex_attrib_fixed_mask &= ~(1 << 0);
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		bpe = 4;
 		break;
 	case GL_SHORT:
+		ffp_vertex_attrib_fixed_mask &= ~(1 << 0);
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_S16N;
 		bpe = 2;
 		break;
 	case GL_BYTE:
+		ffp_vertex_attrib_fixed_mask &= ~(1 << 0);
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_S8N;
 		bpe = 1;
+		break;
+	case GL_FIXED:
+		ffp_vertex_attrib_fixed_mask |= (1 << 0);
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		bpe = 4;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -1388,12 +1419,19 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *po
 	unsigned short bpe;
 	switch (type) {
 	case GL_FLOAT:
+		ffp_vertex_attrib_fixed_mask &= ~(1 << texcoord_fixed_idxs[client_texture_unit]);
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		bpe = 4;
 		break;
 	case GL_SHORT:
+		ffp_vertex_attrib_fixed_mask &= ~(1 << texcoord_fixed_idxs[client_texture_unit]);
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_S16;
 		bpe = 2;
+		break;
+	case GL_FIXED:
+		ffp_vertex_attrib_fixed_mask |= (1 << texcoord_fixed_idxs[client_texture_unit]);
+		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		bpe = 4;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -2301,217 +2339,6 @@ void glEnd(void) {
 	restore_polygon_mode(prim);
 }
 
-void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTexEnvf, "UUF", target, pname, param))
-		return;
-#endif
-	// Aliasing texture unit for cleaner code
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
-
-	// Properly changing texture environment settings as per request
-	switch (target) {
-	case GL_TEXTURE_ENV:
-		switch (pname) {
-		case GL_TEXTURE_ENV_MODE:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_MODULATE)
-				tex_unit->env_mode = MODULATE;
-			else if (param == GL_DECAL)
-				tex_unit->env_mode = DECAL;
-			else if (param == GL_REPLACE)
-				tex_unit->env_mode = REPLACE;
-			else if (param == GL_BLEND)
-				tex_unit->env_mode = BLEND;
-			else if (param == GL_ADD)
-				tex_unit->env_mode = ADD;
-#ifndef DISABLE_TEXTURE_COMBINER
-			else if (param == GL_COMBINE)
-				tex_unit->env_mode = COMBINE;
-			break;
-		case GL_RGB_SCALE:
-#ifndef SKIP_ERROR_HANDLING
-			if (param != 1.0f && param != 2.0f && param != 4.0f) {
-				SET_GL_ERROR(GL_INVALID_VALUE)
-			}
-#endif
-			dirty_frag_unifs = GL_TRUE;
-			tex_unit->rgb_scale = param;
-			break;
-		case GL_ALPHA_SCALE:
-#ifndef SKIP_ERROR_HANDLING
-			if (param != 1.0f && param != 2.0f && param != 4.0f) {
-				SET_GL_ERROR(GL_INVALID_VALUE)
-			}
-#endif
-			dirty_frag_unifs = GL_TRUE;
-			tex_unit->a_scale = param;
-			break;
-		case GL_COMBINE_RGB:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_REPLACE)
-				tex_unit->combiner.rgb_func = REPLACE;
-			else if (param == GL_MODULATE)
-				tex_unit->combiner.rgb_func = MODULATE;
-			else if (param == GL_ADD)
-				tex_unit->combiner.rgb_func = ADD;
-			else if (param == GL_ADD_SIGNED)
-				tex_unit->combiner.rgb_func = ADD_SIGNED;
-			else if (param == GL_INTERPOLATE)
-				tex_unit->combiner.rgb_func = INTERPOLATE;
-			else if (param == GL_SUBTRACT)
-				tex_unit->combiner.rgb_func = SUBTRACT;
-			break;
-		case GL_COMBINE_ALPHA:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_REPLACE)
-				tex_unit->combiner.a_func = REPLACE;
-			else if (param == GL_MODULATE)
-				tex_unit->combiner.a_func = MODULATE;
-			else if (param == GL_ADD)
-				tex_unit->combiner.a_func = ADD;
-			else if (param == GL_ADD_SIGNED)
-				tex_unit->combiner.a_func = ADD_SIGNED;
-			else if (param == GL_INTERPOLATE)
-				tex_unit->combiner.a_func = INTERPOLATE;
-			else if (param == GL_SUBTRACT)
-				tex_unit->combiner.a_func = SUBTRACT;
-			break;
-		case GL_SRC0_RGB:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_TEXTURE)
-				tex_unit->combiner.op_rgb_0 = TEXTURE;
-			else if (param == GL_CONSTANT)
-				tex_unit->combiner.op_rgb_0 = CONSTANT;
-			else if (param == GL_PRIMARY_COLOR)
-				tex_unit->combiner.op_rgb_0 = PRIMARY_COLOR;
-			else if (param == GL_PREVIOUS)
-				tex_unit->combiner.op_rgb_0 = PREVIOUS;
-			break;
-		case GL_SRC1_RGB:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_TEXTURE)
-				tex_unit->combiner.op_rgb_1 = TEXTURE;
-			else if (param == GL_CONSTANT)
-				tex_unit->combiner.op_rgb_1 = CONSTANT;
-			else if (param == GL_PRIMARY_COLOR)
-				tex_unit->combiner.op_rgb_1 = PRIMARY_COLOR;
-			else if (param == GL_PREVIOUS)
-				tex_unit->combiner.op_rgb_1 = PREVIOUS;
-			break;
-		case GL_SRC2_RGB:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_TEXTURE)
-				tex_unit->combiner.op_rgb_2 = TEXTURE;
-			else if (param == GL_CONSTANT)
-				tex_unit->combiner.op_rgb_2 = CONSTANT;
-			else if (param == GL_PRIMARY_COLOR)
-				tex_unit->combiner.op_rgb_2 = PRIMARY_COLOR;
-			else if (param == GL_PREVIOUS)
-				tex_unit->combiner.op_rgb_2 = PREVIOUS;
-			break;
-		case GL_SRC0_ALPHA:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_TEXTURE)
-				tex_unit->combiner.op_a_0 = TEXTURE;
-			else if (param == GL_CONSTANT)
-				tex_unit->combiner.op_a_0 = CONSTANT;
-			else if (param == GL_PRIMARY_COLOR)
-				tex_unit->combiner.op_a_0 = PRIMARY_COLOR;
-			else if (param == GL_PREVIOUS)
-				tex_unit->combiner.op_a_0 = PREVIOUS;
-			break;
-		case GL_SRC1_ALPHA:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_TEXTURE)
-				tex_unit->combiner.op_a_1 = TEXTURE;
-			else if (param == GL_CONSTANT)
-				tex_unit->combiner.op_a_1 = CONSTANT;
-			else if (param == GL_PRIMARY_COLOR)
-				tex_unit->combiner.op_a_1 = PRIMARY_COLOR;
-			else if (param == GL_PREVIOUS)
-				tex_unit->combiner.op_a_1 = PREVIOUS;
-			break;
-		case GL_SRC2_ALPHA:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_TEXTURE)
-				tex_unit->combiner.op_a_2 = TEXTURE;
-			else if (param == GL_CONSTANT)
-				tex_unit->combiner.op_a_2 = CONSTANT;
-			else if (param == GL_PRIMARY_COLOR)
-				tex_unit->combiner.op_a_2 = PRIMARY_COLOR;
-			else if (param == GL_PREVIOUS)
-				tex_unit->combiner.op_a_2 = PREVIOUS;
-			break;
-		case GL_OPERAND0_RGB:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_COLOR)
-				tex_unit->combiner.op_mode_rgb_0 = SRC_COLOR;
-			else if (param == GL_ONE_MINUS_SRC_COLOR)
-				tex_unit->combiner.op_mode_rgb_0 = ONE_MINUS_SRC_COLOR;
-			else if (param == GL_SRC_ALPHA)
-				tex_unit->combiner.op_mode_rgb_0 = SRC_ALPHA;
-			else if (param == GL_ONE_MINUS_SRC_ALPHA)
-				tex_unit->combiner.op_mode_rgb_0 = ONE_MINUS_SRC_ALPHA;
-			break;
-		case GL_OPERAND1_RGB:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_COLOR)
-				tex_unit->combiner.op_mode_rgb_1 = SRC_COLOR;
-			else if (param == GL_ONE_MINUS_SRC_COLOR)
-				tex_unit->combiner.op_mode_rgb_1 = ONE_MINUS_SRC_COLOR;
-			else if (param == GL_SRC_ALPHA)
-				tex_unit->combiner.op_mode_rgb_1 = SRC_ALPHA;
-			else if (param == GL_ONE_MINUS_SRC_ALPHA)
-				tex_unit->combiner.op_mode_rgb_1 = ONE_MINUS_SRC_ALPHA;
-			break;
-		case GL_OPERAND2_RGB:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_COLOR)
-				tex_unit->combiner.op_mode_rgb_2 = SRC_COLOR;
-			else if (param == GL_ONE_MINUS_SRC_COLOR)
-				tex_unit->combiner.op_mode_rgb_2 = ONE_MINUS_SRC_COLOR;
-			else if (param == GL_SRC_ALPHA)
-				tex_unit->combiner.op_mode_rgb_2 = SRC_ALPHA;
-			else if (param == GL_ONE_MINUS_SRC_ALPHA)
-				tex_unit->combiner.op_mode_rgb_2 = ONE_MINUS_SRC_ALPHA;
-			break;
-		case GL_OPERAND0_ALPHA:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_ALPHA)
-				tex_unit->combiner.op_mode_a_0 = SRC_ALPHA;
-			else if (param == GL_ONE_MINUS_SRC_ALPHA)
-				tex_unit->combiner.op_mode_a_0 = ONE_MINUS_SRC_ALPHA;
-			break;
-		case GL_OPERAND1_ALPHA:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_ALPHA)
-				tex_unit->combiner.op_mode_a_1 = SRC_ALPHA;
-			else if (param == GL_ONE_MINUS_SRC_ALPHA)
-				tex_unit->combiner.op_mode_a_1 = ONE_MINUS_SRC_ALPHA;
-			break;
-		case GL_OPERAND2_ALPHA:
-			ffp_dirty_frag = GL_TRUE;
-			if (param == GL_SRC_ALPHA)
-				tex_unit->combiner.op_mode_a_2 = SRC_ALPHA;
-			else if (param == GL_ONE_MINUS_SRC_ALPHA)
-				tex_unit->combiner.op_mode_a_2 = ONE_MINUS_SRC_ALPHA;
-#endif
-			break;
-		default:
-			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
-		}
-		break;
-	default:
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
-	}
-}
-
-void glTexEnvx(GLenum target, GLenum pname, GLfixed param) {
-	glTexEnvf(target, pname, (float)param / 65536.0f);
-}
-
 void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
@@ -2559,7 +2386,7 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTexEnvxv, "UUF", target, pname, param))
+	if (_vgl_enqueue_list_func(glTexEnvxv, "UUU", target, pname, param))
 		return;
 #endif
 	// Aliasing texture unit for cleaner code
@@ -2902,6 +2729,14 @@ void glTexEnvi(GLenum target, GLenum pname, GLint param) {
 	}
 }
 
+void glTexEnvx(GLenum target, GLenum pname, GLfixed param) {
+	glTexEnvi(target, pname, param);
+}
+
+void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
+	glTexEnvi(target, pname, (GLint)param);
+}
+
 void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
@@ -3079,6 +2914,35 @@ void glFogf(GLenum pname, GLfloat param) {
 	dirty_frag_unifs = GL_TRUE;
 }
 
+void glFogx(GLenum pname, GLfixed param) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glFogx, "UI", pname, param))
+		return;
+#endif
+	switch (pname) {
+	case GL_FOG_MODE:
+		fog_mode = param;
+		update_fogging_state();
+		break;
+	case GL_FOG_DENSITY:
+		fog_density = (float)param / 65536.0f;
+		break;
+	case GL_FOG_START:
+		fog_near = (float)param / 65536.0f;
+		fog_range = fog_far - fog_near;
+		break;
+	case GL_FOG_END:
+		fog_far = (float)param / 65536.0f;
+		fog_range = fog_far - fog_near;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
+	dirty_frag_unifs = GL_TRUE;
+}
+
+
 void glFogfv(GLenum pname, const GLfloat *params) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
@@ -3103,6 +2967,40 @@ void glFogfv(GLenum pname, const GLfloat *params) {
 		break;
 	case GL_FOG_COLOR:
 		vgl_fast_memcpy(&fog_color.r, params, sizeof(vector4f));
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
+	dirty_frag_unifs = GL_TRUE;
+}
+
+void glFogxv(GLenum pname, const GLfixed *params) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glFogxv, "UU", pname, params))
+		return;
+#endif
+	switch (pname) {
+	case GL_FOG_MODE:
+		fog_mode = params[0];
+		update_fogging_state();
+		break;
+	case GL_FOG_DENSITY:
+		fog_density = (float)params[0] / 65536.0f;
+		break;
+	case GL_FOG_START:
+		fog_near = (float)params[0] / 65536.0f;
+		fog_range = fog_far - fog_near;
+		break;
+	case GL_FOG_END:
+		fog_far = (float)params[0] / 65536.0f;
+		fog_range = fog_far - fog_near;
+		break;
+	case GL_FOG_COLOR:
+		fog_color.r = (float)params[0] / 65536.0f;
+		fog_color.g = (float)params[1] / 65536.0f;
+		fog_color.b = (float)params[2] / 65536.0f;
+		fog_color.a = (float)params[3] / 65536.0f;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -3154,6 +3052,56 @@ void glClipPlane(GLenum plane, const GLdouble *equation) {
 	clip_planes_eq[idx].y = equation[1];
 	clip_planes_eq[idx].z = equation[2];
 	clip_planes_eq[idx].w = equation[3];
+	matrix4x4 inverted, inverted_transposed;
+	matrix4x4_invert(inverted, modelview_matrix);
+	matrix4x4_transpose(inverted_transposed, inverted);
+	vector4f temp;
+	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
+	vgl_fast_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
+	dirty_vert_unifs = GL_TRUE;
+}
+
+void glClipPlanef(GLenum plane, const GLfloat *equation) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glClipPlanef, "UU", plane, equation))
+		return;
+#endif
+#ifndef SKIP_ERROR_HANDLING
+	if (plane < GL_CLIP_PLANE0 || plane > GL_CLIP_PLANE6) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, plane)
+	}
+#endif
+	int idx = plane - GL_CLIP_PLANE0;
+	clip_planes_eq[idx].x = equation[0];
+	clip_planes_eq[idx].y = equation[1];
+	clip_planes_eq[idx].z = equation[2];
+	clip_planes_eq[idx].w = equation[3];
+	matrix4x4 inverted, inverted_transposed;
+	matrix4x4_invert(inverted, modelview_matrix);
+	matrix4x4_transpose(inverted_transposed, inverted);
+	vector4f temp;
+	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
+	vgl_fast_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
+	dirty_vert_unifs = GL_TRUE;
+}
+
+void glClipPlanex(GLenum plane, const GLfixed *equation) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glClipPlanex, "UU", plane, equation))
+		return;
+#endif
+#ifndef SKIP_ERROR_HANDLING
+	if (plane < GL_CLIP_PLANE0 || plane > GL_CLIP_PLANE6) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, plane)
+	}
+#endif
+	int idx = plane - GL_CLIP_PLANE0;
+	clip_planes_eq[idx].x = (float)equation[0] / 65536.0f;
+	clip_planes_eq[idx].y = (float)equation[1] / 65536.0f;
+	clip_planes_eq[idx].z = (float)equation[2] / 65536.0f;
+	clip_planes_eq[idx].w = (float)equation[3] / 65536.0f;
 	matrix4x4 inverted, inverted_transposed;
 	matrix4x4_invert(inverted, modelview_matrix);
 	matrix4x4_transpose(inverted_transposed, inverted);

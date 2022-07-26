@@ -88,6 +88,10 @@ void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdou
 	glOrthof(left, right, bottom, top, nearVal, farVal);
 }
 
+void glOrthox(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed nearVal, GLfixed farVal) {
+	glOrthof((float)left / 65536.0f, (float)right / 65536.0f, (float)bottom / 65536.0f, (float)top / 65536.0f, (float)nearVal / 65536.0f, (float)farVal / 65536.0f);
+}
+
 void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -208,6 +212,21 @@ void glLoadMatrixf(const GLfloat *m) {
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
 			(*matrix)[i][j] = m[j * 4 + i];
+		}
+	}
+
+	if (matrix != &texture_matrix)
+		mvp_modified = GL_TRUE;
+	else
+		dirty_vert_unifs = GL_TRUE;
+}
+
+void glLoadMatrixx(const GLfixed *m) {
+	// Properly ordering matrix
+	int i, j;
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			(*matrix)[i][j] = (float)m[j * 4 + i] / 65536.0f;
 		}
 	}
 

@@ -357,6 +357,7 @@ extern "C" {
 #define GL_PROGRAM_ERROR_POSITION_ARB                   0x864B
 #define GL_NUM_COMPRESSED_TEXTURE_FORMATS               0x86A2
 #define GL_COMPRESSED_TEXTURE_FORMATS                   0x86A3
+#define GL_PROGRAM_BINARY_LENGTH                        0x8741
 #define GL_MIRROR_CLAMP_EXT                             0x8742
 #define GL_BUFFER_SIZE                                  0x8764
 #define GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD              0x87EE
@@ -396,6 +397,7 @@ extern "C" {
 #define GL_FLOAT_MAT2                                   0x8B5A
 #define GL_FLOAT_MAT3                                   0x8B5B
 #define GL_FLOAT_MAT4                                   0x8B5C
+#define GL_DELETE_STATUS                                0x8B80
 #define GL_COMPILE_STATUS                               0x8B81
 #define GL_LINK_STATUS                                  0x8B82
 #define GL_INFO_LOG_LENGTH                              0x8B84
@@ -535,6 +537,8 @@ void glClearDepthx(GLclampx depth);
 void glClearStencil(GLint s);
 void glClientActiveTexture(GLenum texture);
 void glClipPlane(GLenum plane, const GLdouble *equation);
+void glClipPlanef(GLenum plane, const GLfloat *equation);
+void glClipPlanex(GLenum plane, const GLfixed *equation);
 void glColor3f(GLfloat red, GLfloat green, GLfloat blue);
 void glColor3fv(const GLfloat *v);
 void glColor3ub(GLubyte red, GLubyte green, GLubyte blue);
@@ -564,6 +568,7 @@ void glDepthFunc(GLenum func);
 void glDepthMask(GLboolean flag);
 void glDepthRange(GLdouble nearVal, GLdouble farVal);
 void glDepthRangef(GLfloat nearVal, GLfloat farVal);
+void glDepthRangex(GLfixed nearVal, GLfixed farVal);
 void glDisable(GLenum cap);
 void glDisableClientState(GLenum array);
 void glDisableVertexAttribArray(GLuint index);
@@ -581,6 +586,8 @@ void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length)
 void glFogf(GLenum pname, GLfloat param);
 void glFogfv(GLenum pname, const GLfloat *params);
 void glFogi(GLenum pname, const GLint param);
+void glFogx(GLenum pname, GLfixed param);
+void glFogxv(GLenum pname, const GLfixed *params);
 void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
 void glFramebufferTexture(GLenum target, GLenum attachment, GLuint texture, GLint level);
 void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
@@ -600,10 +607,11 @@ void glGetAttachedShaders(GLuint prog, GLsizei maxCount, GLsizei *count, GLuint 
 GLint glGetAttribLocation(GLuint prog, const GLchar *name);
 void glGetBooleanv(GLenum pname, GLboolean *params);
 void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params);
+GLenum glGetError(void);
 void glGetFloatv(GLenum pname, GLfloat *data);
 void glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLenum pname, GLint *params);
-GLenum glGetError(void);
 void glGetIntegerv(GLenum pname, GLint *data);
+void glGetProgramBinary(GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary);
 void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 void glGetProgramiv(GLuint program, GLenum pname, GLint *params);
 void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
@@ -625,9 +633,11 @@ void glLightModelfv(GLenum pname, const GLfloat *params);
 void glLightModelxv(GLenum pname, const GLfixed *params);
 void glLightxv(GLenum light, GLenum pname, const GLfixed *params);
 void glLineWidth(GLfloat width);
+void glLineWidthx(GLfixed width);
 void glLinkProgram(GLuint progr);
 void glLoadIdentity(void);
 void glLoadMatrixf(const GLfloat *m);
+void glLoadMatrixx(const GLfixed *m);
 void *glMapBuffer(GLenum target, GLbitfield access);
 void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
 void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params);
@@ -645,11 +655,15 @@ void glNormal3s(GLshort x, GLshort y, GLshort z);
 void glNormalPointer(GLenum type, GLsizei stride, const void *pointer);
 void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
 void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal);
+void glOrthox(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed nearVal, GLfixed farVal);
 void glPointSize(GLfloat size);
+void glPointSizex(GLfixed size);
 void glPolygonMode(GLenum face, GLenum mode);
 void glPolygonOffset(GLfloat factor, GLfloat units);
+void glPolygonOffsetx(GLfixed factor, GLfixed units);
 void glPopAttrib(void);
 void glPopMatrix(void);
+void glProgramBinary(GLuint program, GLenum binaryFormat, const void *binary, GLsizei length);
 void glPushAttrib(GLbitfield mask);
 void glPushMatrix(void);
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data);
@@ -682,6 +696,8 @@ void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param);
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *data);
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param);
 void glTexParameteri(GLenum target, GLenum pname, GLint param);
+void glTexParameteriv(GLenum target, GLenum pname, GLint *param);
+void glTexParameterx(GLenum target, GLenum pname, GLfixed param);
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z);
 void glTranslatex(GLfixed x, GLfixed y, GLfixed z);

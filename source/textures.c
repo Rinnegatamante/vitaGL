@@ -1123,6 +1123,13 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 		}
 	case GL_TEXTURE_2D:
 		switch (pname) {
+		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
+#ifndef SKIP_ERROR_HANDLING			
+			if (param != 1) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
+			break;
 		case GL_TEXTURE_MIN_FILTER: // Min filter
 			switch (param) {
 			case GL_NEAREST: // Point
@@ -1234,8 +1241,8 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 	}
 }
 
-void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
-	// Setting some aliases to make code more readable
+void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
+		// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id;
 	texture *tex = &texture_slots[texture2d_idx];
@@ -1243,31 +1250,48 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 	switch (target) {
 	case GL_TEXTURE_CUBE_MAP:
 		switch (pname) {
-		case GL_TEXTURE_MIN_FILTER: // Min Filter
-			if (param == GL_NEAREST) {
+		case GL_TEXTURE_WRAP_S: 
+		case GL_TEXTURE_WRAP_T:
+#ifndef SKIP_ERROR_HANDLING
+			if (param != GL_CLAMP_TO_EDGE && param != GL_CLAMP) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
+			break;
+		case GL_TEXTURE_MIN_FILTER: // Min filter
+			switch (param) {
+			case GL_NEAREST: // Point
 				tex->use_mips = GL_FALSE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-			} else if (param == GL_LINEAR) {
+				break;
+			case GL_LINEAR: // Linear
 				tex->use_mips = GL_FALSE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			} else if (param == GL_NEAREST_MIPMAP_NEAREST) {
+				break;
+			case GL_NEAREST_MIPMAP_NEAREST:
 				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-			} else if (param == GL_LINEAR_MIPMAP_NEAREST) {
+				break;
+			case GL_LINEAR_MIPMAP_NEAREST:
 				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			} else if (param == GL_NEAREST_MIPMAP_LINEAR) {
+				break;
+			case GL_NEAREST_MIPMAP_LINEAR:
 				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-			} else if (param == GL_LINEAR_MIPMAP_LINEAR) {
+				break;
+			case GL_LINEAR_MIPMAP_LINEAR:
 				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
 			if (tex->status == TEX_VALID) {
 				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
@@ -1275,11 +1299,17 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
 			}
 			break;
-		case GL_TEXTURE_MAG_FILTER: // Mag filter
-			if (param == GL_NEAREST)
+		case GL_TEXTURE_MAG_FILTER: // Mag Filter
+			switch (param) {
+			case GL_NEAREST:
 				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-			else if (param == GL_LINEAR)
+				break;
+			case GL_LINEAR:
 				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
 			if (tex->status == TEX_VALID)
 				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
 			break;
@@ -1290,36 +1320,45 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 		switch (pname) {
 		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
 #ifndef SKIP_ERROR_HANDLING			
-			if (param != 1.0f) {
+			if (param != 65536) {
 				SET_GL_ERROR(GL_INVALID_VALUE)
 			}
 #endif
 			break;
-		case GL_TEXTURE_MIN_FILTER: // Min Filter
-			if (param == GL_NEAREST) {
+		case GL_TEXTURE_MIN_FILTER: // Min filter
+			switch (param) {
+			case GL_NEAREST: // Point
 				tex->use_mips = GL_FALSE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-			} else if (param == GL_LINEAR) {
+				break;
+			case GL_LINEAR: // Linear
 				tex->use_mips = GL_FALSE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			} else if (param == GL_NEAREST_MIPMAP_NEAREST) {
+				break;
+			case GL_NEAREST_MIPMAP_NEAREST:
 				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-			} else if (param == GL_LINEAR_MIPMAP_NEAREST) {
+				break;
+			case GL_LINEAR_MIPMAP_NEAREST:
 				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			} else if (param == GL_NEAREST_MIPMAP_LINEAR) {
+				break;
+			case GL_NEAREST_MIPMAP_LINEAR:
 				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-			} else if (param == GL_LINEAR_MIPMAP_LINEAR) {
+				break;
+			case GL_LINEAR_MIPMAP_LINEAR:
 				tex->use_mips = GL_TRUE;
 				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
 				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
 			if (tex->status == TEX_VALID) {
 				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
@@ -1327,40 +1366,64 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
 			}
 			break;
-		case GL_TEXTURE_MAG_FILTER: // Mag filter
-			if (param == GL_NEAREST)
+		case GL_TEXTURE_MAG_FILTER: // Mag Filter
+			switch (param) {
+			case GL_NEAREST:
 				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-			else if (param == GL_LINEAR)
+				break;
+			case GL_LINEAR:
 				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
 			if (tex->status == TEX_VALID)
 				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
 			break;
 		case GL_TEXTURE_WRAP_S: // U Mode
-			if (param == GL_CLAMP_TO_EDGE || param == GL_CLAMP)
-				tex->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP; // Clamp
-			else if (param == GL_REPEAT)
-				tex->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT; // Repeat
-			else if (param == GL_MIRRORED_REPEAT)
-				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR; // Mirror
-			else if (param == GL_MIRROR_CLAMP_EXT)
-				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP; // Mirror Clamp
+			switch (param) {
+			case GL_CLAMP_TO_EDGE: // Clamp
+			case GL_CLAMP:
+				tex->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+				break;
+			case GL_REPEAT: // Repeat
+				tex->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+				break;
+			case GL_MIRRORED_REPEAT: // Mirror
+				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+				break;
+			case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
+				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
 			if (tex->status == TEX_VALID)
 				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
 			break;
 		case GL_TEXTURE_WRAP_T: // V Mode
-			if (param == GL_CLAMP_TO_EDGE || param == GL_CLAMP)
-				tex->v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP; // Clamp
-			else if (param == GL_REPEAT)
-				tex->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT; // Repeat
-			else if (param == GL_MIRRORED_REPEAT)
-				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR; // Mirror
-			else if (param == GL_MIRROR_CLAMP_EXT)
-				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP; // Mirror Clamp
+			switch (param) {
+			case GL_CLAMP_TO_EDGE: // Clamp
+			case GL_CLAMP:
+				tex->v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+				break;
+			case GL_REPEAT: // Repeat
+				tex->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+				break;
+			case GL_MIRRORED_REPEAT: // Mirror
+				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+				break;
+			case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
+				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
 			if (tex->status == TEX_VALID)
 				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
 			break;
 		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
-			tex->lod_bias = (uint32_t)(param + GL_MAX_TEXTURE_LOD_BIAS);
+			tex->lod_bias = (uint32_t)((uint32_t)((float)param / 65536.0f) + GL_MAX_TEXTURE_LOD_BIAS);
 			if (tex->status == TEX_VALID)
 				vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
 			break;
@@ -1371,6 +1434,14 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
+}
+
+void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
+	glTexParameteri(target, pname, (GLint)param);
+}
+
+void glTexParameteriv(GLenum target, GLenum pname, GLint *param) {
+	glTexParameteri(target, pname, param[0]);
 }
 
 void glActiveTexture(GLenum texture) {
