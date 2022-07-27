@@ -119,6 +119,10 @@ ifeq ($(HAVE_PTHREAD),1)
 CFLAGS += -DHAVE_PTHREAD
 endif
 
+ifeq ($(SAFE_ETC1),1)
+CFLAGS += -DDISABLE_HW_ETC1
+endif
+
 CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a

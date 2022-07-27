@@ -92,6 +92,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 #include "utils/atitc_utils.h"
 #include "utils/eac_utils.h"
+#include "utils/etc1_utils.h"
 #include "utils/gpu_utils.h"
 #include "utils/gxm_utils.h"
 #include "utils/math_utils.h"
