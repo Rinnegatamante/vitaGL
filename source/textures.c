@@ -361,7 +361,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 		break;
 	case GL_ALPHA:
 		tex->write_cb = writeR;
-		tex_format = SCE_GXM_TEXTURE_FORMAT_A8;
+		tex_format = SCE_GXM_TEXTURE_FORMAT_U8_R111;
 		break;
 	case GL_RED:
 		tex->write_cb = writeR;
@@ -743,7 +743,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_L8:
 		case SCE_GXM_TEXTURE_FORMAT_U8_RRRR:
-		case SCE_GXM_TEXTURE_FORMAT_A8:
+		case SCE_GXM_TEXTURE_FORMAT_U8_R111:
 		case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
 			if (read_cb == readR)
 				fast_store = GL_TRUE;
