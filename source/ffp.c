@@ -41,10 +41,6 @@
 //#define DISABLE_RAM_SHADER_CACHE // Uncomment this to disable RAM layer cache for ffp
 
 #define SHADER_CACHE_SIZE 256
-#ifndef DISABLE_FS_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 13 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
-//#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
-#endif
 
 #define VERTEX_UNIFORMS_NUM 13
 #ifdef HAVE_HIGH_FFP_TEXUNITS
@@ -555,12 +551,12 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		char fname[256];
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX-%08X_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
+		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX-%08X_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
 #else
-		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
 #endif
 #else
-		sprintf(fname, "ux0:data/shader_cache/v%d-%08X-0000000000000000_v.gxp", SHADER_CACHE_MAGIC, mask.raw);
+		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-0000000000000000_v.gxp", SHADER_CACHE_MAGIC, mask.raw);
 #endif
 		FILE *f = fopen(fname, "rb");
 		if (f) {
@@ -594,12 +590,12 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifdef DUMP_SHADER_SOURCES
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX-%08X_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
+			sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX-%08X_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
 #else
-			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+			sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
 #endif
 #else
-			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-0000000000000000_v.cg", SHADER_CACHE_MAGIC, mask.raw);
+			sprintf(fname, "ux0:data/shader_cache/v%d/%08X-0000000000000000_v.cg", SHADER_CACHE_MAGIC, mask.raw);
 #endif
 			// Saving shader source in filesystem cache
 			f = fopen(fname, "wb");
@@ -1006,7 +1002,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
 		if (ffp_vertex_params[TEX_MATRIX_UNIF])
-			sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16, (const float *)texture_matrix);
+			sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16 * mask.num_textures, (const float *)texture_matrix);
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[POINT_SIZE_UNIF], 0, 1, &point_size);
 		if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) {
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[NORMAL_MATRIX_UNIF], 0, 16, (const float *)normal_matrix);

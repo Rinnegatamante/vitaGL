@@ -124,7 +124,9 @@ void main(
 #endif
 	uniform float4x4 modelview,
 	uniform float4x4 wvp,
-	uniform float4x4 texmat,
+#if num_textures > 0
+	uniform float4x4 texmat[num_textures],
+#endif
 	uniform float point_size,
 	uniform float4x4 normal_mat
 ) {
@@ -137,8 +139,9 @@ void main(
 #if fixed_mode_pos == 3
 	position = GLFixed4ToFloat4(position);
 #endif
+#if clip_planes_num > 0 || lights_num > 0
 	float4 modelpos = mul(modelview, position);
-	
+#endif
 	// User clip planes
 #if clip_planes_num > 0
 	for (int i = 0; i < clip_planes_num; i++) {
@@ -169,17 +172,17 @@ void main(
 #if (fixed_mode_mask & 0x02) == 0x02
 	texcoord0 = GLFixed2ToFloat2(texcoord0);
 #endif
-	vTexcoord = mul(texmat, float4(texcoord0, 0.f, 1.f)).xy;
+	vTexcoord = mul(texmat[0], float4(texcoord0, 0.f, 1.f)).xy;
 #if num_textures > 1
 #if (fixed_mode_mask & 0x04) == 0x04
 	texcoord1 = GLFixed2ToFloat2(texcoord1);
 #endif
-	vTexcoord2 = mul(texmat, float4(texcoord1, 0.f, 1.f)).xy;
+	vTexcoord2 = mul(texmat[1], float4(texcoord1, 0.f, 1.f)).xy;
 #if num_textures > 2
 #if (fixed_mode_mask & 0x08) == 0x08
 	texcoord2 = GLFixed2ToFloat2(texcoord2);
 #endif
-	vTexcoord3 = mul(texmat, float4(texcoord2, 0.f, 1.f)).xy;
+	vTexcoord3 = mul(texmat[2], float4(texcoord2, 0.f, 1.f)).xy;
 #endif
 #endif
 #endif

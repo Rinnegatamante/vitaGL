@@ -100,6 +100,12 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 #include "texture_callbacks.h"
 
+// Fixed-function pipeline shader cache settings
+#ifndef DISABLE_FS_SHADER_CACHE
+#define SHADER_CACHE_MAGIC 14 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+//#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
+#endif
+
 // Debug flags
 //#define DEBUG_MEMCPY // Enable this to use newlib memcpy in order to have proper trace info in coredumps
 
@@ -772,7 +778,7 @@ extern void *index_object;
 extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 extern matrix4x4 projection_matrix; // Projection Matrix
 extern matrix4x4 modelview_matrix; // ModelView Matrix
-extern matrix4x4 texture_matrix; // Texture Matrix
+extern matrix4x4 texture_matrix[TEXTURE_COORDS_NUM]; // Texture Matrix
 extern matrix4x4 normal_matrix; // Normal Matrix
 extern GLboolean mvp_modified; // Check if ModelViewProjection matrix needs to be recreated
 

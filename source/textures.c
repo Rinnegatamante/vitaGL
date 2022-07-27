@@ -1463,7 +1463,12 @@ void glActiveTexture(GLenum texture) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, texture)
 	} else
 #endif
+	{
+		int8_t old_server_texture_unit = server_texture_unit;
 		server_texture_unit = texture - GL_TEXTURE0;
+		if (matrix == &texture_matrix[old_server_texture_unit])
+			matrix = &texture_matrix[server_texture_unit];
+	}
 }
 
 void glGenerateMipmap(GLenum target) {

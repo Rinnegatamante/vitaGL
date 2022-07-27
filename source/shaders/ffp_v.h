@@ -117,7 +117,9 @@ void main(
 	uniform float4x4 modelview,
 #endif
 	uniform float4x4 wvp,
-	uniform float4x4 texmat,
+#if num_textures > 0
+	uniform float4x4 texmat[num_textures],
+#endif
 	uniform float point_size,
 	uniform float4x4 normal_mat
 ) {
@@ -163,12 +165,12 @@ void main(
 #if (fixed_mode_mask & 0x02) == 0x02
 	texcoord0 = GLFixed2ToFloat2(texcoord0);
 #endif
-	vTexcoord = mul(texmat, float4(texcoord0, 0.f, 1.f)).xy;
+	vTexcoord = mul(texmat[0], float4(texcoord0, 0.f, 1.f)).xy;
 #if num_textures > 1
 #if (fixed_mode_mask & 0x04) == 0x04
 	texcoord1 = GLFixed2ToFloat2(texcoord1);
 #endif
-	vTexcoord2 = mul(texmat, float4(texcoord1, 0.f, 1.f)).xy;
+	vTexcoord2 = mul(texmat[1], float4(texcoord1, 0.f, 1.f)).xy;
 #endif
 #endif
 #if lights_num > 0

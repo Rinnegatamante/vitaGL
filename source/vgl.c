@@ -143,6 +143,9 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 
 #ifndef DISABLE_ADVANCED_SHADER_CACHE
 	sceIoMkdir("ux0:data/shader_cache", 0777);
+	char fname[256];
+	sprintf(fname, "ux0:data/shader_cache/v%d", SHADER_CACHE_MAGIC);
+	sceIoMkdir(fname, 0777);
 #endif
 	// Check if framebuffer size is valid
 	GLboolean res_fallback = GL_FALSE;
