@@ -652,6 +652,7 @@ void glNewList(GLuint list, GLenum mode);
 void glNormal3f(GLfloat x, GLfloat y, GLfloat z);
 void glNormal3fv(const GLfloat *v);
 void glNormal3s(GLshort x, GLshort y, GLshort z);
+void glNormal3x(GLfixed x, GLfixed y, GLfixed z);
 void glNormalPointer(GLenum type, GLsizei stride, const void *pointer);
 void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
 void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal);

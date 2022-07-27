@@ -173,6 +173,7 @@ static const struct {
 	{"glNormal3f", (void *)glNormal3f},
 	{"glNormal3fv", (void *)glNormal3fv},
 	{"glNormal3s", (void *)glNormal3s},
+	{"glNormal3x", (void *)glNormal3x},
 	{"glOrtho", (void *)glOrtho},
 	{"glOrthof", (void *)glOrthof},
 	{"glOrthox", (void *)glOrthox},

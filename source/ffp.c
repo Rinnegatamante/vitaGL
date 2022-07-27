@@ -2137,6 +2137,10 @@ void glNormal3s(GLshort x, GLshort y, GLshort z) {
 	glNormal3f(x, y, z);
 }
 
+void glNormal3x(GLfixed x, GLfixed y, GLfixed z) {
+	glNormal3f((float)x / 65536.0f, (float)y / 65536.0f, (float)z / 65536.0f);
+}
+
 void glNormal3fv(const GLfloat *v) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
