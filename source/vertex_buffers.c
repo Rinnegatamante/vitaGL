@@ -113,9 +113,6 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	if (!gpu_buf) {
-		SET_GL_ERROR(GL_INVALID_OPERATION)
-	}
 	switch (usage) {
 	case GL_DYNAMIC_DRAW:
 	case GL_DYNAMIC_READ:
