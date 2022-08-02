@@ -89,6 +89,9 @@ Direct OpenGL Usage:<br>
 [Fahrenheit Vita](https://vitadb.rinnegatamante.it/#/info/835) - Port of Fahrenheit: Indigo Prophecy<br>
 [RVGL Vita](https://vitadb.rinnegatamante.it/#/info/840) - Port of RVGL<br>
 [Bugdom](https://vitadb.rinnegatamante.it/#/info/841) - Port of Bugdom<br>
+[Pekka Kana 2 Vita](https://vitadb.rinnegatamante.it/#/info/847) - Port of Pekka Kana 2<br>
+[Death Road to Canada Lite](https://vitadb.rinnegatamante.it/#/info/846) - Port of Death Road to Canada<br>
+[CrossCraft Classic](https://vitadb.rinnegatamante.it/#/info/848) - Multiplatform Minecraft Classic clone<br>
 
 Libraries:<br>
 [sdl12_gl](https://github.com/Rinnegatamante/SDL-Vita/tree/sdl12_gl/src) - SDL 1.2 Vita port adapted to work with vitaGL as renderer backend<br>
