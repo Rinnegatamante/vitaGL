@@ -468,7 +468,11 @@ size_t vgl_malloc_usable_size(void *ptr) {
 void vgl_free(void *ptr) {
 	vglMemType type = vgl_mem_get_type_by_addr(ptr);
 	if (type == VGL_MEM_EXTERNAL)
+#ifdef HAVE_WRAPPED_ALLOCATORS
+		return __real_free(ptr);
+#else
 		free(ptr);
+#endif
 #ifdef HAVE_CUSTOM_HEAP
 	else
 		heap_blk_free(ptr);
@@ -486,7 +490,11 @@ void vgl_free(void *ptr) {
 
 void *vgl_malloc(size_t size, vglMemType type) {
 	if (type == VGL_MEM_EXTERNAL)
+#ifdef HAVE_WRAPPED_ALLOCATORS
+		return __real_malloc(size);
+#else
 		return malloc(size);
+#endif
 #ifdef HAVE_CUSTOM_HEAP
 	else if (size <= tm_free[type])
 		return heap_alloc(type, size, MEM_ALIGNMENT);
@@ -503,7 +511,11 @@ void *vgl_malloc(size_t size, vglMemType type) {
 
 void *vgl_calloc(size_t num, size_t size, vglMemType type) {
 	if (type == VGL_MEM_EXTERNAL)
+#ifdef HAVE_WRAPPED_ALLOCATORS
+		return __real_calloc(num, size);
+#else
 		return calloc(num, size);
+#endif
 #ifdef HAVE_CUSTOM_HEAP
 	else if (num * size <= tm_free[type])
 		return heap_alloc(type, num * size, MEM_ALIGNMENT);
@@ -520,7 +532,11 @@ void *vgl_calloc(size_t num, size_t size, vglMemType type) {
 
 void *vgl_memalign(size_t alignment, size_t size, vglMemType type) {
 	if (type == VGL_MEM_EXTERNAL)
+#ifdef HAVE_WRAPPED_ALLOCATORS
+		return __real_memalign(alignment, size);
+#else
 		return memalign(alignment, size);
+#endif
 #ifdef HAVE_CUSTOM_HEAP
 	else if (size <= tm_free[type])
 		return heap_alloc(type, size, alignment);
@@ -538,7 +554,11 @@ void *vgl_memalign(size_t alignment, size_t size, vglMemType type) {
 void *vgl_realloc(void *ptr, size_t size) {
 	vglMemType type = vgl_mem_get_type_by_addr(ptr);
 	if (type == VGL_MEM_EXTERNAL)
+#ifdef HAVE_WRAPPED_ALLOCATORS
+		return __real_realloc(ptr, size);
+#else
 		return realloc(ptr, size);
+#endif
 #ifndef HAVE_CUSTOM_HEAP
 #ifdef PHYCONT_ON_DEMAND
 	else if (type == VGL_MEM_SLOW) {
