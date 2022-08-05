@@ -484,7 +484,7 @@ GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int r
 		info.size = sizeof(SceKernelFreeMemorySizeInfo);
 		sceKernelGetFreeMemorySize(&info);
 		return vglInitWithCustomSizes(pool_size, width, height,
-			info.size_user > ram_threshold ? info.size_user - ram_threshold : info.size_user,
+			info.size_user > ram_threshold ? info.size_user - ram_threshold : 0,
 			info.size_cdram > cdram_threshold ? info.size_cdram - cdram_threshold : 0,
 			info.size_phycont > phycont_threshold ? info.size_phycont - phycont_threshold : 0,
 			SCE_KERNEL_MAX_MAIN_CDIALOG_MEM_SIZE > cdlg_threshold ? SCE_KERNEL_MAX_MAIN_CDIALOG_MEM_SIZE - cdlg_threshold : 0, msaa);
