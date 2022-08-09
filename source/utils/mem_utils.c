@@ -580,7 +580,7 @@ void *vgl_realloc(void *ptr, size_t size) {
 
 void vgl_memcpy(void *dst, const void *src, size_t size) {
 #ifndef DEBUG_MEMCPY
-	if (size >= 0x2000 && !has_cached_mem)
+	if (size >= 0x2000 && src < 0x81000000 && dst < 0x81000000)
 		sceDmacMemcpy(dst, src, size);
 	else
 		vgl_fast_memcpy(dst, src, size);
