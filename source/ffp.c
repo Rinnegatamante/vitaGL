@@ -1078,7 +1078,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 	}
 }
 
-void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, GLboolean is_short) {
+void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, GLboolean is_short) {
 	uint8_t mask_state = reload_ffp_shaders(NULL, NULL);
 	int attr_idxs[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 	int attr_num = 0;
@@ -1093,8 +1093,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, GLboole
 
 #ifndef DRAW_SPEEDHACK
 	// Detecting highest index value
-	uint32_t top_idx = 0;
-	if (!is_full_vbo) {
+	if (!is_full_vbo && !top_idx) {
 		if (is_short) {
 			for (int i = 0; i < count; i++) {
 				if (idx_buf[i] > top_idx)
