@@ -47,12 +47,8 @@ uint32_t readABGR(void *data) {
 
 // Read callback for 16bpp unsigned RGBA5551 format
 uint32_t readRGBA5551(void *data) {
-	uint16_t clr;
+	uint16_t clr = *(uint16_t *)data;
 	uint8_t r, g, b, a;
-	uint8_t *dst = (uint8_t *)&clr;
-	uint8_t *src = (uint8_t *)data;
-	dst[0] = src[2];
-	dst[1] = src[1];
 	r = convert_u16_to_u32_cspace(clr, 0, 11, 0x1F);
 	g = convert_u16_to_u32_cspace(clr, 5, 11, 0x1F);
 	b = convert_u16_to_u32_cspace(clr, 10, 11, 0x1F);
@@ -60,14 +56,21 @@ uint32_t readRGBA5551(void *data) {
 	return ((a << 24) | (b << 16) | (g << 8) | r);
 }
 
+// Read callback for 16bpp unsigned BGRA1555 format
+uint32_t readBGRA1555(void *data) {
+	uint16_t clr = *(uint16_t *)data;
+	uint8_t r, g, b, a;
+	b = convert_u16_to_u32_cspace(clr, 11, 11, 0x1F);
+	g = convert_u16_to_u32_cspace(clr, 6, 11, 0x1F);
+	r = convert_u16_to_u32_cspace(clr, 1, 11, 0x1F);
+	a = convert_u16_to_u32_cspace(clr, 0, 15, 0x01);
+	return ((a << 24) | (b << 16) | (g << 8) | r);
+}
+
 // Read callback for 16bpp unsigned RGBA4444 format
 uint32_t readRGBA4444(void *data) {
-	uint16_t clr;
+	uint16_t clr = *(uint16_t *)data;
 	uint8_t r, g, b, a;
-	uint8_t *dst = (uint8_t *)&clr;
-	uint8_t *src = (uint8_t *)data;
-	dst[0] = src[2];
-	dst[1] = src[1];
 	r = convert_u16_to_u32_cspace(clr, 0, 12, 0x0F);
 	g = convert_u16_to_u32_cspace(clr, 4, 12, 0x0F);
 	b = convert_u16_to_u32_cspace(clr, 8, 12, 0x0F);
@@ -77,12 +80,8 @@ uint32_t readRGBA4444(void *data) {
 
 // Read callback for 16bpp unsigned RGB565 format
 uint32_t readRGB565(void *data) {
-	uint16_t clr;
+	uint16_t clr = *(uint16_t *)data;
 	uint8_t r, g, b;
-	uint8_t *dst = (uint8_t *)&clr;
-	uint8_t *src = (uint8_t *)data;
-	dst[0] = src[2];
-	dst[1] = src[1];
 	r = convert_u16_to_u32_cspace(clr, 0, 11, 0x1F);
 	g = convert_u16_to_u32_cspace(clr, 5, 10, 0x3F);
 	b = convert_u16_to_u32_cspace(clr, 11, 11, 0x1F);
