@@ -302,6 +302,47 @@ void glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, G
 	restore_polygon_mode(gxm_p);
 }
 
+void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, void *gl_indices, GLint baseVertex) {
+#ifndef SKIP_ERROR_HANDLING
+	if (type != GL_UNSIGNED_SHORT && type != GL_UNSIGNED_INT) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
+	} else if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	} else if (count < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
+	}
+#endif
+
+	SceGxmPrimitiveType gxm_p;
+	gl_primitive_to_gxm(mode, gxm_p, count);
+	sceneReset();
+	GLboolean is_draw_legal = GL_TRUE;
+
+	gpubuffer *gpu_buf = (gpubuffer *)index_array_unit;
+	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
+	if (cur_program != 0)
+		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end, type == GL_UNSIGNED_SHORT);
+	else {
+		if (!(ffp_vertex_attrib_state & (1 << 0)))
+			return;
+		_glDrawElements_FixedFunctionIMPL(src, count, end, type == GL_UNSIGNED_SHORT);
+	}
+
+#ifndef SKIP_ERROR_HANDLING
+	if (is_draw_legal)
+#endif
+	{
+		if (type == GL_UNSIGNED_SHORT) {
+			setup_elements_indices_with_base(uint16_t)
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
+		} else {
+			setup_elements_indices_with_base(uint32_t)
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
+		}
+	}
+	restore_polygon_mode(gxm_p);
+}
+
 void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {

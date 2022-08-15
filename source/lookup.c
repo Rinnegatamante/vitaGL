@@ -97,6 +97,7 @@ static const struct {
 	{"glDrawElements", (void *)glDrawElements},
 	{"glDrawElementsBaseVertex", (void *)glDrawElementsBaseVertex},
 	{"glDrawRangeElements", (void *)glDrawRangeElements},
+	{"glDrawRangeElementsBaseVertex", (void *)glDrawRangeElementsBaseVertex},
 	{"glEnable", (void *)glEnable},
 	{"glEnableClientState", (void *)glEnableClientState},
 	{"glEnableVertexAttribArray", (void *)glEnableVertexAttribArray},
@@ -352,5 +353,8 @@ void *vglGetProcAddress(const char *name) {
 		}
 	}
 
+#ifndef SKIP_ERROR_HANDLING
+	vgl_log("%s:%d vglGetProcAddress: Requested an unimplemented function (%s).\n", __FILE__, __LINE__, name);
+#endif
 	return NULL;
 }
