@@ -173,6 +173,8 @@ static const struct {
 	{"glMultiTexCoord2i", (void *)glMultiTexCoord2i},
 	{"glMultMatrixf", (void *)glMultMatrixf},
 	{"glMultMatrixx", (void *)glMultMatrixx},
+	{"glMultTransposeMatrixf", (void *)glMultTransposeMatrixf},
+	{"glMultTransposeMatrixx", (void *)glMultTransposeMatrixx},
 	{"glNewList", (void *)glNewList},
 	{"glNormal3f", (void *)glNormal3f},
 	{"glNormal3fv", (void *)glNormal3fv},

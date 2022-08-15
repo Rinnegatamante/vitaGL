@@ -654,6 +654,8 @@ void glMultiTexCoord2fv(GLenum target, GLfloat *f);
 void glMultiTexCoord2i(GLenum target, GLint s, GLint t);
 void glMultMatrixf(const GLfloat *m);
 void glMultMatrixx(const GLfixed *m);
+void glMultTransposeMatrixf(const GLfloat *m);
+void glMultTransposeMatrixx(const GLfixed *m);
 void glNewList(GLuint list, GLenum mode);
 void glNormal3f(GLfloat x, GLfloat y, GLfloat z);
 void glNormal3fv(const GLfloat *v);
