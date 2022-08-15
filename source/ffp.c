@@ -94,16 +94,6 @@ glPhase phase = NONE; // Current drawing phase for legacy openGL
 int legacy_pool_size = 0; // Mempool size for GL1 immediate draw pipeline
 int8_t client_texture_unit = 0; // Current in use client side texture unit
 
-typedef struct {
-	vector2f uv;
-	vector4f clr;
-	vector4f amb;
-	vector4f diff;
-	vector4f spec;
-	vector4f emiss;
-	vector3f nor;
-	vector2f uv2;
-} legacy_vtx_attachment;
 legacy_vtx_attachment current_vtx = {
 	.uv = {0.0f, 0.0f},
 	.clr = {1.0f, 1.0f, 1.0f, 1.0f},

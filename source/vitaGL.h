@@ -115,6 +115,7 @@ extern "C" {
 #define GL_EXP2                                         0x0801
 #define GL_CW                                           0x0900
 #define GL_CCW                                          0x0901
+#define GL_CURRENT_COLOR                                0x0B00
 #define GL_POLYGON_MODE                                 0x0B40
 #define GL_CULL_FACE                                    0x0B44
 #define GL_LIGHTING                                     0x0B50

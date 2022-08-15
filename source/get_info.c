@@ -165,6 +165,9 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 void glGetFloatv(GLenum pname, GLfloat *data) {
 	int i, j;
 	switch (pname) {
+	case GL_CURRENT_COLOR:
+		sceClibMemcpy(data, &current_vtx.clr.r, 4 * sizeof(float));
+		break;
 	case GL_POLYGON_OFFSET_FACTOR: // Polygon offset factor
 		*data = pol_factor;
 		break;
@@ -413,6 +416,12 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 GLboolean glIsEnabled(GLenum cap) {
 	GLboolean ret = GL_FALSE;
 	switch (cap) {
+	case GL_TEXTURE_2D:
+		ret = texture_units[server_texture_unit].enabled;
+		break;
+	case GL_NORMALIZE:
+		ret = normalize;
+		break;
 	case GL_LIGHTING:
 		ret = lighting_state;
 		break;

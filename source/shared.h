@@ -278,6 +278,18 @@ extern __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context,
 #define setViewport sceGxmSetViewport
 #endif
 
+// Struct used for immediate mode vertices
+typedef struct {
+	vector2f uv;
+	vector4f clr;
+	vector4f amb;
+	vector4f diff;
+	vector4f spec;
+	vector4f emiss;
+	vector3f nor;
+	vector2f uv2;
+} legacy_vtx_attachment;
+
 // Drawing phases constants for legacy openGL
 typedef enum {
 	NONE,
@@ -490,6 +502,7 @@ typedef struct {
 #include "shaders.h"
 
 // Internal stuffs
+extern legacy_vtx_attachment current_vtx;
 extern void *frag_uniforms;
 extern void *vert_uniforms;
 extern SceGxmMultisampleMode msaa_mode;
