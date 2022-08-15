@@ -239,12 +239,42 @@ void glLoadMatrixf(const GLfloat *m) {
 		dirty_vert_unifs = GL_TRUE;
 }
 
+void glLoadTransposeMatrixf(const GLfloat *m) {
+	// Properly ordering matrix
+	int i, j;
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			(*matrix)[i][j] = m[i * 4 + j];
+		}
+	}
+
+	if (matrix != &texture_matrix[server_texture_unit])
+		mvp_modified = GL_TRUE;
+	else
+		dirty_vert_unifs = GL_TRUE;
+}
+
 void glLoadMatrixx(const GLfixed *m) {
 	// Properly ordering matrix
 	int i, j;
 	for (i = 0; i < 4; i++) {
 		for (j = 0; j < 4; j++) {
 			(*matrix)[i][j] = (float)m[j * 4 + i] / 65536.0f;
+		}
+	}
+
+	if (matrix != &texture_matrix[server_texture_unit])
+		mvp_modified = GL_TRUE;
+	else
+		dirty_vert_unifs = GL_TRUE;
+}
+
+void glLoadTransposeMatrixx(const GLfixed *m) {
+	// Properly ordering matrix
+	int i, j;
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			(*matrix)[i][j] = (float)m[i * 4 + j] / 65536.0f;
 		}
 	}
 

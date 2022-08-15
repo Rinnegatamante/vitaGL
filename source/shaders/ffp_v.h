@@ -39,7 +39,6 @@ void point_light(int i, float3 normal, float3 eye, float3 position) {
 	float attenuation = 1.0f / (lights_attenuations[i].x +
 		lights_attenuations[i].y * d +
 		lights_attenuations[i].z * d * d);
-	float3 halfVector = normalize(VP + eye);
 	float nDotVP = max(0.0f, dot(normal, VP));
 	float pf = 0.0f;
 	if (nDotVP != 0.0f)
