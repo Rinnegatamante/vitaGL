@@ -246,7 +246,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 			else
 				read_cb = readBGRA;
 			break;
-		case GL_UNSIGNED_SHORT_1_5_5_5:
+		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
 			data_bpp = 2;
 			read_cb = readBGRA1555;
 			break;
@@ -707,7 +707,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			data_bpp = 4;
 			read_cb = readBGRA;
 			break;
-		case GL_UNSIGNED_SHORT_1_5_5_5:
+		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
 			data_bpp = 2;
 			read_cb = readBGRA1555;
 			break;
