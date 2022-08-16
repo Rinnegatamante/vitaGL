@@ -443,7 +443,7 @@ void glPixelStorei(GLenum pname, GLint param) {
 		unpack_row_len = param;
 		break;
 	default:
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 }
 

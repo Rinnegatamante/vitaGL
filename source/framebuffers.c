@@ -475,6 +475,16 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 			}
 			break;
+		case GL_BGR:
+			switch (type) {
+			case GL_UNSIGNED_BYTE:
+				write_cb = writeBGR;
+				dst_bpp = 3;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
+			}
+			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, format)
 		}
