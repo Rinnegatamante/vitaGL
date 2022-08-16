@@ -127,6 +127,10 @@ ifeq ($(SAFE_ETC1),1)
 CFLAGS += -DDISABLE_HW_ETC1
 endif
 
+ifeq ($(HAVE_WVP_ON_GPU),1)
+CFLAGS += -DHAVE_WVP_ON_GPU
+endif
+
 CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a

@@ -49,6 +49,12 @@
 #define FRAGMENT_UNIFORMS_NUM 17
 #endif
 
+#ifdef HAVE_WVP_ON_GPU
+#define WVP_ON_GPU 1
+#else
+#define WVP_ON_GPU 0
+#endif
+
 typedef enum {
 	//FLAT, // FIXME: Not easy to implement with ShaccCg constraints
 	SMOOTH,
@@ -566,7 +572,8 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 			// Compiling the new shader
 			char vshader[8192];
-			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode, mask.normalize, mask.fixed_mask, mask.pos_fixed_mask);
+
+			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode, mask.normalize, mask.fixed_mask, mask.pos_fixed_mask, WVP_ON_GPU);
 			uint32_t size = strlen(vshader);
 			SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 			ffp_vertex_program = (SceGxmProgram *)vglMalloc(size);
@@ -580,12 +587,12 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifdef DUMP_SHADER_SOURCES
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-			sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX-%08X_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
+			sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX-%08X-%d_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low, WVP_ON_GPU);
 #else
-			sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+			sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX-%d_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw, WVP_ON_GPU);
 #endif
 #else
-			sprintf(fname, "ux0:data/shader_cache/v%d/%08X-0000000000000000_v.cg", SHADER_CACHE_MAGIC, mask.raw);
+			sprintf(fname, "ux0:data/shader_cache/v%d/%08X-0000000000000000-%d_v.cg", SHADER_CACHE_MAGIC, mask.raw, WVP_ON_GPU);
 #endif
 			// Saving shader source in filesystem cache
 			f = fopen(fname, "wb");
@@ -911,8 +918,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 	// Recalculating MVP matrix if necessary
 	if (mvp_modified) {
+#ifndef HAVE_WVP_ON_GPU
 		matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-
+#endif
 		// Recalculating normal matrix if necessary (TODO: This should be recalculated only when MV changes)
 		if (mask.lights_num > 0) {
 			matrix4x4 inverted;
@@ -990,7 +998,11 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF], 0, 4 * mask.clip_planes_num, &clip_planes[0].x);
 		if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF])
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[MODELVIEW_MATRIX_UNIF], 0, 16, (const float *)modelview_matrix);
+#ifdef HAVE_WVP_ON_GPU
+		sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)projection_matrix);
+#else
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
+#endif
 		if (ffp_vertex_params[TEX_MATRIX_UNIF])
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16 * mask.num_textures, (const float *)texture_matrix);
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[POINT_SIZE_UNIF], 0, 1, &point_size);

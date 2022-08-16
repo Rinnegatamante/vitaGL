@@ -15,6 +15,7 @@ R"(#define clip_planes_num %d
 #define normalization %d
 #define fixed_mode_mask %d
 #define fixed_mode_pos %d
+#define calculate_wvp %d
 
 #define GLFixedToFloat(fx) (float(bit_cast<short2>(fx).y + (bit_cast<unsigned short2>(fx).x * (1.0f / 65536.0f))))
 #define GLFixed2ToFloat2(fx2) (float2(GLFixedToFloat(fx2.x), GLFixedToFloat(fx2.y)))
@@ -122,7 +123,9 @@ void main(
 #if has_colors == 0 && lights_num > 0
 	uniform float4 ambient,
 #endif
+#if clip_planes_num > 0 || lights_num > 0 || calculate_wvp == 1
 	uniform float4x4 modelview,
+#endif
 	uniform float4x4 wvp,
 #if num_textures > 0
 	uniform float4x4 texmat[num_textures],
@@ -138,6 +141,9 @@ void main(
 #endif
 #if fixed_mode_pos == 3
 	position = GLFixed4ToFloat4(position);
+#endif
+#if calculate_wvp == 1
+	wvp = mul(wvp, modelview); // wvp is actually the proj matrix
 #endif
 #if clip_planes_num > 0 || lights_num > 0
 	float4 modelpos = mul(modelview, position);
