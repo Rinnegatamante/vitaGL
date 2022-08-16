@@ -183,6 +183,7 @@ static const struct {
 	{"glOrtho", (void *)glOrtho},
 	{"glOrthof", (void *)glOrthof},
 	{"glOrthox", (void *)glOrthox},
+	{"glPixelStorei", (void *)glPixelStorei},
 	{"glPointSize", (void *)glPointSize},
 	{"glPointSizex", (void *)glPointSizex},
 	{"glPolygonMode", (void *)glPolygonMode},

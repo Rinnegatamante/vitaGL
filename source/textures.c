@@ -28,6 +28,7 @@ texture texture_slots[TEXTURES_NUM]; // Available texture slots
 
 void *color_table = NULL; // Current in-use color table
 int8_t server_texture_unit = 0; // Current in use server side texture unit
+int unpack_row_len = 0; // Current setting for GL_UNPACK_ROW_LENGTH
 
 void _glTexImage2D_CubeIMPL(texture *tex, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *data, int index) {
 	SceGxmTextureFormat tex_format;
@@ -436,6 +437,16 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
  * ------------------------------
  */
 
+void glPixelStorei(GLenum pname, GLint param) {
+	switch (pname) {
+	case GL_UNPACK_ROW_LENGTH:
+		unpack_row_len = param;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+	}
+}
+
 void glGenTextures(GLsizei n, GLuint *res) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -787,7 +798,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			uint32_t line_size = width * data_bpp;
 			for (i = 0; i < height; i++) {
 				vgl_fast_memcpy(ptr, data, line_size);
-				data += line_size;
+				data += unpack_row_len ? (unpack_row_len * bpp) : line_size;
 				ptr += stride;
 			}
 		} else { // Executing texture modification via callbacks
@@ -798,6 +809,10 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 					write_cb(ptr, clr);
 					data += data_bpp;
 					ptr += bpp;
+				}
+				if (unpack_row_len) {
+					data = pixels + unpack_row_len * bpp;
+					pixels = data;
 				}
 				ptr = ptr_line + stride;
 				ptr_line = ptr;

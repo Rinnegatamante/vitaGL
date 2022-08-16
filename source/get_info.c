@@ -232,6 +232,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_UNPACK_ROW_LENGTH:
+		*data = unpack_row_len;
+		break;
 	case GL_UNPACK_ALIGNMENT:
 		*data = 1;
 		break;

@@ -142,6 +142,7 @@ extern "C" {
 #define GL_BLEND                                        0x0BE2
 #define GL_SCISSOR_BOX                                  0x0C10
 #define GL_SCISSOR_TEST                                 0x0C11
+#define GL_UNPACK_ROW_LENGTH                            0x0CF2
 #define GL_UNPACK_ALIGNMENT                             0x0CF5
 #define GL_PACK_ALIGNMENT                               0x0D05
 #define GL_ALPHA_SCALE                                  0x0D1C
@@ -667,6 +668,7 @@ void glNormalPointer(GLenum type, GLsizei stride, const void *pointer);
 void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal);
 void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal);
 void glOrthox(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed nearVal, GLfixed farVal);
+void glPixelStorei(GLenum pname, GLint param);
 void glPointSize(GLfloat size);
 void glPointSizex(GLfixed size);
 void glPolygonMode(GLenum face, GLenum mode);
