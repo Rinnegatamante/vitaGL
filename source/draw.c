@@ -280,11 +280,11 @@ void glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, G
 	gpubuffer *gpu_buf = (gpubuffer *)index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
-		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end, type == GL_UNSIGNED_SHORT);
+		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end + 1, type == GL_UNSIGNED_SHORT);
 	else {
 		if (!(ffp_vertex_attrib_state & (1 << 0)))
 			return;
-		_glDrawElements_FixedFunctionIMPL(src, count, end, type == GL_UNSIGNED_SHORT);
+		_glDrawElements_FixedFunctionIMPL(src, count, end + 1, type == GL_UNSIGNED_SHORT);
 	}
 
 #ifndef SKIP_ERROR_HANDLING
@@ -321,11 +321,11 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 	gpubuffer *gpu_buf = (gpubuffer *)index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
-		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end, type == GL_UNSIGNED_SHORT);
+		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end + 1, type == GL_UNSIGNED_SHORT);
 	else {
 		if (!(ffp_vertex_attrib_state & (1 << 0)))
 			return;
-		_glDrawElements_FixedFunctionIMPL(src, count, end, type == GL_UNSIGNED_SHORT);
+		_glDrawElements_FixedFunctionIMPL(src, count, end + 1, type == GL_UNSIGNED_SHORT);
 	}
 
 #ifndef SKIP_ERROR_HANDLING
