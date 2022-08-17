@@ -547,12 +547,12 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		char fname[256];
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX-%08X_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
+		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX-%08X-%d_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low, WVP_ON_GPU);
 #else
-		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX-%d_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw, WVP_ON_GPU);
 #endif
 #else
-		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-0000000000000000_v.gxp", SHADER_CACHE_MAGIC, mask.raw);
+		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-0000000000000000-%d_v.gxp", SHADER_CACHE_MAGIC, mask.raw, WVP_ON_GPU);
 #endif
 		FILE *f = fopen(fname, "rb");
 		if (f) {
@@ -572,7 +572,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 			// Compiling the new shader
 			char vshader[8192];
-
 			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode, mask.normalize, mask.fixed_mask, mask.pos_fixed_mask, WVP_ON_GPU);
 			uint32_t size = strlen(vshader);
 			SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
