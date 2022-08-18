@@ -26,9 +26,9 @@
 #include "shared.h"
 
 #ifndef DISABLE_TEXTURE_COMBINER
-#define NUM_EXTENSIONS 31 // Number of supported extensions
+#define NUM_EXTENSIONS 32 // Number of supported extensions
 #else
-#define NUM_EXTENSIONS 30 // Number of supported extensions
+#define NUM_EXTENSIONS 31 // Number of supported extensions
 #endif
 #define COMPRESSED_TEXTURE_FORMATS_NUM 25 // The number of supported texture formats
 
@@ -63,6 +63,7 @@ static GLubyte *extensions[NUM_EXTENSIONS] = {
 	"GL_IMG_user_clip_plane",
 	"GL_ARB_get_program_binary",
 	"GL_OES_get_program_binary",
+	"GL_EXT_draw_instanced",
 #ifndef DISABLE_TEXTURE_COMBINER
 	"GL_EXT_texture_env_combine"
 #endif
