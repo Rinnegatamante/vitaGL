@@ -172,6 +172,63 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	restore_polygon_mode(gxm_p);
 }
 
+void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei primcount) {
+#ifndef SKIP_ERROR_HANDLING
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	} else if (count < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
+	}
+#endif
+	SceGxmPrimitiveType gxm_p;
+	gl_primitive_to_gxm(mode, gxm_p, count);
+	sceneReset();
+	GLboolean is_draw_legal = GL_TRUE;
+
+	if (cur_program != 0)
+		is_draw_legal = _glDrawArrays_CustomShadersIMPL(first + count);
+	else {
+		if (!(ffp_vertex_attrib_state & (1 << 0)))
+			return;
+		_glDrawArrays_FixedFunctionIMPL(first + count);
+	}
+
+#ifndef SKIP_ERROR_HANDLING
+	if (is_draw_legal)
+#endif
+	{
+		uint16_t *ptr;
+		switch (mode) {
+		case GL_QUADS:
+			ptr = default_quads_idx_ptr + (first / 2) * 3;
+			count = (count / 2) * 3;
+			break;
+		case GL_LINE_STRIP:
+			ptr = default_line_strips_idx_ptr + first * 2;
+			count = (count - 1) * 2;
+			break;
+		case GL_LINE_LOOP:
+			ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t));
+			vgl_fast_memcpy(ptr, default_line_strips_idx_ptr + first * 2, (count - 1) * 2 * sizeof(uint16_t));
+			ptr[(count - 1) * 2] = first + count - 1;
+			ptr[(count - 1) * 2 + 1] = first;
+			count *= 2;
+			break;
+		default:
+			ptr = default_idx_ptr + first;
+			break;
+		}
+
+#ifndef SKIP_ERROR_HANDLING
+		if (first + count > MAX_IDX_NUMBER) {
+			vgl_log("%s:%d Attempting to draw a model with glDrawArrays which is too big! Consider increasing MAX_IDX_NUMBER value...\n", __FILE__, __LINE__);
+		}	
+#endif
+		sceGxmDrawInstanced(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count * primcount, count);
+	}
+	restore_polygon_mode(gxm_p);
+}
+
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
@@ -338,6 +395,47 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 		} else {
 			setup_elements_indices_with_base(uint32_t)
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
+		}
+	}
+	restore_polygon_mode(gxm_p);
+}
+
+void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void *gl_indices, GLsizei primcount) {
+#ifndef SKIP_ERROR_HANDLING
+	if (type != GL_UNSIGNED_SHORT && type != GL_UNSIGNED_INT) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
+	} else if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	} else if (count < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
+	}
+#endif
+
+	SceGxmPrimitiveType gxm_p;
+	gl_primitive_to_gxm(mode, gxm_p, count);
+	sceneReset();
+	GLboolean is_draw_legal = GL_TRUE;
+
+	gpubuffer *gpu_buf = (gpubuffer *)index_array_unit;
+	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
+	if (cur_program != 0)
+		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, type == GL_UNSIGNED_SHORT);
+	else {
+		if (!(ffp_vertex_attrib_state & (1 << 0)))
+			return;
+		_glDrawElements_FixedFunctionIMPL(src, count, 0, type == GL_UNSIGNED_SHORT);
+	}
+
+#ifndef SKIP_ERROR_HANDLING
+	if (is_draw_legal)
+#endif
+	{
+		if (type == GL_UNSIGNED_SHORT) {
+			setup_elements_indices(uint16_t)
+			sceGxmDrawInstanced(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count * primcount, count);
+		} else {
+			setup_elements_indices(uint32_t)
+			sceGxmDrawInstanced(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count * primcount, count);
 		}
 	}
 	restore_polygon_mode(gxm_p);
