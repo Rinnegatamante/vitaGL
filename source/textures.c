@@ -665,6 +665,16 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
+	case GL_LUMINANCE:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			read_cb = readL;
+			data_bpp = 1;
+			break;
+		default:
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
+		}
+		break;
 	case GL_RG:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
@@ -774,7 +784,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 		case SCE_GXM_TEXTURE_FORMAT_U8_RRRR:
 		case SCE_GXM_TEXTURE_FORMAT_U8_R111:
 		case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
-			if (read_cb == readR)
+			if (read_cb == readR || read_cb == readL)
 				fast_store = GL_TRUE;
 			else
 				write_cb = writeR;
