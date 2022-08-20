@@ -1049,6 +1049,12 @@ GLuint glCreateProgram(void) {
 	return res;
 }
 
+GLboolean glIsProgram(GLuint i) {
+	if (progs[i - 1].status != PROG_INVALID)
+		return GL_TRUE;
+	return GL_FALSE;
+}
+
 void glGetProgramBinary(GLuint prog, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary) {
 #ifndef SKIP_ERROR_HANDLING
 	if (bufSize < 0) {

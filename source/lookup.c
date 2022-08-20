@@ -152,6 +152,7 @@ static const struct {
 	{"glInterleavedArrays", (void *)glInterleavedArrays},
 	{"glIsEnabled", (void *)glIsEnabled},
 	{"glIsFramebuffer", (void *)glIsFramebuffer},
+	{"glIsProgram", (void *)glIsProgram},
 	{"glIsTexture", (void *)glIsTexture},
 	{"glLightfv", (void *)glLightfv},
 	{"glLightModelfv", (void *)glLightModelfv},
