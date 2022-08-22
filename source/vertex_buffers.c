@@ -31,20 +31,82 @@ void *color_object; // Color object address for vgl* draw pipeline
 void *texture_object; // Texture object address for vgl* draw pipeline
 void *index_object; // Index object address for vgl* draw pipeline
 
+static vao default_vao; // Vertex Array Object used when no vao is bound
+vao *cur_vao = &default_vao; // Current in-use vertex array object
+
+void resetVao(vao *v) {
+	sceClibMemset(v->vertex_attrib_offsets, 0, sizeof(uint32_t) * VERTEX_ATTRIBS_NUM);
+	sceClibMemset(v->vertex_attrib_vbo, 0, sizeof(uint32_t) * VERTEX_ATTRIBS_NUM);
+	for (int i = 0; i < VERTEX_ATTRIBS_NUM; i++) {
+		v->vertex_attrib_size[i] = 4;
+		v->vertex_attrib_config[i].regIndex = i;
+	}
+	v->vertex_attrib_state = 0;
+	
+	// Init generic vertex attrib arrays
+	for (int i = 0; i < VERTEX_ATTRIBS_NUM; i++) {
+		v->vertex_attrib_value[i] = reserve_attrib_pool(4);
+		v->vertex_attrib_config[i].componentCount = 4;
+		v->vertex_attrib_config[i].offset = 0;
+		v->vertex_attrib_config[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		v->vertex_attrib_config[i].regIndex = i;
+		v->vertex_attrib_config[i].streamIndex = i;
+		v->vertex_stream_config[i].stride = 0;
+		v->vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+	}
+}
+
 /*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -
  * ------------------------------
  */
 
-void glGenBuffers(GLsizei n, GLuint *res) {
-	int i;
+void glGenVertexArrays(GLsizei n, GLuint *res) {
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	for (i = 0; i < n; i++) {
+	for (int i = 0; i < n; i++) {
+		res[i] = (GLuint)(vglMalloc(sizeof(vao)));
+#ifdef LOG_ERRORS
+		if (!res[i])
+			vgl_log("%s:%d glGenVertexArrays failed to alloc a buffer (%d/%lu).\n", __FILE__, __LINE__, i, n);
+#endif
+		resetVao((vao *)res[i]);
+	}
+}
+
+void glBindVertexArray(GLuint array) {
+	cur_vao = (vao *)array;
+	if (!cur_vao)
+		cur_vao = &default_vao;
+}
+
+void glDeleteVertexArrays(GLsizei n, const GLuint *gl_arrays) {
+#ifndef SKIP_ERROR_HANDLING
+	if (n < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+		return;
+	}
+#endif
+	int i, j;
+	for (j = 0; j < n; j++) {
+		if (gl_arrays[j]) {
+			vao *gpu_buf = (vao *)gl_arrays[j];
+			vglFree(gpu_buf);
+		}
+	}
+}
+
+void glGenBuffers(GLsizei n, GLuint *res) {
+#ifndef SKIP_ERROR_HANDLING
+	if (n < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+	for (int i = 0; i < n; i++) {
 		res[i] = (GLuint)(vglMalloc(sizeof(gpubuffer)));
 #ifdef LOG_ERRORS
 		if (!res[i])

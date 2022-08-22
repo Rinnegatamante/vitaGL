@@ -34,21 +34,14 @@
 	orig_size[i] = attributes[i].componentCount; \
 	streams[i].stride = 0; \
 	attributes[i].offset = 0; \
-	attributes[i].componentCount = vertex_attrib_size[p->attr_map[i]]; \
+	attributes[i].componentCount = cur_vao->vertex_attrib_size[p->attr_map[i]]; \
 	attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 
 // Internal stuffs
 GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status
-SceGxmVertexAttribute vertex_attrib_config[VERTEX_ATTRIBS_NUM];
-static SceGxmVertexStream vertex_stream_config[VERTEX_ATTRIBS_NUM];
-static float *vertex_attrib_value[VERTEX_ATTRIBS_NUM];
 static float *vertex_attrib_pool;
 static float *vertex_attrib_pool_ptr;
 static float *vertex_attrib_pool_limit;
-static uint8_t vertex_attrib_size[VERTEX_ATTRIBS_NUM] = {4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4};
-static uint32_t vertex_attrib_offsets[VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-static uint32_t vertex_attrib_vbo[VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-static uint8_t vertex_attrib_state = 0;
 static SceGxmVertexAttribute temp_attributes[VERTEX_ATTRIBS_NUM];
 static SceGxmVertexStream temp_streams[VERTEX_ATTRIBS_NUM];
 static unsigned short orig_stride[VERTEX_ATTRIBS_NUM];
@@ -232,8 +225,7 @@ GLenum gxm_unif_type_to_gl(SceGxmParameterType type, uint8_t count) {
 
 void resetCustomShaders(void) {
 	// Init custom shaders
-	int i;
-	for (i = 0; i < MAX_CUSTOM_SHADERS; i++) {
+	for (int i = 0; i < MAX_CUSTOM_SHADERS; i++) {
 		shaders[i].valid = GL_FALSE;
 #ifdef HAVE_SHARK_LOG
 		shaders[i].log = NULL;
@@ -242,25 +234,13 @@ void resetCustomShaders(void) {
 	}
 
 	// Init custom programs
-	for (i = 0; i < MAX_CUSTOM_PROGRAMS; i++) {
+	for (int i = 0; i < MAX_CUSTOM_PROGRAMS; i++) {
 		progs[i].status = PROG_INVALID;
 	}
 
 	vertex_attrib_pool = (float *)gpu_alloc_mapped(DISABLED_ATTRIBS_POOL_SIZE, VGL_MEM_RAM);
 	vertex_attrib_pool_ptr = vertex_attrib_pool;
 	vertex_attrib_pool_limit = (float *)((uint8_t *)vertex_attrib_pool + DISABLED_ATTRIBS_POOL_SIZE);
-
-	// Init generic vertex attrib arrays
-	for (i = 0; i < VERTEX_ATTRIBS_NUM; i++) {
-		vertex_attrib_value[i] = reserve_attrib_pool(4);
-		vertex_attrib_config[i].componentCount = 4;
-		vertex_attrib_config[i].offset = 0;
-		vertex_attrib_config[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		vertex_attrib_config[i].regIndex = i;
-		vertex_attrib_config[i].streamIndex = i;
-		vertex_stream_config[i].stride = 0;
-		vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-	}
 }
 
 GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
@@ -319,13 +299,13 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		attributes = temp_attributes;
 		streams = temp_streams;
 		for (int i = 0; i < p->attr_num; i++) {
-			vgl_fast_memcpy(&temp_attributes[i], &vertex_attrib_config[p->attr_map[i]], sizeof(SceGxmVertexAttribute));
-			vgl_fast_memcpy(&temp_streams[i], &vertex_stream_config[p->attr_map[i]], sizeof(SceGxmVertexStream));
+			vgl_fast_memcpy(&temp_attributes[i], &cur_vao->vertex_attrib_config[p->attr_map[i]], sizeof(SceGxmVertexAttribute));
+			vgl_fast_memcpy(&temp_streams[i], &cur_vao->vertex_stream_config[p->attr_map[i]], sizeof(SceGxmVertexStream));
 			attributes[i].streamIndex = i;
 		}
 	} else {
-		attributes = vertex_attrib_config;
-		streams = vertex_stream_config;
+		attributes = cur_vao->vertex_attrib_config;
+		streams = cur_vao->vertex_stream_config;
 	}
 
 	void *ptrs[VERTEX_ATTRIBS_NUM];
@@ -333,23 +313,23 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
 		for (int i = 0; i < p->attr_num; i++) {
-			if (vertex_attrib_vbo[p->attr_map[i]]) {
+			if (cur_vao->vertex_attrib_vbo[p->attr_map[i]]) {
 				is_packed = GL_FALSE;
 				break;
 			}
 		}
-		if (is_packed && (!(vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > vertex_attrib_offsets[p->attr_map[1]] && vertex_attrib_offsets[p->attr_map[1]] > vertex_attrib_offsets[p->attr_map[0]])))
+		if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[1]] && cur_vao->vertex_attrib_offsets[p->attr_map[1]] > cur_vao->vertex_attrib_offsets[p->attr_map[0]])))
 			is_packed = GL_FALSE;
 	}
 
 	// Gathering real attribute data pointers
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
-		vgl_fast_memcpy(ptrs[0], (void *)vertex_attrib_offsets[p->attr_map[0]], count * streams[0].stride);
+		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]], count * streams[0].stride);
 		for (int i = 0; i < p->attr_num; i++) {
 			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
-			if (vertex_attrib_state & (1 << p->attr_map[i])) {
-				attributes[i].offset = vertex_attrib_offsets[p->attr_map[i]] - vertex_attrib_offsets[p->attr_map[0]];
+			if (cur_vao->vertex_attrib_state & (1 << p->attr_map[i])) {
+				attributes[i].offset = cur_vao->vertex_attrib_offsets[p->attr_map[i]] - cur_vao->vertex_attrib_offsets[p->attr_map[0]];
 			} else {
 				disableDrawAttrib(i)
 			}
@@ -359,18 +339,18 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	{
 		for (int i = 0; i < p->attr_num; i++) {
 			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
-			if (vertex_attrib_state & (1 << p->attr_map[i])) {
-				if (vertex_attrib_vbo[p->attr_map[i]]) {
-					gpubuffer *gpu_buf = (gpubuffer *)vertex_attrib_vbo[p->attr_map[i]];
-					ptrs[i] = (uint8_t *)gpu_buf->ptr + vertex_attrib_offsets[p->attr_map[i]];
+			if (cur_vao->vertex_attrib_state & (1 << p->attr_map[i])) {
+				if (cur_vao->vertex_attrib_vbo[p->attr_map[i]]) {
+					gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[p->attr_map[i]];
+					ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[p->attr_map[i]];
 					gpu_buf->used = GL_TRUE;
 					attributes[i].offset = 0;
 				} else {
 #ifdef DRAW_SPEEDHACK
-					ptrs[i] = (void *)vertex_attrib_offsets[p->attr_map[i]];
+					ptrs[i] = (void *)cur_vao->vertex_attrib_offsets[p->attr_map[i]];
 #else
 					ptrs[i] = gpu_alloc_mapped_temp(count * streams[i].stride);
-					vgl_fast_memcpy(ptrs[i], (void *)vertex_attrib_offsets[p->attr_map[i]], count * streams[i].stride);
+					vgl_fast_memcpy(ptrs[i], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[i]], count * streams[i].stride);
 #endif
 					attributes[i].offset = 0;
 				}
@@ -415,7 +395,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 
 	// Uploading vertex streams
 	for (int i = 0; i < p->attr_num; i++) {
-		GLboolean is_active = vertex_attrib_state & (1 << p->attr_map[i]);
+		GLboolean is_active = cur_vao->vertex_attrib_state & (1 << p->attr_map[i]);
 		if (is_active) {
 #ifdef DRAW_SPEEDHACK
 			sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
@@ -423,7 +403,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
 #endif
 		} else {
-			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[p->attr_map[i]]);
+			sceGxmSetVertexStream(gxm_context, i, cur_vao->vertex_attrib_value[p->attr_map[i]]);
 		}
 		if (!p->has_unaligned_attrs) {
 			attributes[i].regIndex = i;
@@ -494,13 +474,13 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		attributes = temp_attributes;
 		streams = temp_streams;
 		for (int i = 0; i < p->attr_num; i++) {
-			vgl_fast_memcpy(&temp_attributes[i], &vertex_attrib_config[p->attr_map[i]], sizeof(SceGxmVertexAttribute));
-			vgl_fast_memcpy(&temp_streams[i], &vertex_stream_config[p->attr_map[i]], sizeof(SceGxmVertexStream));
+			vgl_fast_memcpy(&temp_attributes[i], &cur_vao->vertex_attrib_config[p->attr_map[i]], sizeof(SceGxmVertexAttribute));
+			vgl_fast_memcpy(&temp_streams[i], &cur_vao->vertex_stream_config[p->attr_map[i]], sizeof(SceGxmVertexStream));
 			attributes[i].streamIndex = i;
 		}
 	} else {
-		attributes = vertex_attrib_config;
-		streams = vertex_stream_config;
+		attributes = cur_vao->vertex_attrib_config;
+		streams = cur_vao->vertex_stream_config;
 	}
 
 	void *ptrs[VERTEX_ATTRIBS_NUM];
@@ -509,15 +489,15 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	GLboolean is_full_vbo = GL_TRUE;
 	if (is_packed) {
 		for (int i = 0; i < p->attr_num; i++) {
-			if (vertex_attrib_vbo[p->attr_map[i]]) {
+			if (cur_vao->vertex_attrib_vbo[p->attr_map[i]]) {
 				is_packed = GL_FALSE;
 			} else {
 				is_full_vbo = GL_FALSE;
 			}
 		}
-		if (is_packed && (!(vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > vertex_attrib_offsets[p->attr_map[1]] && vertex_attrib_offsets[p->attr_map[1]] > vertex_attrib_offsets[p->attr_map[0]])))
+		if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[1]] && cur_vao->vertex_attrib_offsets[p->attr_map[1]] > cur_vao->vertex_attrib_offsets[p->attr_map[0]])))
 			is_packed = GL_FALSE;
-	} else if (!vertex_attrib_vbo[p->attr_map[0]])
+	} else if (!cur_vao->vertex_attrib_vbo[p->attr_map[0]])
 		is_full_vbo = GL_FALSE;
 
 	// Detecting highest index value
@@ -540,11 +520,11 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	// Gathering real attribute data pointers
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(top_idx * streams[0].stride);
-		vgl_fast_memcpy(ptrs[0], (void *)vertex_attrib_offsets[p->attr_map[0]], top_idx * streams[0].stride);
+		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]], top_idx * streams[0].stride);
 		for (int i = 0; i < p->attr_num; i++) {
 			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
-			if (vertex_attrib_state & (1 << p->attr_map[i])) {
-				attributes[i].offset = vertex_attrib_offsets[p->attr_map[i]] - vertex_attrib_offsets[p->attr_map[0]];
+			if (cur_vao->vertex_attrib_state & (1 << p->attr_map[i])) {
+				attributes[i].offset = cur_vao->vertex_attrib_offsets[p->attr_map[i]] - cur_vao->vertex_attrib_offsets[p->attr_map[0]];
 			} else {
 				disableDrawAttrib(i)
 			}
@@ -554,18 +534,18 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	{
 		for (int i = 0; i < p->attr_num; i++) {
 			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
-			if (vertex_attrib_state & (1 << p->attr_map[i])) {
-				if (vertex_attrib_vbo[p->attr_map[i]]) {
-					gpubuffer *gpu_buf = (gpubuffer *)vertex_attrib_vbo[p->attr_map[i]];
-					ptrs[i] = (uint8_t *)gpu_buf->ptr + vertex_attrib_offsets[p->attr_map[i]];
+			if (cur_vao->vertex_attrib_state & (1 << p->attr_map[i])) {
+				if (cur_vao->vertex_attrib_vbo[p->attr_map[i]]) {
+					gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[p->attr_map[i]];
+					ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[p->attr_map[i]];
 					gpu_buf->used = GL_TRUE;
 					attributes[i].offset = 0;
 				} else {
 #ifdef DRAW_SPEEDHACK
-					ptrs[i] = (void *)vertex_attrib_offsets[p->attr_map[i]];
+					ptrs[i] = (void *)cur_vao->vertex_attrib_offsets[p->attr_map[i]];
 #else
 					ptrs[i] = gpu_alloc_mapped_temp(top_idx * streams[i].stride);
-					vgl_fast_memcpy(ptrs[i], (void *)vertex_attrib_offsets[p->attr_map[i]], top_idx * streams[i].stride);
+					vgl_fast_memcpy(ptrs[i], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[i]], top_idx * streams[i].stride);
 #endif
 					attributes[i].offset = 0;
 				}
@@ -610,7 +590,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 
 	// Uploading vertex streams
 	for (int i = 0; i < p->attr_num; i++) {
-		GLboolean is_active = vertex_attrib_state & (1 << p->attr_map[i]);
+		GLboolean is_active = cur_vao->vertex_attrib_state & (1 << p->attr_map[i]);
 		if (is_active) {
 #ifdef DRAW_SPEEDHACK
 			sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
@@ -618,7 +598,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
 #endif
 		} else {
-			sceGxmSetVertexStream(gxm_context, i, vertex_attrib_value[p->attr_map[i]]);
+			sceGxmSetVertexStream(gxm_context, i, cur_vao->vertex_attrib_value[p->attr_map[i]]);
 		}
 		if (!p->has_unaligned_attrs) {
 			attributes[i].regIndex = i;
@@ -1771,7 +1751,7 @@ void glEnableVertexAttribArray(GLuint index) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	vertex_attrib_state |= (1 << index);
+	cur_vao->vertex_attrib_state |= (1 << index);
 }
 
 void glDisableVertexAttribArray(GLuint index) {
@@ -1780,7 +1760,7 @@ void glDisableVertexAttribArray(GLuint index) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	vertex_attrib_state &= ~(1 << index);
+	cur_vao->vertex_attrib_state &= ~(1 << index);
 }
 
 void glGetVertexAttribPointerv(GLuint index, GLenum pname, void **pointer) {
@@ -1791,7 +1771,7 @@ void glGetVertexAttribPointerv(GLuint index, GLenum pname, void **pointer) {
 		SET_GL_ERROR(GL_INVALID_VALUE);
 	}
 #endif
-	pointer[0] = (void *)vertex_attrib_offsets[index];
+	pointer[0] = (void *)cur_vao->vertex_attrib_offsets[index];
 }
 
 void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer) {
@@ -1801,11 +1781,11 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 	}
 #endif
 
-	vertex_attrib_offsets[index] = (uint32_t)pointer;
-	vertex_attrib_vbo[index] = vertex_array_unit;
+	cur_vao->vertex_attrib_offsets[index] = (uint32_t)pointer;
+	cur_vao->vertex_attrib_vbo[index] = vertex_array_unit;
 
-	SceGxmVertexAttribute *attributes = &vertex_attrib_config[index];
-	SceGxmVertexStream *streams = &vertex_stream_config[index];
+	SceGxmVertexAttribute *attributes = &cur_vao->vertex_attrib_config[index];
+	SceGxmVertexStream *streams = &cur_vao->vertex_stream_config[index];
 
 	// Detecting attribute format and size
 	unsigned short bpe;
@@ -1850,22 +1830,22 @@ void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {
 #endif
 	switch (pname) {
 	case GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING:
-		params[0] = (vertex_attrib_state & (1 << index)) ? vertex_attrib_vbo[index] : 0;
+		params[0] = (cur_vao->vertex_attrib_state & (1 << index)) ? cur_vao->vertex_attrib_vbo[index] : 0;
 		break;
 	case GL_VERTEX_ATTRIB_ARRAY_ENABLED:
-		params[0] = (vertex_attrib_state & (1 << index)) ? GL_TRUE : GL_FALSE;
+		params[0] = (cur_vao->vertex_attrib_state & (1 << index)) ? GL_TRUE : GL_FALSE;
 		break;
 	case GL_VERTEX_ATTRIB_ARRAY_SIZE:
-		params[0] = (vertex_attrib_state & (1 << index)) ? vertex_attrib_config[index].componentCount : vertex_attrib_size[index];
+		params[0] = (cur_vao->vertex_attrib_state & (1 << index)) ? cur_vao->vertex_attrib_config[index].componentCount : cur_vao->vertex_attrib_size[index];
 		break;
 	case GL_VERTEX_ATTRIB_ARRAY_STRIDE:
-		params[0] = (vertex_attrib_state & (1 << index)) ? vertex_stream_config[index].stride : 0;
+		params[0] = (cur_vao->vertex_attrib_state & (1 << index)) ? cur_vao->vertex_stream_config[index].stride : 0;
 		break;
 	case GL_VERTEX_ATTRIB_ARRAY_TYPE:
-		params[0] = (vertex_attrib_state & (1 << index)) ? gxm_vd_fmt_to_gl(vertex_attrib_config[index].format) : GL_FLOAT;
+		params[0] = (cur_vao->vertex_attrib_state & (1 << index)) ? gxm_vd_fmt_to_gl(cur_vao->vertex_attrib_config[index].format) : GL_FLOAT;
 		break;
 	case GL_VERTEX_ATTRIB_ARRAY_NORMALIZED:
-		params[0] = (vertex_attrib_state & (1 << index)) ? (vertex_attrib_config[index].format >= SCE_GXM_ATTRIBUTE_FORMAT_U8N && vertex_attrib_config[index].format <= SCE_GXM_ATTRIBUTE_FORMAT_S16N) : GL_FALSE;
+		params[0] = (cur_vao->vertex_attrib_state & (1 << index)) ? (cur_vao->vertex_attrib_config[index].format >= SCE_GXM_ATTRIBUTE_FORMAT_U8N && cur_vao->vertex_attrib_config[index].format <= SCE_GXM_ATTRIBUTE_FORMAT_S16N) : GL_FALSE;
 		break;
 	case GL_CURRENT_VERTEX_ATTRIB:
 #ifndef SKIP_ERROR_HANDLING
@@ -1873,10 +1853,10 @@ void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {
 			SET_GL_ERROR(GL_INVALID_OPERATION)
 		}
 #endif
-		params[0] = vertex_attrib_value[index][0];
-		params[1] = vertex_attrib_size[index] > 1 ? vertex_attrib_value[index][1] : 0;
-		params[2] = vertex_attrib_size[index] > 2 ? vertex_attrib_value[index][2] : 0;
-		params[3] = vertex_attrib_size[index] > 3 ? vertex_attrib_value[index][3] : 1;
+		params[0] = cur_vao->vertex_attrib_value[index][0];
+		params[1] = cur_vao->vertex_attrib_size[index] > 1 ? cur_vao->vertex_attrib_value[index][1] : 0;
+		params[2] = cur_vao->vertex_attrib_size[index] > 2 ? cur_vao->vertex_attrib_value[index][2] : 0;
+		params[3] = cur_vao->vertex_attrib_size[index] > 3 ? cur_vao->vertex_attrib_value[index][3] : 1;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -1891,22 +1871,22 @@ void glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params) {
 #endif
 	switch (pname) {
 	case GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING:
-		params[0] = (vertex_attrib_state & (1 << index)) ? vertex_attrib_vbo[index] : 0;
+		params[0] = (cur_vao->vertex_attrib_state & (1 << index)) ? cur_vao->vertex_attrib_vbo[index] : 0;
 		break;
 	case GL_VERTEX_ATTRIB_ARRAY_ENABLED:
-		params[0] = (vertex_attrib_state & (1 << index)) ? GL_TRUE : GL_FALSE;
+		params[0] = (cur_vao->vertex_attrib_state & (1 << index)) ? GL_TRUE : GL_FALSE;
 		break;
 	case GL_VERTEX_ATTRIB_ARRAY_SIZE:
-		params[0] = (vertex_attrib_state & (1 << index)) ? vertex_attrib_config[index].componentCount : vertex_attrib_size[index];
+		params[0] = (cur_vao->vertex_attrib_state & (1 << index)) ? cur_vao->vertex_attrib_config[index].componentCount : cur_vao->vertex_attrib_size[index];
 		break;
 	case GL_VERTEX_ATTRIB_ARRAY_STRIDE:
-		params[0] = (vertex_attrib_state & (1 << index)) ? vertex_stream_config[index].stride : 0;
+		params[0] = (cur_vao->vertex_attrib_state & (1 << index)) ? cur_vao->vertex_stream_config[index].stride : 0;
 		break;
 	case GL_VERTEX_ATTRIB_ARRAY_TYPE:
-		params[0] = (vertex_attrib_state & (1 << index)) ? gxm_vd_fmt_to_gl(vertex_attrib_config[index].format) : GL_FLOAT;
+		params[0] = (cur_vao->vertex_attrib_state & (1 << index)) ? gxm_vd_fmt_to_gl(cur_vao->vertex_attrib_config[index].format) : GL_FLOAT;
 		break;
 	case GL_VERTEX_ATTRIB_ARRAY_NORMALIZED:
-		params[0] = (vertex_attrib_state & (1 << index)) ? (vertex_attrib_config[index].format >= SCE_GXM_ATTRIBUTE_FORMAT_U8N && vertex_attrib_config[index].format <= SCE_GXM_ATTRIBUTE_FORMAT_S16N) : GL_FALSE;
+		params[0] = (cur_vao->vertex_attrib_state & (1 << index)) ? (cur_vao->vertex_attrib_config[index].format >= SCE_GXM_ATTRIBUTE_FORMAT_U8N && cur_vao->vertex_attrib_config[index].format <= SCE_GXM_ATTRIBUTE_FORMAT_S16N) : GL_FALSE;
 		break;
 	case GL_CURRENT_VERTEX_ATTRIB:
 #ifndef SKIP_ERROR_HANDLING
@@ -1914,10 +1894,10 @@ void glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params) {
 			SET_GL_ERROR(GL_INVALID_OPERATION)
 		}
 #endif
-		params[0] = vertex_attrib_value[index][0];
-		params[1] = vertex_attrib_size[index] > 1 ? vertex_attrib_value[index][1] : 0;
-		params[2] = vertex_attrib_size[index] > 2 ? vertex_attrib_value[index][2] : 0;
-		params[3] = vertex_attrib_size[index] > 3 ? vertex_attrib_value[index][3] : 1;
+		params[0] = cur_vao->vertex_attrib_value[index][0];
+		params[1] = cur_vao->vertex_attrib_size[index] > 1 ? cur_vao->vertex_attrib_value[index][1] : 0;
+		params[2] = cur_vao->vertex_attrib_size[index] > 2 ? cur_vao->vertex_attrib_value[index][2] : 0;
+		params[3] = cur_vao->vertex_attrib_size[index] > 3 ? cur_vao->vertex_attrib_value[index][3] : 1;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -1925,63 +1905,63 @@ void glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params) {
 }
 
 void glVertexAttrib1f(GLuint index, GLfloat v0) {
-	vertex_attrib_value[index] = reserve_attrib_pool(1);
-	vertex_attrib_size[index] = 1;
-	vertex_attrib_value[index][0] = v0;
+	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(1);
+	cur_vao->vertex_attrib_size[index] = 1;
+	cur_vao->vertex_attrib_value[index][0] = v0;
 }
 
 void glVertexAttrib2f(GLuint index, GLfloat v0, GLfloat v1) {
-	vertex_attrib_value[index] = reserve_attrib_pool(2);
-	vertex_attrib_size[index] = 2;
-	vertex_attrib_value[index][0] = v0;
-	vertex_attrib_value[index][1] = v1;
+	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(2);
+	cur_vao->vertex_attrib_size[index] = 2;
+	cur_vao->vertex_attrib_value[index][0] = v0;
+	cur_vao->vertex_attrib_value[index][1] = v1;
 }
 
 void glVertexAttrib3f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2) {
-	vertex_attrib_value[index] = reserve_attrib_pool(3);
-	vertex_attrib_size[index] = 3;
-	vertex_attrib_value[index][0] = v0;
-	vertex_attrib_value[index][1] = v1;
-	vertex_attrib_value[index][2] = v2;
+	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(3);
+	cur_vao->vertex_attrib_size[index] = 3;
+	cur_vao->vertex_attrib_value[index][0] = v0;
+	cur_vao->vertex_attrib_value[index][1] = v1;
+	cur_vao->vertex_attrib_value[index][2] = v2;
 }
 
 void glVertexAttrib4f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
-	vertex_attrib_value[index] = reserve_attrib_pool(4);
-	vertex_attrib_size[index] = 4;
-	vertex_attrib_value[index][0] = v0;
-	vertex_attrib_value[index][1] = v1;
-	vertex_attrib_value[index][2] = v2;
-	vertex_attrib_value[index][3] = v3;
+	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(4);
+	cur_vao->vertex_attrib_size[index] = 4;
+	cur_vao->vertex_attrib_value[index][0] = v0;
+	cur_vao->vertex_attrib_value[index][1] = v1;
+	cur_vao->vertex_attrib_value[index][2] = v2;
+	cur_vao->vertex_attrib_value[index][3] = v3;
 }
 
 void glVertexAttrib1fv(GLuint index, const GLfloat *v) {
-	vertex_attrib_value[index] = reserve_attrib_pool(1);
-	vertex_attrib_size[index] = 1;
-	vertex_attrib_value[index][0] = v[0];
+	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(1);
+	cur_vao->vertex_attrib_size[index] = 1;
+	cur_vao->vertex_attrib_value[index][0] = v[0];
 }
 
 void glVertexAttrib2fv(GLuint index, const GLfloat *v) {
-	vertex_attrib_value[index] = reserve_attrib_pool(2);
-	vertex_attrib_size[index] = 2;
-	vertex_attrib_value[index][0] = v[0];
-	vertex_attrib_value[index][1] = v[1];
+	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(2);
+	cur_vao->vertex_attrib_size[index] = 2;
+	cur_vao->vertex_attrib_value[index][0] = v[0];
+	cur_vao->vertex_attrib_value[index][1] = v[1];
 }
 
 void glVertexAttrib3fv(GLuint index, const GLfloat *v) {
-	vertex_attrib_value[index] = reserve_attrib_pool(3);
-	vertex_attrib_size[index] = 3;
-	vertex_attrib_value[index][0] = v[0];
-	vertex_attrib_value[index][1] = v[1];
-	vertex_attrib_value[index][2] = v[2];
+	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(3);
+	cur_vao->vertex_attrib_size[index] = 3;
+	cur_vao->vertex_attrib_value[index][0] = v[0];
+	cur_vao->vertex_attrib_value[index][1] = v[1];
+	cur_vao->vertex_attrib_value[index][2] = v[2];
 }
 
 void glVertexAttrib4fv(GLuint index, const GLfloat *v) {
-	vertex_attrib_value[index] = reserve_attrib_pool(4);
-	vertex_attrib_size[index] = 4;
-	vertex_attrib_value[index][0] = v[0];
-	vertex_attrib_value[index][1] = v[1];
-	vertex_attrib_value[index][2] = v[2];
-	vertex_attrib_value[index][3] = v[3];
+	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(4);
+	cur_vao->vertex_attrib_size[index] = 4;
+	cur_vao->vertex_attrib_value[index][0] = v[0];
+	cur_vao->vertex_attrib_value[index][1] = v[1];
+	cur_vao->vertex_attrib_value[index][2] = v[2];
+	cur_vao->vertex_attrib_value[index][3] = v[3];
 }
 
 void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
