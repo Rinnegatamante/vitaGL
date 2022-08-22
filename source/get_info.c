@@ -506,8 +506,3 @@ GLboolean glIsTexture(GLuint i) {
 
 	return (i < TEXTURES_NUM && texture_slots[i].status != TEX_UNUSED);
 }
-
-GLboolean glIsFramebuffer(GLuint fb) {
-	framebuffer *p = (framebuffer *)fb;
-	return (p && p->active);
-}

@@ -549,3 +549,13 @@ void vglTexImageDepthBuffer(GLenum target) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 }
+
+GLboolean glIsFramebuffer(GLuint fb) {
+	framebuffer *p = (framebuffer *)fb;
+	return (p && p->active);
+}
+
+GLboolean glIsRenderbuffer(GLuint rb) {
+	renderbuffer *p = (renderbuffer *)rb;
+	return (p && p->active);
+}

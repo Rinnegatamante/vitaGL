@@ -636,6 +636,7 @@ void glHint(GLenum target, GLenum mode);
 void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer);
 GLboolean glIsEnabled(GLenum cap);
 GLboolean glIsFramebuffer(GLuint fb);
+GLboolean glIsRenderbuffer(GLuint rb);
 GLboolean glIsProgram(GLuint program);
 GLboolean glIsTexture(GLuint texture);
 void glLightfv(GLenum light, GLenum pname, const GLfloat *params);

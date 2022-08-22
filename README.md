@@ -62,7 +62,7 @@ Direct OpenGL Usage:<br>
 [Daedalus X64](https://github.com/Rinnegatamante/daedalusx64-vitagl) - Port of Daedalus X64 (N64 Emulator)<br>
 [RetroArch](https://github.com/libretro/RetroArch) - Vita's GL1 video driver of RetroArch<br>
 [vitaET](https://github.com/Rinnegatamante/vitaET) - Port of ET: Legacy (Wolfenstein: Enemy Territory)<br>
-[flycast](https://github.com/Rinnegatamante/flycast) - Port of flycast (Dreamcast Emulator)<br>
+[flycast](https://github.com/Rinnegatamante/flycast-vita) - Port of flycast (Dreamcast Emulator)<br>
 [AvP Gold](https://github.com/Rinnegatamante/AvP-Gold-Vita) - Port of Aliens versus Predator: Gold Edition<br>
 [prboom-plus](https://vitadb.rinnegatamante.it/#/info/591) - Port of PrBoom Plus (Doom engine sourceport)<br>
 [VITAlbum](https://vitadb.rinnegatamante.it/#/info/566) - Filebrowser and image viewer app<br>
@@ -94,6 +94,8 @@ Direct OpenGL Usage:<br>
 [Pekka Kana 2 Vita](https://vitadb.rinnegatamante.it/#/info/847) - Port of Pekka Kana 2<br>
 [Death Road to Canada Lite](https://vitadb.rinnegatamante.it/#/info/846) - Port of Death Road to Canada<br>
 [CrossCraft Classic](https://vitadb.rinnegatamante.it/#/info/848) - Multiplatform Minecraft Classic clone<br>
+[Lugaru HD](https://vitadb.rinnegatamante.it/#/info/853) - Port of Lugaru<br>
+[Nanosaur Vita](https://vitadb.rinnegatamante.it/#/info/851) - Port of Nanosaur<br>
 
 Libraries:<br>
 [sdl12_gl](https://github.com/Rinnegatamante/SDL-Vita/tree/sdl12_gl/src) - SDL 1.2 Vita port adapted to work with vitaGL as renderer backend<br>
