@@ -191,7 +191,6 @@ void DrawQuad() {
 }
 
 int main() {
-	sceSysmoduleLoadModule(9);
 	// Initializing graphics device
 	vglInitExtended(0, 960, 544, 0x1800000, SCE_GXM_MULTISAMPLE_NONE);
 	

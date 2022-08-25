@@ -7,9 +7,8 @@ INCLUDES	:= include
 LIBS = -lvitaGL -lSceLibKernel_stub -lScePvf_stub -lmathneon \
 	-lSceAppMgr_stub -lSceAppUtil_stub -lScePgf_stub \
 	-ljpeg -lfreetype -lc -lSceCommonDialog_stub -lpng16 -lm -lz \
-	-lSceGxm_stub -lSceDisplay_stub -lSceSysmodule_stub -lSceShaccCgExt \
-	-lvitashark -lSceShaccCg_stub -lSceCtrl_stub -lSceKernelDmacMgr_stub \
-	-ltaihen_stub
+	-lSceGxm_stub -lSceDisplay_stub -lSceSysmodule_stub -lvitashark \
+	-lSceShaccCgExt -lSceShaccCg_stub -lSceCtrl_stub -ltaihen_stub -lSceKernelDmacMgr_stub
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
 CPPFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.cpp))
