@@ -429,6 +429,17 @@ typedef struct {
 	GLboolean mapped;
 } gpubuffer;
 
+// VAO struct
+typedef struct {
+	uint8_t vertex_attrib_size[VERTEX_ATTRIBS_NUM];
+	uint32_t vertex_attrib_offsets[VERTEX_ATTRIBS_NUM];
+	uint32_t vertex_attrib_vbo[VERTEX_ATTRIBS_NUM];
+	uint8_t vertex_attrib_state;
+	float *vertex_attrib_value[VERTEX_ATTRIBS_NUM];
+	SceGxmVertexAttribute vertex_attrib_config[VERTEX_ATTRIBS_NUM];
+	SceGxmVertexStream vertex_stream_config[VERTEX_ATTRIBS_NUM];
+} vao;
+
 // 3D vertex for position + 4D vertex for RGBA color struct
 typedef struct {
 	vector3f position;
@@ -728,6 +739,7 @@ extern vector4f current_color; // Current in use color
 extern vector4f clear_rgba_val; // Current clear color for glClear
 extern viewport gl_viewport; // Current viewport state
 extern GLboolean is_fbo_float; // Current framebuffer mode
+extern vao *cur_vao; // Current in-use vertex array object
 
 // Culling
 extern GLboolean no_polygons_mode; // GL_TRUE when cull mode is set to GL_FRONT_AND_BACK
@@ -853,13 +865,14 @@ void resetScissorTestRegion(void); // Resets scissor test region to default valu
 void invalidate_viewport(void); // Invalidates currently set viewport
 void validate_viewport(void); // Restores previously invalidated viewport
 
-/* blending.c (TODO) */
+/* blending.c */
 void change_blend_factor(void); // Changes current blending settings for all used shaders
 void change_blend_mask(void); // Changes color mask when blending is disabled for all used shaders
 GLenum gxm_blend_to_gl(SceGxmBlendFactor factor); // Converts SceGxmBlendFactor to GL blend mode
 
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders
+float *reserve_attrib_pool(uint8_t count);
 void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
 GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, GLboolean is_short); // glDrawElements implementation for rendering with custom shaders
 GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count); // glDrawArrays implementation for rendering with custom shaders
@@ -870,6 +883,9 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count); // glDrawArrays implementat
 uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams); // Reloads current in use ffp shaders
 void upload_ffp_uniforms(); // Uploads required uniforms for the in use ffp shaders
 void update_fogging_state(); // Updates current setup for fogging
+
+/* vertex_buffers.c */
+void resetVao(vao *v); // Reseset vao state
 
 /* misc.c */
 void change_cull_mode(void); // Updates current cull mode

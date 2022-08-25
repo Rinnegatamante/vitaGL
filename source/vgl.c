@@ -293,6 +293,9 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 
 	// Init custom shaders
 	resetCustomShaders();
+	
+	// Init default vao
+	resetVao(cur_vao);
 
 #ifdef HAVE_CIRCULAR_VERTEX_POOL
 	vertex_data_pool = gpu_alloc_mapped(vertex_data_pool_size, VGL_MEM_RAM);
@@ -323,11 +326,6 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		default_quads_idx_ptr[i * 6 + 3] = i * 4 + 1;
 		default_quads_idx_ptr[i * 6 + 4] = i * 4 + 2;
 		default_quads_idx_ptr[i * 6 + 5] = i * 4 + 3;
-	}
-
-	// Init buffers
-	for (i = 0; i < VERTEX_ATTRIBS_NUM; i++) {
-		vertex_attrib_config[i].regIndex = i;
 	}
 
 	// Init default vertex attributes configurations
