@@ -34,6 +34,14 @@ static size_t mempool_size[VGL_MEM_ALL] = {0, 0, 0, 0, 0}; // sizes of heap meml
 
 static int mempool_initialized = GL_FALSE;
 
+#ifdef HAVE_WRAPPED_ALLOCATORS
+void *__real_calloc(uint32_t nmember, uint32_t size);
+void __real_free(void *addr);
+void *__real_malloc(uint32_t size);
+void *__real_memalign(uint32_t alignment, uint32_t size);
+void *__real_realloc(void *ptr, uint32_t size);
+#endif
+
 #ifdef HAVE_CUSTOM_HEAP
 typedef struct tm_block_s {
 	struct tm_block_s *next; // next block in list (either free or allocated)
@@ -580,7 +588,7 @@ void *vgl_realloc(void *ptr, size_t size) {
 
 void vgl_memcpy(void *dst, const void *src, size_t size) {
 #ifndef DEBUG_MEMCPY
-	if (size >= 0x2000 && src < 0x81000000 && dst < 0x81000000)
+	if (size >= 0x2000 && (uint32_t)src < 0x81000000 && (uint32_t)dst < 0x81000000)
 		sceDmacMemcpy(dst, src, size);
 	else
 		vgl_fast_memcpy(dst, src, size);
