@@ -250,7 +250,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 	sceneReset();
 	GLboolean is_draw_legal = GL_TRUE;
 
-	gpubuffer *gpu_buf = (gpubuffer *)index_array_unit;
+	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
 		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, type == GL_UNSIGNED_SHORT);
@@ -291,7 +291,7 @@ void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLv
 	sceneReset();
 	GLboolean is_draw_legal = GL_TRUE;
 
-	gpubuffer *gpu_buf = (gpubuffer *)index_array_unit;
+	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
 		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, type == GL_UNSIGNED_SHORT);
@@ -334,7 +334,7 @@ void glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, G
 	sceneReset();
 	GLboolean is_draw_legal = GL_TRUE;
 
-	gpubuffer *gpu_buf = (gpubuffer *)index_array_unit;
+	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
 		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end + 1, type == GL_UNSIGNED_SHORT);
@@ -375,7 +375,7 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 	sceneReset();
 	GLboolean is_draw_legal = GL_TRUE;
 
-	gpubuffer *gpu_buf = (gpubuffer *)index_array_unit;
+	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
 		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end + 1, type == GL_UNSIGNED_SHORT);
@@ -416,7 +416,7 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void
 	sceneReset();
 	GLboolean is_draw_legal = GL_TRUE;
 
-	gpubuffer *gpu_buf = (gpubuffer *)index_array_unit;
+	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
 		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, type == GL_UNSIGNED_SHORT);

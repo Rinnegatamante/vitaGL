@@ -431,6 +431,7 @@ typedef struct {
 
 // VAO struct
 typedef struct {
+	uint32_t index_array_unit;
 	uint8_t vertex_attrib_size[VERTEX_ATTRIBS_NUM];
 	uint32_t vertex_attrib_offsets[VERTEX_ATTRIBS_NUM];
 	uint32_t vertex_attrib_vbo[VERTEX_ATTRIBS_NUM];
@@ -812,7 +813,6 @@ extern GLuint cur_program; // Current in use custom program (0 = No custom progr
 extern uint32_t vsync_interval; // Current setting for VSync
 
 extern uint32_t vertex_array_unit; // Current in-use vertex array buffer unit
-extern uint32_t index_array_unit; // Current in-use element array buffer unit
 
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
 extern framebuffer *in_use_framebuffer; // Currently in use framebuffer

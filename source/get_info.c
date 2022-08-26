@@ -243,7 +243,7 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		*data = vertex_array_unit;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER_BINDING:
-		*data = index_array_unit;
+		*data = cur_vao->index_array_unit;
 		break;
 	case GL_MAX_ELEMENTS_INDICES:
 	case GL_MAX_ELEMENTS_VERTICES:
