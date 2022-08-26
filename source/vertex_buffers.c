@@ -23,6 +23,9 @@
 
 #include "shared.h"
 
+#define DISABLED_ATTRIBS_POOL_SIZE (256 * 1024) // Disabled attributes circular pool size in bytes for the default VAO
+#define DISABLED_AUX_ATTRIBS_POOL_SIZE (64 * 1024) // Disabled attributes circular pool size in bytes for non default VAOs
+
 uint32_t vertex_array_unit = 0; // Current in-use vertex array buffer unit
 
 void *vertex_object; // Vertex object address for vgl* draw pipeline
@@ -43,7 +46,14 @@ void resetVao(vao *v) {
 	v->vertex_attrib_state = 0;
 	v->index_array_unit = 0;
 	
+	uint32_t circular_pool_size = v == &default_vao ? DISABLED_ATTRIBS_POOL_SIZE : DISABLED_AUX_ATTRIBS_POOL_SIZE;
+	v->vertex_attrib_pool = (float *)gpu_alloc_mapped(circular_pool_size, VGL_MEM_RAM);
+	v->vertex_attrib_pool_ptr = v->vertex_attrib_pool;
+	v->vertex_attrib_pool_limit = (float *)((uint8_t *)v->vertex_attrib_pool + circular_pool_size);
+	
 	// Init generic vertex attrib arrays
+	vao *vao_bkp = cur_vao;
+	cur_vao = v;
 	for (int i = 0; i < VERTEX_ATTRIBS_NUM; i++) {
 		v->vertex_attrib_value[i] = reserve_attrib_pool(4);
 		v->vertex_attrib_config[i].componentCount = 4;
@@ -54,6 +64,7 @@ void resetVao(vao *v) {
 		v->vertex_stream_config[i].stride = 0;
 		v->vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	}
+	cur_vao = vao_bkp;
 }
 
 /*
@@ -95,6 +106,7 @@ void glDeleteVertexArrays(GLsizei n, const GLuint *gl_arrays) {
 	for (j = 0; j < n; j++) {
 		if (gl_arrays[j]) {
 			vao *gpu_buf = (vao *)gl_arrays[j];
+			markAsDirty(gpu_buf->vertex_attrib_pool);
 			vglFree(gpu_buf);
 		}
 	}

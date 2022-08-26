@@ -439,6 +439,9 @@ typedef struct {
 	float *vertex_attrib_value[VERTEX_ATTRIBS_NUM];
 	SceGxmVertexAttribute vertex_attrib_config[VERTEX_ATTRIBS_NUM];
 	SceGxmVertexStream vertex_stream_config[VERTEX_ATTRIBS_NUM];
+	float *vertex_attrib_pool;
+	float *vertex_attrib_pool_ptr;
+	float *vertex_attrib_pool_limit;
 } vao;
 
 // 3D vertex for position + 4D vertex for RGBA color struct

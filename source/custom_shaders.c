@@ -26,8 +26,6 @@
 #define MAX_CUSTOM_SHADERS 2048 // Maximum number of linkable custom shaders
 #define MAX_CUSTOM_PROGRAMS 1024 // Maximum number of linkable custom programs
 
-#define DISABLED_ATTRIBS_POOL_SIZE (256 * 1024) // Disabled attributes circular pool size in bytes
-
 #define disableDrawAttrib(i) \
 	orig_stride[i] = streams[i].stride; \
 	orig_fmt[i] = attributes[i].format; \
@@ -39,9 +37,6 @@
 
 // Internal stuffs
 GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status
-static float *vertex_attrib_pool;
-static float *vertex_attrib_pool_ptr;
-static float *vertex_attrib_pool_limit;
 static SceGxmVertexAttribute temp_attributes[VERTEX_ATTRIBS_NUM];
 static SceGxmVertexStream temp_streams[VERTEX_ATTRIBS_NUM];
 static unsigned short orig_stride[VERTEX_ATTRIBS_NUM];
@@ -136,11 +131,11 @@ void release_shader(shader *s) {
 }
 
 float *reserve_attrib_pool(uint8_t count) {
-	float *res = vertex_attrib_pool_ptr;
-	vertex_attrib_pool_ptr += count;
-	if (vertex_attrib_pool_ptr > vertex_attrib_pool_limit) {
-		vertex_attrib_pool_ptr = vertex_attrib_pool;
-		return vertex_attrib_pool_ptr;
+	float *res = cur_vao->vertex_attrib_pool_ptr;
+	cur_vao->vertex_attrib_pool_ptr += count;
+	if (cur_vao->vertex_attrib_pool_ptr > cur_vao->vertex_attrib_pool_limit) {
+		cur_vao->vertex_attrib_pool_ptr = cur_vao->vertex_attrib_pool;
+		return cur_vao->vertex_attrib_pool_ptr;
 	}
 	return res;
 }
@@ -237,10 +232,6 @@ void resetCustomShaders(void) {
 	for (int i = 0; i < MAX_CUSTOM_PROGRAMS; i++) {
 		progs[i].status = PROG_INVALID;
 	}
-
-	vertex_attrib_pool = (float *)gpu_alloc_mapped(DISABLED_ATTRIBS_POOL_SIZE, VGL_MEM_RAM);
-	vertex_attrib_pool_ptr = vertex_attrib_pool;
-	vertex_attrib_pool_limit = (float *)((uint8_t *)vertex_attrib_pool + DISABLED_ATTRIBS_POOL_SIZE);
 }
 
 GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
