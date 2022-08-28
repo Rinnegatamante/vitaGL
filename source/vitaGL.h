@@ -146,6 +146,7 @@ extern "C" {
 #define GL_UNPACK_ALIGNMENT                             0x0CF5
 #define GL_PACK_ALIGNMENT                               0x0D05
 #define GL_ALPHA_SCALE                                  0x0D1C
+#define GL_MAX_LIGHTS                                   0x0D31
 #define GL_MAX_CLIP_PLANES                              0x0D32
 #define GL_MAX_TEXTURE_SIZE                             0x0D33
 #define GL_MAX_MODELVIEW_STACK_DEPTH                    0x0D36

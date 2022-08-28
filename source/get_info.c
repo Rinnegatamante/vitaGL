@@ -252,6 +252,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_MAX_LIGHTS:
+		*data = MAX_LIGHTS_NUM;
+		break;
 	case GL_VERTEX_ARRAY_SIZE:
 		*data = ffp_vertex_attrib_config[0].componentCount;
 		break;
