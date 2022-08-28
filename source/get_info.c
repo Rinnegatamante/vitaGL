@@ -70,6 +70,25 @@ static GLubyte *extensions[NUM_EXTENSIONS] = {
 };
 static GLubyte *extension = NULL;
 
+GLint gxm_vtx_fmt_to_gl(SceGxmAttributeFormat attr) {
+	switch (attr) {
+	case SCE_GXM_ATTRIBUTE_FORMAT_F32:
+		return GL_FLOAT;
+	case SCE_GXM_ATTRIBUTE_FORMAT_S16N:
+	case SCE_GXM_ATTRIBUTE_FORMAT_S16:	
+		return GL_SHORT;
+	case SCE_GXM_ATTRIBUTE_FORMAT_S8N:
+	case SCE_GXM_ATTRIBUTE_FORMAT_S8:	
+		return GL_BYTE;
+	case SCE_GXM_ATTRIBUTE_FORMAT_U16N:
+	case SCE_GXM_ATTRIBUTE_FORMAT_U16:	
+		return GL_UNSIGNED_SHORT;
+	case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
+	case SCE_GXM_ATTRIBUTE_FORMAT_U8:	
+		return GL_UNSIGNED_BYTE;
+	}
+}
+
 /*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -
@@ -233,6 +252,39 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_VERTEX_ARRAY_SIZE:
+		*data = ffp_vertex_attrib_config[0].componentCount;
+		break;
+	case GL_VERTEX_ARRAY_TYPE:
+		*data = ffp_vertex_attrib_fixed_pos_mask ? GL_FIXED : gxm_vtx_fmt_to_gl(ffp_vertex_attrib_config[0].format);
+		break;
+	case GL_VERTEX_ARRAY_STRIDE:
+		*data = ffp_vertex_stream_config[0].stride;
+		break;
+	case GL_NORMAL_ARRAY_TYPE:
+		*data = (ffp_vertex_attrib_fixed_mask & (1 << 0)) ? GL_FIXED : gxm_vtx_fmt_to_gl(ffp_vertex_attrib_config[6].format);
+		break;
+	case GL_NORMAL_ARRAY_STRIDE:
+		*data = ffp_vertex_stream_config[6].stride;
+		break;
+	case GL_COLOR_ARRAY_SIZE:
+		*data = ffp_vertex_attrib_config[2].componentCount;
+		break;
+	case GL_COLOR_ARRAY_TYPE:
+		*data = gxm_vtx_fmt_to_gl(ffp_vertex_attrib_config[2].format);
+		break;
+	case GL_COLOR_ARRAY_STRIDE:
+		*data = ffp_vertex_stream_config[2].stride;
+		break;
+	case GL_TEXTURE_COORD_ARRAY_SIZE:
+		*data = ffp_vertex_attrib_config[texcoord_idxs[client_texture_unit]].componentCount;
+		break;
+	case GL_TEXTURE_COORD_ARRAY_TYPE:
+		*data = (ffp_vertex_attrib_fixed_mask & (1 << texcoord_fixed_idxs[client_texture_unit])) ? GL_FIXED : gxm_vtx_fmt_to_gl(ffp_vertex_attrib_config[texcoord_idxs[client_texture_unit]].format);
+		break;
+	case GL_TEXTURE_COORD_ARRAY_STRIDE:
+		*data = ffp_vertex_stream_config[texcoord_idxs[client_texture_unit]].stride;
+		break;
 	case GL_UNPACK_ROW_LENGTH:
 		*data = unpack_row_len;
 		break;

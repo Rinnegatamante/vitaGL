@@ -269,6 +269,17 @@ extern "C" {
 #define GL_NORMAL_ARRAY                                 0x8075
 #define GL_COLOR_ARRAY                                  0x8076
 #define GL_TEXTURE_COORD_ARRAY                          0x8078
+#define GL_VERTEX_ARRAY_SIZE                            0x807A
+#define GL_VERTEX_ARRAY_TYPE                            0x807B
+#define GL_VERTEX_ARRAY_STRIDE                          0x807C
+#define GL_NORMAL_ARRAY_TYPE                            0x807E
+#define GL_NORMAL_ARRAY_STRIDE                          0x807F
+#define GL_COLOR_ARRAY_SIZE                             0x8081
+#define GL_COLOR_ARRAY_TYPE                             0x8082
+#define GL_COLOR_ARRAY_STRIDE                           0x8083
+#define GL_TEXTURE_COORD_ARRAY_SIZE                     0x8088
+#define GL_TEXTURE_COORD_ARRAY_TYPE                     0x8089
+#define GL_TEXTURE_COORD_ARRAY_STRIDE                   0x808A
 #define GL_VERTEX_ARRAY_POINTER                         0x808E
 #define GL_NORMAL_ARRAY_POINTER                         0x808F
 #define GL_COLOR_ARRAY_POINTER                          0x8090
@@ -627,7 +638,7 @@ GLenum glGetError(void);
 void glGetFloatv(GLenum pname, GLfloat *data);
 void glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLenum pname, GLint *params);
 void glGetIntegerv(GLenum pname, GLint *data);
-void glGetPointerv(GLenum pname, void ** params);
+void glGetPointerv(GLenum pname, void **params);
 void glGetProgramBinary(GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary);
 void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 void glGetProgramiv(GLuint program, GLenum pname, GLint *params);

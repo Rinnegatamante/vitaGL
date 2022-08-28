@@ -517,6 +517,10 @@ typedef struct {
 #include "shaders.h"
 
 // Internal stuffs
+extern uint8_t texcoord_idxs[TEXTURE_COORDS_NUM];
+extern uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM];
+extern uint8_t ffp_vertex_attrib_fixed_mask;
+extern uint8_t ffp_vertex_attrib_fixed_pos_mask;
 extern legacy_vtx_attachment current_vtx;
 extern void *frag_uniforms;
 extern void *vert_uniforms;

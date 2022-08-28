@@ -132,12 +132,12 @@ static uint32_t ffp_vertex_attrib_vbo[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 
 static GLenum ffp_mode;
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 uint16_t ffp_vertex_attrib_state = 0;
-static uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 2, FFP_VERTEX_ATTRIBS_NUM - 1};
-static uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM] = {1, 2, 3};
+uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 2, FFP_VERTEX_ATTRIBS_NUM - 1};
+uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM] = {1, 2, 3};
 #else
 uint8_t ffp_vertex_attrib_state = 0;
-static uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 1};
-static uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM] = {1, 2};
+uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 1};
+uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM] = {1, 2};
 #endif
 uint8_t ffp_vertex_attrib_fixed_mask = 0;
 uint8_t ffp_vertex_attrib_fixed_pos_mask = 0;
