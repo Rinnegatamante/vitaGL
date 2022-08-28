@@ -67,9 +67,7 @@ void matrix4x4_copy(matrix4x4 dst, const matrix4x4 src);
 void matrix4x4_multiply(matrix4x4 dst, const matrix4x4 src1, const matrix4x4 src2);
 
 // Rotate a matrix on x,y,z axis
-void matrix4x4_rotate_x(matrix4x4 m, float rad);
-void matrix4x4_rotate_y(matrix4x4 m, float rad);
-void matrix4x4_rotate_z(matrix4x4 m, float rad);
+void matrix4x4_rotate(matrix4x4 src, float rad, float x, float y, float z);
 
 // Translate a matrix
 void matrix4x4_translate(matrix4x4 m, float x, float y, float z);

@@ -40,64 +40,31 @@ void matrix4x4_multiply(matrix4x4 dst, const matrix4x4 src1, const matrix4x4 src
 	matmul4_neon((float *)src2, (float *)src1, (float *)dst);
 }
 
-void matrix4x4_init_rotation_x(matrix4x4 m, float rad) {
+void matrix4x4_rotate(matrix4x4 src, float rad, float x, float y, float z) {
 	float cs[2];
 	sincosf_c(rad, cs);
-
+	
+	matrix4x4 m;
 	matrix4x4_identity(m);
-
-	m[1][1] = cs[1];
-	m[1][2] = -cs[0];
-	m[2][1] = cs[0];
-	m[2][2] = cs[1];
-}
-
-void matrix4x4_init_rotation_y(matrix4x4 m, float rad) {
-	float cs[2];
-	sincosf_c(rad, cs);
-
-	matrix4x4_identity(m);
-
-	m[0][0] = cs[1];
-	m[0][2] = cs[0];
-	m[2][0] = -cs[0];
-	m[2][2] = cs[1];
-}
-
-void matrix4x4_init_rotation_z(matrix4x4 m, float rad) {
-	float cs[2];
-	sincosf_c(rad, cs);
-
-	matrix4x4_identity(m);
-
-	m[0][0] = cs[1];
-	m[0][1] = -cs[0];
-	m[1][0] = cs[0];
-	m[1][1] = cs[1];
-}
-
-void matrix4x4_rotate_x(matrix4x4 m, float rad) {
-	matrix4x4 m1, m2;
-
-	matrix4x4_init_rotation_x(m1, rad);
-	matrix4x4_multiply(m2, m, m1);
-	matrix4x4_copy(m, m2);
-}
-
-void matrix4x4_rotate_y(matrix4x4 m, float rad) {
-	matrix4x4 m1, m2;
-
-	matrix4x4_init_rotation_y(m1, rad);
-	matrix4x4_multiply(m2, m, m1);
-	matrix4x4_copy(m, m2);
-}
-
-void matrix4x4_rotate_z(matrix4x4 m, float rad) {
-	matrix4x4 m1, m2;
-
-	matrix4x4_init_rotation_z(m1, rad);
-	matrix4x4_multiply(m2, m, m1);
-	matrix4x4_copy(m, m2);
+	const float c = 1 - cs[1];
+	float axis[3] = {x, y, z};
+	normalize3_neon(axis, axis);
+	const float xc = axis[0] * c, yc = axis[1] * c, zc = axis[2] * c;
+	m[0][0] = axis[0] * xc + cs[1];
+	m[1][0] = axis[1] * xc + axis[2] * cs[0];
+	m[2][0] = axis[2] * xc - axis[1] * cs[0];
+	
+	m[0][1] = axis[0] * yc - axis[2] * cs[0];
+	m[1][1] = axis[1] * yc + cs[1];
+	m[2][1] = axis[2] * yc + axis[0] * cs[0];
+	
+	m[0][2] = axis[0] * zc + axis[1] * cs[0];
+	m[1][2] = axis[1] * zc - axis[0] * cs[0];
+	m[2][2] = axis[2] * zc + cs[1];
+	
+	matrix4x4 res;
+	matrix4x4_multiply(res, src, m);
+	matrix4x4_copy(src, res);
 }
 
 void matrix4x4_init_translation(matrix4x4 m, float x, float y, float z) {

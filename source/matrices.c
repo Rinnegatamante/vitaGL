@@ -374,16 +374,7 @@ void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 
 	// Performing rotation on in use matrix depending on user call
 	float rad = DEG_TO_RAD(angle);
-	if (x == 1.0f) {
-		matrix4x4_rotate_x(*matrix, rad);
-	}
-	if (y == 1.0f) {
-		matrix4x4_rotate_y(*matrix, rad);
-	}
-	if (z == 1.0f) {
-		matrix4x4_rotate_z(*matrix, rad);
-	}
-
+	matrix4x4_rotate(*matrix, rad, x, y, z);
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
 	else
@@ -400,15 +391,7 @@ void glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z) {
 
 	// Performing rotation on in use matrix depending on user call
 	float rad = DEG_TO_RAD((float)angle / 65536.0f);
-	if (x == 65536) {
-		matrix4x4_rotate_x(*matrix, rad);
-	}
-	if (y == 65536) {
-		matrix4x4_rotate_y(*matrix, rad);
-	}
-	if (z == 65536) {
-		matrix4x4_rotate_z(*matrix, rad);
-	}
+	matrix4x4_rotate(*matrix, rad, (float)x / 65536.0f, (float)y / 65536.0f, (float)z / 65536.0f);
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
