@@ -269,6 +269,10 @@ extern "C" {
 #define GL_NORMAL_ARRAY                                 0x8075
 #define GL_COLOR_ARRAY                                  0x8076
 #define GL_TEXTURE_COORD_ARRAY                          0x8078
+#define GL_VERTEX_ARRAY_POINTER                         0x808E
+#define GL_NORMAL_ARRAY_POINTER                         0x808F
+#define GL_COLOR_ARRAY_POINTER                          0x8090
+#define GL_TEXTURE_COORD_ARRAY_POINTER                  0x8092
 #define GL_BLEND_DST_RGB                                0x80C8
 #define GL_BLEND_SRC_RGB                                0x80C9
 #define GL_BLEND_DST_ALPHA                              0x80CA
@@ -623,6 +627,7 @@ GLenum glGetError(void);
 void glGetFloatv(GLenum pname, GLfloat *data);
 void glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLenum pname, GLint *params);
 void glGetIntegerv(GLenum pname, GLint *data);
+void glGetPointerv(GLenum pname, void ** params);
 void glGetProgramBinary(GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary);
 void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 void glGetProgramiv(GLuint program, GLenum pname, GLint *params);
@@ -631,6 +636,7 @@ void glGetShaderiv(GLuint handle, GLenum pname, GLint *params);
 void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *source);
 const GLubyte *glGetString(GLenum name);
 const GLubyte *glGetStringi(GLenum name, GLuint index);
+void glGetTexEnviv(GLenum target, GLenum pname, GLint *params);
 GLint glGetUniformLocation(GLuint prog, const GLchar *name);
 void glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params);
 void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params);

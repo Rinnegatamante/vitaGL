@@ -2737,6 +2737,275 @@ void glTexEnvf(GLenum target, GLenum pname, GLfloat param) {
 	glTexEnvi(target, pname, (GLint)param);
 }
 
+void glGetTexEnviv(GLenum target, GLenum pname, GLint *params) {
+	// Aliasing texture unit for cleaner code
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+
+	// Properly changing texture environment settings as per request
+	switch (target) {
+	case GL_TEXTURE_ENV:
+		switch (pname) {
+#ifndef DISABLE_TEXTURE_COMBINER
+		case GL_RGB_SCALE:
+			*params = tex_unit->rgb_scale;
+			break;
+		case GL_ALPHA_SCALE:
+			*params = tex_unit->a_scale;
+			break;
+#endif
+		case GL_TEXTURE_ENV_MODE:
+			switch (tex_unit->env_mode) {
+			case MODULATE:
+				*params = GL_MODULATE;
+				break;
+			case DECAL:
+				*params = GL_DECAL;
+				break;
+			case REPLACE:
+				*params = GL_REPLACE;
+				break;
+			case BLEND:
+				*params = GL_BLEND;
+				break;
+			case ADD:
+				*params = GL_ADD;
+				break;
+#ifndef DISABLE_TEXTURE_COMBINER
+			case COMBINE:
+				*params = GL_COMBINE;
+				break;
+#endif
+			}
+			break;
+#ifndef DISABLE_TEXTURE_COMBINER
+		case GL_COMBINE_RGB:
+			switch (tex_unit->combiner.rgb_func) {
+			case REPLACE:
+				*params = GL_REPLACE;
+				break;
+			case MODULATE:
+				*params = GL_MODULATE;
+				break;
+			case ADD:
+				*params = GL_ADD;
+				break;
+			case ADD_SIGNED:
+				*params = GL_ADD_SIGNED;
+				break;
+			case INTERPOLATE:
+				*params = GL_INTERPOLATE;
+				break;
+			case SUBTRACT:
+				*params = GL_SUBTRACT;
+				break;
+			}
+			break;
+		case GL_COMBINE_ALPHA:
+			switch (tex_unit->combiner.a_func) {
+			case REPLACE:
+				*params = GL_REPLACE;
+				break;
+			case MODULATE:
+				*params = GL_MODULATE;
+				break;
+			case ADD:
+				*params = GL_ADD;
+				break;
+			case ADD_SIGNED:
+				*params = GL_ADD_SIGNED;
+				break;
+			case INTERPOLATE:
+				*params = GL_INTERPOLATE;
+				break;
+			case SUBTRACT:
+				*params = GL_SUBTRACT;
+				break;
+			}
+			break;
+		case GL_SRC0_RGB:
+			switch (tex_unit->combiner.op_rgb_0) {
+			case TEXTURE:
+				*params = GL_TEXTURE;
+				break;
+			case CONSTANT:
+				*params = GL_CONSTANT;
+				break;
+			case PRIMARY_COLOR:
+				*params = GL_PRIMARY_COLOR;
+				break;
+			case PREVIOUS:
+				*params = GL_PREVIOUS;
+				break;
+			}
+			break;
+		case GL_SRC1_RGB:
+			switch (tex_unit->combiner.op_rgb_1) {
+			case TEXTURE:
+				*params = GL_TEXTURE;
+				break;
+			case CONSTANT:
+				*params = GL_CONSTANT;
+				break;
+			case PRIMARY_COLOR:
+				*params = GL_PRIMARY_COLOR;
+				break;
+			case PREVIOUS:
+				*params = GL_PREVIOUS;
+				break;
+			}
+			break;
+		case GL_SRC2_RGB:
+			switch (tex_unit->combiner.op_rgb_2) {
+			case TEXTURE:
+				*params = GL_TEXTURE;
+				break;
+			case CONSTANT:
+				*params = GL_CONSTANT;
+				break;
+			case PRIMARY_COLOR:
+				*params = GL_PRIMARY_COLOR;
+				break;
+			case PREVIOUS:
+				*params = GL_PREVIOUS;
+				break;
+			}
+			break;
+		case GL_SRC0_ALPHA:
+			switch (tex_unit->combiner.op_a_0) {
+			case TEXTURE:
+				*params = GL_TEXTURE;
+				break;
+			case CONSTANT:
+				*params = GL_CONSTANT;
+				break;
+			case PRIMARY_COLOR:
+				*params = GL_PRIMARY_COLOR;
+				break;
+			case PREVIOUS:
+				*params = GL_PREVIOUS;
+				break;
+			}
+			break;
+		case GL_SRC1_ALPHA:
+			switch (tex_unit->combiner.op_a_1) {
+			case TEXTURE:
+				*params = GL_TEXTURE;
+				break;
+			case CONSTANT:
+				*params = GL_CONSTANT;
+				break;
+			case PRIMARY_COLOR:
+				*params = GL_PRIMARY_COLOR;
+				break;
+			case PREVIOUS:
+				*params = GL_PREVIOUS;
+				break;
+			}
+			break;
+		case GL_SRC2_ALPHA:
+			switch (tex_unit->combiner.op_a_2) {
+			case TEXTURE:
+				*params = GL_TEXTURE;
+				break;
+			case CONSTANT:
+				*params = GL_CONSTANT;
+				break;
+			case PRIMARY_COLOR:
+				*params = GL_PRIMARY_COLOR;
+				break;
+			case PREVIOUS:
+				*params = GL_PREVIOUS;
+				break;
+			}
+			break;
+		case GL_OPERAND0_RGB:
+			switch (tex_unit->combiner.op_mode_rgb_0) {
+			case SRC_COLOR:
+				*params = GL_SRC_COLOR;
+				break;
+			case ONE_MINUS_SRC_COLOR:
+				*params = GL_ONE_MINUS_SRC_COLOR;
+				break;
+			case SRC_ALPHA:
+				*params = GL_SRC_ALPHA;
+				break;
+			case ONE_MINUS_SRC_ALPHA:
+				*params = GL_ONE_MINUS_SRC_ALPHA;
+				break;
+			}
+			break;
+		case GL_OPERAND1_RGB:
+			switch (tex_unit->combiner.op_mode_rgb_1) {
+			case SRC_COLOR:
+				*params = GL_SRC_COLOR;
+				break;
+			case ONE_MINUS_SRC_COLOR:
+				*params = GL_ONE_MINUS_SRC_COLOR;
+				break;
+			case SRC_ALPHA:
+				*params = GL_SRC_ALPHA;
+				break;
+			case ONE_MINUS_SRC_ALPHA:
+				*params = GL_ONE_MINUS_SRC_ALPHA;
+				break;
+			}
+			break;
+		case GL_OPERAND2_RGB:
+			switch (tex_unit->combiner.op_mode_rgb_2) {
+			case SRC_COLOR:
+				*params = GL_SRC_COLOR;
+				break;
+			case ONE_MINUS_SRC_COLOR:
+				*params = GL_ONE_MINUS_SRC_COLOR;
+				break;
+			case SRC_ALPHA:
+				*params = GL_SRC_ALPHA;
+				break;
+			case ONE_MINUS_SRC_ALPHA:
+				*params = GL_ONE_MINUS_SRC_ALPHA;
+				break;
+			}
+			break;
+		case GL_OPERAND0_ALPHA:
+			switch (tex_unit->combiner.op_mode_a_0) {
+			case SRC_ALPHA:
+				*params = GL_SRC_ALPHA;
+				break;
+			case ONE_MINUS_SRC_ALPHA:
+				*params = GL_ONE_MINUS_SRC_ALPHA;
+				break;
+			}
+			break;
+		case GL_OPERAND1_ALPHA:
+			switch (tex_unit->combiner.op_mode_a_1) {
+			case SRC_ALPHA:
+				*params = GL_SRC_ALPHA;
+				break;
+			case ONE_MINUS_SRC_ALPHA:
+				*params = GL_ONE_MINUS_SRC_ALPHA;
+				break;
+			}
+			break;
+		case GL_OPERAND2_ALPHA:
+			switch (tex_unit->combiner.op_mode_a_2) {
+			case SRC_ALPHA:
+				*params = GL_SRC_ALPHA;
+				break;
+			case ONE_MINUS_SRC_ALPHA:
+				*params = GL_ONE_MINUS_SRC_ALPHA;
+				break;
+			}
+			break;
+#endif
+		default:
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+		}
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+}
+
 void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
@@ -3157,4 +3426,23 @@ void glColorMaterial(GLenum face, GLenum mode) {
 	}
 #endif
 	color_material_mode = mode;
+}
+
+void glGetPointerv(GLenum pname, void ** params) {
+	switch (pname) {
+	case GL_VERTEX_ARRAY_POINTER:
+		*params = (void *)ffp_vertex_attrib_offsets[0];
+		break;
+	case GL_TEXTURE_COORD_ARRAY_POINTER:
+		*params = (void *)ffp_vertex_attrib_offsets[texcoord_idxs[client_texture_unit]];
+		break;
+	case GL_COLOR_ARRAY_POINTER:
+		*params = (void *)ffp_vertex_attrib_offsets[2];
+		break;
+	case GL_NORMAL_ARRAY_POINTER:
+		*params = (void *)ffp_vertex_attrib_offsets[6];
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
 }
