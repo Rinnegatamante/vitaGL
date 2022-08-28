@@ -3454,3 +3454,19 @@ void glGetPointerv(GLenum pname, void ** params) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 }
+
+void glRectf(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+	glBegin(GL_QUADS);
+	glVertex2f(x1, y1);
+	glVertex2f(x2, y1);
+	glVertex2f(x2, y2);
+	glVertex2f(x1, y2);
+	glEnd();
+}
+

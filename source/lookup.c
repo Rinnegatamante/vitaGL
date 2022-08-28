@@ -204,6 +204,7 @@ static const struct {
 	{"glPushAttrib", (void *)glPushAttrib},
 	{"glPushMatrix", (void *)glPushMatrix},
 	{"glReadPixels", (void *)glReadPixels},
+	{"glRectf", (void *)glRectf},
 	{"glReleaseShaderCompiler", (void *)glReleaseShaderCompiler},
 	{"glRenderbufferStorage", (void *)glRenderbufferStorage},
 	{"glRotatef", (void *)glRotatef},

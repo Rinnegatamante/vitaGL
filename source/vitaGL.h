@@ -705,6 +705,7 @@ void glProgramBinary(GLuint program, GLenum binaryFormat, const void *binary, GL
 void glPushAttrib(GLbitfield mask);
 void glPushMatrix(void);
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data);
+void glRectf(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2);
 void glReleaseShaderCompiler(void);
 void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
