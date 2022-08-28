@@ -536,6 +536,9 @@ GLboolean glIsEnabled(GLenum cap) {
 	case GL_COLOR_ARRAY:
 		ret = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 		break;
+	case GL_TEXTURE_COORD_ARRAY:
+		ret = (ffp_vertex_attrib_state & (1 << texcoord_idxs[client_texture_unit])) ? GL_TRUE : GL_FALSE;
+		break;
 	case GL_FOG:
 		ret = fogging;
 		break;
