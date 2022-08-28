@@ -355,6 +355,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		// Non-immediate mode variant
 		ffp_vertex_attrib_config[i].streamIndex = i;
 		ffp_vertex_attrib_config[i].offset = 0;
+		ffp_vertex_attrib_config[i].componentCount = 4;
 		ffp_vertex_stream_config[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	}
 
