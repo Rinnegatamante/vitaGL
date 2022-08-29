@@ -51,15 +51,15 @@ void matrix4x4_rotate(matrix4x4 src, float rad, float x, float y, float z) {
 	normalize3_neon(axis, axis);
 	const float xc = axis[0] * c, yc = axis[1] * c, zc = axis[2] * c;
 	m[0][0] = axis[0] * xc + cs[1];
-	m[1][0] = axis[1] * xc + axis[2] * cs[0];
-	m[2][0] = axis[2] * xc - axis[1] * cs[0];
+	m[0][1] = axis[1] * xc + axis[2] * cs[0];
+	m[0][2] = axis[2] * xc - axis[1] * cs[0];
 	
-	m[0][1] = axis[0] * yc - axis[2] * cs[0];
+	m[1][0] = axis[0] * yc - axis[2] * cs[0];
 	m[1][1] = axis[1] * yc + cs[1];
-	m[2][1] = axis[2] * yc + axis[0] * cs[0];
+	m[1][2] = axis[2] * yc + axis[0] * cs[0];
 	
-	m[0][2] = axis[0] * zc + axis[1] * cs[0];
-	m[1][2] = axis[1] * zc - axis[0] * cs[0];
+	m[2][0] = axis[0] * zc + axis[1] * cs[0];
+	m[2][1] = axis[1] * zc - axis[0] * cs[0];
 	m[2][2] = axis[2] * zc + cs[1];
 	
 	matrix4x4 res;
@@ -70,9 +70,9 @@ void matrix4x4_rotate(matrix4x4 src, float rad, float x, float y, float z) {
 void matrix4x4_init_translation(matrix4x4 m, float x, float y, float z) {
 	matrix4x4_identity(m);
 
-	m[0][3] = x;
-	m[1][3] = y;
-	m[2][3] = z;
+	m[3][0] = x;
+	m[3][1] = y;
+	m[3][2] = z;
 }
 
 void matrix4x4_translate(matrix4x4 m, float x, float y, float z) {
@@ -127,47 +127,27 @@ void matrix4x4_transpose(matrix4x4 out, const matrix4x4 m) {
 }
 
 void matrix4x4_init_orthographic(matrix4x4 m, float left, float right, float bottom, float top, float near, float far) {
+	sceClibMemset(m, 0, sizeof(matrix4x4));
+
 	m[0][0] = 2.0f / (right - left);
-	m[0][1] = 0.0f;
-	m[0][2] = 0.0f;
-	m[0][3] = -(right + left) / (right - left);
-
-	m[1][0] = 0.0f;
 	m[1][1] = 2.0f / (top - bottom);
-	m[1][2] = 0.0f;
-	m[1][3] = -(top + bottom) / (top - bottom);
-
-	m[2][0] = 0.0f;
-	m[2][1] = 0.0f;
 	m[2][2] = -2.0f / (far - near);
-	m[2][3] = -(far + near) / (far - near);
-
-	m[3][0] = 0.0f;
-	m[3][1] = 0.0f;
-	m[3][2] = 0.0f;
+	m[3][0] = -(right + left) / (right - left);
+	m[3][1] = -(top + bottom) / (top - bottom);
+	m[3][2] = -(far + near) / (far - near);
 	m[3][3] = 1.0f;
 }
 
 void matrix4x4_init_frustum(matrix4x4 m, float left, float right, float bottom, float top, float near, float far) {
+	sceClibMemset(m, 0, sizeof(matrix4x4));
+	
 	m[0][0] = (2.0f * near) / (right - left);
-	m[0][1] = 0.0f;
-	m[0][2] = (right + left) / (right - left);
-	m[0][3] = 0.0f;
-
-	m[1][0] = 0.0f;
 	m[1][1] = (2.0f * near) / (top - bottom);
-	m[1][2] = (top + bottom) / (top - bottom);
-	m[1][3] = 0.0f;
-
-	m[2][0] = 0.0f;
-	m[2][1] = 0.0f;
+	m[2][0] = (right + left) / (right - left);
+	m[2][1] = (top + bottom) / (top - bottom);
 	m[2][2] = -(far + near) / (far - near);
-	m[2][3] = (-2.0f * far * near) / (far - near);
-
-	m[3][0] = 0.0f;
-	m[3][1] = 0.0f;
-	m[3][2] = -1.0f;
-	m[3][3] = 0.0f;
+	m[2][3] = -1.0f;
+	m[3][2] = (-2.0f * far * near) / (far - near);
 }
 
 void matrix4x4_init_perspective(matrix4x4 m, float fov, float aspect, float near, float far) {
@@ -227,10 +207,10 @@ int matrix4x4_invert(matrix4x4 out, const matrix4x4 m) {
 }
 
 void vector4f_matrix4x4_mult(vector4f *u, const matrix4x4 m, const vector4f *v) {
-	u->x = m[0][0] * v->x + m[0][1] * v->y + m[0][2] * v->z + m[0][3] * v->w;
-	u->y = m[1][0] * v->x + m[1][1] * v->y + m[1][2] * v->z + m[1][3] * v->w;
-	u->z = m[2][0] * v->x + m[2][1] * v->y + m[2][2] * v->z + m[2][3] * v->w;
-	u->w = m[3][0] * v->x + m[3][1] * v->y + m[3][2] * v->z + m[3][3] * v->w;
+	u->x = m[0][0] * v->x + m[1][0] * v->y + m[2][0] * v->z + m[3][0] * v->w;
+	u->y = m[0][1] * v->x + m[1][1] * v->y + m[2][1] * v->z + m[3][1] * v->w;
+	u->z = m[0][2] * v->x + m[1][2] * v->y + m[2][2] * v->z + m[3][2] * v->w;
+	u->w = m[0][3] * v->x + m[1][3] * v->y + m[2][3] * v->z + m[3][3] * v->w;
 }
 
 void vector3f_cross_product(vector3f *r, const vector3f *v1, const vector3f *v2) {
