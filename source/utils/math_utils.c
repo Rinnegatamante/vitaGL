@@ -40,61 +40,53 @@ void matrix4x4_multiply(matrix4x4 dst, const matrix4x4 src1, const matrix4x4 src
 	matmul4_neon((float *)src2, (float *)src1, (float *)dst);
 }
 
-void matrix4x4_rotate(matrix4x4 src, float rad, float x, float y, float z) {
+void matrix4x4_rotate(matrix4x4 m, float rad, float x, float y, float z) {
 	float cs[2];
 	sincosf_c(rad, cs);
 	
-	matrix4x4 m;
-	matrix4x4_identity(m);
+	matrix4x4 m1, m2;
+	sceClibMemset(m1, 0, sizeof(matrix4x4));
 	const float c = 1 - cs[1];
 	float axis[3] = {x, y, z};
 	normalize3_neon(axis, axis);
 	const float xc = axis[0] * c, yc = axis[1] * c, zc = axis[2] * c;
-	m[0][0] = axis[0] * xc + cs[1];
-	m[1][0] = axis[1] * xc + axis[2] * cs[0];
-	m[2][0] = axis[2] * xc - axis[1] * cs[0];
+	m1[0][0] = axis[0] * xc + cs[1];
+	m1[1][0] = axis[1] * xc + axis[2] * cs[0];
+	m1[2][0] = axis[2] * xc - axis[1] * cs[0];
 	
-	m[0][1] = axis[0] * yc - axis[2] * cs[0];
-	m[1][1] = axis[1] * yc + cs[1];
-	m[2][1] = axis[2] * yc + axis[0] * cs[0];
+	m1[0][1] = axis[0] * yc - axis[2] * cs[0];
+	m1[1][1] = axis[1] * yc + cs[1];
+	m1[2][1] = axis[2] * yc + axis[0] * cs[0];
 	
-	m[0][2] = axis[0] * zc + axis[1] * cs[0];
-	m[1][2] = axis[1] * zc - axis[0] * cs[0];
-	m[2][2] = axis[2] * zc + cs[1];
+	m1[0][2] = axis[0] * zc + axis[1] * cs[0];
+	m1[1][2] = axis[1] * zc - axis[0] * cs[0];
+	m1[2][2] = axis[2] * zc + cs[1];
 	
-	matrix4x4 res;
-	matrix4x4_multiply(res, src, m);
-	matrix4x4_copy(src, res);
-}
-
-void matrix4x4_init_translation(matrix4x4 m, float x, float y, float z) {
-	matrix4x4_identity(m);
-
-	m[0][3] = x;
-	m[1][3] = y;
-	m[2][3] = z;
-}
-
-void matrix4x4_translate(matrix4x4 m, float x, float y, float z) {
-	matrix4x4 m1, m2;
-
-	matrix4x4_init_translation(m1, x, y, z);
+	m1[3][3] = 1.0f;
+	
 	matrix4x4_multiply(m2, m, m1);
 	matrix4x4_copy(m, m2);
 }
 
-void matrix4x4_init_scaling(matrix4x4 m, float scale_x, float scale_y, float scale_z) {
-	matrix4x4_identity(m);
+void matrix4x4_translate(matrix4x4 m, float x, float y, float z) {
+	matrix4x4 m1, m2;
+	matrix4x4_identity(m1);
+	m1[0][3] = x;
+	m1[1][3] = y;
+	m1[2][3] = z;
 
-	m[0][0] = scale_x;
-	m[1][1] = scale_y;
-	m[2][2] = scale_z;
+	matrix4x4_multiply(m2, m, m1);
+	matrix4x4_copy(m, m2);
 }
 
-void matrix4x4_scale(matrix4x4 m, float scale_x, float scale_y, float scale_z) {
+void matrix4x4_scale(matrix4x4 m, float x, float y, float z) {
 	matrix4x4 m1, m2;
+	sceClibMemset(m1, 0, sizeof(matrix4x4));
+	m1[0][0] = x;
+	m1[1][1] = y;
+	m1[2][2] = z;
+	m1[3][3] = 1.0f;
 
-	matrix4x4_init_scaling(m1, scale_x, scale_y, scale_z);
 	matrix4x4_multiply(m2, m, m1);
 	matrix4x4_copy(m, m2);
 }
@@ -127,47 +119,25 @@ void matrix4x4_transpose(matrix4x4 out, const matrix4x4 m) {
 }
 
 void matrix4x4_init_orthographic(matrix4x4 m, float left, float right, float bottom, float top, float near, float far) {
+	sceClibMemset(m, 0, sizeof(matrix4x4));
 	m[0][0] = 2.0f / (right - left);
-	m[0][1] = 0.0f;
-	m[0][2] = 0.0f;
 	m[0][3] = -(right + left) / (right - left);
-
-	m[1][0] = 0.0f;
 	m[1][1] = 2.0f / (top - bottom);
-	m[1][2] = 0.0f;
 	m[1][3] = -(top + bottom) / (top - bottom);
-
-	m[2][0] = 0.0f;
-	m[2][1] = 0.0f;
 	m[2][2] = -2.0f / (far - near);
 	m[2][3] = -(far + near) / (far - near);
-
-	m[3][0] = 0.0f;
-	m[3][1] = 0.0f;
-	m[3][2] = 0.0f;
 	m[3][3] = 1.0f;
 }
 
 void matrix4x4_init_frustum(matrix4x4 m, float left, float right, float bottom, float top, float near, float far) {
+	sceClibMemset(m, 0, sizeof(matrix4x4));
 	m[0][0] = (2.0f * near) / (right - left);
-	m[0][1] = 0.0f;
 	m[0][2] = (right + left) / (right - left);
-	m[0][3] = 0.0f;
-
-	m[1][0] = 0.0f;
 	m[1][1] = (2.0f * near) / (top - bottom);
 	m[1][2] = (top + bottom) / (top - bottom);
-	m[1][3] = 0.0f;
-
-	m[2][0] = 0.0f;
-	m[2][1] = 0.0f;
 	m[2][2] = -(far + near) / (far - near);
 	m[2][3] = (-2.0f * far * near) / (far - near);
-
-	m[3][0] = 0.0f;
-	m[3][1] = 0.0f;
 	m[3][2] = -1.0f;
-	m[3][3] = 0.0f;
 }
 
 void matrix4x4_init_perspective(matrix4x4 m, float fov, float aspect, float near, float far) {

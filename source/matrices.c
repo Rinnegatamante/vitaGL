@@ -92,7 +92,7 @@ void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat 
 #else
 	matrix4x4 res, ortho_matrix;
 	matrix4x4_init_orthographic(ortho_matrix, left, right, bottom, top, nearVal, farVal);
-	matrix4x4_multiply(res, ortho_matrix, *matrix);
+	matrix4x4_multiply(res, *matrix, ortho_matrix);
 	matrix4x4_copy(*matrix, res);
 #endif
 
@@ -126,7 +126,7 @@ void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloa
 #else
 	matrix4x4 res, frustum_matrix;
 	matrix4x4_init_frustum(frustum_matrix, left, right, bottom, top, nearVal, farVal);
-	matrix4x4_multiply(res, frustum_matrix, *matrix);
+	matrix4x4_multiply(res, *matrix, frustum_matrix);
 	matrix4x4_copy(*matrix, res);
 #endif
 
@@ -152,7 +152,7 @@ void glFrustumx(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixe
 #else
 	matrix4x4 res, frustum_matrix;
 	matrix4x4_init_frustum(frustum_matrix, (float)left / 65536.0f, (float)right / 65536.0f, (float)bottom / 65536.0f, (float)top / 65536.0f, (float)nearVal / 65536.0f, (float)farVal / 65536.0f);
-	matrix4x4_multiply(res, frustum_matrix, *matrix);
+	matrix4x4_multiply(res, *matrix, frustum_matrix);
 	matrix4x4_copy(*matrix, res);
 #endif
 
@@ -191,7 +191,7 @@ void glMultMatrixf(const GLfloat *m) {
 	}
 	
 	// Multiplicating passed matrix with in use one
-	matrix4x4_multiply(res, src, *matrix);
+	matrix4x4_multiply(res, *matrix, src);
 
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
@@ -213,7 +213,7 @@ void glMultTransposeMatrixf(const GLfloat *m) {
 	}
 	
 	// Multiplicating passed matrix with in use one
-	matrix4x4_multiply(res, src, *matrix);
+	matrix4x4_multiply(res, *matrix, src);
 
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
@@ -235,7 +235,7 @@ void glMultMatrixx(const GLfixed *m) {
 	}
 	
 	// Multiplicating passed matrix with in use one
-	matrix4x4_multiply(res, src, *matrix);
+	matrix4x4_multiply(res, *matrix, src);
 
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
@@ -257,7 +257,7 @@ void glMultTransposeMatrixx(const GLfixed *m) {
 	}
 	
 	// Multiplicating passed matrix with in use one
-	matrix4x4_multiply(res, src, *matrix);
+	matrix4x4_multiply(res, *matrix, src);
 
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
