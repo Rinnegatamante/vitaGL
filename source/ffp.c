@@ -690,8 +690,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		if (mask.lights_num > 0) {	
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "diff");
 			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[3], sizeof(SceGxmVertexAttribute));
-			ffp_vertex_attribute[ffp_vertex_num_params].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-			ffp_vertex_attribute[ffp_vertex_num_params].componentCount = 4;
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[3].stride;
@@ -700,8 +698,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "spec");
 			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[4], sizeof(SceGxmVertexAttribute));
-			ffp_vertex_attribute[ffp_vertex_num_params].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-			ffp_vertex_attribute[ffp_vertex_num_params].componentCount = 4;
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[4].stride;
@@ -710,8 +706,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "emission");
 			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[5], sizeof(SceGxmVertexAttribute));
-			ffp_vertex_attribute[ffp_vertex_num_params].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-			ffp_vertex_attribute[ffp_vertex_num_params].componentCount = 4;
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[5].stride;
