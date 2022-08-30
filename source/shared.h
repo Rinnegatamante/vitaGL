@@ -49,9 +49,9 @@
 #define FRAME_PURGE_FREQ 5 // Frequency in frames for garbage collection
 #define BUFFERS_NUM 256 // Maximum amount of framebuffers objects usable
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-#define FFP_VERTEX_ATTRIBS_NUM 9 // Number of attributes used in ffp shaders
+#define FFP_VERTEX_ATTRIBS_NUM 10 // Number of attributes used in ffp shaders
 #else
-#define FFP_VERTEX_ATTRIBS_NUM 8 // Number of attributes used in ffp shaders
+#define FFP_VERTEX_ATTRIBS_NUM 9 // Number of attributes used in ffp shaders
 #endif
 #define MEM_ALIGNMENT 16 // Memory alignment
 #define MAX_CLIP_PLANES_NUM 7 // Maximum number of allowed user defined clip planes for ffp
@@ -545,12 +545,12 @@ extern float *legacy_pool_ptr; // Current address for vertices population for GL
 extern float *legacy_pool_end; // Address of the end of the GL1 immediate draw pipeline vertex pool
 extern uint32_t vgl_debugger_framecount; // Current frame number since application started
 #endif
-extern SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 1];
-extern SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 1];
-extern SceGxmVertexAttribute legacy_mt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
-extern SceGxmVertexStream legacy_mt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
-extern SceGxmVertexAttribute legacy_nt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 2];
-extern SceGxmVertexStream legacy_nt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 2];
+extern SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 2];
+extern SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 2];
+extern SceGxmVertexAttribute legacy_mt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 1];
+extern SceGxmVertexStream legacy_mt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 1];
+extern SceGxmVertexAttribute legacy_nt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 3];
+extern SceGxmVertexStream legacy_nt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 3];
 extern SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 extern SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 

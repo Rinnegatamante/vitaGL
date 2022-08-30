@@ -55,6 +55,11 @@
 #define WVP_ON_GPU 0
 #endif
 
+#define disableLightingAttr(x) \
+	ffp_vertex_stream_config[x].stride = 0; \
+	ffp_vertex_attrib_config[x].offset = 0; \
+	ffp_vertex_attrib_config[x].componentCount = 4;
+
 typedef enum {
 	//FLAT, // FIXME: Not easy to implement with ShaccCg constraints
 	SMOOTH,
@@ -116,19 +121,19 @@ SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 
 // Immediate Mode with Texturing
-SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 1];
-SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 1];
+SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 2];
+SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 2];
 
 // Immediate Mode with Multitexturing
-SceGxmVertexAttribute legacy_mt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
-SceGxmVertexStream legacy_mt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
+SceGxmVertexAttribute legacy_mt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 1];
+SceGxmVertexStream legacy_mt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 1];
 
 // Immediate Mode without Texturing
-SceGxmVertexAttribute legacy_nt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 2];
-SceGxmVertexStream legacy_nt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 2];
+SceGxmVertexAttribute legacy_nt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 3];
+SceGxmVertexStream legacy_nt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 3];
 
-static uint32_t ffp_vertex_attrib_offsets[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
-static uint32_t ffp_vertex_attrib_vbo[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
+static uint32_t ffp_vertex_attrib_offsets[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+static uint32_t ffp_vertex_attrib_vbo[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 static GLenum ffp_mode;
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 uint16_t ffp_vertex_attrib_state = 0;
@@ -401,7 +406,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #endif
 #endif
 	mask.alpha_test_mode = alpha_op;
-	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
 	mask.shading_mode = shading_mode;
 	mask.normalize = normalize;
@@ -485,6 +489,8 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			}
 		}
 	}
+	mask.has_colors = ((mask.lights_num > 0 && !attrs) || (ffp_vertex_attrib_state & (1 << 2))) ? GL_TRUE : GL_FALSE;
+
 #ifdef DISABLE_TEXTURE_COMBINER
 	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
 #else
@@ -679,24 +685,21 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		// Vertex colors
 		if (mask.has_colors) {
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
-			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[2], sizeof(SceGxmVertexAttribute));
+			if (mask.lights_num > 0) {
+				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[3], sizeof(SceGxmVertexAttribute));
+				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[3].stride;
+			} else {
+				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[2], sizeof(SceGxmVertexAttribute));
+				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[2].stride;
+			}
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[2].stride;
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 		}
 		
 		if (mask.lights_num > 0) {	
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "diff");
-			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[3], sizeof(SceGxmVertexAttribute));
-			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[3].stride;
-			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-			ffp_vertex_num_params++;
-			
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "spec");
 			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[4], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
@@ -704,7 +707,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 			
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "emission");
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "spec");
 			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[5], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
@@ -712,11 +715,19 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 			
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "normals");
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "emission");
 			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[6], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[6].stride;
+			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+			ffp_vertex_num_params++;
+			
+			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "normals");
+			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[7], sizeof(SceGxmVertexAttribute));
+			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[7].stride;
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 		}
@@ -1037,6 +1048,16 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	return draw_mask_state;
 }
 
+static int disabled_material_id;
+float *get_next_disabled_material_ptr() {
+	for (;;) {
+		disabled_material_id++;
+		if (ffp_vertex_stream_config[disabled_material_id].stride == 0)
+			break;
+	}
+	return &current_vtx.amb.r + (4 * (disabled_material_id - 3));
+}
+
 void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 	uint8_t mask_state = reload_ffp_shaders(NULL, NULL);
 
@@ -1048,6 +1069,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 	// Uploading vertex streams
 	int i, j = 0;
 	float *materials = NULL, *src_materials;
+	disabled_material_id = 2;
 	for (i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
 		if (mask_state & (1 << i)) {
 			void *ptr;
@@ -1057,13 +1079,11 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 				ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[i];
 			} else {
 				if (ffp_vertex_stream_config[i].stride == 0) { // Materials
-					if (!materials) {
-						materials = (float *)gpu_alloc_mapped_temp(12 * sizeof(float));
-						src_materials = (float *)&current_vtx.diff.x;
-					} else {
+					if (!materials)
+						materials = (float *)gpu_alloc_mapped_temp(16 * sizeof(float));
+					else
 						materials += 4;
-						src_materials += 4;
-					}
+					src_materials = get_next_disabled_material_ptr();
 					ptr = materials;
 					vgl_fast_memcpy(materials, src_materials, 4 * sizeof(float));
 				} else {
@@ -1120,6 +1140,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 
 	// Uploading vertex streams
 	float *materials = NULL, *src_materials;
+	disabled_material_id = 2;
 	for (int i = 0; i < attr_num; i++) {
 		void *ptr;
 		int attr_idx = attr_idxs[i];
@@ -1129,13 +1150,11 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 			ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[attr_idx];
 		} else {
 			if (ffp_vertex_stream_config[attr_idx].stride == 0) { // Materials
-				if (!materials) {
-					materials = (float *)gpu_alloc_mapped_temp(12 * sizeof(float));
-					src_materials = (float *)&current_vtx.diff.x;
-				} else {
+				if (!materials)
+					materials = (float *)gpu_alloc_mapped_temp(16 * sizeof(float));
+				else
 					materials += 4;
-					src_materials += 4;
-				}
+				src_materials = get_next_disabled_material_ptr();
 				ptr = materials;
 				vgl_fast_memcpy(materials, src_materials, 4 * sizeof(float));
 			} else {
@@ -1199,6 +1218,7 @@ void glEnableClientState(GLenum array) {
 		ffp_vertex_attrib_state |= (1 << 4);
 		ffp_vertex_attrib_state |= (1 << 5);
 		ffp_vertex_attrib_state |= (1 << 6);
+		ffp_vertex_attrib_state |= (1 << 7);
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, array)
@@ -1325,23 +1345,39 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT_AND_DIFFUSE:
-		case GL_DIFFUSE:
 			vgl_fast_memcpy(&ffp_vertex_attrib_config[3], &ffp_vertex_attrib_config[2], sizeof(SceGxmVertexAttribute));
 			vgl_fast_memcpy(&ffp_vertex_stream_config[3], &ffp_vertex_stream_config[2], sizeof(SceGxmVertexStream));
 			ffp_vertex_attrib_offsets[3] = ffp_vertex_attrib_offsets[2];
 			ffp_vertex_attrib_vbo[3] = ffp_vertex_attrib_vbo[2];
-			break;
-		case GL_SPECULAR:
 			vgl_fast_memcpy(&ffp_vertex_attrib_config[4], &ffp_vertex_attrib_config[2], sizeof(SceGxmVertexAttribute));
 			vgl_fast_memcpy(&ffp_vertex_stream_config[4], &ffp_vertex_stream_config[2], sizeof(SceGxmVertexStream));
 			ffp_vertex_attrib_offsets[4] = ffp_vertex_attrib_offsets[2];
 			ffp_vertex_attrib_vbo[4] = ffp_vertex_attrib_vbo[2];
 			break;
-		case GL_EMISSION:
+			break;
+		case GL_AMBIENT:
+			vgl_fast_memcpy(&ffp_vertex_attrib_config[3], &ffp_vertex_attrib_config[2], sizeof(SceGxmVertexAttribute));
+			vgl_fast_memcpy(&ffp_vertex_stream_config[3], &ffp_vertex_stream_config[2], sizeof(SceGxmVertexStream));
+			ffp_vertex_attrib_offsets[3] = ffp_vertex_attrib_offsets[2];
+			ffp_vertex_attrib_vbo[3] = ffp_vertex_attrib_vbo[2];
+			break;
+		case GL_DIFFUSE:
+			vgl_fast_memcpy(&ffp_vertex_attrib_config[4], &ffp_vertex_attrib_config[2], sizeof(SceGxmVertexAttribute));
+			vgl_fast_memcpy(&ffp_vertex_stream_config[4], &ffp_vertex_stream_config[2], sizeof(SceGxmVertexStream));
+			ffp_vertex_attrib_offsets[4] = ffp_vertex_attrib_offsets[2];
+			ffp_vertex_attrib_vbo[4] = ffp_vertex_attrib_vbo[2];
+			break;
+		case GL_SPECULAR:
 			vgl_fast_memcpy(&ffp_vertex_attrib_config[5], &ffp_vertex_attrib_config[2], sizeof(SceGxmVertexAttribute));
 			vgl_fast_memcpy(&ffp_vertex_stream_config[5], &ffp_vertex_stream_config[2], sizeof(SceGxmVertexStream));
 			ffp_vertex_attrib_offsets[5] = ffp_vertex_attrib_offsets[2];
 			ffp_vertex_attrib_vbo[5] = ffp_vertex_attrib_vbo[2];
+			break;
+		case GL_EMISSION:
+			vgl_fast_memcpy(&ffp_vertex_attrib_config[6], &ffp_vertex_attrib_config[2], sizeof(SceGxmVertexAttribute));
+			vgl_fast_memcpy(&ffp_vertex_stream_config[6], &ffp_vertex_stream_config[2], sizeof(SceGxmVertexStream));
+			ffp_vertex_attrib_offsets[6] = ffp_vertex_attrib_offsets[2];
+			ffp_vertex_attrib_vbo[6] = ffp_vertex_attrib_vbo[2];
 			break;
 		default:
 			break;
@@ -1361,11 +1397,11 @@ void glNormalPointer(GLenum type, GLsizei stride, const void *pointer) {
 	}
 #endif
 
-	ffp_vertex_attrib_offsets[6] = (uint32_t)pointer;
-	ffp_vertex_attrib_vbo[6] = vertex_array_unit;
+	ffp_vertex_attrib_offsets[7] = (uint32_t)pointer;
+	ffp_vertex_attrib_vbo[7] = vertex_array_unit;
 
-	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[6];
-	SceGxmVertexStream *streams = &ffp_vertex_stream_config[6];
+	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[7];
+	SceGxmVertexStream *streams = &ffp_vertex_stream_config[7];
 
 	unsigned short bpe;
 	switch (type) {
@@ -1725,18 +1761,24 @@ void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
 #endif
 	switch (pname) {
 	case GL_AMBIENT:
+		disableLightingAttr(3);
 		vgl_fast_memcpy(&current_vtx.amb.x, params, sizeof(float) * 4);
 		break;
 	case GL_DIFFUSE:
+		disableLightingAttr(4);
 		vgl_fast_memcpy(&current_vtx.diff.x, params, sizeof(float) * 4);
 		break;
 	case GL_SPECULAR:
+		disableLightingAttr(5);
 		vgl_fast_memcpy(&current_vtx.spec.x, params, sizeof(float) * 4);
 		break;
 	case GL_EMISSION:
+		disableLightingAttr(6);
 		vgl_fast_memcpy(&current_vtx.emiss.x, params, sizeof(float) * 4);
 		break;
 	case GL_AMBIENT_AND_DIFFUSE:
+		disableLightingAttr(3);
+		disableLightingAttr(4);
 		vgl_fast_memcpy(&current_vtx.amb.x, params, sizeof(float) * 4);
 		vgl_fast_memcpy(&current_vtx.diff.x, params, sizeof(float) * 4);
 		break;
@@ -1803,18 +1845,24 @@ void glColor3f(GLfloat red, GLfloat green, GLfloat blue) {
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
+			disableLightingAttr(3);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_DIFFUSE:
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_SPECULAR:
+			disableLightingAttr(5);
 			vgl_fast_memcpy(&current_vtx.spec.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_EMISSION:
+			disableLightingAttr(6);
 			vgl_fast_memcpy(&current_vtx.emiss.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_AMBIENT_AND_DIFFUSE:
+			disableLightingAttr(3);
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
@@ -1837,18 +1885,24 @@ void glColor3fv(const GLfloat *v) {
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
+			disableLightingAttr(3);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_DIFFUSE:
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_SPECULAR:
+			disableLightingAttr(5);
 			vgl_fast_memcpy(&current_vtx.spec.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_EMISSION:
+			disableLightingAttr(6);
 			vgl_fast_memcpy(&current_vtx.emiss.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_AMBIENT_AND_DIFFUSE:
+			disableLightingAttr(3);
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
@@ -1873,18 +1927,24 @@ void glColor3ub(GLubyte red, GLubyte green, GLubyte blue) {
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
+			disableLightingAttr(3);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_DIFFUSE:
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_SPECULAR:
+			disableLightingAttr(5);
 			vgl_fast_memcpy(&current_vtx.spec.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_EMISSION:
+			disableLightingAttr(6);
 			vgl_fast_memcpy(&current_vtx.emiss.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_AMBIENT_AND_DIFFUSE:
+			disableLightingAttr(3);
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
@@ -1909,18 +1969,24 @@ void glColor3ubv(const GLubyte *c) {
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
+			disableLightingAttr(3);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_DIFFUSE:
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_SPECULAR:
+			disableLightingAttr(5);
 			vgl_fast_memcpy(&current_vtx.spec.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_EMISSION:
+			disableLightingAttr(6);
 			vgl_fast_memcpy(&current_vtx.emiss.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_AMBIENT_AND_DIFFUSE:
+			disableLightingAttr(3);
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
@@ -1945,18 +2011,24 @@ void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
+			disableLightingAttr(3);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_DIFFUSE:
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_SPECULAR:
+			disableLightingAttr(5);
 			vgl_fast_memcpy(&current_vtx.spec.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_EMISSION:
+			disableLightingAttr(6);
 			vgl_fast_memcpy(&current_vtx.emiss.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_AMBIENT_AND_DIFFUSE:
+			disableLightingAttr(3);
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
@@ -1978,18 +2050,24 @@ void glColor4fv(const GLfloat *v) {
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
+			disableLightingAttr(3);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_DIFFUSE:
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_SPECULAR:
+			disableLightingAttr(5);
 			vgl_fast_memcpy(&current_vtx.spec.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_EMISSION:
+			disableLightingAttr(6);
 			vgl_fast_memcpy(&current_vtx.emiss.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_AMBIENT_AND_DIFFUSE:
+			disableLightingAttr(3);
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
@@ -2013,18 +2091,24 @@ void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha) {
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
+			disableLightingAttr(3);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_DIFFUSE:
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_SPECULAR:
+			disableLightingAttr(5);
 			vgl_fast_memcpy(&current_vtx.spec.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_EMISSION:
+			disableLightingAttr(6);
 			vgl_fast_memcpy(&current_vtx.emiss.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_AMBIENT_AND_DIFFUSE:
+			disableLightingAttr(3);
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
@@ -2049,18 +2133,24 @@ void glColor4ubv(const GLubyte *c) {
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
+			disableLightingAttr(3);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_DIFFUSE:
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_SPECULAR:
+			disableLightingAttr(5);
 			vgl_fast_memcpy(&current_vtx.spec.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_EMISSION:
+			disableLightingAttr(6);
 			vgl_fast_memcpy(&current_vtx.emiss.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_AMBIENT_AND_DIFFUSE:
+			disableLightingAttr(3);
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
@@ -2092,18 +2182,24 @@ void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha) {
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
+			disableLightingAttr(3);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_DIFFUSE:
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_SPECULAR:
+			disableLightingAttr(5);
 			vgl_fast_memcpy(&current_vtx.spec.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_EMISSION:
+			disableLightingAttr(6);
 			vgl_fast_memcpy(&current_vtx.emiss.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
 		case GL_AMBIENT_AND_DIFFUSE:
+			disableLightingAttr(3);
+			disableLightingAttr(4);
 			vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.r, sizeof(float) * 4);
 			vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.r, sizeof(float) * 4);
 			break;
@@ -3442,7 +3538,7 @@ void glGetPointerv(GLenum pname, void ** params) {
 		*params = (void *)ffp_vertex_attrib_offsets[2];
 		break;
 	case GL_NORMAL_ARRAY_POINTER:
-		*params = (void *)ffp_vertex_attrib_offsets[6];
+		*params = (void *)ffp_vertex_attrib_offsets[7];
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)

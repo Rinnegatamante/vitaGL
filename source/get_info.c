@@ -265,10 +265,10 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		*data = ffp_vertex_stream_config[0].stride;
 		break;
 	case GL_NORMAL_ARRAY_TYPE:
-		*data = (ffp_vertex_attrib_fixed_mask & (1 << 0)) ? GL_FIXED : gxm_vtx_fmt_to_gl(ffp_vertex_attrib_config[6].format);
+		*data = (ffp_vertex_attrib_fixed_mask & (1 << 0)) ? GL_FIXED : gxm_vtx_fmt_to_gl(ffp_vertex_attrib_config[7].format);
 		break;
 	case GL_NORMAL_ARRAY_STRIDE:
-		*data = ffp_vertex_stream_config[6].stride;
+		*data = ffp_vertex_stream_config[7].stride;
 		break;
 	case GL_COLOR_ARRAY_SIZE:
 		*data = ffp_vertex_attrib_config[2].componentCount;
@@ -531,7 +531,7 @@ GLboolean glIsEnabled(GLenum cap) {
 		ret = (ffp_vertex_attrib_state & (1 << 0)) ? GL_TRUE : GL_FALSE;
 		break;
 	case GL_NORMAL_ARRAY:
-		ret = (ffp_vertex_attrib_state & (1 << 3)) ? GL_TRUE : GL_FALSE;
+		ret = (ffp_vertex_attrib_state & (1 << 7)) ? GL_TRUE : GL_FALSE;
 		break;
 	case GL_COLOR_ARRAY:
 		ret = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
