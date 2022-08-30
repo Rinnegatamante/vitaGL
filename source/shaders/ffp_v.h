@@ -187,7 +187,7 @@ void main(
 #endif
 #if shading_mode == 1 // GL_PHONG_WIN
 	vColor = color;
-#ifdef normalization == 1
+#if normalization == 1
 	vNormal = normalize(normal);
 #else
 	vNormal = normal;
