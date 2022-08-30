@@ -36,7 +36,7 @@ void point_light(int i, float3 normal, float3 eye, float3 position) {
 		lights_attenuations[i].z * d * d);
 	float3 halfVector = normalize(VP + eye);
 	float nDotVP = max(0.0f, dot(normal, VP));
-	float nDotHV = max(0.0f, dot(normal, halfVector));
+
 	float pf = 0.0f;
 	if (nDotVP != 0.0f)
 		pf = 1.0f;
@@ -47,8 +47,7 @@ void point_light(int i, float3 normal, float3 eye, float3 position) {
 
 void directional_light(int i, float3 normal) {
 	float nDotVP = max(0.0f, dot(normal, normalize(lights_positions[i].xyz)));
-	float nDotHV = max(0.0f, dot(normal, normalize(normalize(lights_positions[i].xyz) + float3(0.0f, 0.0f, 1.0f))));
-	
+
 	float pf = 0.0f;
 	if (nDotVP != 0.0f)
 		pf = 1.0f;
