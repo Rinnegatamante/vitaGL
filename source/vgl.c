@@ -670,8 +670,7 @@ void *vglRealloc(void *ptr, uint32_t size) {
 
 	res = vglMalloc(size);
 	if (res) {
-		size_t old_size = vgl_malloc_usable_size(ptr);
-		vgl_fast_memcpy(res, ptr, old_size);
+		vgl_fast_memcpy(res, ptr, vgl_malloc_usable_size(ptr));
 		vglFree(ptr);
 	}
 		

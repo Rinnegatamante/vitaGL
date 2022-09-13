@@ -570,11 +570,12 @@ void *vgl_realloc(void *ptr, size_t size) {
 #ifndef HAVE_CUSTOM_HEAP
 #ifdef PHYCONT_ON_DEMAND
 	else if (type == VGL_MEM_SLOW) {
-		if (vgl_malloc_usable_size(ptr) >= size)
+		size_t old_size = vgl_malloc_usable_size(ptr);
+		if (old_size >= size)
 			return ptr;
 		void *res = vgl_alloc_phycont_block(size);
 		if (res) {
-			vgl_fast_memcpy(res, ptr, size);
+			vgl_fast_memcpy(res, ptr, old_size);
 			vgl_free(ptr);
 			return res;
 		}
