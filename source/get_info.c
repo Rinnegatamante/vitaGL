@@ -247,6 +247,68 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 	}
 }
 
+void glGetDoublev(GLenum pname, GLdouble *data) {
+	int i, j;
+	switch (pname) {
+	case GL_POLYGON_OFFSET_FACTOR: // Polygon offset factor
+		*data = pol_factor;
+		break;
+	case GL_POLYGON_OFFSET_UNITS: // Polygon offset units
+		*data = pol_units;
+		break;
+	case GL_MODELVIEW_MATRIX: // Modelview matrix
+		// Since we use column-major matrices internally, wee need to transpose it before returning it to the application
+		for (i = 0; i < 4; i++) {
+			for (j = 0; j < 4; j++) {
+				data[i * 4 + j] = modelview_matrix[j][i];
+			}
+		}
+		break;
+	case GL_PROJECTION_MATRIX: // Projection matrix
+		// Since we use column-major matrices internally, wee need to transpose it before returning it to the application
+		for (i = 0; i < 4; i++) {
+			for (j = 0; j < 4; j++) {
+				data[i * 4 + j] = projection_matrix[j][i];
+			}
+		}
+		break;
+	case GL_TEXTURE_MATRIX: // Texture matrix
+		// Since we use column-major matrices internally, wee need to transpose it before returning it to the application
+		for (i = 0; i < 4; i++) {
+			for (j = 0; j < 4; j++) {
+				data[i * 4 + j] = texture_matrix[server_texture_unit][j][i];
+			}
+		}
+		break;
+	case GL_ACTIVE_TEXTURE: // Active texture
+		*data = (1.0f * (server_texture_unit + GL_TEXTURE0));
+		break;
+	case GL_MAX_MODELVIEW_STACK_DEPTH: // Max modelview stack depth
+		*data = MODELVIEW_STACK_DEPTH;
+		break;
+	case GL_MAX_PROJECTION_STACK_DEPTH: // Max projection stack depth
+		*data = GENERIC_STACK_DEPTH;
+		break;
+	case GL_MAX_TEXTURE_STACK_DEPTH: // Max texture stack depth
+		*data = GENERIC_STACK_DEPTH;
+		break;
+	case GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT:
+		*data = 1.0f;
+		break;
+	case GL_DEPTH_BITS:
+		*data = 32;
+		break;
+	case GL_STENCIL_BITS:
+		*data = 8;
+		break;
+	case GL_PACK_ALIGNMENT:
+		*data = 1;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
+}
+
 void glGetIntegerv(GLenum pname, GLint *data) {
 	// Aliasing to make code more readable
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];

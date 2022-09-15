@@ -635,6 +635,7 @@ void glGetAttachedShaders(GLuint prog, GLsizei maxCount, GLsizei *count, GLuint 
 GLint glGetAttribLocation(GLuint prog, const GLchar *name);
 void glGetBooleanv(GLenum pname, GLboolean *params);
 void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params);
+void glGetDoublev(GLenum pname, GLdouble *data);
 GLenum glGetError(void);
 void glGetFloatv(GLenum pname, GLfloat *data);
 void glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLenum pname, GLint *params);

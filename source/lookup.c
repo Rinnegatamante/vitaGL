@@ -135,6 +135,7 @@ static const struct {
 	{"glGetAttribLocation", (void *)glGetAttribLocation},
 	{"glGetBooleanv", (void *)glGetBooleanv},
 	{"glGetBufferParameteriv", (void *)glGetBufferParameteriv},
+	{"glGetDoublev", (void *)glGetDoublev},
 	{"glGetError", (void *)glGetError},
 	{"glGetFloatv", (void *)glGetFloatv},
 	{"glGetFramebufferAttachmentParameteriv", (void *)glGetFramebufferAttachmentParameteriv},
