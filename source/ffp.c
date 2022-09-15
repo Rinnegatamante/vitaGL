@@ -3464,3 +3464,18 @@ void glRectf(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2) {
 	glEnd();
 }
 
+void glRecti(GLint x1, GLint y1, GLint x2, GLint y2) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+	glBegin(GL_QUADS);
+	glVertex2i(x1, y1);
+	glVertex2i(x2, y1);
+	glVertex2i(x2, y2);
+	glVertex2i(x1, y2);
+	glEnd();
+}
+

@@ -337,6 +337,10 @@ void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
 		dirty_vert_unifs = GL_TRUE;
 }
 
+void glTranslated(GLdouble x, GLdouble y, GLdouble z) {
+	glTranslatef(x, y, z);
+}
+
 void glTranslatex(GLfixed x, GLfixed y, GLfixed z) {
 	// Translating in use matrix
 	matrix4x4_translate(*matrix, (float)x / 65536.0f, (float)y / 65536.0f, (float)z / 65536.0f);
@@ -353,6 +357,10 @@ void glScalef(GLfloat x, GLfloat y, GLfloat z) {
 		mvp_modified = GL_TRUE;
 	else
 		dirty_vert_unifs = GL_TRUE;
+}
+
+void glScaled(GLdouble x, GLdouble y, GLdouble z) {
+	glScalef(x, y, z);
 }
 
 void glScalex(GLfixed x, GLfixed y, GLfixed z) {
@@ -379,6 +387,10 @@ void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 		mvp_modified = GL_TRUE;
 	else
 		dirty_vert_unifs = GL_TRUE;
+}
+
+void glRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z) {
+	glRotatef(angle, x, y, z);
 }
 
 void glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z) {
