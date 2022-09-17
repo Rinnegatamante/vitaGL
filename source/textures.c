@@ -1606,3 +1606,33 @@ SceGxmTexture *vglGetGxmTexture(GLenum target) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
 	}
 }
+
+void glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border) {
+#ifndef SKIP_ERROR_HANDLING
+	// Checking if texture is too big for sceGxm
+	if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE || width < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	} else if (level < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, level)
+	} else if (border != 0 || border != 1) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, border)
+	}
+#endif
+	void *tmp = vglMalloc(width * height * 4);
+	glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
+	glTexImage2D(target, level, internalformat, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
+	vglFree(tmp);
+}
+
+void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height) {
+#ifndef SKIP_ERROR_HANDLING
+	// Checking if texture is too big for sceGxm
+	if (level < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, level)
+	}
+#endif
+	void *tmp = vglMalloc(width * height * 4);
+	glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
+	glTexSubImage2D(target, level, xoffset, yoffset, width, height, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
+	vglFree(tmp);
+}

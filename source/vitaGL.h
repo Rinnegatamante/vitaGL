@@ -575,7 +575,9 @@ void glColorMaterial(GLenum face, GLenum mode);
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid *data);
 void glCompileShader(GLuint shader);
-void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data); // Mipmap levels are ignored currently
+void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data);
+void glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
+void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 GLuint glCreateProgram(void);
 GLuint glCreateShader(GLenum shaderType);
 void glCullFace(GLenum mode);

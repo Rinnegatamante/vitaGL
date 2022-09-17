@@ -76,6 +76,8 @@ static const struct {
 	{"glColorTable", (void *)glColorTable},
 	{"glCompileShader", (void *)glCompileShader},
 	{"glCompressedTexImage2D", (void *)glCompressedTexImage2D},
+	{"glCopyTexImage2D", (void *)glCopyTexImage2D},
+	{"glCopyTexSubImage2D", (void *)glCopyTexSubImage2D},
 	{"glCreateProgram", (void *)glCreateProgram},
 	{"glCreateShader", (void *)glCreateShader},
 	{"glCullFace", (void *)glCullFace},
