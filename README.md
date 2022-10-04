@@ -96,6 +96,13 @@ Direct OpenGL Usage:<br>
 [CrossCraft Classic](https://vitadb.rinnegatamante.it/#/info/848) - Multiplatform Minecraft Classic clone<br>
 [Lugaru HD](https://vitadb.rinnegatamante.it/#/info/853) - Port of Lugaru<br>
 [Nanosaur Vita](https://vitadb.rinnegatamante.it/#/info/851) - Port of Nanosaur<br>
+[VitaDB Downloader](https://vitadb.rinnegatamante.it/#/info/877) - Homebrew store app<br>
+[Doom64EX](https://vitadb.rinnegatamante.it/#/info/881) - Port of Doom64EX (Doom 64 sourceport)<br>
+[Cro-Mag Rally Vita](https://vitadb.rinnegatamante.it/#/info/872) - Port of Cro-Mag Rally<br>
+[Neverputt Vita](https://vitadb.rinnegatamante.it/#/info/874) - Port of Neverputt<br>
+[Neverball Vita](https://vitadb.rinnegatamante.it/#/info/873) - Port of Neverball<br>
+[Isotope 244 Collection](https://vitadb.rinnegatamante.it/#/info/873) - Port of Machines at War 3 and Land Air Sea Warfare<br>
+[Tomb Raider 1 & 2 Classic Collection](https://vitadb.rinnegatamante.it/#/info/845) - Port of Tomb Raider and Tomb Raider 2<br>
 
 Libraries:<br>
 [sdl12_gl](https://github.com/Rinnegatamante/SDL-Vita/tree/sdl12_gl/src) - SDL 1.2 Vita port adapted to work with vitaGL as renderer backend<br>

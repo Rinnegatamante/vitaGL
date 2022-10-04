@@ -257,6 +257,7 @@ extern "C" {
 #define GL_FUNC_ADD                                     0x8006
 #define GL_MIN                                          0x8007
 #define GL_MAX                                          0x8008
+#define GL_BLEND_EQUATION                               0x8009
 #define GL_FUNC_SUBTRACT                                0x800A
 #define GL_FUNC_REVERSE_SUBTRACT                        0x800B
 #define GL_UNSIGNED_SHORT_4_4_4_4                       0x8033
@@ -383,6 +384,7 @@ extern "C" {
 #define GL_BUFFER_SIZE                                  0x8764
 #define GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD              0x87EE
 #define GL_RGBA16F                                      0x881A
+#define GL_BLEND_EQUATION_ALPHA                         0x883D
 #define GL_MAX_VERTEX_ATTRIBS                           0x8869
 #define GL_VERTEX_ATTRIB_ARRAY_NORMALIZED               0x886A
 #define GL_MAX_TEXTURE_COORDS                           0x8871
@@ -527,6 +529,7 @@ extern "C" {
 
 // Aliases
 #define GL_DRAW_FRAMEBUFFER_BINDING GL_FRAMEBUFFER_BINDING
+#define GL_BLEND_EQUATION_RGB GL_BLEND_EQUATION
 
 // clang-format on
 

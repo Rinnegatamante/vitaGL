@@ -875,7 +875,8 @@ void validate_viewport(void); // Restores previously invalidated viewport
 /* blending.c */
 void change_blend_factor(void); // Changes current blending settings for all used shaders
 void change_blend_mask(void); // Changes color mask when blending is disabled for all used shaders
-GLenum gxm_blend_to_gl(SceGxmBlendFactor factor); // Converts SceGxmBlendFactor to GL blend mode
+GLenum gxm_blend_to_gl(SceGxmBlendFactor factor); // Converts SceGxmBlendFactor to GL blend mode equivalent
+GLenum gxm_blend_eq_to_gl(SceGxmBlendFunc factor); // Converts SceGxmBlendFunc to GL blend func equivalent
 
 /* custom_shaders.c */
 void resetCustomShaders(void); // Resets custom shaders

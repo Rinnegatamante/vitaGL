@@ -35,6 +35,25 @@ SceGxmColorMask blend_color_mask = SCE_GXM_COLOR_MASK_ALL; // Current in-use col
 SceGxmBlendFunc blend_func_rgb = SCE_GXM_BLEND_FUNC_ADD; // Current in-use RGB blend func
 SceGxmBlendFunc blend_func_a = SCE_GXM_BLEND_FUNC_ADD; // Current in-use A blend func
 
+GLenum gxm_blend_eq_to_gl(SceGxmBlendFunc factor) {
+	switch (factor) {
+	case SCE_GXM_BLEND_FUNC_ADD:
+		return GL_FUNC_ADD;
+	case SCE_GXM_BLEND_FUNC_SUBTRACT:
+		return GL_FUNC_SUBTRACT;
+	case SCE_GXM_BLEND_FUNC_REVERSE_SUBTRACT:
+		return GL_FUNC_REVERSE_SUBTRACT;
+	case SCE_GXM_BLEND_FUNC_MIN:
+		return GL_MIN;
+	case SCE_GXM_BLEND_FUNC_MAX:
+		return GL_MAX;
+	default:
+		break;
+	}
+	
+	return 0;
+}
+
 GLenum gxm_blend_to_gl(SceGxmBlendFactor factor) {
 	switch (factor) {
 	case SCE_GXM_BLEND_FACTOR_ZERO:
