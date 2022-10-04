@@ -116,6 +116,7 @@ static program progs[MAX_CUSTOM_PROGRAMS];
 void release_shader(shader *s) {
 	// Deallocating shader and unregistering it from sceGxmShaderPatcher
 	if (s->valid) {
+		sceGxmFinish(gxm_context);
 		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
 		vgl_free((void *)s->prog);
 #ifdef HAVE_SHARK_LOG
@@ -1093,6 +1094,7 @@ void glDeleteProgram(GLuint prog) {
 
 	// Releasing both vertex and fragment programs from sceGxmShaderPatcher
 	if (p->status) {
+		sceGxmFinish(gxm_context);
 		unsigned int count, i;
 		sceGxmShaderPatcherGetFragmentProgramRefCount(gxm_shader_patcher, p->fprog, &count);
 		for (i = 0; i < count; i++) {
