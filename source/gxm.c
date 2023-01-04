@@ -312,27 +312,38 @@ void initGxm(void) {
 	sceKernelStartThread(gc_thread, 0, NULL);
 #endif
 #endif
+
+#ifndef HAVE_VITA3K_SUPPORT // Vita3K lacks sceGxmVshInitialize support, so we can't use it for sysapps
 	// Checking if the running application is a system one
 	SceAppMgrBudgetInfo info;
 	info.size = sizeof(SceAppMgrBudgetInfo);
 	if (!sceAppMgrGetBudgetInfo(&info)) {
 		system_app_mode = GL_TRUE;
 		gxm_display_buffer_count = 2; // Forcing double buffering in system app mode
-		if (msaa_mode == SCE_GXM_MULTISAMPLE_NONE) // FIXME: For some reasons, disabling MSAA makes the shader patcher not able to compile fragment programs in system mode...
+		if (msaa_mode == SCE_GXM_MULTISAMPLE_NONE) // FIXME: For some reasons, disabling MSAA makes the shader patcher not able to compile fragment programs in sysapp mode...
 			msaa_mode = SCE_GXM_MULTISAMPLE_2X;
 	}
+#endif
 
 	// Initializing sceGxm init parameters
 	SceGxmInitializeParams gxm_init_params;
 	sceClibMemset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
+#ifdef HAVE_VITA3K_SUPPORT // Vita3K lacks sceGxmVshInitialize support, so we use sceGxmInitialize instead and disable a couple of features (HW ETC1 support and sysapp mode support)
+	gxm_init_params.flags = 0;
+#else
 	gxm_init_params.flags = GXM_FLAG_TEXFORMAT_EXT | (system_app_mode ? GXM_FLAG_SYSAPP : GXM_FLAG_DEFAULT);
+#endif
 	gxm_init_params.displayQueueMaxPendingCount = gxm_display_buffer_count - 1;
 	gxm_init_params.displayQueueCallback = display_queue_callback;
 	gxm_init_params.displayQueueCallbackDataSize = sizeof(struct display_queue_callback_data);
 	gxm_init_params.parameterBufferSize = gxm_param_buf_size;
 
 	// Initializing sceGxm
+#ifdef HAVE_VITA3K_SUPPORT // Vita3K lacks sceGxmVshInitialize support, so we use sceGxmInitialize instead and disable a couple of features (HW ETC1 support and sysapp mode support)
+	sceGxmInitialize(&gxm_init_params);
+#else
 	sceGxmVshInitialize(&gxm_init_params);
+#endif
 	gxm_initialized = GL_TRUE;
 
 #ifdef HAVE_DEVKIT

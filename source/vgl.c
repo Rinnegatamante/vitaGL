@@ -43,7 +43,7 @@ __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float 
 #endif
 
 // Clear shader
-#ifdef DISABLE_SHACCCG_EXTENSIONS
+#ifdef HAVE_VITA3K_SUPPORT // Vita3K can't use ShaccCg extensions due to lack of taiHEN support, so we need to provide precompiled glClear shaders
 #include "shaders/precompiled_clear_f.h"
 #include "shaders/precompiled_clear_v.h"
 #else
@@ -155,7 +155,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 #endif
 	// Check if framebuffer size is valid
 	GLboolean res_fallback = GL_FALSE;
-	int max_w, max_h;
+	int max_w = width, max_h = height;
 	sceDisplayGetMaximumFrameBufResolution(&max_w, &max_h);
 	if (width > max_w || height > max_h) {
 		width = max_w;
@@ -222,7 +222,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	depth_clear_indices[3] = 3;
 	
 
-#ifdef DISABLE_SHACCCG_EXTENSIONS
+#ifdef HAVE_VITA3K_SUPPORT // Vita3K can't use ShaccCg extensions due to lack of taiHEN support, so we need to provide precompiled glClear shaders
 	{
 		SceGxmProgram *gxm_program_clear_v = (SceGxmProgram *)&clear_v;
 		SceGxmProgram *gxm_program_clear_f = (SceGxmProgram *)&clear_f;
