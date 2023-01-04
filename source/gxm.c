@@ -629,8 +629,8 @@ void sceneReset(void) {
 				SceGxmRenderTargetParams renderTargetParams;
 				sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
 				renderTargetParams.flags = 0;
-				renderTargetParams.width = active_write_fb->width;
-				renderTargetParams.height = active_write_fb->height;
+				renderTargetParams.width = active_write_fb->width ? active_write_fb->width : 1;
+				renderTargetParams.height = active_write_fb->height ? active_write_fb->height : 1;
 				renderTargetParams.scenesPerFrame = 1;
 				renderTargetParams.multisampleMode = msaa_mode;
 				renderTargetParams.multisampleLocations = 0;
