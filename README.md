@@ -38,6 +38,7 @@ In order to build vitaGL use the following command: `make install`.
 `HAVE_RAZOR=2` Enables debugging features through Razor debugger (retail and devkit compatible) with ImGui interface.<br>
 `HAVE_DEVKIT=1` Enables extra debugging features through Razor debugger available only for devkit users.<br>
 `HAVE_DEVKIT=2` Enables extra debugging features through Razor debugger available only for devkit users with ImGui interface.<br>
+`DISABLE_SHACCCG_EXTENSIONS=1` Disables ShaccCg extensions restoration patch. Reduces number of features usable in shader code but makes vitaGL compatible with Vita3K.<br>
 # Samples
 
 You can find samples in the *samples* folder in this repository.

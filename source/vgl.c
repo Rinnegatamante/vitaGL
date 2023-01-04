@@ -43,6 +43,10 @@ __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float 
 #endif
 
 // Clear shader
+#ifdef DISABLE_SHACCCG_EXTENSIONS
+#include "shaders/precompiled_clear_f.h"
+#include "shaders/precompiled_clear_v.h"
+#else
 const char clear_f[] = " \
 	float4 main(uniform float4 u_clear_color) : COLOR \
 	{ \
@@ -55,6 +59,8 @@ const char clear_v[] = " \
 		float y = (idx == 2 || idx == 3) ? position[3] : position[2]; \
 		return float4(x, y, u_clear_depth, 1.f); \
 	}";
+#endif
+
 SceGxmShaderPatcherId clear_vertex_id;
 SceGxmShaderPatcherId clear_fragment_id;
 const SceGxmProgramParameter *clear_position;
@@ -215,6 +221,12 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	depth_clear_indices[2] = 2;
 	depth_clear_indices[3] = 3;
 	
+
+#ifdef DISABLE_SHACCCG_EXTENSIONS
+	{
+		SceGxmProgram *gxm_program_clear_v = (SceGxmProgram *)&clear_v;
+		SceGxmProgram *gxm_program_clear_f = (SceGxmProgram *)&clear_f;
+#else
 	// Compile clear shaders only if shader compiler is up
 	if (is_shark_online) {
 		uint32_t size = strlen(clear_v);
@@ -227,7 +239,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		SceGxmProgram *gxm_program_clear_f = (SceGxmProgram *)vglMalloc(size);
 		vgl_fast_memcpy((void *)gxm_program_clear_f, (void *)p, size);
 		shark_clear_output();
-
+#endif
 		// Clear shader register
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_clear_v,
 			&clear_vertex_id);
@@ -256,6 +268,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 				&clear_fragment_program_float_patched);
 		}
 	}
+
 	sceGxmSetTwoSidedEnable(gxm_context, SCE_GXM_TWO_SIDED_ENABLED);
 
 	// Scissor Test shader register

@@ -131,6 +131,10 @@ ifeq ($(HAVE_WVP_ON_GPU),1)
 CFLAGS += -DHAVE_WVP_ON_GPU
 endif
 
+ifeq ($(DISABLE_SHACCCG_EXTENSIONS),1)
+CFLAGS += -DDISABLE_SHACCCG_EXTENSIONS
+endif
+
 CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a
