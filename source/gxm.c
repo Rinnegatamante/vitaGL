@@ -681,7 +681,7 @@ void sceneReset(void) {
 			old_framebuffer = in_use_framebuffer;
 			glViewport(gl_viewport.x, gl_viewport.y, gl_viewport.w, gl_viewport.h);
 			skip_scene_reset = GL_TRUE;
-			glScissor(region.x, region.gl_y, region.w, region.h);
+			glScissor(region.gl_x, region.gl_y, region.gl_w, region.gl_h);
 			skip_scene_reset = GL_FALSE;
 #ifndef HAVE_UNFLIPPED_FBOS
 			change_cull_mode();

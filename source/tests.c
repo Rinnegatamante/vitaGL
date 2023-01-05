@@ -327,9 +327,9 @@ void update_scissor_test() {
 
 void resetScissorTestRegion(void) {
 	// Setting scissor test region to default values
-	region.x = region.y = region.gl_y = 0;
-	region.w = DISPLAY_WIDTH;
-	region.h = DISPLAY_HEIGHT;
+	region.x = region.y = region.gl_x = region.gl_y = 0;
+	region.w = region.gl_w = DISPLAY_WIDTH;
+	region.h = region.gl_h = DISPLAY_HEIGHT;
 }
 
 /*
@@ -355,7 +355,10 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 #else
 	region.y = is_rendering_display ? (DISPLAY_HEIGHT - y - height) : y;
 #endif
+	region.gl_x = x;
 	region.gl_y = y;
+	region.gl_w = width;
+	region.gl_h = height;
 
 	// Optimizing region
 	if (region.y < 0)

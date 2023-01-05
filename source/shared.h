@@ -302,7 +302,10 @@ typedef struct {
 	int y;
 	int w;
 	int h;
+	int gl_x;
 	int gl_y;
+	int gl_w;
+	int gl_h;
 } scissor_region;
 
 // Viewport struct
