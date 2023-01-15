@@ -470,9 +470,11 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		texture_slots[i].gxm_tex = texture_slots[0].gxm_tex;
 		texture_slots[i].palette_data = NULL;
 	}
-
-	// Set texture matrix to identity
-	matrix4x4_identity(texture_matrix);
+	
+	// Init texture matrices to identity
+	for (i = 0; i < TEXTURE_COORDS_NUM; i++) {
+		matrix4x4_identity(texture_matrix[i]);
+	}
 
 #ifdef HAVE_RAZOR_INTERFACE
 	vgl_debugger_init();
