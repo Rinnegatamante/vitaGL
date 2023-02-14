@@ -597,6 +597,10 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	}
 }
 
+void glTexImage1D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *data) {
+	glTexImage2D(GL_TEXTURE_2D, level, internalFormat, width, 1, border, format, type, pixels);
+}
+
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
@@ -833,6 +837,10 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
+}
+
+void glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels) {
+	glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, 0, width, 1, format, type, pixels);
 }
 
 void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data) {
@@ -1176,6 +1184,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 		}
+	case GL_TEXTURE_1D:
 	case GL_TEXTURE_2D:
 		switch (pname) {
 		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
@@ -1371,6 +1380,7 @@ void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 		}
+	case GL_TEXTURE_1D:
 	case GL_TEXTURE_2D:
 		switch (pname) {
 		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
@@ -1624,6 +1634,11 @@ void glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x
 	vglFree(tmp);
 }
 
+void glCopyTexImage1D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border) {
+	glCopyTexImage2D(GL_TEXTURE_2D, level, internalformat, x, y, width, 1, border);
+}
+
+
 void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height) {
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if texture is too big for sceGxm
@@ -1635,4 +1650,8 @@ void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffse
 	glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
 	glTexSubImage2D(target, level, xoffset, yoffset, width, height, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
 	vglFree(tmp);
+}
+
+void glCopyTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width) {
+	glCopyTexSubImage2D(GL_TEXTURE_2D, level, xoffset, 0, x, y, width, 1);
 }

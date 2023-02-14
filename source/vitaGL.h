@@ -158,6 +158,7 @@ extern "C" {
 #define GL_BLUE_BITS                                    0x0D54
 #define GL_DEPTH_BITS                                   0x0D56
 #define GL_STENCIL_BITS                                 0x0D57
+#define GL_TEXTURE_1D                                   0x0DE0
 #define GL_TEXTURE_2D                                   0x0DE1
 #define GL_DONT_CARE                                    0x1100
 #define GL_FASTEST                                      0x1101
@@ -579,7 +580,9 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid *data);
 void glCompileShader(GLuint shader);
 void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data);
+void glCopyTexImage1D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border);
 void glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
+void glCopyTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width);
 void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 GLuint glCreateProgram(void);
 GLuint glCreateShader(GLenum shaderType);
@@ -741,11 +744,13 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param);
 void glTexEnvi(GLenum target, GLenum pname, GLint param);
 void glTexEnvx(GLenum target, GLenum pname, GLfixed param);
 void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param);
+void glTexImage1D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *data);
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *data);
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param);
 void glTexParameteri(GLenum target, GLenum pname, GLint param);
 void glTexParameteriv(GLenum target, GLenum pname, GLint *param);
 void glTexParameterx(GLenum target, GLenum pname, GLfixed param);
+void glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels);
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
 void glTranslated(GLdouble x, GLdouble y, GLdouble z);
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z);
