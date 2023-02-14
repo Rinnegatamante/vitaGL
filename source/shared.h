@@ -361,7 +361,7 @@ typedef union combinerState {
 
 // Texture unit struct
 typedef struct {
-	GLboolean enabled;
+	uint8_t state;
 	matrix4x4 texture_matrix_stack[GENERIC_STACK_DEPTH];
 	uint8_t texture_stack_counter;
 	int env_mode;
@@ -369,7 +369,7 @@ typedef struct {
 	vector4f env_color;
 	float rgb_scale;
 	float a_scale;
-	GLuint tex_id;
+	GLuint tex_id[2];
 } texture_unit;
 
 // Framebuffer struct

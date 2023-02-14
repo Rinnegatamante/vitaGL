@@ -253,13 +253,13 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
 #ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex);
+			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[0]].gxm_tex);
 			if (r) {
 				vgl_log("%s:%d glDrawArrays: Fragment texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
-			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
+			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK		
 		}
 #endif
@@ -272,13 +272,13 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
 #ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex);
+			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[0]].gxm_tex);
 			if (r) {
 				vgl_log("%s:%d glDrawArrays: Vertex texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
-			sceGxmSetVertexTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
+			sceGxmSetVertexTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK		
 		}
 #endif
@@ -428,13 +428,13 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
 #ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex);
+			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[0]].gxm_tex);
 			if (r) {
 				vgl_log("%s:%d glDrawElements: Fragment texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
-			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
+			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK
 		}
 #endif
@@ -447,13 +447,13 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
 #ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id].gxm_tex);
+			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[0]].gxm_tex);
 			if (r) {
 				vgl_log("%s:%d glDrawElements: Vertex texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
-			sceGxmSetVertexTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
+			sceGxmSetVertexTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK		
 		}
 #endif
@@ -654,7 +654,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 		if (p->frag_texunits[i]) {
 #endif
 			texture_unit *tex_unit = &texture_units[i];
-			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id].gxm_tex);
+			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK
 		}
 #endif

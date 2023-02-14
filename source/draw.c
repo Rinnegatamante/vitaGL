@@ -461,9 +461,9 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	} else if (ffp_vertex_attrib_state & (1 << 0)) {
 		reload_ffp_shaders(NULL, NULL);
 		if (ffp_vertex_attrib_state & (1 << 1)) {
-			if (texture_slots[tex_unit->tex_id].status != TEX_VALID)
+			if (texture_slots[tex_unit->tex_id[0]].status != TEX_VALID)
 				return;
-			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[tex_unit->tex_id].gxm_tex);
+			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
 			sceGxmSetVertexStream(gxm_context, 1, texture_object);
 			if (ffp_vertex_num_params > 2)
 				sceGxmSetVertexStream(gxm_context, 2, color_object);

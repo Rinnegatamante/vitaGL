@@ -543,8 +543,11 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 GLboolean glIsEnabled(GLenum cap) {
 	GLboolean ret = GL_FALSE;
 	switch (cap) {
+	case GL_TEXTURE_1D:
+		ret = texture_units[server_texture_unit].state & (1 << 0);
+		break;
 	case GL_TEXTURE_2D:
-		ret = texture_units[server_texture_unit].enabled;
+		ret = texture_units[server_texture_unit].state & (1 << 1);
 		break;
 	case GL_NORMALIZE:
 		ret = normalize;

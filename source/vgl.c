@@ -281,8 +281,9 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	for (i = 0; i < COMBINED_TEXTURE_IMAGE_UNITS_NUM; i++) {
 		sceClibMemset(&texture_units[i].env_color.r, 0, sizeof(vector4f));
 		texture_units[i].env_mode = MODULATE;
-		texture_units[i].tex_id = 0;
-		texture_units[i].enabled = GL_FALSE;
+		texture_units[i].tex_id[0] = 0;
+		texture_units[i].tex_id[1] = 0;
+		texture_units[i].state = 0;
 		texture_units[i].texture_stack_counter = 0;
 #ifndef DISABLE_TEXTURE_COMBINER
 		texture_units[i].combiner.rgb_func = MODULATE;

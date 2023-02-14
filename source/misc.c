@@ -383,10 +383,13 @@ void glEnable(GLenum cap) {
 		update_polygon_offset();
 		break;
 	case GL_TEXTURE_1D:
+		ffp_dirty_vert = GL_TRUE;
+		ffp_dirty_frag = GL_TRUE;
+		texture_units[server_texture_unit].state |= (1 << 0);
 	case GL_TEXTURE_2D:
 		ffp_dirty_vert = GL_TRUE;
 		ffp_dirty_frag = GL_TRUE;
-		texture_units[server_texture_unit].enabled = GL_TRUE;
+		texture_units[server_texture_unit].state |= (1 << 1);
 		break;
 	case GL_ALPHA_TEST:
 		alpha_test_state = GL_TRUE;
@@ -501,10 +504,13 @@ void glDisable(GLenum cap) {
 		update_polygon_offset();
 		break;
 	case GL_TEXTURE_1D:
+		ffp_dirty_vert = GL_TRUE;
+		ffp_dirty_frag = GL_TRUE;
+		texture_units[server_texture_unit].state &= ~(1 << 0);
 	case GL_TEXTURE_2D:
 		ffp_dirty_vert = GL_TRUE;
 		ffp_dirty_frag = GL_TRUE;
-		texture_units[server_texture_unit].enabled = GL_FALSE;
+		texture_units[server_texture_unit].state &= ~(1 << 1);
 		break;
 	case GL_ALPHA_TEST:
 		alpha_test_state = GL_FALSE;

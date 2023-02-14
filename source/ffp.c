@@ -412,7 +412,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	// Counting number of enabled texture units
 	mask.num_textures = 0;
 	for (int i = 0; i < TEXTURE_COORDS_NUM; i++) {
-		if (texture_units[i].enabled && (ffp_vertex_attrib_state & (1 << texcoord_idxs[i]))) {
+		if (texture_units[i].state && (ffp_vertex_attrib_state & (1 << texcoord_idxs[i]))) {
 			mask.num_textures++;
 			switch (i) {
 			case 0:
@@ -1042,7 +1042,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
-		sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[texture_units[i].tex_id].gxm_tex);
+		sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]].gxm_tex);
 	}
 
 	// Uploading vertex streams
@@ -1115,7 +1115,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
-		sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[texture_units[i].tex_id].gxm_tex);
+		sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]].gxm_tex);
 	}
 
 	// Uploading vertex streams
@@ -1640,7 +1640,7 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 	legacy_pool_ptr[0] = x;
 	legacy_pool_ptr[1] = y;
 	legacy_pool_ptr[2] = z;
-	if (texture_units[1].enabled) { // Multitexturing enabled
+	if (texture_units[1].state) { // Multitexturing enabled
 		vgl_fast_memcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 2);
 		vgl_fast_memcpy(legacy_pool_ptr + 5, &current_vtx.uv2.x, sizeof(float) * 2);
 		if (lighting_state) {
@@ -1648,7 +1648,7 @@ void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 		} else
 			vgl_fast_memcpy(legacy_pool_ptr + 7, &current_vtx.clr.x, sizeof(float) * 4);
 		legacy_pool_ptr += LEGACY_MT_VERTEX_STRIDE;
-	} else if (texture_units[0].enabled) { // Texturing enabled
+	} else if (texture_units[0].state) { // Texturing enabled
 		if (lighting_state) {
 			vgl_fast_memcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 2);
 			vgl_fast_memcpy(legacy_pool_ptr + 5, &current_vtx.amb.x, sizeof(float) * 19);
@@ -2271,15 +2271,15 @@ void glEnd(void) {
 
 	ffp_dirty_frag = GL_TRUE;
 	ffp_dirty_vert = GL_TRUE;
-	if (texture_units[1].enabled) { // Multitexture usage
+	if (texture_units[1].state) { // Multitexture usage
 		ffp_vertex_attrib_state = 0xFF;
 		reload_ffp_shaders(legacy_mt_vertex_attrib_config, legacy_mt_vertex_stream_config);
-		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[0].tex_id].gxm_tex);
-		sceGxmSetFragmentTexture(gxm_context, 1, &texture_slots[texture_units[1].tex_id].gxm_tex);
-	} else if (texture_units[0].enabled) { // Texturing usage
+		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]].gxm_tex);
+		sceGxmSetFragmentTexture(gxm_context, 1, &texture_slots[texture_units[1].tex_id[texture_units[1].state > 1 ? 0 : 1]].gxm_tex);
+	} else if (texture_units[0].state) { // Texturing usage
 		ffp_vertex_attrib_state = 0x07;
 		reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
-		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[0].tex_id].gxm_tex);
+		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]].gxm_tex);
 	} else { // No texturing usage
 		ffp_vertex_attrib_state = 0x05;
 		reload_ffp_shaders(legacy_nt_vertex_attrib_config, legacy_nt_vertex_stream_config);
@@ -2323,9 +2323,9 @@ void glEnd(void) {
 	sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, ptr, index_count);
 
 	// Moving legacy pool address offset
-	if (texture_units[1].enabled)
+	if (texture_units[1].state)
 		legacy_pool += vertex_count * LEGACY_MT_VERTEX_STRIDE;
-	else if (texture_units[0].enabled)
+	else if (texture_units[0].state)
 		legacy_pool += vertex_count * LEGACY_VERTEX_STRIDE;
 	else
 		legacy_pool += vertex_count * LEGACY_NT_VERTEX_STRIDE;
