@@ -83,6 +83,7 @@ extern "C" {
 #define GL_TRIANGLE_STRIP                               0x0005
 #define GL_TRIANGLE_FAN                                 0x0006
 #define GL_QUADS                                        0x0007
+#define GL_POLYGON                                      0x0009
 #define GL_ADD                                          0x0104
 #define GL_NEVER                                        0x0200
 #define GL_NEVER                                        0x0200

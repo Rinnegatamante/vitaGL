@@ -172,6 +172,7 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 			return; \
 		p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP; \
 		break; \
+	case GL_POLYGON: \
 	case GL_TRIANGLE_FAN: \
 		if (c < 3 || no_polygons_mode) \
 			return; \
@@ -218,6 +219,7 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 	case GL_TRIANGLE_STRIP: \
 		p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP; \
 		break; \
+	case GL_POLYGON: \
 	case GL_TRIANGLE_FAN: \
 		p = SCE_GXM_PRIMITIVE_TRIANGLE_FAN; \
 		break; \
