@@ -382,6 +382,7 @@ void glEnable(GLenum cap) {
 		pol_offset_point = GL_TRUE;
 		update_polygon_offset();
 		break;
+	case GL_TEXTURE_1D:
 	case GL_TEXTURE_2D:
 		ffp_dirty_vert = GL_TRUE;
 		ffp_dirty_frag = GL_TRUE;
@@ -499,6 +500,7 @@ void glDisable(GLenum cap) {
 		pol_offset_point = GL_FALSE;
 		update_polygon_offset();
 		break;
+	case GL_TEXTURE_1D:
 	case GL_TEXTURE_2D:
 		ffp_dirty_vert = GL_TRUE;
 		ffp_dirty_frag = GL_TRUE;
