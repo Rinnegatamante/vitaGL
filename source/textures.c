@@ -834,11 +834,16 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 
 		if (fast_store) { // Internal format and input format are the same, we can take advantage of this
 			uint8_t *data = (uint8_t *)pixels;
-			uint32_t line_size = width * data_bpp;
-			for (i = 0; i < height; i++) {
-				vgl_fast_memcpy(ptr, data, line_size);
-				data += unpack_row_len ? (unpack_row_len * bpp) : line_size;
-				ptr += stride;
+			uint32_t line_size = width * bpp;
+			uint32_t src_stride = (unpack_row_len ? unpack_row_len : width) * bpp;
+			if (xoffset == 0 && src_stride == orig_w * bpp && src_stride == stride) {
+				vgl_fast_memcpy(ptr, data, line_size * height);
+			} else {
+				for (i = 0; i < height; i++) {
+					vgl_fast_memcpy(ptr, data, line_size);
+					data += src_stride;
+					ptr += stride;
+				}
 			}
 		} else { // Executing texture modification via callbacks
 			uint8_t *data = (uint8_t *)pixels;
