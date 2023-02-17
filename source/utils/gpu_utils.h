@@ -38,6 +38,9 @@ enum {
 
 // Texture object struct
 typedef struct {
+#ifndef TEXTURES_SPEEDHACK
+	GLboolean used;
+#endif
 	SceGxmTexture gxm_tex;
 	void *data;
 	void *palette_data;
@@ -95,6 +98,9 @@ void gpu_alloc_compressed_texture(int32_t level, uint32_t w, uint32_t h, SceGxmT
 
 // Alloc a paletted texture
 void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *));
+
+// Dealloc a texture data
+void gpu_free_texture_data(texture *tex);
 
 // Dealloc a texture
 void gpu_free_texture(texture *tex);

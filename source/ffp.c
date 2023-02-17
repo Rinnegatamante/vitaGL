@@ -1042,6 +1042,9 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
+#ifndef TEXTURES_SPEEDHACK
+		texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]].used = GL_TRUE;
+#endif
 		sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]].gxm_tex);
 	}
 
@@ -1115,6 +1118,9 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
+#ifndef TEXTURES_SPEEDHACK
+		texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]].used = GL_TRUE;
+#endif
 		sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]].gxm_tex);
 	}
 
@@ -2274,11 +2280,20 @@ void glEnd(void) {
 	if (texture_units[1].state) { // Multitexture usage
 		ffp_vertex_attrib_state = 0xFF;
 		reload_ffp_shaders(legacy_mt_vertex_attrib_config, legacy_mt_vertex_stream_config);
+#ifndef TEXTURES_SPEEDHACK
+		texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]].used = GL_TRUE;
+#endif
+#ifndef TEXTURES_SPEEDHACK
+		texture_slots[texture_units[1].tex_id[texture_units[1].state > 1 ? 0 : 1]].used = GL_TRUE;
+#endif
 		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]].gxm_tex);
 		sceGxmSetFragmentTexture(gxm_context, 1, &texture_slots[texture_units[1].tex_id[texture_units[1].state > 1 ? 0 : 1]].gxm_tex);
 	} else if (texture_units[0].state) { // Texturing usage
 		ffp_vertex_attrib_state = 0x07;
 		reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
+#ifndef TEXTURES_SPEEDHACK
+		texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]].used = GL_TRUE;
+#endif
 		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]].gxm_tex);
 	} else { // No texturing usage
 		ffp_vertex_attrib_state = 0x05;

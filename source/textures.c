@@ -464,6 +464,9 @@ void glGenTextures(GLsizei n, GLuint *res) {
 
 			// Resetting texture parameters to their default values
 			texture_slots[i].dirty = GL_FALSE;
+#ifndef TEXTURES_SPEEDHACK
+			texture_slots[i].used = GL_FALSE;
+#endif
 			texture_slots[i].faces_counter = 0;
 			texture_slots[i].ref_counter = 0;
 			texture_slots[i].mip_count = 1;
@@ -621,12 +624,23 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	level -= target_texture->mip_start;
 #endif
 
-	// Calculating implicit texture stride and start address of requested texture modification
-	uint32_t orig_w = sceGxmTextureGetWidth(&target_texture->gxm_tex);
-	uint32_t orig_h = sceGxmTextureGetHeight(&target_texture->gxm_tex);
+	// Copying the texture in a new mem location and dirtying old one
 	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&target_texture->gxm_tex);
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
+	uint32_t orig_w = sceGxmTextureGetWidth(&target_texture->gxm_tex);
+	uint32_t orig_h = sceGxmTextureGetHeight(&target_texture->gxm_tex);
 	uint32_t stride = ALIGN(orig_w, 8) * bpp;
+#ifndef TEXTURES_SPEEDHACK
+	if (target_texture->used) {
+		void *texture_data = gpu_alloc_mapped(orig_h * stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+		vgl_fast_memcpy(texture_data, target_texture->data, orig_h * stride);
+		gpu_free_texture_data(target_texture);
+		sceGxmTextureSetData(&target_texture->gxm_tex, texture_data);
+		target_texture->data = texture_data;
+		target_texture->used = GL_FALSE;
+	}
+#endif
+	// Calculating start address of requested texture modification
 	uint8_t *ptr = (uint8_t *)target_texture->data + xoffset * bpp + yoffset * stride;
 	uint8_t *ptr_line = ptr;
 	uint8_t data_bpp = 0;

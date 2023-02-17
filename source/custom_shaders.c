@@ -259,6 +259,9 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 				return GL_FALSE;
 			}
 #endif
+#ifndef TEXTURES_SPEEDHACK
+			texture_slots[tex_unit->tex_id[0]].used = GL_TRUE;
+#endif
 			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK		
 		}
@@ -433,6 +436,9 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 				vgl_log("%s:%d glDrawElements: Fragment texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
+#endif
+#ifndef TEXTURES_SPEEDHACK
+			texture_slots[tex_unit->tex_id[0]].used = GL_TRUE;
 #endif
 			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK

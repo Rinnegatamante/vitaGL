@@ -463,6 +463,9 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 		if (ffp_vertex_attrib_state & (1 << 1)) {
 			if (texture_slots[tex_unit->tex_id[0]].status != TEX_VALID)
 				return;
+#ifndef TEXTURES_SPEEDHACK
+			texture_slots[tex_unit->tex_id[0]].used = GL_TRUE;
+#endif
 			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
 			sceGxmSetVertexStream(gxm_context, 1, texture_object);
 			if (ffp_vertex_num_params > 2)

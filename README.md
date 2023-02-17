@@ -18,6 +18,7 @@ In order to build vitaGL use the following command: `make install`.
 `SOFTFP_ABI=1` Compiles the library in soft floating point compatibility mode.<br>
 `DRAW_SPEEDHACK=1` Enables faster code for draw calls. May cause crashes.<br>
 `MATH_SPEEDHACK=1` Enables faster code for matrix math calls. May cause glitches.<br>
+`TEXTURES_SPEEDHACK=1` Makes glTexSubImage2D/glTexSubImage1D non fully OpenGL compliant but makes rendering pipeline slightly faster.<br>
 `SAMPLERS_SPEEDHACK=1` Enables faster code for samplers resolution during shaders usage. May cause glitches.<br>
 `SHADER_COMPILER_SPEEDHACK=1` Enables faster code for glShaderSource. May cause errors.<br>
 `HAVE_HIGH_FFP_TEXUNITS=1` Enables support for more than 2 texunits for fixed function pipeline at the cost of some performance loss.<br>
