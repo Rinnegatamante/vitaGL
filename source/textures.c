@@ -222,7 +222,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 3;
-			if (internalFormat == GL_RGB)
+			if (internalFormat == GL_RGB || internalFormat == GL_RGB8)
 				fast_store = GL_TRUE;
 			else
 				read_cb = readRGB;
@@ -282,7 +282,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 			break;
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 4;
-			if (internalFormat == GL_RGBA)
+			if (internalFormat == GL_RGBA || internalFormat == GL_RGBA8)
 				fast_store = GL_TRUE;
 			else
 				read_cb = readRGBA;
@@ -333,6 +333,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 	case GL_SRGB:
 	case GL_SRGB8:
 		gamma_correction = GL_TRUE;
+	case GL_RGB8:
 	case GL_RGB:
 		tex->write_cb = writeRGB;
 		if (fast_store && data_bpp == 2)
@@ -347,6 +348,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 	case GL_SRGB_ALPHA:
 	case GL_SRGB8_ALPHA8:
 		gamma_correction = GL_TRUE;
+	case GL_RGBA8:
 	case GL_RGBA:
 		tex->write_cb = writeRGBA;
 		if (fast_store && data_bpp == 2) {
