@@ -1110,20 +1110,14 @@ void glDeleteProgram(GLuint prog) {
 		while (p->vert_uniforms) {
 			uniform *old = p->vert_uniforms;
 			p->vert_uniforms = (uniform *)p->vert_uniforms->chain;
-#ifdef HAVE_SAMPLERS_AS_UNIFORMS
 			if (old->size && !(old->is_fragment && old->is_vertex))
-#else
-			if (!(old->is_fragment && old->is_vertex))
-#endif
 				vgl_free(old->data);
 			vgl_free(old);
 		}
 		while (p->frag_uniforms) {
 			uniform *old = p->frag_uniforms;
 			p->frag_uniforms = (uniform *)p->frag_uniforms->chain;
-#ifdef HAVE_SAMPLERS_AS_UNIFORMS
 			if (old->size)
-#endif
 				vgl_free(old->data);
 			vgl_free(old);
 		}
