@@ -1270,9 +1270,7 @@ void glLinkProgram(GLuint progr) {
 	}
 
 	// Analyzing vertex shader
-	p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "wvp");
-	if (!p->wvp) // Allow to use gl_ModelViewProjectionMatrix binding
-		p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "gl_ModelViewProjectionMatrix");
+	p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "gl_ModelViewProjectionMatrix");
 	cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
 	for (i = 0; i < cnt; i++) {
 		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, i);
