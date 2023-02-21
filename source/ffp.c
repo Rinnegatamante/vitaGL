@@ -930,7 +930,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		}
 
 		mvp_modified = GL_FALSE;
-		dirty_vert_unifs = GL_TRUE;
 	}
 
 	// Uploading fragment shader uniforms

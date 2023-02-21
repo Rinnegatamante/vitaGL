@@ -98,8 +98,7 @@ void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat 
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal) {
@@ -132,8 +131,7 @@ void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloa
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glFrustumx(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed nearVal, GLfixed farVal) {
@@ -158,8 +156,7 @@ void glFrustumx(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixe
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal) {
@@ -176,8 +173,7 @@ void glLoadIdentity(void) {
 	matrix4x4_identity(*matrix);
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glMultMatrixf(const GLfloat *m) {
@@ -198,8 +194,7 @@ void glMultMatrixf(const GLfloat *m) {
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glMultTransposeMatrixf(const GLfloat *m) {
@@ -242,8 +237,7 @@ void glMultMatrixx(const GLfixed *m) {
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glMultTransposeMatrixx(const GLfixed *m) {
@@ -264,8 +258,7 @@ void glMultTransposeMatrixx(const GLfixed *m) {
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glLoadMatrixf(const GLfloat *m) {
@@ -279,8 +272,7 @@ void glLoadMatrixf(const GLfloat *m) {
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glLoadTransposeMatrixf(const GLfloat *m) {
@@ -294,8 +286,7 @@ void glLoadTransposeMatrixf(const GLfloat *m) {
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glLoadMatrixx(const GLfixed *m) {
@@ -309,8 +300,7 @@ void glLoadMatrixx(const GLfixed *m) {
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glLoadTransposeMatrixx(const GLfixed *m) {
@@ -324,8 +314,7 @@ void glLoadTransposeMatrixx(const GLfixed *m) {
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
@@ -333,8 +322,7 @@ void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
 	matrix4x4_translate(*matrix, x, y, z);
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glTranslated(GLdouble x, GLdouble y, GLdouble z) {
@@ -346,8 +334,7 @@ void glTranslatex(GLfixed x, GLfixed y, GLfixed z) {
 	matrix4x4_translate(*matrix, (float)x / 65536.0f, (float)y / 65536.0f, (float)z / 65536.0f);
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glScalef(GLfloat x, GLfloat y, GLfloat z) {
@@ -355,8 +342,7 @@ void glScalef(GLfloat x, GLfloat y, GLfloat z) {
 	matrix4x4_scale(*matrix, x, y, z);
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glScaled(GLdouble x, GLdouble y, GLdouble z) {
@@ -368,8 +354,7 @@ void glScalex(GLfixed x, GLfixed y, GLfixed z) {
 	matrix4x4_scale(*matrix, (float)x / 65536.0f, (float)y / 65536.0f, (float)z / 65536.0f);
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
@@ -385,8 +370,7 @@ void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 	matrix4x4_rotate(*matrix, rad, x, y, z);
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z) {
@@ -407,8 +391,7 @@ void glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z) {
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void glPushMatrix(void) {
@@ -482,7 +465,6 @@ void glPopMatrix(void) {
 
 		// MVP matrix will have to be updated
 		mvp_modified = GL_TRUE;
-
 	} else if (matrix == &projection_matrix) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
@@ -495,7 +477,6 @@ void glPopMatrix(void) {
 
 		// MVP matrix will have to be updated
 		mvp_modified = GL_TRUE;
-
 	} else if (matrix == &texture_matrix[server_texture_unit]) {
 		texture_unit *tex_unit = &texture_units[server_texture_unit];
 
@@ -506,10 +487,9 @@ void glPopMatrix(void) {
 		}
 #endif
 		// Copying last matrix on stack into current matrix and decreasing stack counter
-		matrix4x4_copy(*matrix, tex_unit->texture_matrix_stack[--tex_unit->texture_stack_counter]);
-
-		dirty_vert_unifs = GL_TRUE;
+		matrix4x4_copy(*matrix, tex_unit->texture_matrix_stack[--tex_unit->texture_stack_counter]);	
 	}
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar) {
@@ -525,8 +505,7 @@ void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFa
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
 
 void gluLookAt(GLdouble eyeX, GLdouble eyeY, GLdouble eyeZ, GLdouble centerX, GLdouble centerY, GLdouble centerZ, GLdouble upX, GLdouble upY, GLdouble upZ) {
@@ -569,4 +548,8 @@ void gluLookAt(GLdouble eyeX, GLdouble eyeY, GLdouble eyeZ, GLdouble centerX, GL
 	matrix4x4_multiply(res, m, *matrix);
 	matrix4x4_copy(*matrix, res);
 	matrix4x4_translate(*matrix, -eyeX, -eyeY, -eyeZ);
+	
+	if (matrix != &texture_matrix[server_texture_unit])
+		mvp_modified = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
 }
