@@ -1435,7 +1435,7 @@ void glUniform1f(GLint location, GLfloat v0) {
 		dirty_frag_unifs = GL_TRUE;
 }
 
-void glProgramUniform1if(GLuint prog, GLint location, GLfloat v0) {
+void glProgramUniform1f(GLuint prog, GLint location, GLfloat v0) {
 	glUniform1f(location, v0);
 }
 
