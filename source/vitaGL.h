@@ -557,6 +557,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void *data);
 void glCallList(GLuint list);
 GLenum glCheckFramebufferStatus(GLenum target);
+GLenum glCheckNamedFramebufferStatus(GLuint target, GLenum dummy);
 void glClear(GLbitfield mask);
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void glClearColorx(GLclampx red, GLclampx green, GLclampx blue, GLclampx alpha);
@@ -696,6 +697,10 @@ void glMultMatrixf(const GLfloat *m);
 void glMultMatrixx(const GLfixed *m);
 void glMultTransposeMatrixf(const GLfloat *m);
 void glMultTransposeMatrixx(const GLfixed *m);
+void glNamedFramebufferRenderbuffer(GLuint framebuffer, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+void glNamedFramebufferTexture(GLuint target, GLenum attachment, GLuint texture, GLint level);
+void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+void glNamedRenderbufferStorage(GLuint target, GLenum internalformat, GLsizei width, GLsizei height);
 void glNewList(GLuint list, GLenum mode);
 void glNormal3f(GLfloat x, GLfloat y, GLfloat z);
 void glNormal3fv(const GLfloat *v);
