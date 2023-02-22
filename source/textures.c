@@ -1596,6 +1596,38 @@ void glGenerateMipmap(GLenum target) {
 	}
 }
 
+void glGenerateTextureMipmap(GLuint target) {
+	// Setting some aliases to make code more readable
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = target;
+	texture *tex = &texture_slots[texture2d_idx];
+
+#ifndef SKIP_ERROR_HANDLING
+	// Checking if current texture is valid
+	if (tex->status != TEX_VALID)
+		return;
+	// Checking if current texture is compressed
+	else {
+		SceGxmTextureFormat fmt = sceGxmTextureGetFormat(&tex->gxm_tex);
+		if (fmt >= 0x80000000 && fmt <= 0x87000000) {
+			SET_GL_ERROR(GL_INVALID_OPERATION)
+		}
+	}
+#endif
+
+	// Generating mipmaps to the max possible level
+	gpu_alloc_mipmaps(-1, tex);
+
+	// Setting texture parameters
+	vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+	vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+	vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+	vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
+	vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+	vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
+	vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+}
+
 void glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border) {
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if texture is too big for sceGxm

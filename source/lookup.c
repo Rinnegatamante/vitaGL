@@ -127,6 +127,7 @@ static const struct {
 	{"glFrustumx", (void *)glFrustumx},
 	{"glGenBuffers", (void *)glGenBuffers},
 	{"glGenerateMipmap", (void *)glGenerateMipmap},
+	{"glGenerateTextureMipmap", (void *)glGenerateTextureMipmap},
 	{"glGenFramebuffers", (void *)glGenFramebuffers},
 	{"glGenLists", (void *)glGenLists},
 	{"glGenRenderbuffers", (void *)glGenRenderbuffers},
