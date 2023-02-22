@@ -1390,6 +1390,10 @@ void glUniform1i(GLint location, GLint v0) {
 		dirty_frag_unifs = GL_TRUE;
 }
 
+void glProgramUniform1i(GLuint prog, GLint location, GLint v0) {
+	glUniform1i(location, v0);
+}
+
 void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
@@ -1410,6 +1414,10 @@ void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 		dirty_frag_unifs = GL_TRUE;
 }
 
+void glProgramUniform1iv(GLuint prog, GLint location, GLsizei count, const GLint *value) {
+	glUniform1iv(location, count, value);
+}
+
 void glUniform1f(GLint location, GLfloat v0) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
@@ -1425,6 +1433,10 @@ void glUniform1f(GLint location, GLfloat v0) {
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
 		dirty_frag_unifs = GL_TRUE;
+}
+
+void glProgramUniform1if(GLuint prog, GLint location, GLfloat v0) {
+	glUniform1f(location, v0);
 }
 
 void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
@@ -1444,6 +1456,10 @@ void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 		dirty_frag_unifs = GL_TRUE;
 }
 
+void glProgramUniform1fv(GLuint prog, GLint location, GLsizei count, const GLfloat *value) {
+	glUniform1fv(location, count, value);
+}
+
 void glUniform2i(GLint location, GLint v0, GLint v1) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
@@ -1460,6 +1476,10 @@ void glUniform2i(GLint location, GLint v0, GLint v1) {
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
 		dirty_frag_unifs = GL_TRUE;
+}
+
+void glProgramUniform2i(GLuint prog, GLint location, GLint v0, GLint v1) {
+	glUniform2i(location, v0, v1);
 }
 
 void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
@@ -1482,6 +1502,10 @@ void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 		dirty_frag_unifs = GL_TRUE;
 }
 
+void glProgramUniform2iv(GLuint prog, GLint location, GLsizei count, const GLint *value) {
+	glUniform2iv(location, count, value);
+}
+
 void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
@@ -1498,6 +1522,10 @@ void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
 		dirty_frag_unifs = GL_TRUE;
+}
+
+void glProgramUniform2f(GLuint prog, GLint location, GLfloat v0, GLfloat v1) {
+	glUniform2f(location, v0, v1);
 }
 
 void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
@@ -1517,6 +1545,10 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 		dirty_frag_unifs = GL_TRUE;
 }
 
+void glProgramUniform2fv(GLuint prog, GLint location, GLsizei count, const GLfloat *value) {
+	glUniform2fv(location, count, value);
+}
+
 void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
@@ -1534,6 +1566,10 @@ void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) {
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
 		dirty_frag_unifs = GL_TRUE;
+}
+
+void glProgramUniform3i(GLuint prog, GLint location, GLint v0, GLint v1, GLint v2) {
+	glUniform3i(location, v0, v1, v2);
 }
 
 void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
@@ -1556,6 +1592,10 @@ void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
 		dirty_frag_unifs = GL_TRUE;
 }
 
+void glProgramUniform3iv(GLuint prog, GLint location, GLsizei count, const GLint *value) {
+	glUniform3iv(location, count, value);
+}
+
 void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
@@ -1575,6 +1615,10 @@ void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
 		dirty_frag_unifs = GL_TRUE;
 }
 
+void glProgramUniform3f(GLuint prog, GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
+	glUniform3f(location, v0, v1, v2);
+}
+
 void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
@@ -1590,6 +1634,10 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
 		dirty_frag_unifs = GL_TRUE;
+}
+
+void glProgramUniform3fv(GLuint prog, GLint location, GLsizei count, const GLfloat *value) {
+	glUniform3fv(location, count, value);
 }
 
 void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) {
@@ -1612,6 +1660,10 @@ void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) {
 		dirty_frag_unifs = GL_TRUE;
 }
 
+void glProgramUniform4i(GLuint prog, GLint location, GLint v0, GLint v1, GLint v2, GLint v3) {
+	glUniform4i(location, v0, v1, v2, v3);
+}
+
 void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
@@ -1630,6 +1682,10 @@ void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
 		dirty_frag_unifs = GL_TRUE;
+}
+
+void glProgramUniform4iv(GLuint prog, GLint location, GLsizei count, const GLint *value) {
+	glUniform4iv(location, count, value);
 }
 
 void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
@@ -1652,6 +1708,10 @@ void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
 		dirty_frag_unifs = GL_TRUE;
 }
 
+void glProgramUniform4f(GLuint prog, GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
+	glUniform4f(location, v0, v1, v2, v3);
+}
+
 void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
@@ -1667,6 +1727,10 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
 		dirty_frag_unifs = GL_TRUE;
+}
+
+void glProgramUniform4fv(GLuint prog, GLint location, GLsizei count, const GLfloat *value) {
+	glUniform4fv(location, count, value);
 }
 
 void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
@@ -1691,6 +1755,10 @@ void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, cons
 		dirty_frag_unifs = GL_TRUE;
 }
 
+void glProgramUniformMatrix2fv(GLuint prog, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
+	glUniformMatrix2fv(location, count, transpose, value);
+}
+
 void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
@@ -1711,6 +1779,10 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, cons
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
 		dirty_frag_unifs = GL_TRUE;
+}
+
+void glProgramUniformMatrix3fv(GLuint prog, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
+	glUniformMatrix3fv(location, count, transpose, value);
 }
 
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
@@ -1734,6 +1806,10 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 		dirty_vert_unifs = GL_TRUE;
 	if (u->is_fragment)
 		dirty_frag_unifs = GL_TRUE;
+}
+
+void glProgramUniformMatrix4fv(GLuint prog, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
+	glUniformMatrix4fv(location, count, transpose, value);
 }
 
 void glEnableVertexAttribArray(GLuint index) {
