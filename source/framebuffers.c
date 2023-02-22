@@ -297,16 +297,7 @@ void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, 
 	active_rb->depthbuffer_ptr = &active_rb->depthbuffer;
 }
 
-void glNamedRenderbufferStorage(GLuint target, GLenum internalformat, GLsizei width, GLsizei height) {
-#ifndef SKIP_ERROR_HANDLING
-	if (target != GL_RENDERBUFFER) {
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
-	}
-	if (width < 0 || height < 0) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-#endif
-	
+void glNamedRenderbufferStorage(GLuint target, GLenum internalformat, GLsizei width, GLsizei height) {	
 	renderbuffer *rb = (renderbuffer *)target;
 	if (rb->depthbuffer_ptr) {
 		markAsDirty(rb->depthbuffer_ptr->depthData);
