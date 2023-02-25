@@ -496,15 +496,22 @@ void glBindTexture(GLenum target, GLuint texture) {
 	if (_vgl_enqueue_list_func(glBindTexture, "UU", target, texture))
 		return;
 #endif
-#ifndef SKIP_ERROR_HANDLING
-	// Error handling
-	if (target > GL_TEXTURE_2D) {
-		vgl_log("%s:%d glBindTexture: Target type unsupported.\n", __FILE__, __LINE__);
-	}
-#endif
 
 	// Setting current in use texture id for the in use server texture unit
-	texture_units[server_texture_unit].tex_id[GL_TEXTURE_2D - target] = texture;
+	switch (target) {
+	case GL_TEXTURE_2D:
+		texture_units[server_texture_unit].tex_id[0] = texture;
+		break;
+	case GL_TEXTURE_1D:
+		texture_units[server_texture_unit].tex_id[1] = texture;
+		break;
+	case GL_TEXTURE_CUBE_MAP:
+		texture_units[server_texture_unit].tex_id[0] = texture; // FIXME
+		break;
+	default:
+		vgl_log("%s:%d glBindTexture: Target type unsupported.\n", __FILE__, __LINE__);
+		break;
+	}
 }
 
 void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
