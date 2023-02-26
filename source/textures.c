@@ -23,6 +23,28 @@
 
 #include "shared.h"
 
+#define resolveTexTarget(target) \
+	switch (target) { \
+	case GL_TEXTURE_2D: \
+		texture2d_idx = tex_unit->tex_id[0]; \
+		break; \
+	case GL_TEXTURE_CUBE_MAP: \
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_X: \
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_Y: \
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_Z: \
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X: \
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y: \
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z: \
+		texture2d_idx = tex_unit->tex_id[2]; \
+		break; \
+	case GL_TEXTURE_1D: \
+		texture2d_idx = tex_unit->tex_id[1]; \
+		break; \
+	default: \
+		vgl_log("%s:%d Target type unsupported.\n", __FILE__, __LINE__); \
+		break; \
+	}
+
 texture_unit texture_units[COMBINED_TEXTURE_IMAGE_UNITS_NUM]; // Available texture units
 texture texture_slots[TEXTURES_NUM]; // Available texture slots
 
@@ -561,6 +583,8 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 					tex_unit->tex_id[0] = 0;
 				if (i == tex_unit->tex_id[1])
 					tex_unit->tex_id[1] = 0;
+				if (i == tex_unit->tex_id[2])
+					tex_unit->tex_id[2] = 0;
 			}
 		}
 	}
@@ -569,7 +593,8 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *data) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id[GL_TEXTURE_2D - target];
+	int texture2d_idx;
+	resolveTexTarget(target);
 	texture *tex = &texture_slots[texture2d_idx];
 
 #ifndef SKIP_ERROR_HANDLING
@@ -626,7 +651,9 @@ void glTexImage1D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id[GL_TEXTURE_2D - target];
+	int texture2d_idx;
+	resolveTexTarget(target);
+	texture *tex = &texture_slots[texture2d_idx];
 	texture *target_texture = &texture_slots[texture2d_idx];
 
 #ifdef HAVE_UNPURE_TEXTURES
@@ -885,7 +912,8 @@ void glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, G
 void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id[GL_TEXTURE_2D - target];
+	int texture2d_idx;
+	resolveTexTarget(target);
 	texture *tex = &texture_slots[texture2d_idx];
 
 #ifdef HAVE_UNPURE_TEXTURES
@@ -917,63 +945,99 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 	switch (target) {
 	case GL_TEXTURE_1D: // Workaround for 1D textures support
 	case GL_TEXTURE_2D:
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
 		// Detecting proper write callback and texture format
 		switch (internalFormat) {
 		case GL_PALETTE4_RGB8_OES:
+			if (target != GL_TEXTURE_2D) {
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
+			}	
 			read_cb = readRGB;
 			data_bpp = 3;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
 			paletted_format = GL_TRUE;
 			break;
 		case GL_PALETTE4_RGBA8_OES:
+			if (target != GL_TEXTURE_2D) {
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
+			}	
 			read_cb = readRGBA;
 			data_bpp = 4;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
 			paletted_format = GL_TRUE;
 			break;
 		case GL_PALETTE4_RGBA4_OES:
+			if (target != GL_TEXTURE_2D) {
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
+			}
 			read_cb = readRGBA4444;
 			data_bpp = 2;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
 			paletted_format = GL_TRUE;
 			break;
 		case GL_PALETTE4_R5_G6_B5_OES:
+			if (target != GL_TEXTURE_2D) {
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
+			}
 			read_cb = readRGB565;
 			data_bpp = 2;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
 			paletted_format = GL_TRUE;
 			break;
 		case GL_PALETTE4_RGB5_A1_OES:
+			if (target != GL_TEXTURE_2D) {
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
+			}
 			read_cb = readRGBA5551;
 			data_bpp = 2;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
 			paletted_format = GL_TRUE;
 			break;
 		case GL_PALETTE8_RGB8_OES:
+			if (target != GL_TEXTURE_2D) {
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
+			}
 			read_cb = readRGB;
 			data_bpp = 3;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 			paletted_format = GL_TRUE;
 			break;
 		case GL_PALETTE8_RGBA8_OES:
+			if (target != GL_TEXTURE_2D) {
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
+			}
 			read_cb = readRGBA;
 			data_bpp = 4;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 			paletted_format = GL_TRUE;
 			break;
 		case GL_PALETTE8_RGBA4_OES:
+			if (target != GL_TEXTURE_2D) {
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
+			}
 			read_cb = readRGBA4444;
 			data_bpp = 2;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 			paletted_format = GL_TRUE;
 			break;
 		case GL_PALETTE8_R5_G6_B5_OES:
+			if (target != GL_TEXTURE_2D) {
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
+			}
 			read_cb = readRGB565;
 			data_bpp = 2;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 			paletted_format = GL_TRUE;
 			break;
 		case GL_PALETTE8_RGB5_A1_OES:
+			if (target != GL_TEXTURE_2D) {
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
+			}
 			read_cb = readRGBA5551;
 			data_bpp = 2;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
@@ -1019,7 +1083,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			non_native_format = GL_TRUE;
 			decompressed_data = vglMalloc(width * height * 3);
 			etc1_decode_image((etc1_byte *)data, (etc1_byte *)decompressed_data, width, height, 3, width * 3);
-			if (recompress_non_native) {
+			if (recompress_non_native || target != GL_TEXTURE_2D) {
 				read_cb = readRGB;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
 			} else
@@ -1031,7 +1095,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			non_native_format = GL_TRUE;
 			decompressed_data = vglMalloc(width * height * 4);
 			eac_decode((uint8_t *)data, decompressed_data, width, height, EAC_ETC2);
-			if (recompress_non_native) {
+			if (recompress_non_native || target != GL_TEXTURE_2D) {
 				read_cb = readRGBA;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
 			} else
@@ -1042,7 +1106,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			non_native_format = GL_TRUE;
 			decompressed_data = vglMalloc(width * height * 4);
 			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_RGB);
-			if (recompress_non_native) {
+			if (recompress_non_native || target != GL_TEXTURE_2D) {
 				read_cb = readBGRA;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
 			} else
@@ -1053,7 +1117,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			non_native_format = GL_TRUE;
 			decompressed_data = vglMalloc(width * height * 4);
 			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_EXPLICIT_ALPHA);
-			if (recompress_non_native) {
+			if (recompress_non_native || target != GL_TEXTURE_2D) {
 				read_cb = readBGRA;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
 			} else
@@ -1064,7 +1128,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			non_native_format = GL_TRUE;
 			decompressed_data = vglMalloc(width * height * 4);
 			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_INTERPOLATED_ALPHA);
-			if (recompress_non_native) {
+			if (recompress_non_native || target != GL_TEXTURE_2D) {
 				read_cb = readBGRA;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
 			} else
@@ -1092,18 +1156,26 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			}
 #endif
 			if (non_native_format) {
-				if (level == 0)
-					if (read_cb)
-						gpu_alloc_compressed_texture(level, width, height, tex_format, 0, decompressed_data, tex, data_bpp, read_cb);
-					else
+				if (level == 0) {
+					if (read_cb) {
+						if (target == GL_TEXTURE_2D)
+							gpu_alloc_compressed_texture(level, width, height, tex_format, 0, decompressed_data, tex, data_bpp, read_cb);
+						else
+							gpu_alloc_compressed_cube_texture(width, height, tex_format, 0, decompressed_data, tex, data_bpp, read_cb, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+					} else {
 						gpu_alloc_texture(width, height, tex_format, decompressed_data, tex, data_bpp, NULL, NULL, GL_TRUE);
-				else if (read_cb)
+					}
+				} else if (read_cb) {
 					gpu_alloc_compressed_texture(level, width, height, tex_format, 0, decompressed_data, tex, data_bpp, read_cb);
-				else
+				} else
 					gpu_alloc_mipmaps(level, tex);
 				vgl_free(decompressed_data);
-			} else
-				gpu_alloc_compressed_texture(level, width, height, tex_format, imageSize, data, tex, 0, NULL);
+			} else {
+				if (target == GL_TEXTURE_2D)
+					gpu_alloc_compressed_texture(level, width, height, tex_format, imageSize, data, tex, 0, NULL);
+				else
+					gpu_alloc_compressed_cube_texture(width, height, tex_format, imageSize, data, tex, 0, NULL, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+			}
 		}
 		// Setting texture parameters
 		vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
@@ -1152,7 +1224,8 @@ void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum fo
 void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id[GL_TEXTURE_2D - target];
+	int texture2d_idx;
+	resolveTexTarget(target);
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
@@ -1348,7 +1421,8 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
 		// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id[GL_TEXTURE_2D - target];
+	int texture2d_idx;
+	resolveTexTarget(target);
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
@@ -1688,7 +1762,8 @@ void gluBuild2DMipmaps(GLenum target, GLint internalFormat, GLsizei width, GLsiz
 void *vglGetTexDataPointer(GLenum target) {
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id[GL_TEXTURE_2D - target];
+	int texture2d_idx;
+	resolveTexTarget(target);
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
@@ -1702,7 +1777,8 @@ void *vglGetTexDataPointer(GLenum target) {
 void vglOverloadTexDataPointer(GLenum target, void *data) {
 		// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id[GL_TEXTURE_2D - target];
+	int texture2d_idx;
+	resolveTexTarget(target);
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
@@ -1717,7 +1793,8 @@ void vglOverloadTexDataPointer(GLenum target, void *data) {
 SceGxmTexture *vglGetGxmTexture(GLenum target) {
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id[GL_TEXTURE_2D - target];
+	int texture2d_idx;
+	resolveTexTarget(target);
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {

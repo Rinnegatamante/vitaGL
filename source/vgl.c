@@ -283,6 +283,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		texture_units[i].env_mode = MODULATE;
 		texture_units[i].tex_id[0] = 0;
 		texture_units[i].tex_id[1] = 0;
+		texture_units[i].tex_id[2] = 0;
 		texture_units[i].state = 0;
 		texture_units[i].texture_stack_counter = 0;
 #ifndef DISABLE_TEXTURE_COMBINER

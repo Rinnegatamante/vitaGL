@@ -575,6 +575,105 @@ int gpu_get_compressed_mip_offset(int level, int width, int height, SceGxmTextur
 	return gpu_get_compressed_mipchain_size(level - 1, width, height, format);
 }
 
+void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), int index) {
+	// If there's already a texture in passed texture object we first dealloc it
+	if (tex->status == TEX_VALID && tex->faces_counter >= 6) {
+		gpu_free_texture_data(tex);
+		tex->faces_counter = 1;
+	} else
+		tex->faces_counter++;
+	
+	// Calculating swizzled compressed texture size on memory
+	vglMemType new_mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
+
+	if (!image_size)
+		image_size = gpu_get_compressed_mip_size(0, w, h, format);
+	
+	const uint32_t blocksize = (format == SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR) ? 16 : 8;
+	const uint32_t aligned_width = nearest_po2(w);
+	const uint32_t aligned_height = nearest_po2(h);
+	uint32_t max_width, max_height, aligned_max_width, aligned_max_height;
+	max_width = w;
+	max_height = h;
+	aligned_max_width = aligned_width;
+	aligned_max_height = aligned_height;
+
+	// Getting texture format bpp
+	uint8_t bpp = tex_format_to_bytespp(format);
+	
+	// Allocating texture data buffer
+	const int mip_offset = gpu_get_compressed_mip_offset(0, aligned_max_width, aligned_max_height, format);
+	const int face_size = gpu_get_compressed_mipchain_size(0, aligned_max_width, aligned_max_height, format);
+	const int mip_size = face_size - mip_offset;
+	void *base_texture_data = tex->faces_counter == 1 ? gpu_alloc_mapped(face_size * 6, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM) : tex->data;
+	void *texture_data = (uint8_t *)base_texture_data + face_size * index;
+	void *mip_data = texture_data + mip_offset;
+
+	// Initializing texture data buffer
+	if (texture_data != NULL) {
+		if (data != NULL) {
+			if (read_cb != NULL) {
+				void *temp = (void *)data;
+
+				// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
+				if (read_cb != readRGBA) {
+					temp = vgl_malloc(w * h * 4, VGL_MEM_EXTERNAL);
+					uint8_t *src = (uint8_t *)data;
+					uint32_t *dst = (uint32_t *)temp;
+					int i;
+					for (i = 0; i < w * h; i++) {
+						uint32_t clr = read_cb(src);
+						writeRGBA(dst++, clr);
+						src += src_bpp;
+					}
+				}
+
+				// Performing swizzling and DXT compression
+				uint8_t alignment = tex_format_to_alignment(format);
+				dxt_compress(mip_data, temp, aligned_width, aligned_height, alignment == 16);
+
+				// Freeing temporary data if necessary
+				if (read_cb != readRGBA)
+					vgl_free(temp);
+			} else {
+				// Perform swizzling if necessary.
+				switch (format) {
+				case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
+				case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
+				case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
+				case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
+					vgl_fast_memcpy(mip_data, data, image_size);
+					break;
+				case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
+				case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
+					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_LARGE_BLOCK);
+					break;
+				case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
+					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_WIDE_BLOCK);
+					break;
+				case SCE_GXM_TEXTURE_FORMAT_ETC1_RGB:
+					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_ENDIANESS_SWAP);
+					break;
+				default:
+					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_DEFAULT);
+					break;
+				}
+			}
+		} else
+			sceClibMemset(mip_data, 0, mip_size);
+
+		// Initializing texture and validating it
+		tex->mip_count = 0;
+		vglInitCubeTexture(&tex->gxm_tex, base_texture_data, format, w, h, tex->mip_count);
+		tex->palette_data = NULL;
+		tex->status = TEX_VALID;
+		tex->data = base_texture_data;
+#ifndef TEXTURES_SPEEDHACK
+		tex->used = GL_FALSE;
+#endif
+	}
+}
+
 void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *)) {
 	// If there's already a texture in passed texture object we first dealloc it
 	if (tex->status == TEX_VALID && !mip_level)

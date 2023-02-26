@@ -369,7 +369,7 @@ typedef struct {
 	vector4f env_color;
 	float rgb_scale;
 	float a_scale;
-	GLuint tex_id[2];
+	GLuint tex_id[3]; // {2D, 1D, CUBE_MAP}
 } texture_unit;
 
 // Framebuffer struct
