@@ -252,17 +252,18 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		if (p->frag_texunits[i]) {
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
+			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : 0;
 #ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[0]].gxm_tex);
+			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
 			if (r) {
 				vgl_log("%s:%d glDrawArrays: Fragment texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
 #ifndef TEXTURES_SPEEDHACK
-			texture_slots[tex_unit->tex_id[0]].used = GL_TRUE;
+			texture_slots[tex_unit->tex_id[tex_type]].used = GL_TRUE;
 #endif
-			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
+			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK		
 		}
 #endif
@@ -274,14 +275,18 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		if (p->vert_texunits[i]) {
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
+			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : 0;
 #ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[0]].gxm_tex);
+			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
 			if (r) {
 				vgl_log("%s:%d glDrawArrays: Vertex texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
-			sceGxmSetVertexTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
+#ifndef TEXTURES_SPEEDHACK
+			texture_slots[tex_unit->tex_id[tex_type]].used = GL_TRUE;
+#endif
+			sceGxmSetVertexTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK		
 		}
 #endif
@@ -430,17 +435,18 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		if (p->frag_texunits[i]) {
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
+			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : 0;
 #ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[0]].gxm_tex);
+			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
 			if (r) {
 				vgl_log("%s:%d glDrawElements: Fragment texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
 #ifndef TEXTURES_SPEEDHACK
-			texture_slots[tex_unit->tex_id[0]].used = GL_TRUE;
+			texture_slots[tex_unit->tex_id[tex_type]].used = GL_TRUE;
 #endif
-			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
+			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK
 		}
 #endif
@@ -452,14 +458,18 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		if (p->vert_texunits[i]) {
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
+			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : 0;
 #ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[0]].gxm_tex);
+			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
 			if (r) {
 				vgl_log("%s:%d glDrawElements: Vertex texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
-			sceGxmSetVertexTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
+#ifndef TEXTURES_SPEEDHACK
+			texture_slots[tex_unit->tex_id[tex_type]].used = GL_TRUE;
+#endif
+			sceGxmSetVertexTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK		
 		}
 #endif
@@ -1246,7 +1256,7 @@ void glLinkProgram(GLuint progr) {
 			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
 			u->chain = p->frag_uniforms;
 			u->ptr = param;
-			u->size = 0;
+			u->size = sceGxmProgramParameterIsSamplerCube(param) ? 0xFFFFFFFF : 0;
 			u->data = NULL;
 			p->frag_uniforms = u;
 			p->frag_texunits[texunit_idx - 1] = u;
@@ -1379,7 +1389,7 @@ void glUniform1i(GLint location, GLint v0) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	if (u->size == 0) // Sampler
+	if (u->size == 0 || u->size == 0xFFFFFFFF) // Sampler
 		u->data = (float *)v0;
 	else // Regular Uniform
 		u->data[0] = (float)v0;
@@ -1403,8 +1413,13 @@ void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	int i;
-	for (i = 0; i < count; i++) {
+#ifndef SKIP_ERROR_HANDLING
+	if (u->size != count) {
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr)); \
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+	for (int i = 0; i < count; i++) {
 		u->data[i] = (float)value[i];
 	}
 
@@ -1448,6 +1463,12 @@ void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
+#ifndef SKIP_ERROR_HANDLING
+	if (u->size < count) {
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr)); \
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
 	vgl_fast_memcpy(u->data, value, count * sizeof(float));
 
 	if (u->is_vertex)
@@ -1491,8 +1512,13 @@ void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	int i;
-	for (i = 0; i < count * 2; i++) {
+#ifndef SKIP_ERROR_HANDLING
+	if (u->size < count * 2) {
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr)); \
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+	for (int i = 0; i < count * 2; i++) {
 		u->data[i] = (float)value[i];
 	}
 
@@ -1537,6 +1563,12 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
+#ifndef SKIP_ERROR_HANDLING
+	if (u->size < count * 2) {
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr)); \
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
 	vgl_fast_memcpy(u->data, value, count * 2 * sizeof(float));
 
 	if (u->is_vertex)
@@ -1581,8 +1613,13 @@ void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	int i;
-	for (i = 0; i < count * 3; i++) {
+#ifndef SKIP_ERROR_HANDLING
+	if (u->size < count * 3) {
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr)); \
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+	for (int i = 0; i < count * 3; i++) {
 		u->data[i] = (float)value[i];
 	}
 
@@ -1628,6 +1665,12 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
+#ifndef SKIP_ERROR_HANDLING
+	if (u->size < count * 3) {
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr)); \
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
 	vgl_fast_memcpy(u->data, value, count * 3 * sizeof(float));
 
 	if (u->is_vertex)
@@ -1673,8 +1716,13 @@ void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
-	int i;
-	for (i = 0; i < count * 4; i++) {
+#ifndef SKIP_ERROR_HANDLING
+	if (u->size < count * 4) {
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+	for (int i = 0; i < count * 4; i++) {
 		u->data[i] = (float)value[i];
 	}
 
@@ -1721,6 +1769,12 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
+#ifndef SKIP_ERROR_HANDLING
+	if (u->size < count * 4) {
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
 	vgl_fast_memcpy(u->data, value, count * 4 * sizeof(float));
 
 	if (u->is_vertex)
@@ -1742,6 +1796,12 @@ void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, cons
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
+#ifndef SKIP_ERROR_HANDLING
+	if (u->size < count * 4) {
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
 	if (transpose) {
 		for (int i = 0; i < count; i++) {
 			matrix2x2_transpose(&u->data[i * 4], &value[i * 4]);
@@ -1768,6 +1828,12 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, cons
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
+#ifndef SKIP_ERROR_HANDLING
+	if (u->size < count * 9) {
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 9, sceGxmProgramParameterGetName(u->ptr)); \
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
 	if (transpose) {
 		for (int i = 0; i < count; i++) {
 			matrix3x3_transpose(&u->data[i * 9], &value[i * 9]);
@@ -1795,6 +1861,12 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 	uniform *u = (uniform *)-location;
 
 	// Setting passed value to desired uniform
+#ifndef SKIP_ERROR_HANDLING
+	if (u->size < count * 16) {
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 16, sceGxmProgramParameterGetName(u->ptr)); \
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
 	if (transpose) {
 		for (int i = 0; i < count; i++) {
 			matrix4x4_transpose(&u->data[i * 16], &value[i * 16]);
