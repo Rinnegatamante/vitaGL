@@ -119,7 +119,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
-	} else if (count < 0) {
+	} else if (count <= 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
 	}
 #endif
@@ -176,7 +176,7 @@ void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei prim
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
-	} else if (count < 0) {
+	} else if (count <= 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
 	}
 #endif
@@ -240,7 +240,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	} else if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
-	} else if (count < 0) {
+	} else if (count <= 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
 	}
 #endif
@@ -281,7 +281,7 @@ void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLv
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	} else if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
-	} else if (count < 0) {
+	} else if (count <= 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
 	}
 #endif
@@ -322,7 +322,7 @@ void glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, G
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	} else if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
-	} else if (count < 0) {
+	} else if (count <= 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
 	} else if (end < start) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -365,7 +365,7 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	} else if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
-	} else if (count < 0) {
+	} else if (count <= 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
 	}
 #endif
@@ -406,7 +406,7 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	} else if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
-	} else if (count < 0) {
+	} else if (count <= 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
 	}
 #endif
@@ -445,7 +445,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
-	} else if (count < 0) {
+	} else if (count <= 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
 	}
 #endif
