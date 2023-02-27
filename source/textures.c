@@ -155,6 +155,8 @@ void _glTexImage2D_CubeIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 		gpu_alloc_cube_texture(width, height, tex_format, src_format, data, tex, data_bpp, index);
 
 	// Setting texture parameters
+	vglSetTexUMode(&tex->gxm_tex, SCE_GXM_TEXTURE_ADDR_CLAMP);
+	vglSetTexVMode(&tex->gxm_tex, SCE_GXM_TEXTURE_ADDR_CLAMP);
 	vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
 	vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
 	vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
@@ -528,7 +530,7 @@ void glBindTexture(GLenum target, GLuint texture) {
 		texture_units[server_texture_unit].tex_id[1] = texture;
 		break;
 	case GL_TEXTURE_CUBE_MAP:
-		texture_units[server_texture_unit].tex_id[0] = texture; // FIXME
+		texture_units[server_texture_unit].tex_id[2] = texture;
 		break;
 	default:
 		vgl_log("%s:%d glBindTexture: Target type unsupported.\n", __FILE__, __LINE__);
@@ -1178,8 +1180,13 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			}
 		}
 		// Setting texture parameters
-		vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
-		vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+		if (target == GL_TEXTURE_2D) {
+			vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+			vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+		} else {
+			vglSetTexUMode(&tex->gxm_tex, SCE_GXM_TEXTURE_ADDR_CLAMP);
+			vglSetTexVMode(&tex->gxm_tex, SCE_GXM_TEXTURE_ADDR_CLAMP);
+		}
 		vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
 		vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
 		vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
@@ -1297,6 +1304,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 		}
+		break;
 	case GL_TEXTURE_1D:
 	case GL_TEXTURE_2D:
 		switch (pname) {
@@ -1494,6 +1502,7 @@ void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 		}
+		break;
 	case GL_TEXTURE_1D:
 	case GL_TEXTURE_2D:
 		switch (pname) {
@@ -1767,7 +1776,9 @@ void *vglGetTexDataPointer(GLenum target) {
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
+	case GL_TEXTURE_CUBE_MAP:
 	case GL_TEXTURE_2D:
+	case GL_TEXTURE_1D:
 		return tex->data;
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
@@ -1782,7 +1793,9 @@ void vglOverloadTexDataPointer(GLenum target, void *data) {
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
+	case GL_TEXTURE_CUBE_MAP:
 	case GL_TEXTURE_2D:
+	case GL_TEXTURE_1D:
 		tex->data = data;
 		break;
 	default:
@@ -1798,7 +1811,9 @@ SceGxmTexture *vglGetGxmTexture(GLenum target) {
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
+	case GL_TEXTURE_CUBE_MAP:
 	case GL_TEXTURE_2D:
+	case GL_TEXTURE_1D:
 		return &tex->gxm_tex;
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
