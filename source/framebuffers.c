@@ -51,8 +51,14 @@ uint32_t get_color_from_texture(SceGxmTextureFormat type) {
 	case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
 		res = SCE_GXM_COLOR_FORMAT_U4U4U4U4_ABGR;
 		break;
+	case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA:
+		res = SCE_GXM_COLOR_FORMAT_U4U4U4U4_RGBA;
+		break;
 	case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
 		res = SCE_GXM_COLOR_FORMAT_U1U5U5U5_ABGR;
+		break;
+	case SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA:
+		res = SCE_GXM_COLOR_FORMAT_U5U5U5U1_RGBA;
 		break;
 	case SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA:
 		res = SCE_GXM_COLOR_FORMAT_F16F16F16F16_RGBA;
@@ -670,7 +676,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 void vglTexImageDepthBuffer(GLenum target) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id;
+	int texture2d_idx = tex_unit->tex_id[0];
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
