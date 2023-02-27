@@ -256,7 +256,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
 			if (r) {
-				vgl_log("%s:%d glDrawArrays: Fragment texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
+				vgl_log("%s:%d glDrawArrays: Fragment %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
@@ -279,7 +279,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
 			if (r) {
-				vgl_log("%s:%d glDrawArrays: Vertex texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
+				vgl_log("%s:%d glDrawArrays: Vertex %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
@@ -376,7 +376,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 					mvp_modified = GL_FALSE;
 				}
 				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
-			} else if (u->size)
+			} else if (u->size > 0 && u->size < 0xFFFFFFFF)
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
@@ -386,7 +386,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
-			if (u->size)
+			if (u->size > 0 && u->size < 0xFFFFFFFF)
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
@@ -439,7 +439,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
 			if (r) {
-				vgl_log("%s:%d glDrawElements: Fragment texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
+				vgl_log("%s:%d glDrawElements: Fragment %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
@@ -462,7 +462,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
 			if (r) {
-				vgl_log("%s:%d glDrawElements: Vertex texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, i, get_gxm_error_literal(r));
+				vgl_log("%s:%d glDrawElements: Vertex %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
@@ -579,7 +579,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 					mvp_modified = GL_FALSE;
 				}
 				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
-			} else if (u->size)
+			} else if (u->size > 0 && u->size < 0xFFFFFFFF)
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
@@ -589,7 +589,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
-			if (u->size)
+			if (u->size > 0 && u->size < 0xFFFFFFFF)
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
@@ -647,7 +647,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 					mvp_modified = GL_FALSE;
 				}
 				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
-			} else if (u->size)
+			} else if (u->size > 0 && u->size < 0xFFFFFFFF)
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
@@ -657,7 +657,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
 		uniform *u = p->frag_uniforms;
 		while (u) {
-			if (u->size)
+			if (u->size > 0 && u->size < 0xFFFFFFFF)
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
 			u = (uniform *)u->chain;
 		}
