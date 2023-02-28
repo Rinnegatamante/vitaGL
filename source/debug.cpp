@@ -94,14 +94,14 @@ void vgl_debugger_light_draw(uint32_t *fb) {
 	vgl_debugger_draw_string_format(5, dbg_y, "Frame Number: %lu", vgl_debugger_framecount);
 	dbg_y += 20;
 #elif defined(HAVE_LIGHT_RAZOR)
-	vgl_debugger_draw_string_format(5, dbg_y, "Frame Number: %lu", razor_metrics.frameNumber);
+	vgl_debugger_draw_string_format(5, dbg_y, "Frame Number: %lu", razor_metrics.frame_number);
 	dbg_y += 20;
 #endif
 #ifdef HAVE_LIGHT_RAZOR
-	vgl_debugger_draw_string_format(5, dbg_y, "GPU activity: %dus (%.0f%%)", razor_metrics.frameGpuActive, 100.f * razor_metrics.frameGpuActive / razor_metrics.frameDuration);
-	vgl_debugger_draw_string_format(5, dbg_y + 20, "Partial Rendering: %s", razor_metrics.partialRender ? "Yes" : "No");
-	vgl_debugger_draw_string_format(5, dbg_y + 40, "Param Buffer Outage: %s", razor_metrics.vertexJobPaused ? "Yes" : "No");
-	vgl_debugger_draw_string_format(5, dbg_y + 60, "Param Buffer Peak Usage: %lu Bytes", razor_metrics.peakUsage);
+	vgl_debugger_draw_string_format(5, dbg_y, "GPU activity: %dus (%.0f%%)", razor_metrics.gpu_activity_duration_time, 100.f * razor_metrics.gpu_activity_duration_time / razor_metrics.frame_duration);
+	vgl_debugger_draw_string_format(5, dbg_y + 20, "Partial Rendering: %s", razor_metrics.partial_render ? "Yes" : "No");
+	vgl_debugger_draw_string_format(5, dbg_y + 40, "Param Buffer Outage: %s", razor_metrics.vertex_job_paused ? "Yes" : "No");
+	vgl_debugger_draw_string_format(5, dbg_y + 60, "Param Buffer Peak Usage: %lu Bytes", razor_metrics.peak_usage_value);
 #endif
 }
 #endif
