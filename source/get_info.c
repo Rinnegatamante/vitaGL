@@ -314,6 +314,12 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_DOUBLEBUFFER:
+		*data = GL_TRUE;
+		break;
+	case GL_ALPHA_BITS:
+		*data = active_write_fb ? get_alpha_channel_size(sceGxmColorSurfaceGetFormat(&active_write_fb->colorbuffer)) : 8;
+		break;
 	case GL_BLEND_EQUATION:
 		*data = gxm_blend_eq_to_gl(blend_func_rgb);
 		break;

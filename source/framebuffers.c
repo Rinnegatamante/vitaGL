@@ -69,6 +69,25 @@ uint32_t get_color_from_texture(SceGxmTextureFormat type) {
 	return res;
 }
 
+uint32_t get_alpha_channel_size(SceGxmColorFormat type) {
+	switch (type) {
+	case SCE_GXM_COLOR_FORMAT_U8_R:
+	case SCE_GXM_COLOR_FORMAT_U8U8U8_BGR:
+	case SCE_GXM_COLOR_FORMAT_U5U6U5_RGB:
+		return 0;
+	case SCE_GXM_COLOR_FORMAT_U4U4U4U4_ABGR:
+	case SCE_GXM_COLOR_FORMAT_U4U4U4U4_RGBA:
+		return 4;
+	case SCE_GXM_COLOR_FORMAT_U1U5U5U5_ABGR:
+	case SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA:
+		return 1;
+	case SCE_GXM_COLOR_FORMAT_F16F16F16F16_RGBA:
+		return 16;
+	default:
+		return 8;
+	}
+}
+
 /*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -

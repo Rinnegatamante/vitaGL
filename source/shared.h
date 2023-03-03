@@ -863,6 +863,9 @@ void waitRenderingDone(void); // Waits for rendering to be finished
 void sceneReset(void); // Resets drawing scene if required
 GLboolean startShaderCompiler(void); // Starts a shader compiler instance
 
+/* framebuffers.c */
+uint32_t get_alpha_channel_size(SceGxmColorFormat type); // Get alpha channel size in bits
+
 /* tests.c */
 void change_depth_write(SceGxmDepthWriteMode mode); // Changes current in use depth write mode
 void change_depth_func(void); // Changes current in use depth test function

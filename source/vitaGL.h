@@ -143,6 +143,7 @@ extern "C" {
 #define GL_BLEND                                        0x0BE2
 #define GL_SCISSOR_BOX                                  0x0C10
 #define GL_SCISSOR_TEST                                 0x0C11
+#define GL_DOUBLEBUFFER                                 0x0C32
 #define GL_UNPACK_ROW_LENGTH                            0x0CF2
 #define GL_UNPACK_ALIGNMENT                             0x0CF5
 #define GL_PACK_ALIGNMENT                               0x0D05
@@ -157,6 +158,7 @@ extern "C" {
 #define GL_RED_BITS                                     0x0D52
 #define GL_GREEN_BITS                                   0x0D53
 #define GL_BLUE_BITS                                    0x0D54
+#define GL_ALPHA_BITS                                   0x0D55
 #define GL_DEPTH_BITS                                   0x0D56
 #define GL_STENCIL_BITS                                 0x0D57
 #define GL_TEXTURE_1D                                   0x0DE0
