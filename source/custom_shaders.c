@@ -685,19 +685,19 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	case SHARK_LOG_INFO:
 		sprintf(newline, "%sI] %s on line %d", shark_log ? "\n" : "", msg, line);
 #ifdef LOG_ERRORS
-		vgl_log("Shader Compiler: I] %s on line %d\n", msg, line);
+		vgl_log("Shader Compiler: I] %s on line %d.\n", msg, line);
 #endif
 		break;
 	case SHARK_LOG_WARNING:
 		sprintf(newline, "%sW] %s on line %d", shark_log ? "\n" : "", msg, line);
 #ifdef LOG_ERRORS
-		vgl_log("Shader Compiler: W] %s on line %d\n", msg, line);
+		vgl_log("Shader Compiler: W] %s on line %d.\n", msg, line);
 #endif
 		break;
 	case SHARK_LOG_ERROR:
 		sprintf(newline, "%sE] %s on line %d", shark_log ? "\n" : "", msg, line);
 #ifdef LOG_ERRORS
-		vgl_log("Shader Compiler: E] %s on line %d\n", msg, line);
+		vgl_log("Shader Compiler: E] %s on line %d.\n", msg, line);
 #endif
 		break;
 	}
@@ -712,13 +712,13 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	switch (msg_level) {
 	case SHARK_LOG_INFO:
-		vgl_log("Shader Compiler: I] %s on line %d\n", msg, line);
+		vgl_log("Shader Compiler: I] %s on line %d.\n", msg, line);
 		break;
 	case SHARK_LOG_WARNING:
-		vgl_log("Shader Compiler: W] %s on line %d\n", msg, line);
+		vgl_log("Shader Compiler: W] %s on line %d.\n", msg, line);
 		break;
 	case SHARK_LOG_ERROR:
-		vgl_log("Shader Compiler: E] %s on line %d\n", msg, line);
+		vgl_log("Shader Compiler: E] %s on line %d.\n", msg, line);
 		break;
 	}
 }
@@ -761,7 +761,7 @@ GLuint glCreateShader(GLenum shaderType) {
 
 	// All shader slots are busy, exiting call
 	if (res == 0) {
-		vgl_log("%s:%d glCreateShader: Out of shaders handles. Consider increasing MAX_CUSTOM_SHADERS...\n", __FILE__, __LINE__);
+		vgl_log("%s:%d %s: Out of shaders handles. Consider increasing MAX_CUSTOM_SHADERS...\n", __FILE__, __LINE__, __func__);
 		return res;
 	}
 
@@ -919,7 +919,7 @@ void glCompileShader(GLuint handle) {
 			sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
 #ifdef LOG_ERRORS
 		if (r)
-			vgl_log("%s:%d glCompileShader: Program failed to register on sceGxm (%s).\n", __FILE__, __LINE__, get_gxm_error_literal(r));
+			vgl_log("%s:%d %s: Program failed to register on sceGxm (%s).\n", __FILE__, __LINE__, __func__, get_gxm_error_literal(r));
 #endif
 		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
 	}
@@ -1030,7 +1030,7 @@ GLuint glCreateProgram(void) {
 	}
 #ifndef SKIP_ERROR_HANDLING
 	if (res == 0xFFFFFFFF) {
-		vgl_log("%s:%d glCreateProgram: Out of programs handles. Consider increasing MAX_CUSTOM_PROGRAMS...\n", __FILE__, __LINE__);
+		vgl_log("%s:%d %s: Out of programs handles. Consider increasing MAX_CUSTOM_PROGRAMS...\n", __FILE__, __LINE__, __func__);
 		return 0;
 	}
 #endif	
@@ -1234,8 +1234,10 @@ void glLinkProgram(GLuint progr) {
 	// Grabbing passed program
 	program *p = &progs[progr - 1];
 #ifndef SKIP_ERROR_HANDLING
-	if (!p->fshader->prog || !p->vshader->prog)
+	if (!p->fshader->prog || !p->vshader->prog) {
+		vgl_log("%s:%d: %s %s shader is missing.\n", __FILE__, __LINE__, __func__, p->fshader->prog ? "fragment" : "vertex"); \
 		return;
+	}
 #endif
 	p->status = PROG_LINKED;
 
@@ -1415,7 +1417,7 @@ void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size != count) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1465,7 +1467,7 @@ void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1514,7 +1516,7 @@ void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 2) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1565,7 +1567,7 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 2) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1615,7 +1617,7 @@ void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 3) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1667,7 +1669,7 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 3) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1718,7 +1720,7 @@ void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 4) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1771,7 +1773,7 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 4) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1798,7 +1800,7 @@ void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, cons
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 4) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1830,7 +1832,7 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, cons
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 9) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 9, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 9, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1863,7 +1865,7 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 16) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s\n", __FILE__, __LINE__, __func__, u->size, count * 16, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 16, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
