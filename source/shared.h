@@ -440,7 +440,7 @@ typedef struct {
 	uint8_t vertex_attrib_size[VERTEX_ATTRIBS_NUM];
 	uint32_t vertex_attrib_offsets[VERTEX_ATTRIBS_NUM];
 	uint32_t vertex_attrib_vbo[VERTEX_ATTRIBS_NUM];
-	uint8_t vertex_attrib_state;
+	uint32_t vertex_attrib_state;
 	float *vertex_attrib_value[VERTEX_ATTRIBS_NUM];
 	SceGxmVertexAttribute vertex_attrib_config[VERTEX_ATTRIBS_NUM];
 	SceGxmVertexStream vertex_stream_config[VERTEX_ATTRIBS_NUM];

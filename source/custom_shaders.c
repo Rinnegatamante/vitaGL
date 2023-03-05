@@ -395,7 +395,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 
 	// Uploading vertex streams
 	for (int i = 0; i < p->attr_num; i++) {
-		GLboolean is_active = cur_vao->vertex_attrib_state & (1 << p->attr_map[i]);
+		GLboolean is_active = cur_vao->vertex_attrib_state & (1 << p->attr_map[i]) ? GL_TRUE : GL_FALSE;
 		if (is_active) {
 #ifdef DRAW_SPEEDHACK
 			sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
@@ -598,7 +598,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 
 	// Uploading vertex streams
 	for (int i = 0; i < p->attr_num; i++) {
-		GLboolean is_active = cur_vao->vertex_attrib_state & (1 << p->attr_map[i]);
+		GLboolean is_active = cur_vao->vertex_attrib_state & (1 << p->attr_map[i]) ? GL_TRUE : GL_FALSE;
 		if (is_active) {
 #ifdef DRAW_SPEEDHACK
 			sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
