@@ -263,7 +263,7 @@ static void *heap_alloc(int32_t type, uint32_t size, uint32_t alignment) {
 #ifdef PHYCONT_ON_DEMAND
 void *vgl_alloc_phycont_block(uint32_t size) {
 	size = ALIGN(size, 1024 * 1024);
-	SceUID blk = sceKernelAllocMemBlock("phycont_blk", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW, size, NULL);
+	SceUID blk = sceKernelAllocMemBlock("phycont_blk", has_cached_mem ? SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW, size, NULL);
 
 	if (blk < 0)
 		return NULL;
@@ -352,19 +352,21 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_
 		}
 	}
 
-#if defined(PHYCONT_ON_DEMAND) && !defined(HAVE_CUSTOM_HEAP)
+#ifdef PHYCONT_ON_DEMAND
 	// Getting total available phycont mem
+	uint32_t phycont_size;
 	if (system_app_mode) {
 		SceAppMgrBudgetInfo info;
 		info.size = sizeof(SceAppMgrBudgetInfo);
 		sceAppMgrGetBudgetInfo(&info);
-		mempool_size[VGL_MEM_SLOW] = info.total_phycont_mem;
+		phycont_size = info.total_phycont_mem;
 	} else {
 		SceKernelFreeMemorySizeInfo info;
 		info.size = sizeof(SceKernelFreeMemorySizeInfo);
 		sceKernelGetFreeMemorySize(&info);
-		mempool_size[VGL_MEM_SLOW] = info.size_phycont;
+		phycont_size = info.size_phycont;
 	}
+	mempool_size[VGL_MEM_SLOW] = phycont_size;
 #endif
 
 	// Mapping newlib heap into sceGxm
@@ -383,7 +385,7 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_
 }
 
 vglMemType vgl_mem_get_type_by_addr(void *addr) {
-#ifdef HAVE_CUSTOM_HEAP
+#if !defined(PHYCONT_ON_DEMAND) && defined(HAVE_CUSTOM_HEAP)
 	if (addr >= mempool_addr[VGL_MEM_EXTERNAL] && (addr < mempool_addr[VGL_MEM_EXTERNAL] + mempool_size[VGL_MEM_EXTERNAL]))
 		return VGL_MEM_EXTERNAL;
 	return -1;
@@ -400,18 +402,18 @@ vglMemType vgl_mem_get_type_by_addr(void *addr) {
 		return VGL_MEM_BUDGET;
 	else if (addr >= mempool_addr[VGL_MEM_EXTERNAL] && (addr < mempool_addr[VGL_MEM_EXTERNAL] + mempool_size[VGL_MEM_EXTERNAL]))
 		return VGL_MEM_EXTERNAL;
+#endif
 #ifdef PHYCONT_ON_DEMAND
 	return VGL_MEM_SLOW;
 #else
 	return -1;
-#endif
 #endif
 }
 
 size_t vgl_mem_get_free_space(vglMemType type) {
 	if (type == VGL_MEM_EXTERNAL) {
 		return 0;
-#if defined(PHYCONT_ON_DEMAND) && !defined(HAVE_CUSTOM_HEAP)
+#if defined(PHYCONT_ON_DEMAND)
 	} else if (type == VGL_MEM_SLOW) {
 		if (system_app_mode) {
 			SceAppMgrBudgetInfo info;
@@ -481,16 +483,16 @@ void vgl_free(void *ptr) {
 #else
 		free(ptr);
 #endif
-#ifdef HAVE_CUSTOM_HEAP
-	else
-		heap_blk_free(ptr);
-#else
 #ifdef PHYCONT_ON_DEMAND
 	else if (type == VGL_MEM_SLOW) {
 		sceGxmUnmapMemory(ptr);
 		sceKernelFreeMemBlock(sceKernelFindMemBlockByAddr(ptr, 0));
 	}
 #endif
+#ifdef HAVE_CUSTOM_HEAP
+	else
+		heap_blk_free(ptr);
+#else
 	else if (mempool_mspace[type])
 		sceClibMspaceFree(mempool_mspace[type], ptr);
 #endif
@@ -503,14 +505,14 @@ void *vgl_malloc(size_t size, vglMemType type) {
 #else
 		return malloc(size);
 #endif
-#ifdef HAVE_CUSTOM_HEAP
-	else if (size <= tm_free[type])
-		return heap_alloc(type, size, MEM_ALIGNMENT);
-#else
 #ifdef PHYCONT_ON_DEMAND
 	else if (type == VGL_MEM_SLOW)
 		return vgl_alloc_phycont_block(size);
 #endif
+#ifdef HAVE_CUSTOM_HEAP
+	else if (size <= tm_free[type])
+		return heap_alloc(type, size, MEM_ALIGNMENT);
+#else
 	else if (mempool_mspace[type])
 		return sceClibMspaceMalloc(mempool_mspace[type], size);
 #endif
@@ -524,14 +526,14 @@ void *vgl_calloc(size_t num, size_t size, vglMemType type) {
 #else
 		return calloc(num, size);
 #endif
-#ifdef HAVE_CUSTOM_HEAP
-	else if (num * size <= tm_free[type])
-		return heap_alloc(type, num * size, MEM_ALIGNMENT);
-#else
 #ifdef PHYCONT_ON_DEMAND
 	else if (type == VGL_MEM_SLOW)
 		return vgl_alloc_phycont_block(num * size);
 #endif
+#ifdef HAVE_CUSTOM_HEAP
+	else if (num * size <= tm_free[type])
+		return heap_alloc(type, num * size, MEM_ALIGNMENT);
+#else
 	else if (mempool_mspace[type])
 		return sceClibMspaceCalloc(mempool_mspace[type], num, size);
 #endif
@@ -545,14 +547,14 @@ void *vgl_memalign(size_t alignment, size_t size, vglMemType type) {
 #else
 		return memalign(alignment, size);
 #endif
-#ifdef HAVE_CUSTOM_HEAP
-	else if (size <= tm_free[type])
-		return heap_alloc(type, size, alignment);
-#else
 #ifdef PHYCONT_ON_DEMAND
 	else if (type == VGL_MEM_SLOW)
 		return vgl_alloc_phycont_block(size);
 #endif
+#ifdef HAVE_CUSTOM_HEAP
+	else if (size <= tm_free[type])
+		return heap_alloc(type, size, alignment);
+#else
 	else if (mempool_mspace[type])
 		return sceClibMspaceMemalign(mempool_mspace[type], alignment, size);
 #endif
@@ -567,7 +569,6 @@ void *vgl_realloc(void *ptr, size_t size) {
 #else
 		return realloc(ptr, size);
 #endif
-#ifndef HAVE_CUSTOM_HEAP
 #ifdef PHYCONT_ON_DEMAND
 	else if (type == VGL_MEM_SLOW) {
 		size_t old_size = vgl_malloc_usable_size(ptr);
@@ -581,6 +582,7 @@ void *vgl_realloc(void *ptr, size_t size) {
 		}
 	}
 #endif
+#ifndef HAVE_CUSTOM_HEAP
 	else if (mempool_mspace[type])
 		return sceClibMspaceRealloc(mempool_mspace[type], ptr, size);
 #endif
