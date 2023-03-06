@@ -1235,10 +1235,12 @@ void glLinkProgram(GLuint progr) {
 	program *p = &progs[progr - 1];
 #ifndef SKIP_ERROR_HANDLING
 	if (!p->fshader->prog || !p->vshader->prog) {
-		vgl_log("%s:%d: %s %s shader is missing.\n", __FILE__, __LINE__, __func__, p->fshader->prog ? "fragment" : "vertex"); \
+		vgl_log("%s:%d: %s: %s shader is missing.\n", __FILE__, __LINE__, __func__, p->fshader->prog ? "fragment" : "vertex"); \
 		return;
 	}
 #endif
+	if (p->status == PROG_LINKED)
+		return;
 	p->status = PROG_LINKED;
 
 	// Analyzing fragment shader
@@ -1417,7 +1419,7 @@ void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size != count) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1467,7 +1469,7 @@ void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1516,7 +1518,7 @@ void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 2) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1567,7 +1569,7 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 2) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1617,7 +1619,7 @@ void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 3) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1669,7 +1671,7 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 3) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1720,7 +1722,7 @@ void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 4) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1773,7 +1775,7 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 4) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1800,7 +1802,7 @@ void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, cons
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 4) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1832,7 +1834,7 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, cons
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 9) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 9, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 9, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1865,7 +1867,7 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 16) {
-		vgl_log("%s:%d: %s expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 16, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 16, sceGxmProgramParameterGetName(u->ptr)); \
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -2127,14 +2129,13 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 	int index = sceGxmProgramParameterGetResourceIndex(param);
 
 	// If attribute has been already bound, we return its location
-	int i;
-	for (i = 0; i < p->attr_highest_idx; i++) {
+	for (int i = 0; i < p->attr_highest_idx; i++) {
 		if (p->attr[i].regIndex == index)
 			return i;
 	}
 
 	// If attribute is not bound, we bind it and return its location
-	for (i = 0; i < p->attr_num; i++) {
+	for (int i = 0; i < p->attr_num; i++) {
 		if (p->attr[i].regIndex == 0xDEAD) {
 			p->attr[i].regIndex = index;
 
@@ -2143,8 +2144,7 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 
 			// Checking back if attributes are aligned
 			p->has_unaligned_attrs = GL_FALSE;
-			int j;
-			for (j = 0; j < p->attr_num; j++) {
+			for (int j = 0; j < p->attr_num; j++) {
 				p->attr_map[j] = j;
 				if (p->attr[j].regIndex == 0xDEAD) {
 					p->has_unaligned_attrs = GL_TRUE;
@@ -2155,7 +2155,7 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 			// Fixing attributes mapping cache if in presence of unaligned attributes
 			if (p->has_unaligned_attrs) {
 				int k = 0;
-				for (j = 0; j < p->attr_highest_idx; j++) {
+				for (int j = 0; j < p->attr_highest_idx; j++) {
 					if (p->attr[j].regIndex != 0xDEAD) {
 						p->attr_map[k] = j;
 						k++;
