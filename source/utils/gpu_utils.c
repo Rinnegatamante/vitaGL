@@ -23,11 +23,16 @@
 
 #include "../shared.h"
 
+#include "texture_swizzler.h"
+
 #define STB_DXT_IMPLEMENTATION
 #include "stb_dxt.h"
 
 #ifndef MAX
 #define MAX(a, b) (((a) < (b)) ? (b) : (a))
+#endif
+#ifndef MIN
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
 // VRAM usage setting
@@ -87,59 +92,6 @@ void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
 		extract_block(src + offs_y * 16 + offs_x * w * 16, w, block);
 		stb_compress_dxt_block(dst, block, isdxt5, fast_texture_compression ? STB_DXT_NORMAL : STB_DXT_HIGHQUAL);
 		dst += isdxt5 ? 16 : 8;
-	}
-}
-
-enum {
-	SWIZZLER_DEFAULT = 0x00,
-	SWIZZLER_LARGE_BLOCK = 0x01,
-	SWIZZLER_WIDE_BLOCK = 0x02,
-	SWIZZLER_ENDIANESS_SWAP = 0x04
-};
-
-void swizzle_compressed_texture_region(void *dst, const void *src, int tex_width, int tex_height, int region_x, int region_y, int region_width, int region_height, int mode) {
-	const int blocksize = (mode & SWIZZLER_LARGE_BLOCK) ? 16 : 8;
-	const uint32_t blockw = (mode & SWIZZLER_WIDE_BLOCK) ? 8 : 4;
-
-	// round sizes up to block size
-	tex_width = ALIGN(tex_width, blockw);
-	tex_height = ALIGN(tex_height, 4);
-	region_width = ALIGN(region_width, blockw);
-	region_height = ALIGN(region_height, 4);
-
-	const int s = MAX(tex_width, tex_height);
-	const uint32_t num_blocks = (s * s) / (blockw * 4);
-
-	uint64_t d, offs_x, offs_y;
-	uint64_t dst_x, dst_y;
-	for (d = 0; d < num_blocks; d++) {
-		d2xy_morton(d, &offs_x, &offs_y);
-		// If the block coords exceed input texture dimensions.
-		if ((offs_x * 4 >= region_height + region_y) || (offs_x * 4 < region_y)) {
-			// If the block coord is smaller than the Po2 aligned dimension, skip forward one block.
-			if (offs_x * 4 < tex_height)
-				dst += blocksize;
-			continue;
-		}
-
-		if ((offs_y * blockw >= region_width + region_x) || (offs_y * blockw < region_x)) {
-			if (offs_y * blockw < tex_width)
-				dst += blocksize;
-			continue;
-		}
-
-		dst_x = offs_x - (region_y / 4);
-		dst_y = offs_y - (region_x / blockw);
-		
-		if (mode & SWIZZLER_ENDIANESS_SWAP) {
-			uint32_t *block_src = (uint32_t *)(src + dst_y * blocksize + dst_x * (region_width / blockw) * blocksize);
-			uint32_t *block_dst = dst;
-			for (int i = 0; i < blocksize / 4; i++) {
-				block_dst[i] = __builtin_bswap32(block_src[i]);
-			}
-		} else
-			vgl_fast_memcpy(dst, src + dst_y * blocksize + dst_x * (region_width / blockw) * blocksize, blocksize);
-		dst += blocksize;
 	}
 }
 
@@ -646,16 +598,16 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 				case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_LARGE_BLOCK);
+					SwizzleTexData128Bpp((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 4), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 4), ALIGNBLOCK(MIN(aligned_width, aligned_height), 4));
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
-					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_WIDE_BLOCK);
+					SwizzleTexData64Bpp((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 8), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 8), MIN(ALIGNBLOCK(aligned_width, 8), ALIGNBLOCK(aligned_height, 4)));
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_ETC1_RGB:
-					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_ENDIANESS_SWAP);
+					SwizzleTexDataETC1((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 4), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 4), ALIGNBLOCK(MIN(aligned_width, aligned_height), 4));
 					break;
 				default:
-					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_DEFAULT);
+					SwizzleTexData64Bpp((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 4), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 4), ALIGNBLOCK(MIN(aligned_width, aligned_height), 4));
 					break;
 				}
 			}
@@ -774,16 +726,16 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 				case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_LARGE_BLOCK);
+					SwizzleTexData128Bpp((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 4), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 4), ALIGNBLOCK(MIN(aligned_width, aligned_height), 4));
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
-					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_WIDE_BLOCK);
+					SwizzleTexData64Bpp((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 8), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 8), MIN(ALIGNBLOCK(aligned_width, 8), ALIGNBLOCK(aligned_height, 4)));
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_ETC1_RGB:
-					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_ENDIANESS_SWAP);
+					SwizzleTexDataETC1((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 4), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 4), ALIGNBLOCK(MIN(aligned_width, aligned_height), 4));
 					break;
 				default:
-					swizzle_compressed_texture_region(mip_data, (void *)data, aligned_width, aligned_height, 0, 0, w, h, SWIZZLER_DEFAULT);
+					SwizzleTexData64Bpp((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 4), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 4), ALIGNBLOCK(MIN(aligned_width, aligned_height), 4));
 					break;
 				}
 			}

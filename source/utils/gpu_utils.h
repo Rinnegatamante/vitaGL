@@ -28,6 +28,7 @@
 
 // Align a value to the requested alignment
 #define ALIGN(x, a) (((x) + ((a)-1)) & ~((a)-1))
+#define ALIGNBLOCK(x, a) (((x) + ((a)-1)) / a)
 
 // Texture object status enum
 enum {
