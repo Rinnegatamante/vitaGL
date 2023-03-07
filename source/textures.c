@@ -1784,6 +1784,7 @@ void glGenSamplers(GLsizei n, GLuint *samplers) {
 		smp->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 		smp->u_mode = smp->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 		smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+		smp->lod_bias = GL_MAX_TEXTURE_LOD_BIAS;
 		smp->use_mips = GL_TRUE;
 		samplers[i] = (GLuint)smp;
 	}
