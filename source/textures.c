@@ -499,6 +499,7 @@ void glGenTextures(GLsizei n, GLuint *res) {
 #ifdef HAVE_UNPURE_TEXTURES
 			texture_slots[i].mip_start = -1;
 #endif
+			texture_slots[i].overridden = GL_FALSE;
 			texture_slots[i].use_mips = GL_FALSE;
 			texture_slots[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
 			texture_slots[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
@@ -511,7 +512,7 @@ void glGenTextures(GLsizei n, GLuint *res) {
 			return;
 	}
 
-	vgl_log("%s:%d glGenTextures: Texture slots limit reached (%d textures hadn't been generated).\n", __FILE__, __LINE__, n - j);
+	vgl_log("%s:%d %s: Texture slots limit reached (%d textures hadn't been generated).\n", __FILE__, __LINE__, __func__, n - j);
 }
 
 void glBindTexture(GLenum target, GLuint texture) {

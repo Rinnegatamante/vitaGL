@@ -112,6 +112,7 @@ typedef struct {
 // Internal shaders and array
 static shader shaders[MAX_CUSTOM_SHADERS];
 static program progs[MAX_CUSTOM_PROGRAMS];
+sampler *samplers[COMBINED_TEXTURE_IMAGE_UNITS_NUM] = {NULL};
 
 void release_shader(shader *s) {
 	// Deallocating shader and unregistering it from sceGxmShaderPatcher
@@ -253,17 +254,34 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
 			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : 0;
+			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
+			int r = sceGxmTextureValidate(&tex->gxm_tex);
 			if (r) {
 				vgl_log("%s:%d glDrawArrays: Fragment %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
 #ifndef TEXTURES_SPEEDHACK
-			texture_slots[tex_unit->tex_id[tex_type]].used = GL_TRUE;
+			tex->used = GL_TRUE;
 #endif
-			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
+			sampler *smp = samplers[(int)p->frag_texunits[i]->data];
+			if (smp) {
+				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+				vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
+				vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
+				vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
+				tex->overridden = GL_TRUE;
+			} else if (tex->overridden) {
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+				tex->overridden = GL_FALSE;
+			}
+			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK		
 		}
 #endif
@@ -275,18 +293,35 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		if (p->vert_texunits[i]) {
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
-			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : 0;
+			uint8_t tex_type = p->vert_texunits[i]->size ? 2 : 0;
+			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
+			int r = sceGxmTextureValidate(&tex->gxm_tex);
 			if (r) {
 				vgl_log("%s:%d glDrawArrays: Vertex %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
 #ifndef TEXTURES_SPEEDHACK
-			texture_slots[tex_unit->tex_id[tex_type]].used = GL_TRUE;
+			tex->used = GL_TRUE;
 #endif
-			sceGxmSetVertexTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
+			sampler *smp = samplers[(int)p->vert_texunits[i]->data];
+			if (smp) {
+				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+				vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
+				vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
+				vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
+				tex->overridden = GL_TRUE;
+			} else if (tex->overridden) {
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+				tex->overridden = GL_FALSE;
+			}
+			sceGxmSetVertexTexture(gxm_context, i, &tex->gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK		
 		}
 #endif
@@ -429,25 +464,42 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	}
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 
-	// Uploading textures on relative texture units
+	// Uploading fragment textures on relative texture units
 	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
 #ifndef SAMPLERS_SPEEDHACK
 		if (p->frag_texunits[i]) {
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
 			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : 0;
+			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
+			int r = sceGxmTextureValidate(&tex->gxm_tex);
 			if (r) {
 				vgl_log("%s:%d glDrawElements: Fragment %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
 #ifndef TEXTURES_SPEEDHACK
-			texture_slots[tex_unit->tex_id[tex_type]].used = GL_TRUE;
+			tex->used = GL_TRUE;
 #endif
-			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
-#ifndef SAMPLERS_SPEEDHACK
+			sampler *smp = samplers[(int)p->frag_texunits[i]->data];
+			if (smp) {
+				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+				vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
+				vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
+				vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
+				tex->overridden = GL_TRUE;
+			} else if (tex->overridden) {
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+				tex->overridden = GL_FALSE;
+			}
+			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
+#ifndef SAMPLERS_SPEEDHACK		
 		}
 #endif
 	}
@@ -458,18 +510,35 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		if (p->vert_texunits[i]) {
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
-			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : 0;
+			uint8_t tex_type = p->vert_texunits[i]->size ? 2 : 0;
+			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
+			int r = sceGxmTextureValidate(&tex->gxm_tex);
 			if (r) {
 				vgl_log("%s:%d glDrawElements: Vertex %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
 				return GL_FALSE;
 			}
 #endif
 #ifndef TEXTURES_SPEEDHACK
-			texture_slots[tex_unit->tex_id[tex_type]].used = GL_TRUE;
+			tex->used = GL_TRUE;
 #endif
-			sceGxmSetVertexTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[tex_type]].gxm_tex);
+			sampler *smp = samplers[(int)p->vert_texunits[i]->data];
+			if (smp) {
+				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+				vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
+				vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
+				vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
+				tex->overridden = GL_TRUE;
+			} else if (tex->overridden) {
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+				tex->overridden = GL_FALSE;
+			}
+			sceGxmSetVertexTexture(gxm_context, i, &tex->gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK		
 		}
 #endif
@@ -747,6 +816,141 @@ void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, in
 	compiler_fastmath = use_fastmath;
 	compiler_fastprecision = use_fastprecision;
 	compiler_fastint = use_fastint;
+}
+
+void glGenSamplers(GLsizei n, GLuint *samplers) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (n < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+	
+	for (int i = 0; i < n; i++) {
+		sampler *smp = (sampler *)vglMalloc(sizeof(sampler));
+		smp->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+		smp->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+		smp->u_mode = smp->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+		smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+		smp->use_mips = GL_TRUE;
+		samplers[i] = (GLuint)smp;
+	}
+}
+
+void glBindSampler(GLuint unit, GLuint smp) {
+#ifndef SKIP_ERROR_HANDLING
+	if (unit< 0 || unit >= COMBINED_TEXTURE_IMAGE_UNITS_NUM) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, unit)
+	}
+#endif
+	samplers[unit] = (sampler *)smp;
+}
+
+void glSamplerParameteri(GLuint target, GLenum pname, GLint param) {
+	// Setting some aliases to make code more readable
+	sampler *smp = (sampler *)target;
+
+	switch (pname) {
+	case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
+#ifndef SKIP_ERROR_HANDLING			
+		if (param != 1) {
+			SET_GL_ERROR(GL_INVALID_VALUE)
+		}
+#endif
+		break;
+	case GL_TEXTURE_MIN_FILTER: // Min filter
+		switch (param) {
+		case GL_NEAREST: // Point
+			smp->use_mips = GL_FALSE;
+			smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+			smp->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+			break;
+		case GL_LINEAR: // Linear
+			smp->use_mips = GL_FALSE;
+			smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+			smp->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+			break;
+		case GL_NEAREST_MIPMAP_NEAREST:
+			smp->use_mips = GL_TRUE;
+			smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+			smp->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+			break;
+		case GL_LINEAR_MIPMAP_NEAREST:
+			smp->use_mips = GL_TRUE;
+			smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+			smp->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+			break;
+		case GL_NEAREST_MIPMAP_LINEAR:
+			smp->use_mips = GL_TRUE;
+			smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+			smp->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+			break;
+		case GL_LINEAR_MIPMAP_LINEAR:
+			smp->use_mips = GL_TRUE;
+			smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+			smp->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+			break;
+		default:
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+		}
+		break;
+	case GL_TEXTURE_MAG_FILTER: // Mag Filter
+		switch (param) {
+		case GL_NEAREST:
+			smp->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+			break;
+		case GL_LINEAR:
+			smp->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+			break;
+		default:
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+		}
+		break;
+	case GL_TEXTURE_WRAP_S: // U Mode
+		switch (param) {
+		case GL_CLAMP_TO_EDGE: // Clamp
+		case GL_CLAMP:
+			smp->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+			break;
+		case GL_REPEAT: // Repeat
+			smp->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+			break;
+		case GL_MIRRORED_REPEAT: // Mirror
+			smp->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+			break;
+		case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
+			smp->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
+			break;
+		default:
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+		}
+		break;
+	case GL_TEXTURE_WRAP_T: // V Mode
+		switch (param) {
+		case GL_CLAMP_TO_EDGE: // Clamp
+		case GL_CLAMP:
+			smp->v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+			break;
+		case GL_REPEAT: // Repeat
+			smp->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+			break;
+		case GL_MIRRORED_REPEAT: // Mirror
+			smp->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+			break;
+		case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
+			smp->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
+			break;
+		default:
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+		}
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
+}
+
+void glSamplerParameterf(GLuint sampler, GLenum pname, GLfloat param) {
+	glSamplerParameteri(sampler, pname, param);
 }
 
 GLuint glCreateShader(GLenum shaderType) {

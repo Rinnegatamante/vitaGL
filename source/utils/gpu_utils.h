@@ -58,6 +58,7 @@ typedef struct {
 	uint8_t ref_counter;
 	uint8_t faces_counter;
 	GLboolean dirty;
+	GLboolean overridden;
 #ifdef HAVE_UNPURE_TEXTURES
 	int8_t mip_start;
 #endif

@@ -413,6 +413,7 @@ extern "C" {
 #define GL_DYNAMIC_READ                                 0x88E9
 #define GL_DYNAMIC_COPY                                 0x88EA
 #define GL_DEPTH24_STENCIL8                             0x88F0
+#define GL_SAMPLER_BINDING                              0x8919
 #define GL_FRAGMENT_SHADER                              0x8B30
 #define GL_VERTEX_SHADER                                0x8B31
 #define GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS               0x8B4C
@@ -549,6 +550,7 @@ void glBindAttribLocation(GLuint program, GLuint index, const GLchar *name);
 void glBindBuffer(GLenum target, GLuint buffer);
 void glBindFramebuffer(GLenum target, GLuint framebuffer);
 void glBindRenderbuffer(GLenum target, GLuint renderbuffer);
+void glBindSampler(GLuint unit, GLuint smp);
 void glBindTexture(GLenum target, GLuint texture);
 void glBindVertexArray(GLuint array);
 void glBlendEquation(GLenum mode);
@@ -642,6 +644,7 @@ void glGenerateTextureMipmap(GLuint target);
 void glGenFramebuffers(GLsizei n, GLuint *framebuffers);
 GLuint glGenLists(GLsizei range);
 void glGenRenderbuffers(GLsizei n, GLuint *renderbuffers);
+void glGenSamplers(GLsizei n, GLuint *samplers);
 void glGenTextures(GLsizei n, GLuint *textures);
 void glGenVertexArrays(GLsizei n, GLuint *res);
 void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
@@ -751,6 +754,8 @@ void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, 
 void glRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z);
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
 void glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z);
+void glSamplerParameterf(GLuint sampler, GLenum pname, GLfloat param);
+void glSamplerParameteri(GLuint target, GLenum pname, GLint param);
 void glScaled(GLdouble x, GLdouble y, GLdouble z);
 void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScalex(GLfixed x, GLfixed y, GLfixed z);

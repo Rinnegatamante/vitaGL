@@ -396,6 +396,16 @@ typedef struct {
 	SceGxmDepthStencilSurface *depthbuffer_ptr;
 } renderbuffer;
 
+// Sampler object struct
+typedef struct {
+	SceGxmTextureFilter min_filter;
+	SceGxmTextureFilter mag_filter;
+	SceGxmTextureAddrMode u_mode;
+	SceGxmTextureAddrMode v_mode;
+	SceGxmTextureMipFilter mip_filter;
+	GLboolean use_mips;
+} sampler;
+
 // Texture environment mode
 typedef enum {
 	MODULATE,
@@ -667,6 +677,8 @@ extern int frame_purge_idx; // Index for currently populatable purge list
 extern int frame_elem_purge_idx; // Index for currently populatable purge list element
 extern int frame_rt_purge_idx; // Index for currently populatable purge list rendertarget
 extern GLboolean use_vram; // Flag for VRAM usage for allocations
+
+extern sampler *samplers[COMBINED_TEXTURE_IMAGE_UNITS_NUM]; // Sampler objects array
 
 // Macro to mark a pointer or a rendertarget as dirty for garbage collection
 #define markAsDirty(x) frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x
