@@ -1041,10 +1041,27 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
+		texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
 #ifndef TEXTURES_SPEEDHACK
-		texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]].used = GL_TRUE;
+		tex->used = GL_TRUE;
 #endif
-		sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]].gxm_tex);
+		sampler *smp = samplers[i];
+		if (smp) {
+			vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
+			vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+			vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
+			vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
+			vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
+			tex->overridden = GL_TRUE;
+		} else if (tex->overridden) {
+			vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+			vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+			vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+			vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+			vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+			tex->overridden = GL_FALSE;
+		}
+		sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
 	}
 
 	// Uploading vertex streams
@@ -1117,10 +1134,27 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
+		texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
 #ifndef TEXTURES_SPEEDHACK
-		texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]].used = GL_TRUE;
+		tex->used = GL_TRUE;
 #endif
-		sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]].gxm_tex);
+		sampler *smp = samplers[i];
+		if (smp) {
+			vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
+			vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+			vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
+			vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
+			vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
+			tex->overridden = GL_TRUE;
+		} else if (tex->overridden) {
+			vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+			vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+			vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+			vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+			vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+			tex->overridden = GL_FALSE;
+		}
+		sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
 	}
 
 	// Uploading vertex streams
@@ -2279,21 +2313,53 @@ void glEnd(void) {
 	if (texture_units[1].state) { // Multitexture usage
 		ffp_vertex_attrib_state = 0xFF;
 		reload_ffp_shaders(legacy_mt_vertex_attrib_config, legacy_mt_vertex_stream_config);
+		for (int i = 0; i < 2; i++) {
+			texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
 #ifndef TEXTURES_SPEEDHACK
-		texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]].used = GL_TRUE;
+			tex->used = GL_TRUE;
 #endif
-#ifndef TEXTURES_SPEEDHACK
-		texture_slots[texture_units[1].tex_id[texture_units[1].state > 1 ? 0 : 1]].used = GL_TRUE;
-#endif
-		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]].gxm_tex);
-		sceGxmSetFragmentTexture(gxm_context, 1, &texture_slots[texture_units[1].tex_id[texture_units[1].state > 1 ? 0 : 1]].gxm_tex);
+			sampler *smp = samplers[i];
+			if (smp) {
+				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+				vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
+				vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
+				vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
+				tex->overridden = GL_TRUE;
+			} else if (tex->overridden) {
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+				tex->overridden = GL_FALSE;
+			}
+			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
+		}
 	} else if (texture_units[0].state) { // Texturing usage
 		ffp_vertex_attrib_state = 0x07;
 		reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
+		texture *tex = &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]];
 #ifndef TEXTURES_SPEEDHACK
-		texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]].used = GL_TRUE;
+		tex->used = GL_TRUE;
 #endif
-		sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]].gxm_tex);
+		sampler *smp = samplers[0];
+		if (smp) {
+			vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
+			vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+			vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
+			vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
+			vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
+			tex->overridden = GL_TRUE;
+		} else if (tex->overridden) {
+			vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+			vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+			vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+			vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+			vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+			tex->overridden = GL_FALSE;
+		}
+		sceGxmSetFragmentTexture(gxm_context, 0, &tex->gxm_tex);
 	} else { // No texturing usage
 		ffp_vertex_attrib_state = 0x05;
 		reload_ffp_shaders(legacy_nt_vertex_attrib_config, legacy_nt_vertex_stream_config);

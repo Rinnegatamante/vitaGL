@@ -112,7 +112,6 @@ typedef struct {
 // Internal shaders and array
 static shader shaders[MAX_CUSTOM_SHADERS];
 static program progs[MAX_CUSTOM_PROGRAMS];
-sampler *samplers[COMBINED_TEXTURE_IMAGE_UNITS_NUM] = {NULL};
 
 void release_shader(shader *s) {
 	// Deallocating shader and unregistering it from sceGxmShaderPatcher
@@ -272,6 +271,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 				vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
 				vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
 				vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
+				vglSetTexLodBias(&tex->gxm_tex, smp->lod_bias);
 				tex->overridden = GL_TRUE;
 			} else if (tex->overridden) {
 				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
@@ -279,6 +279,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
 				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
 				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+				vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
 				tex->overridden = GL_FALSE;
 			}
 			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
@@ -816,141 +817,6 @@ void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, in
 	compiler_fastmath = use_fastmath;
 	compiler_fastprecision = use_fastprecision;
 	compiler_fastint = use_fastint;
-}
-
-void glGenSamplers(GLsizei n, GLuint *samplers) {
-#ifndef SKIP_ERROR_HANDLING
-	// Error handling
-	if (n < 0) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-#endif
-	
-	for (int i = 0; i < n; i++) {
-		sampler *smp = (sampler *)vglMalloc(sizeof(sampler));
-		smp->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-		smp->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-		smp->u_mode = smp->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-		smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-		smp->use_mips = GL_TRUE;
-		samplers[i] = (GLuint)smp;
-	}
-}
-
-void glBindSampler(GLuint unit, GLuint smp) {
-#ifndef SKIP_ERROR_HANDLING
-	if (unit< 0 || unit >= COMBINED_TEXTURE_IMAGE_UNITS_NUM) {
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, unit)
-	}
-#endif
-	samplers[unit] = (sampler *)smp;
-}
-
-void glSamplerParameteri(GLuint target, GLenum pname, GLint param) {
-	// Setting some aliases to make code more readable
-	sampler *smp = (sampler *)target;
-
-	switch (pname) {
-	case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
-#ifndef SKIP_ERROR_HANDLING			
-		if (param != 1) {
-			SET_GL_ERROR(GL_INVALID_VALUE)
-		}
-#endif
-		break;
-	case GL_TEXTURE_MIN_FILTER: // Min filter
-		switch (param) {
-		case GL_NEAREST: // Point
-			smp->use_mips = GL_FALSE;
-			smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-			smp->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-			break;
-		case GL_LINEAR: // Linear
-			smp->use_mips = GL_FALSE;
-			smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-			smp->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			break;
-		case GL_NEAREST_MIPMAP_NEAREST:
-			smp->use_mips = GL_TRUE;
-			smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-			smp->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-			break;
-		case GL_LINEAR_MIPMAP_NEAREST:
-			smp->use_mips = GL_TRUE;
-			smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-			smp->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			break;
-		case GL_NEAREST_MIPMAP_LINEAR:
-			smp->use_mips = GL_TRUE;
-			smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-			smp->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-			break;
-		case GL_LINEAR_MIPMAP_LINEAR:
-			smp->use_mips = GL_TRUE;
-			smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-			smp->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			break;
-		default:
-			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-		}
-		break;
-	case GL_TEXTURE_MAG_FILTER: // Mag Filter
-		switch (param) {
-		case GL_NEAREST:
-			smp->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-			break;
-		case GL_LINEAR:
-			smp->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			break;
-		default:
-			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-		}
-		break;
-	case GL_TEXTURE_WRAP_S: // U Mode
-		switch (param) {
-		case GL_CLAMP_TO_EDGE: // Clamp
-		case GL_CLAMP:
-			smp->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
-			break;
-		case GL_REPEAT: // Repeat
-			smp->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-			break;
-		case GL_MIRRORED_REPEAT: // Mirror
-			smp->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
-			break;
-		case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
-			smp->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
-			break;
-		default:
-			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-		}
-		break;
-	case GL_TEXTURE_WRAP_T: // V Mode
-		switch (param) {
-		case GL_CLAMP_TO_EDGE: // Clamp
-		case GL_CLAMP:
-			smp->v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
-			break;
-		case GL_REPEAT: // Repeat
-			smp->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-			break;
-		case GL_MIRRORED_REPEAT: // Mirror
-			smp->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
-			break;
-		case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
-			smp->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
-			break;
-		default:
-			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-		}
-		break;
-	default:
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
-	}
-}
-
-void glSamplerParameterf(GLuint sampler, GLenum pname, GLfloat param) {
-	glSamplerParameteri(sampler, pname, param);
 }
 
 GLuint glCreateShader(GLenum shaderType) {

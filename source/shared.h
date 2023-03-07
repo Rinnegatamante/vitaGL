@@ -403,6 +403,7 @@ typedef struct {
 	SceGxmTextureAddrMode u_mode;
 	SceGxmTextureAddrMode v_mode;
 	SceGxmTextureMipFilter mip_filter;
+	uint32_t lod_bias;
 	GLboolean use_mips;
 } sampler;
 
