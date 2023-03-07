@@ -88,6 +88,7 @@ static const struct {
 	{"glDeleteLists", (void *)glDeleteLists},
 	{"glDeleteProgram", (void *)glDeleteProgram},
 	{"glDeleteRenderbuffers", (void *)glDeleteRenderbuffers},
+	{"glDeleteSamplers", (void *)glDeleteSamplers},
 	{"glDeleteShader", (void *)glDeleteShader},
 	{"glDeleteTextures", (void *)glDeleteTextures},
 	{"glDeleteVertexArrays", (void *)glDeleteVertexArrays},

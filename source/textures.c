@@ -1789,6 +1789,23 @@ void glGenSamplers(GLsizei n, GLuint *samplers) {
 	}
 }
 
+void glDeleteSamplers(GLsizei n, const GLuint *smp) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (n < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j <  COMBINED_TEXTURE_IMAGE_UNITS_NUM; j++) {
+			if (smp[i] == (GLuint)samplers[j])
+				samplers[j] = NULL;
+		}
+		vglFree((void *)smp[i]);
+	}
+}
+
 void glBindSampler(GLuint unit, GLuint smp) {
 #ifndef SKIP_ERROR_HANDLING
 	if (unit< 0 || unit >= COMBINED_TEXTURE_IMAGE_UNITS_NUM) {

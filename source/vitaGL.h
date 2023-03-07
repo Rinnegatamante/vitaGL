@@ -600,6 +600,7 @@ void glDeleteFramebuffers(GLsizei n, const GLuint *framebuffers);
 void glDeleteLists(GLuint list, GLsizei range);
 void glDeleteProgram(GLuint prog);
 void glDeleteRenderbuffers(GLsizei n, const GLuint *renderbuffers);
+void glDeleteSamplers(GLsizei n, const GLuint *smp);
 void glDeleteShader(GLuint shad);
 void glDeleteTextures(GLsizei n, const GLuint *textures);
 void glDeleteVertexArrays(GLsizei n, const GLuint *gl_arrays);
