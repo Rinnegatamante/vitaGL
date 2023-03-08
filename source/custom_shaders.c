@@ -116,7 +116,6 @@ static program progs[MAX_CUSTOM_PROGRAMS];
 void release_shader(shader *s) {
 	// Deallocating shader and unregistering it from sceGxmShaderPatcher
 	if (s->valid) {
-		sceGxmFinish(gxm_context);
 		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
 		vgl_free((void *)s->prog);
 #ifdef HAVE_SHARK_LOG
