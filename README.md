@@ -16,6 +16,7 @@ In order to build vitaGL use the following command: `make install`.
 `NO_DEBUG=1` Disables most of the error handling features (Faster CPU code execution but code may be non compliant to all OpenGL standards).<br>
 `NO_TEX_COMBINER=1` Disables texture combiner support (GL_COMBINE) for faster fixed function pipeline code execution.<br>
 `SOFTFP_ABI=1` Compiles the library in soft floating point compatibility mode.<br>
+`STORE_DEPTH_STENCIL=1` Makes all framebuffers depth/stencil surfaces to be load/stored on memory. Makes the rendering slower but more compliant with OpenGL standards.<br>
 `DRAW_SPEEDHACK=1` Enables faster code for draw calls. May cause crashes.<br>
 `MATH_SPEEDHACK=1` Enables faster code for matrix math calls. May cause glitches.<br>
 `TEXTURES_SPEEDHACK=1` Makes glTexSubImage2D/glTexSubImage1D non fully OpenGL compliant but makes rendering pipeline slightly faster.<br>

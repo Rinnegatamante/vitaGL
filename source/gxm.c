@@ -492,6 +492,11 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 
 	// Allocating depth surface
 	void *depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, VGL_MEM_VRAM);
+	
+#ifdef STORE_DEPTH_STENCIL
+	// Initializing mask update bit to 1
+	sceClibMemset(depth_buffer, 0x80, 4 * depth_stencil_samples);
+#endif
 
 	// Allocating stencil surface
 	void *stencil_buffer = NULL;
@@ -504,6 +509,11 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 		SCE_GXM_DEPTH_STENCIL_SURFACE_LINEAR,
 		msaa_mode == SCE_GXM_MULTISAMPLE_4X ? depth_stencil_width * 2 : depth_stencil_width,
 		depth_buffer, stencil_buffer);
+	
+#ifdef STORE_DEPTH_STENCIL
+	sceGxmDepthStencilSurfaceSetForceLoadMode(surface, SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED);
+	sceGxmDepthStencilSurfaceSetForceStoreMode(surface, SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED);
+#endif
 }
 
 void initDepthStencilSurfaces(void) {
