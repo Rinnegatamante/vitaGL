@@ -1180,12 +1180,6 @@ void glDeleteProgram(GLuint prog) {
 	// Releasing both vertex and fragment programs from sceGxmShaderPatcher
 	if (p->status) {
 		sceGxmFinish(gxm_context);
-		unsigned int count, i;
-		sceGxmShaderPatcherGetFragmentProgramRefCount(gxm_shader_patcher, p->fprog, &count);
-		for (i = 0; i < count; i++) {
-			sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, p->fprog);
-			sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, p->vprog);
-		}
 		while (p->vert_uniforms) {
 			uniform *old = p->vert_uniforms;
 			p->vert_uniforms = (uniform *)p->vert_uniforms->chain;
