@@ -1478,16 +1478,20 @@ void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 
 	// Grabbing passed uniform
 	uniform *u = (uniform *)-location;
-
-	// Setting passed value to desired uniform
+	
+	if (u->size == 0 || u->size == 0xFFFFFFFF) // Sampler
+		u->data = (float *)value[0];
+	else {
+		// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
-	if (u->size != count) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr)); \
-		SET_GL_ERROR(GL_INVALID_OPERATION)
-	}
+		if (u->size != count) {
+			vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr)); \
+			SET_GL_ERROR(GL_INVALID_OPERATION)
+		}
 #endif
-	for (int i = 0; i < count; i++) {
-		u->data[i] = (float)value[i];
+		for (int i = 0; i < count; i++) {
+			u->data[i] = (float)value[i];
+		}
 	}
 
 	if (u->is_vertex)
