@@ -427,6 +427,8 @@ extern "C" {
 #define GL_FLOAT_MAT2                                   0x8B5A
 #define GL_FLOAT_MAT3                                   0x8B5B
 #define GL_FLOAT_MAT4                                   0x8B5C
+#define GL_SAMPLER_2D                                   0x8B5E
+#define GL_SAMPLER_CUBE                                 0x8B60
 #define GL_DELETE_STATUS                                0x8B80
 #define GL_COMPILE_STATUS                               0x8B81
 #define GL_LINK_STATUS                                  0x8B82

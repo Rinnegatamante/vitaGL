@@ -2288,8 +2288,13 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 	strncpy(name, pname, bufSize);
 	name[bufSize] = 0;
 
-	*type = gxm_unif_type_to_gl(sceGxmProgramParameterGetType(u->ptr), sceGxmProgramParameterGetComponentCount(u->ptr));
-	*size = sceGxmProgramParameterGetArraySize(u->ptr);
+	if (sceGxmProgramParameterGetCategory(u->ptr) == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+		*type = sceGxmProgramParameterIsSamplerCube(u->ptr) ? GL_SAMPLER_CUBE : GL_SAMPLER_2D;
+		*size = 1;
+	} else {
+		*type = gxm_unif_type_to_gl(sceGxmProgramParameterGetType(u->ptr), sceGxmProgramParameterGetComponentCount(u->ptr));
+		*size = sceGxmProgramParameterGetArraySize(u->ptr);
+	}
 }
 
 /*
