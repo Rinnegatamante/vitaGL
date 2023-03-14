@@ -43,7 +43,7 @@ eboot.bin: $(TARGET).velf
 	vita-elf-create $< $@
 	
 $(TARGET).elf: $(OBJS)
-	$(CC) $(CFLAGS) $^ $(LIBS) -o $@
+	$(CXX) $(CXXFLAGS) $^ $(LIBS) -o $@
 	
 clean:
 	@rm -rf *.velf *.elf *.vpk $(OBJS) param.sfo eboot.bin
