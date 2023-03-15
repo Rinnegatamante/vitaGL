@@ -23,6 +23,8 @@
 
 #include "../shared.h"
 
+#define HEAP_COOKIE 0x13371337
+
 GLboolean has_cached_mem = GL_FALSE; // Flag for wether to use cached memory for mempools or not
 
 #ifndef HAVE_CUSTOM_HEAP
@@ -49,6 +51,9 @@ typedef struct tm_block_s {
 	uintptr_t base; // block start address
 	uint32_t offset; // offset for USSE stuff (unused)
 	uint32_t size; // block size
+#ifndef SKIP_ERROR_HANDLING
+	uint32_t real_size; // real alloc size for putting a heap cookie
+#endif
 } tm_block_t;
 
 static tm_block_t *tm_alloclist; // list of allocated blocks
@@ -170,6 +175,9 @@ static tm_block_t *heap_blk_alloc(int32_t type, uint32_t size, uint32_t alignmen
 				tm_freelist = curblk->next;
 
 			curblk->next = tm_alloclist;
+#ifndef SKIP_ERROR_HANDLING
+			curblk->real_size = size;
+#endif
 			tm_alloclist = curblk;
 			tm_free[type] -= size;
 			return curblk;
@@ -199,6 +207,12 @@ static void heap_blk_free(uintptr_t base) {
 #endif
 		return;
 	}
+
+#ifndef SKIP_ERROR_HANDLING
+	if (*(uint32_t *)(curblk->base + curblk->real_size - 4) != HEAP_COOKIE) {
+		vgl_log("%s:%d A heap overflow was detected on pointer: 0x%08X!\n", __FILE__, __LINE__, base);
+	}
+#endif
 
 	if (prevblk)
 		prevblk->next = curblk->next;
@@ -251,11 +265,17 @@ static void heap_extend(int32_t type, void *base, uint32_t size) {
 
 // allocates memory from the heap (basically malloc())
 static void *heap_alloc(int32_t type, uint32_t size, uint32_t alignment) {
+#ifndef SKIP_ERROR_HANDLING
+	size += 4;
+#endif
 	tm_block_t *block = heap_blk_alloc(type, size, alignment);
 
 	if (!block)
 		return NULL;
 
+#ifndef SKIP_ERROR_HANDLING
+	*(uint32_t *)(block->base + block->real_size - 4) = HEAP_COOKIE;
+#endif
 	return (void *)block->base;
 }
 #endif
