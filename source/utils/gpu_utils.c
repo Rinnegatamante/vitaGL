@@ -99,6 +99,7 @@ static int unsafe_allocator_counter = 0;
 void *gpu_alloc_mapped_aligned_unsafe(size_t alignment, size_t size, vglMemType type) {
 	// Performing a garbage collection cycle prior to attempting to allocate the memory again
 	unsafe_allocator_counter++;
+	sceGxmFinish(gxm_context);
 #if defined(HAVE_SINGLE_THREADED_GC) && !defined(HAVE_PTHREAD)
 	garbage_collector(0, NULL);
 #else
