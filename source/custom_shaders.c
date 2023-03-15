@@ -762,30 +762,31 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 static char *shark_log = NULL;
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	char newline[1024];
+	GLboolean is_extra_line = shark_log ? GL_TRUE : GL_FALSE;
 	switch (msg_level) {
 	case SHARK_LOG_INFO:
-		sprintf(newline, "%sI] %s on line %d", shark_log ? "\n" : "", msg, line);
+		sprintf(newline, "%sI] %s on line %d", is_extra_line ? "\n" : "", msg, line);
 #ifdef LOG_ERRORS
 		vgl_log("Shader Compiler: I] %s on line %d.\n", msg, line);
 #endif
 		break;
 	case SHARK_LOG_WARNING:
-		sprintf(newline, "%sW] %s on line %d", shark_log ? "\n" : "", msg, line);
+		sprintf(newline, "%sW] %s on line %d", is_extra_line ? "\n" : "", msg, line);
 #ifdef LOG_ERRORS
 		vgl_log("Shader Compiler: W] %s on line %d.\n", msg, line);
 #endif
 		break;
 	case SHARK_LOG_ERROR:
-		sprintf(newline, "%sE] %s on line %d", shark_log ? "\n" : "", msg, line);
+		sprintf(newline, "%sE] %s on line %d", is_extra_line ? "\n" : "", msg, line);
 #ifdef LOG_ERRORS
 		vgl_log("Shader Compiler: E] %s on line %d.\n", msg, line);
 #endif
 		break;
 	}
-	uint32_t size = (shark_log ? strlen(shark_log) : 0) + strlen(newline);
+	uint32_t size = (is_extra_line ? strlen(shark_log) : 0) + strlen(newline);
 	shark_log = shark_log ? vglRealloc(shark_log, size + 1) : vglMalloc(size + 1);
-	if (shark_log)
-		sprintf(shark_log, "%s%s", shark_log, newline);
+	if (is_extra_line)
+		strcat(shark_log, newline);
 	else
 		strcpy(shark_log, newline);
 }
