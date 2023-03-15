@@ -765,19 +765,19 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	GLboolean is_extra_line = shark_log ? GL_TRUE : GL_FALSE;
 	switch (msg_level) {
 	case SHARK_LOG_INFO:
-		sprintf(newline, "%sI] %s on line %d", is_extra_line ? "\n" : "", msg, line);
+		sprintf(newline, "%sI] %s on line %d.", is_extra_line ? "\n" : "", msg, line);
 #ifdef LOG_ERRORS
 		vgl_log("Shader Compiler: I] %s on line %d.\n", msg, line);
 #endif
 		break;
 	case SHARK_LOG_WARNING:
-		sprintf(newline, "%sW] %s on line %d", is_extra_line ? "\n" : "", msg, line);
+		sprintf(newline, "%sW] %s on line %d.", is_extra_line ? "\n" : "", msg, line);
 #ifdef LOG_ERRORS
 		vgl_log("Shader Compiler: W] %s on line %d.\n", msg, line);
 #endif
 		break;
 	case SHARK_LOG_ERROR:
-		sprintf(newline, "%sE] %s on line %d", is_extra_line ? "\n" : "", msg, line);
+		sprintf(newline, "%sE] %s on line %d.", is_extra_line ? "\n" : "", msg, line);
 #ifdef LOG_ERRORS
 		vgl_log("Shader Compiler: E] %s on line %d.\n", msg, line);
 #endif
