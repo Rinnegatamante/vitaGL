@@ -1368,7 +1368,7 @@ void glLinkProgram(GLuint progr) {
 			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
 			u->chain = p->vert_uniforms;
 			u->ptr = param;
-			u->size = 0;
+			u->size = sceGxmProgramParameterIsSamplerCube(param) ? 0xFFFFFFFF : 0;
 			u->data = NULL;
 			p->vert_uniforms = u;
 			p->vert_texunits[texunit_idx - 1] = u;
