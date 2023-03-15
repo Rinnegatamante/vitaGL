@@ -210,7 +210,7 @@ static void heap_blk_free(uintptr_t base) {
 
 #ifndef SKIP_ERROR_HANDLING
 	if (*(uint32_t *)(curblk->base + curblk->real_size - 4) != HEAP_COOKIE) {
-		vgl_log("%s:%d A heap overflow from was detected on pointer: 0x%08X!\n", __FILE__, __LINE__, base);
+		vgl_log("%s:%d A heap overflow was detected on pointer: 0x%08X!\n", __FILE__, __LINE__, base);
 	}
 #endif
 
@@ -274,7 +274,7 @@ static void *heap_alloc(int32_t type, uint32_t size, uint32_t alignment) {
 		return NULL;
 
 #ifndef SKIP_ERROR_HANDLING
-	*(uint32_t *)(block->base + size - 4) = HEAP_COOKIE;
+	*(uint32_t *)(block->base + block->real_size - 4) = HEAP_COOKIE;
 #endif
 	return (void *)block->base;
 }
