@@ -103,7 +103,8 @@ void *gpu_alloc_mapped_aligned_unsafe(size_t alignment, size_t size, vglMemType 
 #if defined(HAVE_SINGLE_THREADED_GC) && !defined(HAVE_PTHREAD)
 	garbage_collector(0, NULL);
 #else
-	sceKernelSignalSema(gc_mutex, 1);
+	sceKernelWaitSema(gc_mutex[1], 1, NULL);
+	sceKernelSignalSema(gc_mutex[0], 1);
 	sceKernelDelayThread(1000000);
 #endif
 	

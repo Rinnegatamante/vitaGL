@@ -93,7 +93,7 @@ int frame_purge_idx = 0; // Index for currently populatable purge list
 int frame_elem_purge_idx = 0; // Index for currently populatable purge list element
 int frame_rt_purge_idx = 0; // Index for currently populatable purge list rendetarget
 static int frame_purge_clean_idx = 1;
-SceUID gc_mutex;
+SceUID gc_mutex[2];
 static int gc_thread_priority = 0x10000100;
 static int gc_thread_affinity = 0;
 #ifdef HAVE_PTHREAD
@@ -226,7 +226,7 @@ int garbage_collector(unsigned int args, void *arg) {
 #ifndef HAVE_SINGLE_THREADED_GC
 	for (;;) {
 		// Waiting for garbage collection request
-		sceKernelWaitSema(gc_mutex, 1, NULL);
+		sceKernelWaitSema(gc_mutex[0], 1, NULL);
 #endif
 		// Purging all elements marked for deletion
 		int i;
@@ -249,6 +249,7 @@ int garbage_collector(unsigned int args, void *arg) {
 		frame_elem_purge_idx = 0;
 		frame_rt_purge_idx = 0;
 #ifndef HAVE_SINGLE_THREADED_GC
+		sceKernelSignalSema(gc_mutex[1], 1);
 	}
 #ifndef HAVE_PTHREAD
 	return sceKernelExitDeleteThread(0);
@@ -303,7 +304,8 @@ void initGxm(void) {
 
 #ifndef HAVE_SINGLE_THREADED_GC
 	// Initializing garbage collector
-	gc_mutex = sceKernelCreateSema("Garbage Collector Sema", 0, 0, FRAME_PURGE_FREQ, NULL);
+	gc_mutex[0] = sceKernelCreateSema("GC Sema Push", 0, 0, FRAME_PURGE_FREQ, NULL);
+	gc_mutex[1] = sceKernelCreateSema("GC Sema Pull", 0, FRAME_PURGE_FREQ, FRAME_PURGE_FREQ, NULL);
 #ifdef HAVE_PTRHEAD
 	pthread_create(&gc_thread, NULL, garbage_collector, NULL);
 	pthread_setaffinity_np(gc_thread, 4, &gc_thread_affinity);
@@ -888,7 +890,8 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 #ifdef HAVE_SINGLE_THREADED_GC
 	garbage_collector(0, NULL);
 #else
-	sceKernelSignalSema(gc_mutex, 1);
+	sceKernelWaitSema(gc_mutex[1], 1, NULL);
+	sceKernelSignalSema(gc_mutex[0], 1);
 #endif
 }
 
