@@ -824,13 +824,23 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 			uint32_t curSrcStride = ALIGN(curWidth, 8);
 			uint32_t curDstStride = ALIGN(curWidth >> 1, 8);
 			uint8_t *dstPtr = curPtr + jumps[j];
-			sceGxmTransferDownscale(
-				fmt, curPtr, 0, 0,
-				curWidth, curHeight,
-				curSrcStride * bpp,
-				fmt, dstPtr, 0, 0,
-				curDstStride * bpp,
-				NULL, 0, NULL);
+			if (curWidth <= 1024 && curHeight <= 1024) {
+				sceGxmTransferDownscale(
+					fmt, curPtr, 0, 0,
+					curWidth, curHeight,
+					curSrcStride * bpp,
+					fmt, dstPtr, 0, 0,
+					curDstStride * bpp,
+					NULL, 0, NULL);
+			} else { // sceGxmTransferDownscale doesn't support higher sizes, so we go for CPU downscaling
+				for (int y = 0, y2 = 0; y < curHeight; y += 2, y2++) {
+					uint8_t *srcLine = curPtr + curSrcStride * bpp * y;
+					uint8_t *dstLine = dstPtr + curDstStride * bpp * y2;
+					for (int x = 0, x2 = 0; x < curWidth; x += 2, x2++) {
+						sceClibMemcpy(dstLine + x2 * bpp, srcLine + x * bpp, bpp);
+					}
+				}
+			}
 			curPtr = dstPtr;
 			curWidth /= 2;
 			curHeight /= 2;
