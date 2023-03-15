@@ -773,7 +773,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		uint32_t h = nearest_po2(orig_h);
 
 		// Calculating new texture data buffer size
-		uint32_t jumps[10];
+		uint32_t jumps[16];
 		uint32_t size = 0;
 		int j;
 		if (level < 0 || count <= 0) {
