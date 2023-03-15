@@ -182,7 +182,7 @@ GLenum gxm_attr_type_to_gl(uint8_t size, uint8_t num) {
 	}
 }
 
-GLenum gxm_unif_type_to_gl(SceGxmParameterType type, uint8_t count) {
+GLenum gxm_unif_type_to_gl(SceGxmParameterType type, uint8_t count, int *size) {
 	switch (type) {
 	case SCE_GXM_PARAMETER_TYPE_F32:
 	case SCE_GXM_PARAMETER_TYPE_F16:
@@ -191,10 +191,22 @@ GLenum gxm_unif_type_to_gl(SceGxmParameterType type, uint8_t count) {
 		case 1:
 			return GL_FLOAT;
 		case 2:
+			if (*size == 2) {
+				*size = 1;
+				return GL_FLOAT_MAT2;
+			}
 			return GL_FLOAT_VEC2;
 		case 3:
+			if (*size == 3) {
+				*size = 1;
+				return GL_FLOAT_MAT3;
+			}
 			return GL_FLOAT_VEC3;
 		case 4:
+			if (*size == 4) {
+				*size = 1;
+				return GL_FLOAT_MAT4;
+			}
 			return GL_FLOAT_VEC4;
 		default:
 			break;
@@ -2296,8 +2308,8 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 		*type = sceGxmProgramParameterIsSamplerCube(u->ptr) ? GL_SAMPLER_CUBE : GL_SAMPLER_2D;
 		*size = 1;
 	} else {
-		*type = gxm_unif_type_to_gl(sceGxmProgramParameterGetType(u->ptr), sceGxmProgramParameterGetComponentCount(u->ptr));
 		*size = sceGxmProgramParameterGetArraySize(u->ptr);
+		*type = gxm_unif_type_to_gl(sceGxmProgramParameterGetType(u->ptr), sceGxmProgramParameterGetComponentCount(u->ptr), size);
 	}
 }
 
