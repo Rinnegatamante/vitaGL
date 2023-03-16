@@ -27,6 +27,7 @@ In order to build vitaGL use the following command: `make install`.
 `HAVE_UNFLIPPED_FBOS=1` Framebuffers objects won't be internally flipped to match OpenGL standards.<br>
 `HAVE_WVP_ON_GPU=1` Moves calculation of the wvp in fixed function pipeline codepath to the GPU. Reduces CPU workload and increases GPU one.<br>
 `SAFE_ETC1=1` Disables hardware support for ETC1 textures. Makes ETC1 textures usage less efficient but may solve glitches.<br>
+`SAFE_DRAW=1` Makes some optimizations in the drawing pipeline less efficient but can solve some glitches.<br>
 `SHARED_RENDERTARGETS=1` Makes small framebuffers objects use shared rendertargets instead of dedicated ones.<br>
 `CIRCULAR_VERTEX_POOL=1` Makes temporary data buffers being handled with a circular pool.<br>
 `HAVE_PTHREAD=1` Use pthread instead of sceKernel for starting garbage collector thread.<br>

@@ -363,10 +363,19 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			if (cur_vao->vertex_attrib_vbo[p->attr_map[i]]) {
 				is_packed = GL_FALSE;
 				break;
+#ifdef STRICT_DRAW_COMPLIANCE
+			} else {
+				if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[i]] && cur_vao->vertex_attrib_offsets[p->attr_map[i]] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]]))) {
+					is_packed = GL_FALSE;
+					break;
+				}
+#endif
 			}
 		}
+#ifndef STRICT_DRAW_COMPLIANCE
 		if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[1]] && cur_vao->vertex_attrib_offsets[p->attr_map[1]] > cur_vao->vertex_attrib_offsets[p->attr_map[0]])))
 			is_packed = GL_FALSE;
+#endif
 	}
 
 	// Gathering real attribute data pointers
@@ -581,11 +590,17 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			if (cur_vao->vertex_attrib_vbo[p->attr_map[i]]) {
 				is_packed = GL_FALSE;
 			} else {
+#ifdef STRICT_DRAW_COMPLIANCE
+				if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[i]] && cur_vao->vertex_attrib_offsets[p->attr_map[i]] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]])))
+					is_packed = GL_FALSE;
+#endif
 				is_full_vbo = GL_FALSE;
 			}
 		}
+#ifndef STRICT_DRAW_COMPLIANCE
 		if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[1]] && cur_vao->vertex_attrib_offsets[p->attr_map[1]] > cur_vao->vertex_attrib_offsets[p->attr_map[0]])))
 			is_packed = GL_FALSE;
+#endif
 	} else if (!cur_vao->vertex_attrib_vbo[p->attr_map[0]])
 		is_full_vbo = GL_FALSE;
 

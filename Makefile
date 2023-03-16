@@ -131,6 +131,10 @@ ifeq ($(SAFE_ETC1),1)
 CFLAGS += -DDISABLE_HW_ETC1
 endif
 
+ifeq ($(SAFE_DRAW),1)
+CFLAGS += -DSTRICT_DRAW_COMPLIANCE
+endif
+
 ifeq ($(HAVE_WVP_ON_GPU),1)
 CFLAGS += -DHAVE_WVP_ON_GPU
 endif
