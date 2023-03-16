@@ -785,6 +785,8 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 				h /= 2;
 				mips++;
 			}
+			jumps[mips] = MAX(w, 8) * h * bpp;
+			size += jumps[mips];
 			if (level < 0)
 				level = mips;
 			else
