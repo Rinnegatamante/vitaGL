@@ -161,6 +161,9 @@ render_target *getFreeRenderTarget(int w, int h) {
 			return &rt_list[i];
 		}
 	}
+#ifdef LOG_ERRORS
+	vgl_log("%s:%d Failed to create a shared rendertarget of size %dx%d (Out of rendertargets handles).\n", __FILE__, __LINE__, w, h);
+#endif
 	return NULL;
 }
 
