@@ -911,11 +911,6 @@ void glReleaseShaderCompiler(void) {
 }
 
 void glFlush(void) {
-	needs_end_scene = GL_FALSE;
-	if (!needs_scene_reset)
-		sceneEnd();
-
-	needs_scene_reset = GL_TRUE;
 }
 
 void vglSetDisplayCallback(void (*cb)(void *framebuf)) {
