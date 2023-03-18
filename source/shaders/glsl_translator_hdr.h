@@ -10,9 +10,15 @@ inline float4 vglMul(float v1, float4 v2) { return v1 * v2; }
 inline float3 vglMul(float v1, float3 v2) { return v1 * v2; }
 inline float2 vglMul(float v1, float2 v2) { return v1 * v2; }
 inline float vglMul(float v1, float v2) { return v1 * v2; }
+inline float4 vglMul(float4 v1, float4 v2) { return v1 * v2; }
+inline float3 vglMul(float3 v1, float3 v2) { return v1 * v2; }
+inline float2 vglMul(float2 v1, float2 v2) { return v1 * v2; }
 inline float4 vglMul(float4 v1, float v2) { return v1 * v2; }
 inline float3 vglMul(float3 v1, float v2) { return v1 * v2; }
 inline float2 vglMul(float2 v1, float v2) { return v1 * v2; }
+inline int4 vglMul(int4 v1, int4 v2) { return v1 * v2; }
+inline int3 vglMul(int3 v1, int3 v2) { return v1 * v2; }
+inline int2 vglMul(int2 v1, int2 v2) { return v1 * v2; }
 inline int4 vglMul(int v1, int4 v2) { return v1 * v2; }
 inline int3 vglMul(int v1, int3 v2) { return v1 * v2; }
 inline int2 vglMul(int v1, int2 v2) { return v1 * v2; }
