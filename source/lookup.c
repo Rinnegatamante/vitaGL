@@ -335,6 +335,7 @@ static const struct {
 	{"vglVertexAttribPointerMapped", (void *)vglVertexAttribPointerMapped},
 	{"vglAlloc", (void *)vglAlloc},
 	{"vglCalloc", (void *)vglCalloc},
+	{"vglCgShaderSource", (void *)vglCgShaderSource},
 	{"vglEnd", (void *)vglEnd},
 	{"vglForceAlloc", (void *)vglForceAlloc},
 	{"vglFree", (void *)vglFree},

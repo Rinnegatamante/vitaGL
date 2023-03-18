@@ -2784,3 +2784,34 @@ void vglGetShaderBinary(GLuint handle, GLsizei bufSize, GLsizei *length, void *b
 	if (length)
 		*length = size;
 }
+
+void vglCgShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length) {
+#ifndef SKIP_ERROR_HANDLING
+	if (count < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+	// Grabbing passed shader
+	shader *s = &shaders[handle - 1];
+	
+	uint32_t size = 1;	
+	for (int i = 0; i < count; i++) {
+		size += length ? length[i] : strlen(string[i]);
+	}
+
+#if defined(SHADER_COMPILER_SPEEDHACK)
+	if (count == 1)
+		s->prog = (SceGxmProgram *)*string;
+	else
+#endif
+	{
+		s->source = (char *)vglMalloc(size);
+		s->source[0] = 0;
+		for (int i = 0; i < count; i++) {
+			strncat(s->source, string[i], length ? length[i] : strlen(string[i]));
+		}
+		s->prog = (SceGxmProgram *)s->source;
+	}
+	
+	s->size = size - 1;
+}
