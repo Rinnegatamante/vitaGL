@@ -571,7 +571,7 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 
 				// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
 				if (read_cb != readRGBA) {
-					temp = vgl_malloc(w * h * 4, VGL_MEM_EXTERNAL);
+					temp = vglMalloc(w * h * 4);
 					uint8_t *src = (uint8_t *)data;
 					uint32_t *dst = (uint32_t *)temp;
 					int i;
@@ -699,7 +699,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 
 				// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
 				if (read_cb != readRGBA) {
-					temp = vgl_malloc(w * h * 4, VGL_MEM_EXTERNAL);
+					temp = vglMalloc(w * h * 4);
 					uint8_t *src = (uint8_t *)data;
 					uint32_t *dst = (uint32_t *)temp;
 					int i;
