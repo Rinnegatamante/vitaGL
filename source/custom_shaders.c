@@ -294,11 +294,11 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 				tex->overridden = GL_FALSE;
 			}
 			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
-#ifndef SAMPLERS_SPEEDHACK		
+#ifndef SAMPLERS_SPEEDHACK
 		}
 #endif
 	}
-	
+
 	// Uploading vertex textures on relative texture units
 	for (int i = 0; i < p->max_vert_texunit_idx; i++) {
 #ifndef SAMPLERS_SPEEDHACK
@@ -334,7 +334,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 				tex->overridden = GL_FALSE;
 			}
 			sceGxmSetVertexTexture(gxm_context, i, &tex->gxm_tex);
-#ifndef SAMPLERS_SPEEDHACK		
+#ifndef SAMPLERS_SPEEDHACK
 		}
 #endif
 	}
@@ -520,11 +520,11 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 				tex->overridden = GL_FALSE;
 			}
 			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
-#ifndef SAMPLERS_SPEEDHACK		
+#ifndef SAMPLERS_SPEEDHACK
 		}
 #endif
 	}
-	
+
 	// Uploading vertex textures on relative texture units
 	for (int i = 0; i < p->max_vert_texunit_idx; i++) {
 #ifndef SAMPLERS_SPEEDHACK
@@ -560,7 +560,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 				tex->overridden = GL_FALSE;
 			}
 			sceGxmSetVertexTexture(gxm_context, i, &tex->gxm_tex);
-#ifndef SAMPLERS_SPEEDHACK		
+#ifndef SAMPLERS_SPEEDHACK
 		}
 #endif
 	}
@@ -938,7 +938,7 @@ void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *
 
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
-	
+
 	GLsizei size = 0;
 	if (s->source) {
 		GLsizei src_len = strlen(s->source);
@@ -1032,7 +1032,7 @@ void glCompileShader(GLuint handle) {
 void glDeleteShader(GLuint shad) {
 	// Grabbing passed shader
 	shader *s = &shaders[shad - 1];
-	
+
 	// If the shader is attached to any program, we only mark it for deletion
 	if (s->ref_counter > 0)
 		s->dirty = GL_TRUE;
@@ -1067,7 +1067,7 @@ void glAttachShader(GLuint prog, GLuint shad) {
 void glGetAttachedShaders(GLuint prog, GLsizei maxCount, GLsizei *count, GLuint *shads) {
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
-	
+
 #ifndef SKIP_ERROR_HANDLING
 	if (maxCount < 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, maxCount)
@@ -1130,7 +1130,7 @@ GLuint glCreateProgram(void) {
 		vgl_log("%s:%d %s: Out of programs handles. Consider increasing MAX_CUSTOM_PROGRAMS...\n", __FILE__, __LINE__, __func__);
 		return 0;
 	}
-#endif	
+#endif
 	return res;
 }
 
@@ -1149,7 +1149,7 @@ void glGetProgramBinary(GLuint prog, GLsizei bufSize, GLsizei *length, GLenum *b
 
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
-	
+
 	// Saving info related to bound attributes locations
 	GLuint *b = (GLuint *)binary;
 	b[0] = p->attr_highest_idx;
@@ -1178,13 +1178,13 @@ void glGetProgramBinary(GLuint prog, GLsizei bufSize, GLsizei *length, GLenum *b
 void glProgramBinary(GLuint prog, GLenum binaryFormat, const void *binary, GLsizei length) {
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
-	
+
 	// Restoring bound attributes info
 	GLuint *b = (GLuint *)binary;
 	p->attr_highest_idx = b[0];
 	sceClibMemcpy(p->attr, &b[1], sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM);
 	GLsizei size = sizeof(GLuint) + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM;
-	
+
 	// Restoring shaders
 	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
 	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
@@ -1194,7 +1194,7 @@ void glProgramBinary(GLuint prog, GLenum binaryFormat, const void *binary, GLsiz
 	glShaderBinary(1, &fs, 0, &sizeptr[1], sizeptr[0]);
 	glAttachShader(prog, vs);
 	glAttachShader(prog, fs);
-	
+
 	// Linking program and marking for deletion temporary shaders
 	glLinkProgram(prog);
 	glDeleteShader(vs);
@@ -1222,18 +1222,18 @@ void glDeleteProgram(GLuint prog) {
 				vgl_free(old->data);
 			vgl_free(old);
 		}
-		
+
 		// Checking if attached shaders are marked for deletion and should be deleted
 		if (p->vshader) {
 			p->vshader->ref_counter--;
 			if (p->vshader->dirty && p->vshader->ref_counter == 0)
 				release_shader(p->vshader);
-		}	
+		}
 		if (p->fshader) {
 			p->fshader->ref_counter--;
 			if (p->fshader->dirty && p->fshader->ref_counter == 0)
 				release_shader(p->fshader);
-		}		
+		}
 	}
 	p->status = PROG_INVALID;
 }
@@ -1326,7 +1326,7 @@ void glLinkProgram(GLuint progr) {
 	program *p = &progs[progr - 1];
 #ifndef SKIP_ERROR_HANDLING
 	if (!p->fshader->prog || !p->vshader->prog) {
-		vgl_log("%s:%d: %s: %s shader is missing.\n", __FILE__, __LINE__, __func__, p->fshader->prog ? "fragment" : "vertex"); \
+		vgl_log("%s:%d: %s: %s shader is missing.\n", __FILE__, __LINE__, __func__, p->fshader->prog ? "fragment" : "vertex");
 		return;
 	}
 #endif
@@ -1420,7 +1420,7 @@ void glLinkProgram(GLuint progr) {
 	} else {
 		// Checking if bound attributes are aligned
 		p->has_unaligned_attrs = GL_FALSE;
-		
+
 		for (i = 0; i < p->attr_num; i++) {
 			p->attr_map[i] = i;
 			if (p->attr[i].regIndex == 0xDEAD) {
@@ -1428,7 +1428,7 @@ void glLinkProgram(GLuint progr) {
 				break;
 			}
 		}
-		
+
 		// Fixing attributes mapping cache if in presence of unaligned attributes
 		if (p->has_unaligned_attrs) {
 			int j = 0;
@@ -1506,14 +1506,14 @@ void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 
 	// Grabbing passed uniform
 	uniform *u = (uniform *)-location;
-	
+
 	if (u->size == 0 || u->size == 0xFFFFFFFF) // Sampler
 		u->data = (float *)value[0];
 	else {
 		// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 		if (u->size != count) {
-			vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr)); \
+			vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr));
 			SET_GL_ERROR(GL_INVALID_OPERATION)
 		}
 #endif
@@ -1564,7 +1564,7 @@ void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr));
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1613,7 +1613,7 @@ void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 2) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr));
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1664,7 +1664,7 @@ void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 2) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr));
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1714,7 +1714,7 @@ void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 3) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr));
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1766,7 +1766,7 @@ void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 3) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr));
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1817,7 +1817,7 @@ void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 4) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr));
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1870,7 +1870,7 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 4) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr));
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1897,7 +1897,7 @@ void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, cons
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 4) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr));
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1929,7 +1929,7 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, cons
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 9) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 9, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 9, sceGxmProgramParameterGetName(u->ptr));
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -1962,7 +1962,7 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, cons
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
 	if (u->size < count * 16) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 16, sceGxmProgramParameterGetName(u->ptr)); \
+		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 16, sceGxmProgramParameterGetName(u->ptr));
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
@@ -2246,7 +2246,7 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 					break;
 				}
 			}
-			
+
 			// Fixing attributes mapping cache if in presence of unaligned attributes
 			if (p->has_unaligned_attrs) {
 				int k = 0;
@@ -2257,7 +2257,7 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 					}
 				}
 			}
-			
+
 			return i;
 		}
 	}
@@ -2481,7 +2481,7 @@ void vglGetShaderBinary(GLuint handle, GLsizei bufSize, GLsizei *length, void *b
 
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
-	
+
 	GLsizei size = 0;
 	if (s->prog) {
 		GLsizei bin_len = sceGxmProgramGetSize(s->prog);

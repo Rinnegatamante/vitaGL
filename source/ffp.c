@@ -408,7 +408,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	mask.fixed_mask = ffp_vertex_attrib_fixed_mask;
 	mask.pos_fixed_mask = ffp_vertex_attrib_fixed_pos_mask;
 	uint8_t draw_mask_state = ffp_vertex_attrib_state;
-	
+
 	// Counting number of enabled texture units
 	mask.num_textures = 0;
 	for (int i = 0; i < TEXTURE_COORDS_NUM; i++) {
@@ -577,7 +577,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 #ifdef DUMP_SHADER_SOURCES
 			if (t) {
-#endif		
+#endif
 			ffp_vertex_program = (SceGxmProgram *)vglMalloc(size);
 			vgl_fast_memcpy((void *)ffp_vertex_program, (void *)t, size);
 			shark_clear_output();
@@ -686,8 +686,8 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 		}
-		
-		if (mask.lights_num > 0) {	
+
+		if (mask.lights_num > 0) {
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "diff");
 			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[3], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
@@ -695,7 +695,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[3].stride;
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
-			
+
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "spec");
 			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[4], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
@@ -703,7 +703,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[4].stride;
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
-			
+
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "emission");
 			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[5], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
@@ -711,7 +711,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[5].stride;
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
-			
+
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "normals");
 			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[6], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
@@ -741,7 +741,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 				ffp_vertex_num_params++;
 			}
-#endif	
+#endif
 		}
 		streams = ffp_vertex_stream;
 		attrs = ffp_vertex_attribute;
@@ -844,7 +844,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 #ifdef DUMP_SHADER_SOURCES
 			if (t) {
-#endif			
+#endif
 			ffp_fragment_program = (SceGxmProgram *)vglMalloc(size);
 			vgl_fast_memcpy((void *)ffp_fragment_program, (void *)t, size);
 			shark_clear_output();
@@ -1032,7 +1032,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		}
 		dirty_vert_unifs = GL_FALSE;
 	}
-	
+
 	return draw_mask_state;
 }
 
@@ -1360,7 +1360,7 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 	}
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
-	
+
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT_AND_DIFFUSE:
@@ -1838,7 +1838,7 @@ void glColor3f(GLfloat red, GLfloat green, GLfloat blue) {
 	current_vtx.clr.g = green;
 	current_vtx.clr.b = blue;
 	current_vtx.clr.a = 1.0f;
-	
+
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
@@ -1872,7 +1872,7 @@ void glColor3fv(const GLfloat *v) {
 	// Setting current color value
 	vgl_fast_memcpy(&current_vtx.clr.r, v, sizeof(vector3f));
 	current_vtx.clr.a = 1.0f;
-	
+
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
@@ -1908,7 +1908,7 @@ void glColor3ub(GLubyte red, GLubyte green, GLubyte blue) {
 	current_vtx.clr.g = (float)green / 255.0f;
 	current_vtx.clr.b = (float)blue / 255.0f;
 	current_vtx.clr.a = 1.0f;
-	
+
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
@@ -1944,7 +1944,7 @@ void glColor3ubv(const GLubyte *c) {
 	current_vtx.clr.g = (float)c[1] / 255.0f;
 	current_vtx.clr.b = (float)c[2] / 255.0f;
 	current_vtx.clr.a = 1.0f;
-	
+
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
@@ -1980,7 +1980,7 @@ void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
 	current_vtx.clr.g = green;
 	current_vtx.clr.b = blue;
 	current_vtx.clr.a = alpha;
-	
+
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
@@ -2013,7 +2013,7 @@ void glColor4fv(const GLfloat *v) {
 #endif
 	// Setting current color value
 	vgl_fast_memcpy(&current_vtx.clr.r, v, sizeof(vector4f));
-	
+
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
@@ -2048,7 +2048,7 @@ void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha) {
 	current_vtx.clr.g = (float)green / 255.0f;
 	current_vtx.clr.b = (float)blue / 255.0f;
 	current_vtx.clr.a = (float)alpha / 255.0f;
-	
+
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
@@ -2084,7 +2084,7 @@ void glColor4ubv(const GLubyte *c) {
 	current_vtx.clr.g = (float)c[1] / 255.0f;
 	current_vtx.clr.b = (float)c[2] / 255.0f;
 	current_vtx.clr.a = (float)c[3] / 255.0f;
-	
+
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
@@ -2127,7 +2127,7 @@ void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha) {
 	current_vtx.clr.g = (float)green / 65536.0f;
 	current_vtx.clr.b = (float)blue / 65536.0f;
 	current_vtx.clr.a = (float)alpha / 65536.0f;
-	
+
 	if (color_material_state) {
 		switch (color_material_mode) {
 		case GL_AMBIENT:
@@ -2278,7 +2278,7 @@ void glBegin(GLenum mode) {
 
 	// Performing a scene reset if necessary
 	sceneReset();
-	
+
 	// Tracking desired primitive
 	ffp_mode = mode;
 
@@ -3293,7 +3293,6 @@ void glFogx(GLenum pname, GLfixed param) {
 	dirty_frag_unifs = GL_TRUE;
 }
 
-
 void glFogfv(GLenum pname, const GLfloat *params) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
@@ -3510,7 +3509,7 @@ void glColorMaterial(GLenum face, GLenum mode) {
 	color_material_mode = mode;
 }
 
-void glGetPointerv(GLenum pname, void ** params) {
+void glGetPointerv(GLenum pname, void **params) {
 	switch (pname) {
 	case GL_VERTEX_ARRAY_POINTER:
 		*params = (void *)ffp_vertex_attrib_offsets[0];
@@ -3558,4 +3557,3 @@ void glRecti(GLint x1, GLint y1, GLint x2, GLint y2) {
 	glVertex2i(x1, y2);
 	glEnd();
 }
-

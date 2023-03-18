@@ -49,7 +49,7 @@ void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfac
 static SceGxmSyncObject *gxm_sync_objects[DISPLAY_MAX_BUFFER_COUNT]; // Display sync objects
 unsigned int gxm_front_buffer_index; // Display front buffer id
 unsigned int gxm_back_buffer_index; // Display back buffer id
-static void (*vgl_display_cb) (void *framebuf) = NULL; // Additional custom caallback used inside display queue callback
+static void (*vgl_display_cb)(void *framebuf) = NULL; // Additional custom caallback used inside display queue callback
 
 static void *gxm_shader_patcher_buffer_addr; // Shader PAtcher buffer memblock starting address
 static void *gxm_shader_patcher_vertex_usse_addr; // Shader Patcher vertex USSE memblock starting address
@@ -497,7 +497,7 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 
 	// Allocating depth surface
 	void *depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, VGL_MEM_VRAM);
-	
+
 #ifdef STORE_DEPTH_STENCIL
 	// Initializing mask update bit to 1
 	sceClibMemset(depth_buffer, 0x80, 4 * depth_stencil_samples);
@@ -514,7 +514,7 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 		SCE_GXM_DEPTH_STENCIL_SURFACE_LINEAR,
 		msaa_mode == SCE_GXM_MULTISAMPLE_4X ? depth_stencil_width * 2 : depth_stencil_width,
 		depth_buffer, stencil_buffer);
-	
+
 #ifdef STORE_DEPTH_STENCIL
 	sceGxmDepthStencilSurfaceSetForceLoadMode(surface, SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED);
 	sceGxmDepthStencilSurfaceSetForceStoreMode(surface, SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED);
@@ -646,7 +646,7 @@ void sceneReset(void) {
 				active_write_fb->depthbuffer_ptr = &active_write_fb->depthbuffer;
 				active_write_fb->is_depth_hidden = GL_TRUE;
 			}
-			
+
 			// If a rendertarget is not bound to the in use framebuffer, we get one for it
 			if (!active_write_fb->target) {
 #ifdef HAVE_SHARED_RENDERTARGETS
@@ -752,7 +752,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 	// Marking uniform values as dirty at each frame end just to be safe
 	dirty_frag_unifs = GL_TRUE;
 	dirty_vert_unifs = GL_TRUE;
-	
+
 #if defined(HAVE_RAZOR_INTERFACE) && !defined(HAVE_LIGHT_RAZOR)
 	if (!in_use_framebuffer) {
 		vgl_debugger_draw();

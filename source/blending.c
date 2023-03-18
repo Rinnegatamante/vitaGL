@@ -50,7 +50,7 @@ GLenum gxm_blend_eq_to_gl(SceGxmBlendFunc factor) {
 	default:
 		break;
 	}
-	
+
 	return 0;
 }
 
@@ -81,7 +81,7 @@ GLenum gxm_blend_to_gl(SceGxmBlendFactor factor) {
 	default:
 		break;
 	}
-	
+
 	return 0;
 }
 

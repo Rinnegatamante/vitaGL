@@ -68,7 +68,7 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 			break; \
 		} \
 	}
-	
+
 #define setup_elements_indices_with_base(type_t) \
 	type_t *ptr; \
 	switch (mode) { \
@@ -165,7 +165,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 #ifndef SKIP_ERROR_HANDLING
 		if (first + count > MAX_IDX_NUMBER) {
 			vgl_log("%s:%d Attempting to draw a model with glDrawArrays which is too big! Consider increasing MAX_IDX_NUMBER value...\n", __FILE__, __LINE__);
-		}	
+		}
 #endif
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 	}
@@ -222,7 +222,7 @@ void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei prim
 #ifndef SKIP_ERROR_HANDLING
 		if (first + count > MAX_IDX_NUMBER) {
 			vgl_log("%s:%d Attempting to draw a model with glDrawArrays which is too big! Consider increasing MAX_IDX_NUMBER value...\n", __FILE__, __LINE__);
-		}	
+		}
 #endif
 		sceGxmDrawInstanced(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count * primcount, count);
 	}
@@ -265,10 +265,10 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 #endif
 	{
 		if (type == GL_UNSIGNED_SHORT) {
-			setup_elements_indices(uint16_t)
+			setup_elements_indices(uint16_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		} else {
-			setup_elements_indices(uint32_t)
+			setup_elements_indices(uint32_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
 		}
 	}
@@ -306,10 +306,10 @@ void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLv
 #endif
 	{
 		if (type == GL_UNSIGNED_SHORT) {
-			setup_elements_indices_with_base(uint16_t)
+			setup_elements_indices_with_base(uint16_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		} else {
-			setup_elements_indices_with_base(uint32_t)
+			setup_elements_indices_with_base(uint32_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
 		}
 	}
@@ -349,10 +349,10 @@ void glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, G
 #endif
 	{
 		if (type == GL_UNSIGNED_SHORT) {
-			setup_elements_indices(uint16_t)
+			setup_elements_indices(uint16_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		} else {
-			setup_elements_indices(uint32_t)
+			setup_elements_indices(uint32_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
 		}
 	}
@@ -391,10 +391,10 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 	{
 		if (type == GL_UNSIGNED_SHORT) {
 			setup_elements_indices_with_base(uint16_t)
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		} else {
 			setup_elements_indices_with_base(uint32_t)
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
+				sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
 		}
 	}
 	restore_polygon_mode(gxm_p);
@@ -431,10 +431,10 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void
 #endif
 	{
 		if (type == GL_UNSIGNED_SHORT) {
-			setup_elements_indices(uint16_t)
+			setup_elements_indices(uint16_t);
 			sceGxmDrawInstanced(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count * primcount, count);
 		} else {
-			setup_elements_indices(uint32_t)
+			setup_elements_indices(uint32_t);
 			sceGxmDrawInstanced(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count * primcount, count);
 		}
 	}

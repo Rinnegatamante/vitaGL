@@ -43,7 +43,7 @@ void matrix4x4_multiply(matrix4x4 dst, const matrix4x4 src1, const matrix4x4 src
 void matrix4x4_rotate(matrix4x4 m, float rad, float x, float y, float z) {
 	float cs[2];
 	sincosf_c(rad, cs);
-	
+
 	matrix4x4 m1, m2;
 	sceClibMemset(m1, 0, sizeof(matrix4x4));
 	const float c = 1 - cs[1];
@@ -53,17 +53,17 @@ void matrix4x4_rotate(matrix4x4 m, float rad, float x, float y, float z) {
 	m1[0][0] = axis[0] * xc + cs[1];
 	m1[1][0] = axis[1] * xc + axis[2] * cs[0];
 	m1[2][0] = axis[2] * xc - axis[1] * cs[0];
-	
+
 	m1[0][1] = axis[0] * yc - axis[2] * cs[0];
 	m1[1][1] = axis[1] * yc + cs[1];
 	m1[2][1] = axis[2] * yc + axis[0] * cs[0];
-	
+
 	m1[0][2] = axis[0] * zc + axis[1] * cs[0];
 	m1[1][2] = axis[1] * zc - axis[0] * cs[0];
 	m1[2][2] = axis[2] * zc + cs[1];
-	
+
 	m1[3][3] = 1.0f;
-	
+
 	matrix4x4_multiply(m2, m, m1);
 	matrix4x4_copy(m, m2);
 }
@@ -204,9 +204,9 @@ void vector4f_matrix4x4_mult(vector4f *u, const matrix4x4 m, const vector4f *v) 
 }
 
 void vector3f_cross_product(vector3f *r, const vector3f *v1, const vector3f *v2) {
-    r->x = v1->y * v2->z - v1->z * v2->y;
-    r->y = -v1->x * v2->z + v1->z * v2->x;
-    r->z = v1->x * v2->y - v1->y * v2->x;
+	r->x = v1->y * v2->z - v1->z * v2->y;
+	r->y = -v1->x * v2->z + v1->z * v2->x;
+	r->z = v1->x * v2->y - v1->y * v2->x;
 }
 
 void vector4f_normalize(vector4f *v) {

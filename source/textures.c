@@ -275,7 +275,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 			break;
 		case GL_UNSIGNED_INT_8_8_8_8:
 			data_bpp = 4;
-            read_cb = readARGB;
+			read_cb = readARGB;
 			break;
 		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
 			data_bpp = 2;
@@ -804,7 +804,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			break;
 		case GL_UNSIGNED_INT_8_8_8_8:
 			data_bpp = 4;
-            read_cb = readARGB;
+			read_cb = readARGB;
 			break;
 		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
 			data_bpp = 2;
@@ -960,7 +960,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		case GL_PALETTE4_RGB8_OES:
 			if (target != GL_TEXTURE_2D) {
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
-			}	
+			}
 			read_cb = readRGB;
 			data_bpp = 3;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
@@ -969,7 +969,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		case GL_PALETTE4_RGBA8_OES:
 			if (target != GL_TEXTURE_2D) {
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
-			}	
+			}
 			read_cb = readRGBA;
 			data_bpp = 4;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
@@ -1240,7 +1240,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 	switch (target) {
 	case GL_TEXTURE_CUBE_MAP:
 		switch (pname) {
-		case GL_TEXTURE_WRAP_S: 
+		case GL_TEXTURE_WRAP_S:
 		case GL_TEXTURE_WRAP_T:
 #ifndef SKIP_ERROR_HANDLING
 			if (param != GL_CLAMP_TO_EDGE && param != GL_CLAMP) {
@@ -1311,7 +1311,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 	case GL_TEXTURE_2D:
 		switch (pname) {
 		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
-#ifndef SKIP_ERROR_HANDLING			
+#ifndef SKIP_ERROR_HANDLING
 			if (param != 1) {
 				SET_GL_ERROR(GL_INVALID_VALUE)
 			}
@@ -1429,7 +1429,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 }
 
 void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
-		// Setting some aliases to make code more readable
+	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
 	resolveTexTarget(target);
@@ -1438,7 +1438,7 @@ void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
 	switch (target) {
 	case GL_TEXTURE_CUBE_MAP:
 		switch (pname) {
-		case GL_TEXTURE_WRAP_S: 
+		case GL_TEXTURE_WRAP_S:
 		case GL_TEXTURE_WRAP_T:
 #ifndef SKIP_ERROR_HANDLING
 			if (param != GL_CLAMP_TO_EDGE && param != GL_CLAMP) {
@@ -1509,7 +1509,7 @@ void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
 	case GL_TEXTURE_2D:
 		switch (pname) {
 		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
-#ifndef SKIP_ERROR_HANDLING			
+#ifndef SKIP_ERROR_HANDLING
 			if (param != 65536) {
 				SET_GL_ERROR(GL_INVALID_VALUE)
 			}
@@ -1741,7 +1741,6 @@ void glCopyTexImage1D(GLenum target, GLint level, GLenum internalformat, GLint x
 	glCopyTexImage2D(GL_TEXTURE_1D, level, internalformat, x, y, width, 1, border);
 }
 
-
 void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height) {
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if texture is too big for sceGxm
@@ -1777,7 +1776,7 @@ void glGenSamplers(GLsizei n, GLuint *samplers) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	
+
 	for (int i = 0; i < n; i++) {
 		sampler *smp = (sampler *)vglMalloc(sizeof(sampler));
 		smp->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
@@ -1799,7 +1798,7 @@ void glDeleteSamplers(GLsizei n, const GLuint *smp) {
 #endif
 
 	for (int i = 0; i < n; i++) {
-		for (int j = 0; j <  COMBINED_TEXTURE_IMAGE_UNITS_NUM; j++) {
+		for (int j = 0; j < COMBINED_TEXTURE_IMAGE_UNITS_NUM; j++) {
 			if (smp[i] == (GLuint)samplers[j])
 				samplers[j] = NULL;
 		}
@@ -1809,7 +1808,7 @@ void glDeleteSamplers(GLsizei n, const GLuint *smp) {
 
 void glBindSampler(GLuint unit, GLuint smp) {
 #ifndef SKIP_ERROR_HANDLING
-	if (unit< 0 || unit >= COMBINED_TEXTURE_IMAGE_UNITS_NUM) {
+	if (unit < 0 || unit >= COMBINED_TEXTURE_IMAGE_UNITS_NUM) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, unit)
 	}
 #endif
@@ -1822,7 +1821,7 @@ void glSamplerParameteri(GLuint target, GLenum pname, GLint param) {
 
 	switch (pname) {
 	case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
-#ifndef SKIP_ERROR_HANDLING			
+#ifndef SKIP_ERROR_HANDLING
 		if (param != 1) {
 			SET_GL_ERROR(GL_INVALID_VALUE)
 		}
@@ -1944,7 +1943,7 @@ void *vglGetTexDataPointer(GLenum target) {
 }
 
 void vglOverloadTexDataPointer(GLenum target, void *data) {
-		// Aliasing texture unit for cleaner code
+	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
 	resolveTexTarget(target);

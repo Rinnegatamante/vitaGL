@@ -318,11 +318,11 @@ void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, 
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalformat)
 		break;
 	}
-	
+
 	active_rb->depthbuffer_ptr = &active_rb->depthbuffer;
 }
 
-void glNamedRenderbufferStorage(GLuint target, GLenum internalformat, GLsizei width, GLsizei height) {	
+void glNamedRenderbufferStorage(GLuint target, GLenum internalformat, GLsizei width, GLsizei height) {
 	renderbuffer *rb = (renderbuffer *)target;
 	if (rb->depthbuffer_ptr) {
 		markAsDirty(rb->depthbuffer_ptr->depthData);
@@ -346,7 +346,7 @@ void glNamedRenderbufferStorage(GLuint target, GLenum internalformat, GLsizei wi
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalformat)
 		break;
 	}
-	
+
 	rb->depthbuffer_ptr = &rb->depthbuffer;
 }
 
@@ -383,7 +383,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 	fb->stride = ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
 	fb->data = sceGxmTextureGetData(&tex->gxm_tex);
 	fb->data_type = tex->type;
-	
+
 	// Discarding any previously bound hidden depth buffer
 	if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
 		markAsDirty(fb->depthbuffer_ptr->depthData);
@@ -415,10 +415,10 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 		// Increasing texture reference counter
 		fb->tex = tex;
 		tex->ref_counter++;
-		
+
 		// Checking if the framebuffer requires extended register size
 		fb->is_float = fmt == SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
-		
+
 		// Allocating colorbuffer
 		sceGxmColorSurfaceInit(
 			&fb->colorbuffer,
@@ -455,7 +455,7 @@ void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum textar
 	fb->stride = ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
 	fb->data = sceGxmTextureGetData(&tex->gxm_tex);
 	fb->data_type = tex->type;
-	
+
 	// Discarding any previously bound hidden depth buffer
 	if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
 		markAsDirty(fb->depthbuffer_ptr->depthData);
@@ -487,10 +487,10 @@ void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum textar
 		// Increasing texture reference counter
 		fb->tex = tex;
 		tex->ref_counter++;
-		
+
 		// Checking if the framebuffer requires extended register size
 		fb->is_float = fmt == SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
-		
+
 		// Allocating colorbuffer
 		sceGxmColorSurfaceInit(
 			&fb->colorbuffer,
@@ -552,7 +552,7 @@ void glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLe
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
-	
+
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:

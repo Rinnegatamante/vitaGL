@@ -299,7 +299,7 @@ void *vgl_alloc_phycont_block(uint32_t size) {
 void vgl_mem_term(void) {
 	if (!mempool_initialized)
 		return;
-	
+
 #ifdef HAVE_CUSTOM_HEAP
 	heap_destroy();
 #endif

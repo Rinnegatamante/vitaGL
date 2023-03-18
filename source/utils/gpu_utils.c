@@ -107,7 +107,7 @@ void *gpu_alloc_mapped_aligned_unsafe(size_t alignment, size_t size, vglMemType 
 	sceKernelSignalSema(gc_mutex[0], 1);
 	sceKernelDelayThread(1000000);
 #endif
-	
+
 	// Allocating requested memblock
 	void *res = vgl_memalign(alignment, size, type);
 	if (res)
@@ -122,7 +122,7 @@ void *gpu_alloc_mapped_aligned_unsafe(size_t alignment, size_t size, vglMemType 
 	res = vgl_memalign(alignment, size, VGL_MEM_SLOW);
 	if (res)
 		return res;
-	
+
 	// Even this failed, attempting with game common dialog RAM
 	res = vgl_memalign(alignment, size, VGL_MEM_BUDGET);
 	if (res)
@@ -135,7 +135,7 @@ void *gpu_alloc_mapped_aligned_unsafe(size_t alignment, size_t size, vglMemType 
 	// Iterating for as many as possible max pending garbage collector cycles
 	if (!res && unsafe_allocator_counter < FRAME_PURGE_FREQ)
 		res = gpu_alloc_mapped_aligned_unsafe(alignment, size, type);
-	
+
 	return res;
 }
 
@@ -154,7 +154,7 @@ void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type) {
 	res = vgl_memalign(alignment, size, VGL_MEM_SLOW);
 	if (res)
 		return res;
-	
+
 	// Even this failed, attempting with game common dialog RAM
 	res = vgl_memalign(alignment, size, VGL_MEM_BUDGET);
 	if (res)
@@ -179,7 +179,7 @@ void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type) {
 			vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe successfully allocated the requested memory after forcing %d garbage collection cycles.\n", __FILE__, __LINE__, unsafe_allocator_counter);
 #endif
 	}
-	
+
 	return res;
 }
 
@@ -441,12 +441,12 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 	// If there's already a texture in passed texture object we first dealloc it
 	if (tex->status == TEX_VALID)
 		gpu_free_texture_data(tex);
-	
+
 	// Check if the texture is P8
 	uint8_t is_p8 = tex_format_to_bytespp(format);
 	uint32_t orig_w = w;
 	uint32_t orig_h = h;
-	
+
 	// Calculating texture data buffer size
 	uint32_t tex_size = 0;
 	for (int j = 0; j <= level; j++) {
@@ -454,7 +454,7 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 		w /= 2;
 		h /= 2;
 	}
-	
+
 	// Allocating texture and palette data buffers
 	int num_entries = is_p8 ? 256 : 16;
 	tex->palette_data = gpu_alloc_mapped_aligned(64, num_entries * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
@@ -467,7 +467,7 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 		palette_data[i] = read_cb(src);
 		src += src_bpp;
 	}
-	
+
 	// Populating texture data
 	if (is_p8)
 		vgl_fast_memcpy(tex->data, src, tex_size);
@@ -536,13 +536,13 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 		tex->faces_counter = 1;
 	} else
 		tex->faces_counter++;
-	
+
 	// Calculating swizzled compressed texture size on memory
 	vglMemType new_mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
 
 	if (!image_size)
 		image_size = gpu_get_compressed_mip_size(0, w, h, format);
-	
+
 	const uint32_t blocksize = (format == SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR) ? 16 : 8;
 	const uint32_t aligned_width = nearest_po2(w);
 	const uint32_t aligned_height = nearest_po2(h);
@@ -554,7 +554,7 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 
 	// Getting texture format bpp
 	uint8_t bpp = tex_format_to_bytespp(format);
-	
+
 	// Allocating texture data buffer
 	const int mip_offset = gpu_get_compressed_mip_offset(0, aligned_max_width, aligned_max_height, format);
 	const int face_size = gpu_get_compressed_mipchain_size(0, aligned_max_width, aligned_max_height, format);
@@ -799,7 +799,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 			}
 			level++;
 		}
-		
+
 		// Calculating needed sceGxmTransfer format for the downscale process
 		SceGxmTransferFormat fmt = tex_format_to_transfer(format);
 

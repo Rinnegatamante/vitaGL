@@ -45,12 +45,12 @@ void resetVao(vao *v) {
 	}
 	v->vertex_attrib_state = 0;
 	v->index_array_unit = 0;
-	
+
 	uint32_t circular_pool_size = v == &default_vao ? DISABLED_ATTRIBS_POOL_SIZE : DISABLED_AUX_ATTRIBS_POOL_SIZE;
 	v->vertex_attrib_pool = (float *)gpu_alloc_mapped(circular_pool_size, VGL_MEM_RAM);
 	v->vertex_attrib_pool_ptr = v->vertex_attrib_pool;
 	v->vertex_attrib_pool_limit = (float *)((uint8_t *)v->vertex_attrib_pool + circular_pool_size);
-	
+
 	// Init generic vertex attrib arrays
 	vao *vao_bkp = cur_vao;
 	cur_vao = v;
@@ -252,7 +252,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 			return;
 		}
 #endif
-		
+
 		// Copying up previous data combined to modified data
 		if (offset > 0)
 			vgl_memcpy(ptr, gpu_buf->ptr, offset);
@@ -262,12 +262,12 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 
 		// Marking previous content for deletion
 		markAsDirty(gpu_buf->ptr);
-		
+
 		gpu_buf->ptr = ptr;
 		gpu_buf->used = GL_FALSE;
 	} else {
 		vgl_memcpy((uint8_t *)gpu_buf->ptr + offset, data, size);
-	}	
+	}
 }
 
 void *glMapBuffer(GLenum target, GLenum access) {
@@ -292,7 +292,7 @@ void *glMapBuffer(GLenum target, GLenum access) {
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL);
 	}
-	
+
 	if (!gpu_buf || gpu_buf->mapped) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_OPERATION, NULL)
 	}
@@ -315,7 +315,7 @@ void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitf
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
 	}
-	
+
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf || gpu_buf->mapped) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_OPERATION, NULL)
@@ -323,7 +323,7 @@ void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitf
 		SET_GL_ERROR_WITH_RET(GL_INVALID_VALUE, NULL)
 	}
 #endif
-	
+
 	// TODO: Current implementation doesn't take into account 'used' state
 	gpu_buf->mapped = GL_TRUE;
 	return (void *)((uint8_t *)gpu_buf->ptr + offset);
@@ -347,7 +347,7 @@ GLboolean glUnmapBuffer(GLenum target) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_OPERATION, GL_TRUE)
 	}
 #endif
-	
+
 	gpu_buf->used = GL_FALSE;
 	gpu_buf->mapped = GL_FALSE;
 	return GL_TRUE;

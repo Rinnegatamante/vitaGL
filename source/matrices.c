@@ -185,7 +185,7 @@ void glMultMatrixf(const GLfloat *m) {
 			src[i][j] = m[j * 4 + i];
 		}
 	}
-	
+
 	// Multiplicating passed matrix with in use one
 	matrix4x4_multiply(res, *matrix, src);
 
@@ -206,7 +206,7 @@ void glMultTransposeMatrixf(const GLfloat *m) {
 			src[i][j] = m[i * 4 + j];
 		}
 	}
-	
+
 	// Multiplicating passed matrix with in use one
 	matrix4x4_multiply(res, *matrix, src);
 
@@ -228,7 +228,7 @@ void glMultMatrixx(const GLfixed *m) {
 			src[i][j] = (float)m[j * 4 + i] / 65536.0f;
 		}
 	}
-	
+
 	// Multiplicating passed matrix with in use one
 	matrix4x4_multiply(res, *matrix, src);
 
@@ -249,7 +249,7 @@ void glMultTransposeMatrixx(const GLfixed *m) {
 			src[i][j] = (float)m[i * 4 + j] / 65536.0f;
 		}
 	}
-	
+
 	// Multiplicating passed matrix with in use one
 	matrix4x4_multiply(res, *matrix, src);
 
@@ -487,7 +487,7 @@ void glPopMatrix(void) {
 		}
 #endif
 		// Copying last matrix on stack into current matrix and decreasing stack counter
-		matrix4x4_copy(*matrix, tex_unit->texture_matrix_stack[--tex_unit->texture_stack_counter]);	
+		matrix4x4_copy(*matrix, tex_unit->texture_matrix_stack[--tex_unit->texture_stack_counter]);
 	}
 	dirty_vert_unifs = GL_TRUE;
 }
@@ -520,7 +520,7 @@ void gluLookAt(GLdouble eyeX, GLdouble eyeY, GLdouble eyeZ, GLdouble centerX, GL
 	up[2] = upZ;
 	up[3] = 0.0f;
 	vector4f_normalize((vector4f *)up);
-	
+
 	matrix4x4 m, res;
 	float s[4], u[3];
 	vector3f_cross_product((vector3f *)s, (vector3f *)f, (vector3f *)up);
@@ -529,7 +529,7 @@ void gluLookAt(GLdouble eyeX, GLdouble eyeY, GLdouble eyeZ, GLdouble centerX, GL
 	m[0][1] = s[1];
 	m[0][2] = s[2];
 	m[0][3] = 0.0f;
-	
+
 	vector4f_normalize((vector4f *)s);
 	vector3f_cross_product((vector3f *)u, (vector3f *)s, (vector3f *)f);
 	m[1][0] = u[0];
@@ -544,11 +544,11 @@ void gluLookAt(GLdouble eyeX, GLdouble eyeY, GLdouble eyeZ, GLdouble centerX, GL
 	m[3][1] = 0.0f;
 	m[3][2] = 0.0f;
 	m[3][3] = 1.0f;
-	
+
 	matrix4x4_multiply(res, m, *matrix);
 	matrix4x4_copy(*matrix, res);
 	matrix4x4_translate(*matrix, -eyeX, -eyeY, -eyeZ);
-	
+
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
 	dirty_vert_unifs = GL_TRUE;

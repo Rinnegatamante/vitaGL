@@ -20,7 +20,7 @@
  * display_lists.c:
  * Implementation for display lists
  */
- 
+
 #include "shared.h"
 
 #define NUM_DISPLAY_LISTS 32
@@ -33,7 +33,7 @@ GLboolean _vgl_enqueue_list_func(void (*func)(), const char *type, ...) {
 	// Check if we are creating a display list
 	if (!curr_display_list)
 		return GL_FALSE;
-	
+
 	// Enqueuing function call
 	list_chain *new_tail = (list_chain *)vglMalloc(sizeof(list_chain));
 	if (curr_display_list->tail)
@@ -42,7 +42,7 @@ GLboolean _vgl_enqueue_list_func(void (*func)(), const char *type, ...) {
 	if (!curr_display_list->head)
 		curr_display_list->head = new_tail;
 	new_tail->func = func;
-	
+
 	// Recording function arguments
 	if (*type) {
 		va_list arglist;
@@ -51,48 +51,38 @@ GLboolean _vgl_enqueue_list_func(void (*func)(), const char *type, ...) {
 		char *p = (char *)type;
 		while (*p) {
 			switch (*p) {
-			case 'I':
-				{
+			case 'I': {
 				int32_t arg = va_arg(arglist, int32_t);
 				sceClibMemcpy(&new_tail->args[i], &arg, sizeof(arg));
 				i += sizeof(arg);
-				}
-				break;
-			case 'U':
-				{
+			} break;
+			case 'U': {
 				uint32_t arg = va_arg(arglist, uint32_t);
 				sceClibMemcpy(&new_tail->args[i], &arg, sizeof(arg));
 				i += sizeof(arg);
-				}
-				break;
-			case 'F':
-				{
+			} break;
+			case 'F': {
 				float arg = (float)va_arg(arglist, double);
 				sceClibMemcpy(&new_tail->args[i], &arg, sizeof(arg));
 				i += sizeof(arg);
-				}
-				break;
-			case 'X':
-				{
+			} break;
+			case 'X': {
 				uint8_t arg = (uint8_t)va_arg(arglist, int);
 				sceClibMemcpy(&new_tail->args[i], &arg, sizeof(arg));
 				i += sizeof(arg);
-				}
-				break;
-			case 'S':
-				{
+			} break;
+			case 'S': {
 				int16_t arg = (int16_t)va_arg(arglist, int);
 				sceClibMemcpy(&new_tail->args[i], &arg, sizeof(arg));
 				i += sizeof(arg);
-				}
-				break;
+			} break;
 			default:
 				break;
 			}
 			p++;
 		}
 		va_end(arglist);
-		
+
 		// Detecting function type
 		// 1 argument
 		if (strcmp(type, "U"))
@@ -144,7 +134,7 @@ GLboolean _vgl_enqueue_list_func(void (*func)(), const char *type, ...) {
 			new_tail->type = DLIST_FUNC_U8_U8_U8_U8;
 	} else
 		new_tail->type = DLIST_FUNC_VOID;
-	
+
 	return !display_list_execute;
 }
 
@@ -276,7 +266,7 @@ GLuint glGenLists(GLsizei range) {
 		vgl_log("%s:%d glGenLists: Not enough display lists! Consider increasing the display lists maximum number...\n", __FILE__, __LINE__);
 		return 0;
 	}
-#endif	
+#endif
 	for (GLuint i = first; i < first + range; i++) {
 		display_lists[i].used = GL_TRUE;
 		display_lists[i].head = display_lists[i].tail = NULL;

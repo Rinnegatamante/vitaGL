@@ -220,7 +220,6 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	depth_clear_indices[1] = 1;
 	depth_clear_indices[2] = 2;
 	depth_clear_indices[3] = 3;
-	
 
 #ifdef HAVE_VITA3K_SUPPORT // Vita3K can't use ShaccCg extensions due to lack of taiHEN support, so we need to provide precompiled glClear shaders
 	{
@@ -308,7 +307,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 
 	// Init custom shaders
 	resetCustomShaders();
-	
+
 	// Init default vao
 	resetVao(cur_vao);
 
@@ -472,7 +471,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		texture_slots[i].gxm_tex = texture_slots[0].gxm_tex;
 		texture_slots[i].palette_data = NULL;
 	}
-	
+
 	// Init texture matrices to identity
 	for (i = 0; i < TEXTURE_COORDS_NUM; i++) {
 		matrix4x4_identity(texture_matrix[i]);
@@ -481,7 +480,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 #ifdef HAVE_RAZOR_INTERFACE
 	vgl_debugger_init();
 #endif
-	
+
 	vgl_inited = GL_TRUE;
 	return res_fallback;
 }
@@ -603,7 +602,7 @@ void *vglMalloc(uint32_t size) {
 	void *res = vgl_malloc(size, VGL_MEM_EXTERNAL);
 	if (res)
 		return res;
-	
+
 	// If it fails, we try with standard RAM mem pool
 	res = vgl_malloc(size, VGL_MEM_RAM);
 	if (res)
@@ -613,7 +612,7 @@ void *vglMalloc(uint32_t size) {
 	res = vgl_malloc(size, VGL_MEM_SLOW);
 	if (res)
 		return res;
-	
+
 	// If it fails, we try with common dialog mem
 	res = vgl_malloc(size, VGL_MEM_BUDGET);
 	if (res)
@@ -632,7 +631,7 @@ void *vglMemalign(uint32_t alignment, uint32_t size) {
 	void *res = vgl_memalign(alignment, size, VGL_MEM_EXTERNAL);
 	if (res)
 		return res;
-	
+
 	// If it fails, we try with standard RAM mem pool
 	res = vgl_memalign(alignment, size, VGL_MEM_RAM);
 	if (res)
@@ -642,7 +641,7 @@ void *vglMemalign(uint32_t alignment, uint32_t size) {
 	res = vgl_memalign(alignment, size, VGL_MEM_SLOW);
 	if (res)
 		return res;
-	
+
 	// If it fails, we try with common dialog mem
 	res = vgl_memalign(alignment, size, VGL_MEM_BUDGET);
 	if (res)
@@ -657,7 +656,7 @@ void *vglCalloc(uint32_t nmember, uint32_t size) {
 	void *res = vgl_calloc(nmember, size, VGL_MEM_EXTERNAL);
 	if (res)
 		return res;
-	
+
 	// If it fails, we try with standard RAM mem pool
 	res = vgl_calloc(nmember, size, VGL_MEM_RAM);
 	if (res)
@@ -667,7 +666,7 @@ void *vglCalloc(uint32_t nmember, uint32_t size) {
 	res = vgl_calloc(nmember, size, VGL_MEM_SLOW);
 	if (res)
 		return res;
-	
+
 	// If it fails, we try with common dialog mem
 	res = vgl_calloc(nmember, size, VGL_MEM_BUDGET);
 	if (res)
@@ -690,7 +689,7 @@ void *vglRealloc(void *ptr, uint32_t size) {
 		vgl_fast_memcpy(res, ptr, vgl_malloc_usable_size(ptr));
 		vglFree(ptr);
 	}
-		
+
 	return res;
 }
 
