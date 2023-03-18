@@ -1172,7 +1172,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 							}
 							// VOUT will get extended by the preprocessor into a out varying bound to a progressive TEXCOORD semantic
 							if (idx >= 0) {
-								sprintf(newline, "VOUT(%s,%d);", str + 8, idx);
+								sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
 							} else {
 #ifndef SKIP_ERROR_HANDLING
 								if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID) {
@@ -1252,7 +1252,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		// Manually handle * operator replacements for vector * matrix and matrix * vector operations support
 		char *dst = vglMalloc(size + 1024 * 1024); // FIXME: This is just an estimation, check if 1MB is enough
 		glsl_inject_mul(s->source, dst);
-		vglFree(s->source);
+		vgl_free(s->source);
 		s->source = dst;
 #ifdef DEBUG_GLSL_TRANSLATOR
 		vgl_log("%s:%d %s: GLSL translation output:\n\n%s\n\n", __FILE__, __LINE__, __func__, s->source);
