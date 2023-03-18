@@ -617,6 +617,31 @@ gears_idle(void)
    }
 }
 
+//#define USE_GLSL_TRANSLATOR // Compile vitaGL with HAVE_GLSL_SUPPORT for this
+#ifdef USE_GLSL_TRANSLATOR
+static const char vertex_shader[] =
+"attribute vec3 position;\n"
+"attribute vec3 normal;\n"
+"uniform mat4 ModelViewProjectionMatrix;\n"
+"uniform mat4 NormalMatrix;\n"
+"uniform vec4 LightSourcePosition;\n"
+"uniform vec4 MaterialColor;\n"
+"varying vec4 Color;\n"
+"void main() {\n"
+"    vec3 N = normalize((NormalMatrix * vec4(normal, 1.0)).xyz);\n"
+"    vec3 L = normalize(LightSourcePosition.xyz);\n"
+"    float diffuse = max(dot(N, L), 0.0);\n"
+"    Color = diffuse * MaterialColor;\n"
+"    gl_Position = ModelViewProjectionMatrix * vec4(position, 1.0);\n"
+"}";
+
+static const char fragment_shader[] =
+"varying vec4 Color;\n"
+"void main()\n"
+"{\n"
+"    gl_FragColor = Color;\n"
+"}";
+#else
 static const char vertex_shader[] =
 "void main(\n"
 "float3 position,\n"
@@ -641,6 +666,7 @@ static const char fragment_shader[] =
 "{\n"
 "    return Color;\n"
 "}";
+#endif
 
 static void
 gears_init(void)

@@ -11,6 +11,7 @@ In order to build vitaGL use the following command: `make install`.
 <br>These are all the available flags usable when compiling the library:<br>
 `HAVE_SHARK_LOG=1` Enables logging support in runtime shader compiler.<br>
 `HAVE_CUSTOM_HEAP=1` Replaces sceClib heap implementation with custom one (Less efficient but safer).<br>
+`HAVE_GLSL_SUPPORT=1` Enables experimental GLSL to CG auto translation for shader sources.<br>
 `LOG_ERRORS=1` Errors will be logged with sceClibPrintf.<br>
 `LOG_ERRORS=2` Errors will be logged to ux0:data/vitaGL.log.<br>
 `NO_DEBUG=1` Disables most of the error handling features (Faster CPU code execution but code may be non compliant to all OpenGL standards).<br>

@@ -23,6 +23,135 @@
 
 #include "shared.h"
 
+#ifdef HAVE_GLSL_TRANSLATOR
+//#define DEBUG_GLSL_TRANSLATOR // Define this to enable logging of GLSL translator output prior compilation
+#define MAX_CG_TEXCOORD_ID 10 // Maximum number of bindable TEXCOORD semantic
+#include "shaders/glsl_translator_hdr.h"
+char glsl_texcoords_binds[MAX_CG_TEXCOORD_ID][128];
+int glsl_max_texcoord_bind = 0;
+GLboolean glsl_is_first_shader = GL_TRUE;
+
+/* 
+ * Experimental function to replace all multiplication operators in a GLSL shader code:
+ * The idea behind this is to replace all operators with a function call (vglMul)
+ * which is an overloaded inlined function properly adding support for matrix * vector
+ * and vector * matrix operations. This implementation is very likely non exhaustive
+ * since, for a proper implementation, ideally we'd want a proper GLSL parser.
+ */
+void glsl_inject_mul(char *txt, char *out) {
+    char *star = strstr(txt + strlen(glsl_hdr), "*");
+	if (!star) {
+		strcpy(out, txt);
+		return;
+	}
+	char *left;
+LOOP_START:
+    left = star - 1;
+    int para_left = 0;
+    int found = 0;
+    while (left != txt) {
+        switch (*left) {
+        case ')':
+            para_left++;
+            break;
+        case '(':
+            para_left--;
+            if (para_left < 0)
+                found = 1;
+            break;
+        case '=':
+            left++;
+            found = 1;
+            break;
+        case ',':
+        case '+':
+        case '-':
+            if (para_left == 0)
+                found = 1;
+            break;
+        default:
+            break;
+        }
+        if (found) {
+            left++;
+            break;
+        } else
+            left--;
+    }
+    found = 0;
+    char *right = star + 1;
+    para_left = 0;
+    while (*right) {
+        switch (*right) {
+        case '(':
+            para_left++;
+            break;
+        case ')':
+            para_left--;
+            if (para_left < 0)
+                found = 1;
+            break;
+        case ',':
+        case '+':
+        case '-':
+            if (para_left == 0)
+                found = 1;
+            break;
+        case ';':
+            found = 1;
+            break;
+        default:
+            break;
+        }
+        if (found)
+            break;
+        else
+            right++;
+    }
+    char *res = (char *)malloc(1024 * 1024);
+	res[0] = 0;
+    char tmp = *left;
+    left[0] = 0;
+    strcpy(res, txt);
+    left[0] = tmp;
+    strcat(res, "vglMul(");
+    tmp = *right;
+    right[0] = 0;
+    *star = ',';
+    strcat(res, left);
+    strcat(res, ")");
+    right[0] = tmp;
+    strcat(res, right);
+    strcpy(out, res);
+	free(res);
+    txt = out;
+    star = strstr(out + strlen(glsl_hdr), "*");
+    if (star)
+        goto LOOP_START;
+}
+
+void glsl_nuke_comments(char *txt) {
+	// Nuke C++ styled comments
+	char *s = strstr(txt, "/*");
+	char *s2;
+	while (s) {
+		s2 = strstr(s, "*/") + 2;
+		sceClibMemset(s, ' ', s2 - s);
+		s = strstr(s2, "/*");
+	}
+	
+	// Nuke C styled comments
+	s = strstr(txt, "//");
+	while (s) {
+		s2 = strstr(s, "\n");
+		if (!s2)
+			s2 = txt + strlen(txt);
+		sceClibMemset(s, ' ', s2 - s);
+		s = strstr(s2, "//");
+	}
+}
+#endif
+
 #define MAX_CUSTOM_SHADERS 2048 // Maximum number of linkable custom shaders
 #define MAX_CUSTOM_PROGRAMS 1024 // Maximum number of linkable custom programs
 
@@ -957,15 +1086,29 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
-
+	
 	uint32_t size = 1;
+#ifdef HAVE_GLSL_TRANSLATOR
+	GLboolean hasFragCoord = GL_FALSE;
+	size += strlen(glsl_hdr);
+	if (s->type == GL_VERTEX_SHADER)
+		size += strlen("#define VGL_IS_VERTEX_SHADER\n");
+#endif	
 	for (int i = 0; i < count; i++) {
+#ifdef HAVE_GLSL_TRANSLATOR
+		// Checking if shader requires gl_FragCoord
+		if (!hasFragCoord)
+			hasFragCoord = strstr(string[i], "gl_FragCoord") ? GL_TRUE : GL_FALSE;
+#endif
 		size += length ? length[i] : strlen(string[i]);
 	}
-#ifdef SHADER_COMPILER_SPEEDHACK
+#ifdef HAVE_GLSL_TRANSLATOR
+	if (hasFragCoord)
+		size += strlen("varying in float4 gl_FragCoord : WPOS;\n");
+#endif
+#if defined(SHADER_COMPILER_SPEEDHACK) && !defined(HAVE_GLSL_TRANSLATOR)
 	if (count == 1)
 		s->prog = (SceGxmProgram *)*string;
 	else
@@ -973,12 +1116,160 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	{
 		s->source = (char *)vglMalloc(size);
 		s->source[0] = 0;
+#ifdef HAVE_GLSL_TRANSLATOR
+		// Injecting GLSL to CG header
+		if (s->type == GL_VERTEX_SHADER)
+			strcat(s->source, "#define VGL_IS_VERTEX_SHADER\n");
+		else if (hasFragCoord)
+			strcat(s->source, "varying in float4 gl_FragCoord : WPOS;\n");
+		strcat(s->source, glsl_hdr);
+#endif
 		for (int i = 0; i < count; i++) {
+#ifdef HAVE_GLSL_TRANSLATOR
+			char *text = s->source + strlen(s->source);
+#endif
 			strncat(s->source, string[i], length ? length[i] : strlen(string[i]));
+#ifdef HAVE_GLSL_TRANSLATOR
+			// Nukeing version directive
+			char *str = strstr(text, "#version");
+			if (str) {
+				str[0] = str[1] = '/';
+			}	
+			char newline[128];
+			int idx;
+			if (s->type == GL_VERTEX_SHADER) {
+				// Manually patching attributes and varyings
+				char *str = strstr(text, "attribute ");
+				char *str2 = strstr(text, "varying ");
+				while (str || str2) {
+					char *t;
+					if (!str)
+						t = str2;
+					else if (!str2)
+						t = str;
+					else
+						t = min(str, str2);
+					if (t == str) {
+						// Replace attribute with 'vgl in' that will get extended in a 'varying in' by the preprocessor
+						sceClibMemcpy(t, "vgl in    ", 10);
+						str = strstr(t, "attribute ");
+					} else {
+						char *end = strstr(t, ";");
+						char *start = end;
+						while (*start != ' ') {
+							start--;
+						}
+						start++;
+						end[0] = 0;
+						if (glsl_is_first_shader) {
+							idx = -1;
+							// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
+							for (int j = 0; j < glsl_max_texcoord_bind; j++) {
+								if (!strcmp(glsl_texcoords_binds[j], start)) {
+									idx = j;
+									break;
+								}
+							}
+							// VOUT will get extended by the preprocessor into a out varying bound to a progressive TEXCOORD semantic
+							if (idx >= 0) {
+								sprintf(newline, "VOUT(%s,%d);", str + 8, idx);
+							} else {
+#ifndef SKIP_ERROR_HANDLING
+								if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID) {
+									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+									return;
+								}
+#endif
+								strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
+								sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_max_texcoord_bind++);
+							}
+						} else {
+							// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
+							for (int j = 0; j < glsl_max_texcoord_bind; j++) {
+								if (!strcmp(glsl_texcoords_binds[j], start)) {
+									idx = j;
+									break;
+								}
+							}
+							sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+						}
+						sceClibMemcpy(str2, newline, strlen(newline));
+						str2 = strstr(t, "varying ");
+					}
+				}
+			} else {
+				// Manually patching varyings
+				char *str = strstr(text, "varying ");
+				while (str) {
+					char *end = strstr(str, ";");
+					char *start = end;
+					while (*start != ' ') {
+						start--;
+					}
+					start++;
+					end[0] = 0;
+					if (glsl_is_first_shader) {
+						idx = -1;
+						// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
+						for (int j = 0; j < glsl_max_texcoord_bind; j++) {
+							if (!strcmp(glsl_texcoords_binds[j], start)) {
+								idx = j;
+								break;
+							}
+						}
+						// VIN will get extended by the preprocessor into a in varying bound to a progressive TEXCOORD semantic
+						if (idx >= 0) {
+							sprintf(newline, "VIN(%s, %d); ", str + 8, idx);
+						} else {
+#ifndef SKIP_ERROR_HANDLING
+							if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID) {
+								vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+								return;
+							}
+#endif
+							strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
+							sprintf(newline, "VIN(%s, %d); ", str + 8, glsl_max_texcoord_bind++);
+						}
+					} else {
+						// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
+						for (int j = 0; j < glsl_max_texcoord_bind; j++) {
+							if (!strcmp(glsl_texcoords_binds[j], start)) {
+								idx = j;
+								break;
+							}
+						}
+						sprintf(newline, "VIN(%s, %d); ", str + 8, idx);
+					}
+					sceClibMemcpy(str, newline, strlen(newline));
+					str = strstr(str, "varying ");
+				}
+			}
+#endif
 		}
+#ifdef HAVE_GLSL_TRANSLATOR
+		// Nukeing comments (required for * operator replacer to properly work)
+		glsl_nuke_comments(s->source);
+		// Manually handle * operator replacements for vector * matrix and matrix * vector operations support
+		char *dst = vglMalloc(size + 1024 * 1024); // FIXME: This is just an estimation, check if 1MB is enough
+		glsl_inject_mul(s->source, dst);
+		vglFree(s->source);
+		s->source = dst;
+#ifdef DEBUG_GLSL_TRANSLATOR
+		vgl_log("%s:%d %s: GLSL translation output:\n\n%s\n\n", __FILE__, __LINE__, __func__, s->source);
+#endif
+#endif
 		s->prog = (SceGxmProgram *)s->source;
 	}
+	
+#ifdef HAVE_GLSL_TRANSLATOR
+	// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
+	glsl_is_first_shader = !glsl_is_first_shader;
+	if (glsl_is_first_shader)
+		glsl_max_texcoord_bind = 0;
+	s->size = strlen(s->source);
+#else
 	s->size = size - 1;
+#endif
 }
 
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length) {
