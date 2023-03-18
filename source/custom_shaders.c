@@ -1134,7 +1134,12 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 			char *str = strstr(text, "#version");
 			if (str) {
 				str[0] = str[1] = '/';
-			}	
+			}
+			str = strstr(text, "precision ");
+			while (str) {
+				str[0] = str[1] = '/';
+				str = strstr(str, "precision ");
+			}
 			char newline[128];
 			int idx;
 			if (s->type == GL_VERTEX_SHADER) {

@@ -41,7 +41,6 @@ inline float4 textureCube(samplerCUBE x, float3 s, float b) { return texCUBEbias
 #define const static
 #define fract(x) frac(x)
 #define mod(x,y) fmod(x,y)
-#define precision
 #define mat2 float2x2
 #define mat3 float3x3
 #define mat4 float4x4
