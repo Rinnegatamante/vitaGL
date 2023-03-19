@@ -23,10 +23,6 @@ R"(#define clip_planes_num %d
 #define GLFixed4ToFloat4(fx4) (float4(GLFixedToFloat(fx4.x), GLFixedToFloat(fx4.y), GLFixedToFloat(fx4.z), GLFixedToFloat(fx4.w)))
 
 #if lights_num > 0 && shading_mode < 1 // GL_SMOOTH/GL_FLAT
-static float4 Ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
-static float4 Diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
-static float4 Specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-
 uniform float4 lights_ambients[lights_num];
 uniform float4 lights_diffuses[lights_num];
 uniform float4 lights_speculars[lights_num];
@@ -34,44 +30,36 @@ uniform float4 lights_positions[lights_num];
 uniform float3 lights_attenuations[lights_num];
 uniform float4 light_global_ambient;
 
-void point_light(int i, float3 normal, float3 eye, float3 position) {
+#define shininess (0.02f) // FIXME: Shininess hardcoded
+
+void point_light(short i, float3 normal, float3 position, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
 	float3 VP = lights_positions[i].xyz - position;
 	float d = length(VP);
 	VP = normalize(VP);
 	float attenuation = 1.0f / (lights_attenuations[i].x +
 		lights_attenuations[i].y * d +
 		lights_attenuations[i].z * d * d);
-	float3 halfVector = normalize(VP + eye);
 	float nDotVP = max(0.0f, dot(normal, VP));
-	float nDotHV = max(0.0f, dot(normal, halfVector));
-	float pf = 0.0f;
-	if (nDotVP != 0.0f)
-		pf = 1.0f;
 	Ambient += lights_ambients[i] * attenuation;
 	Diffuse += lights_diffuses[i] * nDotVP * attenuation;
-	Specular += lights_speculars[i] * pf * attenuation;
+	if (nDotVP != 0.0f)
+		Specular += lights_speculars[i] * shininess * attenuation; 
 }
 
-void directional_light(int i, float3 normal) {
+void directional_light(short i, float3 normal, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
 	float nDotVP = max(0.0f, dot(normal, normalize(lights_positions[i].xyz)));
-	float nDotHV = max(0.0f, dot(normal, normalize(normalize(lights_positions[i].xyz) + float3(0.0f, 0.0f, 1.0f))));
-	
-	float pf = 0.0f;
-	if (nDotVP != 0.0f)
-		pf = 1.0f;
 		
 	Ambient += lights_ambients[i];
 	Diffuse += lights_diffuses[i] * nDotVP;
-	Specular += lights_speculars[i] * pf;
+	if (nDotVP != 0.0f)
+		Specular += lights_speculars[i] * shininess;
 }
 
-void calculate_light(int i, float3 ecPosition, float3 N) {
-	float3 eye = float3(0.0f, 0.0f, 1.0f);
-	
+void calculate_light(short i, float3 ecPosition, float3 N, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
 	if (lights_positions[i].w == 1.0f)
-		point_light(i, N, eye, ecPosition);
+		point_light(i, N, ecPosition, Ambient, Diffuse, Specular);
 	else
-		directional_light(i, N);
+		directional_light(i, N, Ambient, Diffuse, Specular);
 }
 #endif
 
@@ -150,7 +138,7 @@ void main(
 #endif
 	// User clip planes
 #if clip_planes_num > 0
-	for (int i = 0; i < clip_planes_num; i++) {
+	for (short i = 0; i < clip_planes_num; i++) {
 		vClip[i] = dot(modelpos, clip_planes_eq[i]);
 	}
 #endif
@@ -162,14 +150,17 @@ void main(
 	normals = GLFixed3ToFloat3(normals);
 #endif
 #if normalization == 1
-	float3 normal = normalize(mul(float3x3(normal_mat), normalize(normals)));
-#else
 	float3 normal = normalize(mul(float3x3(normal_mat), normals));
+#else
+	float3 normal = mul(float3x3(normal_mat), normals);
 #endif
 	float3 ecPosition = modelpos.xyz / modelpos.w;
 #if shading_mode < 1 // GL_SMOOTH/GL_FLAT
-	for (int i = 0; i < lights_num; i++) {
-		calculate_light(i, ecPosition, normal);
+	float4 Ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float4 Diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float4 Specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	for (short i = 0; i < lights_num; i++) {
+		calculate_light(i, ecPosition, normal, Ambient, Diffuse, Specular);
 	}
 #endif
 #endif

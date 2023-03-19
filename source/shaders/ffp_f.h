@@ -16,10 +16,6 @@ uniform float pass1_a_scale;
 #define shading_mode %d
 
 #if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
-static float4 Ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
-static float4 Diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
-static float4 Specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-
 uniform float4 lights_ambients[lights_num];
 uniform float4 lights_diffuses[lights_num];
 uniform float4 lights_speculars[lights_num];
@@ -27,43 +23,37 @@ uniform float4 lights_positions[lights_num];
 uniform float3 lights_attenuations[lights_num];
 uniform float4 light_global_ambient;
 
-void point_light(int i, float3 normal, float3 eye, float3 position) {
+#define shininess (0.02f) // FIXME: Shininess hardcoded
+
+void point_light(short i, float3 normal, float3 position, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
 	float3 VP = lights_positions[i].xyz - position;
 	float d = length(VP);
 	VP = normalize(VP);
 	float attenuation = 1.0f / (lights_attenuations[i].x +
 		lights_attenuations[i].y * d +
 		lights_attenuations[i].z * d * d);
-	float3 halfVector = normalize(VP + eye);
 	float nDotVP = max(0.0f, dot(normal, VP));
 
-	float pf = 0.0f;
-	if (nDotVP != 0.0f)
-		pf = 1.0f;
 	Ambient += lights_ambients[i] * attenuation;
 	Diffuse += lights_diffuses[i] * nDotVP * attenuation;
-	Specular += lights_speculars[i] * pf * attenuation;
+	if (nDotVP != 0.0f)
+		Specular += lights_speculars[i] * shininess * attenuation;
 }
 
-void directional_light(int i, float3 normal) {
+void directional_light(short i, float3 normal, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
 	float nDotVP = max(0.0f, dot(normal, normalize(lights_positions[i].xyz)));
-
-	float pf = 0.0f;
-	if (nDotVP != 0.0f)
-		pf = 1.0f;
 		
 	Ambient += lights_ambients[i];
 	Diffuse += lights_diffuses[i] * nDotVP;
-	Specular += lights_speculars[i] * pf;
+	if (nDotVP != 0.0f)
+		Specular += lights_speculars[i] * shininess;
 }
 
-void calculate_light(int i, float3 ecPosition, float3 N) {
-	float3 eye = float3(0.0f, 0.0f, 1.0f);
-	
+void calculate_light(short i, float3 ecPosition, float3 N, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
 	if (lights_positions[i].w == 1.0f)
-		point_light(i, N, eye, ecPosition);
+		point_light(i, N, ecPosition, Ambient, Diffuse, Specular);
 	else
-		directional_light(i, N);
+		directional_light(i, N, Ambient, Diffuse, Specular);
 }
 #endif
 
@@ -81,7 +71,7 @@ float4 main(
 	float4 vSpecular : TEXCOORD5,
 	float4 vEmission : TEXCOORD6,
 #endif
-#if has_colors == 1
+#if (has_colors == 1 || lights_num > 0)
 	float4 vColor : COLOR0,
 #endif
 #if fog_mode < 3
@@ -102,7 +92,7 @@ float4 main(
 #if alpha_test_mode == 6
 	discard;
 #endif
-#if has_colors == 0
+#if has_colors == 0 && lights_num == 0
 	float4 vColor = tintColor;
 #endif
 #if num_textures > 0
@@ -151,8 +141,11 @@ float4 main(
 
 	// Lighting
 #if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
-	for (int i = 0; i < lights_num; i++) {
-		calculate_light(i, vEcPosition, vNormal);
+	float4 Ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float4 Diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float4 Specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	for (short i = 0; i < lights_num; i++) {
+		calculate_light(i, vEcPosition, vNormal, Ambient, Diffuse, Specular);
 	}
 	float4 fragColor = texColor;
 	texColor = vEmission + fragColor * light_global_ambient;
