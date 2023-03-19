@@ -1103,7 +1103,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 			hasFragCoord = strstr(string[i], "gl_FragCoord") ? GL_TRUE : GL_FALSE;
 		// Checking if shader requires gl_InstanceID
 		if (!hasInstanceID)
-			hasInstanceId = strstr(string[i], "gl_InstanceID") ? GL_TRUE : GL_FALSE;
+			hasInstanceID = strstr(string[i], "gl_InstanceID") ? GL_TRUE : GL_FALSE;
 		// Checking if shader requires gl_VertexID
 		if (!hasVertexID)
 			hasVertexID = strstr(string[i], "gl_VertexID") ? GL_TRUE : GL_FALSE;
@@ -1136,9 +1136,9 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		if (s->type == GL_VERTEX_SHADER) {
 			strcat(s->source, "#define VGL_IS_VERTEX_SHADER\n");
 			if (hasInstanceID)
-				strcat(s->source, "varying in short gl_InstanceID : INSTANCE;\n");
+				strcat(s->source, "varying in int gl_InstanceID : INSTANCE;\n");
 			if (hasVertexID)
-				strcat(s->source, "varying in short gl_VertexID : INDEX;\n");
+				strcat(s->source, "varying in int gl_VertexID : INDEX;\n");
 		} else {
 			if (hasFragCoord)
 				strcat(s->source, "varying in float4 gl_FragCoord : WPOS;\n");
