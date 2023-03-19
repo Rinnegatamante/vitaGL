@@ -14,6 +14,7 @@ uniform float pass1_a_scale;
 #define pass1_func texenv%d
 #define lights_num %d
 #define shading_mode %d
+#define point_sprite %d
 
 #if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
 uniform float4 lights_ambients[lights_num];
@@ -77,6 +78,9 @@ float4 main(
 #if fog_mode < 3
 	float4 coords : WPOS,
 #endif
+#if point_sprite > 0 && num_textures > 0
+	float2 point_coords : SPRITECOORD,
+#endif
 #if num_textures > 0
 	uniform sampler2D tex[num_textures],
 	uniform float4 texEnvColor[num_textures],
@@ -96,6 +100,9 @@ float4 main(
 	float4 vColor = tintColor;
 #endif
 #if num_textures > 0
+#if point_sprite > 0
+	vTexcoord = point_coords;
+#endif
 	// Texture Environment
 	float4 prevColor = vColor;
 	prevColor = pass0_func(tex[0], vTexcoord, prevColor, vColor, texEnvColor[0]);

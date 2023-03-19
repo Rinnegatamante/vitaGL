@@ -142,6 +142,28 @@ uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM] = {1, 2};
 uint8_t ffp_vertex_attrib_fixed_mask = 0;
 uint8_t ffp_vertex_attrib_fixed_pos_mask = 0;
 
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+typedef union shader_mask {
+	struct {
+		uint64_t alpha_test_mode : 3;
+		uint64_t num_textures : 2;
+		uint64_t has_colors : 1;
+		uint64_t fog_mode : 2;
+		uint64_t clip_planes_num : 3;
+		uint64_t lights_num : 4;
+		uint64_t tex_env_mode_pass0 : 3;
+		uint64_t tex_env_mode_pass1 : 3;
+		uint64_t shading_mode : 1;
+		uint64_t normalize : 1;
+		uint64_t tex_env_mode_pass2 : 3;
+		uint64_t fixed_mask : 4;
+		uint64_t pos_fixed_mask : 2;
+		uint64_t point_sprite : 1;
+		uint64_t UNUSED : 31;
+	};
+	uint64_t raw;
+} shader_mask;
+#else
 typedef union shader_mask {
 	struct {
 		uint32_t alpha_test_mode : 3;
@@ -154,18 +176,14 @@ typedef union shader_mask {
 		uint32_t tex_env_mode_pass1 : 3;
 		uint32_t shading_mode : 1;
 		uint32_t normalize : 1;
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-		uint32_t tex_env_mode_pass2 : 3;
-		uint32_t fixed_mask : 4;
-		uint32_t pos_fixed_mask : 2;
-#else
 		uint32_t fixed_mask : 3;
 		uint32_t pos_fixed_mask : 2;
-		uint32_t UNUSED : 3;
-#endif
+		uint32_t point_sprite : 1;
+		uint32_t UNUSED : 2;
 	};
 	uint32_t raw;
 } shader_mask;
+#endif
 #ifndef DISABLE_TEXTURE_COMBINER
 typedef union combiner_mask {
 	struct {
@@ -404,6 +422,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
 	mask.shading_mode = shading_mode;
+	mask.point_sprite = point_sprite_state;
 	mask.normalize = normalize;
 	mask.fixed_mask = ffp_vertex_attrib_fixed_mask;
 	mask.pos_fixed_mask = ffp_vertex_attrib_fixed_pos_mask;
@@ -547,12 +566,16 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		char fname[256];
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX-%08X-%d_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low, WVP_ON_GPU);
+		sprintf(fname, "ux0:data/shader_cache/v%d/%016llX-%016llX-%08X-%d_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low, WVP_ON_GPU);
 #else
 		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX-%d_v.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw, WVP_ON_GPU);
 #endif
 #else
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+		sprintf(fname, "ux0:data/shader_cache/v%d/%016llX-0000000000000000-%d_v.gxp", SHADER_CACHE_MAGIC, mask.raw, WVP_ON_GPU);
+#else
 		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-0000000000000000-%d_v.gxp", SHADER_CACHE_MAGIC, mask.raw, WVP_ON_GPU);
+#endif
 #endif
 		FILE *f = fopen(fname, "rb");
 		if (f) {
@@ -590,12 +613,16 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			}
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-			sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX-%08X-%d_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low, WVP_ON_GPU);
+			sprintf(fname, "ux0:data/shader_cache/v%d/%016llX-%016llX-%08X-%d_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low, WVP_ON_GPU);
 #else
 			sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX-%d_v.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw, WVP_ON_GPU);
 #endif
 #else
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+			sprintf(fname, "ux0:data/shader_cache/v%d/%016llX-0000000000000000-%d_v.cg", SHADER_CACHE_MAGIC, mask.raw, WVP_ON_GPU);
+#else
 			sprintf(fname, "ux0:data/shader_cache/v%d/%08X-0000000000000000-%d_v.cg", SHADER_CACHE_MAGIC, mask.raw, WVP_ON_GPU);
+#endif
 #endif
 			// Saving shader source in filesystem cache
 			f = fopen(fname, "wb");
@@ -756,12 +783,16 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		char fname[256];
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX-%08X_f.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
+		sprintf(fname, "ux0:data/shader_cache/v%d/%016llX-%016llX-%08X_f.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
 #else
 		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-%016llX_f.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
 #endif
 #else
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+		sprintf(fname, "ux0:data/shader_cache/v%d/%016llX-0000000000000000_f.gxp", SHADER_CACHE_MAGIC, mask.raw);
+#else
 		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-0000000000000000_f.gxp", SHADER_CACHE_MAGIC, mask.raw);
+#endif
 #endif
 		FILE *f = fopen(fname, "rb");
 		if (f) {
@@ -832,13 +863,13 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				mask.tex_env_mode_pass0 != COMBINE ? mask.tex_env_mode_pass0 : 50,
 				mask.tex_env_mode_pass1 != COMBINE ? mask.tex_env_mode_pass1 : 51,
 				mask.tex_env_mode_pass2 != COMBINE ? mask.tex_env_mode_pass2 : 52,
-				mask.lights_num, mask.shading_mode);
+				mask.lights_num, mask.shading_mode, mask.point_sprite);
 #else
 			sprintf(fshader, ffp_frag_src, texenv_shad, alpha_op,
 				mask.num_textures, mask.has_colors, mask.fog_mode,
 				mask.tex_env_mode_pass0 != COMBINE ? mask.tex_env_mode_pass0 : 50,
 				mask.tex_env_mode_pass1 != COMBINE ? mask.tex_env_mode_pass1 : 51,
-				mask.lights_num, mask.shading_mode);
+				mask.lights_num, mask.shading_mode, mask.point_sprite);
 #endif
 			uint32_t size = strlen(fshader);
 			SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
@@ -857,12 +888,16 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			}
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX-%08X_f.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
+			sprintf(fname, "ux0:data/shader_cache/v%d-%016llX-%016llX-%08X_f.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
 #else
 			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016X_f.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
 #endif
 #else
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+			sprintf(fname, "ux0:data/shader_cache/v%d-%016llX-0000000000000000_f.cg", SHADER_CACHE_MAGIC, mask.raw);
+#else
 			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-0000000000000000_f.cg", SHADER_CACHE_MAGIC, mask.raw);
+#endif
 #endif
 			// Saving shader source in filesystem cache
 			f = fopen(fname, "wb");

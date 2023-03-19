@@ -393,6 +393,7 @@ extern "C" {
 #define GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD              0x87EE
 #define GL_RGBA16F                                      0x881A
 #define GL_BLEND_EQUATION_ALPHA                         0x883D
+#define GL_POINT_SPRITE                                 0x8861
 #define GL_MAX_VERTEX_ATTRIBS                           0x8869
 #define GL_VERTEX_ATTRIB_ARRAY_NORMALIZED               0x886A
 #define GL_MAX_TEXTURE_COORDS                           0x8871

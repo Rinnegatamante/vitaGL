@@ -143,6 +143,9 @@ SceGxmPolygonMode polygon_mode_back = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL; // Cur
 GLenum gl_polygon_mode_front = GL_FILL; // Current in use polygon mode for front
 GLenum gl_polygon_mode_back = GL_FILL; // Current in use polygon mode for back
 
+// Point Sprite
+GLboolean point_sprite_state = GL_FALSE; // Current state for GL_POINT_SPRITE
+
 viewport gl_viewport; // Current viewport state
 
 static void update_polygon_offset() {
@@ -341,6 +344,10 @@ void glEnable(GLenum cap) {
 	}
 #endif
 	switch (cap) {
+	case GL_POINT_SPRITE:
+		ffp_dirty_frag = GL_TRUE;
+		point_sprite_state = GL_TRUE;
+		break;
 	case GL_LIGHTING:
 		ffp_dirty_vert = GL_TRUE;
 		lighting_state = GL_TRUE;
@@ -461,6 +468,11 @@ void glDisable(GLenum cap) {
 	}
 #endif
 	switch (cap) {
+	case GL_POINT_SPRITE:
+		ffp_dirty_frag = GL_TRUE;
+		ffp_dirty_vert = GL_TRUE;
+		point_sprite_state = GL_FALSE;
+		break;
 	case GL_LIGHTING:
 		ffp_dirty_vert = GL_TRUE;
 		ffp_dirty_frag = GL_TRUE;

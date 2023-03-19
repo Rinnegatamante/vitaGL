@@ -102,7 +102,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 // Fixed-function pipeline shader cache settings
 #ifndef DISABLE_FS_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 17 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 18 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
@@ -781,6 +781,9 @@ extern SceGxmPolygonMode polygon_mode_front; // Current in use polygon mode for 
 extern SceGxmPolygonMode polygon_mode_back; // Current in use polygon mode for back
 extern GLenum gl_polygon_mode_front; // Current in use polygon mode for front
 extern GLenum gl_polygon_mode_back; // Current in use polygon mode for back
+
+// Point Sprite
+extern GLboolean point_sprite_state; // Current state for GL_POINT_SPRITE
 
 // Lighting
 extern GLboolean lighting_state; // Current lighting processor state
