@@ -1091,7 +1091,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	
 	uint32_t size = 1;
 #ifdef HAVE_GLSL_TRANSLATOR
-	GLboolean hasFragCoord = GL_FALSE;
+	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE;
 	size += strlen(glsl_hdr);
 	if (s->type == GL_VERTEX_SHADER)
 		size += strlen("#define VGL_IS_VERTEX_SHADER\n");
@@ -1101,12 +1101,22 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		// Checking if shader requires gl_FragCoord
 		if (!hasFragCoord)
 			hasFragCoord = strstr(string[i], "gl_FragCoord") ? GL_TRUE : GL_FALSE;
+		// Checking if shader requires gl_InstanceID
+		if (!hasInstanceID)
+			hasInstanceId = strstr(string[i], "gl_InstanceID") ? GL_TRUE : GL_FALSE;
+		// Checking if shader requires gl_VertexID
+		if (!hasVertexID)
+			hasVertexID = strstr(string[i], "gl_VertexID") ? GL_TRUE : GL_FALSE;
 #endif
 		size += length ? length[i] : strlen(string[i]);
 	}
 #ifdef HAVE_GLSL_TRANSLATOR
 	if (hasFragCoord)
 		size += strlen("varying in float4 gl_FragCoord : WPOS;\n");
+	if (hasInstanceID)
+		size += strlen("varying in int gl_InstanceID : INSTANCE;\n");
+	if (hasVertexID)
+		size += strlen("varying in int gl_VertexID : INDEX;\n");
 #endif
 #if defined(SHADER_COMPILER_SPEEDHACK) && !defined(HAVE_GLSL_TRANSLATOR)
 	if (count == 1)
@@ -1118,9 +1128,13 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		s->source[0] = 0;
 #ifdef HAVE_GLSL_TRANSLATOR
 		// Injecting GLSL to CG header
-		if (s->type == GL_VERTEX_SHADER)
+		if (s->type == GL_VERTEX_SHADER) {
 			strcat(s->source, "#define VGL_IS_VERTEX_SHADER\n");
-		else if (hasFragCoord)
+			if (hasInstanceID)
+				strcat(s->source, "varying in short gl_InstanceID : INSTANCE;\n");
+			if (hasVertexID)
+				strcat(s->source, "varying in short gl_VertexID : INDEX;\n");
+		} else if (hasFragCoord)
 			strcat(s->source, "varying in float4 gl_FragCoord : WPOS;\n");
 		strcat(s->source, glsl_hdr);
 #endif
@@ -1135,6 +1149,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 			if (str) {
 				str[0] = str[1] = '/';
 			}
+			// Nukeing precision directives
 			str = strstr(text, "precision ");
 			while (str) {
 				str[0] = str[1] = '/';
