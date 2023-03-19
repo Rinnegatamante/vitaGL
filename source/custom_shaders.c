@@ -1091,7 +1091,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	
 	uint32_t size = 1;
 #ifdef HAVE_GLSL_TRANSLATOR
-	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE;
+	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE, hasFragDepth = GL_FALSE;
 	size += strlen(glsl_hdr);
 	if (s->type == GL_VERTEX_SHADER)
 		size += strlen("#define VGL_IS_VERTEX_SHADER\n");
@@ -1107,6 +1107,9 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		// Checking if shader requires gl_VertexID
 		if (!hasVertexID)
 			hasVertexID = strstr(string[i], "gl_VertexID") ? GL_TRUE : GL_FALSE;
+		// Checking if shader requires gl_FragDepth
+		if (!hasFragDepth)
+			hasFragDepth = strstr(string[i], "gl_FragDepth") ? GL_TRUE : GL_FALSE;	
 #endif
 		size += length ? length[i] : strlen(string[i]);
 	}
@@ -1117,6 +1120,8 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		size += strlen("varying in int gl_InstanceID : INSTANCE;\n");
 	if (hasVertexID)
 		size += strlen("varying in int gl_VertexID : INDEX;\n");
+	if (hasFragDepth)
+		size += strlen("varying out float gl_FragDepth : DEPTH;\n");
 #endif
 #if defined(SHADER_COMPILER_SPEEDHACK) && !defined(HAVE_GLSL_TRANSLATOR)
 	if (count == 1)
@@ -1134,8 +1139,12 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 				strcat(s->source, "varying in short gl_InstanceID : INSTANCE;\n");
 			if (hasVertexID)
 				strcat(s->source, "varying in short gl_VertexID : INDEX;\n");
-		} else if (hasFragCoord)
-			strcat(s->source, "varying in float4 gl_FragCoord : WPOS;\n");
+		} else {
+			if (hasFragCoord)
+				strcat(s->source, "varying in float4 gl_FragCoord : WPOS;\n");
+			if (hasFragDepth)
+				strcat(s->source, "varying out float gl_FragDepth : DEPTH;\n");
+		}
 		strcat(s->source, glsl_hdr);
 #endif
 		for (int i = 0; i < count; i++) {
