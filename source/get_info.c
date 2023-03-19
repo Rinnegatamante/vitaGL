@@ -25,48 +25,51 @@
 
 #include "shared.h"
 
-#ifndef DISABLE_TEXTURE_COMBINER
-#define NUM_EXTENSIONS 32 // Number of supported extensions
-#else
-#define NUM_EXTENSIONS 31 // Number of supported extensions
-#endif
 #define COMPRESSED_TEXTURE_FORMATS_NUM 25 // The number of supported texture formats
 
-static GLubyte *extensions[NUM_EXTENSIONS] = {
-	"GL_OES_vertex_half_float",
-	"GL_OES_texture_npot",
-	"GL_OES_rgb8_rgba8",
-	"GL_OES_framebuffer_object",
-	"GL_OES_compressed_paletted_texture",
-	"GL_EXT_texture_format_BGRA8888",
-	"GL_EXT_read_format_bgra",
+#define NUM_EXTENSIONS (sizeof(extensions) / sizeof(GLubyte *))
+static GLubyte *extensions[] = {
+	"GL_AMD_compressed_ATC_texture",
+	"GL_ARB_framebuffer_object",
+	"GL_ARB_get_program_binary",
+	"GL_ARB_multitexture",
+	"GL_ARB_sampler_objects",
 	"GL_EXT_abgr",
+	"GL_EXT_color_buffer_half_float",
+	"GL_EXT_draw_instanced",
+	"GL_EXT_framebuffer_object",
+	"GL_EXT_map_buffer_range",
+	"GL_EXT_packed_depth_stencil",
+	"GL_EXT_packed_float",
+	"GL_EXT_read_format_bgra",
 	"GL_EXT_texture_compression_dxt1",
 	"GL_EXT_texture_compression_dxt3",
 	"GL_EXT_texture_compression_dxt5",
 	"GL_EXT_texture_compression_s3tc",
-	"GL_IMG_texture_compression_pvrtc",
-	"GL_OES_compressed_ETC1_RGB8_texture",
 	"GL_EXT_texture_env_add",
-	"GL_WIN_phong_shading",
-	"GL_AMD_compressed_ATC_texture",
-	"GL_ARB_multitexture",
-	"GL_EXT_map_buffer_range",
-	"GL_OES_mapbuffer",
-	"GL_OES_depth24",
-	"GL_OES_packed_depth_stencil",
-	"GL_NVX_gpu_memory_info",
-	"GL_EXT_color_buffer_half_float",
-	"GL_OES_texture_half_float",
-	"GL_OES_texture_half_float_linear",
-	"GL_IMG_user_clip_plane",
-	"GL_ARB_get_program_binary",
-	"GL_OES_get_program_binary",
-	"GL_EXT_draw_instanced",
-	"GL_ARB_sampler_objects",
 #ifndef DISABLE_TEXTURE_COMBINER
 	"GL_EXT_texture_env_combine"
 #endif
+	"GL_EXT_texture_format_BGRA8888",
+	"GL_IMG_texture_compression_pvrtc",
+	"GL_IMG_user_clip_plane",
+	"GL_NVX_gpu_memory_info",
+	"GL_NV_fbo_color_attachments",
+	"GL_OES_compressed_ETC1_RGB8_texture",
+	"GL_OES_compressed_paletted_texture",
+	"GL_OES_depth24",
+	"GL_OES_framebuffer_object",
+	"GL_OES_get_program_binary",
+	"GL_OES_mapbuffer",
+	"GL_OES_packed_depth_stencil",
+	"GL_OES_rgb8_rgba8",
+	"GL_OES_texture_float",
+	"GL_OES_texture_half_float",
+	"GL_OES_texture_half_float_linear",
+	"GL_OES_texture_npot",
+	"GL_OES_vertex_array_object",
+	"GL_OES_vertex_half_float",
+	"GL_WIN_phong_shading",
 };
 static GLubyte *extension = NULL;
 
