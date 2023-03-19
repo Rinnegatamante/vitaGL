@@ -185,6 +185,10 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 void glGetFloatv(GLenum pname, GLfloat *data) {
 	int i, j;
 	switch (pname) {
+	case GL_DEPTH_RANGE:
+		data[0] = z_port - z_scale;
+		data[1] = z_port + z_scale;
+		break;
 	case GL_COLOR_CLEAR_VALUE:
 		sceClibMemcpy(data, &clear_rgba_val.r, 4 * sizeof(float));
 		break;

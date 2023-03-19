@@ -128,6 +128,7 @@ extern "C" {
 #define GL_FOG_END                                      0x0B64
 #define GL_FOG_MODE                                     0x0B65
 #define GL_FOG_COLOR                                    0x0B66
+#define GL_DEPTH_RANGE                                  0x0B70
 #define GL_DEPTH_TEST                                   0x0B71
 #define GL_DEPTH_WRITEMASK                              0x0B72
 #define GL_STENCIL_TEST                                 0x0B90
