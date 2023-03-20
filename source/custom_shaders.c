@@ -2972,6 +2972,7 @@ void vglCgShaderSource(GLuint handle, GLsizei count, const GLchar *const *string
 }
 
 void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum type) {
+#ifdef HAVE_GLSL_TRANSLATOR
 #ifndef SKIP_ERROR_HANDLING
 	if (glsl_custom_bindings_num >= MAX_CUSTOM_BINDINGS) {
 		vgl_log("%s:%d %s: Too many custom bindings supplied. Consider increasing MAX_CUSTOM_BINDINGS.\n", __FILE__, __LINE__, __func__);
@@ -2981,4 +2982,5 @@ void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum typ
 	strcpy(glsl_custom_bindings[glsl_custom_bindings_num].name, varying);
 	glsl_custom_bindings[glsl_custom_bindings_num].idx = index;
 	glsl_custom_bindings[glsl_custom_bindings_num++].type = type;
+#endif
 }
