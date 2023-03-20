@@ -67,6 +67,12 @@ LOOP_START:
 	int found = 0;
 	while (left != txt) {
 		switch (*left) {
+		case 'n':
+			if (!strncmp(left - 5, "return", 6)) {
+				left++;
+				found = 1;
+			}
+			break;
 		case ' ':
 		case '\t':
 			break;
