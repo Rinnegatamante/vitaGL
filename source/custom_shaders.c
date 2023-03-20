@@ -33,7 +33,7 @@ typedef struct {
 	int idx;
 	GLenum type;
 } glsl_sema_bind;
-glsl_sema_bind glsl_custom_bindings[64];
+glsl_sema_bind glsl_custom_bindings[MAX_CUSTOM_BINDINGS];
 int glsl_custom_bindings_num = 0;
 char glsl_texcoords_binds[MAX_CG_TEXCOORD_ID][64];
 int glsl_max_texcoord_bind = 0;
@@ -2972,6 +2972,12 @@ void vglCgShaderSource(GLuint handle, GLsizei count, const GLchar *const *string
 }
 
 void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum type) {
+#ifndef SKIP_ERROR_HANDLING
+	if (glsl_custom_bindings_num >= MAX_CUSTOM_BINDINGS) {
+		vgl_log("%s:%d %s: Too many custom bindings supplied. Consider increasing MAX_CUSTOM_BINDINGS.\n", __FILE__, __LINE__, __func__);
+		return;
+	}			
+#endif
 	strcpy(glsl_custom_bindings[glsl_custom_bindings_num].name, varying);
 	glsl_custom_bindings[glsl_custom_bindings_num].idx = index;
 	glsl_custom_bindings[glsl_custom_bindings_num++].type = type;
