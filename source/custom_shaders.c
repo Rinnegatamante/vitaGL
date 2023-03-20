@@ -26,10 +26,19 @@
 #ifdef HAVE_GLSL_TRANSLATOR
 //#define DEBUG_GLSL_TRANSLATOR // Define this to enable logging of GLSL translator output prior compilation
 #define MAX_CG_TEXCOORD_ID 10 // Maximum number of bindable TEXCOORD semantic
+#define MAX_CUSTOM_BINDINGS 64 // Maximum number of custom semantic bindings usable with vglAddSemanticBinding
 #include "shaders/glsl_translator_hdr.h"
-char glsl_texcoords_binds[MAX_CG_TEXCOORD_ID][128];
+typedef struct {
+	char name[64];
+	int idx;
+	GLenum type;
+} glsl_sema_bind;
+glsl_sema_bind glsl_custom_bindings[64];
+int glsl_custom_bindings_num = 0;
+char glsl_texcoords_binds[MAX_CG_TEXCOORD_ID][64];
 int glsl_max_texcoord_bind = 0;
 GLboolean glsl_is_first_shader = GL_TRUE;
+GLenum prev_shader_type = GL_NONE;
 
 /* 
  * Experimental function to replace all multiplication operators in a GLSL shader code:
@@ -39,95 +48,141 @@ GLboolean glsl_is_first_shader = GL_TRUE;
  * since, for a proper implementation, ideally we'd want a proper GLSL parser.
  */
 void glsl_inject_mul(char *txt, char *out) {
-    char *star = strstr(txt + strlen(glsl_hdr), "*");
+	char *star = strstr(txt + strlen(glsl_hdr), "*");
+	while (star) {
+		if (star[1] == '=') // FIXME: *= still not handled
+			star = strstr(star + 1, "*");
+		else
+			break;
+	}
 	if (!star) {
 		strcpy(out, txt);
 		return;
 	}
 	char *left;
 LOOP_START:
-    left = star - 1;
-    int para_left = 0;
-    int found = 0;
-    while (left != txt) {
-        switch (*left) {
-        case ')':
-            para_left++;
-            break;
-        case '(':
-            para_left--;
-            if (para_left < 0)
-                found = 1;
-            break;
-        case '=':
-            left++;
-            found = 1;
-            break;
-        case ',':
-        case '+':
-        case '-':
-            if (para_left == 0)
-                found = 1;
-            break;
-        default:
-            break;
-        }
-        if (found) {
-            left++;
-            break;
-        } else
-            left--;
-    }
-    found = 0;
-    char *right = star + 1;
-    para_left = 0;
-    while (*right) {
-        switch (*right) {
-        case '(':
-            para_left++;
-            break;
-        case ')':
-            para_left--;
-            if (para_left < 0)
-                found = 1;
-            break;
-        case ',':
-        case '+':
-        case '-':
-            if (para_left == 0)
-                found = 1;
-            break;
-        case ';':
-            found = 1;
-            break;
-        default:
-            break;
-        }
-        if (found)
-            break;
-        else
-            right++;
-    }
-    char *res = (char *)malloc(1024 * 1024);
+	left = star - 1;
+	int para_left = 0;
+	int quad_para_left = 0;
+	int found = 0;
+	while (left != txt) {
+		switch (*left) {
+		case ' ':
+		case '\t':
+			break;
+		case '[':
+			quad_para_left--;
+			if (quad_para_left < 0)
+				found = 2;
+			break;
+		case ']':
+			quad_para_left++;
+			break;
+		case ')':
+			para_left++;
+			break;
+		case '(':
+			para_left--;
+			if (para_left < 0)
+				found = 1;
+			break;
+		case '=':
+			found = 1;
+			break;
+		case ',':
+		case '+':
+		case '-':
+			if (para_left == 0 && quad_para_left == 0)
+				found = 1;
+			break;
+		default:
+			break;
+		}
+		if (found) {
+			left++;
+			break;
+		} else
+			left--;
+	}
+	found = 0;
+	char *right = star + 1;
+	para_left = 0;
+	int literal = 0;
+	while (*right) {
+		switch (*right) {
+		case ' ':
+		case '\t':
+			break;
+		case ']':
+			quad_para_left--;
+			if (quad_para_left < 0)
+				found = 2;
+			break;
+		case '[':
+			quad_para_left++;
+			break;
+		case '(':
+			para_left++;
+			break;
+		case ')':
+			para_left--;
+			if (para_left < 0)
+				found = 1;
+			break;
+		case ',':
+		case '+':
+			if (para_left == 0 && quad_para_left == 0)
+				found = 1;
+			break;
+		case '-':
+			if (para_left == 0 && quad_para_left == 0 && literal)
+				found = 1;
+			break;
+		case ';':
+			found = 1;
+			break;
+		default:
+			literal = 1;
+			break;
+		}
+		if (found)
+			break;
+		else
+			right++;
+	}
+	char *res = (char *)vglMalloc(1024 * 1024);
 	res[0] = 0;
-    char tmp = *left;
-    left[0] = 0;
-    strcpy(res, txt);
-    left[0] = tmp;
-    strcat(res, "vglMul(");
-    tmp = *right;
-    right[0] = 0;
-    *star = ',';
-    strcat(res, left);
-    strcat(res, ")");
-    right[0] = tmp;
-    strcat(res, right);
-    strcpy(out, res);
-	free(res);
-    txt = out;
-    star = strstr(out + strlen(glsl_hdr), "*");
-    if (star)
-        goto LOOP_START;
+	if (found < 2) { // Standard match
+		char tmp = *left;
+		left[0] = 0;
+		strcpy(res, txt);
+		left[0] = tmp;
+		strcat(res, "vglMul(");
+		tmp = *right;
+		right[0] = 0;
+		*star = ',';
+		strcat(res, left);
+		strcat(res, ")");
+		right[0] = tmp;
+		strcat(res, right);
+		strcpy(out, res);
+		vgl_free(res);
+		txt = out;
+		star = strstr(txt + strlen(glsl_hdr), "*");
+	} else { // [ bracket match, we assume a matrix is not involved
+		uint32_t jump = right - txt;
+		strcpy(res, txt);
+		strcpy(out, res);
+		vgl_free(res);
+		txt = out;
+		star = strstr(txt + jump, "*");
+	}
+	while (star) {
+		if (star[1] == '=') // FIXME: *= still not handled
+			star = strstr(star + 1, "*");
+		else
+			goto LOOP_START;
+	}
 }
 
 void glsl_nuke_comments(char *txt) {
@@ -1093,6 +1148,13 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 #ifdef HAVE_GLSL_TRANSLATOR
 	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE, hasFragDepth = GL_FALSE;
 	size += strlen(glsl_hdr);
+#ifndef SKIP_ERROR_HANDLING
+	if (prev_shader_type == s->type) {
+		vgl_log("%s:%d %s: Unexpected shader type, translation may be imperfect.\n", __FILE__, __LINE__, __func__);
+		glsl_is_first_shader = GL_TRUE;
+		glsl_max_texcoord_bind = 0;
+	}
+#endif
 	if (s->type == GL_VERTEX_SHADER)
 		size += strlen("#define VGL_IS_VERTEX_SHADER\n");
 #endif	
@@ -1185,42 +1247,74 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 					} else {
 						char *end = strstr(t, ";");
 						char *start = end;
-						while (*start != ' ') {
+						while (*start != ' ' && *start != '\t') {
 							start--;
 						}
 						start++;
 						end[0] = 0;
-						if (glsl_is_first_shader) {
-							idx = -1;
-							// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
-							for (int j = 0; j < glsl_max_texcoord_bind; j++) {
-								if (!strcmp(glsl_texcoords_binds[j], start)) {
-									idx = j;
-									break;
-								}
+						idx = -1;
+						// Check first if the varying has a known binding
+						for (int j = 0; j < glsl_custom_bindings_num; j++) {
+							if (!strcmp(glsl_custom_bindings[j].name, start)) {
+								idx = j;
 							}
-							// VOUT will get extended by the preprocessor into a out varying bound to a progressive TEXCOORD semantic
-							if (idx >= 0) {
-								sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
-							} else {
-#ifndef SKIP_ERROR_HANDLING
-								if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID) {
-									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
-									return;
-								}
-#endif
-								strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
-								sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_max_texcoord_bind++);
+						}
+						if (idx != -1) {
+							switch (glsl_custom_bindings[idx].type) {
+							case VGL_TYPE_TEXCOORD:
+								strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
+								sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+								break;
+							case VGL_TYPE_COLOR:
+								sprintf(newline, "COUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+								break;
+							case VGL_TYPE_FOG:
+								sprintf(newline, "FOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+								break;
 							}
 						} else {
-							// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
-							for (int j = 0; j < glsl_max_texcoord_bind; j++) {
-								if (!strcmp(glsl_texcoords_binds[j], start)) {
-									idx = j;
-									break;
+							if (glsl_is_first_shader) {
+								// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
+								for (int j = 0; j < glsl_max_texcoord_bind; j++) {
+									if (!strcmp(glsl_texcoords_binds[j], start)) {
+										idx = j;
+										break;
+									}
 								}
+								// VOUT will get extended by the preprocessor into a out varying bound to a progressive TEXCOORD semantic
+								if (idx >= 0) {
+									sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+								} else {
+#ifndef SKIP_ERROR_HANDLING
+									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID) {
+										glsl_max_texcoord_bind--;
+										vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+									}
+#endif
+									strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
+									sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_max_texcoord_bind++);
+									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
+										glsl_max_texcoord_bind--;
+								}
+							} else {
+								// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
+								for (int j = 0; j < glsl_max_texcoord_bind; j++) {
+									if (!strcmp(glsl_texcoords_binds[j], start)) {
+										idx = j;
+										break;
+									}
+								}
+								if (idx == -1) {
+									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
+										glsl_max_texcoord_bind--;
+									vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, glsl_max_texcoord_bind);
+									strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
+									idx = glsl_max_texcoord_bind++;
+									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
+										glsl_max_texcoord_bind--;
+								}
+								sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
 							}
-							sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
 						}
 						sceClibMemcpy(str2, newline, strlen(newline));
 						str2 = strstr(t, "varying ");
@@ -1232,42 +1326,74 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 				while (str) {
 					char *end = strstr(str, ";");
 					char *start = end;
-					while (*start != ' ') {
+					while (*start != ' ' && *start != '\t') {
 						start--;
 					}
 					start++;
 					end[0] = 0;
-					if (glsl_is_first_shader) {
-						idx = -1;
-						// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
-						for (int j = 0; j < glsl_max_texcoord_bind; j++) {
-							if (!strcmp(glsl_texcoords_binds[j], start)) {
-								idx = j;
-								break;
-							}
+					idx = -1;
+					// Check first if the varying has a known binding
+					for (int j = 0; j < glsl_custom_bindings_num; j++) {
+						if (!strcmp(glsl_custom_bindings[j].name, start)) {
+							idx = j;
 						}
-						// VIN will get extended by the preprocessor into a in varying bound to a progressive TEXCOORD semantic
-						if (idx >= 0) {
-							sprintf(newline, "VIN(%s, %d); ", str + 8, idx);
-						} else {
-#ifndef SKIP_ERROR_HANDLING
-							if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID) {
-								vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
-								return;
-							}
-#endif
-							strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
-							sprintf(newline, "VIN(%s, %d); ", str + 8, glsl_max_texcoord_bind++);
+					}
+					if (idx != -1) {
+						switch (glsl_custom_bindings[idx].type) {
+						case VGL_TYPE_TEXCOORD:
+							strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
+							sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+							break;
+						case VGL_TYPE_COLOR:
+							sprintf(newline, "CIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+							break;
+						case VGL_TYPE_FOG:
+							sprintf(newline, "FIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+							break;
 						}
 					} else {
-						// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
-						for (int j = 0; j < glsl_max_texcoord_bind; j++) {
-							if (!strcmp(glsl_texcoords_binds[j], start)) {
-								idx = j;
-								break;
+						if (glsl_is_first_shader) {
+							// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
+							for (int j = 0; j < glsl_max_texcoord_bind; j++) {
+								if (!strcmp(glsl_texcoords_binds[j], start)) {
+									idx = j;
+									break;
+								}
 							}
+							// VIN will get extended by the preprocessor into a in varying bound to a progressive TEXCOORD semantic
+							if (idx >= 0) {
+								sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+							} else {
+#ifndef SKIP_ERROR_HANDLING
+								if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID) {
+									glsl_max_texcoord_bind--;
+									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+								}
+#endif
+								strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
+								sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_max_texcoord_bind++);
+								if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
+									glsl_max_texcoord_bind--;
+							}
+						} else {
+							// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
+							for (int j = 0; j < glsl_max_texcoord_bind; j++) {
+								if (!strcmp(glsl_texcoords_binds[j], start)) {
+									idx = j;
+									break;
+								}
+							}
+							if (idx == -1) {
+								if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
+									glsl_max_texcoord_bind--;
+								vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, glsl_max_texcoord_bind);
+								strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
+								idx = glsl_max_texcoord_bind++;
+								if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
+									glsl_max_texcoord_bind--;
+							}
+							sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
 						}
-						sprintf(newline, "VIN(%s, %d); ", str + 8, idx);
 					}
 					sceClibMemcpy(str, newline, strlen(newline));
 					str = strstr(str, "varying ");
@@ -1284,7 +1410,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		vgl_free(s->source);
 		s->source = dst;
 #ifdef DEBUG_GLSL_TRANSLATOR
-		vgl_log("%s:%d %s: GLSL translation output:\n\n%s\n\n", __FILE__, __LINE__, __func__, s->source);
+		vgl_log("%s:%d %s: GLSL translation output (%s shader):\n\n%s\n\n", __FILE__, __LINE__, __func__, glsl_is_first_shader ? "first" : "second", s->source);
 #endif
 #endif
 		s->prog = (SceGxmProgram *)s->source;
@@ -2843,4 +2969,10 @@ void vglCgShaderSource(GLuint handle, GLsizei count, const GLchar *const *string
 	}
 	
 	s->size = size - 1;
+}
+
+void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum type) {
+	strcpy(glsl_custom_bindings[glsl_custom_bindings_num].name, varying);
+	glsl_custom_bindings[glsl_custom_bindings_num].idx = index;
+	glsl_custom_bindings[glsl_custom_bindings_num++].type = type;
 }

@@ -51,8 +51,16 @@ inline float4 textureCube(samplerCUBE x, float3 s, float b) { return texCUBEbias
 #define mat3 float3x3
 #define mat4 float4x4
 #define vgl varying
+#define FOUT(x, y) \
+	varying out x : FOG
+#define COUT(x, y) \
+	varying out x : COLOR##y
 #define VOUT(x, y) \
 	varying out x : TEXCOORD##y
+#define FIN(x, y) \
+	varying in x : FOG
+#define CIN(x, y) \
+	varying in x : COLOR##y
 #define VIN(x, y) \
 	varying in x : TEXCOORD##y
 #ifdef VGL_IS_VERTEX_SHADER

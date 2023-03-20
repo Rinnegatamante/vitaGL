@@ -320,6 +320,7 @@ static const struct {
 	{"gluPerspective", (void *)gluPerspective},
 #ifdef EXPOSE_VGL_FUNCS
 	// *vgl
+	{"vglAddSemanticBinding", (void *)vglAddSemanticBinding},
 	{"vglColorPointer", (void *)vglColorPointer},
 	{"vglColorPointerMapped", (void *)vglColorPointerMapped},
 	{"vglDrawObjects", (void *)vglDrawObjects},

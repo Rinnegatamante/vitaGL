@@ -877,7 +877,14 @@ typedef enum {
 	VGL_MEM_ALL
 } vglMemType;
 
+typedef enum {
+	VGL_TYPE_TEXCOORD,
+	VGL_TYPE_COLOR,
+	VGL_TYPE_FOG
+} vglSemanticType;
+
 // vgl*
+void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum type);
 void *vglAlloc(uint32_t size, vglMemType type);
 void *vglCalloc(uint32_t nmember, uint32_t size);
 void vglCgShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length);
