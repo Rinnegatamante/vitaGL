@@ -523,6 +523,12 @@ void glBindTexture(GLenum target, GLuint texture) {
 		return;
 #endif
 
+#ifndef SKIP_ERROR_HANDLING
+	if (texture >= TEXTURES_NUM) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, texture)
+	}
+#endif
+
 	// Setting current in use texture id for the in use server texture unit
 	switch (target) {
 	case GL_TEXTURE_2D:
@@ -535,7 +541,7 @@ void glBindTexture(GLenum target, GLuint texture) {
 		texture_units[server_texture_unit].tex_id[2] = texture;
 		break;
 	default:
-		vgl_log("%s:%d glBindTexture: Target type unsupported.\n", __FILE__, __LINE__);
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 		break;
 	}
 }
@@ -551,7 +557,7 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 	// Deallocating given textures and invalidating used texture ids
 	for (int j = 0; j < n; j++) {
 		GLuint i = gl_textures[j];
-		if (i > 0) {
+		if (i > 0 && i < TEXTURES_NUM) {
 			if (texture_slots[i].status == TEX_VALID) {
 				if (texture_slots[i].ref_counter > 0)
 					if (texture_slots[i].ref_counter == 1) {
