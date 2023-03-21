@@ -40,6 +40,77 @@ int glsl_max_texcoord_bind = 0;
 GLboolean glsl_is_first_shader = GL_TRUE;
 GLenum prev_shader_type = GL_NONE;
 
+#define glsl_replace_marker(m, r) \
+	type = strstr(txt + strlen(glsl_hdr), m); \
+	while (type) { \
+		char *res = (char *)vglMalloc(1024 * 1024); \
+		type[0] = 0; \
+		strcpy(res, txt); \
+		strcat(res, r); \
+		strcat(res, type + 1); \
+		strcpy(out, res); \
+		vgl_free(res); \
+		txt = out; \
+		type = strstr(txt + strlen(glsl_hdr), m); \
+	}
+
+/* 
+ * Experimental function to add static keyword to all global variables:
+ * The idea behind this is to check if a variable falls outside of a function and, if so,
+ * add to it static keyword only if not uniform. This is required cause CG handles
+ * global variables by default as uniforms.
+ */
+void glsl_handle_globals(char *txt, char *out) {
+	char *src = txt;
+	out[0] = 0;
+	char *type = strstr(txt + strlen(glsl_hdr), "\n");
+	char *last_func_start = strstr(txt + strlen(glsl_hdr), "{");
+	char *last_func_end = strstr(last_func_start, "}");
+	// First pass: marking all global variables
+	while (type) {
+		while (*type == ' ' || *type == '\t' || *type == '\r' || *type == '\n') {
+			type++;
+		}
+		if (*type == 0)
+			break;
+		if (!strncmp(type, "float", 5) ||
+		    !strncmp(type, "int", 3) || 
+		    !strncmp(type, "vec", 3) ||
+		    !strncmp(type, "ivec", 4) ||
+		    !strncmp(type, "mat", 3) ||
+		    !strncmp(type, "const", 5)
+		) {
+			char *var_end = strstr(type, ";");
+HANDLE_VAR:
+			if (last_func_start && last_func_end && type > last_func_start && var_end < last_func_end) { // Var is inside a function, skipping
+				type = strstr(type, "}");
+				type = strstr(type, "\n");
+			} else if (last_func_end && type > last_func_end) { // Var is after last function, need to update last function
+				last_func_start = strstr(last_func_start + 1, "{");
+				last_func_end = strstr(last_func_end + 1, "}");
+				goto HANDLE_VAR;
+			} else if (var_end < last_func_start || !last_func_start) { // Var is prior a function, handling it
+				type[0] = '\v';
+				type = strstr(type, "\n");
+			} else { // Var is a function, skipping
+				type = strstr(type, "\n");
+			}
+		} else {
+			type = strstr(type, "\n");
+		}
+	}
+	// Second pass: replacing all marked variables
+	glsl_replace_marker("\vloat", "static f");
+	glsl_replace_marker("\vnt", "static i");
+	glsl_replace_marker("\vec", "static v");
+	glsl_replace_marker("\vvec", "static i");
+	glsl_replace_marker("\vat", "static m");
+	glsl_replace_marker("\vonst", "static c");
+	
+	if (strlen(out) == 0)
+		strcpy(out, src);
+}
+
 /* 
  * Experimental function to replace all multiplication operators in a GLSL shader code:
  * The idea behind this is to replace all operators with a function call (vglMul)
@@ -157,7 +228,6 @@ LOOP_START:
 			right++;
 	}
 	char *res = (char *)vglMalloc(1024 * 1024);
-	res[0] = 0;
 	if (found < 2) { // Standard match
 		char tmp = *left;
 		left[0] = 0;
@@ -1236,8 +1306,14 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 			int idx;
 			if (s->type == GL_VERTEX_SHADER) {
 				// Manually patching attributes and varyings
-				char *str = strstr(text, "attribute ");
-				char *str2 = strstr(text, "varying ");
+				char *str = strstr(text, "attribute");
+				while (str && !(str[9] == ' ' || str[9] == '\t')) {
+					str = strstr(str + 9, "attribute");
+				}
+				char *str2 = strstr(text, "varying");
+				while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
+					str2 = strstr(str2 + 7, "varying");
+				}
 				while (str || str2) {
 					char *t;
 					if (!str)
@@ -1246,11 +1322,14 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 						t = str;
 					else
 						t = min(str, str2);
-					if (t == str) {
+					if (t == str) { // Attribute
 						// Replace attribute with 'vgl in' that will get extended in a 'varying in' by the preprocessor
 						sceClibMemcpy(t, "vgl in    ", 10);
-						str = strstr(t, "attribute ");
-					} else {
+						str = strstr(t, "attribute");
+						while (str && !(str[9] == ' ' || str[9] == '\t')) {
+							str = strstr(str + 9, "attribute");
+						}
+					} else { // Varying
 						char *end = strstr(t, ";");
 						char *start = end;
 						while (*start != ' ' && *start != '\t') {
@@ -1323,86 +1402,114 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 							}
 						}
 						sceClibMemcpy(str2, newline, strlen(newline));
-						str2 = strstr(t, "varying ");
+						str2 = strstr(t, "varying");
+						while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
+							str2 = strstr(str2 + 7, "varying");
+						}
 					}
 				}
 			} else {
-				// Manually patching varyings
-				char *str = strstr(text, "varying ");
-				while (str) {
-					char *end = strstr(str, ";");
-					char *start = end;
-					while (*start != ' ' && *start != '\t') {
-						start--;
-					}
-					start++;
-					end[0] = 0;
-					idx = -1;
-					// Check first if the varying has a known binding
-					for (int j = 0; j < glsl_custom_bindings_num; j++) {
-						if (!strcmp(glsl_custom_bindings[j].name, start)) {
-							idx = j;
+				// Manually patching varyings and "texture" uniforms
+				char *str = strstr(text, "varying");
+				while (str && !(str[7] == ' ' || str[7] == '\t')) {
+					str = strstr(str + 1, "varying");
+				}
+				char *str2 = strstr(text, "texture");
+				while (str2 && !(str2[7] == ';')) {
+					str2 = strstr(str2 + 7, "texture");
+				}
+				while (str || str2) {
+					char *t;
+					if (!str)
+						t = str2;
+					else if (!str2)
+						t = str;
+					else
+						t = min(str, str2);
+					if (t == str) { // Varying
+						char *end = strstr(str, ";");
+						char *start = end;
+						while (*start != ' ' && *start != '\t') {
+							start--;
 						}
-					}
-					if (idx != -1) {
-						switch (glsl_custom_bindings[idx].type) {
-						case VGL_TYPE_TEXCOORD:
-							strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
-							sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
-							break;
-						case VGL_TYPE_COLOR:
-							sprintf(newline, "CIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
-							break;
-						case VGL_TYPE_FOG:
-							sprintf(newline, "FIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
-							break;
-						}
-					} else {
-						if (glsl_is_first_shader) {
-							// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
-							for (int j = 0; j < glsl_max_texcoord_bind; j++) {
-								if (!strcmp(glsl_texcoords_binds[j], start)) {
-									idx = j;
-									break;
-								}
+						start++;
+						end[0] = 0;
+						idx = -1;
+						// Check first if the varying has a known binding
+						for (int j = 0; j < glsl_custom_bindings_num; j++) {
+							if (!strcmp(glsl_custom_bindings[j].name, start)) {
+								idx = j;
 							}
-							// VIN will get extended by the preprocessor into a in varying bound to a progressive TEXCOORD semantic
-							if (idx >= 0) {
-								sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
-							} else {
-#ifndef SKIP_ERROR_HANDLING
-								if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID) {
-									glsl_max_texcoord_bind--;
-									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
-								}
-#endif
-								strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
-								sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_max_texcoord_bind++);
-								if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
-									glsl_max_texcoord_bind--;
+						}
+						if (idx != -1) {
+							switch (glsl_custom_bindings[idx].type) {
+							case VGL_TYPE_TEXCOORD:
+								strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
+								sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+								break;
+							case VGL_TYPE_COLOR:
+								sprintf(newline, "CIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+								break;
+							case VGL_TYPE_FOG:
+								sprintf(newline, "FIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+								break;
 							}
 						} else {
-							// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
-							for (int j = 0; j < glsl_max_texcoord_bind; j++) {
-								if (!strcmp(glsl_texcoords_binds[j], start)) {
-									idx = j;
-									break;
+							if (glsl_is_first_shader) {
+								// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
+								for (int j = 0; j < glsl_max_texcoord_bind; j++) {
+									if (!strcmp(glsl_texcoords_binds[j], start)) {
+										idx = j;
+										break;
+									}
 								}
+								// VIN will get extended by the preprocessor into a in varying bound to a progressive TEXCOORD semantic
+								if (idx >= 0) {
+									sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+								} else {
+#ifndef SKIP_ERROR_HANDLING
+									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID) {
+										glsl_max_texcoord_bind--;
+										vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+									}
+#endif
+									strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
+									sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_max_texcoord_bind++);
+									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
+										glsl_max_texcoord_bind--;
+								}
+							} else {
+								// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
+								for (int j = 0; j < glsl_max_texcoord_bind; j++) {
+									if (!strcmp(glsl_texcoords_binds[j], start)) {
+										idx = j;
+										break;
+									}
+								}
+								if (idx == -1) {
+									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
+										glsl_max_texcoord_bind--;
+									vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, glsl_max_texcoord_bind);
+									strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
+									idx = glsl_max_texcoord_bind++;
+									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
+										glsl_max_texcoord_bind--;
+								}
+								sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
 							}
-							if (idx == -1) {
-								if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
-									glsl_max_texcoord_bind--;
-								vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, glsl_max_texcoord_bind);
-								strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
-								idx = glsl_max_texcoord_bind++;
-								if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
-									glsl_max_texcoord_bind--;
-							}
-							sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+						}
+						sceClibMemcpy(str, newline, strlen(newline));
+						str = strstr(str, "varying");
+						while (str && !(str[7] == ' ' || str[7] == '\t')) {
+							str = strstr(str + 7, "varying");
+						}
+					} else { // "texture" Uniform
+						sceClibMemcpy(t, "vgl_tex", 7);
+						str2 = strstr(t, "texture");
+						while (str2 && !(str2[7] == ';')) {
+							str2 = strstr(str2 + 7, "texture");
 						}
 					}
-					sceClibMemcpy(str, newline, strlen(newline));
-					str = strstr(str, "varying ");
 				}
 			}
 #endif
@@ -1414,7 +1521,11 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		char *dst = vglMalloc(size + 1024 * 1024); // FIXME: This is just an estimation, check if 1MB is enough
 		glsl_inject_mul(s->source, dst);
 		vgl_free(s->source);
-		s->source = dst;
+		// Manually handle global variables, adding "static" to them
+		char *dst2 = vglMalloc(strlen(dst) + 1024 * 1024);
+		glsl_handle_globals(dst, dst2);
+		vgl_free(dst);
+		s->source = dst2;
 #ifdef DEBUG_GLSL_TRANSLATOR
 		vgl_log("%s:%d %s: GLSL translation output (%s shader):\n\n%s\n\n", __FILE__, __LINE__, __func__, glsl_is_first_shader ? "first" : "second", s->source);
 #endif
@@ -1904,6 +2015,12 @@ void glUseProgram(GLuint prog) {
 GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
+
+#ifdef HAVE_GLSL_TRANSLATOR
+	// texture is a reserved keyword in CG but is not in GLSL
+	if (!strcmp(name, "texture"))
+		name = "vgl_tex";
+#endif
 
 	// Checking if parameter is a vertex or fragment related one
 	uniform *j;
@@ -2766,6 +2883,11 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 
 	// Copying attribute name
 	const char *pname = sceGxmProgramParameterGetName(u->ptr);
+#ifdef HAVE_GLSL_TRANSLATOR
+	// texture is a reserved keyword in CG but is not in GLSL
+	if (!strcmp(pname, "vgl_tex"))
+		pname = "texture";
+#endif
 	bufSize = min(strlen(pname), bufSize - 1);
 	if (length)
 		*length = bufSize;
