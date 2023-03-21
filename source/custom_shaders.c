@@ -1415,8 +1415,14 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 					str = strstr(str + 1, "varying");
 				}
 				char *str2 = strstr(text, "texture");
-				while (str2 && !(str2[7] == ';')) {
-					str2 = strstr(str2 + 7, "texture");
+				while (str2) {
+					char *str2_end = str2 + 7;
+					while (*str2_end == ' ' || *str2_end == '\t') {
+						str2_end++;
+					}
+					if (*str2_end == ',' || *str2_end == ';')
+						break;
+					str2 = strstr(str2_end, "texture");
 				}
 				while (str || str2) {
 					char *t;
@@ -1506,8 +1512,14 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 					} else { // "texture" Uniform
 						sceClibMemcpy(t, "vgl_tex", 7);
 						str2 = strstr(t, "texture");
-						while (str2 && !(str2[7] == ';')) {
-							str2 = strstr(str2 + 7, "texture");
+						while (str2) {
+							char *str2_end = str2 + 7;
+							while (*str2_end == ' ' || *str2_end == '\t') {
+								str2_end++;
+							}
+							if (*str2_end == ',' || *str2_end == ';')
+								break;
+							str2 = strstr(str2_end, "texture");
 						}
 					}
 				}
