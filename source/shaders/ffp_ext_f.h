@@ -105,6 +105,19 @@ float4 main(
 #if has_colors == 0 && lights_num == 0
 	float4 vColor = tintColor;
 #endif
+	// Lighting
+#if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
+	float4 Ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float4 Diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float4 Specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	for (short i = 0; i < lights_num; i++) {
+		calculate_light(i, vEcPosition, vNormal, Ambient, Diffuse, Specular);
+	}
+	float4 fragColor = vColor;
+	vColor = vEmission + fragColor * light_global_ambient;
+	vColor += Ambient * fragColor + Diffuse * vDiffuse + Specular * vSpecular;
+	vColor = clamp(vColor, 0.0f, 1.0f);
+#endif	
 #if num_textures > 0
 #if point_sprite > 0
 	vTexcoord = point_coords;
@@ -154,20 +167,6 @@ float4 main(
 		discard;
 	}
 #endif
-
-	// Lighting
-#if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
-	float4 Ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	float4 Diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	float4 Specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	for (short i = 0; i < lights_num; i++) {
-		calculate_light(i, vEcPosition, vNormal, Ambient, Diffuse, Specular);
-	}
-	float4 fragColor = texColor;
-	texColor = vEmission + fragColor * light_global_ambient;
-	texColor += Ambient * fragColor + Diffuse * vDiffuse + Specular * vSpecular;
-	texColor = clamp(texColor, 0.0f, 1.0f);
-#endif	
 
 	// Fogging
 #if fog_mode < 3
