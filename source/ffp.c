@@ -3433,16 +3433,14 @@ void glClipPlane(GLenum plane, const GLdouble *equation) {
 	}
 #endif
 	int idx = plane - GL_CLIP_PLANE0;
-	clip_planes_eq[idx].x = equation[0];
-	clip_planes_eq[idx].y = equation[1];
-	clip_planes_eq[idx].z = equation[2];
-	clip_planes_eq[idx].w = equation[3];
-	matrix4x4 inverted, inverted_transposed;
-	matrix4x4_invert(inverted, modelview_matrix);
-	matrix4x4_transpose(inverted_transposed, inverted);
 	vector4f temp;
-	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
-	vgl_fast_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
+	temp.x = equation[0];
+	temp.y = equation[1];
+	temp.z = equation[2];
+	temp.w = equation[3];
+	matrix4x4 inverted;
+	matrix4x4_invert(inverted, modelview_matrix);
+	vector4f_matrix4x4_mult(&clip_planes_eq[idx].x, inverted, &temp.x);
 	dirty_vert_unifs = GL_TRUE;
 }
 
@@ -3458,16 +3456,14 @@ void glClipPlanef(GLenum plane, const GLfloat *equation) {
 	}
 #endif
 	int idx = plane - GL_CLIP_PLANE0;
-	clip_planes_eq[idx].x = equation[0];
-	clip_planes_eq[idx].y = equation[1];
-	clip_planes_eq[idx].z = equation[2];
-	clip_planes_eq[idx].w = equation[3];
-	matrix4x4 inverted, inverted_transposed;
-	matrix4x4_invert(inverted, modelview_matrix);
-	matrix4x4_transpose(inverted_transposed, inverted);
 	vector4f temp;
-	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
-	vgl_fast_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
+	temp.x = equation[0];
+	temp.y = equation[1];
+	temp.z = equation[2];
+	temp.w = equation[3];
+	matrix4x4 inverted;
+	matrix4x4_invert(inverted, modelview_matrix);
+	vector4f_matrix4x4_mult(&clip_planes_eq[idx].x, inverted, &temp.x);
 	dirty_vert_unifs = GL_TRUE;
 }
 
@@ -3483,16 +3479,14 @@ void glClipPlanex(GLenum plane, const GLfixed *equation) {
 	}
 #endif
 	int idx = plane - GL_CLIP_PLANE0;
-	clip_planes_eq[idx].x = (float)equation[0] / 65536.0f;
-	clip_planes_eq[idx].y = (float)equation[1] / 65536.0f;
-	clip_planes_eq[idx].z = (float)equation[2] / 65536.0f;
-	clip_planes_eq[idx].w = (float)equation[3] / 65536.0f;
-	matrix4x4 inverted, inverted_transposed;
-	matrix4x4_invert(inverted, modelview_matrix);
-	matrix4x4_transpose(inverted_transposed, inverted);
 	vector4f temp;
-	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
-	vgl_fast_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
+	temp.x = (float)equation[0] / 65536.0f;
+	temp.y = (float)equation[1] / 65536.0f;
+	temp.z = (float)equation[2] / 65536.0f;
+	temp.w = (float)equation[3] / 65536.0f;
+	matrix4x4 inverted;
+	matrix4x4_invert(inverted, modelview_matrix);
+	vector4f_matrix4x4_mult(&clip_planes_eq[idx].x, inverted, &temp.x);
 	dirty_vert_unifs = GL_TRUE;
 }
 
