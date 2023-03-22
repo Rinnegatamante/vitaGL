@@ -86,6 +86,7 @@ void matrix4x4_init_frustum(matrix4x4 m, float left, float right, float bottom, 
 void matrix4x4_init_perspective(matrix4x4 m, float fov, float aspect, float near, float far);
 
 // Invert a matrix
+int matrix3x3_invert(matrix3x3 out, const matrix3x3 m);
 int matrix4x4_invert(matrix4x4 out, const matrix4x4 m);
 
 // Perform a matrix per vector moltiplication

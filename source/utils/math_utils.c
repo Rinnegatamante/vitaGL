@@ -147,53 +147,66 @@ void matrix4x4_init_perspective(matrix4x4 m, float fov, float aspect, float near
 	matrix4x4_init_frustum(m, -half_width, half_width, -half_height, half_height, near, far);
 }
 
-int matrix4x4_invert(matrix4x4 out, const matrix4x4 m) {
-	int i, j;
+int matrix3x3_invert(matrix3x3 inverse, const matrix3x3 mat) {
+    float det, invDet;
+    int i,j;
 
-	const float a0 = m[0][0] * m[1][1] - m[0][1] * m[1][0];
-	const float a1 = m[0][0] * m[1][2] - m[0][2] * m[1][0];
-	const float a2 = m[0][0] * m[1][3] - m[0][3] * m[1][0];
-	const float a3 = m[0][1] * m[1][2] - m[0][2] * m[1][1];
-	const float a4 = m[0][1] * m[1][3] - m[0][3] * m[1][1];
-	const float a5 = m[0][2] * m[1][3] - m[0][3] * m[1][2];
-	const float b0 = m[2][0] * m[3][1] - m[2][1] * m[3][0];
-	const float b1 = m[2][0] * m[3][2] - m[2][2] * m[3][0];
-	const float b2 = m[2][0] * m[3][3] - m[2][3] * m[3][0];
-	const float b3 = m[2][1] * m[3][2] - m[2][2] * m[3][1];
-	const float b4 = m[2][1] * m[3][3] - m[2][3] * m[3][1];
-	const float b5 = m[2][2] * m[3][3] - m[2][3] * m[3][2];
+    inverse[0][0] = mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1];
+    inverse[1][0] = mat[1][2] * mat[2][0] - mat[1][0] * mat[2][2];
+    inverse[2][0] = mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0];
 
-	float det = a0 * b5 - a1 * b4 + a2 * b3 + a3 * b2 - a4 * b1 + a5 * b0;
+    det = mat[0][0] * inverse[0][0] + mat[0][1] * inverse[1][0] + mat[0][2] * inverse[2][0];
 
-	if (fabsf(det) > 0.0001f) {
-		out[0][0] = m[0][1] * b5 - m[1][2] * b4 + m[1][3] * b3;
-		out[1][0] = -m[1][0] * b5 + m[1][2] * b2 - m[1][3] * b1;
-		out[2][0] = m[1][0] * b4 - m[1][1] * b2 + m[1][3] * b0;
-		out[3][0] = -m[1][0] * b3 + m[1][1] * b1 - m[1][2] * b0;
-		out[0][1] = -m[0][1] * b5 + m[0][2] * b4 - m[0][3] * b3;
-		out[1][1] = m[0][0] * b5 - m[0][2] * b2 + m[0][3] * b1;
-		out[2][1] = -m[0][0] * b4 + m[0][1] * b2 - m[0][3] * b0;
-		out[3][1] = m[0][0] * b3 - m[0][1] * b1 + m[0][2] * b0;
-		out[0][2] = m[3][1] * a5 - m[3][2] * a4 + m[3][3] * a3;
-		out[1][2] = -m[3][0] * a5 + m[3][2] * a2 - m[3][3] * a1;
-		out[2][2] = m[3][0] * a4 - m[3][1] * a2 + m[3][3] * a0;
-		out[3][2] = -m[3][0] * a3 + m[3][1] * a1 - m[3][2] * a0;
-		out[0][3] = -m[2][1] * a5 + m[2][2] * a4 - m[2][3] * a3;
-		out[1][3] = m[2][0] * a5 - m[2][2] * a2 + m[2][3] * a1;
-		out[2][3] = -m[2][0] * a4 + m[2][1] * a2 - m[2][3] * a0;
-		out[3][3] = m[2][0] * a3 - m[2][1] * a1 + m[2][2] * a0;
+    if (det == 0)
+		return 0;
 
-		det = 1.0f / det;
+    invDet = 1.0f / det;
 
-		for (i = 0; i < 4; i++) {
-			for (j = 0; j < 4; j++)
-				out[i][j] *= det;
-		}
+    inverse[0][1] = mat[0][2] * mat[2][1] - mat[0][1] * mat[2][2];
+    inverse[0][2] = mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1];
+    inverse[1][1] = mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0];
+    inverse[1][2] = mat[0][2] * mat[1][0] - mat[0][0] * mat[1][2];
+    inverse[2][1] = mat[0][1] * mat[2][0] - mat[0][0] * mat[2][1];
+    inverse[2][2] = mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
 
-		return 1;
-	}
+    for(i=0;i<3;i++)
+    {
+        for(j=0;j<3;j++)
+        {
+            inverse[i][j]*= invDet;
+        }
+    }
+	
+	return 1;
+}
 
-	return 0;
+int matrix4x4_invert(matrix4x4 out, const matrix4x4 in) {
+	float *invOut = (float *)out;
+	float *m = (float *)in;
+    float inv[9], det;
+    int i;
+ 
+    inv[ 0] =  m[5] * m[10] * m[15] - m[5] * m[11] * m[14] - m[9] * m[6] * m[15] + m[9] * m[7] * m[14] + m[13] * m[6] * m[11] - m[13] * m[7] * m[10];
+    inv[ 3] = -m[4] * m[10] * m[15] + m[4] * m[11] * m[14] + m[8] * m[6] * m[15] - m[8] * m[7] * m[14] - m[12] * m[6] * m[11] + m[12] * m[7] * m[10];
+    inv[ 6] =  m[4] * m[ 9] * m[15] - m[4] * m[11] * m[13] - m[8] * m[5] * m[15] + m[8] * m[7] * m[13] + m[12] * m[5] * m[11] - m[12] * m[7] * m[ 9];
+    inv[ 1] = -m[1] * m[10] * m[15] + m[1] * m[11] * m[14] + m[9] * m[2] * m[15] - m[9] * m[3] * m[14] - m[13] * m[2] * m[11] + m[13] * m[3] * m[10];
+    inv[ 4] =  m[0] * m[10] * m[15] - m[0] * m[11] * m[14] - m[8] * m[2] * m[15] + m[8] * m[3] * m[14] + m[12] * m[2] * m[11] - m[12] * m[3] * m[10];
+    inv[ 7] = -m[0] * m[ 9] * m[15] + m[0] * m[11] * m[13] + m[8] * m[1] * m[15] - m[8] * m[3] * m[13] - m[12] * m[1] * m[11] + m[12] * m[3] * m[ 9];
+    inv[ 2] =  m[1] * m[ 6] * m[15] - m[1] * m[ 7] * m[14] - m[5] * m[2] * m[15] + m[5] * m[3] * m[14] + m[13] * m[2] * m[ 7] - m[13] * m[3] * m[ 6];
+    inv[ 5] = -m[0] * m[ 6] * m[15] + m[0] * m[ 7] * m[14] + m[4] * m[2] * m[15] - m[4] * m[3] * m[14] - m[12] * m[2] * m[ 7] + m[12] * m[3] * m[ 6];
+    inv[ 8] =  m[0] * m[ 5] * m[15] - m[0] * m[ 7] * m[13] - m[4] * m[1] * m[15] + m[4] * m[3] * m[13] + m[12] * m[1] * m[ 7] - m[12] * m[3] * m[ 5];
+    
+    det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8];
+ 
+    if(det == 0)
+        return 0;
+ 
+    det = 1.f / det;
+ 
+    for(i = 0; i < 16; i++)
+        invOut[i] = inv[i] * det;
+ 
+    return 1;
 }
 
 void vector4f_matrix4x4_mult(vector4f *u, const matrix4x4 m, const vector4f *v) {
