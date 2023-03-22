@@ -23,8 +23,7 @@ uniform float4 lights_speculars[lights_num];
 uniform float4 lights_positions[lights_num];
 uniform float3 lights_attenuations[lights_num];
 uniform float4 light_global_ambient;
-
-#define shininess (0.02f) // FIXME: Shininess hardcoded
+uniform float shininess;
 
 void point_light(short i, float3 normal, float3 position, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
 	float3 VP = lights_positions[i].xyz - position;
@@ -37,24 +36,28 @@ void point_light(short i, float3 normal, float3 position, float4 inout Ambient, 
 
 	Ambient += lights_ambients[i] * attenuation;
 	Diffuse += lights_diffuses[i] * nDotVP * attenuation;
-	if (nDotVP != 0.0f)
-		Specular += lights_speculars[i] * shininess * attenuation;
+	if (nDotVP != 0.0f) {
+		float nDotHV = max(0.0f, dot(normal, normalize(VP + float3(0.0f, 0.0f, 1.0f))));
+		Specular += lights_speculars[i] * pow(nDotHV, shininess) * attenuation;
+	}
 }
 
-void directional_light(short i, float3 normal, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
+void directional_light(short i, float3 normal, float3 position, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
 	float nDotVP = max(0.0f, dot(normal, normalize(lights_positions[i].xyz)));
 		
 	Ambient += lights_ambients[i];
 	Diffuse += lights_diffuses[i] * nDotVP;
-	if (nDotVP != 0.0f)
-		Specular += lights_speculars[i] * shininess;
+	if (nDotVP != 0.0f) {
+		float nDotHV = max(0.0f, dot(normal, normalize(lights_positions[i].xyz - position)));
+		Specular += lights_speculars[i] * pow(nDotHV, shininess);
+	}
 }
 
 void calculate_light(short i, float3 ecPosition, float3 N, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
 	if (lights_positions[i].w == 1.0f)
 		point_light(i, N, ecPosition, Ambient, Diffuse, Specular);
 	else
-		directional_light(i, N, Ambient, Diffuse, Specular);
+		directional_light(i, N, ecPosition, Ambient, Diffuse, Specular);
 }
 #endif
 
@@ -129,32 +132,32 @@ float4 main(
 	
 	// Alpha Test
 #if alpha_test_mode == 0
-	if (texColor.a < alphaCut){
+	if (texColor.a < alphaCut) {
 		discard;
 	}
 #endif
 #if alpha_test_mode == 1
-	if (texColor.a <= alphaCut){
+	if (texColor.a <= alphaCut) {
 		discard;
 	}
 #endif
 #if alpha_test_mode == 2
-	if (texColor.a == alphaCut){
+	if (texColor.a == alphaCut) {
 		discard;
 	}
 #endif
 #if alpha_test_mode == 3
-	if (texColor.a != alphaCut){
+	if (texColor.a != alphaCut) {
 		discard;
 	}
 #endif
 #if alpha_test_mode == 4
-	if (texColor.a > alphaCut){
+	if (texColor.a > alphaCut) {
 		discard;
 	}
 #endif
 #if alpha_test_mode == 5
-	if (texColor.a >= alphaCut){
+	if (texColor.a >= alphaCut) {
 		discard;
 	}
 #endif
