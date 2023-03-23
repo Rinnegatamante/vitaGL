@@ -915,6 +915,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count); // glDrawArrays implementat
 uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams); // Reloads current in use ffp shaders
 void upload_ffp_uniforms(); // Uploads required uniforms for the in use ffp shaders
 void update_fogging_state(); // Updates current setup for fogging
+void adjust_color_material_state(); // Updates internal settings for GL_COLOR_MATERIAL
 
 /* vertex_buffers.c */
 void resetVao(vao *v); // Reseset vao state

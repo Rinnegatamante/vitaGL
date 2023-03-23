@@ -76,7 +76,7 @@ float4 main(
 	float4 vEmission : TEXCOORD6,
 #endif
 #if (has_colors == 1 || lights_num > 0)
-	float4 vColor : COLOR0,
+	float4 vColor : COLOR,
 #endif
 #if fog_mode < 3
 	float4 coords : WPOS,
