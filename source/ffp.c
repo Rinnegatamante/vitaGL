@@ -86,7 +86,7 @@ static SceGxmPrimitiveType prim; // Current in use primitive for rendering
 GLboolean lighting_state = GL_FALSE; // Current lighting processor state
 GLboolean lights_aligned; // Are clip planes in a contiguous range
 uint8_t light_range[2]; // The highest and lowest enabled lights
-uint8_t light_mask; // Bitmask of enabled lights
+uint8_t light_mask = 0; // Bitmask of enabled lights
 vector4f lights_ambients[MAX_LIGHTS_NUM];
 vector4f lights_diffuses[MAX_LIGHTS_NUM];
 vector4f lights_speculars[MAX_LIGHTS_NUM];
@@ -574,9 +574,14 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				}
 			}
 		}
-		// Force enabling colors attribute since used for ambient color
-		if (draw_mask_state & (1 << 3))
-			draw_mask_state |= (1 << 2); 
+		// Force enabling lights related streams
+		if (mask.lights_num > 0) {
+			draw_mask_state |= (1 << 2);
+			draw_mask_state |= (1 << 3);
+			draw_mask_state |= (1 << 4);
+			draw_mask_state |= (1 << 5);
+			draw_mask_state |= (1 << 6);
+		}
 	}
 #ifdef DISABLE_TEXTURE_COMBINER
 	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
