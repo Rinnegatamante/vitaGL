@@ -102,7 +102,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 // Fixed-function pipeline shader cache settings
 #ifndef DISABLE_FS_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 19 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 20 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
@@ -915,6 +915,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count); // glDrawArrays implementat
 uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams); // Reloads current in use ffp shaders
 void upload_ffp_uniforms(); // Uploads required uniforms for the in use ffp shaders
 void update_fogging_state(); // Updates current setup for fogging
+void adjust_color_material_state(); // Updates internal settings for GL_COLOR_MATERIAL
 
 /* vertex_buffers.c */
 void resetVao(vao *v); // Reseset vao state

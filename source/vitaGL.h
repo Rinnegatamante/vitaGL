@@ -188,6 +188,7 @@ extern "C" {
 #define GL_FIXED                                        0x140C
 #define GL_INVERT                                       0x150A
 #define GL_EMISSION                                     0x1600
+#define GL_SHININESS                                    0x1601
 #define GL_AMBIENT_AND_DIFFUSE                          0x1602
 #define GL_MODELVIEW                                    0x1700
 #define GL_PROJECTION                                   0x1701
@@ -699,7 +700,10 @@ void glLoadTransposeMatrixf(const GLfloat *m);
 void glLoadTransposeMatrixx(const GLfixed *m);
 void *glMapBuffer(GLenum target, GLbitfield access);
 void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
+void glMaterialf(GLenum face, GLenum pname, GLfloat param);
 void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params);
+void glMateriali(GLenum face, GLenum pname, GLint param);
+void glMaterialx(GLenum face, GLenum pname, const GLfixed param);
 void glMaterialxv(GLenum face, GLenum pname, const GLfixed *params);
 void glMatrixMode(GLenum mode);
 void glMultiTexCoord2f(GLenum target, GLfloat s, GLfloat t);
