@@ -638,11 +638,7 @@ extern GLboolean dirty_vert_unifs;
 // Internal fixed function pipeline dirty flags and variables
 extern GLboolean ffp_dirty_frag;
 extern GLboolean ffp_dirty_vert;
-#ifdef HAVE_HIGH_FFP_TEXUNITS
 extern uint16_t ffp_vertex_attrib_state;
-#else
-extern uint8_t ffp_vertex_attrib_state;
-#endif
 extern uint8_t ffp_vertex_num_params;
 
 // Internal runtime shader compiler settings

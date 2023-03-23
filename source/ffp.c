@@ -155,12 +155,11 @@ SceGxmVertexStream legacy_nt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 2];
 static uint32_t ffp_vertex_attrib_offsets[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 static uint32_t ffp_vertex_attrib_vbo[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 static GLenum ffp_mode;
-#ifdef HAVE_HIGH_FFP_TEXUNITS
 uint16_t ffp_vertex_attrib_state = 0;
+#ifdef HAVE_HIGH_FFP_TEXUNITS
 uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 2, FFP_VERTEX_ATTRIBS_NUM - 1};
 uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM] = {1, 2, 3};
 #else
-uint8_t ffp_vertex_attrib_state = 0;
 uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 1};
 uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM] = {1, 2};
 #endif
@@ -497,7 +496,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	mask.normalize = normalize;
 	mask.fixed_mask = ffp_vertex_attrib_fixed_mask;
 	mask.pos_fixed_mask = ffp_vertex_attrib_fixed_pos_mask;
-	uint8_t draw_mask_state = ffp_vertex_attrib_state;
+	uint16_t draw_mask_state = ffp_vertex_attrib_state;
 
 	// Counting number of enabled texture units
 	mask.num_textures = 0;
@@ -2260,12 +2259,12 @@ void glEnd(void) {
 	gl_primitive_to_gxm(ffp_mode, prim, vertex_count);
 
 	// Invalidating current attributes state settings
-	uint8_t orig_state = ffp_vertex_attrib_state;
+	uint16_t orig_state = ffp_vertex_attrib_state;
 
 	ffp_dirty_frag = GL_TRUE;
 	ffp_dirty_vert = GL_TRUE;
 	if (texture_units[1].state) { // Multitexture usage
-		ffp_vertex_attrib_state = 0xFF;
+		ffp_vertex_attrib_state = 0xFFFF;
 		reload_ffp_shaders(legacy_mt_vertex_attrib_config, legacy_mt_vertex_stream_config);
 		for (int i = 0; i < 2; i++) {
 			texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
@@ -2291,7 +2290,7 @@ void glEnd(void) {
 			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
 		}
 	} else if (texture_units[0].state) { // Texturing usage
-		ffp_vertex_attrib_state = 0x07;
+		ffp_vertex_attrib_state = 0x0007;
 		reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
 		texture *tex = &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]];
 #ifndef TEXTURES_SPEEDHACK
@@ -2315,7 +2314,7 @@ void glEnd(void) {
 		}
 		sceGxmSetFragmentTexture(gxm_context, 0, &tex->gxm_tex);
 	} else { // No texturing usage
-		ffp_vertex_attrib_state = 0x05;
+		ffp_vertex_attrib_state = 0x0005;
 		reload_ffp_shaders(legacy_nt_vertex_attrib_config, legacy_nt_vertex_stream_config);
 	}
 
