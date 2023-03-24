@@ -1421,7 +1421,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 				while (str && !(str[7] == ' ' || str[7] == '\t')) {
 					str = strstr(str + 1, "varying");
 				}
-				char *str2 = strstr(text, "texture");
+				char *str2 = strcasestr(text, "texture");
 				while (str2) {
 					char *str2_end = str2 + 7;
 					while (*str2_end == ' ' || *str2_end == '\t') {
@@ -1429,7 +1429,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 					}
 					if (*str2_end == ',' || *str2_end == ';')
 						break;
-					str2 = strstr(str2_end, "texture");
+					str2 = strcasestr(str2_end, "texture");
 				}
 				while (str || str2) {
 					char *t;
@@ -1517,8 +1517,11 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 							str = strstr(str + 7, "varying");
 						}
 					} else { // "texture" Uniform
-						sceClibMemcpy(t, "vgl_tex", 7);
-						str2 = strstr(t, "texture");
+						if (t[0] == 't')
+							sceClibMemcpy(t, "vgl_tex", 7);
+						else
+							sceClibMemcpy(t, "Vgl_tex", 7);
+						str2 = strcasestr(t, "texture");
 						while (str2) {
 							char *str2_end = str2 + 7;
 							while (*str2_end == ' ' || *str2_end == '\t') {
@@ -1526,7 +1529,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 							}
 							if (*str2_end == ',' || *str2_end == ';')
 								break;
-							str2 = strstr(str2_end, "texture");
+							str2 = strcasestr(str2_end, "texture");
 						}
 					}
 				}
@@ -2039,6 +2042,8 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	// texture is a reserved keyword in CG but is not in GLSL
 	if (!strcmp(name, "texture"))
 		name = "vgl_tex";
+	else if (!strcmp(name, "Texture"))
+		name = "Vgl_tex";
 #endif
 
 	// Checking if parameter is a vertex or fragment related one
@@ -2906,6 +2911,8 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 	// texture is a reserved keyword in CG but is not in GLSL
 	if (!strcmp(pname, "vgl_tex"))
 		pname = "texture";
+	else if (!strcmp(pname, "Vgl_tex"))
+		pname = "Texture";
 #endif
 	bufSize = min(strlen(pname), bufSize - 1);
 	if (length)
