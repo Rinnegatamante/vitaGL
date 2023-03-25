@@ -1229,7 +1229,8 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	
 	uint32_t size = 1;
 #ifdef HAVE_GLSL_TRANSLATOR
-	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE, hasFragDepth = GL_FALSE, hasFrontFacing = GL_FALSE;
+	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE;
+	GLboolean hasPointSize = GL_FALSE, hasFragDepth = GL_FALSE, hasFrontFacing = GL_FALSE;
 	size += strlen(glsl_hdr);
 #ifndef SKIP_ERROR_HANDLING
 	if (prev_shader_type == s->type) {
@@ -1243,25 +1244,33 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 #endif	
 	for (int i = 0; i < count; i++) {
 #ifdef HAVE_GLSL_TRANSLATOR
-		// Checking if shader requires gl_FrontFacing
-		if (!hasFrontFacing)
-			hasFrontFacing = strstr(string[i], "gl_FrontFacing") ? GL_TRUE : GL_FALSE;
-		// Checking if shader requires gl_FragCoord
-		if (!hasFragCoord)
-			hasFragCoord = strstr(string[i], "gl_FragCoord") ? GL_TRUE : GL_FALSE;
-		// Checking if shader requires gl_InstanceID
-		if (!hasInstanceID)
-			hasInstanceID = strstr(string[i], "gl_InstanceID") ? GL_TRUE : GL_FALSE;
-		// Checking if shader requires gl_VertexID
-		if (!hasVertexID)
-			hasVertexID = strstr(string[i], "gl_VertexID") ? GL_TRUE : GL_FALSE;
-		// Checking if shader requires gl_FragDepth
-		if (!hasFragDepth)
-			hasFragDepth = strstr(string[i], "gl_FragDepth") ? GL_TRUE : GL_FALSE;	
+		if (s->type == GL_VERTEX_SHADER) {
+			// Checking if shader requires gl_PointSize
+			if (!hasPointSize)
+				hasPointSize = strstr(string[i], "gl_PointSize") ? GL_TRUE : GL_FALSE;
+			// Checking if shader requires gl_InstanceID
+			if (!hasInstanceID)
+				hasInstanceID = strstr(string[i], "gl_InstanceID") ? GL_TRUE : GL_FALSE;
+			// Checking if shader requires gl_VertexID
+			if (!hasVertexID)
+				hasVertexID = strstr(string[i], "gl_VertexID") ? GL_TRUE : GL_FALSE;
+		} else {
+			// Checking if shader requires gl_FrontFacing
+			if (!hasFrontFacing)
+				hasFrontFacing = strstr(string[i], "gl_FrontFacing") ? GL_TRUE : GL_FALSE;
+			// Checking if shader requires gl_FragCoord
+			if (!hasFragCoord)
+				hasFragCoord = strstr(string[i], "gl_FragCoord") ? GL_TRUE : GL_FALSE;
+			// Checking if shader requires gl_FragDepth
+			if (!hasFragDepth)
+				hasFragDepth = strstr(string[i], "gl_FragDepth") ? GL_TRUE : GL_FALSE;
+		}
 #endif
 		size += length ? length[i] : strlen(string[i]);
 	}
 #ifdef HAVE_GLSL_TRANSLATOR
+	if (hasPointSize)
+		size += strlen("varying out float gl_PointSize : PSIZE;\n");
 	if (hasFrontFacing)
 		size += strlen("varying in float vgl_Face : FACE;\n");
 	if (hasFragCoord)
@@ -1285,6 +1294,8 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		// Injecting GLSL to CG header
 		if (s->type == GL_VERTEX_SHADER) {
 			strcat(s->source, "#define VGL_IS_VERTEX_SHADER\n");
+			if (hasPointSize)
+				strcat(s->source, "varying out float gl_PointSize : PSIZE;\n");
 			if (hasInstanceID)
 				strcat(s->source, "varying in int gl_InstanceID : INSTANCE;\n");
 			if (hasVertexID)
