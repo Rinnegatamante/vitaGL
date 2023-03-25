@@ -1229,7 +1229,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	
 	uint32_t size = 1;
 #ifdef HAVE_GLSL_TRANSLATOR
-	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE, hasFragDepth = GL_FALSE;
+	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE, hasFragDepth = GL_FALSE, hasFrontFacing = GL_FALSE;
 	size += strlen(glsl_hdr);
 #ifndef SKIP_ERROR_HANDLING
 	if (prev_shader_type == s->type) {
@@ -1243,6 +1243,9 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 #endif	
 	for (int i = 0; i < count; i++) {
 #ifdef HAVE_GLSL_TRANSLATOR
+		// Checking if shader requires gl_FrontFacing
+		if (!hasFrontFacing)
+			hasFrontFacing = strstr(string[i], "gl_FrontFacing") ? GL_TRUE : GL_FALSE;
 		// Checking if shader requires gl_FragCoord
 		if (!hasFragCoord)
 			hasFragCoord = strstr(string[i], "gl_FragCoord") ? GL_TRUE : GL_FALSE;
@@ -1259,6 +1262,8 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		size += length ? length[i] : strlen(string[i]);
 	}
 #ifdef HAVE_GLSL_TRANSLATOR
+	if (hasFrontFacing)
+		size += strlen("varying in float vgl_Face : FACE;\n");
 	if (hasFragCoord)
 		size += strlen("varying in float4 gl_FragCoord : WPOS;\n");
 	if (hasInstanceID)
@@ -1285,6 +1290,8 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 			if (hasVertexID)
 				strcat(s->source, "varying in int gl_VertexID : INDEX;\n");
 		} else {
+			if (hasFrontFacing)
+				strcat(s->source, "varying in float vgl_Face : FACE;\n");
 			if (hasFragCoord)
 				strcat(s->source, "varying in float4 gl_FragCoord : WPOS;\n");
 			if (hasFragDepth)
@@ -1416,6 +1423,14 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 					}
 				}
 			} else {
+				// Manually patching gl_FrontFacing usage
+				if (hasFrontFacing) {
+					char *str = strstr(text, "gl_FrontFacing");
+					while (str) {
+						sceClibMemcpy(str, "(vgl_Face > 0)", 14);
+						str = strstr(str, "gl_FrontFacing");
+					}
+				}
 				// Manually patching varyings and "texture" uniforms
 				char *str = strstr(text, "varying");
 				while (str && !(str[7] == ' ' || str[7] == '\t')) {
