@@ -370,6 +370,7 @@ static const struct {
 	{"vglSwapBuffers", (void *)vglSwapBuffers},
 	{"vglTexImageDepthBuffer", (void *)vglTexImageDepthBuffer},
 	{"vglUseCachedMem", (void *)vglUseCachedMem},
+	{"vglUseLowPrecision", (void *)vglUseLowPrecision},
 	{"vglUseTripleBuffering", (void *)vglUseTripleBuffering},
 	{"vglUseVram", (void *)vglUseVram},
 	{"vglUseVramForUSSE", (void *)vglUseVramForUSSE},

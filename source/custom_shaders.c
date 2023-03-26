@@ -38,6 +38,7 @@ int glsl_custom_bindings_num = 0;
 char glsl_texcoords_binds[MAX_CG_TEXCOORD_ID][64];
 int glsl_max_texcoord_bind = 0;
 GLboolean glsl_is_first_shader = GL_TRUE;
+GLboolean glsl_precision_low = GL_FALSE;
 GLenum prev_shader_type = GL_NONE;
 
 #define glsl_replace_marker(m, r) \
@@ -1232,6 +1233,8 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE;
 	GLboolean hasPointSize = GL_FALSE, hasFragDepth = GL_FALSE, hasFrontFacing = GL_FALSE;
 	size += strlen(glsl_hdr);
+	if (glsl_precision_low)
+		size += strlen(glsl_precision_hdr);
 #ifndef SKIP_ERROR_HANDLING
 	if (prev_shader_type == s->type) {
 		vgl_log("%s:%d %s: Unexpected shader type, translation may be imperfect.\n", __FILE__, __LINE__, __func__);
@@ -1309,6 +1312,8 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 				strcat(s->source, "varying out float gl_FragDepth : DEPTH;\n");
 		}
 		strcat(s->source, glsl_hdr);
+		if (glsl_precision_low)
+			strcat(s->source, glsl_precision_hdr);
 #endif
 		for (int i = 0; i < count; i++) {
 #ifdef HAVE_GLSL_TRANSLATOR
@@ -3166,5 +3171,11 @@ void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum typ
 	strcpy(glsl_custom_bindings[glsl_custom_bindings_num].name, varying);
 	glsl_custom_bindings[glsl_custom_bindings_num].idx = index;
 	glsl_custom_bindings[glsl_custom_bindings_num++].type = type;
+#endif
+}
+
+void vglUseLowPrecision(GLboolean val) {
+#ifdef HAVE_GLSL_TRANSLATOR
+	glsl_precision_low = val;
 #endif
 }

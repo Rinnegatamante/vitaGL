@@ -921,6 +921,7 @@ void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, in
 void vglSwapBuffers(GLboolean has_commondialog);
 void vglTexImageDepthBuffer(GLenum target);
 void vglUseCachedMem(GLboolean use);
+void vglUseLowPrecision(GLboolean val);
 void vglUseTripleBuffering(GLboolean usage);
 void vglUseVram(GLboolean usage);
 void vglUseVramForUSSE(GLboolean usage);

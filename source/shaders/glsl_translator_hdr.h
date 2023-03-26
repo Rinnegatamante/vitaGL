@@ -73,3 +73,17 @@ varying out float4 gl_Position : POSITION;
 varying out float4 gl_FragColor : COLOR;
 #endif
 )";
+
+const char *glsl_precision_hdr =
+R"(#define float half
+#define float2 half2
+#define float3 half3
+#define float4 half4
+#define float2x2 half2x2
+#define float3x3 half3x3
+#define float4x4 half4x4
+#define int short
+#define int2 short2
+#define int3 short3
+#define int4 short4
+)";
