@@ -1455,7 +1455,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 				char *str2 = strcasestr(text, "texture");
 				while (str2) {
 					char *str2_end = str2 + 7;
-					if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t') {
+					if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t' || *(str2 - 1) == '(') {
 						while (*str2_end == ' ' || *str2_end == '\t') {
 							str2_end++;
 						}
@@ -1557,7 +1557,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 						str2 = strcasestr(t, "texture");
 						while (str2) {
 							char *str2_end = str2 + 7;
-							if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t') {
+							if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t' || *(str2 - 1) == '(') {
 								while (*str2_end == ' ' || *str2_end == '\t') {
 									str2_end++;
 								}
