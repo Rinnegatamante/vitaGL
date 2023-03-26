@@ -33,7 +33,6 @@ inline int2 vglMul(int2 v1, int v2) { return v1 * v2; }
 #define samplerCube samplerCUBE
 inline float4 glslTexture2D(sampler2D x, float2 s) { return tex2D(x,s); }
 inline float4 glslTexture2D(sampler2D x, float3 s) { return tex2D(x,s); }
-inline float4 glslTexture2D(samplerCUBE x, float3 s) { return texCUBE(x,s); }
 inline float4 glslTexture2D(sampler2D x, float2 s, float b) { return tex2Dbias(x,float4(s,1,b)); }
 inline float4 textureCube(samplerCUBE x, float3 s) { return texCUBE(x,s); }
 inline float4 textureCube(samplerCUBE x, float4 s) { return texCUBE(x,s); }
