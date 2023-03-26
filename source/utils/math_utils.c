@@ -171,7 +171,7 @@ int matrix3x3_invert(matrix3x3 out, const matrix3x3 in) {
 
 	det = 1.f / det;
 
-	for(i = 0; i < 16; i++)
+	for(i = 0; i < 9; i++)
 		invOut[i] = inv[i] * det;
 	
 	return 1;
