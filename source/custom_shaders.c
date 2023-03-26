@@ -21,6 +21,8 @@
  * Implementation for custom shaders feature
  */
 
+#define _GNU_SOURCE
+#include <string.h>
 #include "shared.h"
 
 #ifdef HAVE_GLSL_TRANSLATOR

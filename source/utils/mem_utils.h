@@ -26,10 +26,45 @@
 
 #define SCE_KERNEL_MAX_MAIN_CDIALOG_MEM_SIZE 0x8C6000
 
+// Debug flags
+//#define DEBUG_MEMCPY // Enable this to use newlib memcpy in order to have proper trace info in coredumps
+
+#ifdef DEBUG_MEMCPY
+#define vgl_fast_memcpy memcpy
+#else
+#define vgl_fast_memcpy sceClibMemcpy
+#endif
+
+extern GLboolean use_vram; // Flag for VRAM usage for allocations
+
 // Support for older vitasdk versions for CI based on ancient builds
 #ifndef SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_NC_RW
 #define SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_NC_RW 0x0CA08060
 #define SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_RW 0x0CA0D060
+#endif
+
+// Garbage collector related stuffs
+extern void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
+extern void *frame_rt_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_RENDERTARGETS_LIST_SIZE]; // Purge list for rendertargets
+extern int frame_purge_idx; // Index for currently populatable purge list
+extern int frame_elem_purge_idx; // Index for currently populatable purge list element
+extern int frame_rt_purge_idx; // Index for currently populatable purge list rendertarget
+
+// Macro to mark a pointer or a rendertarget as dirty for garbage collection
+#define markAsDirty(x) frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x
+#ifdef HAVE_SHARED_RENDERTARGETS
+typedef struct {
+	SceGxmRenderTarget *rt;
+	int w;
+	int h;
+	int ref_count;
+	int max_refs;
+} render_target;
+void __markRtAsDirty(render_target *rt);
+#define _markRtAsDirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
+#define markRtAsDirty(x) __markRtAsDirty((render_target *)x)
+#else
+#define markRtAsDirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
 #endif
 
 void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_t size_cdlg);
@@ -45,6 +80,17 @@ void *vgl_realloc(void *ptr, size_t size);
 void vgl_free(void *ptr);
 
 // Helper function for fastest memory copy on uncached mem
-void vgl_memcpy(void *dst, const void *src, size_t size);
+static inline __attribute__((always_inline)) void vgl_memcpy(void *dst, const void *src, size_t size) {
+#ifndef DEBUG_MEMCPY
+#ifndef DISABLE_DMAC
+	if (size >= 0x2000 && (uint32_t)src < 0x81000000 && (uint32_t)dst < 0x81000000)
+		sceDmacMemcpy(dst, src, size);
+	else
+#endif
+		vgl_fast_memcpy(dst, src, size);
+#else
+	memcpy(dst, src, size);
+#endif
+}
 
 #endif
