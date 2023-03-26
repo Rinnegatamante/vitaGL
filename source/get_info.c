@@ -121,7 +121,7 @@ const GLubyte *glGetString(GLenum name) {
 		}
 		return extension;
 	case GL_SHADING_LANGUAGE_VERSION: // Supported shading language version
-#ifdef HAVE_GLSL_SUPPORT
+#ifdef HAVE_GLSL_TRANSLATOR
 		return "1.00 ES";
 #else
 		return "2.00 NVIDIA via Cg compiler";
