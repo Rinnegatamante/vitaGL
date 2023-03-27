@@ -302,7 +302,7 @@ int tex_format_to_alignment(SceGxmTextureFormat format) {
 }
 
 void tex_convert(uint32_t w, uint32_t h, const void *src_data, void *dst_data, uint8_t src_bpp, uint8_t bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), GLboolean fast_store, int unpack_row_len) {
-	int aligned_w = ALIGN(w, 8);
+	uint32_t aligned_w = ALIGN(w, 8);
 	uint32_t src_stride = unpack_row_len ? (unpack_row_len * bpp) : (w * bpp);
 	uint32_t dst_stride = aligned_w * bpp;
 	uint8_t *src;
