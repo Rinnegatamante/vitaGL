@@ -375,6 +375,8 @@ typedef struct {
 // Framebuffer struct
 typedef struct {
 	GLboolean active;
+	GLboolean is_float;
+	GLboolean is_depth_hidden;
 	SceGxmRenderTarget *target;
 	SceGxmColorSurface colorbuffer;
 	SceGxmDepthStencilSurface depthbuffer;
@@ -385,8 +387,6 @@ typedef struct {
 	void *data;
 	uint32_t data_type;
 	texture *tex;
-	GLboolean is_float;
-	GLboolean is_depth_hidden;
 } framebuffer;
 
 // Renderbuffer struct
