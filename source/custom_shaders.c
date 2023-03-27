@@ -3418,7 +3418,8 @@ void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum typ
 #endif
 	strcpy(glsl_custom_bindings[glsl_custom_bindings_num].name, varying);
 	glsl_custom_bindings[glsl_custom_bindings_num].idx = index;
-	glsl_custom_bindings[glsl_custom_bindings_num++].type = type;
+	glsl_custom_bindings[glsl_custom_bindings_num].type = type;
+	glsl_custom_bindings[glsl_custom_bindings_num++].ref_idx = glsl_current_ref_idx;
 #endif
 }
 
