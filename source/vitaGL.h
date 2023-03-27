@@ -882,6 +882,7 @@ typedef enum {
 } vglMemType;
 
 typedef enum {
+	VGL_TYPE_NONE,
 	VGL_TYPE_TEXCOORD,
 	VGL_TYPE_COLOR,
 	VGL_TYPE_FOG
