@@ -309,7 +309,7 @@ void tex_convert(uint32_t w, uint32_t h, const void *src_data, void *dst_data, u
 	uint8_t *dst;
 	int i, j;
 	if (fast_store) { // Internal Format and Data Format are the same, we can just use vgl_fast_memcpy for better performance
-		if (aligned_w == w && (!unpack_row_len || unpack_row_len == w)) // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
+		if (src_stride == dst_stride) // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
 			vgl_fast_memcpy(dst_data, src, w * bpp);
 		else {
 			for (i = 0; i < h; i++) {
