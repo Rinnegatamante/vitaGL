@@ -33,14 +33,17 @@
 typedef struct {
 	char name[64];
 	int idx;
+	int ref_idx;
 	GLenum type;
 } glsl_sema_bind;
 glsl_sema_bind glsl_custom_bindings[MAX_CUSTOM_BINDINGS];
 int glsl_custom_bindings_num = 0;
+int glsl_current_ref_idx = 0;
 char glsl_texcoords_binds[MAX_CG_TEXCOORD_ID][64];
 GLboolean glsl_texcoords_used[MAX_CG_TEXCOORD_ID];
 GLboolean glsl_is_first_shader = GL_TRUE;
 GLboolean glsl_precision_low = GL_FALSE;
+GLenum glsl_sema_mode = VGL_MODE_SHADER_PAIR;
 GLenum prev_shader_type = GL_NONE;
 
 #define glsl_get_existing_texcoord_bind(idx, s) \
@@ -74,6 +77,398 @@ GLenum prev_shader_type = GL_NONE;
 		txt = out; \
 		type = strstr(txt + strlen(glsl_hdr), m); \
 	}
+
+void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFrontFacing) {
+	char newline[128];
+	int idx;
+	if (type == GL_VERTEX_SHADER) {
+		// Manually patching attributes and varyings
+		char *str = strstr(text, "attribute");
+		while (str && !(str[9] == ' ' || str[9] == '\t')) {
+			str = strstr(str + 9, "attribute");
+		}
+		char *str2 = strstr(text, "varying");
+		while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
+			str2 = strstr(str2 + 7, "varying");
+		}
+		while (str || str2) {
+			char *t;
+			if (!str)
+				t = str2;
+			else if (!str2)
+				t = str;
+			else
+				t = min(str, str2);
+			if (t == str) { // Attribute
+				// Replace attribute with 'vgl in' that will get extended in a 'varying in' by the preprocessor
+				sceClibMemcpy(t, "vgl in    ", 10);
+				str = strstr(t, "attribute");
+				while (str && !(str[9] == ' ' || str[9] == '\t')) {
+					str = strstr(str + 9, "attribute");
+				}
+			} else { // Varying
+				char *end = strstr(t, ";");
+				char *start = end;
+				while (*start != ' ' && *start != '\t') {
+					start--;
+				}
+				start++;
+				end[0] = 0;
+				idx = -1;
+				// Check first if the varying has a known binding
+				for (int j = 0; j < glsl_custom_bindings_num; j++) {
+					if (!strcmp(glsl_custom_bindings[j].name, start)) {
+						idx = j;
+					}
+				}
+				if (idx != -1) {
+					switch (glsl_custom_bindings[idx].type) {
+					case VGL_TYPE_TEXCOORD:
+						strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
+						glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+						sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_COLOR:
+						sprintf(newline, "COUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_FOG:
+						sprintf(newline, "FOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						break;
+					}
+				} else {
+					if (glsl_is_first_shader) {
+						// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
+						glsl_get_existing_texcoord_bind(idx, start);
+						if (idx == -1) {
+							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
+								sprintf(newline, "VOUT(%s,\v);", str2 + 8);
+							} else {
+								glsl_reserve_texcoord_bind(idx, start);
+#ifndef SKIP_ERROR_HANDLING
+								if (idx == -1) {
+									idx = 9;
+									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+								}
+#endif
+								sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+							}
+						} else
+							sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);							
+					} else {
+						// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
+						glsl_get_existing_texcoord_bind(idx, start);
+						if (idx == -1) {
+							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
+								sprintf(newline, "VOUT(%s,\v);", str2 + 8);
+							} else {
+								glsl_reserve_texcoord_bind(idx, start)
+#ifndef SKIP_ERROR_HANDLING
+								if (idx == -1) {
+									idx = 9;
+									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+								}
+#endif
+								vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, idx);
+								sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+							}
+						} else
+							sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+					}
+				}
+				sceClibMemcpy(str2, newline, strlen(newline));
+				str2 = strstr(t, "varying");
+				while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
+					str2 = strstr(str2 + 7, "varying");
+				}
+			}
+		}
+	} else {
+		// Manually patching gl_FrontFacing usage
+		if (hasFrontFacing) {
+			char *str = strstr(text, "gl_FrontFacing");
+			while (str) {
+				sceClibMemcpy(str, "(vgl_Face > 0)", 14);
+				str = strstr(str, "gl_FrontFacing");
+			}
+		}
+		// Manually patching varyings and "texture" uniforms
+		char *str = strstr(text, "varying");
+		while (str && !(str[7] == ' ' || str[7] == '\t')) {
+			str = strstr(str + 1, "varying");
+		}
+		char *str2 = strcasestr(text, "texture");
+		while (str2) {
+			char *str2_end = str2 + 7;
+			if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t' || *(str2 - 1) == '(') {
+				while (*str2_end == ' ' || *str2_end == '\t') {
+					str2_end++;
+				}
+				if (*str2_end == ',' || *str2_end == ';')
+					break;
+			}
+			str2 = strcasestr(str2_end, "texture");
+		}
+		while (str || str2) {
+			char *t;
+			if (!str)
+				t = str2;
+			else if (!str2)
+				t = str;
+			else
+				t = min(str, str2);
+			if (t == str) { // Varying
+				char *end = strstr(str, ";");
+				char *start = end;
+				while (*start != ' ' && *start != '\t') {
+					start--;
+				}
+				start++;
+				end[0] = 0;
+				idx = -1;
+				// Check first if the varying has a known binding
+				for (int j = 0; j < glsl_custom_bindings_num; j++) {
+					if (!strcmp(glsl_custom_bindings[j].name, start)) {
+						idx = j;
+					}
+				}
+				if (idx != -1) {
+					switch (glsl_custom_bindings[idx].type) {
+					case VGL_TYPE_TEXCOORD:
+						strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
+						glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+						sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_COLOR:
+						sprintf(newline, "CIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_FOG:
+						sprintf(newline, "FIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					}
+				} else {
+					if (glsl_is_first_shader) {
+						// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
+						glsl_get_existing_texcoord_bind(idx, start);
+						if (idx == -1) {
+							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
+								sprintf(newline, "VIN(%s, \v);", str + 8);
+							} else {
+								glsl_reserve_texcoord_bind(idx, start);
+#ifndef SKIP_ERROR_HANDLING
+								if (idx == -1) {
+									idx = 9;
+									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+								}
+#endif
+								sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+							}
+						} else
+							sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+					} else {
+						// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
+						glsl_get_existing_texcoord_bind(idx, start);
+						if (idx == -1) {
+							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
+								sprintf(newline, "VIN(%s, \v);", str + 8);
+							} else {
+								glsl_reserve_texcoord_bind(idx, start)
+#ifndef SKIP_ERROR_HANDLING
+								if (idx == -1) {
+									idx = 9;
+									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+								}
+#endif
+								vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, idx);
+								sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+							}
+						} else
+							sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+					}
+				}
+				sceClibMemcpy(str, newline, strlen(newline));
+				str = strstr(str, "varying");
+				while (str && !(str[7] == ' ' || str[7] == '\t')) {
+					str = strstr(str + 7, "varying");
+				}
+			} else { // "texture" Uniform
+				if (t[0] == 't')
+					sceClibMemcpy(t, "vgl_tex", 7);
+				else
+					sceClibMemcpy(t, "Vgl_tex", 7);
+				str2 = strcasestr(t, "texture");
+				while (str2) {
+					char *str2_end = str2 + 7;
+					if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t' || *(str2 - 1) == '(') {
+						while (*str2_end == ' ' || *str2_end == '\t') {
+							str2_end++;
+						}
+						if (*str2_end == ',' || *str2_end == ';')
+							break;
+					}
+					str2 = strcasestr(str2_end, "texture");
+				}
+			}
+		}
+	}
+}
+
+void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacing) {
+	char newline[128];
+	int idx;
+	if (type == GL_VERTEX_SHADER) {
+		// Manually patching attributes and varyings
+		char *str = strstr(text, "attribute");
+		while (str && !(str[9] == ' ' || str[9] == '\t')) {
+			str = strstr(str + 9, "attribute");
+		}
+		char *str2 = strstr(text, "varying");
+		while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
+			str2 = strstr(str2 + 7, "varying");
+		}
+		while (str || str2) {
+			char *t;
+			if (!str)
+				t = str2;
+			else if (!str2)
+				t = str;
+			else
+				t = min(str, str2);
+			if (t == str) { // Attribute
+				// Replace attribute with 'vgl in' that will get extended in a 'varying in' by the preprocessor
+				sceClibMemcpy(t, "vgl in    ", 10);
+				str = strstr(t, "attribute");
+				while (str && !(str[9] == ' ' || str[9] == '\t')) {
+					str = strstr(str + 9, "attribute");
+				}
+			} else { // Varying
+				char *end = strstr(t, ";");
+				char *start = end;
+				while (*start != ' ' && *start != '\t') {
+					start--;
+				}
+				start++;
+				end[0] = 0;
+				idx = -1;
+				// Check first if the varying has a known binding
+				for (int j = 0; j < glsl_custom_bindings_num; j++) {
+					if (!strcmp(glsl_custom_bindings[j].name, start)) {
+						glsl_custom_bindings[j].ref_idx = glsl_current_ref_idx;
+						idx = j;
+					}
+				}
+				if (idx != -1) {
+					switch (glsl_custom_bindings[idx].type) {
+					case VGL_TYPE_TEXCOORD:
+						sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_COLOR:
+						sprintf(newline, "COUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_FOG:
+						sprintf(newline, "FOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						break;
+					}
+				} else {
+					sprintf(newline, "VOUT(%s,\v);", str2 + 8);
+				}
+				sceClibMemcpy(str2, newline, strlen(newline));
+				str2 = strstr(t, "varying");
+				while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
+					str2 = strstr(str2 + 7, "varying");
+				}
+			}
+		}
+	} else {
+		// Manually patching gl_FrontFacing usage
+		if (hasFrontFacing) {
+			char *str = strstr(text, "gl_FrontFacing");
+			while (str) {
+				sceClibMemcpy(str, "(vgl_Face > 0)", 14);
+				str = strstr(str, "gl_FrontFacing");
+			}
+		}
+		// Manually patching varyings and "texture" uniforms
+		char *str = strstr(text, "varying");
+		while (str && !(str[7] == ' ' || str[7] == '\t')) {
+			str = strstr(str + 1, "varying");
+		}
+		char *str2 = strcasestr(text, "texture");
+		while (str2) {
+			char *str2_end = str2 + 7;
+			if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t' || *(str2 - 1) == '(') {
+				while (*str2_end == ' ' || *str2_end == '\t') {
+					str2_end++;
+				}
+				if (*str2_end == ',' || *str2_end == ';')
+					break;
+			}
+			str2 = strcasestr(str2_end, "texture");
+		}
+		while (str || str2) {
+			char *t;
+			if (!str)
+				t = str2;
+			else if (!str2)
+				t = str;
+			else
+				t = min(str, str2);
+			if (t == str) { // Varying
+				char *end = strstr(str, ";");
+				char *start = end;
+				while (*start != ' ' && *start != '\t') {
+					start--;
+				}
+				start++;
+				end[0] = 0;
+				idx = -1;
+				// Check first if the varying has a known binding
+				for (int j = 0; j < glsl_custom_bindings_num; j++) {
+					if (!strcmp(glsl_custom_bindings[j].name, start)) {
+						glsl_custom_bindings[j].ref_idx = glsl_current_ref_idx;
+						idx = j;
+					}
+				}
+				if (idx != -1) {
+					switch (glsl_custom_bindings[idx].type) {
+					case VGL_TYPE_TEXCOORD:
+						sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_COLOR:
+						sprintf(newline, "CIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_FOG:
+						sprintf(newline, "FIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					}
+				} else {
+					sprintf(newline, "VIN(%s, \v);", str + 8);
+				}
+				sceClibMemcpy(str, newline, strlen(newline));
+				str = strstr(str, "varying");
+				while (str && !(str[7] == ' ' || str[7] == '\t')) {
+					str = strstr(str + 7, "varying");
+				}
+			} else { // "texture" Uniform
+				if (t[0] == 't')
+					sceClibMemcpy(t, "vgl_tex", 7);
+				else
+					sceClibMemcpy(t, "Vgl_tex", 7);
+				str2 = strcasestr(t, "texture");
+				while (str2) {
+					char *str2_end = str2 + 7;
+					if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t' || *(str2 - 1) == '(') {
+						while (*str2_end == ' ' || *str2_end == '\t') {
+							str2_end++;
+						}
+						if (*str2_end == ',' || *str2_end == ';')
+							break;
+					}
+					str2 = strcasestr(str2_end, "texture");
+				}
+			}
+		}
+	}
+}
 
 /* 
  * Experimental function to add static keyword to all global variables:
@@ -1266,11 +1661,14 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	if (glsl_precision_low)
 		size += strlen(glsl_precision_hdr);
 #ifndef SKIP_ERROR_HANDLING
-	if (prev_shader_type == s->type) {
-		vgl_log("%s:%d %s: Unexpected shader type, translation may be imperfect.\n", __FILE__, __LINE__, __func__);
-		glsl_is_first_shader = GL_TRUE;
-		sceClibMemset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
-	}
+	if (glsl_sema_mode == VGL_MODE_SHADER_PAIR) {
+		if (prev_shader_type == s->type) {
+			vgl_log("%s:%d %s: Unexpected shader type, translation may be imperfect.\n", __FILE__, __LINE__, __func__);
+			glsl_is_first_shader = GL_TRUE;
+			sceClibMemset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
+		}
+	} else
+		glsl_current_ref_idx++;
 #endif
 	if (s->type == GL_VERTEX_SHADER)
 		size += strlen("#define VGL_IS_VERTEX_SHADER\n");
@@ -1362,242 +1760,22 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 				str[0] = str[1] = '/';
 				str = strstr(str, "precision ");
 			}
-			char newline[128];
-			int idx;
-			if (s->type == GL_VERTEX_SHADER) {
-				// Manually patching attributes and varyings
-				char *str = strstr(text, "attribute");
-				while (str && !(str[9] == ' ' || str[9] == '\t')) {
-					str = strstr(str + 9, "attribute");
-				}
-				char *str2 = strstr(text, "varying");
-				while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
-					str2 = strstr(str2 + 7, "varying");
-				}
-				while (str || str2) {
-					char *t;
-					if (!str)
-						t = str2;
-					else if (!str2)
-						t = str;
-					else
-						t = min(str, str2);
-					if (t == str) { // Attribute
-						// Replace attribute with 'vgl in' that will get extended in a 'varying in' by the preprocessor
-						sceClibMemcpy(t, "vgl in    ", 10);
-						str = strstr(t, "attribute");
-						while (str && !(str[9] == ' ' || str[9] == '\t')) {
-							str = strstr(str + 9, "attribute");
-						}
-					} else { // Varying
-						char *end = strstr(t, ";");
-						char *start = end;
-						while (*start != ' ' && *start != '\t') {
-							start--;
-						}
-						start++;
-						end[0] = 0;
-						idx = -1;
-						// Check first if the varying has a known binding
-						for (int j = 0; j < glsl_custom_bindings_num; j++) {
-							if (!strcmp(glsl_custom_bindings[j].name, start)) {
-								idx = j;
-							}
-						}
-						if (idx != -1) {
-							switch (glsl_custom_bindings[idx].type) {
-							case VGL_TYPE_TEXCOORD:
-								strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
-								glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
-								sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
-								break;
-							case VGL_TYPE_COLOR:
-								sprintf(newline, "COUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
-								break;
-							case VGL_TYPE_FOG:
-								sprintf(newline, "FOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
-								break;
-							}
-						} else {
-							if (glsl_is_first_shader) {
-								// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
-								glsl_get_existing_texcoord_bind(idx, start);
-								if (idx == -1) {
-									if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
-										sprintf(newline, "VOUT(%s,\v);", str2 + 8);
-									} else {
-										glsl_reserve_texcoord_bind(idx, start);
-#ifndef SKIP_ERROR_HANDLING
-										if (idx == -1) {
-											idx = 9;
-											vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
-										}
-#endif
-										sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
-									}
-								} else
-									sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);							
-							} else {
-								// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
-								glsl_get_existing_texcoord_bind(idx, start);
-								if (idx == -1) {
-									if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
-										sprintf(newline, "VOUT(%s,\v);", str2 + 8);
-									} else {
-										glsl_reserve_texcoord_bind(idx, start)
-#ifndef SKIP_ERROR_HANDLING
-										if (idx == -1) {
-											idx = 9;
-											vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
-										}
-#endif
-										vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, idx);
-										sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
-									}
-								} else
-									sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
-							}
-						}
-						sceClibMemcpy(str2, newline, strlen(newline));
-						str2 = strstr(t, "varying");
-						while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
-							str2 = strstr(str2 + 7, "varying");
-						}
-					}
-				}
-			} else {
-				// Manually patching gl_FrontFacing usage
-				if (hasFrontFacing) {
-					char *str = strstr(text, "gl_FrontFacing");
-					while (str) {
-						sceClibMemcpy(str, "(vgl_Face > 0)", 14);
-						str = strstr(str, "gl_FrontFacing");
-					}
-				}
-				// Manually patching varyings and "texture" uniforms
-				char *str = strstr(text, "varying");
-				while (str && !(str[7] == ' ' || str[7] == '\t')) {
-					str = strstr(str + 1, "varying");
-				}
-				char *str2 = strcasestr(text, "texture");
-				while (str2) {
-					char *str2_end = str2 + 7;
-					if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t' || *(str2 - 1) == '(') {
-						while (*str2_end == ' ' || *str2_end == '\t') {
-							str2_end++;
-						}
-						if (*str2_end == ',' || *str2_end == ';')
-							break;
-					}
-					str2 = strcasestr(str2_end, "texture");
-				}
-				while (str || str2) {
-					char *t;
-					if (!str)
-						t = str2;
-					else if (!str2)
-						t = str;
-					else
-						t = min(str, str2);
-					if (t == str) { // Varying
-						char *end = strstr(str, ";");
-						char *start = end;
-						while (*start != ' ' && *start != '\t') {
-							start--;
-						}
-						start++;
-						end[0] = 0;
-						idx = -1;
-						// Check first if the varying has a known binding
-						for (int j = 0; j < glsl_custom_bindings_num; j++) {
-							if (!strcmp(glsl_custom_bindings[j].name, start)) {
-								idx = j;
-							}
-						}
-						if (idx != -1) {
-							switch (glsl_custom_bindings[idx].type) {
-							case VGL_TYPE_TEXCOORD:
-								strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
-								glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
-								sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
-								break;
-							case VGL_TYPE_COLOR:
-								sprintf(newline, "CIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
-								break;
-							case VGL_TYPE_FOG:
-								sprintf(newline, "FIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
-								break;
-							}
-						} else {
-							if (glsl_is_first_shader) {
-								// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
-								glsl_get_existing_texcoord_bind(idx, start);
-								if (idx == -1) {
-									if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
-										sprintf(newline, "VIN(%s, \v);", str + 8);
-									} else {
-										glsl_reserve_texcoord_bind(idx, start);
-#ifndef SKIP_ERROR_HANDLING
-										if (idx == -1) {
-											idx = 9;
-											vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
-										}
-#endif
-										sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
-									}
-								} else
-									sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
-							} else {
-								// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
-								glsl_get_existing_texcoord_bind(idx, start);
-								if (idx == -1) {
-									if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
-										sprintf(newline, "VIN(%s, \v);", str + 8);
-									} else {
-										glsl_reserve_texcoord_bind(idx, start)
-#ifndef SKIP_ERROR_HANDLING
-										if (idx == -1) {
-											idx = 9;
-											vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
-										}
-#endif
-										vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, idx);
-										sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
-									}
-								} else
-									sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
-							}
-						}
-						sceClibMemcpy(str, newline, strlen(newline));
-						str = strstr(str, "varying");
-						while (str && !(str[7] == ' ' || str[7] == '\t')) {
-							str = strstr(str + 7, "varying");
-						}
-					} else { // "texture" Uniform
-						if (t[0] == 't')
-							sceClibMemcpy(t, "vgl_tex", 7);
-						else
-							sceClibMemcpy(t, "Vgl_tex", 7);
-						str2 = strcasestr(t, "texture");
-						while (str2) {
-							char *str2_end = str2 + 7;
-							if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t' || *(str2 - 1) == '(') {
-								while (*str2_end == ' ' || *str2_end == '\t') {
-									str2_end++;
-								}
-								if (*str2_end == ',' || *str2_end == ';')
-									break;
-							}
-							str2 = strcasestr(str2_end, "texture");
-						}
-					}
-				}
+			switch (glsl_sema_mode) {
+			case VGL_MODE_SHADER_PAIR:
+				glsl_translate_with_shader_pair(text, s->type, hasFrontFacing);
+				break;
+			case VGL_MODE_GLOBAL:
+				glsl_translate_with_global(text, s->type, hasFrontFacing);
+				break;
+			default:
+				vgl_log("%s:%d %s: Invalid semantic binding resolution mode supplied.\n", __FILE__, __LINE__, __func__);
+				break;
 			}
 #endif
 		}
 #ifdef HAVE_GLSL_TRANSLATOR
 		// Replacing all marked varying with actual bindings if custom bindings are used
-		if (glsl_custom_bindings_num > 0) {
+		if (glsl_custom_bindings_num > 0 || glsl_sema_mode == VGL_MODE_GLOBAL) {
 			char *str = strstr(s->source, "\v");
 			while (str) {
 				char *start = str;
@@ -1611,7 +1789,24 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 				start++;
 				int idx = -1;
 				*end = 0;
-				glsl_reserve_texcoord_bind(idx, start);
+				if (glsl_sema_mode == VGL_MODE_GLOBAL) {
+					for (int j = 0; j < MAX_CG_TEXCOORD_ID; j++) {
+						idx = j;
+						for (int i = 0; i < glsl_custom_bindings_num; i++) {
+							// Check if amongst the currently known bindings, used in the shader, there's one mapped to the attempted index
+							if (glsl_custom_bindings[i].type == VGL_TYPE_TEXCOORD && glsl_custom_bindings[i].idx == j && glsl_custom_bindings[i].ref_idx == glsl_current_ref_idx) {
+								idx = -1;
+								break;
+							}
+						}
+						if (idx != -1)
+							break;
+					}
+					if (idx != -1)
+						vglAddSemanticBinding(start, idx, VGL_TYPE_TEXCOORD);
+				} else {
+					glsl_reserve_texcoord_bind(idx, start);
+				}
 				*end = ',';
 #ifndef SKIP_ERROR_HANDLING
 				if (idx == -1) {
@@ -1643,9 +1838,11 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	
 #ifdef HAVE_GLSL_TRANSLATOR
 	// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
-	glsl_is_first_shader = !glsl_is_first_shader;
-	if (glsl_is_first_shader)
-		sceClibMemset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
+	if (glsl_sema_mode == VGL_MODE_SHADER_PAIR) {
+		glsl_is_first_shader = !glsl_is_first_shader;
+		if (glsl_is_first_shader)
+			sceClibMemset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
+	}
 	s->size = strlen(s->source);
 #else
 	s->size = size - 1;
@@ -3228,5 +3425,11 @@ void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum typ
 void vglUseLowPrecision(GLboolean val) {
 #ifdef HAVE_GLSL_TRANSLATOR
 	glsl_precision_low = val;
+#endif
+}
+
+void vglSetSemanticBindingMode(GLenum mode) {
+#ifdef HAVE_GLSL_TRANSLATOR
+	glsl_sema_mode = mode;
 #endif
 }

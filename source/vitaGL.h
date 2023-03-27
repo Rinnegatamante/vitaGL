@@ -888,6 +888,11 @@ typedef enum {
 	VGL_TYPE_FOG
 } vglSemanticType;
 
+typedef enum {
+	VGL_MODE_SHADER_PAIR,
+	VGL_MODE_GLOBAL
+} vglSemanticMode;
+
 // vgl*
 void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum type);
 void *vglAlloc(uint32_t size, vglMemType type);
@@ -913,6 +918,7 @@ void *vglRealloc(void *ptr, uint32_t size);
 void vglSetDisplayCallback(void (*cb)(void *framebuf));
 void vglSetFragmentBufferSize(uint32_t size);
 void vglSetParamBufferSize(uint32_t size);
+void vglSetSemanticBindingMode(GLenum mode);
 void vglSetUSSEBufferSize(uint32_t size);
 void vglSetVDMBufferSize(uint32_t size);
 void vglSetVertexBufferSize(uint32_t size);
