@@ -42,10 +42,16 @@ typedef struct {
 #ifndef TEXTURES_SPEEDHACK
 	GLboolean used;
 #endif
+	uint8_t status;
+	uint8_t mip_count;
+	uint8_t ref_counter;
+	uint8_t faces_counter;
+	GLboolean use_mips;
+	GLboolean dirty;
+	GLboolean overridden;
 	SceGxmTexture gxm_tex;
 	void *data;
 	void *palette_data;
-	uint8_t status;
 	uint32_t type;
 	void (*write_cb)(void *, uint32_t);
 	SceGxmTextureFilter min_filter;
@@ -54,12 +60,6 @@ typedef struct {
 	SceGxmTextureAddrMode v_mode;
 	SceGxmTextureMipFilter mip_filter;
 	uint32_t lod_bias;
-	uint8_t mip_count;
-	GLboolean use_mips;
-	uint8_t ref_counter;
-	uint8_t faces_counter;
-	GLboolean dirty;
-	GLboolean overridden;
 #ifdef HAVE_UNPURE_TEXTURES
 	int8_t mip_start;
 #endif

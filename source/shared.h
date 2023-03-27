@@ -362,9 +362,9 @@ typedef union combinerState {
 // Texture unit struct
 typedef struct {
 	uint8_t state;
-	matrix4x4 texture_matrix_stack[GENERIC_STACK_DEPTH];
 	uint8_t texture_stack_counter;
-	int env_mode;
+	uint8_t env_mode;
+	matrix4x4 texture_matrix_stack[GENERIC_STACK_DEPTH];
 	combinerState combiner;
 	vector4f env_color;
 	float rgb_scale;
@@ -375,6 +375,8 @@ typedef struct {
 // Framebuffer struct
 typedef struct {
 	GLboolean active;
+	GLboolean is_float;
+	GLboolean is_depth_hidden;
 	SceGxmRenderTarget *target;
 	SceGxmColorSurface colorbuffer;
 	SceGxmDepthStencilSurface depthbuffer;
@@ -385,8 +387,6 @@ typedef struct {
 	void *data;
 	uint32_t data_type;
 	texture *tex;
-	GLboolean is_float;
-	GLboolean is_depth_hidden;
 } framebuffer;
 
 // Renderbuffer struct
@@ -403,8 +403,8 @@ typedef struct {
 	SceGxmTextureAddrMode u_mode;
 	SceGxmTextureAddrMode v_mode;
 	SceGxmTextureMipFilter mip_filter;
-	uint32_t lod_bias;
 	GLboolean use_mips;
+	uint32_t lod_bias;
 } sampler;
 
 // Texture environment mode
