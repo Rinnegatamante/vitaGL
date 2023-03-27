@@ -361,6 +361,7 @@ static const struct {
 	{"vglSetDisplayCallback", (void *)vglSetDisplayCallback},
 	{"vglSetFragmentBufferSize", (void *)vglSetFragmentBufferSize},
 	{"vglSetParamBufferSize", (void *)vglSetParamBufferSize},
+	{"vglSetSemanticBindingMode", (void *)vglSetSemanticBindingMode},
 	{"vglSetUSSEBufferSize", (void *)vglSetUSSEBufferSize},
 	{"vglSetVDMBufferSize", (void *)vglSetVDMBufferSize},
 	{"vglSetVertexBufferSize", (void *)vglSetVertexBufferSize},
