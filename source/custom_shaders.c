@@ -356,10 +356,10 @@ typedef struct {
 	shader *vshader;
 	shader *fshader;
 	uint8_t status;
-	uniform *vert_texunits[TEXTURE_IMAGE_UNITS_NUM];
-	uniform *frag_texunits[TEXTURE_IMAGE_UNITS_NUM];
 	uint8_t max_frag_texunit_idx;
 	uint8_t max_vert_texunit_idx;
+	uniform *vert_texunits[TEXTURE_IMAGE_UNITS_NUM];
+	uniform *frag_texunits[TEXTURE_IMAGE_UNITS_NUM];
 	SceGxmVertexAttribute attr[VERTEX_ATTRIBS_NUM];
 	SceGxmVertexStream stream[VERTEX_ATTRIBS_NUM];
 	uint8_t attr_map[VERTEX_ATTRIBS_NUM];
