@@ -901,7 +901,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 					ptr += bpp;
 				}
 				if (unpack_row_len) {
-					data = pixels + unpack_row_len * bpp;
+					data = (uint8_t *)pixels + unpack_row_len * bpp;
 					pixels = data;
 				}
 				ptr = ptr_line + stride;
