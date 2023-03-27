@@ -310,7 +310,7 @@ void tex_convert(uint32_t w, uint32_t h, const void *src_data, void *dst_data, u
 	int i, j;
 	if (fast_store) { // Internal Format and Data Format are the same, we can just use vgl_fast_memcpy for better performance
 		if (src_stride == dst_stride) // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
-			vgl_fast_memcpy(dst_data, src, w * bpp);
+			vgl_fast_memcpy(dst_data, src, w * h * bpp);
 		else {
 			for (i = 0; i < h; i++) {
 				src = (uint8_t *)src_data + src_stride * i;
