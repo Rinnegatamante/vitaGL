@@ -301,15 +301,13 @@ int tex_format_to_alignment(SceGxmTextureFormat format) {
 	}
 }
 
-void tex_convert(uint32_t w, uint32_t h, const void *src_data, void *dst_data, uint8_t src_bpp, uint8_t bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), GLboolean fast_store, int unpack_row_len) {
-	uint32_t aligned_w = ALIGN(w, 8);
-	uint32_t src_stride = unpack_row_len ? (unpack_row_len * bpp) : (w * bpp);
-	uint32_t dst_stride = aligned_w * bpp;
+void gpu_store_texture_data(uint32_t orig_w, uint32_t w, uint32_t h, uint32_t src_stride, const void *src_data, void *dst_data, uint8_t src_bpp, uint8_t bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), GLboolean fast_store, GLint xoffset) {
+	uint32_t dst_stride = ALIGN(orig_w, 8) * bpp;
 	uint8_t *src;
 	uint8_t *dst;
 	int i, j;
 	if (fast_store) { // Internal Format and Data Format are the same, we can just use vgl_fast_memcpy for better performance
-		if (src_stride == dst_stride) // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
+		if (xoffset == 0 && src_stride == dst_stride && src_stride == orig_w * bpp) // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
 			vgl_fast_memcpy(dst_data, src, w * h * bpp);
 		else {
 			for (i = 0; i < h; i++) {
@@ -424,7 +422,8 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	if (texture_data != NULL) {
 		// Initializing texture data buffer
 		if (data != NULL) {
-			tex_convert(w, h, data, texture_data, src_bpp, bpp, read_cb, write_cb, fast_store, 0);
+			uint32_t src_stride = w * bpp;
+			gpu_store_texture_data(w, w, h, src_stride, data, texture_data, src_bpp, bpp, read_cb, write_cb, fast_store, 0);
 		} else
 			sceClibMemset(texture_data, 0, tex_size);
 

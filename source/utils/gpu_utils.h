@@ -89,8 +89,8 @@ void gpu_fragment_usse_free_mapped(void *addr);
 // Calculate bpp for a requested texture format
 int tex_format_to_bytespp(SceGxmTextureFormat format);
 
-// Convert texture between data and internal format
-void tex_convert(uint32_t w, uint32_t h, const void *src_data, void *dst_data, uint8_t src_bpp, uint8_t bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), GLboolean fast_store, int unpack_row_len);
+// Store texture data
+void gpu_store_texture_data(uint32_t orig_w, uint32_t w, uint32_t h, uint32_t src_stride, const void *src_data, void *dst_data, uint8_t src_bpp, uint8_t bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), GLboolean fast_store, GLint xoffset);
 
 // Alloc a texture
 void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), GLboolean fast_store);
