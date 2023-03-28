@@ -30,6 +30,11 @@ inline int4 vglMul(int4 v1, int v2) { return v1 * v2; }
 inline int3 vglMul(int3 v1, int v2) { return v1 * v2; }
 inline int2 vglMul(int2 v1, int v2) { return v1 * v2; }
 #define greaterThanEqual(x, y) (x >= y)
+#define greaterThan(x, y) (x > y)
+#define lessThanEqual(x, y) (x <= y)
+#define lessThan(x, y) (x < y)
+#define equal(x, y) (x == y)
+#define notEqual(x, y) (x != y)
 #define texture2DProj(x,y) tex2Dproj(x,y)
 #define inversesqrt rsqrt
 #define samplerCube samplerCUBE
