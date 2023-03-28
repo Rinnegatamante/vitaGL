@@ -308,7 +308,7 @@ void gpu_store_texture_data(uint32_t orig_w, uint32_t w, uint32_t h, uint32_t sr
 	int i, j;
 	if (fast_store) { // Internal Format and Data Format are the same, we can just use vgl_fast_memcpy for better performance
 		if (xoffset == 0 && src_stride == dst_stride && src_stride == orig_w * bpp) // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
-			vgl_fast_memcpy(dst_data, src, w * h * bpp);
+			vgl_fast_memcpy(dst_data, src_data, w * h * bpp);
 		else {
 			for (i = 0; i < h; i++) {
 				src = (uint8_t *)src_data + src_stride * i;
