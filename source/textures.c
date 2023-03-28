@@ -689,7 +689,6 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	// Calculating start address of requested texture modification
 	uint8_t *texture_data = (uint8_t *)target_texture->data + xoffset * bpp + yoffset * stride;
 	uint8_t data_bpp = 0;
-	int i, j;
 	GLboolean fast_store = GL_FALSE;
 
 #ifndef SKIP_ERROR_HANDLING
