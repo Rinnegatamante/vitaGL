@@ -718,6 +718,100 @@ void glsl_nuke_comments(char *txt) {
 	attributes[i].componentCount = cur_vao->vertex_attrib_size[attr_idx]; \
 	attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 
+#define handleUnpackedAttrib(count) \
+	if (cur_vao->vertex_attrib_state & (1 << attr_idx)) { \
+		if (cur_vao->vertex_attrib_vbo[attr_idx]) { \
+			gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[attr_idx]; \
+			ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[attr_idx]; \
+			gpu_buf->used = GL_TRUE; \
+			attributes[i].offset = 0; \
+		} else { \
+			ptrs[i] = gpu_alloc_mapped_temp(count * streams[i].stride); \
+			vgl_fast_memcpy(ptrs[i], (void *)cur_vao->vertex_attrib_offsets[attr_idx], count * streams[i].stride); \
+			attributes[i].offset = 0; \
+		} \
+	} else { \
+		disableDrawAttrib(i) \
+	}
+	
+#define handleSpeedhackAttrib() \
+	for (int i = 0; i < p->attr_num; i++) { \
+		uint8_t attr_idx = p->attr_map[i]; \
+		attributes[i].regIndex = p->attr[attr_idx].regIndex; \
+		if (cur_vao->vertex_attrib_state & (1 << attr_idx)) { \
+			if (cur_vao->vertex_attrib_vbo[attr_idx]) { \
+				gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[attr_idx]; \
+				ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[attr_idx]; \
+				gpu_buf->used = GL_TRUE; \
+				attributes[i].offset = 0; \
+			} else { \
+				ptrs[i] = (void *)cur_vao->vertex_attrib_offsets[attr_idx]; \
+				attributes[i].offset = 0; \
+			} \
+		} else { \
+			disableDrawAttrib(i) \
+		} \
+	}
+
+#define handlePackedAttrib() \
+	if (cur_vao->vertex_attrib_state & (1 << attr_idx)) { \
+		attributes[i].offset = cur_vao->vertex_attrib_offsets[attr_idx] - cur_vao->vertex_attrib_offsets[p->attr_map[0]]; \
+	} else { \
+		disableDrawAttrib(i) \
+	}
+	
+#define uploadUniforms() \
+	void *buffer; \
+	if (p->vert_uniforms && dirty_vert_unifs) { \
+		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer); \
+		uniform *u = p->vert_uniforms; \
+		while (u) { \
+			if (u->ptr == p->wvp) { \
+				if (mvp_modified) { \
+					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix); \
+					mvp_modified = GL_FALSE; \
+				} \
+				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix); \
+			} else if (u->size > 0 && u->size < 0xFFFFFFFF) \
+				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
+			u = (uniform *)u->chain; \
+		} \
+		dirty_vert_unifs = GL_FALSE; \
+	} \
+	if (p->frag_uniforms && dirty_frag_unifs) { \
+		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer); \
+		uniform *u = p->frag_uniforms; \
+		while (u) { \
+			if (u->size > 0 && u->size < 0xFFFFFFFF) \
+				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
+			u = (uniform *)u->chain; \
+		} \
+		dirty_frag_unifs = GL_FALSE; \
+	}
+	
+#define setupFragProgram() \
+	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float)) { \
+		p->is_fbo_float = is_fbo_float; \
+		p->blend_info.raw = blend_info.raw; \
+		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4); \
+	} \
+	sceGxmSetFragmentProgram(gxm_context, p->fprog);
+	
+#define alignAttributes(attributes, streams) \
+	if (p->has_unaligned_attrs) { \
+		attributes = temp_attributes; \
+		streams = temp_streams; \
+		for (int i = 0; i < p->attr_num; i++) { \
+			uint8_t attr_idx = p->attr_map[i]; \
+			vgl_fast_memcpy(&temp_attributes[i], &cur_vao->vertex_attrib_config[attr_idx], sizeof(SceGxmVertexAttribute)); \
+			vgl_fast_memcpy(&temp_streams[i], &cur_vao->vertex_stream_config[attr_idx], sizeof(SceGxmVertexStream)); \
+			attributes[i].streamIndex = i; \
+		} \
+	} else { \
+		attributes = cur_vao->vertex_attrib_config; \
+		streams = cur_vao->vertex_stream_config; \
+	}
+
 // Internal stuffs
 GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status
 static SceGxmVertexAttribute temp_attributes[VERTEX_ATTRIBS_NUM];
@@ -933,12 +1027,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required and upload fragment program
-	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float)) {
-		p->is_fbo_float = is_fbo_float;
-		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
-	}
-	sceGxmSetFragmentProgram(gxm_context, p->fprog);
+	setupFragProgram();
 
 	// Uploading fragment textures on relative texture units
 	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
@@ -1025,34 +1114,31 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	// Aligning attributes
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
-	if (p->has_unaligned_attrs) {
-		attributes = temp_attributes;
-		streams = temp_streams;
-		for (int i = 0; i < p->attr_num; i++) {
-			uint8_t attr_idx = p->attr_map[i];
-			vgl_fast_memcpy(&temp_attributes[i], &cur_vao->vertex_attrib_config[attr_idx], sizeof(SceGxmVertexAttribute));
-			vgl_fast_memcpy(&temp_streams[i], &cur_vao->vertex_stream_config[attr_idx], sizeof(SceGxmVertexStream));
-			attributes[i].streamIndex = i;
-		}
-	} else {
-		attributes = cur_vao->vertex_attrib_config;
-		streams = cur_vao->vertex_stream_config;
-	}
+	alignAttributes(attributes, streams);
 
 	void *ptrs[VERTEX_ATTRIBS_NUM];
 #ifndef DRAW_SPEEDHACK
+#ifdef STRICT_DRAW_COMPLIANCE
+	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
+	sceClibMemset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
+	if (is_packed[0]) {
+#else
 	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
+#endif
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			if (cur_vao->vertex_attrib_vbo[attr_idx]) {
+#ifdef STRICT_DRAW_COMPLIANCE
+				sceClibMemset(is_packed, 0, p->attr_num * sizeof(GLboolean));
+#else
 				is_packed = GL_FALSE;
+#endif
 				break;
 #ifdef STRICT_DRAW_COMPLIANCE
 			} else {
-				if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[attr_idx] && cur_vao->vertex_attrib_offsets[attr_idx] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]]))) {
-					is_packed = GL_FALSE;
-					break;
+				if (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[attr_idx] && cur_vao->vertex_attrib_offsets[attr_idx] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]])) {
+					is_packed[attr_idx] = GL_FALSE;
 				}
 #endif
 			}
@@ -1062,7 +1148,22 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			is_packed = GL_FALSE;
 #endif
 	}
-
+#ifdef STRICT_DRAW_COMPLIANCE
+	// Gathering real attribute data pointers
+	if (is_packed[0]) {
+		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
+		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]], count * streams[0].stride);
+	}
+	for (int i = 0; i < p->attr_num; i++) {
+		uint8_t attr_idx = p->attr_map[i];
+		attributes[i].regIndex = p->attr[attr_idx].regIndex;
+		if (is_packed[i]) {
+			handlePackedAttrib();
+		} else {
+			handleUnpackedAttrib(count);
+		}
+	}
+#else
 	// Gathering real attribute data pointers
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
@@ -1070,71 +1171,25 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			attributes[i].regIndex = p->attr[attr_idx].regIndex;
-			if (cur_vao->vertex_attrib_state & (1 << attr_idx)) {
-				attributes[i].offset = cur_vao->vertex_attrib_offsets[attr_idx] - cur_vao->vertex_attrib_offsets[p->attr_map[0]];
-			} else {
-				disableDrawAttrib(i)
-			}
+			handlePackedAttrib();
 		}
-	} else
-#endif
-	{
+	} else {
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			attributes[i].regIndex = p->attr[attr_idx].regIndex;
-			if (cur_vao->vertex_attrib_state & (1 << attr_idx)) {
-				if (cur_vao->vertex_attrib_vbo[attr_idx]) {
-					gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[attr_idx];
-					ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[attr_idx];
-					gpu_buf->used = GL_TRUE;
-					attributes[i].offset = 0;
-				} else {
-#ifdef DRAW_SPEEDHACK
-					ptrs[i] = (void *)cur_vao->vertex_attrib_offsets[attr_idx];
-#else
-					ptrs[i] = gpu_alloc_mapped_temp(count * streams[i].stride);
-					vgl_fast_memcpy(ptrs[i], (void *)cur_vao->vertex_attrib_offsets[attr_idx], count * streams[i].stride);
-#endif
-					attributes[i].offset = 0;
-				}
-			} else {
-				disableDrawAttrib(i)
-			}
+			handleUnpackedAttrib(count);
 		}
 	}
-
+#endif
+#else // DRAW_SPEEDHACK
+	handleSpeedhackAttrib();
+#endif
 	// Uploading new vertex program
 	patchVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
 
 	// Uploading both fragment and vertex uniforms data
-	void *buffer;
-	if (p->vert_uniforms && dirty_vert_unifs) {
-		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer);
-		uniform *u = p->vert_uniforms;
-		while (u) {
-			if (u->ptr == p->wvp) {
-				if (mvp_modified) {
-					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-					mvp_modified = GL_FALSE;
-				}
-				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
-			} else if (u->size > 0 && u->size < 0xFFFFFFFF)
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
-			u = (uniform *)u->chain;
-		}
-		dirty_vert_unifs = GL_FALSE;
-	}
-	if (p->frag_uniforms && dirty_frag_unifs) {
-		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
-		uniform *u = p->frag_uniforms;
-		while (u) {
-			if (u->size > 0 && u->size < 0xFFFFFFFF)
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
-			u = (uniform *)u->chain;
-		}
-		dirty_frag_unifs = GL_FALSE;
-	}
+	uploadUniforms();
 
 	// Uploading vertex streams
 	for (int i = 0; i < p->attr_num; i++) {
@@ -1144,7 +1199,11 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 #ifdef DRAW_SPEEDHACK
 			sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
 #else
+#ifdef STRICT_DRAW_COMPLIANCE
+			sceGxmSetVertexStream(gxm_context, i, is_packed[i] ? ptrs[0] : ptrs[i]);
+#else
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
+#endif
 #endif
 		} else {
 			sceGxmSetVertexStream(gxm_context, i, cur_vao->vertex_attrib_value[attr_idx]);
@@ -1166,12 +1225,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required and upload fragment program
-	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float)) {
-		p->is_fbo_float = is_fbo_float;
-		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
-	}
-	sceGxmSetFragmentProgram(gxm_context, p->fprog);
+	setupFragProgram();
 
 	// Uploading fragment textures on relative texture units
 	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
@@ -1256,33 +1310,32 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	// Aligning attributes
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
-	if (p->has_unaligned_attrs) {
-		attributes = temp_attributes;
-		streams = temp_streams;
-		for (int i = 0; i < p->attr_num; i++) {
-			uint8_t attr_idx = p->attr_map[i];
-			vgl_fast_memcpy(&temp_attributes[i], &cur_vao->vertex_attrib_config[attr_idx], sizeof(SceGxmVertexAttribute));
-			vgl_fast_memcpy(&temp_streams[i], &cur_vao->vertex_stream_config[attr_idx], sizeof(SceGxmVertexStream));
-			attributes[i].streamIndex = i;
-		}
-	} else {
-		attributes = cur_vao->vertex_attrib_config;
-		streams = cur_vao->vertex_stream_config;
-	}
+	alignAttributes(attributes, streams);
 
 	void *ptrs[VERTEX_ATTRIBS_NUM];
 #ifndef DRAW_SPEEDHACK
-	GLboolean is_packed = p->attr_num > 1;
 	GLboolean is_full_vbo = GL_TRUE;
+#ifdef STRICT_DRAW_COMPLIANCE
+	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
+	sceClibMemset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
+	if (is_packed[0]) {
+#else
+	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
+#endif
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			if (cur_vao->vertex_attrib_vbo[attr_idx]) {
+#ifdef STRICT_DRAW_COMPLIANCE
+				sceClibMemset(is_packed, 0, p->attr_num * sizeof(GLboolean));
+#else
 				is_packed = GL_FALSE;
+#endif
 			} else {
 #ifdef STRICT_DRAW_COMPLIANCE
-				if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[attr_idx] && cur_vao->vertex_attrib_offsets[attr_idx] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]])))
-					is_packed = GL_FALSE;
+				if (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[attr_idx] && cur_vao->vertex_attrib_offsets[attr_idx] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]])) {
+					is_packed[attr_idx] = GL_FALSE;
+				}
 #endif
 				is_full_vbo = GL_FALSE;
 			}
@@ -1311,6 +1364,22 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		top_idx++;
 	}
 
+#ifdef STRICT_DRAW_COMPLIANCE
+	// Gathering real attribute data pointers
+	if (is_packed[0]) {
+		ptrs[0] = gpu_alloc_mapped_temp(top_idx * streams[0].stride);
+		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]], top_idx * streams[0].stride);
+	}
+	for (int i = 0; i < p->attr_num; i++) {
+		uint8_t attr_idx = p->attr_map[i];
+		attributes[i].regIndex = p->attr[attr_idx].regIndex;
+		if (is_packed[i]) {
+			handlePackedAttrib();
+		} else {
+			handleUnpackedAttrib(top_idx);
+		}
+	}
+#else
 	// Gathering real attribute data pointers
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(top_idx * streams[0].stride);
@@ -1318,71 +1387,25 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			attributes[i].regIndex = p->attr[attr_idx].regIndex;
-			if (cur_vao->vertex_attrib_state & (1 << attr_idx)) {
-				attributes[i].offset = cur_vao->vertex_attrib_offsets[attr_idx] - cur_vao->vertex_attrib_offsets[p->attr_map[0]];
-			} else {
-				disableDrawAttrib(i)
-			}
+			handlePackedAttrib();
 		}
-	} else
-#endif
-	{
+	} else {
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			attributes[i].regIndex = p->attr[attr_idx].regIndex;
-			if (cur_vao->vertex_attrib_state & (1 << attr_idx)) {
-				if (cur_vao->vertex_attrib_vbo[attr_idx]) {
-					gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[attr_idx];
-					ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[attr_idx];
-					gpu_buf->used = GL_TRUE;
-					attributes[i].offset = 0;
-				} else {
-#ifdef DRAW_SPEEDHACK
-					ptrs[i] = (void *)cur_vao->vertex_attrib_offsets[attr_idx];
-#else
-					ptrs[i] = gpu_alloc_mapped_temp(top_idx * streams[i].stride);
-					vgl_fast_memcpy(ptrs[i], (void *)cur_vao->vertex_attrib_offsets[attr_idx], top_idx * streams[i].stride);
-#endif
-					attributes[i].offset = 0;
-				}
-			} else {
-				disableDrawAttrib(i)
-			}
+			handleUnpackedAttrib(top_idx);
 		}
 	}
-
+#endif
+#else // DRAW_SPEEDHACK
+	handleSpeedhackAttrib();
+#endif
 	// Uploading new vertex program
 	patchVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
 
 	// Uploading both fragment and vertex uniforms data
-	void *buffer;
-	if (p->vert_uniforms && dirty_vert_unifs) {
-		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer);
-		uniform *u = p->vert_uniforms;
-		while (u) {
-			if (u->ptr == p->wvp) {
-				if (mvp_modified) {
-					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-					mvp_modified = GL_FALSE;
-				}
-				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
-			} else if (u->size > 0 && u->size < 0xFFFFFFFF)
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
-			u = (uniform *)u->chain;
-		}
-		dirty_vert_unifs = GL_FALSE;
-	}
-	if (p->frag_uniforms && dirty_frag_unifs) {
-		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
-		uniform *u = p->frag_uniforms;
-		while (u) {
-			if (u->size > 0 && u->size < 0xFFFFFFFF)
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
-			u = (uniform *)u->chain;
-		}
-		dirty_frag_unifs = GL_FALSE;
-	}
+	uploadUniforms();
 
 	// Uploading vertex streams
 	for (int i = 0; i < p->attr_num; i++) {
@@ -1392,7 +1415,11 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #ifdef DRAW_SPEEDHACK
 			sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
 #else
+#ifdef STRICT_DRAW_COMPLIANCE
+			sceGxmSetVertexStream(gxm_context, i, is_packed[i] ? ptrs[0] : ptrs[i]);
+#else
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
+#endif
 #endif
 		} else {
 			sceGxmSetVertexStream(gxm_context, i, cur_vao->vertex_attrib_value[attr_idx]);
@@ -1414,44 +1441,13 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required
-	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float)) {
-		p->is_fbo_float = is_fbo_float;
-		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
-	}
+	setupFragProgram();
 
-	// Setting up required shader
+	// Setting up required vertex shader
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
-	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 
 	// Uploading both fragment and vertex uniforms data
-	void *buffer;
-	if (p->vert_uniforms && (dirty_vert_unifs || mvp_modified)) {
-		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer);
-		uniform *u = p->vert_uniforms;
-		while (u) {
-			if (u->ptr == p->wvp && implicit_wvp) {
-				if (mvp_modified) {
-					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-					mvp_modified = GL_FALSE;
-				}
-				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
-			} else if (u->size > 0 && u->size < 0xFFFFFFFF)
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
-			u = (uniform *)u->chain;
-		}
-		dirty_vert_unifs = GL_FALSE;
-	}
-	if (p->frag_uniforms && dirty_frag_unifs) {
-		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
-		uniform *u = p->frag_uniforms;
-		while (u) {
-			if (u->size > 0 && u->size < 0xFFFFFFFF)
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
-			u = (uniform *)u->chain;
-		}
-		dirty_frag_unifs = GL_FALSE;
-	}
+	uploadUniforms();
 
 	// Uploading textures on relative texture units
 	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
