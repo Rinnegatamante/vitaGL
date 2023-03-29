@@ -34,7 +34,7 @@ $(TARGET).vpk: eboot.bin
 		-a ssao.frag=ssao.frag \
 		-a ssao.vert=ssao.vert \
 		-a lighting.frag=lighting.frag \
-		-a lighting.vert=lighting.bert $@
+		-a lighting.vert=lighting.vert $@
 
 eboot.bin: $(TARGET).velf
 	vita-make-fself -s $< eboot.bin	
