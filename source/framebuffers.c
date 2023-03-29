@@ -667,10 +667,9 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	if (active_read_fb) {
 		data_u8 = data;
 		dst_stride = width * dst_bpp;
-	} else {
-#else
-	{
+	} else
 #endif
+	{
 		data_u8 = data + (width * dst_bpp * (height - 1));
 		dst_stride = -(width * dst_bpp);
 	}
