@@ -877,7 +877,8 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 		}
 
 		uint32_t src_stride = unpack_row_len ? (unpack_row_len * bpp) : (width * bpp);
-		gpu_store_texture_data(orig_w, width, height, src_stride, pixels, texture_data, data_bpp, bpp, read_cb, write_cb, fast_store, xoffset);
+		uint32_t dst_stride = ALIGN(orig_w, 8) * bpp;
+		gpu_store_texture_data(orig_w, width, height, src_stride, dst_stride, pixels, texture_data, data_bpp, bpp, read_cb, write_cb, fast_store, xoffset);
 
 		break;
 	default:
