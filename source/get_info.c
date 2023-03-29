@@ -329,7 +329,7 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 
 	switch (pname) {
 	case GL_SAMPLER_BINDING:
-		*data = samplers[server_texture_unit];
+		*data = (GLint)samplers[server_texture_unit];
 		break;
 	case GL_DOUBLEBUFFER:
 		*data = GL_TRUE;
@@ -443,7 +443,7 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[3] = region.h;
 		break;
 	case GL_TEXTURE_BINDING_2D:
-		*data = server_tex_unit->tex_id;
+		*data = (GLint)server_tex_unit->tex_id[0];
 		break;
 	case GL_MAX_VIEWPORT_DIMS:
 	case GL_MAX_TEXTURE_SIZE:

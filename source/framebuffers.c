@@ -377,6 +377,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 	texture *tex = &texture_slots[tex_id];
 
 	// Extracting texture data
+	int old_w = fb->width, old_h = fb->height;
 	SceGxmTextureFormat fmt = sceGxmTextureGetFormat(&tex->gxm_tex);
 	fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
 	fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
@@ -410,6 +411,9 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 			}
 			fb->tex = NULL;
 			return;
+		} else if (fb->target && (old_w != fb->width || old_h != fb->height)) {
+			markRtAsDirty(fb->target);
+			fb->target = NULL;
 		}
 
 		// Increasing texture reference counter
@@ -427,7 +431,6 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
 			fb->is_float ? SCE_GXM_OUTPUT_REGISTER_SIZE_64BIT : SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
 			fb->width, fb->height, ALIGN(fb->width, 8), fb->data);
-
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, attachment)
@@ -449,6 +452,7 @@ void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum textar
 	texture *tex = &texture_slots[tex_id];
 
 	// Extracting texture data
+	int old_w = fb->width, old_h = fb->height;
 	SceGxmTextureFormat fmt = sceGxmTextureGetFormat(&tex->gxm_tex);
 	fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
 	fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
@@ -482,6 +486,9 @@ void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum textar
 			}
 			fb->tex = NULL;
 			return;
+		} else if (fb->target && (old_w != fb->width || old_h != fb->height)) {
+			markRtAsDirty(fb->target);
+			fb->target = NULL;
 		}
 
 		// Increasing texture reference counter

@@ -33,15 +33,36 @@
 typedef struct {
 	char name[64];
 	int idx;
+	int ref_idx;
 	GLenum type;
 } glsl_sema_bind;
 glsl_sema_bind glsl_custom_bindings[MAX_CUSTOM_BINDINGS];
 int glsl_custom_bindings_num = 0;
+int glsl_current_ref_idx = 0;
 char glsl_texcoords_binds[MAX_CG_TEXCOORD_ID][64];
-int glsl_max_texcoord_bind = 0;
+GLboolean glsl_texcoords_used[MAX_CG_TEXCOORD_ID];
 GLboolean glsl_is_first_shader = GL_TRUE;
 GLboolean glsl_precision_low = GL_FALSE;
+GLenum glsl_sema_mode = VGL_MODE_SHADER_PAIR;
 GLenum prev_shader_type = GL_NONE;
+
+#define glsl_get_existing_texcoord_bind(idx, s) \
+	for (int j = 0; j < MAX_CG_TEXCOORD_ID; j++) { \
+		if (glsl_texcoords_used[j] && !strcmp(glsl_texcoords_binds[j], s)) { \
+			idx = j; \
+			break; \
+		} \
+	}
+
+#define glsl_reserve_texcoord_bind(idx, s) \
+	for (int j = 0; j < MAX_CG_TEXCOORD_ID; j++) { \
+		if (!glsl_texcoords_used[j]) { \
+			glsl_texcoords_used[j] = GL_TRUE; \
+			strcpy(glsl_texcoords_binds[j], s); \
+			idx = j; \
+			break; \
+		} \
+	}
 
 #define glsl_replace_marker(m, r) \
 	type = strstr(txt + strlen(glsl_hdr), m); \
@@ -56,6 +77,398 @@ GLenum prev_shader_type = GL_NONE;
 		txt = out; \
 		type = strstr(txt + strlen(glsl_hdr), m); \
 	}
+
+void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFrontFacing) {
+	char newline[128];
+	int idx;
+	if (type == GL_VERTEX_SHADER) {
+		// Manually patching attributes and varyings
+		char *str = strstr(text, "attribute");
+		while (str && !(str[9] == ' ' || str[9] == '\t')) {
+			str = strstr(str + 9, "attribute");
+		}
+		char *str2 = strstr(text, "varying");
+		while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
+			str2 = strstr(str2 + 7, "varying");
+		}
+		while (str || str2) {
+			char *t;
+			if (!str)
+				t = str2;
+			else if (!str2)
+				t = str;
+			else
+				t = min(str, str2);
+			if (t == str) { // Attribute
+				// Replace attribute with 'vgl in' that will get extended in a 'varying in' by the preprocessor
+				sceClibMemcpy(t, "vgl in    ", 10);
+				str = strstr(t, "attribute");
+				while (str && !(str[9] == ' ' || str[9] == '\t')) {
+					str = strstr(str + 9, "attribute");
+				}
+			} else { // Varying
+				char *end = strstr(t, ";");
+				char *start = end;
+				while (*start != ' ' && *start != '\t') {
+					start--;
+				}
+				start++;
+				end[0] = 0;
+				idx = -1;
+				// Check first if the varying has a known binding
+				for (int j = 0; j < glsl_custom_bindings_num; j++) {
+					if (!strcmp(glsl_custom_bindings[j].name, start)) {
+						idx = j;
+					}
+				}
+				if (idx != -1) {
+					switch (glsl_custom_bindings[idx].type) {
+					case VGL_TYPE_TEXCOORD:
+						strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
+						glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+						sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_COLOR:
+						sprintf(newline, "COUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_FOG:
+						sprintf(newline, "FOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						break;
+					}
+				} else {
+					if (glsl_is_first_shader) {
+						// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
+						glsl_get_existing_texcoord_bind(idx, start);
+						if (idx == -1) {
+							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
+								sprintf(newline, "VOUT(%s,\v);", str2 + 8);
+							} else {
+								glsl_reserve_texcoord_bind(idx, start);
+#ifndef SKIP_ERROR_HANDLING
+								if (idx == -1) {
+									idx = 9;
+									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+								}
+#endif
+								sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+							}
+						} else
+							sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);							
+					} else {
+						// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
+						glsl_get_existing_texcoord_bind(idx, start);
+						if (idx == -1) {
+							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
+								sprintf(newline, "VOUT(%s,\v);", str2 + 8);
+							} else {
+								glsl_reserve_texcoord_bind(idx, start)
+#ifndef SKIP_ERROR_HANDLING
+								if (idx == -1) {
+									idx = 9;
+									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+								}
+#endif
+								vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, idx);
+								sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+							}
+						} else
+							sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+					}
+				}
+				sceClibMemcpy(str2, newline, strlen(newline));
+				str2 = strstr(t, "varying");
+				while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
+					str2 = strstr(str2 + 7, "varying");
+				}
+			}
+		}
+	} else {
+		// Manually patching gl_FrontFacing usage
+		if (hasFrontFacing) {
+			char *str = strstr(text, "gl_FrontFacing");
+			while (str) {
+				sceClibMemcpy(str, "(vgl_Face > 0)", 14);
+				str = strstr(str, "gl_FrontFacing");
+			}
+		}
+		// Manually patching varyings and "texture" uniforms
+		char *str = strstr(text, "varying");
+		while (str && !(str[7] == ' ' || str[7] == '\t')) {
+			str = strstr(str + 1, "varying");
+		}
+		char *str2 = strcasestr(text, "texture");
+		while (str2) {
+			char *str2_end = str2 + 7;
+			if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t' || *(str2 - 1) == '(') {
+				while (*str2_end == ' ' || *str2_end == '\t') {
+					str2_end++;
+				}
+				if (*str2_end == ',' || *str2_end == ';')
+					break;
+			}
+			str2 = strcasestr(str2_end, "texture");
+		}
+		while (str || str2) {
+			char *t;
+			if (!str)
+				t = str2;
+			else if (!str2)
+				t = str;
+			else
+				t = min(str, str2);
+			if (t == str) { // Varying
+				char *end = strstr(str, ";");
+				char *start = end;
+				while (*start != ' ' && *start != '\t') {
+					start--;
+				}
+				start++;
+				end[0] = 0;
+				idx = -1;
+				// Check first if the varying has a known binding
+				for (int j = 0; j < glsl_custom_bindings_num; j++) {
+					if (!strcmp(glsl_custom_bindings[j].name, start)) {
+						idx = j;
+					}
+				}
+				if (idx != -1) {
+					switch (glsl_custom_bindings[idx].type) {
+					case VGL_TYPE_TEXCOORD:
+						strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
+						glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+						sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_COLOR:
+						sprintf(newline, "CIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_FOG:
+						sprintf(newline, "FIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					}
+				} else {
+					if (glsl_is_first_shader) {
+						// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
+						glsl_get_existing_texcoord_bind(idx, start);
+						if (idx == -1) {
+							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
+								sprintf(newline, "VIN(%s, \v);", str + 8);
+							} else {
+								glsl_reserve_texcoord_bind(idx, start);
+#ifndef SKIP_ERROR_HANDLING
+								if (idx == -1) {
+									idx = 9;
+									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+								}
+#endif
+								sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+							}
+						} else
+							sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+					} else {
+						// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
+						glsl_get_existing_texcoord_bind(idx, start);
+						if (idx == -1) {
+							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
+								sprintf(newline, "VIN(%s, \v);", str + 8);
+							} else {
+								glsl_reserve_texcoord_bind(idx, start)
+#ifndef SKIP_ERROR_HANDLING
+								if (idx == -1) {
+									idx = 9;
+									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+								}
+#endif
+								vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, idx);
+								sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+							}
+						} else
+							sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+					}
+				}
+				sceClibMemcpy(str, newline, strlen(newline));
+				str = strstr(str, "varying");
+				while (str && !(str[7] == ' ' || str[7] == '\t')) {
+					str = strstr(str + 7, "varying");
+				}
+			} else { // "texture" Uniform
+				if (t[0] == 't')
+					sceClibMemcpy(t, "vgl_tex", 7);
+				else
+					sceClibMemcpy(t, "Vgl_tex", 7);
+				str2 = strcasestr(t, "texture");
+				while (str2) {
+					char *str2_end = str2 + 7;
+					if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t' || *(str2 - 1) == '(') {
+						while (*str2_end == ' ' || *str2_end == '\t') {
+							str2_end++;
+						}
+						if (*str2_end == ',' || *str2_end == ';')
+							break;
+					}
+					str2 = strcasestr(str2_end, "texture");
+				}
+			}
+		}
+	}
+}
+
+void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacing) {
+	char newline[128];
+	int idx;
+	if (type == GL_VERTEX_SHADER) {
+		// Manually patching attributes and varyings
+		char *str = strstr(text, "attribute");
+		while (str && !(str[9] == ' ' || str[9] == '\t')) {
+			str = strstr(str + 9, "attribute");
+		}
+		char *str2 = strstr(text, "varying");
+		while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
+			str2 = strstr(str2 + 7, "varying");
+		}
+		while (str || str2) {
+			char *t;
+			if (!str)
+				t = str2;
+			else if (!str2)
+				t = str;
+			else
+				t = min(str, str2);
+			if (t == str) { // Attribute
+				// Replace attribute with 'vgl in' that will get extended in a 'varying in' by the preprocessor
+				sceClibMemcpy(t, "vgl in    ", 10);
+				str = strstr(t, "attribute");
+				while (str && !(str[9] == ' ' || str[9] == '\t')) {
+					str = strstr(str + 9, "attribute");
+				}
+			} else { // Varying
+				char *end = strstr(t, ";");
+				char *start = end;
+				while (*start != ' ' && *start != '\t') {
+					start--;
+				}
+				start++;
+				end[0] = 0;
+				idx = -1;
+				// Check first if the varying has a known binding
+				for (int j = 0; j < glsl_custom_bindings_num; j++) {
+					if (!strcmp(glsl_custom_bindings[j].name, start)) {
+						glsl_custom_bindings[j].ref_idx = glsl_current_ref_idx;
+						idx = j;
+					}
+				}
+				if (idx != -1) {
+					switch (glsl_custom_bindings[idx].type) {
+					case VGL_TYPE_TEXCOORD:
+						sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_COLOR:
+						sprintf(newline, "COUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_FOG:
+						sprintf(newline, "FOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						break;
+					}
+				} else {
+					sprintf(newline, "VOUT(%s,\v);", str2 + 8);
+				}
+				sceClibMemcpy(str2, newline, strlen(newline));
+				str2 = strstr(t, "varying");
+				while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
+					str2 = strstr(str2 + 7, "varying");
+				}
+			}
+		}
+	} else {
+		// Manually patching gl_FrontFacing usage
+		if (hasFrontFacing) {
+			char *str = strstr(text, "gl_FrontFacing");
+			while (str) {
+				sceClibMemcpy(str, "(vgl_Face > 0)", 14);
+				str = strstr(str, "gl_FrontFacing");
+			}
+		}
+		// Manually patching varyings and "texture" uniforms
+		char *str = strstr(text, "varying");
+		while (str && !(str[7] == ' ' || str[7] == '\t')) {
+			str = strstr(str + 1, "varying");
+		}
+		char *str2 = strcasestr(text, "texture");
+		while (str2) {
+			char *str2_end = str2 + 7;
+			if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t' || *(str2 - 1) == '(') {
+				while (*str2_end == ' ' || *str2_end == '\t') {
+					str2_end++;
+				}
+				if (*str2_end == ',' || *str2_end == ';')
+					break;
+			}
+			str2 = strcasestr(str2_end, "texture");
+		}
+		while (str || str2) {
+			char *t;
+			if (!str)
+				t = str2;
+			else if (!str2)
+				t = str;
+			else
+				t = min(str, str2);
+			if (t == str) { // Varying
+				char *end = strstr(str, ";");
+				char *start = end;
+				while (*start != ' ' && *start != '\t') {
+					start--;
+				}
+				start++;
+				end[0] = 0;
+				idx = -1;
+				// Check first if the varying has a known binding
+				for (int j = 0; j < glsl_custom_bindings_num; j++) {
+					if (!strcmp(glsl_custom_bindings[j].name, start)) {
+						glsl_custom_bindings[j].ref_idx = glsl_current_ref_idx;
+						idx = j;
+					}
+				}
+				if (idx != -1) {
+					switch (glsl_custom_bindings[idx].type) {
+					case VGL_TYPE_TEXCOORD:
+						sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_COLOR:
+						sprintf(newline, "CIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_FOG:
+						sprintf(newline, "FIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					}
+				} else {
+					sprintf(newline, "VIN(%s, \v);", str + 8);
+				}
+				sceClibMemcpy(str, newline, strlen(newline));
+				str = strstr(str, "varying");
+				while (str && !(str[7] == ' ' || str[7] == '\t')) {
+					str = strstr(str + 7, "varying");
+				}
+			} else { // "texture" Uniform
+				if (t[0] == 't')
+					sceClibMemcpy(t, "vgl_tex", 7);
+				else
+					sceClibMemcpy(t, "Vgl_tex", 7);
+				str2 = strcasestr(t, "texture");
+				while (str2) {
+					char *str2_end = str2 + 7;
+					if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t' || *(str2 - 1) == '(') {
+						while (*str2_end == ' ' || *str2_end == '\t') {
+							str2_end++;
+						}
+						if (*str2_end == ',' || *str2_end == ';')
+							break;
+					}
+					str2 = strcasestr(str2_end, "texture");
+				}
+			}
+		}
+	}
+}
 
 /* 
  * Experimental function to add static keyword to all global variables:
@@ -302,8 +715,102 @@ void glsl_nuke_comments(char *txt) {
 	orig_size[i] = attributes[i].componentCount; \
 	streams[i].stride = 0; \
 	attributes[i].offset = 0; \
-	attributes[i].componentCount = cur_vao->vertex_attrib_size[p->attr_map[i]]; \
+	attributes[i].componentCount = cur_vao->vertex_attrib_size[attr_idx]; \
 	attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+
+#define handleUnpackedAttrib(count) \
+	if (cur_vao->vertex_attrib_state & (1 << attr_idx)) { \
+		if (cur_vao->vertex_attrib_vbo[attr_idx]) { \
+			gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[attr_idx]; \
+			ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[attr_idx]; \
+			gpu_buf->used = GL_TRUE; \
+			attributes[i].offset = 0; \
+		} else { \
+			ptrs[i] = gpu_alloc_mapped_temp(count * streams[i].stride); \
+			vgl_fast_memcpy(ptrs[i], (void *)cur_vao->vertex_attrib_offsets[attr_idx], count * streams[i].stride); \
+			attributes[i].offset = 0; \
+		} \
+	} else { \
+		disableDrawAttrib(i) \
+	}
+	
+#define handleSpeedhackAttrib() \
+	for (int i = 0; i < p->attr_num; i++) { \
+		uint8_t attr_idx = p->attr_map[i]; \
+		attributes[i].regIndex = p->attr[attr_idx].regIndex; \
+		if (cur_vao->vertex_attrib_state & (1 << attr_idx)) { \
+			if (cur_vao->vertex_attrib_vbo[attr_idx]) { \
+				gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[attr_idx]; \
+				ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[attr_idx]; \
+				gpu_buf->used = GL_TRUE; \
+				attributes[i].offset = 0; \
+			} else { \
+				ptrs[i] = (void *)cur_vao->vertex_attrib_offsets[attr_idx]; \
+				attributes[i].offset = 0; \
+			} \
+		} else { \
+			disableDrawAttrib(i) \
+		} \
+	}
+
+#define handlePackedAttrib() \
+	if (cur_vao->vertex_attrib_state & (1 << attr_idx)) { \
+		attributes[i].offset = cur_vao->vertex_attrib_offsets[attr_idx] - cur_vao->vertex_attrib_offsets[p->attr_map[0]]; \
+	} else { \
+		disableDrawAttrib(i) \
+	}
+	
+#define uploadUniforms() \
+	void *buffer; \
+	if (p->vert_uniforms && dirty_vert_unifs) { \
+		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer); \
+		uniform *u = p->vert_uniforms; \
+		while (u) { \
+			if (u->ptr == p->wvp) { \
+				if (mvp_modified) { \
+					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix); \
+					mvp_modified = GL_FALSE; \
+				} \
+				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix); \
+			} else if (u->size > 0 && u->size < 0xFFFFFFFF) \
+				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
+			u = (uniform *)u->chain; \
+		} \
+		dirty_vert_unifs = GL_FALSE; \
+	} \
+	if (p->frag_uniforms && dirty_frag_unifs) { \
+		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer); \
+		uniform *u = p->frag_uniforms; \
+		while (u) { \
+			if (u->size > 0 && u->size < 0xFFFFFFFF) \
+				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
+			u = (uniform *)u->chain; \
+		} \
+		dirty_frag_unifs = GL_FALSE; \
+	}
+	
+#define setupFragProgram() \
+	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float)) { \
+		p->is_fbo_float = is_fbo_float; \
+		p->blend_info.raw = blend_info.raw; \
+		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4); \
+	} \
+	sceGxmSetFragmentProgram(gxm_context, p->fprog);
+	
+#define alignAttributes(attributes, streams) \
+	if (p->has_unaligned_attrs) { \
+		attributes = temp_attributes; \
+		streams = temp_streams; \
+		for (int i = 0; i < p->attr_num; i++) { \
+			uint8_t attr_idx = p->attr_map[i]; \
+			vgl_fast_memcpy(&temp_attributes[i], &cur_vao->vertex_attrib_config[attr_idx], sizeof(SceGxmVertexAttribute)); \
+			vgl_fast_memcpy(&temp_streams[i], &cur_vao->vertex_stream_config[attr_idx], sizeof(SceGxmVertexStream)); \
+			attributes[i].streamIndex = i; \
+		} \
+	} else { \
+		attributes = cur_vao->vertex_attrib_config; \
+		streams = cur_vao->vertex_stream_config; \
+	}
 
 // Internal stuffs
 GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status
@@ -358,10 +865,10 @@ typedef struct {
 	shader *vshader;
 	shader *fshader;
 	uint8_t status;
-	uniform *vert_texunits[TEXTURE_IMAGE_UNITS_NUM];
-	uniform *frag_texunits[TEXTURE_IMAGE_UNITS_NUM];
 	uint8_t max_frag_texunit_idx;
 	uint8_t max_vert_texunit_idx;
+	uniform *vert_texunits[TEXTURE_IMAGE_UNITS_NUM];
+	uniform *frag_texunits[TEXTURE_IMAGE_UNITS_NUM];
 	SceGxmVertexAttribute attr[VERTEX_ATTRIBS_NUM];
 	SceGxmVertexStream stream[VERTEX_ATTRIBS_NUM];
 	uint8_t attr_map[VERTEX_ATTRIBS_NUM];
@@ -520,12 +1027,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required and upload fragment program
-	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float)) {
-		p->is_fbo_float = is_fbo_float;
-		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
-	}
-	sceGxmSetFragmentProgram(gxm_context, p->fprog);
+	setupFragProgram();
 
 	// Uploading fragment textures on relative texture units
 	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
@@ -612,32 +1114,31 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	// Aligning attributes
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
-	if (p->has_unaligned_attrs) {
-		attributes = temp_attributes;
-		streams = temp_streams;
-		for (int i = 0; i < p->attr_num; i++) {
-			vgl_fast_memcpy(&temp_attributes[i], &cur_vao->vertex_attrib_config[p->attr_map[i]], sizeof(SceGxmVertexAttribute));
-			vgl_fast_memcpy(&temp_streams[i], &cur_vao->vertex_stream_config[p->attr_map[i]], sizeof(SceGxmVertexStream));
-			attributes[i].streamIndex = i;
-		}
-	} else {
-		attributes = cur_vao->vertex_attrib_config;
-		streams = cur_vao->vertex_stream_config;
-	}
+	alignAttributes(attributes, streams);
 
 	void *ptrs[VERTEX_ATTRIBS_NUM];
 #ifndef DRAW_SPEEDHACK
+#ifdef STRICT_DRAW_COMPLIANCE
+	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
+	sceClibMemset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
+	if (is_packed[0]) {
+#else
 	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
+#endif
 		for (int i = 0; i < p->attr_num; i++) {
-			if (cur_vao->vertex_attrib_vbo[p->attr_map[i]]) {
+			uint8_t attr_idx = p->attr_map[i];
+			if (cur_vao->vertex_attrib_vbo[attr_idx]) {
+#ifdef STRICT_DRAW_COMPLIANCE
+				sceClibMemset(is_packed, 0, p->attr_num * sizeof(GLboolean));
+#else
 				is_packed = GL_FALSE;
+#endif
 				break;
 #ifdef STRICT_DRAW_COMPLIANCE
 			} else {
-				if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[i]] && cur_vao->vertex_attrib_offsets[p->attr_map[i]] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]]))) {
-					is_packed = GL_FALSE;
-					break;
+				if (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[attr_idx] && cur_vao->vertex_attrib_offsets[attr_idx] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]])) {
+					is_packed[attr_idx] = GL_FALSE;
 				}
 #endif
 			}
@@ -647,89 +1148,65 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			is_packed = GL_FALSE;
 #endif
 	}
-
+#ifdef STRICT_DRAW_COMPLIANCE
+	// Gathering real attribute data pointers
+	if (is_packed[0]) {
+		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
+		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]], count * streams[0].stride);
+	}
+	for (int i = 0; i < p->attr_num; i++) {
+		uint8_t attr_idx = p->attr_map[i];
+		attributes[i].regIndex = p->attr[attr_idx].regIndex;
+		if (is_packed[i]) {
+			handlePackedAttrib();
+		} else {
+			handleUnpackedAttrib(count);
+		}
+	}
+#else
 	// Gathering real attribute data pointers
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
 		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]], count * streams[0].stride);
 		for (int i = 0; i < p->attr_num; i++) {
-			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
-			if (cur_vao->vertex_attrib_state & (1 << p->attr_map[i])) {
-				attributes[i].offset = cur_vao->vertex_attrib_offsets[p->attr_map[i]] - cur_vao->vertex_attrib_offsets[p->attr_map[0]];
-			} else {
-				disableDrawAttrib(i)
-			}
+			uint8_t attr_idx = p->attr_map[i];
+			attributes[i].regIndex = p->attr[attr_idx].regIndex;
+			handlePackedAttrib();
 		}
-	} else
-#endif
-	{
+	} else {
 		for (int i = 0; i < p->attr_num; i++) {
-			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
-			if (cur_vao->vertex_attrib_state & (1 << p->attr_map[i])) {
-				if (cur_vao->vertex_attrib_vbo[p->attr_map[i]]) {
-					gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[p->attr_map[i]];
-					ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[p->attr_map[i]];
-					gpu_buf->used = GL_TRUE;
-					attributes[i].offset = 0;
-				} else {
-#ifdef DRAW_SPEEDHACK
-					ptrs[i] = (void *)cur_vao->vertex_attrib_offsets[p->attr_map[i]];
-#else
-					ptrs[i] = gpu_alloc_mapped_temp(count * streams[i].stride);
-					vgl_fast_memcpy(ptrs[i], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[i]], count * streams[i].stride);
-#endif
-					attributes[i].offset = 0;
-				}
-			} else {
-				disableDrawAttrib(i)
-			}
+			uint8_t attr_idx = p->attr_map[i];
+			attributes[i].regIndex = p->attr[attr_idx].regIndex;
+			handleUnpackedAttrib(count);
 		}
 	}
-
+#endif
+#else // DRAW_SPEEDHACK
+	handleSpeedhackAttrib();
+#endif
 	// Uploading new vertex program
 	patchVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
 
 	// Uploading both fragment and vertex uniforms data
-	void *buffer;
-	if (p->vert_uniforms && dirty_vert_unifs) {
-		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer);
-		uniform *u = p->vert_uniforms;
-		while (u) {
-			if (u->ptr == p->wvp) {
-				if (mvp_modified) {
-					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-					mvp_modified = GL_FALSE;
-				}
-				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
-			} else if (u->size > 0 && u->size < 0xFFFFFFFF)
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
-			u = (uniform *)u->chain;
-		}
-		dirty_vert_unifs = GL_FALSE;
-	}
-	if (p->frag_uniforms && dirty_frag_unifs) {
-		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
-		uniform *u = p->frag_uniforms;
-		while (u) {
-			if (u->size > 0 && u->size < 0xFFFFFFFF)
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
-			u = (uniform *)u->chain;
-		}
-		dirty_frag_unifs = GL_FALSE;
-	}
+	uploadUniforms();
 
 	// Uploading vertex streams
 	for (int i = 0; i < p->attr_num; i++) {
-		GLboolean is_active = cur_vao->vertex_attrib_state & (1 << p->attr_map[i]) ? GL_TRUE : GL_FALSE;
+		uint8_t attr_idx = p->attr_map[i];
+		GLboolean is_active = cur_vao->vertex_attrib_state & (1 << attr_idx) ? GL_TRUE : GL_FALSE;
 		if (is_active) {
 #ifdef DRAW_SPEEDHACK
 			sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
 #else
+#ifdef STRICT_DRAW_COMPLIANCE
+			sceGxmSetVertexStream(gxm_context, i, is_packed[i] ? ptrs[0] : ptrs[i]);
+#else
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
 #endif
+#endif
 		} else {
-			sceGxmSetVertexStream(gxm_context, i, cur_vao->vertex_attrib_value[p->attr_map[i]]);
+			sceGxmSetVertexStream(gxm_context, i, cur_vao->vertex_attrib_value[attr_idx]);
 		}
 		if (!p->has_unaligned_attrs) {
 			attributes[i].regIndex = i;
@@ -748,12 +1225,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required and upload fragment program
-	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float)) {
-		p->is_fbo_float = is_fbo_float;
-		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
-	}
-	sceGxmSetFragmentProgram(gxm_context, p->fprog);
+	setupFragProgram();
 
 	// Uploading fragment textures on relative texture units
 	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
@@ -838,31 +1310,32 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	// Aligning attributes
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
-	if (p->has_unaligned_attrs) {
-		attributes = temp_attributes;
-		streams = temp_streams;
-		for (int i = 0; i < p->attr_num; i++) {
-			vgl_fast_memcpy(&temp_attributes[i], &cur_vao->vertex_attrib_config[p->attr_map[i]], sizeof(SceGxmVertexAttribute));
-			vgl_fast_memcpy(&temp_streams[i], &cur_vao->vertex_stream_config[p->attr_map[i]], sizeof(SceGxmVertexStream));
-			attributes[i].streamIndex = i;
-		}
-	} else {
-		attributes = cur_vao->vertex_attrib_config;
-		streams = cur_vao->vertex_stream_config;
-	}
+	alignAttributes(attributes, streams);
 
 	void *ptrs[VERTEX_ATTRIBS_NUM];
 #ifndef DRAW_SPEEDHACK
-	GLboolean is_packed = p->attr_num > 1;
 	GLboolean is_full_vbo = GL_TRUE;
+#ifdef STRICT_DRAW_COMPLIANCE
+	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
+	sceClibMemset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
+	if (is_packed[0]) {
+#else
+	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
+#endif
 		for (int i = 0; i < p->attr_num; i++) {
-			if (cur_vao->vertex_attrib_vbo[p->attr_map[i]]) {
+			uint8_t attr_idx = p->attr_map[i];
+			if (cur_vao->vertex_attrib_vbo[attr_idx]) {
+#ifdef STRICT_DRAW_COMPLIANCE
+				sceClibMemset(is_packed, 0, p->attr_num * sizeof(GLboolean));
+#else
 				is_packed = GL_FALSE;
+#endif
 			} else {
 #ifdef STRICT_DRAW_COMPLIANCE
-				if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[i]] && cur_vao->vertex_attrib_offsets[p->attr_map[i]] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]])))
-					is_packed = GL_FALSE;
+				if (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[attr_idx] && cur_vao->vertex_attrib_offsets[attr_idx] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]])) {
+					is_packed[attr_idx] = GL_FALSE;
+				}
 #endif
 				is_full_vbo = GL_FALSE;
 			}
@@ -891,88 +1364,65 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		top_idx++;
 	}
 
+#ifdef STRICT_DRAW_COMPLIANCE
+	// Gathering real attribute data pointers
+	if (is_packed[0]) {
+		ptrs[0] = gpu_alloc_mapped_temp(top_idx * streams[0].stride);
+		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]], top_idx * streams[0].stride);
+	}
+	for (int i = 0; i < p->attr_num; i++) {
+		uint8_t attr_idx = p->attr_map[i];
+		attributes[i].regIndex = p->attr[attr_idx].regIndex;
+		if (is_packed[i]) {
+			handlePackedAttrib();
+		} else {
+			handleUnpackedAttrib(top_idx);
+		}
+	}
+#else
 	// Gathering real attribute data pointers
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(top_idx * streams[0].stride);
 		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]], top_idx * streams[0].stride);
 		for (int i = 0; i < p->attr_num; i++) {
-			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
-			if (cur_vao->vertex_attrib_state & (1 << p->attr_map[i])) {
-				attributes[i].offset = cur_vao->vertex_attrib_offsets[p->attr_map[i]] - cur_vao->vertex_attrib_offsets[p->attr_map[0]];
-			} else {
-				disableDrawAttrib(i)
-			}
+			uint8_t attr_idx = p->attr_map[i];
+			attributes[i].regIndex = p->attr[attr_idx].regIndex;
+			handlePackedAttrib();
 		}
-	} else
-#endif
-	{
+	} else {
 		for (int i = 0; i < p->attr_num; i++) {
-			attributes[i].regIndex = p->attr[p->attr_map[i]].regIndex;
-			if (cur_vao->vertex_attrib_state & (1 << p->attr_map[i])) {
-				if (cur_vao->vertex_attrib_vbo[p->attr_map[i]]) {
-					gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[p->attr_map[i]];
-					ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[p->attr_map[i]];
-					gpu_buf->used = GL_TRUE;
-					attributes[i].offset = 0;
-				} else {
-#ifdef DRAW_SPEEDHACK
-					ptrs[i] = (void *)cur_vao->vertex_attrib_offsets[p->attr_map[i]];
-#else
-					ptrs[i] = gpu_alloc_mapped_temp(top_idx * streams[i].stride);
-					vgl_fast_memcpy(ptrs[i], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[i]], top_idx * streams[i].stride);
-#endif
-					attributes[i].offset = 0;
-				}
-			} else {
-				disableDrawAttrib(i)
-			}
+			uint8_t attr_idx = p->attr_map[i];
+			attributes[i].regIndex = p->attr[attr_idx].regIndex;
+			handleUnpackedAttrib(top_idx);
 		}
 	}
-
+#endif
+#else // DRAW_SPEEDHACK
+	handleSpeedhackAttrib();
+#endif
 	// Uploading new vertex program
 	patchVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
 
 	// Uploading both fragment and vertex uniforms data
-	void *buffer;
-	if (p->vert_uniforms && dirty_vert_unifs) {
-		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer);
-		uniform *u = p->vert_uniforms;
-		while (u) {
-			if (u->ptr == p->wvp) {
-				if (mvp_modified) {
-					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-					mvp_modified = GL_FALSE;
-				}
-				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
-			} else if (u->size > 0 && u->size < 0xFFFFFFFF)
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
-			u = (uniform *)u->chain;
-		}
-		dirty_vert_unifs = GL_FALSE;
-	}
-	if (p->frag_uniforms && dirty_frag_unifs) {
-		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
-		uniform *u = p->frag_uniforms;
-		while (u) {
-			if (u->size > 0 && u->size < 0xFFFFFFFF)
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
-			u = (uniform *)u->chain;
-		}
-		dirty_frag_unifs = GL_FALSE;
-	}
+	uploadUniforms();
 
 	// Uploading vertex streams
 	for (int i = 0; i < p->attr_num; i++) {
-		GLboolean is_active = cur_vao->vertex_attrib_state & (1 << p->attr_map[i]) ? GL_TRUE : GL_FALSE;
+		uint8_t attr_idx = p->attr_map[i];
+		GLboolean is_active = cur_vao->vertex_attrib_state & (1 << attr_idx) ? GL_TRUE : GL_FALSE;
 		if (is_active) {
 #ifdef DRAW_SPEEDHACK
 			sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
 #else
+#ifdef STRICT_DRAW_COMPLIANCE
+			sceGxmSetVertexStream(gxm_context, i, is_packed[i] ? ptrs[0] : ptrs[i]);
+#else
 			sceGxmSetVertexStream(gxm_context, i, is_packed ? ptrs[0] : ptrs[i]);
 #endif
+#endif
 		} else {
-			sceGxmSetVertexStream(gxm_context, i, cur_vao->vertex_attrib_value[p->attr_map[i]]);
+			sceGxmSetVertexStream(gxm_context, i, cur_vao->vertex_attrib_value[attr_idx]);
 		}
 		if (!p->has_unaligned_attrs) {
 			attributes[i].regIndex = i;
@@ -991,44 +1441,13 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required
-	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float)) {
-		p->is_fbo_float = is_fbo_float;
-		p->blend_info.raw = blend_info.raw;
-		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
-	}
+	setupFragProgram();
 
-	// Setting up required shader
+	// Setting up required vertex shader
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
-	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 
 	// Uploading both fragment and vertex uniforms data
-	void *buffer;
-	if (p->vert_uniforms && (dirty_vert_unifs || mvp_modified)) {
-		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer);
-		uniform *u = p->vert_uniforms;
-		while (u) {
-			if (u->ptr == p->wvp && implicit_wvp) {
-				if (mvp_modified) {
-					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
-					mvp_modified = GL_FALSE;
-				}
-				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix);
-			} else if (u->size > 0 && u->size < 0xFFFFFFFF)
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
-			u = (uniform *)u->chain;
-		}
-		dirty_vert_unifs = GL_FALSE;
-	}
-	if (p->frag_uniforms && dirty_frag_unifs) {
-		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer);
-		uniform *u = p->frag_uniforms;
-		while (u) {
-			if (u->size > 0 && u->size < 0xFFFFFFFF)
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data);
-			u = (uniform *)u->chain;
-		}
-		dirty_frag_unifs = GL_FALSE;
-	}
+	uploadUniforms();
 
 	// Uploading textures on relative texture units
 	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
@@ -1238,11 +1657,14 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	if (glsl_precision_low)
 		size += strlen(glsl_precision_hdr);
 #ifndef SKIP_ERROR_HANDLING
-	if (prev_shader_type == s->type) {
-		vgl_log("%s:%d %s: Unexpected shader type, translation may be imperfect.\n", __FILE__, __LINE__, __func__);
-		glsl_is_first_shader = GL_TRUE;
-		glsl_max_texcoord_bind = 0;
-	}
+	if (glsl_sema_mode == VGL_MODE_SHADER_PAIR) {
+		if (prev_shader_type == s->type) {
+			vgl_log("%s:%d %s: Unexpected shader type, translation may be imperfect.\n", __FILE__, __LINE__, __func__);
+			glsl_is_first_shader = GL_TRUE;
+			sceClibMemset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
+		}
+	} else
+		glsl_current_ref_idx++;
 #endif
 	if (s->type == GL_VERTEX_SHADER)
 		size += strlen("#define VGL_IS_VERTEX_SHADER\n");
@@ -1334,246 +1756,64 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 				str[0] = str[1] = '/';
 				str = strstr(str, "precision ");
 			}
-			char newline[128];
-			int idx;
-			if (s->type == GL_VERTEX_SHADER) {
-				// Manually patching attributes and varyings
-				char *str = strstr(text, "attribute");
-				while (str && !(str[9] == ' ' || str[9] == '\t')) {
-					str = strstr(str + 9, "attribute");
-				}
-				char *str2 = strstr(text, "varying");
-				while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
-					str2 = strstr(str2 + 7, "varying");
-				}
-				while (str || str2) {
-					char *t;
-					if (!str)
-						t = str2;
-					else if (!str2)
-						t = str;
-					else
-						t = min(str, str2);
-					if (t == str) { // Attribute
-						// Replace attribute with 'vgl in' that will get extended in a 'varying in' by the preprocessor
-						sceClibMemcpy(t, "vgl in    ", 10);
-						str = strstr(t, "attribute");
-						while (str && !(str[9] == ' ' || str[9] == '\t')) {
-							str = strstr(str + 9, "attribute");
-						}
-					} else { // Varying
-						char *end = strstr(t, ";");
-						char *start = end;
-						while (*start != ' ' && *start != '\t') {
-							start--;
-						}
-						start++;
-						end[0] = 0;
-						idx = -1;
-						// Check first if the varying has a known binding
-						for (int j = 0; j < glsl_custom_bindings_num; j++) {
-							if (!strcmp(glsl_custom_bindings[j].name, start)) {
-								idx = j;
-							}
-						}
-						if (idx != -1) {
-							switch (glsl_custom_bindings[idx].type) {
-							case VGL_TYPE_TEXCOORD:
-								strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
-								sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
-								break;
-							case VGL_TYPE_COLOR:
-								sprintf(newline, "COUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
-								break;
-							case VGL_TYPE_FOG:
-								sprintf(newline, "FOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
-								break;
-							}
-						} else {
-							if (glsl_is_first_shader) {
-								// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
-								for (int j = 0; j < glsl_max_texcoord_bind; j++) {
-									if (!strcmp(glsl_texcoords_binds[j], start)) {
-										idx = j;
-										break;
-									}
-								}
-								// VOUT will get extended by the preprocessor into a out varying bound to a progressive TEXCOORD semantic
-								if (idx >= 0) {
-									sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
-								} else {
-#ifndef SKIP_ERROR_HANDLING
-									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID) {
-										glsl_max_texcoord_bind--;
-										vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
-									}
-#endif
-									strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
-									sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_max_texcoord_bind++);
-									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
-										glsl_max_texcoord_bind--;
-								}
-							} else {
-								// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
-								for (int j = 0; j < glsl_max_texcoord_bind; j++) {
-									if (!strcmp(glsl_texcoords_binds[j], start)) {
-										idx = j;
-										break;
-									}
-								}
-								if (idx == -1) {
-									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
-										glsl_max_texcoord_bind--;
-									vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, glsl_max_texcoord_bind);
-									strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
-									idx = glsl_max_texcoord_bind++;
-									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
-										glsl_max_texcoord_bind--;
-								}
-								sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
-							}
-						}
-						sceClibMemcpy(str2, newline, strlen(newline));
-						str2 = strstr(t, "varying");
-						while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
-							str2 = strstr(str2 + 7, "varying");
-						}
-					}
-				}
-			} else {
-				// Manually patching gl_FrontFacing usage
-				if (hasFrontFacing) {
-					char *str = strstr(text, "gl_FrontFacing");
-					while (str) {
-						sceClibMemcpy(str, "(vgl_Face > 0)", 14);
-						str = strstr(str, "gl_FrontFacing");
-					}
-				}
-				// Manually patching varyings and "texture" uniforms
-				char *str = strstr(text, "varying");
-				while (str && !(str[7] == ' ' || str[7] == '\t')) {
-					str = strstr(str + 1, "varying");
-				}
-				char *str2 = strcasestr(text, "texture");
-				while (str2) {
-					char *str2_end = str2 + 7;
-					if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t' || *(str2 - 1) == '(') {
-						while (*str2_end == ' ' || *str2_end == '\t') {
-							str2_end++;
-						}
-						if (*str2_end == ',' || *str2_end == ';')
-							break;
-					}
-					str2 = strcasestr(str2_end, "texture");
-				}
-				while (str || str2) {
-					char *t;
-					if (!str)
-						t = str2;
-					else if (!str2)
-						t = str;
-					else
-						t = min(str, str2);
-					if (t == str) { // Varying
-						char *end = strstr(str, ";");
-						char *start = end;
-						while (*start != ' ' && *start != '\t') {
-							start--;
-						}
-						start++;
-						end[0] = 0;
-						idx = -1;
-						// Check first if the varying has a known binding
-						for (int j = 0; j < glsl_custom_bindings_num; j++) {
-							if (!strcmp(glsl_custom_bindings[j].name, start)) {
-								idx = j;
-							}
-						}
-						if (idx != -1) {
-							switch (glsl_custom_bindings[idx].type) {
-							case VGL_TYPE_TEXCOORD:
-								strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
-								sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
-								break;
-							case VGL_TYPE_COLOR:
-								sprintf(newline, "CIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
-								break;
-							case VGL_TYPE_FOG:
-								sprintf(newline, "FIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
-								break;
-							}
-						} else {
-							if (glsl_is_first_shader) {
-								// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
-								for (int j = 0; j < glsl_max_texcoord_bind; j++) {
-									if (!strcmp(glsl_texcoords_binds[j], start)) {
-										idx = j;
-										break;
-									}
-								}
-								// VIN will get extended by the preprocessor into a in varying bound to a progressive TEXCOORD semantic
-								if (idx >= 0) {
-									sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
-								} else {
-#ifndef SKIP_ERROR_HANDLING
-									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID) {
-										glsl_max_texcoord_bind--;
-										vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
-									}
-#endif
-									strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
-									sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_max_texcoord_bind++);
-									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
-										glsl_max_texcoord_bind--;
-								}
-							} else {
-								// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
-								for (int j = 0; j < glsl_max_texcoord_bind; j++) {
-									if (!strcmp(glsl_texcoords_binds[j], start)) {
-										idx = j;
-										break;
-									}
-								}
-								if (idx == -1) {
-									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
-										glsl_max_texcoord_bind--;
-									vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, glsl_max_texcoord_bind);
-									strcpy(glsl_texcoords_binds[glsl_max_texcoord_bind], start);
-									idx = glsl_max_texcoord_bind++;
-									if (glsl_max_texcoord_bind >= MAX_CG_TEXCOORD_ID)
-										glsl_max_texcoord_bind--;
-								}
-								sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
-							}
-						}
-						sceClibMemcpy(str, newline, strlen(newline));
-						str = strstr(str, "varying");
-						while (str && !(str[7] == ' ' || str[7] == '\t')) {
-							str = strstr(str + 7, "varying");
-						}
-					} else { // "texture" Uniform
-						if (t[0] == 't')
-							sceClibMemcpy(t, "vgl_tex", 7);
-						else
-							sceClibMemcpy(t, "Vgl_tex", 7);
-						str2 = strcasestr(t, "texture");
-						while (str2) {
-							char *str2_end = str2 + 7;
-							if (*(str2 - 1) == ' ' || *(str2 - 1) == '\t' || *(str2 - 1) == '(') {
-								while (*str2_end == ' ' || *str2_end == '\t') {
-									str2_end++;
-								}
-								if (*str2_end == ',' || *str2_end == ';')
-									break;
-							}
-							str2 = strcasestr(str2_end, "texture");
-						}
-					}
-				}
+			switch (glsl_sema_mode) {
+			case VGL_MODE_SHADER_PAIR:
+				glsl_translate_with_shader_pair(text, s->type, hasFrontFacing);
+				break;
+			case VGL_MODE_GLOBAL:
+				glsl_translate_with_global(text, s->type, hasFrontFacing);
+				break;
+			default:
+				vgl_log("%s:%d %s: Invalid semantic binding resolution mode supplied.\n", __FILE__, __LINE__, __func__);
+				break;
 			}
 #endif
 		}
 #ifdef HAVE_GLSL_TRANSLATOR
+		// Replacing all marked varying with actual bindings if custom bindings are used
+		if (glsl_custom_bindings_num > 0 || glsl_sema_mode == VGL_MODE_GLOBAL) {
+			char *str = strstr(s->source, "\v");
+			while (str) {
+				char *start = str;
+				while (*start != ',') {
+					start--;
+				}
+				char *end = start;
+				while (*start != ' ' && *start != '\t') {
+					start--;
+				}
+				start++;
+				int idx = -1;
+				*end = 0;
+				if (glsl_sema_mode == VGL_MODE_GLOBAL) {
+					for (int j = 0; j < MAX_CG_TEXCOORD_ID; j++) {
+						idx = j;
+						for (int i = 0; i < glsl_custom_bindings_num; i++) {
+							// Check if amongst the currently known bindings, used in the shader, there's one mapped to the attempted index
+							if (glsl_custom_bindings[i].type == VGL_TYPE_TEXCOORD && glsl_custom_bindings[i].idx == j && glsl_custom_bindings[i].ref_idx == glsl_current_ref_idx) {
+								idx = -1;
+								break;
+							}
+						}
+						if (idx != -1)
+							break;
+					}
+					if (idx != -1)
+						vglAddSemanticBinding(start, idx, VGL_TYPE_TEXCOORD);
+				} else {
+					glsl_reserve_texcoord_bind(idx, start);
+				}
+				*end = ',';
+#ifndef SKIP_ERROR_HANDLING
+				if (idx == -1) {
+					idx = 9;
+					vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+				}
+#endif
+				*str = '0' + idx;
+				str = strstr(str, "\v");
+			}
+		}
 		// Nukeing comments (required for * operator replacer to properly work)
 		glsl_nuke_comments(s->source);
 		// Manually handle * operator replacements for vector * matrix and matrix * vector operations support
@@ -1594,9 +1834,11 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	
 #ifdef HAVE_GLSL_TRANSLATOR
 	// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
-	glsl_is_first_shader = !glsl_is_first_shader;
-	if (glsl_is_first_shader)
-		glsl_max_texcoord_bind = 0;
+	if (glsl_sema_mode == VGL_MODE_SHADER_PAIR) {
+		glsl_is_first_shader = !glsl_is_first_shader;
+		if (glsl_is_first_shader)
+			sceClibMemset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
+	}
 	s->size = strlen(s->source);
 #else
 	s->size = size - 1;
@@ -3172,12 +3414,19 @@ void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum typ
 #endif
 	strcpy(glsl_custom_bindings[glsl_custom_bindings_num].name, varying);
 	glsl_custom_bindings[glsl_custom_bindings_num].idx = index;
-	glsl_custom_bindings[glsl_custom_bindings_num++].type = type;
+	glsl_custom_bindings[glsl_custom_bindings_num].type = type;
+	glsl_custom_bindings[glsl_custom_bindings_num++].ref_idx = glsl_current_ref_idx;
 #endif
 }
 
 void vglUseLowPrecision(GLboolean val) {
 #ifdef HAVE_GLSL_TRANSLATOR
 	glsl_precision_low = val;
+#endif
+}
+
+void vglSetSemanticBindingMode(GLenum mode) {
+#ifdef HAVE_GLSL_TRANSLATOR
+	glsl_sema_mode = mode;
 #endif
 }

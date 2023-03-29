@@ -119,12 +119,14 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 	}
 #endif
 	for (int i = 0; i < n; i++) {
-		res[i] = (GLuint)(vglMalloc(sizeof(gpubuffer)));
+		gpubuffer *gpu_buf = (gpubuffer *)vglMalloc(sizeof(gpubuffer));
 #ifdef LOG_ERRORS
-		if (!res[i])
+		if (!gpu_buf)
 			vgl_log("%s:%d glGenBuffers failed to alloc a buffer (%d/%lu).\n", __FILE__, __LINE__, i, n);
 #endif
-		sceClibMemset((void *)res[i], 0, sizeof(gpubuffer));
+		gpu_buf->ptr = NULL;
+		gpu_buf->used = GL_FALSE;
+		res[i] = (GLuint)gpu_buf;
 	}
 }
 
