@@ -24,6 +24,7 @@
 #ifndef _GPU_UTILS_H_
 #define _GPU_UTILS_H_
 
+#include "debug_utils.h"
 #include "mem_utils.h"
 
 // Align a value to the requested alignment
@@ -95,13 +96,27 @@ static inline __attribute__((always_inline)) void gpu_store_texture_data(uint32_
 }
 
 // Alloc a generic memblock into sceGxm mapped memory
-void *gpu_alloc_mapped(size_t size, vglMemType type);
+static inline __attribute__((always_inline)) void *gpu_alloc_mapped(size_t size, vglMemType type) {
+	return gpu_alloc_mapped_aligned(MEM_ALIGNMENT, size, type);
+}
 
 // Alloc a generic memblock into sceGxm mapped memory and marks it for garbage collection
-void *gpu_alloc_mapped_temp(size_t size);
+static inline __attribute__((always_inline)) void *gpu_alloc_mapped_temp(size_t size) {
+#ifndef HAVE_CIRCULAR_VERTEX_POOL
+	// Allocating memblock and marking it for garbage collection
+	void *res = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
-// Alloc a generic memblock into sceGxm mapped memory with a given alignment
-void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type);
+#ifdef LOG_ERRORS
+	if (!res)
+		vgl_log("%s:%d gpu_alloc_mapped_temp failed with a requested size of 0x%08X\n", __FILE__, __LINE__, size);
+#endif
+
+	markAsDirty(res);
+	return res;
+#else
+	return reserve_data_pool(size);
+#endif
+}
 
 // Alloc into sceGxm mapped memory a vertex USSE memblock
 void *gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset);
@@ -116,7 +131,37 @@ void *gpu_fragment_usse_alloc_mapped(size_t size, unsigned int *usse_offset);
 void gpu_fragment_usse_free_mapped(void *addr);
 
 // Calculate bpp for a requested texture format
-int tex_format_to_bytespp(SceGxmTextureFormat format);
+static inline __attribute__((always_inline)) int tex_format_to_bytespp(SceGxmTextureFormat format) {
+	// Calculating bpp for the requested texture format
+	switch (format & 0x9F000000) {
+	case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
+		return 0;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+	case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
+	case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
+		return 1;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
+	case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
+	case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
+		return 2;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
+	case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
+		return 3;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:
+		return 8;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
+	case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
+	case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
+	case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
+	default:
+		return 4;
+	}
+}
 
 // Alloc a texture
 void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), GLboolean fast_store);
@@ -134,10 +179,23 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *));
 
 // Dealloc a texture data
-void gpu_free_texture_data(texture *tex);
+static inline __attribute__((always_inline)) void gpu_free_texture_data(texture *tex) {
+	// Deallocating texture
+	if (tex->data != NULL) {
+		markAsDirty(tex->data);
+		tex->data = NULL;
+	}
+	if (tex->palette_data != NULL) {
+		markAsDirty(tex->palette_data);
+		tex->palette_data = NULL;
+	}
+}
 
 // Dealloc a texture
-void gpu_free_texture(texture *tex);
+static inline __attribute__((always_inline)) void gpu_free_texture(texture *tex) {
+	gpu_free_texture_data(tex);
+	tex->status = TEX_UNUSED;
+}
 
 // Alloc a palette
 void *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe);

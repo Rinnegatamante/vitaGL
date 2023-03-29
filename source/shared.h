@@ -106,25 +106,6 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
-// Debug flags
-//#define DEBUG_MEMCPY // Enable this to use newlib memcpy in order to have proper trace info in coredumps
-
-// Debugging tool
-char *get_gxm_error_literal(uint32_t code);
-#ifdef FILE_LOG
-void vgl_file_log(const char *format, ...);
-#define vgl_log vgl_file_log
-#elif defined(LOG_ERRORS)
-#define vgl_log sceClibPrintf
-#else
-#define vgl_log(...)
-#endif
-#ifdef DEBUG_MEMCPY
-#define vgl_fast_memcpy memcpy
-#else
-#define vgl_fast_memcpy sceClibMemcpy
-#endif
-
 extern GLboolean prim_is_non_native; // Flag for when a primitive not supported natively by sceGxm is used
 
 // Translates a GL primitive enum to its sceGxm equivalent
@@ -668,31 +649,8 @@ extern GLenum vgl_error; // Error returned by glGetError
 extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 extern SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil surfaces setup for sceGxm
 extern GLboolean system_app_mode; // Flag for system app mode usage
-extern void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
-extern void *frame_rt_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_RENDERTARGETS_LIST_SIZE]; // Purge list for rendertargets
-extern int frame_purge_idx; // Index for currently populatable purge list
-extern int frame_elem_purge_idx; // Index for currently populatable purge list element
-extern int frame_rt_purge_idx; // Index for currently populatable purge list rendertarget
-extern GLboolean use_vram; // Flag for VRAM usage for allocations
 
 extern sampler *samplers[COMBINED_TEXTURE_IMAGE_UNITS_NUM]; // Sampler objects array
-
-// Macro to mark a pointer or a rendertarget as dirty for garbage collection
-#define markAsDirty(x) frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x
-#ifdef HAVE_SHARED_RENDERTARGETS
-typedef struct {
-	SceGxmRenderTarget *rt;
-	int w;
-	int h;
-	int ref_count;
-	int max_refs;
-} render_target;
-void __markRtAsDirty(render_target *rt);
-#define _markRtAsDirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
-#define markRtAsDirty(x) __markRtAsDirty((render_target *)x)
-#else
-#define markRtAsDirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
-#endif
 
 // Blending
 extern GLboolean blend_state; // Current state for GL_BLEND

@@ -33,19 +33,68 @@ void vglRestoreVertexUniformBuffer(void);
 void vglSetupUniformCircularPool(void);
 
 #ifndef PARANOID
+typedef struct {
+	uint32_t control_words[4];
+} SceGxmTextureInternal;
+
 // Faster variants with stripped error handling
-void vglSetTexUMode(SceGxmTexture *texture, SceGxmTextureAddrMode addrMode);
-void vglSetTexVMode(SceGxmTexture *texture, SceGxmTextureAddrMode addrMode);
-void vglSetTexMinFilter(SceGxmTexture *texture, SceGxmTextureFilter minFilter);
-void vglSetTexMagFilter(SceGxmTexture *texture, SceGxmTextureFilter magFilter);
-void vglSetTexMipFilter(SceGxmTexture *texture, SceGxmTextureMipFilter mipFilter);
-void vglSetTexLodBias(SceGxmTexture *texture, uint32_t bias);
-void vglSetTexMipmapCount(SceGxmTexture *texture, uint32_t count);
-void vglSetTexGammaMode(SceGxmTexture *texture, SceGxmTextureGammaMode mode);
-void vglSetTexPalette(SceGxmTexture *texture, void *data);
-void vglInitLinearTexture(SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount);
-void vglInitCubeTexture(SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount);
-void vglInitSwizzledTexture(SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount);
+static inline __attribute__((always_inline)) void vglSetTexUMode(SceGxmTexture *texture, SceGxmTextureAddrMode addrMode) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	tex->control_words[0] = ((addrMode << 6) & 0x1C0) | tex->control_words[0] & 0xFFFFFE3F;
+}
+static inline __attribute__((always_inline)) void vglSetTexVMode(SceGxmTexture *texture, SceGxmTextureAddrMode addrMode) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	tex->control_words[0] = ((addrMode << 3) & 0x38) | tex->control_words[0] & 0xFFFFFFC7;
+}
+static inline __attribute__((always_inline)) void vglSetTexMinFilter(SceGxmTexture *texture, SceGxmTextureFilter minFilter) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	tex->control_words[0] = ((minFilter << 10) & 0xC00) | tex->control_words[0] & 0xFFFFF3FF;
+}
+static inline __attribute__((always_inline)) void vglSetTexMagFilter(SceGxmTexture *texture, SceGxmTextureFilter magFilter) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	tex->control_words[0] = ((magFilter << 12) & 0x3000) | tex->control_words[0] & 0xFFFFCFFF;
+}
+static inline __attribute__((always_inline)) void vglSetTexMipFilter(SceGxmTexture *texture, SceGxmTextureMipFilter mipFilter) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	tex->control_words[0] = mipFilter & 0x200 | tex->control_words[0] & 0xFFFFFDFF;
+}
+static inline __attribute__((always_inline)) void vglSetTexLodBias(SceGxmTexture *texture, uint32_t bias) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	tex->control_words[0] = tex->control_words[0] & 0xF81FFFFF | (bias << 21);
+}
+static inline __attribute__((always_inline)) void vglSetTexMipmapCount(SceGxmTexture *texture, uint32_t count) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	tex->control_words[0] = tex->control_words[0] & 0xFFE1FFFF | (((count - 1) & 0xF) << 17);
+}
+static inline __attribute__((always_inline)) void vglSetTexGammaMode(SceGxmTexture *texture, SceGxmTextureGammaMode mode) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	tex->control_words[0] = mode & 0x18000000 | tex->control_words[0] & 0xE7FFFFFF;
+}
+static inline __attribute__((always_inline)) void vglSetTexPalette(SceGxmTexture *texture, void *data) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	tex->control_words[3] = tex->control_words[3] & 0xFC000000 | (uint32_t)data >> 6;
+}
+static inline __attribute__((always_inline)) void vglInitLinearTexture(SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	tex->control_words[0] = ((mipCount - 1) & 0xF) << 17 | 0x3E00090 | texFormat & 0x80000000;
+	tex->control_words[1] = (height - 1) | 0x60000000 | ((width - 1) << 12) | texFormat & 0x1F000000;
+	tex->control_words[2] = (uint32_t)data & 0xFFFFFFFC;
+	tex->control_words[3] = ((texFormat & 0x7000) << 16) | 0x80000000;
+}
+static inline __attribute__((always_inline)) void vglInitCubeTexture(SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	tex->control_words[0] = ((mipCount - 1) & 0xF) << 17 | 0x3E00090 | texFormat & 0x80000000;
+	tex->control_words[1] = (31 - __builtin_clz(height)) | 0x40000000 | ((31 - __builtin_clz(width)) << 16) | texFormat & 0x1F000000;
+	tex->control_words[2] = (uint32_t)data & 0xFFFFFFFC;
+	tex->control_words[3] = ((texFormat & 0x7000) << 16) | 0x80000000;
+}
+static inline __attribute__((always_inline)) void vglInitSwizzledTexture(SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, unsigned int width, unsigned int height, unsigned int mipCount) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	tex->control_words[0] = ((mipCount - 1) & 0xF) << 17 | 0x3E00090 | texFormat & 0x80000000;
+	tex->control_words[1] = (height - 1) | 0xA0000000 | ((width - 1) << 12) | texFormat & 0x1F000000;
+	tex->control_words[2] = (uint32_t)data & 0xFFFFFFFC;
+	tex->control_words[3] = ((texFormat & 0x7000) << 16) | 0x80000000;
+}
 #else
 // Default sceGxm functions
 #define vglSetTexUMode sceGxmTextureSetUAddrMode

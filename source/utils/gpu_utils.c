@@ -43,7 +43,7 @@ uint8_t use_vram_for_usse = GL_FALSE;
 GLboolean use_extra_mem = GL_TRUE;
 
 // Taken from here: https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-uint32_t nearest_po2(uint32_t val) {
+static inline __attribute__((always_inline)) uint32_t nearest_po2(uint32_t val) {
 	val--;
 	val |= val >> 1;
 	val |= val >> 2;
@@ -55,7 +55,7 @@ uint32_t nearest_po2(uint32_t val) {
 	return val;
 }
 
-uint64_t morton_1(uint64_t x) {
+static inline __attribute__((always_inline)) uint64_t morton_1(uint64_t x) {
 	x = x & 0x5555555555555555;
 	x = (x | (x >> 1)) & 0x3333333333333333;
 	x = (x | (x >> 2)) & 0x0F0F0F0F0F0F0F0F;
@@ -65,14 +65,13 @@ uint64_t morton_1(uint64_t x) {
 	return x;
 }
 
-void d2xy_morton(uint64_t d, uint64_t *x, uint64_t *y) {
+static inline __attribute__((always_inline)) void d2xy_morton(uint64_t d, uint64_t *x, uint64_t *y) {
 	*x = morton_1(d);
 	*y = morton_1(d >> 1);
 }
 
-void extract_block(const uint8_t *src, int width, uint8_t *block) {
-	int j;
-	for (j = 0; j < 4; j++) {
+static inline __attribute__((always_inline)) void extract_block(const uint8_t *src, int width, uint8_t *block) {
+	for (int j = 0; j < 4; j++) {
 		vgl_fast_memcpy(&block[j * 4 * 4], src, 16);
 		src += width * 4;
 	}
@@ -183,10 +182,6 @@ void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type) {
 	return res;
 }
 
-void *gpu_alloc_mapped(size_t size, vglMemType type) {
-	return gpu_alloc_mapped_aligned(MEM_ALIGNMENT, size, type);
-}
-
 void *gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
 	void *addr = gpu_alloc_mapped_aligned(4096, size, use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM);
@@ -225,56 +220,7 @@ void gpu_fragment_usse_free_mapped(void *addr) {
 	vgl_free(addr);
 }
 
-void *gpu_alloc_mapped_temp(size_t size) {
-#ifndef HAVE_CIRCULAR_VERTEX_POOL
-	// Allocating memblock and marking it for garbage collection
-	void *res = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-
-#ifdef LOG_ERRORS
-	if (!res)
-		vgl_log("%s:%d gpu_alloc_mapped_temp failed with a requested size of 0x%08X\n", __FILE__, __LINE__, size);
-#endif
-
-	markAsDirty(res);
-	return res;
-#else
-	return reserve_data_pool(size);
-#endif
-}
-
-int tex_format_to_bytespp(SceGxmTextureFormat format) {
-	// Calculating bpp for the requested texture format
-	switch (format & 0x9F000000) {
-	case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
-		return 0;
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
-		return 1;
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
-		return 2;
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
-		return 3;
-	case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:
-		return 8;
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
-	default:
-		return 4;
-	}
-}
-
-SceGxmTransferFormat tex_format_to_transfer(SceGxmTextureFormat format) {
+static inline __attribute__((always_inline)) SceGxmTransferFormat tex_format_to_transfer(SceGxmTextureFormat format) {
 	// Calculating transfer format for the requested texture format
 	switch (format & 0x9F000000) {
 	case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
@@ -291,7 +237,7 @@ SceGxmTransferFormat tex_format_to_transfer(SceGxmTextureFormat format) {
 	}
 }
 
-int tex_format_to_alignment(SceGxmTextureFormat format) {
+static inline __attribute__((always_inline)) int tex_format_to_alignment(SceGxmTextureFormat format) {
 	switch (format & 0x9F000000) {
 	case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
 	case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
@@ -313,23 +259,6 @@ void *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 
 	// Returning palette
 	return texture_palette;
-}
-
-void gpu_free_texture_data(texture *tex) {
-	// Deallocating texture
-	if (tex->data != NULL) {
-		markAsDirty(tex->data);
-		tex->data = NULL;
-	}
-	if (tex->palette_data != NULL) {
-		markAsDirty(tex->palette_data);
-		tex->palette_data = NULL;
-	}
-}
-
-void gpu_free_texture(texture *tex) {
-	gpu_free_texture_data(tex);
-	tex->status = TEX_UNUSED;
 }
 
 void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, SceGxmTransferFormat src_format, const void *data, texture *tex, uint8_t src_bpp, int index) {
@@ -463,7 +392,7 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 #endif
 }
 
-static inline int gpu_get_compressed_mip_size(int level, int width, int height, SceGxmTextureFormat format) {
+static inline __attribute__((always_inline)) int gpu_get_compressed_mip_size(int level, int width, int height, SceGxmTextureFormat format) {
 	switch (format) {
 	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
 	case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
@@ -487,7 +416,7 @@ static inline int gpu_get_compressed_mip_size(int level, int width, int height, 
 	}
 }
 
-int gpu_get_compressed_mipchain_size(int level, int width, int height, SceGxmTextureFormat format) {
+static inline __attribute__((always_inline)) int gpu_get_compressed_mipchain_size(int level, int width, int height, SceGxmTextureFormat format) {
 	int size = 0;
 
 	for (int currentLevel = 0; currentLevel <= level; currentLevel++) {
@@ -501,7 +430,7 @@ int gpu_get_compressed_mipchain_size(int level, int width, int height, SceGxmTex
 	return size;
 }
 
-int gpu_get_compressed_mip_offset(int level, int width, int height, SceGxmTextureFormat format) {
+static inline __attribute__((always_inline)) int gpu_get_compressed_mip_offset(int level, int width, int height, SceGxmTextureFormat format) {
 	return gpu_get_compressed_mipchain_size(level - 1, width, height, format);
 }
 
