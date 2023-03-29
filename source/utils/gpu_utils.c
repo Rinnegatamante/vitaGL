@@ -316,14 +316,16 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	uint8_t bpp = tex_format_to_bytespp(format);
 
 	// Allocating texture data buffer
-	const int tex_size = ALIGN(w, 8) * h * bpp;
+	int aligned_w = ALIGN(w, 8);
+	const int tex_size = aligned_w * h * bpp;
 	void *texture_data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
 	if (texture_data != NULL) {
 		// Initializing texture data buffer
 		if (data != NULL) {
 			uint32_t src_stride = w * bpp;
-			gpu_store_texture_data(w, w, h, src_stride, data, texture_data, src_bpp, bpp, read_cb, write_cb, fast_store, 0);
+			uint32_t dst_stride = aligned_w * bpp;
+			gpu_store_texture_data(w, w, h, src_stride, dst_stride, data, texture_data, src_bpp, bpp, read_cb, write_cb, fast_store, 0);
 		} else
 			sceClibMemset(texture_data, 0, tex_size);
 

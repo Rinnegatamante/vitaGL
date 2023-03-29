@@ -661,40 +661,21 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		}
 	}
 
-#ifdef HAVE_UNFLIPPED_FBOS
-	uint8_t *data_u8 = data + (width * dst_bpp * (height - 1));
-#else
-	uint8_t *data_u8 = active_read_fb ? data : (data + (width * dst_bpp * (height - 1)));
+	uint8_t *data_u8;
+	uint32_t dst_stride;
+#ifndef HAVE_UNFLIPPED_FBOS
+	if (active_read_fb) {
+		data_u8 = data;
+		dst_stride = width * dst_bpp;
+	} else
 #endif
-	int i;
-	if (fast_store) {
-		for (i = 0; i < height; i++) {
-			vgl_fast_memcpy(data_u8, &src[y + x * src_bpp], width * src_bpp);
-			y += stride;
-#ifdef HAVE_UNFLIPPED_FBOS
-			data_u8 -= width * src_bpp;
-#else
-			data_u8 -= (active_read_fb ? -width : width) * src_bpp;
-#endif
-		}
-	} else {
-		int j;
-		for (i = 0; i < height; i++) {
-			uint8_t *line_src = &src[y + i * stride + x * src_bpp];
-			uint8_t *line_dst = data_u8;
-			for (j = 0; j < width; j++) {
-				uint32_t clr = read_cb(line_src);
-				write_cb(line_dst, clr);
-				line_src += src_bpp;
-				line_dst += dst_bpp;
-			}
-#ifdef HAVE_UNFLIPPED_FBOS
-			data_u8 -= width * dst_bpp;
-#else
-			data_u8 -= (active_read_fb ? -width : width) * dst_bpp;
-#endif
-		}
+	{
+		data_u8 = data + (width * dst_bpp * (height - 1));
+		dst_stride = -(width * dst_bpp);
 	}
+
+	uint32_t src_stride = width * src_bpp;
+	gpu_store_texture_data(width, width, height, src_stride, dst_stride, src + x * src_bpp + y, data_u8, src_bpp, dst_bpp, read_cb, write_cb, fast_store, 0);
 }
 
 /* vgl* */
