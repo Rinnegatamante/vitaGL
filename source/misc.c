@@ -147,6 +147,7 @@ GLenum gl_polygon_mode_back = GL_FILL; // Current in use polygon mode for back
 GLboolean point_sprite_state = GL_FALSE; // Current state for GL_POINT_SPRITE
 
 viewport gl_viewport; // Current viewport state
+GLboolean skip_viewport_override = GL_FALSE;
 
 static void update_polygon_offset() {
 	switch (polygon_mode_front) {
@@ -306,10 +307,13 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 #endif
 
 	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-	gl_viewport.x = x;
-	gl_viewport.y = y;
-	gl_viewport.w = width;
-	gl_viewport.h = height;
+	if (!skip_viewport_override) {
+		gl_viewport.x = x;
+		gl_viewport.y = y;
+		gl_viewport.w = width;
+		gl_viewport.h = height;
+	} else
+		skip_viewport_override = GL_FALSE;
 }
 
 void glDepthRange(GLdouble nearVal, GLdouble farVal) {

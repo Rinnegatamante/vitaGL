@@ -514,6 +514,7 @@ typedef struct {
 #include "shaders.h"
 
 // Internal stuffs
+extern GLboolean skip_viewport_override;
 extern uint8_t texcoord_idxs[TEXTURE_COORDS_NUM];
 extern uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM];
 extern uint8_t ffp_vertex_attrib_fixed_mask;

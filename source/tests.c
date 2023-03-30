@@ -96,12 +96,22 @@ void validate_depth_test() {
 
 void invalidate_viewport() {
 	// Invalidating current viewport
-	setViewport(gxm_context, fullscreen_x_port, fullscreen_x_scale, fullscreen_y_port, fullscreen_y_scale, fullscreen_z_port, fullscreen_z_scale);
+	if (is_rendering_display)
+		setViewport(gxm_context, fullscreen_x_port, fullscreen_x_scale, fullscreen_y_port, fullscreen_y_scale, fullscreen_z_port, fullscreen_z_scale);
+	else {
+		skip_viewport_override = GL_TRUE;
+		glViewport(0, 0, in_use_framebuffer->width, in_use_framebuffer->height);
+	}
 }
 
 void validate_viewport() {
 	// Restoring original viewport
-	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	if (is_rendering_display)
+		setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	else {
+		skip_viewport_override = GL_TRUE;
+		glViewport(gl_viewport.x, gl_viewport.y, gl_viewport.w, gl_viewport.h);
+	}
 }
 
 void change_stencil_settings() {
