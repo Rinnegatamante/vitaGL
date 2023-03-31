@@ -176,12 +176,14 @@ float4 main(
 	float fog_dist = coords.z / coords.w;
 #if fog_mode == 0 // GL_LINEAR
 	float vFog = (fog_far - fog_dist) / fog_range;
-#endif
+#else
+	const float LOG2E = 1.442695f;
 #if fog_mode == 1  // GL_EXP
-	float vFog = exp(-fog_density * fog_dist);
+	float vFog = exp(-fog_density * fog_dist * LOG2E);
 #endif
 #if fog_mode == 2  // GL_EXP2
-	float vFog = exp(-fog_density * fog_density * fog_dist * fog_dist);
+	float vFog = exp(-fog_density * fog_density * fog_dist * fog_dist * LOG2E);
+#endif
 #endif
 	vFog = clamp(vFog, 0.0f, 1.0f);
 	texColor.rgb = lerp(fogColor.rgb, texColor.rgb, vFog);
