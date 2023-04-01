@@ -25,6 +25,7 @@
 #include <string.h>
 #include "shared.h"
 #include "utils/glsl_utils.h"
+#include "utils/shacccg_paramquery.h"
 
 #define MAX_CUSTOM_SHADERS 2048 // Maximum number of linkable custom shaders
 #define MAX_CUSTOM_PROGRAMS 1024 // Maximum number of linkable custom programs
@@ -148,6 +149,12 @@ shark_opt compiler_opts = SHARK_OPT_FAST;
 
 GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
 
+// Matrix uniform struct
+typedef struct {
+	const SceGxmProgramParameter *ptr;
+	void *chain;
+} matrix_uniform;
+
 // Uniform struct
 typedef struct {
 	const SceGxmProgramParameter *ptr;
@@ -168,6 +175,7 @@ typedef struct {
 	const SceGxmProgram *prog;
 	uint32_t size;
 	char *source;
+	matrix_uniform *mat;
 #ifdef HAVE_SHARK_LOG
 	char *log;
 #endif
@@ -215,6 +223,11 @@ void release_shader(shader *s) {
 	if (s->valid) {
 		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
 		vgl_free((void *)s->prog);
+		while (s->mat) {
+			matrix_uniform *m = (matrix_uniform *)s->mat->chain;
+			vgl_free(s->mat);
+			s->mat = m;
+		}
 #ifdef HAVE_SHARK_LOG
 		if (s->log) {
 			vgl_free(s->log);
@@ -237,7 +250,7 @@ float *reserve_attrib_pool(uint8_t count) {
 	return res;
 }
 
-GLenum gxm_vd_fmt_to_gl(SceGxmAttributeFormat fmt) {
+static inline __attribute__((always_inline)) GLenum gxm_vd_fmt_to_gl(SceGxmAttributeFormat fmt) {
 	switch (fmt) {
 	case SCE_GXM_ATTRIBUTE_FORMAT_F16:
 		return GL_HALF_FLOAT;
@@ -260,7 +273,7 @@ GLenum gxm_vd_fmt_to_gl(SceGxmAttributeFormat fmt) {
 	}
 }
 
-GLenum gxm_attr_type_to_gl(uint8_t size, uint8_t num) {
+static inline __attribute__((always_inline)) GLenum gxm_attr_type_to_gl(uint8_t size, uint8_t num) {
 	switch (size * num) {
 	case 1:
 		return GL_FLOAT;
@@ -279,7 +292,7 @@ GLenum gxm_attr_type_to_gl(uint8_t size, uint8_t num) {
 	}
 }
 
-GLenum gxm_unif_type_to_gl(SceGxmParameterType type, uint8_t count, int *size) {
+static inline __attribute__((always_inline)) GLenum gxm_unif_type_to_gl(SceGxmParameterType type, uint8_t count, int *size) {
 	switch (type) {
 	case SCE_GXM_PARAMETER_TYPE_F32:
 	case SCE_GXM_PARAMETER_TYPE_F16:
@@ -288,22 +301,10 @@ GLenum gxm_unif_type_to_gl(SceGxmParameterType type, uint8_t count, int *size) {
 		case 1:
 			return GL_FLOAT;
 		case 2:
-			if (*size == 2) {
-				*size = 1;
-				return GL_FLOAT_MAT2;
-			}
 			return GL_FLOAT_VEC2;
 		case 3:
-			if (*size == 3) {
-				*size = 1;
-				return GL_FLOAT_MAT3;
-			}
 			return GL_FLOAT_VEC3;
 		case 4:
-			if (*size == 4) {
-				*size = 1;
-				return GL_FLOAT_MAT4;
-			}
 			return GL_FLOAT_VEC4;
 		default:
 			break;
@@ -322,6 +323,25 @@ GLenum gxm_unif_type_to_gl(SceGxmParameterType type, uint8_t count, int *size) {
 		default:
 			break;
 		}
+	default:
+		break;
+	}
+}
+
+static inline __attribute__((always_inline)) void gxm_unif_to_mat(GLenum *type, int *size) {
+	switch (*type) {
+	case GL_FLOAT_VEC2:
+		*type = GL_FLOAT_MAT2;
+		*size = *size / 2;
+		break;
+	case GL_FLOAT_VEC3:
+		*type = GL_FLOAT_MAT3;
+		*size = *size / 3;
+		break;
+	case GL_FLOAT_VEC4:
+		*type = GL_FLOAT_MAT4;
+		*size = *size / 4;
+		break;
 	default:
 		break;
 	}
@@ -882,6 +902,7 @@ GLuint glCreateShader(GLenum shaderType) {
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, 0)
 	}
+	shaders[res - 1].mat = NULL;
 	shaders[res - 1].valid = GL_TRUE;
 
 	return res;
@@ -1170,10 +1191,26 @@ void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, c
 	shader *s = &shaders[handles[0] - 1];
 
 	// Allocating compiled shader on RAM and registering it into sceGxmShaderPatcher
-	s->prog = (SceGxmProgram *)vglMalloc(length);
-	vgl_fast_memcpy((void *)s->prog, binary, length);
-	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
-	s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
+	uint8_t *ubin = (uint8_t *)binary;
+	if (ubin[0] == 'G' && ubin[1] == 'X' && ubin[2] == 'P') { // Standard GXP file
+		s->prog = (SceGxmProgram *)vglMalloc(length);
+		vgl_fast_memcpy((void *)s->prog, binary, length);
+		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
+		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
+	} else { // GXP program with matrix uniforms table
+		uint32_t *ubin32 = (uint32_t *)binary;
+		GLsizei bin_len = length - (ubin32[0] + 1) * sizeof(uint32_t);
+		s->prog = (SceGxmProgram *)vglMalloc(bin_len);
+		vgl_fast_memcpy((void *)s->prog, &ubin32[ubin32[0] + 1], bin_len);
+		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
+		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
+		for (uint32_t i = 1; i <= ubin32[0]; i++) {
+			matrix_uniform *m = (matrix_uniform *)vglMalloc(sizeof(matrix_uniform));
+			m->ptr = sceGxmProgramGetParameter(s->prog, ubin32[i]);
+			m->chain = s->mat;
+			s->mat = m;
+		}
+	}
 }
 
 void glCompileShader(GLuint handle) {
@@ -1203,6 +1240,17 @@ void glCompileShader(GLuint handle) {
 			vgl_log("%s:%d %s: Program failed to register on sceGxm (%s).\n", __FILE__, __LINE__, __func__, get_gxm_error_literal(r));
 #endif
 		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
+		SceShaccCgCompileOutput *cout = (SceShaccCgCompileOutput *)shark_get_internal_compile_output();
+		SceShaccCgParameter param = sceShaccCgGetFirstParameter(cout);
+		while (param) {
+			if (sceShaccCgGetParameterClass(param) == SCE_SHACCCG_PARAMETERCLASS_MATRIX) {
+				matrix_uniform *m = (matrix_uniform *)vglMalloc(sizeof(matrix_uniform));
+				m->ptr = sceGxmProgramFindParameterByName(s->prog, sceShaccCgGetParameterName(param));
+				m->chain = s->mat;
+				s->mat = m;
+			}
+			param = sceShaccCgGetNextParameter(param);
+		}
 	}
 #ifdef HAVE_SHARK_LOG
 	if (s->log)
@@ -1340,21 +1388,36 @@ void glGetProgramBinary(GLuint prog, GLsizei bufSize, GLsizei *length, GLenum *b
 	sceClibMemcpy(&b[1], p->attr, sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM);
 	GLsizei size = sizeof(GLuint) + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM;
 
-	// Dumping binaries
-	if (p->vshader->prog) {
-		GLsizei bin_len = sceGxmProgramGetSize(p->vshader->prog);
-		uint32_t *sizeptr = (uint32_t *)((uint8_t *)binary + size);
-		sizeptr[0] = bin_len;
-		vgl_fast_memcpy(&sizeptr[1], p->vshader->prog, bin_len);
-		size += bin_len + sizeof(uint32_t);
+	// Dumping vertex binary
+	uint32_t matrix_uniforms_num = 0;
+	matrix_uniform *m = p->vshader->mat;
+	uint32_t *ubin = (uint32_t *)((uint8_t *)binary + size);
+	while (m) {
+		matrix_uniforms_num++;
+		ubin[matrix_uniforms_num + 1] = sceGxmProgramParameterGetIndex(p->vshader->prog, m->ptr);
+		m = (matrix_uniform *)m->chain;
 	}
-	if (p->fshader->prog) {
-		GLsizei bin_len = sceGxmProgramGetSize(p->fshader->prog);
-		uint32_t *sizeptr = (uint32_t *)((uint8_t *)binary + size);
-		sizeptr[0] = bin_len;
-		vgl_fast_memcpy(&sizeptr[1], p->fshader->prog, bin_len);
-		size += bin_len + sizeof(uint32_t);
+	ubin[1] = matrix_uniforms_num;
+	GLsizei bin_len = sceGxmProgramGetSize(p->vshader->prog);
+	ubin[0] = bin_len + (matrix_uniforms_num + 1) * sizeof(uint32_t);
+	vgl_fast_memcpy(&ubin[matrix_uniforms_num + 2], p->vshader->prog, bin_len);
+	size += bin_len + sizeof(uint32_t) * (2 + matrix_uniforms_num);
+	
+	// Dumping fragment binary
+	matrix_uniforms_num = 0;
+	m = p->fshader->mat;
+	ubin = (uint32_t *)((uint8_t *)binary + size);
+	while (m) {
+		matrix_uniforms_num++;
+		ubin[matrix_uniforms_num + 1] = sceGxmProgramParameterGetIndex(p->fshader->prog, m->ptr);
+		m = (matrix_uniform *)m->chain;
 	}
+	ubin[1] = matrix_uniforms_num;
+	bin_len = sceGxmProgramGetSize(p->fshader->prog);
+	ubin[0] = bin_len + (matrix_uniforms_num + 1) * sizeof(uint32_t);
+	vgl_fast_memcpy(&ubin[matrix_uniforms_num + 2], p->fshader->prog, bin_len);
+	size += bin_len + sizeof(uint32_t) * (2 + matrix_uniforms_num);
+
 	if (length)
 		*length = size;
 }
@@ -2504,8 +2567,37 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 		index--;
 	}
 
-	// Copying attribute name
+	// Detecting uniform type
 	const char *pname = sceGxmProgramParameterGetName(u->ptr);
+	if (sceGxmProgramParameterGetCategory(u->ptr) == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+		*type = sceGxmProgramParameterIsSamplerCube(u->ptr) ? GL_SAMPLER_CUBE : GL_SAMPLER_2D;
+		*size = 1;
+	} else {
+		*size = sceGxmProgramParameterGetArraySize(u->ptr);
+		*type = gxm_unif_type_to_gl(sceGxmProgramParameterGetType(u->ptr), sceGxmProgramParameterGetComponentCount(u->ptr), size);
+		if (*type >= GL_FLOAT_VEC2 && *type <= GL_FLOAT_VEC4) {
+			matrix_uniform *m = p->vshader->mat;
+			while (m) {
+				if (m->ptr == u->ptr) {
+					gxm_unif_to_mat(type, size);
+					break;
+				}
+				m = (matrix_uniform *)m->chain;
+			}
+			if (!m) {
+				m = p->fshader->mat;
+				while (m) {
+					if (m->ptr == u->ptr) {
+						gxm_unif_to_mat(type, size);
+						break;
+					}
+					m = (matrix_uniform *)m->chain;
+				}
+			}
+		}
+	}
+	
+	// Copying uniform name
 #ifdef HAVE_GLSL_TRANSLATOR
 	// texture is a reserved keyword in CG but is not in GLSL
 	if (!strcmp(pname, "vgl_tex"))
@@ -2518,14 +2610,6 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 		*length = bufSize;
 	strncpy(name, pname, bufSize);
 	name[bufSize] = 0;
-
-	if (sceGxmProgramParameterGetCategory(u->ptr) == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-		*type = sceGxmProgramParameterIsSamplerCube(u->ptr) ? GL_SAMPLER_CUBE : GL_SAMPLER_2D;
-		*size = 1;
-	} else {
-		*size = sceGxmProgramParameterGetArraySize(u->ptr);
-		*type = gxm_unif_type_to_gl(sceGxmProgramParameterGetType(u->ptr), sceGxmProgramParameterGetComponentCount(u->ptr), size);
-	}
 }
 
 /*
@@ -2683,11 +2767,19 @@ void vglGetShaderBinary(GLuint handle, GLsizei bufSize, GLsizei *length, void *b
 
 	GLsizei size = 0;
 	if (s->prog) {
+		uint32_t matrix_uniforms_num = 0;
+		matrix_uniform *m = s->mat;
+		uint32_t *ubin = (uint32_t *)binary;
+		while (m) {
+			matrix_uniforms_num++;
+			ubin[matrix_uniforms_num] = sceGxmProgramParameterGetIndex(s->prog, m->ptr);
+			m = (matrix_uniform *)m->chain;
+		}
+		ubin[0] = matrix_uniforms_num;
+		
 		GLsizei bin_len = sceGxmProgramGetSize(s->prog);
-		if (bufSize <= bin_len)
-			bin_len = bufSize;
-		vgl_fast_memcpy(binary, s->prog, bin_len);
-		size = bin_len;
+		vgl_fast_memcpy(&ubin[matrix_uniforms_num + 1], s->prog, bin_len);
+		size = bin_len + (matrix_uniforms_num + 1) * sizeof(uint32_t);
 	}
 	if (length)
 		*length = size;
