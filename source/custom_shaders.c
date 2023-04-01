@@ -2575,7 +2575,7 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 	} else {
 		*size = sceGxmProgramParameterGetArraySize(u->ptr);
 		*type = gxm_unif_type_to_gl(sceGxmProgramParameterGetType(u->ptr), sceGxmProgramParameterGetComponentCount(u->ptr), size);
-		if (*type >= GL_FLOAT_VEC2 && *type <= GL_FLOAT_VEC4) {
+		if (*type >= GL_FLOAT_VEC2 && *type <= GL_FLOAT_VEC4 && *size > 1) {
 			matrix_uniform *m = p->vshader->mat;
 			while (m) {
 				if (m->ptr == u->ptr) {
