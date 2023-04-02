@@ -1499,6 +1499,7 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 
 	switch (pname) {
 	case GL_LINK_STATUS:
+	case GL_VALIDATE_STATUS:
 		*params = p->status == PROG_LINKED;
 		break;
 	case GL_INFO_LOG_LENGTH:
