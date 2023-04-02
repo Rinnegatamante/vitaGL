@@ -25,7 +25,6 @@
 #include "glsl_utils.h"
 
 #ifdef HAVE_GLSL_TRANSLATOR
-
 glsl_sema_bind glsl_custom_bindings[MAX_CUSTOM_BINDINGS];
 int glsl_custom_bindings_num = 0;
 int glsl_current_ref_idx = 0;

@@ -1,4 +1,7 @@
-const char *glsl_hdr =
+#ifndef _GLSL_TRANSLATOR_HDR_H_
+#define _GLSL_TRANSLATOR_HDR_H_
+
+static const char *glsl_hdr =
 R"(#define GL_ES 1
 inline float4x4 vglMul(float4x4 M, float v) { return v * M; }
 inline float3x3 vglMul(float3x3 M, float v) { return v * M; }
@@ -81,7 +84,7 @@ varying out float4 gl_FragColor : COLOR;
 #endif
 )";
 
-const char *glsl_precision_hdr =
+static const char *glsl_precision_hdr =
 R"(#define float half
 #define float2 half2
 #define float3 half3
@@ -94,3 +97,5 @@ R"(#define float half
 #define int3 short3
 #define int4 short4
 )";
+
+#endif
