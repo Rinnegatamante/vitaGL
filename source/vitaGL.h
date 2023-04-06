@@ -25,6 +25,7 @@ extern "C" {
 
 #include <vitashark.h>
 
+#ifndef HAVE_GL_HEADERS
 // clang-format off
 #define GLbitfield    uint32_t
 #define GLboolean     uint8_t
@@ -854,6 +855,7 @@ EGLuint64 eglGetSystemTimeNV(void);
 EGLenum eglQueryAPI(void);
 EGLBoolean eglSwapInterval(EGLDisplay display, EGLint interval);
 EGLBoolean eglSwapBuffers(EGLDisplay display, EGLSurface surface);
+#endif
 
 // VGL_EXT_gpu_objects_array extension
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
