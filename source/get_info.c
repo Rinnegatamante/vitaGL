@@ -35,7 +35,9 @@ static GLubyte *extensions[] = {
 	"GL_ARB_get_program_binary",
 	"GL_ARB_multitexture",
 	"GL_ARB_sampler_objects",
+#ifdef HAVE_GLSL_TRANSLATOR
 	"GL_ARB_shading_language_100",
+#endif
 	"GL_ARB_texture_compression",
 	"GL_ARB_vertex_buffer_object",
 	"GL_EXT_abgr",
