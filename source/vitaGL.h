@@ -421,6 +421,9 @@ extern "C" {
 #define GL_SAMPLER_BINDING                              0x8919
 #define GL_FRAGMENT_SHADER                              0x8B30
 #define GL_VERTEX_SHADER                                0x8B31
+#define GL_MAX_VARYING_FLOATS                           0x8B4B
+#define GL_MAX_FRAGMENT_UNIFORM_COMPONENTS              0x8B49
+#define GL_MAX_VERTEX_UNIFORM_COMPONENTS                0x8B4A
 #define GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS               0x8B4C
 #define GL_SHADER_TYPE                                  0x8B4F
 #define GL_FLOAT_VEC2                                   0x8B50
@@ -484,6 +487,7 @@ extern "C" {
 #define GL_READ_FRAMEBUFFER_BINDING                     0x8CAA
 #define GL_COLOR_ATTACHMENT0                            0x8CE0
 #define GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE           0x8CD0
+#define GL_MAX_COLOR_ATTACHMENTS                        0x8CDF
 #define GL_DEPTH_ATTACHMENT                             0x8D00
 #define GL_STENCIL_ATTACHMENT                           0x8D20
 #define GL_DEPTH_COMPONENT32F                           0x8DAB

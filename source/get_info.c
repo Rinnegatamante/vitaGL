@@ -328,6 +328,16 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_MAX_VERTEX_UNIFORM_COMPONENTS:
+	case GL_MAX_FRAGMENT_UNIFORM_COMPONENTS:
+		*data = 2048;
+		break;
+	case GL_MAX_VARYING_FLOATS:
+		*data = 40;
+		break;
+	case GL_MAX_COLOR_ATTACHMENTS:
+		*data = 0;
+		break;
 	case GL_SAMPLER_BINDING:
 		*data = (GLint)samplers[server_texture_unit];
 		break;
