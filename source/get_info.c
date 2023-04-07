@@ -30,10 +30,14 @@
 #define NUM_EXTENSIONS (sizeof(extensions) / sizeof(GLubyte *))
 static GLubyte *extensions[] = {
 	"GL_AMD_compressed_ATC_texture",
+	"GL_ARB_fragment_shader",
 	"GL_ARB_framebuffer_object",
 	"GL_ARB_get_program_binary",
 	"GL_ARB_multitexture",
 	"GL_ARB_sampler_objects",
+	"GL_ARB_shading_language_100",
+	"GL_ARB_texture_compression",
+	"GL_ARB_vertex_buffer_object",
 	"GL_EXT_abgr",
 	"GL_EXT_color_buffer_half_float",
 	"GL_EXT_draw_instanced",
@@ -336,7 +340,7 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		*data = 40;
 		break;
 	case GL_MAX_COLOR_ATTACHMENTS:
-		*data = 0;
+		*data = 1;
 		break;
 	case GL_SAMPLER_BINDING:
 		*data = (GLint)samplers[server_texture_unit];
