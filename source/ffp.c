@@ -459,21 +459,6 @@ void setup_combiner_pass(int i, char *dst) {
 }
 #endif
 
-GLboolean is_color_mapped(int idx) {
-	switch (idx) {
-	case 0: // Ambient
-		return (color_material_mode == GL_AMBIENT || color_material_mode == GL_AMBIENT_AND_DIFFUSE);
-	case 1: // Diffuse
-		return (color_material_mode == GL_DIFFUSE || color_material_mode == GL_AMBIENT_AND_DIFFUSE);
-	case 2: // Specular
-		return (color_material_mode == GL_SPECULAR);
-	case 3: // Emisison
-		return (color_material_mode == GL_EMISSION);
-	default:
-		return GL_FALSE;
-	}
-}
-
 SceGxmVertexStream *cur_streams;
 int light_idx_start;
 uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams) {
@@ -1208,7 +1193,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 #ifdef DRAW_SPEEDHACK
 					ptr = (void *)ffp_vertex_attrib_offsets[i];
 #else
-					uint32_t size = count * cur_streams[i].stride;
+					uint32_t size = count * ffp_vertex_stream_config[i].stride; // FIXME: cur_stream here seems to cause issues, figure out why
 					ptr = gpu_alloc_mapped_temp(size);
 					vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[i], size);
 #endif
