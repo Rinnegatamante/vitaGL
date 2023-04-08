@@ -124,8 +124,8 @@
 		streams = temp_streams; \
 		for (int i = 0; i < p->attr_num; i++) { \
 			uint8_t attr_idx = p->attr_map[i]; \
-			vgl_fast_memcpy(&temp_attributes[i], &cur_vao->vertex_attrib_config[attr_idx], sizeof(SceGxmVertexAttribute)); \
-			vgl_fast_memcpy(&temp_streams[i], &cur_vao->vertex_stream_config[attr_idx], sizeof(SceGxmVertexStream)); \
+			temp_attributes[i] = cur_vao->vertex_attrib_config[attr_idx]; \
+			temp_streams[i] = cur_vao->vertex_stream_config[attr_idx]; \
 			attributes[i].streamIndex = i; \
 		} \
 	} else { \
