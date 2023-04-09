@@ -545,7 +545,7 @@ LOOP_START:
 				found = 1;
 			break;
 		case '-':
-			if (*(left - 1) == 'E' && *(left - 2) >= '0' && *(left - 2) <= '9')
+			if ((*(left - 1) == 'E' || *(left - 1) == 'e') && *(left - 2) >= '0' && *(left - 2) <= '9')
 				break;
 			if (para_left == 0 && quad_para_left == 0)
 				found = 1;
@@ -597,7 +597,7 @@ LOOP_START:
 				found = 1;
 			break;
 		case '-':
-			if (*(right - 1) == 'E' && *(right - 2) >= '0' && *(right - 2) <= '9')
+			if ((*(right - 1) == 'E' || *(right - 1) == 'e') && *(right - 2) >= '0' && *(right - 2) <= '9')
 				break;
 			if (para_left == 0 && quad_para_left == 0 && literal)
 				found = 1;
