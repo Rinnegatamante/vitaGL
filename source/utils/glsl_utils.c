@@ -32,7 +32,7 @@ char glsl_texcoords_binds[MAX_CG_TEXCOORD_ID][64];
 GLboolean glsl_texcoords_used[MAX_CG_TEXCOORD_ID];
 GLboolean glsl_is_first_shader = GL_TRUE;
 GLboolean glsl_precision_low = GL_FALSE;
-GLenum glsl_sema_mode = VGL_MODE_SHADER_PAIR;
+GLenum glsl_sema_mode = VGL_MODE_GLOBAL;
 GLenum prev_shader_type = GL_NONE;
 
 void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFrontFacing) {
