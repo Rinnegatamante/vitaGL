@@ -193,13 +193,13 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 					case VGL_TYPE_TEXCOORD:
 						strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
 						glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
-						sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						sprintf(newline, "VIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 						break;
 					case VGL_TYPE_COLOR:
-						sprintf(newline, "CIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						sprintf(newline, "CIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 						break;
 					case VGL_TYPE_FOG:
-						sprintf(newline, "FIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						sprintf(newline, "FIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 						break;
 					}
 				} else {
@@ -217,10 +217,10 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
 								}
 #endif
-								sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+								sprintf(newline, "VIN(%s, %d);", str + 8, idx);
 							}
 						} else
-							sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+							sprintf(newline, "VIN(%s, %d);", str + 8, idx);
 					} else {
 						// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
 						glsl_get_existing_texcoord_bind(idx, start);
@@ -236,10 +236,10 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 								}
 #endif
 								vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, idx);
-								sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+								sprintf(newline, "VIN(%s, %d);", str + 8, idx);
 							}
 						} else
-							sprintf(newline, "VIN(%s, %d);\n", str + 8, idx);
+							sprintf(newline, "VIN(%s, %d);", str + 8, idx);
 					}
 				}
 				sceClibMemcpy(str, newline, strlen(newline));
@@ -388,13 +388,13 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 				if (idx != -1) {
 					switch (glsl_custom_bindings[idx].type) {
 					case VGL_TYPE_TEXCOORD:
-						sprintf(newline, "VIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						sprintf(newline, "VIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 						break;
 					case VGL_TYPE_COLOR:
-						sprintf(newline, "CIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						sprintf(newline, "CIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 						break;
 					case VGL_TYPE_FOG:
-						sprintf(newline, "FIN(%s, %d);\n", str + 8, glsl_custom_bindings[idx].idx);
+						sprintf(newline, "FIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 						break;
 					}
 				} else {
