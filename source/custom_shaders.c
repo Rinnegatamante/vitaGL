@@ -1094,8 +1094,12 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 			// Nukeing precision directives
 			str = strstr(text, "precision ");
 			while (str) {
-				str[0] = str[1] = '/';
-				str = strstr(str, "precision ");
+				str[0] = ' ';
+				str++;
+				if (str[0] == ';') {
+					str[0] = ' ';
+					str = strstr(str, "precision ");
+				}
 			}
 			switch (glsl_sema_mode) {
 			case VGL_MODE_SHADER_PAIR:
