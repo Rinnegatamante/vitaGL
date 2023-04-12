@@ -1098,7 +1098,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 				str++;
 				if (str[0] == ';') {
 					str[0] = ' ';
-					break;
+					str = strstr(str, "precision ");
 				}
 			}
 			switch (glsl_sema_mode) {
