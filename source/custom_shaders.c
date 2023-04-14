@@ -992,7 +992,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	
 	uint32_t size = 1;
 #ifdef HAVE_GLSL_TRANSLATOR
-	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE;
+	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE, hasPointCoord = GL_FALSE;
 	GLboolean hasPointSize = GL_FALSE, hasFragDepth = GL_FALSE, hasFrontFacing = GL_FALSE;
 	size += strlen(glsl_hdr);
 	if (glsl_precision_low)
@@ -1023,6 +1023,9 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 			if (!hasVertexID)
 				hasVertexID = strstr(string[i], "gl_VertexID") ? GL_TRUE : GL_FALSE;
 		} else {
+			// Checking if shader requires gl_PointCoord
+			if (!hasPointCoord)
+				hasPointCoord = strstr(string[i], "gl_PointCoord") ? GL_TRUE : GL_FALSE;
 			// Checking if shader requires gl_FrontFacing
 			if (!hasFrontFacing)
 				hasFrontFacing = strstr(string[i], "gl_FrontFacing") ? GL_TRUE : GL_FALSE;
@@ -1049,6 +1052,8 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		size += strlen("varying in int gl_VertexID : INDEX;\n");
 	if (hasFragDepth)
 		size += strlen("varying out float gl_FragDepth : DEPTH;\n");
+	if (hasPointCoord)
+		size += strlen("varying in float2 gl_PointCoord : SPRITECOORD;\n");
 #endif
 #if defined(SHADER_COMPILER_SPEEDHACK) && !defined(HAVE_GLSL_TRANSLATOR)
 	if (count == 1)
@@ -1075,6 +1080,8 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 				strcat(s->source, "varying in float4 gl_FragCoord : WPOS;\n");
 			if (hasFragDepth)
 				strcat(s->source, "varying out float gl_FragDepth : DEPTH;\n");
+			if (hasPointCoord)
+				strcat(s->source, "varying in float2 gl_PointCoord : SPRITECOORD;\n");
 		}
 		strcat(s->source, glsl_hdr);
 		if (glsl_precision_low)

@@ -20,7 +20,9 @@
  * glsl_utils.c:
  * Implementation for the GLSL to CG translator
  */
- 
+
+#define _GNU_SOURCE
+#include <string.h>
 #include "../shared.h"
 #include "glsl_utils.h"
 
