@@ -6,6 +6,9 @@ R"(#define GL_ES 1
 inline float4x4 vglMul(float4x4 M, float v) { return v * M; }
 inline float3x3 vglMul(float3x3 M, float v) { return v * M; }
 inline float2x2 vglMul(float2x2 M, float v) { return v * M; }
+inline float4x4 vglMul(float M, float4x4 v) { return v * M; }
+inline float3x3 vglMul(float M, float3x3 v) { return v * M; }
+inline float2x2 vglMul(float M, float2x2 v) { return v * M; }
 inline float4 vglMul(float4x4 M, float4 v) { return mul(v, M); }
 inline float3 vglMul(float3x3 M, float3 v) { return mul(v, M); }
 inline float2 vglMul(float2x2 M, float2 v) { return mul(v, M); }
