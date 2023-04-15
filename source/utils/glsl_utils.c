@@ -538,9 +538,12 @@ LOOP_START:
 			if (para_left < 0)
 				found = 1;
 			break;
+		case '!':
 		case '=':
 			found = 1;
 			break;
+		case '>':
+		case '<':
 		case ',':
 		case '+':
 			if (para_left == 0 && quad_para_left == 0)
@@ -592,6 +595,8 @@ LOOP_START:
 			if (para_left < 0)
 				found = 1;
 			break;
+		case '>':
+		case '<':
 		case ',':
 		case '+':
 		case ':':
