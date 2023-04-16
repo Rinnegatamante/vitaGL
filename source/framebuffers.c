@@ -379,22 +379,23 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 	// Extracting texture data
 	int old_w = fb->width, old_h = fb->height;
 	SceGxmTextureFormat fmt = sceGxmTextureGetFormat(&tex->gxm_tex);
-	fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
-	fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
-	fb->stride = ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
-	fb->data = sceGxmTextureGetData(&tex->gxm_tex);
-	fb->data_type = tex->type;
-
-	// Discarding any previously bound hidden depth buffer
-	if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
-		markAsDirty(fb->depthbuffer_ptr->depthData);
-		fb->depthbuffer_ptr = NULL;
-		fb->is_depth_hidden = GL_FALSE;
-	}
 
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
+		fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
+		fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
+		fb->stride = ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
+		fb->data = sceGxmTextureGetData(&tex->gxm_tex);
+		fb->data_type = tex->type;
+
+		// Discarding any previously bound hidden depth buffer
+		if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
+			markAsDirty(fb->depthbuffer_ptr->depthData);
+			fb->depthbuffer_ptr = NULL;
+			fb->is_depth_hidden = GL_FALSE;
+		}
+	
 		// Clearing previously attached texture
 		if (fb->tex) {
 			fb->tex->ref_counter--;
@@ -454,22 +455,23 @@ void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum textar
 	// Extracting texture data
 	int old_w = fb->width, old_h = fb->height;
 	SceGxmTextureFormat fmt = sceGxmTextureGetFormat(&tex->gxm_tex);
-	fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
-	fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
-	fb->stride = ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
-	fb->data = sceGxmTextureGetData(&tex->gxm_tex);
-	fb->data_type = tex->type;
-
-	// Discarding any previously bound hidden depth buffer
-	if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
-		markAsDirty(fb->depthbuffer_ptr->depthData);
-		fb->depthbuffer_ptr = NULL;
-		fb->is_depth_hidden = GL_FALSE;
-	}
 
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
+		fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
+		fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
+		fb->stride = ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
+		fb->data = sceGxmTextureGetData(&tex->gxm_tex);
+		fb->data_type = tex->type;
+
+		// Discarding any previously bound hidden depth buffer
+		if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
+			markAsDirty(fb->depthbuffer_ptr->depthData);
+			fb->depthbuffer_ptr = NULL;
+			fb->is_depth_hidden = GL_FALSE;
+		}
+	
 		// Clearing previously attached texture
 		if (fb->tex) {
 			fb->tex->ref_counter--;
