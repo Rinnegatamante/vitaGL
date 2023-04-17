@@ -244,6 +244,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 	}
 #endif
 
+#ifndef BUFFERS_SPEEDHACK
 	// Allocating a new buffer
 	if (gpu_buf->used) {
 		uint8_t *ptr = gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
@@ -267,7 +268,9 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 
 		gpu_buf->ptr = ptr;
 		gpu_buf->used = GL_FALSE;
-	} else {
+	} else
+#endif
+	{
 		vgl_memcpy((uint8_t *)gpu_buf->ptr + offset, data, size);
 	}
 }
