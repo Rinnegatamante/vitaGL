@@ -44,7 +44,7 @@ In order to build vitaGL use the following command: `make install`.
 `HAVE_RAZOR=2` Enables debugging features through Razor debugger (retail and devkit compatible) with ImGui interface.<br>
 `HAVE_DEVKIT=1` Enables extra debugging features through Razor debugger available only for devkit users.<br>
 `HAVE_DEVKIT=2` Enables extra debugging features through Razor debugger available only for devkit users with ImGui interface.<br>
-`HAVE_VITA3K_SUPPORT=1` Disables several features in order to make vitaGL compatible with Vita3K. Requires vitaShaRK compiled with https://github.com/Rinnegatamante/vitaShaRK/blob/master/source/vitashark.c#L25 uncommented.<br>
+`HAVE_VITA3K_SUPPORT=1` Disables several features in order to make vitaGL compatible with Vita3K. Requires vitaShaRK compiled with https://github.com/Rinnegatamante/vitaShaRK/blob/master/source/vitashark.c#L24 uncommented.<br>
 # Samples
 
 You can find samples in the *samples* folder in this repository.
