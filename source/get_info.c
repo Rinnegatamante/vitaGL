@@ -462,6 +462,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		*data = (GLint)server_tex_unit->tex_id[0];
 		break;
 	case GL_MAX_VIEWPORT_DIMS:
+		data[0] = GXM_TEX_MAX_SIZE;
+		data[1] = GXM_TEX_MAX_SIZE;
+		break;
 	case GL_MAX_TEXTURE_SIZE:
 	case GL_MAX_RENDERBUFFER_SIZE:
 		*data = GXM_TEX_MAX_SIZE;
