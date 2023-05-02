@@ -391,6 +391,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			if (smp) {
 				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+				vglSetTexMagFilter(&tex->gxm_tex, smp->mag_filter);
 				vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
 				vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
 				vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
@@ -399,6 +400,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			} else if (tex->overridden) {
 				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
 				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
 				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
 				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
@@ -433,6 +435,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			if (smp) {
 				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+				vglSetTexMagFilter(&tex->gxm_tex, smp->mag_filter);
 				vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
 				vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
 				vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
@@ -440,6 +443,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			} else if (tex->overridden) {
 				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
 				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
 				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
 				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
@@ -589,6 +593,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			if (smp) {
 				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+				vglSetTexMagFilter(&tex->gxm_tex, smp->mag_filter);
 				vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
 				vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
 				vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
@@ -596,6 +601,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			} else if (tex->overridden) {
 				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
 				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
 				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
 				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
@@ -629,6 +635,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			if (smp) {
 				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+				vglSetTexMagFilter(&tex->gxm_tex, smp->mag_filter);
 				vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
 				vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
 				vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
@@ -636,6 +643,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			} else if (tex->overridden) {
 				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
 				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
 				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
 				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
