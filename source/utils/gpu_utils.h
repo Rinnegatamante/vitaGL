@@ -66,34 +66,6 @@ typedef struct {
 #endif
 } texture;
 
-static inline __attribute__((always_inline)) void gpu_store_texture_data(uint32_t orig_w, uint32_t w, uint32_t h, uint32_t src_stride, uint32_t dst_stride, const void *src_data, void *dst_data, uint8_t src_bpp, uint8_t dst_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), GLboolean fast_store, GLint xoffset) {
-	uint8_t *src;
-	uint8_t *dst;
-	int i, j;
-	if (fast_store) { // Internal Format and Data Format are the same, we can just use vgl_fast_memcpy for better performance
-		if (xoffset == 0 && src_stride == dst_stride && src_stride == orig_w * dst_bpp) // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
-			sceClibMemcpy(dst_data, src_data, w * h * dst_bpp);
-		else {
-			for (i = 0; i < h; i++) {
-				src = (uint8_t *)src_data + src_stride * i;
-				dst = (uint8_t *)dst_data + dst_stride * i;
-				sceClibMemcpy(dst, src, w * dst_bpp);
-			}
-		}
-	} else { // Different internal and data formats, we need to go with slower callbacks system
-		for (i = 0; i < h; i++) {
-			src = (uint8_t *)src_data + src_stride * i;
-			dst = (uint8_t *)dst_data + dst_stride * i;
-			for (j = 0; j < w; j++) {
-				uint32_t clr = read_cb(src);
-				write_cb(dst, clr);
-				src += src_bpp;
-				dst += dst_bpp;
-			}
-		}
-	}
-}
-
 // Alloc a generic memblock into sceGxm mapped memory with alignment
 void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type);
 

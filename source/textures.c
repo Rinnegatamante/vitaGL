@@ -687,7 +687,8 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	}
 #endif
 	// Calculating start address of requested texture modification
-	uint8_t *texture_data = (uint8_t *)target_texture->data + xoffset * bpp + yoffset * stride;
+	uint8_t *ptr = (uint8_t *)target_texture->data + xoffset * bpp + yoffset * stride;
+	uint8_t *ptr_line = ptr;
 	uint8_t data_bpp = 0;
 	GLboolean fast_store = GL_FALSE;
 
@@ -876,8 +877,36 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			break;
 		}
 
-		uint32_t src_stride = (unpack_row_len ? unpack_row_len : width) * data_bpp;
-		gpu_store_texture_data(orig_w, width, height, src_stride, stride, pixels, texture_data, data_bpp, bpp, read_cb, write_cb, fast_store, xoffset);
+		if (fast_store) { // Internal format and input format are the same, we can take advantage of this
+			uint8_t *data = (uint8_t *)pixels;
+			uint32_t line_size = width * bpp;
+			uint32_t src_stride = (unpack_row_len ? unpack_row_len : width) * bpp;
+			if (xoffset == 0 && src_stride == orig_w * bpp && src_stride == stride) {
+				vgl_fast_memcpy(ptr, data, line_size * height);
+			} else {
+				for (int i = 0; i < height; i++) {
+					vgl_fast_memcpy(ptr, data, line_size);
+					data += src_stride;
+					ptr += stride;
+				}
+			}
+		} else { // Executing texture modification via callbacks
+			uint8_t *data = (uint8_t *)pixels;
+			for (int i = 0; i < height; i++) {
+				for (int j = 0; j < width; j++) {
+					uint32_t clr = read_cb((uint8_t *)data);
+					write_cb(ptr, clr);
+					data += data_bpp;
+					ptr += bpp;
+				}
+				if (unpack_row_len) {
+					data = (uint8_t *)pixels + unpack_row_len * bpp;
+					pixels = data;
+				}
+				ptr = ptr_line + stride;
+				ptr_line = ptr;
+			}
+		}
 
 		break;
 	default:
