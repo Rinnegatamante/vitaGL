@@ -433,8 +433,49 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 	if (level == 0)
 		if (tex->write_cb)
 			gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, tex->write_cb, fast_store);
-		else
-			gpu_alloc_compressed_texture(level, width, height, tex_format, 0, data, tex, data_bpp, read_cb);
+		else {
+			// FIXME: NPOT textures are not supported in dxt_compress for now so we make the texture POT prior runtime compressing it
+			int pot_w = 1;
+			int pot_h = 1;
+			while (pot_w < width) {
+				pot_w = pot_w << 1;
+			}
+			while (pot_h < height) {
+				pot_h = pot_h << 1;
+			}
+						
+			// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
+			void *target_data = data;
+			if (read_cb != readRGBA) {
+				target_data = vglMalloc(pot_w * pot_h * 4);
+				uint8_t *src = (uint8_t *)data;
+				uint32_t *dst = target_data;
+				for (int y = 0; y < height; y++) {
+					for (int x = 0; x < width; x++) {
+						uint32_t clr = read_cb(src);
+						writeRGBA(dst++, clr);
+						src += data_bpp;
+					}
+					dst = &dst[y * pot_w];
+				}
+			} else if (pot_w != width || pot_h != height) {
+				target_data = vglMalloc(pot_w * pot_h * 4);
+				uint32_t *src = (uint32_t *)data;
+				uint32_t *dst = target_data;
+				for (int y = 0; y < height; y++) {
+					sceClibMemcpy(&dst[pot_w * y], &src[width * y], width * 4);
+				}
+			}
+			
+			gpu_alloc_compressed_texture(level, pot_w, pot_h, tex_format, 0, target_data, tex, data_bpp, read_cb);
+			
+			// If we needed a temp memory for input data, we likely needed to turn our texture into pot, so we patch back original texture size into sceGxm descriptor
+			if (target_data != data) {
+				vgl_free(target_data);
+				sceGxmTextureSetWidth(&tex->gxm_tex, width);
+				sceGxmTextureSetHeight(&tex->gxm_tex, height);
+			}
+		}
 	else if (tex->write_cb)
 		gpu_alloc_mipmaps(level, tex);
 	else
@@ -1167,10 +1208,50 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			if (non_native_format) {
 				if (level == 0) {
 					if (read_cb) {
+						// FIXME: NPOT textures are not supported in dxt_compress for now so we make the texture POT prior runtime compressing it
+						int pot_w = 1;
+						int pot_h = 1;
+						while (pot_w < width) {
+							pot_w = pot_w << 1;
+						}
+						while (pot_h < height) {
+							pot_h = pot_h << 1;
+						}
+						
+						// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
+						void *target_data = decompressed_data;
+						if (read_cb != readRGBA) {
+							target_data = vglMalloc(pot_w * pot_h * 4);
+							uint8_t *src = (uint8_t *)decompressed_data;
+							uint32_t *dst = target_data;
+							for (int y = 0; y < height; y++) {
+								for (int x = 0; x < width; x++) {
+									uint32_t clr = read_cb(src);
+									writeRGBA(dst++, clr);
+									src += data_bpp;
+								}
+								dst = &dst[y * pot_w];
+							}
+						} else if (pot_w != width || pot_h != height) {
+							target_data = vglMalloc(pot_w * pot_h * 4);
+							uint32_t *src = (uint32_t *)decompressed_data;
+							uint32_t *dst = target_data;
+							for (int y = 0; y < height; y++) {
+								sceClibMemcpy(&dst[pot_w * y], &src[width * y], width * 4);
+							}
+						}
+						
 						if (target == GL_TEXTURE_2D)
-							gpu_alloc_compressed_texture(level, width, height, tex_format, 0, decompressed_data, tex, data_bpp, read_cb);
+							gpu_alloc_compressed_texture(level, pot_w, pot_h, tex_format, 0, target_data, tex, data_bpp, read_cb);
 						else
-							gpu_alloc_compressed_cube_texture(width, height, tex_format, 0, decompressed_data, tex, data_bpp, read_cb, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+							gpu_alloc_compressed_cube_texture(pot_w, pot_h, tex_format, 0, target_data, tex, data_bpp, read_cb, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+						
+						// If we needed a temp memory for input data, we likely needed to turn our texture into pot, so we patch back original texture size into sceGxm descriptor
+						if (target_data != decompressed_data) {
+							vgl_free(target_data);
+							sceGxmTextureSetWidth(&tex->gxm_tex, width);
+							sceGxmTextureSetHeight(&tex->gxm_tex, height);
+						}
 					} else {
 						gpu_alloc_texture(width, height, tex_format, decompressed_data, tex, data_bpp, NULL, NULL, GL_TRUE);
 					}

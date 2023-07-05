@@ -495,28 +495,9 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 	if (texture_data != NULL) {
 		if (data != NULL) {
 			if (read_cb != NULL) {
-				void *temp = (void *)data;
-
-				// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
-				if (read_cb != readRGBA) {
-					temp = vglMalloc(w * h * 4);
-					uint8_t *src = (uint8_t *)data;
-					uint32_t *dst = (uint32_t *)temp;
-					int i;
-					for (i = 0; i < w * h; i++) {
-						uint32_t clr = read_cb(src);
-						writeRGBA(dst++, clr);
-						src += src_bpp;
-					}
-				}
-
 				// Performing swizzling and DXT compression
 				uint8_t alignment = tex_format_to_alignment(format);
-				dxt_compress(mip_data, temp, aligned_width, aligned_height, alignment == 16);
-
-				// Freeing temporary data if necessary
-				if (read_cb != readRGBA)
-					vgl_free(temp);
+				dxt_compress(mip_data, data, aligned_width, aligned_height, alignment == 16);
 			} else {
 				// Perform swizzling if necessary.
 				switch (format) {
@@ -623,28 +604,9 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 	if (texture_data != NULL) {
 		if (data != NULL) {
 			if (read_cb != NULL) {
-				void *temp = (void *)data;
-
-				// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
-				if (read_cb != readRGBA) {
-					temp = vglMalloc(w * h * 4);
-					uint8_t *src = (uint8_t *)data;
-					uint32_t *dst = (uint32_t *)temp;
-					int i;
-					for (i = 0; i < w * h; i++) {
-						uint32_t clr = read_cb(src);
-						writeRGBA(dst++, clr);
-						src += src_bpp;
-					}
-				}
-
 				// Performing swizzling and DXT compression
 				uint8_t alignment = tex_format_to_alignment(format);
-				dxt_compress(mip_data, temp, aligned_width, aligned_height, alignment == 16);
-
-				// Freeing temporary data if necessary
-				if (read_cb != readRGBA)
-					vgl_free(temp);
+				dxt_compress(mip_data, data, aligned_width, aligned_height, alignment == 16);
 			} else {
 				// Perform swizzling if necessary.
 				switch (format) {
