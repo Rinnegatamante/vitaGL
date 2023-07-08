@@ -1139,7 +1139,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
 		texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
 #ifndef TEXTURES_SPEEDHACK
-		tex->used = GL_TRUE;
+		tex->last_frame = vgl_framecount;
 #endif
 		sampler *smp = samplers[i];
 		if (smp) {
@@ -1168,7 +1168,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 			void *ptr;
 			if (ffp_vertex_attrib_vbo[i]) {
 				gpubuffer *gpu_buf = (gpubuffer *)ffp_vertex_attrib_vbo[i];
-				gpu_buf->used = GL_TRUE;
+				gpu_buf->last_frame = vgl_framecount;
 				ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[i];
 			} else {
 				if (i >= light_idx_start && i < light_idx_start + 5) {
@@ -1240,7 +1240,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
 		texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
 #ifndef TEXTURES_SPEEDHACK
-		tex->used = GL_TRUE;
+		tex->last_frame = vgl_framecount;
 #endif
 		sampler *smp = samplers[i];
 		if (smp) {
@@ -1268,7 +1268,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 		int attr_idx = attr_idxs[i];
 		if (ffp_vertex_attrib_vbo[attr_idx]) {
 			gpubuffer *gpu_buf = (gpubuffer *)ffp_vertex_attrib_vbo[attr_idx];
-			gpu_buf->used = GL_TRUE;
+			gpu_buf->last_frame = vgl_framecount;
 			ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[attr_idx];
 		} else {
 			if (i >= light_idx_start && i < light_idx_start + 5) {
@@ -2254,7 +2254,7 @@ void glEnd(void) {
 		for (int i = 0; i < 2; i++) {
 			texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
 #ifndef TEXTURES_SPEEDHACK
-			tex->used = GL_TRUE;
+			tex->last_frame = vgl_framecount;
 #endif
 			sampler *smp = samplers[i];
 			if (smp) {
@@ -2279,7 +2279,7 @@ void glEnd(void) {
 		reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
 		texture *tex = &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]];
 #ifndef TEXTURES_SPEEDHACK
-		tex->used = GL_TRUE;
+		tex->last_frame = vgl_framecount;
 #endif
 		sampler *smp = samplers[0];
 		if (smp) {

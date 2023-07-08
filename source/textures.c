@@ -445,7 +445,7 @@ void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 			}
 						
 			// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
-			void *target_data = data;
+			void *target_data = (void *)data;
 			if (read_cb != readRGBA) {
 				target_data = vglMalloc(pot_w * pot_h * 4);
 				uint8_t *src = (uint8_t *)data;
@@ -533,7 +533,7 @@ void glGenTextures(GLsizei n, GLuint *res) {
 			// Resetting texture parameters to their default values
 			texture_slots[i].dirty = GL_FALSE;
 #ifndef TEXTURES_SPEEDHACK
-			texture_slots[i].used = GL_FALSE;
+			texture_slots[i].last_frame = 0;
 #endif
 			texture_slots[i].faces_counter = 0;
 			texture_slots[i].ref_counter = 0;
@@ -718,13 +718,13 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	uint32_t orig_h = sceGxmTextureGetHeight(&target_texture->gxm_tex);
 	uint32_t stride = ALIGN(orig_w, 8) * bpp;
 #ifndef TEXTURES_SPEEDHACK
-	if (target_texture->used) {
+	if (vgl_framecount - target_texture->last_frame <= FRAME_PURGE_FREQ) {
 		void *texture_data = gpu_alloc_mapped(orig_h * stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 		vgl_fast_memcpy(texture_data, target_texture->data, orig_h * stride);
 		gpu_free_texture_data(target_texture);
 		sceGxmTextureSetData(&target_texture->gxm_tex, texture_data);
 		target_texture->data = texture_data;
-		target_texture->used = GL_FALSE;
+		target_texture->last_frame = 0;
 	}
 #endif
 	// Calculating start address of requested texture modification
@@ -1820,7 +1820,7 @@ void glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x
 	void *tmp = vglMalloc(width * height * 4);
 	glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
 	glTexImage2D(target, level, internalformat, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
-	vglFree(tmp);
+	vgl_free(tmp);
 }
 
 void glCopyTexImage1D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border) {
@@ -1837,7 +1837,7 @@ void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffse
 	void *tmp = vglMalloc(width * height * 4);
 	glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
 	glTexSubImage2D(target, level, xoffset, yoffset, width, height, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
-	vglFree(tmp);
+	vgl_free(tmp);
 }
 
 void glCopyTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width) {
@@ -1888,7 +1888,7 @@ void glDeleteSamplers(GLsizei n, const GLuint *smp) {
 			if (smp[i] == (GLuint)samplers[j])
 				samplers[j] = NULL;
 		}
-		vglFree((void *)smp[i]);
+		vgl_free((void *)smp[i]);
 	}
 }
 

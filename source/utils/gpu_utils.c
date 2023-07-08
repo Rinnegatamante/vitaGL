@@ -302,7 +302,7 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 		tex->status = TEX_VALID;
 		tex->data = base_texture_data;
 #ifndef TEXTURES_SPEEDHACK
-		tex->used = GL_FALSE;
+		tex->last_frame = 0;
 #endif
 	}
 }
@@ -360,7 +360,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 		tex->status = TEX_VALID;
 		tex->data = texture_data;
 #ifndef TEXTURES_SPEEDHACK
-		tex->used = GL_FALSE;
+		tex->last_frame = 0;
 #endif
 	}
 }
@@ -411,7 +411,7 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 	vglInitLinearTexture(&tex->gxm_tex, tex->data, format, orig_w, orig_h, tex->mip_count);
 	tex->status = TEX_VALID;
 #ifndef TEXTURES_SPEEDHACK
-	tex->used = GL_FALSE;
+	tex->last_frame = 0;
 #endif
 }
 
@@ -532,7 +532,7 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 		tex->status = TEX_VALID;
 		tex->data = base_texture_data;
 #ifndef TEXTURES_SPEEDHACK
-		tex->used = GL_FALSE;
+		tex->last_frame = 0;
 #endif
 	}
 }
@@ -642,7 +642,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		tex->status = TEX_VALID;
 		tex->data = texture_data;
 #ifndef TEXTURES_SPEEDHACK
-		tex->used = GL_FALSE;
+		tex->last_frame = 0;
 #endif
 	}
 }
@@ -745,7 +745,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		tex->status = TEX_VALID;
 		tex->data = texture_data;
 #ifndef TEXTURES_SPEEDHACK
-		tex->used = GL_FALSE;
+		tex->last_frame = 0;
 #endif
 	}
 }

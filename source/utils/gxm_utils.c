@@ -38,10 +38,10 @@ void *vglReserveUniformCircularPoolBuffer(uint32_t size) {
 	if (unif_idx + size >= UNIFORM_CIRCULAR_POOL_SIZE) {
 #ifndef SKIP_ERROR_HANDLING
 		static uint32_t last_frame_swap = 0;
-		if (last_frame_swap == vgl_debugger_framecount) {
+		if (last_frame_swap == vgl_framecount) {
 			vgl_log("%s:%d Circular Uniform Pool outage detected! Consider increasing its size...\n", __FILE__, __LINE__);
 		}
-		last_frame_swap = vgl_debugger_framecount;
+		last_frame_swap = vgl_framecount;
 #endif
 		r = unif_pool;
 		unif_idx = size;

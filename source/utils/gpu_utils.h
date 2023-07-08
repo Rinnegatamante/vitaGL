@@ -27,6 +27,8 @@
 #include "debug_utils.h"
 #include "mem_utils.h"
 
+extern uint32_t vgl_framecount; // Current frame number since application started
+
 // Align a value to the requested alignment
 #define ALIGN(x, a) (((x) + ((a)-1)) & ~((a)-1))
 #define ALIGNBLOCK(x, a) (((x) + ((a)-1)) / a)
@@ -41,7 +43,7 @@ enum {
 // Texture object struct
 typedef struct {
 #ifndef TEXTURES_SPEEDHACK
-	GLboolean used;
+	uint32_t last_frame;
 #endif
 	uint8_t status;
 	uint8_t mip_count;
@@ -156,11 +158,21 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 static inline __attribute__((always_inline)) void gpu_free_texture_data(texture *tex) {
 	// Deallocating texture
 	if (tex->data != NULL) {
-		markAsDirty(tex->data);
+#ifndef TEXTURES_SPEEDHACK
+		if (vgl_framecount - tex->last_frame > FRAME_PURGE_FREQ)
+			vgl_free(tex->data);
+		else
+#endif
+			markAsDirty(tex->data);
 		tex->data = NULL;
 	}
 	if (tex->palette_data != NULL) {
-		markAsDirty(tex->palette_data);
+#ifndef TEXTURES_SPEEDHACK
+		if (vgl_framecount - tex->last_frame > FRAME_PURGE_FREQ)
+			vgl_free(tex->palette_data);
+		else
+#endif
+			markAsDirty(tex->palette_data);
 		tex->palette_data = NULL;
 	}
 }

@@ -84,7 +84,7 @@ float *legacy_pool_ptr = NULL; // Current address for vertices population for GL
 #ifndef SKIP_ERROR_HANDLING
 float *legacy_pool_end = NULL; // Address of the end of the GL1 immediate draw pipeline vertex pool
 
-uint32_t vgl_debugger_framecount = 0; // Current frame number since application started
+uint32_t vgl_framecount = 0; // Current frame number since application started
 #endif
 
 void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
@@ -745,9 +745,7 @@ void vglUseTripleBuffering(GLboolean usage) {
 }
 
 void vglSwapBuffers(GLboolean has_commondialog) {
-#ifndef SKIP_ERROR_HANDLING
-	vgl_debugger_framecount++;
-#endif
+	vgl_framecount++;
 
 	// Marking uniform values as dirty at each frame end just to be safe
 	dirty_frag_unifs = GL_TRUE;

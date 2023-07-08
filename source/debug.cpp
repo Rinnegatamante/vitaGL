@@ -91,7 +91,7 @@ void vgl_debugger_light_draw(uint32_t *fb) {
 	vgl_debugger_draw_mem_usage("Phycont RAM Usage", VGL_MEM_SLOW);
 	vgl_debugger_draw_mem_usage("CDLG RAM Usage", VGL_MEM_BUDGET);
 #ifndef SKIP_ERROR_HANDLING
-	vgl_debugger_draw_string_format(5, dbg_y, "Frame Number: %lu", vgl_debugger_framecount);
+	vgl_debugger_draw_string_format(5, dbg_y, "Frame Number: %lu", vgl_framecount);
 	dbg_y += 20;
 #elif defined(HAVE_LIGHT_RAZOR)
 	vgl_debugger_draw_string_format(5, dbg_y, "Frame Number: %lu", razor_metrics.frame_number);

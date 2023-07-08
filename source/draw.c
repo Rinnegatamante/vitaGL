@@ -29,7 +29,7 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 	type_t *ptr; \
 	if (gpu_buf != NULL && !prim_is_non_native) { \
 		ptr = (type_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices); \
-		gpu_buf->used = GL_TRUE; \
+		gpu_buf->last_frame = vgl_framecount; \
 	} else { \
 		switch (mode) { \
 		case GL_QUADS: \
@@ -464,7 +464,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 			if (texture_slots[tex_unit->tex_id[0]].status != TEX_VALID)
 				return;
 #ifndef TEXTURES_SPEEDHACK
-			texture_slots[tex_unit->tex_id[0]].used = GL_TRUE;
+			texture_slots[tex_unit->tex_id[0]].last_frame = vgl_framecount;
 #endif
 			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
 			sceGxmSetVertexStream(gxm_context, 1, texture_object);

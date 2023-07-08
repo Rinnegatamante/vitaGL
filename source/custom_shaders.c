@@ -44,7 +44,7 @@
 		if (cur_vao->vertex_attrib_vbo[attr_idx]) { \
 			gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[attr_idx]; \
 			ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[attr_idx]; \
-			gpu_buf->used = GL_TRUE; \
+			gpu_buf->last_frame = vgl_framecount; \
 			attributes[i].offset = 0; \
 		} else { \
 			ptrs[i] = gpu_alloc_mapped_temp(count * streams[i].stride); \
@@ -63,7 +63,7 @@
 			if (cur_vao->vertex_attrib_vbo[attr_idx]) { \
 				gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[attr_idx]; \
 				ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[attr_idx]; \
-				gpu_buf->used = GL_TRUE; \
+				gpu_buf->last_frame = vgl_framecount; \
 				attributes[i].offset = 0; \
 			} else { \
 				ptrs[i] = (void *)cur_vao->vertex_attrib_offsets[attr_idx]; \
@@ -385,7 +385,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			}
 #endif
 #ifndef TEXTURES_SPEEDHACK
-			tex->used = GL_TRUE;
+			tex->last_frame = vgl_framecount;
 #endif
 			sampler *smp = samplers[(int)p->frag_texunits[i]->data];
 			if (smp) {
@@ -429,7 +429,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			}
 #endif
 #ifndef TEXTURES_SPEEDHACK
-			tex->used = GL_TRUE;
+			tex->last_frame = vgl_framecount;
 #endif
 			sampler *smp = samplers[(int)p->vert_texunits[i]->data];
 			if (smp) {
@@ -587,7 +587,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			}
 #endif
 #ifndef TEXTURES_SPEEDHACK
-			tex->used = GL_TRUE;
+			tex->last_frame = vgl_framecount;
 #endif
 			sampler *smp = samplers[(int)p->frag_texunits[i]->data];
 			if (smp) {
@@ -629,7 +629,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			}
 #endif
 #ifndef TEXTURES_SPEEDHACK
-			tex->used = GL_TRUE;
+			tex->last_frame = vgl_framecount;
 #endif
 			sampler *smp = samplers[(int)p->vert_texunits[i]->data];
 			if (smp) {

@@ -499,7 +499,7 @@ void vgl_free(void *ptr) {
 	vglMemType type = vgl_mem_get_type_by_addr(ptr);
 	if (type == VGL_MEM_EXTERNAL)
 #ifdef HAVE_WRAPPED_ALLOCATORS
-		return __real_free(ptr);
+		__real_free(ptr);
 #else
 		free(ptr);
 #endif
