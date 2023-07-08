@@ -83,9 +83,8 @@ float *legacy_pool = NULL; // Mempool for GL1 immediate draw pipeline
 float *legacy_pool_ptr = NULL; // Current address for vertices population for GL1 immediate draw pipeline
 #ifndef SKIP_ERROR_HANDLING
 float *legacy_pool_end = NULL; // Address of the end of the GL1 immediate draw pipeline vertex pool
-
-uint32_t vgl_framecount = 0; // Current frame number since application started
 #endif
+uint32_t vgl_framecount = 0; // Current frame number since application started
 
 void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
 void *frame_rt_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_RENDERTARGETS_LIST_SIZE]; // Purge list for rendertargets
