@@ -352,6 +352,7 @@ extern "C" {
 #define GL_INCR_WRAP                                    0x8507
 #define GL_DECR_WRAP                                    0x8508
 #define GL_TEXTURE_CUBE_MAP                             0x8513
+#define GL_TEXTURE_BINDING_CUBE_MAP                     0x8514
 #define GL_TEXTURE_CUBE_MAP_POSITIVE_X                  0x8515
 #define GL_TEXTURE_CUBE_MAP_NEGATIVE_X                  0x8516
 #define GL_TEXTURE_CUBE_MAP_POSITIVE_Y                  0x8517
