@@ -298,7 +298,7 @@ void *glMapBuffer(GLenum target, GLenum access) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL);
 	}
 
-	if (!gpu_buf || gpu_buf->mapped) {
+	if (!gpu_buf) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_OPERATION, NULL)
 	}
 #endif
