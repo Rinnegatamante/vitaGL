@@ -35,12 +35,40 @@ inline int vglMul(int v1, int v2) { return v1 * v2; }
 inline int4 vglMul(int4 v1, int v2) { return v1 * v2; }
 inline int3 vglMul(int3 v1, int v2) { return v1 * v2; }
 inline int2 vglMul(int2 v1, int v2) { return v1 * v2; }
-#define greaterThanEqual(x, y) (x >= y)
-#define greaterThan(x, y) (x > y)
-#define lessThanEqual(x, y) (x <= y)
-#define lessThan(x, y) (x < y)
-#define equal(x, y) (x == y)
-#define notEqual(x, y) (x != y)
+inline int greaterThanEqual(int a, int b) { return (a >= b ? 1 : 0); }
+inline int2 greaterThanEqual(int2 a, int2 b) { return int2(a.x >= b.x ? 1 : 0, a.y >= b.y ? 1 : 0); }
+inline int3 greaterThanEqual(int3 a, int3 b) { return int3(a.x >= b.x ? 1 : 0, a.y >= b.y ? 1 : 0, a.z >= b.z ? 1 : 0); }
+inline int4 greaterThanEqual(int4 a, int4 b) { return int4(a.x >= b.x ? 1 : 0, a.y >= b.y ? 1 : 0, a.z >= b.z ? 1 : 0, a.w >= b.w ? 1 : 0); }
+inline int greaterThanEqual(float a, float b) { return (a >= b ? 1 : 0); }
+inline int2 greaterThanEqual(float2 a, float2 b) { return int2(a.x >= b.x ? 1 : 0, a.y >= b.y ? 1 : 0); }
+inline int3 greaterThanEqual(float3 a, float3 b) { return int3(a.x >= b.x ? 1 : 0, a.y >= b.y ? 1 : 0, a.z >= b.z ? 1 : 0); }
+inline int4 greaterThanEqual(float4 a, float4 b) { return int4(a.x >= b.x ? 1 : 0, a.y >= b.y ? 1 : 0, a.z >= b.z ? 1 : 0, a.w >= b.w ? 1 : 0); }
+inline int greaterThan(int a, int b) { return (a >= b ? 1 : 0); }
+inline int2 greaterThan(int2 a, int2 b) { return int2(a.x > b.x ? 1 : 0, a.y > b.y ? 1 : 0); }
+inline int3 greaterThan(int3 a, int3 b) { return int3(a.x > b.x ? 1 : 0, a.y > b.y ? 1 : 0, a.z > b.z ? 1 : 0); }
+inline int4 greaterThan(int4 a, int4 b) { return int4(a.x > b.x ? 1 : 0, a.y > b.y ? 1 : 0, a.z > b.z ? 1 : 0, a.w > b.w ? 1 : 0); }
+inline int greaterThan(float a, float b) { return (a > b ? 1 : 0); }
+inline int2 greaterThan(float2 a, float2 b) { return int2(a.x > b.x ? 1 : 0, a.y > b.y ? 1 : 0); }
+inline int3 greaterThan(float3 a, float3 b) { return int3(a.x > b.x ? 1 : 0, a.y > b.y ? 1 : 0, a.z > b.z ? 1 : 0); }
+inline int4 greaterThan(float4 a, float4 b) { return int4(a.x > b.x ? 1 : 0, a.y > b.y ? 1 : 0, a.z > b.z ? 1 : 0, a.w > b.w ? 1 : 0); }
+#define lessThan(x, y) greaterThanEqual(y, x)
+#define lessThanEqual(x, y) greaterThan(y, x)
+inline int equal(int a, int b) { return (a == b ? 1 : 0); }
+inline int2 equal(int2 a, int2 b) { return int2(a.x == b.x ? 1 : 0, a.y == b.y ? 1 : 0); }
+inline int3 equal(int3 a, int3 b) { return int3(a.x == b.x ? 1 : 0, a.y == b.y ? 1 : 0, a.z == b.z ? 1 : 0); }
+inline int4 equal(int4 a, int4 b) { return int4(a.x == b.x ? 1 : 0, a.y == b.y ? 1 : 0, a.z == b.z ? 1 : 0, a.w == b.w ? 1 : 0); }
+inline int equal(float a, float b) { return (a == b ? 1 : 0); }
+inline int2 equal(float2 a, float2 b) { return int2(a.x == b.x ? 1 : 0, a.y == b.y ? 1 : 0); }
+inline int3 equal(float3 a, float3 b) { return int3(a.x == b.x ? 1 : 0, a.y == b.y ? 1 : 0, a.z == b.z ? 1 : 0); }
+inline int4 equal(float4 a, float4 b) { return int4(a.x == b.x ? 1 : 0, a.y == b.y ? 1 : 0, a.z == b.z ? 1 : 0, a.w == b.w ? 1 : 0); }
+inline int notEqual(int a, int b) { return (a != b ? 1 : 0); }
+inline int2 notEqual(int2 a, int2 b) { return int2(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0); }
+inline int3 notEqual(int3 a, int3 b) { return int3(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0, a.z != b.z ? 1 : 0); }
+inline int4 notEqual(int4 a, int4 b) { return int4(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0, a.z != b.z ? 1 : 0, a.w != b.w ? 1 : 0); }
+inline int notEqual(float a, float b) { return (a != b ? 1 : 0); }
+inline int2 notEqual(float2 a, float2 b) { return int2(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0); }
+inline int3 notEqual(float3 a, float3 b) { return int3(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0, a.z != b.z ? 1 : 0); }
+inline int4 notEqual(float4 a, float4 b) { return int4(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0, a.z != b.z ? 1 : 0, a.w != b.w ? 1 : 0); }
 #define texture2DProj(x,y) tex2Dproj(x,y)
 #define inversesqrt rsqrt
 #define samplerCube samplerCUBE
