@@ -303,6 +303,7 @@ static const struct {
 	{"glUseProgram", (void *)glUseProgram},
 	{"glVertex2f", (void *)glVertex2f},
 	{"glVertex2i", (void *)glVertex2i},
+	{"glVertex2fv", (void *)glVertex2fv},
 	{"glVertex3f", (void *)glVertex3f},
 	{"glVertex3fv", (void *)glVertex3fv},
 	{"glVertex3i", (void *)glVertex3i},

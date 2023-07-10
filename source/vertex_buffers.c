@@ -303,7 +303,7 @@ void *glMapBuffer(GLenum target, GLenum access) {
 	}
 #endif
 
-	// TODO: Current implementation doesn't take into account 'used' state
+	// FIXME: Current implementation doesn't take into account 'last_frame' state
 	gpu_buf->mapped = GL_TRUE;
 	return gpu_buf->ptr;
 }
@@ -329,7 +329,7 @@ void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitf
 	}
 #endif
 
-	// TODO: Current implementation doesn't take into account 'used' state
+	// FIXME: Current implementation doesn't take into account 'last_frame' state
 	gpu_buf->mapped = GL_TRUE;
 	return (void *)((uint8_t *)gpu_buf->ptr + offset);
 }
