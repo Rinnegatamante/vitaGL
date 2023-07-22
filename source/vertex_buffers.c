@@ -540,13 +540,13 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *po
 	}
 }
 
-void vglVertexPointerMapped(const GLvoid *pointer) {
+void vglVertexPointerMapped(GLint size, const GLvoid *pointer) {
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[0];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[0];
 
 	attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-	attributes->componentCount = 3;
-	streams->stride = 12;
+	attributes->componentCount = size;
+	streams->stride = size * 4;
 
 	vertex_object = (GLvoid *)pointer;
 }
