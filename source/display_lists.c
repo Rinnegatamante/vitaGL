@@ -23,7 +23,11 @@
 
 #include "shared.h"
 
+#ifdef HAVE_DLISTS
 #define NUM_DISPLAY_LISTS 512
+#else
+#define NUM_DISPLAY_LISTS 1 // Save on memory usage if display lists are disabled
+#endif
 
 display_list *curr_display_list = NULL;
 GLboolean display_list_execute;
