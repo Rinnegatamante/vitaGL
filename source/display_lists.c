@@ -29,6 +29,12 @@
 #define NUM_DISPLAY_LISTS 1 // Save on memory usage if display lists are disabled
 #endif
 
+#define call_full_list(t) \
+	for (i = 0; i < n; i++) { \
+		t *l = (t *)lists; \
+		glCallList(l[i]); \
+	}
+
 display_list *curr_display_list = NULL;
 GLboolean display_list_execute;
 display_list display_lists[NUM_DISPLAY_LISTS];
@@ -229,6 +235,41 @@ void glCallList(GLuint list) {
 			break;
 		}
 		l = (list_chain *)l->next;
+	}
+}
+
+void glCallLists(GLsizei n, GLenum type, const void *lists) {
+#ifndef SKIP_ERROR_HANDLING
+	if (n < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, n)
+	}
+#endif
+	int i;
+	switch (type) {
+	case GL_BYTE:
+		call_full_list(int8_t);
+		break;
+	case GL_UNSIGNED_BYTE:
+		call_full_list(uint8_t);
+		break;
+	case GL_SHORT:
+		call_full_list(int16_t);
+		break;
+	case GL_UNSIGNED_SHORT:
+		call_full_list(uint16_t);
+		break;
+	case GL_INT:
+		call_full_list(int32_t);
+		break;
+	case GL_UNSIGNED_INT:
+		call_full_list(uint32_t);
+		break;
+	case GL_FLOAT:
+		call_full_list(float);
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
+		break;
 	}
 }
 

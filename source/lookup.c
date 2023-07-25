@@ -50,6 +50,7 @@ static const struct {
 	{"glBufferData", (void *)glBufferData},
 	{"glBufferSubData", (void *)glBufferSubData},
 	{"glCallList", (void *)glCallList},
+	{"glCallLists", (void *)glCallLists},
 	{"glCheckFramebufferStatus", (void *)glCheckFramebufferStatus},
 	{"glCheckNamedFramebufferStatus", (void *)glCheckNamedFramebufferStatus},
 	{"glClear", (void *)glClear},

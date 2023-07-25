@@ -573,6 +573,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage);
 void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void *data);
 void glCallList(GLuint list);
+void glCallLists(GLsizei n, GLenum type, const void *lists);
 GLenum glCheckFramebufferStatus(GLenum target);
 GLenum glCheckNamedFramebufferStatus(GLuint target, GLenum dummy);
 void glClear(GLbitfield mask);
