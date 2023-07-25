@@ -318,6 +318,18 @@ void glLoadTransposeMatrixx(const GLfixed *m) {
 }
 
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glTranslatef, "FFF", x, y, z))
+		return;
+#endif
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
 	// Translating in use matrix
 	matrix4x4_translate(*matrix, x, y, z);
 	if (matrix != &texture_matrix[server_texture_unit])
@@ -338,6 +350,18 @@ void glTranslatex(GLfixed x, GLfixed y, GLfixed z) {
 }
 
 void glScalef(GLfloat x, GLfloat y, GLfloat z) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glScalef, "FFF", x, y, z))
+		return;
+#endif
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (phase == MODEL_CREATION) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
 	// Scaling in use matrix
 	matrix4x4_scale(*matrix, x, y, z);
 	if (matrix != &texture_matrix[server_texture_unit])
@@ -358,6 +382,11 @@ void glScalex(GLfixed x, GLfixed y, GLfixed z) {
 }
 
 void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glRotatef, "FFF", x, y, z))
+		return;
+#endif
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
