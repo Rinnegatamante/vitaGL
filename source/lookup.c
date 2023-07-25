@@ -175,6 +175,7 @@ static const struct {
 	{"glLineWidth", (void *)glLineWidth},
 	{"glLineWidthx", (void *)glLineWidthx},
 	{"glLinkProgram", (void *)glLinkProgram},
+	{"glListBase", (void *)glListBase},
 	{"glLoadIdentity", (void *)glLoadIdentity},
 	{"glLoadMatrixf", (void *)glLoadMatrixf},
 	{"glLoadMatrixx", (void *)glLoadMatrixx},

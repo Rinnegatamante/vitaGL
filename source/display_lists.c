@@ -23,11 +23,12 @@
 
 #include "shared.h"
 
-#define NUM_DISPLAY_LISTS 32
+#define NUM_DISPLAY_LISTS 512
 
 display_list *curr_display_list = NULL;
 GLboolean display_list_execute;
 display_list display_lists[NUM_DISPLAY_LISTS];
+static uint32_t dlist_offs = 0;
 
 GLboolean _vgl_enqueue_list_func(void (*func)(), const char *type, ...) {
 	// Check if we are creating a display list
@@ -138,8 +139,12 @@ GLboolean _vgl_enqueue_list_func(void (*func)(), const char *type, ...) {
 	return !display_list_execute;
 }
 
+void glListBase(GLuint base) {
+	dlist_offs = base;
+}
+
 void glCallList(GLuint list) {
-	list_chain *l = curr_display_list->head;
+	list_chain *l = display_lists[list + dlist_offs].head;
 	while (l) {
 		switch (l->type) {
 		// No arguments

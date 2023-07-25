@@ -700,6 +700,7 @@ void glLightxv(GLenum light, GLenum pname, const GLfixed *params);
 void glLineWidth(GLfloat width);
 void glLineWidthx(GLfixed width);
 void glLinkProgram(GLuint progr);
+void glListBase(GLuint base);
 void glLoadIdentity(void);
 void glLoadMatrixf(const GLfloat *m);
 void glLoadMatrixx(const GLfixed *m);
