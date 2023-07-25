@@ -42,6 +42,10 @@ GLboolean display_list_execute;
 display_list display_lists[NUM_DISPLAY_LISTS];
 static uint32_t dlist_offs = 0;
 
+void resetDlists() {
+	sceClibMemset(&display_lists[0], 0, sizeof(display_list) * NUM_DISPLAY_LISTS);
+}
+
 GLboolean _vgl_enqueue_list_func(void (*func)(), const char *type, ...) {
 	// Check if we are creating a display list
 	if (!curr_display_list)
@@ -157,34 +161,34 @@ void glListBase(GLuint base) {
 }
 
 void glCallList(GLuint list) {
-	list_chain *l = display_lists[list + dlist_offs].head;
+	list_chain *l = display_lists[list + dlist_offs - 1].head;
 #ifdef DEBUG_DLISTS
 	vgl_log("%s:%d %s: Executing display list %d (Offset: %d)\n", __FILE__, __LINE__, __func__, list + dlist_offs, dlist_offs);
 #endif
 	// Function prototypes
-	void (*f)();
-	void (*f1)(uint32_t);
-	void (*f2)(uint32_t, uint32_t);
-	void (*f3)(uint32_t, int32_t);
-	void (*f4)(int32_t, int32_t);
-	void (*f5)(uint32_t, float);
-	void (*f6)(float, float);
-	void (*f7)(int32_t, int32_t, int32_t);
-	void (*f8)(uint32_t, int32_t, int32_t);
-	void (*f9)(uint32_t, int32_t, uint32_t);
-	void (*f10)(uint32_t, uint32_t, uint32_t);
-	void (*f11)(uint32_t, uint32_t, int32_t);
-	void (*f12)(uint8_t, uint8_t, uint8_t);
-	void (*f13)(int16_t, int16_t, int16_t);
-	void (*f14)(uint32_t, float, float);
-	void (*f15)(uint32_t, uint32_t, float);
-	void (*f16)(float, float, float);
-	void (*f17)(uint32_t, uint32_t, uint32_t, uint32_t);
-	void (*f18)(int32_t, int32_t, int32_t, int32_t);
-	void (*f19)(int32_t, uint32_t, int32_t, uint32_t);
-	void (*f20)(uint32_t, int32_t, uint32_t, uint32_t);
-	void (*f21)(float, float, float, float);
-	void (*f22)(uint8_t, uint8_t, uint8_t, uint8_t);
+	void (*f)(); // DLIST_FUNC_VOID
+	void (*f1)(uint32_t); // DLIST_FUNC_U32
+	void (*f2)(uint32_t, uint32_t); // DLIST_FUNC_U32_U32
+	void (*f3)(uint32_t, int32_t); // DLIST_FUNC_U32_I32
+	void (*f4)(int32_t, int32_t); // DLIST_FUNC_I32_I32
+	void (*f5)(uint32_t, float); // DLIST_FUNC_U32_F32
+	void (*f6)(float, float); // DLIST_FUNC_F32_F32
+	void (*f7)(int32_t, int32_t, int32_t); // DLIST_FUNC_I32_I32_I32
+	void (*f8)(uint32_t, int32_t, int32_t); // DLIST_FUNC_U32_I32_I32
+	void (*f9)(uint32_t, int32_t, uint32_t); // DLIST_FUNC_U32_I32_U32
+	void (*f10)(uint32_t, uint32_t, uint32_t); // DLIST_FUNC_U32_U32_U32
+	void (*f11)(uint32_t, uint32_t, int32_t); // DLIST_FUNC_U32_U32_I32
+	void (*f12)(uint8_t, uint8_t, uint8_t); // DLIST_FUNC_U8_U8_U8
+	void (*f13)(int16_t, int16_t, int16_t); // DLIST_FUNC_I16_I16_I16
+	void (*f14)(uint32_t, float, float); // DLIST_FUNC_U32_F32_F32
+	void (*f15)(uint32_t, uint32_t, float); // DLIST_FUNC_U32_U32_F32
+	void (*f16)(float, float, float); // DLIST_FUNC_F32_F32_F32
+	void (*f17)(uint32_t, uint32_t, uint32_t, uint32_t); // DLIST_FUNC_U32_U32_U32_U32
+	void (*f18)(int32_t, int32_t, int32_t, int32_t); // DLIST_FUNC_I32_I32_I32_I32
+	void (*f19)(int32_t, uint32_t, int32_t, uint32_t); // DLIST_FUNC_I32_U32_I32_U32
+	void (*f20)(uint32_t, int32_t, uint32_t, uint32_t); // DLIST_FUNC_U32_I32_U32_U32
+	void (*f21)(float, float, float, float); // DLIST_FUNC_F32_F32_F32_F32
+	void (*f22)(uint8_t, uint8_t, uint8_t, uint8_t); // DLIST_FUNC_U8_U8_U8_U8
 	
 	while (l) {
 		switch (l->type) {
@@ -404,7 +408,7 @@ void glNewList(GLuint list, GLenum mode) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	curr_display_list = &display_lists[list];
+	curr_display_list = &display_lists[list - 1];
 	display_list_execute = mode == GL_COMPILE ? GL_FALSE : GL_TRUE;
 }
 
@@ -421,14 +425,14 @@ GLuint glGenLists(GLsizei range) {
 	}
 #endif
 	GLsizei r = range;
-	GLuint first = 0xDEADBEEF;
+	GLuint first = 0;
 	for (GLuint i = 0; i < NUM_DISPLAY_LISTS; i++) {
 		if (!display_lists[i].used) {
-			if (first == 0xDEADBEEF)
-				first = i;
+			if (first == 0)
+				first = i + 1;
 			r--;
 		} else {
-			first = 0xDEADBEEF;
+			first = i + 1;
 			r = range;
 		}
 		if (!r)
@@ -440,7 +444,7 @@ GLuint glGenLists(GLsizei range) {
 		return 0;
 	}
 #endif
-	for (GLuint i = first; i < first + range; i++) {
+	for (GLuint i = first - 1; i < first + range; i++) {
 		display_lists[i].used = GL_TRUE;
 		display_lists[i].head = display_lists[i].tail = NULL;
 	}
@@ -455,7 +459,7 @@ void glDeleteLists(GLuint list, GLsizei range) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	for (GLuint i = list; i < list + range; i++) {
+	for (GLuint i = list - 1; i < list + range; i++) {
 		list_chain *l = display_lists[i].head;
 		while (l) {
 			list_chain *old = l;

@@ -318,6 +318,11 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 
 	// Init default vao
 	resetVao(cur_vao);
+	
+#ifdef HAVE_DLISTS
+	// Init display lists
+	resetDlists();
+#endif
 
 #ifdef HAVE_CIRCULAR_VERTEX_POOL
 	vertex_data_pool = gpu_alloc_mapped(vertex_data_pool_size, VGL_MEM_RAM);
