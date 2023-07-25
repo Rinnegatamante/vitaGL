@@ -1807,47 +1807,22 @@ void glClientActiveTexture(GLenum texture) {
 }
 
 void glVertex3fv(const GLfloat *v) {
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glVertex3fv, "U", v))
-		return;
-#endif
 	glVertex3f(v[0], v[1], v[2]);
 }
 
 void glVertex3i(GLint x, GLint y, GLint z) {
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glVertex3i, "III", x, y, z))
-		return;
-#endif
 	glVertex3f(x, y, z);
 }
 
 void glVertex2fv(const GLfloat *v) {
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glVertex2fv, "U", v))
-		return;
-#endif
 	glVertex2f(v[0], v[1]);
 }
 
 void glVertex2f(GLfloat x, GLfloat y) {
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glVertex2f, "FF", x, y))
-		return;
-#endif
 	glVertex3f(x, y, 0.0f);
 }
 
 void glVertex2i(GLint x, GLint y) {
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glVertex2i, "II", x, y))
-		return;
-#endif
 	glVertex3f(x, y, 0.0f);
 }
 
