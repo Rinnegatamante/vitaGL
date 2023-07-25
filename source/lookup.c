@@ -346,6 +346,7 @@ static const struct {
 	{"vglEnd", (void *)vglEnd},
 	{"vglForceAlloc", (void *)vglForceAlloc},
 	{"vglFree", (void *)vglFree},
+	{"vglGetFuncName", (void *)vglGetFuncName},
 	{"vglGetGxmTexture", (void *)vglGetGxmTexture},
 	{"vglGetProcAddress", (void *)vglGetProcAddress},
 	{"vglGetShaderBinary", (void *)vglGetShaderBinary},
@@ -417,6 +418,19 @@ void *vglGetProcAddress(const char *name) {
 
 #ifndef SKIP_ERROR_HANDLING
 	vgl_log("%s:%d vglGetProcAddress: Requested an unimplemented function (%s).\n", __FILE__, __LINE__, name);
+#endif
+	return NULL;
+}
+
+void *vglGetFuncName(uint32_t func) {
+	// search for function name
+	for (size_t i = 0; i < vgl_numproc; ++i) {
+		if (func == vgl_proctable[i].proc)
+			return vgl_proctable[i].name;
+	}
+	
+#ifndef SKIP_ERROR_HANDLING
+	vgl_log("%s:%d vglGetFuncName: Requested an unimplemented function.\n", __FILE__, __LINE__);
 #endif
 	return NULL;
 }

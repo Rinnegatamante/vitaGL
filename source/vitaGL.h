@@ -912,6 +912,7 @@ void vglCgShaderSource(GLuint handle, GLsizei count, const GLchar *const *string
 void vglEnd(void);
 void *vglForceAlloc(uint32_t size);
 void vglFree(void *addr);
+void *vglGetFuncName(uint32_t func);
 SceGxmTexture *vglGetGxmTexture(GLenum target);
 void *vglGetProcAddress(const char *name);
 void *vglGetTexDataPointer(GLenum target);
