@@ -1889,7 +1889,7 @@ void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
 void glMaterialf(GLenum face, GLenum pname, GLfloat param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glMaterialf, "UUF", face, pname, params))
+	if (_vgl_enqueue_list_func(glMaterialf, "UUF", face, pname, param))
 		return;
 #endif
 	switch (pname) {
