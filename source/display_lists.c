@@ -53,6 +53,7 @@ GLboolean _vgl_enqueue_list_func(void (*func)(), const char *type, ...) {
 	if (!curr_display_list->head)
 		curr_display_list->head = new_tail;
 	new_tail->func = func;
+	new_tail->next = NULL;
 
 	// Recording function arguments
 	if (*type) {
