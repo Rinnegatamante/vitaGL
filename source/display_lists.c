@@ -35,6 +35,8 @@
 		glCallList(l[i]); \
 	}
 
+//#define DEBUG_DLISTS // Uncomment this to debug display lists
+
 display_list *curr_display_list = NULL;
 GLboolean display_list_execute;
 display_list display_lists[NUM_DISPLAY_LISTS];
@@ -97,52 +99,52 @@ GLboolean _vgl_enqueue_list_func(void (*func)(), const char *type, ...) {
 
 		// Detecting function type
 		// 1 argument
-		if (strcmp(type, "U"))
+		if (!strcmp(type, "U"))
 			new_tail->type = DLIST_FUNC_U32;
 		// 2 arguments
-		else if (strcmp(type, "II"))
+		else if (!strcmp(type, "II"))
 			new_tail->type = DLIST_FUNC_I32_I32;
-		else if (strcmp(type, "UU"))
+		else if (!strcmp(type, "UU"))
 			new_tail->type = DLIST_FUNC_U32_U32;
-		else if (strcmp(type, "UI"))
+		else if (!strcmp(type, "UI"))
 			new_tail->type = DLIST_FUNC_U32_I32;
-		else if (strcmp(type, "FF"))
+		else if (!strcmp(type, "FF"))
 			new_tail->type = DLIST_FUNC_F32_F32;
-		else if (strcmp(type, "UF"))
+		else if (!strcmp(type, "UF"))
 			new_tail->type = DLIST_FUNC_U32_F32;
 		// 3 arguments
-		else if (strcmp(type, "UII"))
+		else if (!strcmp(type, "UII"))
 			new_tail->type = DLIST_FUNC_U32_I32_I32;
-		else if (strcmp(type, "UIU"))
+		else if (!strcmp(type, "UIU"))
 			new_tail->type = DLIST_FUNC_U32_I32_U32;
-		else if (strcmp(type, "UUI"))
+		else if (!strcmp(type, "UUI"))
 			new_tail->type = DLIST_FUNC_U32_U32_I32;
-		else if (strcmp(type, "UUU"))
+		else if (!strcmp(type, "UUU"))
 			new_tail->type = DLIST_FUNC_U32_U32_U32;
-		else if (strcmp(type, "III"))
+		else if (!strcmp(type, "III"))
 			new_tail->type = DLIST_FUNC_I32_I32_I32;
-		else if (strcmp(type, "UFF"))
+		else if (!strcmp(type, "UFF"))
 			new_tail->type = DLIST_FUNC_U32_F32_F32;
-		else if (strcmp(type, "UUF"))
+		else if (!strcmp(type, "UUF"))
 			new_tail->type = DLIST_FUNC_U32_U32_F32;
-		else if (strcmp(type, "FFF"))
+		else if (!strcmp(type, "FFF"))
 			new_tail->type = DLIST_FUNC_F32_F32_F32;
-		else if (strcmp(type, "XXX"))
+		else if (!strcmp(type, "XXX"))
 			new_tail->type = DLIST_FUNC_U8_U8_U8;
-		else if (strcmp(type, "SSS"))
+		else if (!strcmp(type, "SSS"))
 			new_tail->type = DLIST_FUNC_I16_I16_I16;
 		// 4 arguments
-		else if (strcmp(type, "UUUU"))
+		else if (!strcmp(type, "UUUU"))
 			new_tail->type = DLIST_FUNC_U32_U32_U32_U32;
-		else if (strcmp(type, "UIUU"))
+		else if (!strcmp(type, "UIUU"))
 			new_tail->type = DLIST_FUNC_U32_I32_U32_U32;
-		else if (strcmp(type, "IIII"))
+		else if (!strcmp(type, "IIII"))
 			new_tail->type = DLIST_FUNC_I32_I32_I32_I32;
-		else if (strcmp(type, "IUIU"))
+		else if (!strcmp(type, "IUIU"))
 			new_tail->type = DLIST_FUNC_I32_U32_I32_U32;
-		else if (strcmp(type, "FFFF"))
+		else if (!strcmp(type, "FFFF"))
 			new_tail->type = DLIST_FUNC_F32_F32_F32_F32;
-		else if (strcmp(type, "XXXX"))
+		else if (!strcmp(type, "XXXX"))
 			new_tail->type = DLIST_FUNC_U8_U8_U8_U8;
 	} else
 		new_tail->type = DLIST_FUNC_VOID;
@@ -156,81 +158,201 @@ void glListBase(GLuint base) {
 
 void glCallList(GLuint list) {
 	list_chain *l = display_lists[list + dlist_offs].head;
+#ifdef DEBUG_DLISTS
+	vgl_log("%s:%d %s: Executing display list %d (Offset: %d)\n", __FILE__, __LINE__, __func__, list + dlist_offs, dlist_offs);
+#endif
+	// Function prototypes
+	void (*f)();
+	void (*f1)(uint32_t);
+	void (*f2)(uint32_t, uint32_t);
+	void (*f3)(uint32_t, int32_t);
+	void (*f4)(int32_t, int32_t);
+	void (*f5)(uint32_t, float);
+	void (*f6)(float, float);
+	void (*f7)(int32_t, int32_t, int32_t);
+	void (*f8)(uint32_t, int32_t, int32_t);
+	void (*f9)(uint32_t, int32_t, uint32_t);
+	void (*f10)(uint32_t, uint32_t, uint32_t);
+	void (*f11)(uint32_t, uint32_t, int32_t);
+	void (*f12)(uint8_t, uint8_t, uint8_t);
+	void (*f13)(int16_t, int16_t, int16_t);
+	void (*f14)(uint32_t, float, float);
+	void (*f15)(uint32_t, uint32_t, float);
+	void (*f16)(float, float, float);
+	void (*f17)(uint32_t, uint32_t, uint32_t, uint32_t);
+	void (*f18)(int32_t, int32_t, int32_t, int32_t);
+	void (*f19)(int32_t, uint32_t, int32_t, uint32_t);
+	void (*f20)(uint32_t, int32_t, uint32_t, uint32_t);
+	void (*f21)(float, float, float, float);
+	void (*f22)(uint8_t, uint8_t, uint8_t, uint8_t);
+	
 	while (l) {
 		switch (l->type) {
 		// No arguments
 		case DLIST_FUNC_VOID:
-			l->func();
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s()\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func));
+#endif
+			f = l->func;
+			f();
 			break;
 		// 1 argument
 		case DLIST_FUNC_U32:
-			l->func(*(uint32_t *)(l->args));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%u)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(uint32_t *)(l->args));
+#endif		
+			f1 = l->func;
+			f1(*(uint32_t *)(l->args));
 			break;
 		// 2 arguments
 		case DLIST_FUNC_U32_U32:
-			l->func(*(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%u, %u)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]));
+#endif	
+			f2 = l->func;
+			f2(*(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]));
 			break;
 		case DLIST_FUNC_U32_I32:
-			l->func(*(uint32_t *)(l->args), *(int32_t *)(&l->args[4]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%u, %d)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(uint32_t *)(l->args), *(int32_t *)(&l->args[4]));
+#endif
+			f3 = l->func;
+			f3(*(uint32_t *)(l->args), *(int32_t *)(&l->args[4]));
 			break;
 		case DLIST_FUNC_I32_I32:
-			l->func(*(int32_t *)(l->args), *(int32_t *)(&l->args[4]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%i, %i)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(int32_t *)(l->args), *(int32_t *)(&l->args[4]));
+#endif
+			f4 = l->func;
+			f4(*(int32_t *)(l->args), *(int32_t *)(&l->args[4]));
 			break;
 		case DLIST_FUNC_U32_F32:
-			l->func(*(uint32_t *)(l->args), *(float *)(&l->args[4]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%u, %f)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(uint32_t *)(l->args), *(float *)(&l->args[4]));
+#endif
+			f5 = l->func;
+			f5(*(uint32_t *)(l->args), *(float *)(&l->args[4]));
 			break;
 		case DLIST_FUNC_F32_F32:
-			l->func(*(float *)(l->args), *(float *)(&l->args[4]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%f, %f)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(float *)(l->args), *(float *)(&l->args[4]));
+#endif
+			f6 = l->func;
+			f6(*(float *)(l->args), *(float *)(&l->args[4]));
 			break;
 		// 3 arguments
 		case DLIST_FUNC_I32_I32_I32:
-			l->func(*(int32_t *)(l->args), *(int32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%d, %d, %d)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(int32_t *)(l->args), *(int32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]));
+#endif
+			f7 = l->func;
+			f7(*(int32_t *)(l->args), *(int32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]));
 			break;
 		case DLIST_FUNC_U32_I32_I32:
-			l->func(*(uint32_t *)(l->args), *(int32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%u, %d, %d)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(uint32_t *)(l->args), *(int32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]));
+#endif
+			f8 = l->func;
+			f8(*(uint32_t *)(l->args), *(int32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]));
 			break;
 		case DLIST_FUNC_U32_I32_U32:
-			l->func(*(uint32_t *)(l->args), *(int32_t *)(&l->args[4]), *(uint32_t *)(&l->args[8]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%u, %d, %u)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(uint32_t *)(l->args), *(int32_t *)(&l->args[4]), *(uint32_t *)(&l->args[8]));
+#endif
+			f9 = l->func;
+			f9(*(uint32_t *)(l->args), *(int32_t *)(&l->args[4]), *(uint32_t *)(&l->args[8]));
 			break;
 		case DLIST_FUNC_U32_U32_U32:
-			l->func(*(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(uint32_t *)(&l->args[8]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%u, %u, %u)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(uint32_t *)(&l->args[8]));
+#endif
+			f10 = l->func;
+			f10(*(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(uint32_t *)(&l->args[8]));
 			break;
 		case DLIST_FUNC_U32_U32_I32:
-			l->func(*(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%u, %u, %d)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]));
+#endif
+			f11 = l->func;
+			f11(*(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]));
 			break;
 		case DLIST_FUNC_U8_U8_U8:
-			l->func(*(uint8_t *)(l->args), *(uint8_t *)(&l->args[1]), *(uint8_t *)(&l->args[2]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%hhu, %hhu, %hhu)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(uint8_t *)(l->args), *(uint8_t *)(&l->args[1]), *(uint8_t *)(&l->args[2]));
+#endif
+			f12 = l->func;
+			f12(*(uint8_t *)(l->args), *(uint8_t *)(&l->args[1]), *(uint8_t *)(&l->args[2]));
 			break;
 		case DLIST_FUNC_I16_I16_I16:
-			l->func(*(int16_t *)(l->args), *(int16_t *)(&l->args[2]), *(int16_t *)(&l->args[4]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%hd, %hd, %hd)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(int16_t *)(l->args), *(int16_t *)(&l->args[2]), *(int16_t *)(&l->args[4]));
+#endif
+			f13 = l->func;
+			f13(*(int16_t *)(l->args), *(int16_t *)(&l->args[2]), *(int16_t *)(&l->args[4]));
 			break;
 		case DLIST_FUNC_U32_F32_F32:
-			l->func(*(uint32_t *)(l->args), *(float *)(&l->args[4]), *(float *)(&l->args[8]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%u, %f, %f)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(uint32_t *)(l->args), *(float *)(&l->args[4]), *(float *)(&l->args[8]));
+#endif
+			f14 = l->func;
+			f14(*(uint32_t *)(l->args), *(float *)(&l->args[4]), *(float *)(&l->args[8]));
 			break;
 		case DLIST_FUNC_U32_U32_F32:
-			l->func(*(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(float *)(&l->args[8]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%u, %u, %f)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(float *)(&l->args[8]));
+#endif
+			f15 = l->func;
+			f15(*(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(float *)(&l->args[8]));
 			break;
 		case DLIST_FUNC_F32_F32_F32:
-			l->func(*(float *)(l->args), *(float *)(&l->args[4]), *(float *)(&l->args[8]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%f, %f, %f)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(float *)(l->args), *(float *)(&l->args[4]), *(float *)(&l->args[8]));
+#endif
+			f16 = l->func;
+			f16(*(float *)(l->args), *(float *)(&l->args[4]), *(float *)(&l->args[8]));
 			break;
 		// 4 arguments
 		case DLIST_FUNC_U32_U32_U32_U32:
-			l->func(*(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(uint32_t *)(&l->args[8]), *(uint32_t *)(&l->args[12]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%u, %u, %u, %u)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(uint32_t *)(&l->args[8]), *(uint32_t *)(&l->args[12]));
+#endif
+			f17 = l->func;
+			f17(*(uint32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(uint32_t *)(&l->args[8]), *(uint32_t *)(&l->args[12]));
 			break;
 		case DLIST_FUNC_I32_I32_I32_I32:
-			l->func(*(int32_t *)(l->args), *(int32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]), *(int32_t *)(&l->args[12]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%d, %d, %d, %d)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(int32_t *)(l->args), *(int32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]), *(int32_t *)(&l->args[12]));
+#endif
+			f18 = l->func;
+			f18(*(int32_t *)(l->args), *(int32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]), *(int32_t *)(&l->args[12]));
 			break;
 		case DLIST_FUNC_I32_U32_I32_U32:
-			l->func(*(int32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]), *(uint32_t *)(&l->args[12]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%d, %u, %d, %u)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(int32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]), *(uint32_t *)(&l->args[12]));
+#endif
+			f19 = l->func;
+			f19(*(int32_t *)(l->args), *(uint32_t *)(&l->args[4]), *(int32_t *)(&l->args[8]), *(uint32_t *)(&l->args[12]));
 			break;
 		case DLIST_FUNC_U32_I32_U32_U32:
-			l->func(*(uint32_t *)(l->args), *(int32_t *)(&l->args[4]), *(uint32_t *)(&l->args[8]), *(uint32_t *)(&l->args[12]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%u, %d, %u, %u)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(uint32_t *)(l->args), *(int32_t *)(&l->args[4]), *(uint32_t *)(&l->args[8]), *(uint32_t *)(&l->args[12]));
+#endif
+			f20 = l->func;
+			f20(*(uint32_t *)(l->args), *(int32_t *)(&l->args[4]), *(uint32_t *)(&l->args[8]), *(uint32_t *)(&l->args[12]));
 			break;
 		case DLIST_FUNC_F32_F32_F32_F32:
-			l->func(*(float *)(l->args), *(float *)(&l->args[4]), *(float *)(&l->args[8]), *(float *)(&l->args[12]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%f, %f, %f, %f)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(float *)(l->args), *(float *)(&l->args[4]), *(float *)(&l->args[8]), *(float *)(&l->args[12]));
+#endif
+			f21 = l->func;
+			f21(*(float *)(l->args), *(float *)(&l->args[4]), *(float *)(&l->args[8]), *(float *)(&l->args[12]));
 			break;
 		case DLIST_FUNC_U8_U8_U8_U8:
-			l->func(*(uint8_t *)(l->args), *(uint8_t *)(&l->args[1]), *(uint8_t *)(&l->args[2]), *(uint8_t *)(&l->args[3]));
+#ifdef DEBUG_DLISTS
+			vgl_log("%s:%d %s: %s(%hhu, %hhu, %hhu, %hhu)\n", __FILE__, __LINE__, __func__, vglGetFuncName(l->func), *(uint8_t *)(l->args), *(uint8_t *)(&l->args[1]), *(uint8_t *)(&l->args[2]), *(uint8_t *)(&l->args[3]));
+#endif
+			f22 = l->func;
+			f22(*(uint8_t *)(l->args), *(uint8_t *)(&l->args[1]), *(uint8_t *)(&l->args[2]), *(uint8_t *)(&l->args[3]));
 			break;
 		default:
 			break;
@@ -299,14 +421,14 @@ GLuint glGenLists(GLsizei range) {
 	}
 #endif
 	GLsizei r = range;
-	GLuint first = 0;
+	GLuint first = 0xDEADBEEF;
 	for (GLuint i = 0; i < NUM_DISPLAY_LISTS; i++) {
 		if (!display_lists[i].used) {
-			if (!first)
+			if (first == 0xDEADBEEF)
 				first = i;
 			r--;
 		} else {
-			first = 0;
+			first = 0xDEADBEEF;
 			r = range;
 		}
 		if (!r)
