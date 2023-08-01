@@ -941,8 +941,9 @@ GLuint glCreateShader(GLenum shaderType) {
 	}
 	shaders[res - 1].mat = NULL;
 	shaders[res - 1].valid = GL_TRUE;
+#ifdef HAVE_GLSL_TRANSLATOR
 	shaders[res - 1].glsl_source = NULL;
-
+#endif
 	return res;
 }
 
