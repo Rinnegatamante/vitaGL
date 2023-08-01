@@ -87,4 +87,6 @@ void glsl_handle_globals(char *txt, char *out);
 void glsl_inject_mul(char *txt, char *out);
 void glsl_nuke_comments(char *txt);
 
+void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *string, const GLint *length);
+
 #endif

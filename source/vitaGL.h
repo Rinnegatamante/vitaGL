@@ -901,7 +901,8 @@ typedef enum {
 
 typedef enum {
 	VGL_MODE_SHADER_PAIR,
-	VGL_MODE_GLOBAL
+	VGL_MODE_GLOBAL,
+	VGL_MODE_POSTPONED
 } vglSemanticMode;
 
 // vgl*

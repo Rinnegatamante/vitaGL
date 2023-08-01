@@ -511,6 +511,31 @@ typedef struct {
 	list_chain *tail;
 } display_list;
 
+// Matrix uniform struct
+typedef struct {
+	const SceGxmProgramParameter *ptr;
+	void *chain;
+} matrix_uniform;
+
+// Generic shader struct
+typedef struct {
+	GLenum type;
+	GLboolean valid;
+	GLboolean dirty;
+	int16_t ref_counter;
+	SceGxmShaderPatcherId id;
+	const SceGxmProgram *prog;
+	uint32_t size;
+	char *source;
+#ifdef HAVE_GLSL_TRANSLATOR
+	char *glsl_source;
+#endif
+	matrix_uniform *mat;
+#ifdef HAVE_SHARK_LOG
+	char *log;
+#endif
+} shader;
+
 #include "shaders.h"
 
 // Internal stuffs

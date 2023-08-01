@@ -675,4 +675,194 @@ void glsl_nuke_comments(char *txt) {
 		s = strstr(s2, "//");
 	}
 }
+
+void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *string, const GLint *length) {
+	uint32_t size = 1;
+	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE, hasPointCoord = GL_FALSE;
+	GLboolean hasPointSize = GL_FALSE, hasFragDepth = GL_FALSE, hasFrontFacing = GL_FALSE;
+	size += strlen(glsl_hdr);
+	if (glsl_precision_low)
+		size += strlen(glsl_precision_hdr);
+#ifndef SKIP_ERROR_HANDLING
+	if (glsl_sema_mode == VGL_MODE_SHADER_PAIR) {
+		if (prev_shader_type == s->type) {
+			vgl_log("%s:%d %s: Unexpected shader type, translation may be imperfect.\n", __FILE__, __LINE__, __func__);
+			glsl_is_first_shader = GL_TRUE;
+			sceClibMemset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
+		}
+	} else
+		glsl_current_ref_idx++;
+#endif
+	if (s->type == GL_VERTEX_SHADER)
+		size += strlen("#define VGL_IS_VERTEX_SHADER\n");
+	
+	for (int i = 0; i < count; i++) {
+		if (s->type == GL_VERTEX_SHADER) {
+			// Checking if shader requires gl_PointSize
+			if (!hasPointSize)
+				hasPointSize = strstr(string[i], "gl_PointSize") ? GL_TRUE : GL_FALSE;
+			// Checking if shader requires gl_InstanceID
+			if (!hasInstanceID)
+				hasInstanceID = strstr(string[i], "gl_InstanceID") ? GL_TRUE : GL_FALSE;
+			// Checking if shader requires gl_VertexID
+			if (!hasVertexID)
+				hasVertexID = strstr(string[i], "gl_VertexID") ? GL_TRUE : GL_FALSE;
+		} else {
+			// Checking if shader requires gl_PointCoord
+			if (!hasPointCoord)
+				hasPointCoord = strstr(string[i], "gl_PointCoord") ? GL_TRUE : GL_FALSE;
+			// Checking if shader requires gl_FrontFacing
+			if (!hasFrontFacing)
+				hasFrontFacing = strstr(string[i], "gl_FrontFacing") ? GL_TRUE : GL_FALSE;
+			// Checking if shader requires gl_FragCoord
+			if (!hasFragCoord)
+				hasFragCoord = strstr(string[i], "gl_FragCoord") ? GL_TRUE : GL_FALSE;
+			// Checking if shader requires gl_FragDepth
+			if (!hasFragDepth)
+				hasFragDepth = strstr(string[i], "gl_FragDepth") ? GL_TRUE : GL_FALSE;
+		}
+		size += length ? length[i] : strlen(string[i]);
+	}
+	
+	if (hasPointSize)
+		size += strlen("varying out float gl_PointSize : PSIZE;\n");
+	if (hasFrontFacing)
+		size += strlen("varying in float vgl_Face : FACE;\n");
+	if (hasFragCoord)
+		size += strlen("varying in float4 gl_FragCoord : WPOS;\n");
+	if (hasInstanceID)
+		size += strlen("varying in int gl_InstanceID : INSTANCE;\n");
+	if (hasVertexID)
+		size += strlen("varying in int gl_VertexID : INDEX;\n");
+	if (hasFragDepth)
+		size += strlen("varying out float gl_FragDepth : DEPTH;\n");
+	if (hasPointCoord)
+		size += strlen("varying in float2 gl_PointCoord : SPRITECOORD;\n");
+	
+	s->source = (char *)vglMalloc(size);
+	s->source[0] = 0;
+	
+	// Injecting GLSL to CG header
+	if (s->type == GL_VERTEX_SHADER) {
+		strcat(s->source, "#define VGL_IS_VERTEX_SHADER\n");
+		if (hasPointSize)
+			strcat(s->source, "varying out float gl_PointSize : PSIZE;\n");
+		if (hasInstanceID)
+			strcat(s->source, "varying in int gl_InstanceID : INSTANCE;\n");
+		if (hasVertexID)
+			strcat(s->source, "varying in int gl_VertexID : INDEX;\n");
+	} else {
+		if (hasFrontFacing)
+			strcat(s->source, "varying in float vgl_Face : FACE;\n");
+		if (hasFragCoord)
+			strcat(s->source, "varying in float4 gl_FragCoord : WPOS;\n");
+		if (hasFragDepth)
+			strcat(s->source, "varying out float gl_FragDepth : DEPTH;\n");
+		if (hasPointCoord)
+			strcat(s->source, "varying in float2 gl_PointCoord : SPRITECOORD;\n");
+	}
+	strcat(s->source, glsl_hdr);
+	if (glsl_precision_low)
+		strcat(s->source, glsl_precision_hdr);
+	
+	for (int i = 0; i < count; i++) {
+		char *text = s->source + strlen(s->source);
+		strncat(s->source, string[i], length ? length[i] : strlen(string[i]));
+
+		// Nukeing version directive
+		char *str = strstr(text, "#version");
+		if (str) {
+			str[0] = str[1] = '/';
+		}
+		// Nukeing precision directives
+		str = strstr(text, "precision ");
+		while (str) {
+			str[0] = ' ';
+			str++;
+			if (str[0] == ';') {
+				str[0] = ' ';
+				str = strstr(str, "precision ");
+			}
+		}
+		switch (glsl_sema_mode) {
+		case VGL_MODE_SHADER_PAIR:
+			glsl_translate_with_shader_pair(text, s->type, hasFrontFacing);
+			break;
+		case VGL_MODE_GLOBAL:
+			glsl_translate_with_global(text, s->type, hasFrontFacing);
+			break;
+		default:
+			vgl_log("%s:%d %s: Invalid semantic binding resolution mode supplied.\n", __FILE__, __LINE__, __func__);
+			break;
+		}
+	}
+
+	// Replacing all marked varying with actual bindings if custom bindings are used
+	if (glsl_custom_bindings_num > 0 || glsl_sema_mode == VGL_MODE_GLOBAL) {
+		char *str = strstr(s->source, "\v");
+		while (str) {
+			char *start = str;
+			while (*start != ',') {
+				start--;
+			}
+			char *end = start;
+			while (*start != ' ' && *start != '\t') {
+				start--;
+			}
+			start++;
+			int idx = -1;
+			*end = 0;
+			if (glsl_sema_mode == VGL_MODE_GLOBAL) {
+				for (int j = 0; j < MAX_CG_TEXCOORD_ID; j++) {
+					idx = j;
+					for (int i = 0; i < glsl_custom_bindings_num; i++) {
+						// Check if amongst the currently known bindings, used in the shader, there's one mapped to the attempted index
+						if (glsl_custom_bindings[i].type == VGL_TYPE_TEXCOORD && glsl_custom_bindings[i].idx == j && glsl_custom_bindings[i].ref_idx == glsl_current_ref_idx) {
+							idx = -1;
+							break;
+						}
+					}
+					if (idx != -1)
+						break;
+				}
+				if (idx != -1)
+					vglAddSemanticBinding(start, idx, VGL_TYPE_TEXCOORD);
+			} else {
+				glsl_reserve_texcoord_bind(idx, start);
+			}
+			*end = ',';
+#ifndef SKIP_ERROR_HANDLING
+			if (idx == -1) {
+				idx = 9;
+				vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+			}
+#endif
+			*str = '0' + idx;
+			str = strstr(str, "\v");
+		}
+	}
+	// Nukeing comments (required for * operator replacer to properly work)
+	glsl_nuke_comments(s->source);
+	// Manually handle * operator replacements for vector * matrix and matrix * vector operations support
+	char *dst = vglMalloc(size + 1024 * 1024); // FIXME: This is just an estimation, check if 1MB is enough
+	glsl_inject_mul(s->source, dst);
+	vgl_free(s->source);
+	// Manually handle global variables, adding "static" to them
+	char *dst2 = vglMalloc(strlen(dst) + 1024 * 1024);
+	glsl_handle_globals(dst, dst2);
+	vgl_free(dst);
+	s->source = dst2;
+#ifdef DEBUG_GLSL_TRANSLATOR
+	vgl_log("%s:%d %s: GLSL translation output (%s shader):\n\n%s\n\n", __FILE__, __LINE__, __func__, glsl_is_first_shader ? "first" : "second", s->source);
+#endif
+	s->prog = (SceGxmProgram *)s->source;
+
+	// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
+	if (glsl_sema_mode == VGL_MODE_SHADER_PAIR) {
+		glsl_is_first_shader = !glsl_is_first_shader;
+		if (glsl_is_first_shader)
+			sceClibMemset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
+	}
+	s->size = strlen(s->source);
+}
 #endif

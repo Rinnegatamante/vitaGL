@@ -141,6 +141,13 @@ static unsigned short orig_stride[VERTEX_ATTRIBS_NUM];
 static SceGxmAttributeFormat orig_fmt[VERTEX_ATTRIBS_NUM];
 static unsigned char orig_size[VERTEX_ATTRIBS_NUM];
 
+#ifdef HAVE_GLSL_TRANSLATOR
+typedef struct {
+	GLuint idx;
+	char name[64];
+} attr_mapping;
+#endif
+
 // Internal runtime shader compiler settings
 int32_t compiler_fastmath = GL_TRUE;
 int32_t compiler_fastprecision = GL_FALSE;
@@ -148,12 +155,6 @@ int32_t compiler_fastint = GL_TRUE;
 shark_opt compiler_opts = SHARK_OPT_FAST;
 
 GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
-
-// Matrix uniform struct
-typedef struct {
-	const SceGxmProgramParameter *ptr;
-	void *chain;
-} matrix_uniform;
 
 // Uniform struct
 typedef struct {
@@ -164,22 +165,6 @@ typedef struct {
 	GLboolean is_fragment;
 	GLboolean is_vertex;
 } uniform;
-
-// Generic shader struct
-typedef struct {
-	GLenum type;
-	GLboolean valid;
-	GLboolean dirty;
-	int16_t ref_counter;
-	SceGxmShaderPatcherId id;
-	const SceGxmProgram *prog;
-	uint32_t size;
-	char *source;
-	matrix_uniform *mat;
-#ifdef HAVE_SHARK_LOG
-	char *log;
-#endif
-} shader;
 
 // Program status enum
 typedef enum {
@@ -212,6 +197,10 @@ typedef struct {
 	GLuint attr_highest_idx;
 	GLboolean has_unaligned_attrs;
 	GLboolean is_fbo_float;
+#ifdef HAVE_GLSL_TRANSLATOR
+	uint8_t num_glsl_attr;
+	attr_mapping *glsl_attr_map;
+#endif
 } program;
 
 // Internal shaders and array
@@ -345,6 +334,46 @@ static inline __attribute__((always_inline)) void gxm_unif_to_mat(GLenum *type, 
 	default:
 		break;
 	}
+}
+
+static inline __attribute__((always_inline)) void compile_shader(shader *s) {
+	// Compiling shader source
+	s->prog = shark_compile_shader_extended((const char *)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
+	if (s->prog) {
+		if (s->source) {
+			vgl_free(s->source);
+			s->source = NULL;
+		}
+		SceGxmProgram *res = (SceGxmProgram *)vglMalloc(s->size);
+		vgl_fast_memcpy((void *)res, (void *)s->prog, s->size);
+#ifdef LOG_ERRORS
+		int r =
+#endif
+			sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
+#ifdef LOG_ERRORS
+		if (r)
+			vgl_log("%s:%d %s: Program failed to register on sceGxm (%s).\n", __FILE__, __LINE__, __func__, get_gxm_error_literal(r));
+#endif
+		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
+		SceShaccCgCompileOutput *cout = (SceShaccCgCompileOutput *)shark_get_internal_compile_output();
+		SceShaccCgParameter param = sceShaccCgGetFirstParameter(cout);
+		while (param) {
+			if (sceShaccCgGetParameterClass(param) == SCE_SHACCCG_PARAMETERCLASS_MATRIX) {
+				matrix_uniform *m = (matrix_uniform *)vglMalloc(sizeof(matrix_uniform));
+				m->ptr = sceGxmProgramFindParameterByName(s->prog, sceShaccCgGetParameterName(param));
+				m->chain = s->mat;
+				s->mat = m;
+			}
+			param = sceShaccCgGetNextParameter(param);
+		}
+	}
+#ifdef HAVE_SHARK_LOG
+	if (s->log)
+		vgl_free(s->log);
+	s->log = shark_log;
+	shark_log = NULL;
+#endif
+	shark_clear_output();
 }
 
 void resetCustomShaders(void) {
@@ -912,6 +941,7 @@ GLuint glCreateShader(GLenum shaderType) {
 	}
 	shaders[res - 1].mat = NULL;
 	shaders[res - 1].valid = GL_TRUE;
+	shaders[res - 1].glsl_source = NULL;
 
 	return res;
 }
@@ -997,72 +1027,20 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 #endif
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
+
+#ifdef HAVE_GLSL_TRANSLATOR
+	if (glsl_sema_mode != VGL_MODE_POSTPONED) {
+		glsl_translator_process(s, count, string, length);
+		return;
+	}
+#endif
 	
 	uint32_t size = 1;
-#ifdef HAVE_GLSL_TRANSLATOR
-	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE, hasPointCoord = GL_FALSE;
-	GLboolean hasPointSize = GL_FALSE, hasFragDepth = GL_FALSE, hasFrontFacing = GL_FALSE;
-	size += strlen(glsl_hdr);
-	if (glsl_precision_low)
-		size += strlen(glsl_precision_hdr);
-#ifndef SKIP_ERROR_HANDLING
-	if (glsl_sema_mode == VGL_MODE_SHADER_PAIR) {
-		if (prev_shader_type == s->type) {
-			vgl_log("%s:%d %s: Unexpected shader type, translation may be imperfect.\n", __FILE__, __LINE__, __func__);
-			glsl_is_first_shader = GL_TRUE;
-			sceClibMemset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
-		}
-	} else
-		glsl_current_ref_idx++;
-#endif
-	if (s->type == GL_VERTEX_SHADER)
-		size += strlen("#define VGL_IS_VERTEX_SHADER\n");
-#endif	
+
 	for (int i = 0; i < count; i++) {
-#ifdef HAVE_GLSL_TRANSLATOR
-		if (s->type == GL_VERTEX_SHADER) {
-			// Checking if shader requires gl_PointSize
-			if (!hasPointSize)
-				hasPointSize = strstr(string[i], "gl_PointSize") ? GL_TRUE : GL_FALSE;
-			// Checking if shader requires gl_InstanceID
-			if (!hasInstanceID)
-				hasInstanceID = strstr(string[i], "gl_InstanceID") ? GL_TRUE : GL_FALSE;
-			// Checking if shader requires gl_VertexID
-			if (!hasVertexID)
-				hasVertexID = strstr(string[i], "gl_VertexID") ? GL_TRUE : GL_FALSE;
-		} else {
-			// Checking if shader requires gl_PointCoord
-			if (!hasPointCoord)
-				hasPointCoord = strstr(string[i], "gl_PointCoord") ? GL_TRUE : GL_FALSE;
-			// Checking if shader requires gl_FrontFacing
-			if (!hasFrontFacing)
-				hasFrontFacing = strstr(string[i], "gl_FrontFacing") ? GL_TRUE : GL_FALSE;
-			// Checking if shader requires gl_FragCoord
-			if (!hasFragCoord)
-				hasFragCoord = strstr(string[i], "gl_FragCoord") ? GL_TRUE : GL_FALSE;
-			// Checking if shader requires gl_FragDepth
-			if (!hasFragDepth)
-				hasFragDepth = strstr(string[i], "gl_FragDepth") ? GL_TRUE : GL_FALSE;
-		}
-#endif
 		size += length ? length[i] : strlen(string[i]);
 	}
-#ifdef HAVE_GLSL_TRANSLATOR
-	if (hasPointSize)
-		size += strlen("varying out float gl_PointSize : PSIZE;\n");
-	if (hasFrontFacing)
-		size += strlen("varying in float vgl_Face : FACE;\n");
-	if (hasFragCoord)
-		size += strlen("varying in float4 gl_FragCoord : WPOS;\n");
-	if (hasInstanceID)
-		size += strlen("varying in int gl_InstanceID : INSTANCE;\n");
-	if (hasVertexID)
-		size += strlen("varying in int gl_VertexID : INDEX;\n");
-	if (hasFragDepth)
-		size += strlen("varying out float gl_FragDepth : DEPTH;\n");
-	if (hasPointCoord)
-		size += strlen("varying in float2 gl_PointCoord : SPRITECOORD;\n");
-#endif
+
 #if defined(SHADER_COMPILER_SPEEDHACK) && !defined(HAVE_GLSL_TRANSLATOR)
 	if (count == 1)
 		s->prog = (SceGxmProgram *)*string;
@@ -1071,138 +1049,14 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	{
 		s->source = (char *)vglMalloc(size);
 		s->source[0] = 0;
-#ifdef HAVE_GLSL_TRANSLATOR
-		// Injecting GLSL to CG header
-		if (s->type == GL_VERTEX_SHADER) {
-			strcat(s->source, "#define VGL_IS_VERTEX_SHADER\n");
-			if (hasPointSize)
-				strcat(s->source, "varying out float gl_PointSize : PSIZE;\n");
-			if (hasInstanceID)
-				strcat(s->source, "varying in int gl_InstanceID : INSTANCE;\n");
-			if (hasVertexID)
-				strcat(s->source, "varying in int gl_VertexID : INDEX;\n");
-		} else {
-			if (hasFrontFacing)
-				strcat(s->source, "varying in float vgl_Face : FACE;\n");
-			if (hasFragCoord)
-				strcat(s->source, "varying in float4 gl_FragCoord : WPOS;\n");
-			if (hasFragDepth)
-				strcat(s->source, "varying out float gl_FragDepth : DEPTH;\n");
-			if (hasPointCoord)
-				strcat(s->source, "varying in float2 gl_PointCoord : SPRITECOORD;\n");
-		}
-		strcat(s->source, glsl_hdr);
-		if (glsl_precision_low)
-			strcat(s->source, glsl_precision_hdr);
-#endif
+
 		for (int i = 0; i < count; i++) {
-#ifdef HAVE_GLSL_TRANSLATOR
-			char *text = s->source + strlen(s->source);
-#endif
 			strncat(s->source, string[i], length ? length[i] : strlen(string[i]));
-#ifdef HAVE_GLSL_TRANSLATOR
-			// Nukeing version directive
-			char *str = strstr(text, "#version");
-			if (str) {
-				str[0] = str[1] = '/';
-			}
-			// Nukeing precision directives
-			str = strstr(text, "precision ");
-			while (str) {
-				str[0] = ' ';
-				str++;
-				if (str[0] == ';') {
-					str[0] = ' ';
-					str = strstr(str, "precision ");
-				}
-			}
-			switch (glsl_sema_mode) {
-			case VGL_MODE_SHADER_PAIR:
-				glsl_translate_with_shader_pair(text, s->type, hasFrontFacing);
-				break;
-			case VGL_MODE_GLOBAL:
-				glsl_translate_with_global(text, s->type, hasFrontFacing);
-				break;
-			default:
-				vgl_log("%s:%d %s: Invalid semantic binding resolution mode supplied.\n", __FILE__, __LINE__, __func__);
-				break;
-			}
-#endif
 		}
-#ifdef HAVE_GLSL_TRANSLATOR
-		// Replacing all marked varying with actual bindings if custom bindings are used
-		if (glsl_custom_bindings_num > 0 || glsl_sema_mode == VGL_MODE_GLOBAL) {
-			char *str = strstr(s->source, "\v");
-			while (str) {
-				char *start = str;
-				while (*start != ',') {
-					start--;
-				}
-				char *end = start;
-				while (*start != ' ' && *start != '\t') {
-					start--;
-				}
-				start++;
-				int idx = -1;
-				*end = 0;
-				if (glsl_sema_mode == VGL_MODE_GLOBAL) {
-					for (int j = 0; j < MAX_CG_TEXCOORD_ID; j++) {
-						idx = j;
-						for (int i = 0; i < glsl_custom_bindings_num; i++) {
-							// Check if amongst the currently known bindings, used in the shader, there's one mapped to the attempted index
-							if (glsl_custom_bindings[i].type == VGL_TYPE_TEXCOORD && glsl_custom_bindings[i].idx == j && glsl_custom_bindings[i].ref_idx == glsl_current_ref_idx) {
-								idx = -1;
-								break;
-							}
-						}
-						if (idx != -1)
-							break;
-					}
-					if (idx != -1)
-						vglAddSemanticBinding(start, idx, VGL_TYPE_TEXCOORD);
-				} else {
-					glsl_reserve_texcoord_bind(idx, start);
-				}
-				*end = ',';
-#ifndef SKIP_ERROR_HANDLING
-				if (idx == -1) {
-					idx = 9;
-					vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
-				}
-#endif
-				*str = '0' + idx;
-				str = strstr(str, "\v");
-			}
-		}
-		// Nukeing comments (required for * operator replacer to properly work)
-		glsl_nuke_comments(s->source);
-		// Manually handle * operator replacements for vector * matrix and matrix * vector operations support
-		char *dst = vglMalloc(size + 1024 * 1024); // FIXME: This is just an estimation, check if 1MB is enough
-		glsl_inject_mul(s->source, dst);
-		vgl_free(s->source);
-		// Manually handle global variables, adding "static" to them
-		char *dst2 = vglMalloc(strlen(dst) + 1024 * 1024);
-		glsl_handle_globals(dst, dst2);
-		vgl_free(dst);
-		s->source = dst2;
-#ifdef DEBUG_GLSL_TRANSLATOR
-		vgl_log("%s:%d %s: GLSL translation output (%s shader):\n\n%s\n\n", __FILE__, __LINE__, __func__, glsl_is_first_shader ? "first" : "second", s->source);
-#endif
-#endif
 		s->prog = (SceGxmProgram *)s->source;
 	}
 	
-#ifdef HAVE_GLSL_TRANSLATOR
-	// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
-	if (glsl_sema_mode == VGL_MODE_SHADER_PAIR) {
-		glsl_is_first_shader = !glsl_is_first_shader;
-		if (glsl_is_first_shader)
-			sceClibMemset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
-	}
-	s->size = strlen(s->source);
-#else
 	s->size = size - 1;
-#endif
 }
 
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length) {
@@ -1237,47 +1091,17 @@ void glCompileShader(GLuint handle) {
 	if (!is_shark_online && !startShaderCompiler()) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
+	
+#ifdef HAVE_GLSL_TRANSLATOR
+	// If we use VGL_MODE_POSTPONED, we compile shaders in glLinkProgram
+	if (glsl_sema_mode == VGL_MODE_POSTPONED)
+		return;
+#endif
 
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
-
-	// Compiling shader source
-	s->prog = shark_compile_shader_extended((const char *)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
-	if (s->prog) {
-		if (s->source) {
-			vgl_free(s->source);
-			s->source = NULL;
-		}
-		SceGxmProgram *res = (SceGxmProgram *)vglMalloc(s->size);
-		vgl_fast_memcpy((void *)res, (void *)s->prog, s->size);
-#ifdef LOG_ERRORS
-		int r =
-#endif
-			sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
-#ifdef LOG_ERRORS
-		if (r)
-			vgl_log("%s:%d %s: Program failed to register on sceGxm (%s).\n", __FILE__, __LINE__, __func__, get_gxm_error_literal(r));
-#endif
-		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
-		SceShaccCgCompileOutput *cout = (SceShaccCgCompileOutput *)shark_get_internal_compile_output();
-		SceShaccCgParameter param = sceShaccCgGetFirstParameter(cout);
-		while (param) {
-			if (sceShaccCgGetParameterClass(param) == SCE_SHACCCG_PARAMETERCLASS_MATRIX) {
-				matrix_uniform *m = (matrix_uniform *)vglMalloc(sizeof(matrix_uniform));
-				m->ptr = sceGxmProgramFindParameterByName(s->prog, sceShaccCgGetParameterName(param));
-				m->chain = s->mat;
-				s->mat = m;
-			}
-			param = sceShaccCgGetNextParameter(param);
-		}
-	}
-#ifdef HAVE_SHARK_LOG
-	if (s->log)
-		vgl_free(s->log);
-	s->log = shark_log;
-	shark_log = NULL;
-#endif
-	shark_clear_output();
+	
+	compile_shader(s);
 }
 
 void glDeleteShader(GLuint shad) {
@@ -1289,6 +1113,12 @@ void glDeleteShader(GLuint shad) {
 		s->dirty = GL_TRUE;
 	else
 		release_shader(s);
+	
+#ifdef HAVE_GLSL_TRANSLATOR
+	if (s->glsl_source) {
+		vgl_free(s->glsl_source);
+	}
+#endif
 }
 
 void glAttachShader(GLuint prog, GLuint shad) {
@@ -1369,6 +1199,10 @@ GLuint glCreateProgram(void) {
 			progs[i].vert_uniforms = NULL;
 			progs[i].frag_uniforms = NULL;
 			progs[i].attr_highest_idx = 0;
+#ifdef HAVE_GLSL_TRANSLATOR
+			progs[i].num_glsl_attr = 0;
+			progs[i].glsl_attr_map = NULL;
+#endif
 			progs[i].is_fbo_float = 0xFF;
 			for (j = 0; j < VERTEX_ATTRIBS_NUM; j++) {
 				progs[i].attr[j].regIndex = 0xDEAD;
@@ -1597,6 +1431,29 @@ void glLinkProgram(GLuint progr) {
 		return;
 	}
 #endif
+
+#ifdef HAVE_GLSL_TRANSLATOR
+	// With VGL_MODE_POSTPONED we perform shaders translation+compilation and attributes binding prior actual program linking
+	if (glsl_sema_mode == VGL_MODE_POSTPONED) {
+		glsl_sema_mode = VGL_MODE_SHADER_PAIR;
+		if (!p->vshader->glsl_source)
+			p->vshader->glsl_source = p->vshader->source;
+		glsl_translator_process(p->vshader, 1, &p->vshader->glsl_source, NULL);
+		if (!p->fshader->glsl_source)
+			p->fshader->glsl_source = p->fshader->source;
+		glsl_translator_process(p->fshader, 1, &p->fshader->glsl_source, NULL);
+		compile_shader(p->vshader);
+		compile_shader(p->fshader);
+		if (p->glsl_attr_map) {
+			for (int i = 0; i < p->num_glsl_attr; i++) {
+				glBindAttribLocation(progr, p->glsl_attr_map[i].idx, p->glsl_attr_map[i].name);
+			}
+			vgl_free(p->glsl_attr_map);
+		}
+		glsl_sema_mode = VGL_MODE_POSTPONED;
+	}
+#endif
+
 	if (p->status == PROG_LINKED)
 		return;
 	p->status = PROG_LINKED;
@@ -2480,6 +2337,17 @@ void glVertexAttrib4fv(GLuint index, const GLfloat *v) {
 void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
+	
+#ifdef HAVE_GLSL_TRANSLATOR
+	// If we use VGL_MODE_POSTPONED, we perform attributes binding in glLinkProgram
+	if (glsl_sema_mode == VGL_MODE_POSTPONED) {
+		if (!p->glsl_attr_map)
+			p->glsl_attr_map = vglMalloc(sizeof(attr_mapping) * VERTEX_ATTRIBS_NUM);
+		p->glsl_attr_map[p->num_glsl_attr].idx = index;
+		strcpy(p->glsl_attr_map[p->num_glsl_attr++].name, name);
+		return;
+	}
+#endif
 
 	// Looking for desired parameter in requested program
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
