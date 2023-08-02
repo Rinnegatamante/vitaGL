@@ -1350,6 +1350,8 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 	int i, cnt;
 	const SceGxmProgramParameter *param;
 	uniform *u;
+	matrix_uniform *m;
+	int matrix_uniform_num = 0;
 
 	switch (pname) {
 	case GL_LINK_STATUS:
@@ -1360,7 +1362,17 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 		*params = 0;
 		break;
 	case GL_PROGRAM_BINARY_LENGTH:
-		*params = sceGxmProgramGetSize(p->vshader->prog) + sceGxmProgramGetSize(p->fshader->prog) + sizeof(uint32_t) * 2 + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM + sizeof(GLuint);
+		m = p->vshader->mat;
+		while (m) {
+			matrix_uniform_num++;
+			m = (matrix_uniform *)m->chain;
+		}
+		m = p->fshader->mat;
+		while (m) {
+			matrix_uniform_num++;
+			m = (matrix_uniform *)m->chain;
+		}
+		*params = sceGxmProgramGetSize(p->vshader->prog) + sceGxmProgramGetSize(p->fshader->prog) + sizeof(uint32_t) * 2 + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM + sizeof(GLuint) + (matrix_uniform_num + 2) * sizeof(GLuint);
 		break;
 	case GL_ATTACHED_SHADERS:
 		i = 0;
