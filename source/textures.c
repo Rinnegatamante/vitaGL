@@ -716,7 +716,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
 	uint32_t orig_w = sceGxmTextureGetWidth(&target_texture->gxm_tex);
 	uint32_t orig_h = sceGxmTextureGetHeight(&target_texture->gxm_tex);
-	uint32_t stride = ALIGN(orig_w, 8) * bpp;
+	uint32_t stride = VGL_ALIGN(orig_w, 8) * bpp;
 #ifndef TEXTURES_SPEEDHACK
 	if (vgl_framecount - target_texture->last_frame <= FRAME_PURGE_FREQ) {
 		void *texture_data = gpu_alloc_mapped(orig_h * stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);

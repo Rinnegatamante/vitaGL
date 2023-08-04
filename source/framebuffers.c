@@ -385,7 +385,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 	case GL_COLOR_ATTACHMENT0:
 		fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
 		fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
-		fb->stride = ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
+		fb->stride = VGL_ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
 		fb->data = sceGxmTextureGetData(&tex->gxm_tex);
 		fb->data_type = tex->type;
 
@@ -431,7 +431,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 			SCE_GXM_COLOR_SURFACE_LINEAR,
 			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
 			fb->is_float ? SCE_GXM_OUTPUT_REGISTER_SIZE_64BIT : SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-			fb->width, fb->height, ALIGN(fb->width, 8), fb->data);
+			fb->width, fb->height, VGL_ALIGN(fb->width, 8), fb->data);
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, attachment)
@@ -461,7 +461,7 @@ void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum textar
 	case GL_COLOR_ATTACHMENT0:
 		fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
 		fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
-		fb->stride = ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
+		fb->stride = VGL_ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
 		fb->data = sceGxmTextureGetData(&tex->gxm_tex);
 		fb->data_type = tex->type;
 
@@ -507,7 +507,7 @@ void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum textar
 			SCE_GXM_COLOR_SURFACE_LINEAR,
 			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
 			fb->is_float ? SCE_GXM_OUTPUT_REGISTER_SIZE_64BIT : SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-			fb->width, fb->height, ALIGN(fb->width, 8), fb->data);
+			fb->width, fb->height, VGL_ALIGN(fb->width, 8), fb->data);
 
 		break;
 	default:

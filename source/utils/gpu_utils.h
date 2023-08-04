@@ -30,7 +30,7 @@
 extern uint32_t vgl_framecount; // Current frame number since application started
 
 // Align a value to the requested alignment
-#define ALIGN(x, a) (((x) + ((a)-1)) & ~((a)-1))
+#define VGL_ALIGN(x, a) (((x) + ((a)-1)) & ~((a)-1))
 #define ALIGNBLOCK(x, a) (((x) + ((a)-1)) / a)
 
 // Texture object status enum

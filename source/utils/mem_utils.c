@@ -119,7 +119,7 @@ static tm_block_t *heap_blk_alloc(int32_t type, uint32_t size, uint32_t alignmen
 	tm_block_t *prevblk = NULL;
 
 	while (curblk) {
-		const uint32_t skip = ALIGN(curblk->base, alignment) - curblk->base;
+		const uint32_t skip = VGL_ALIGN(curblk->base, alignment) - curblk->base;
 
 		if (curblk->type == type && skip + size <= curblk->size) {
 			tm_block_t *skipblk = NULL;
@@ -282,7 +282,7 @@ static void *heap_alloc(int32_t type, uint32_t size, uint32_t alignment) {
 
 #ifdef PHYCONT_ON_DEMAND
 void *vgl_alloc_phycont_block(uint32_t size) {
-	size = ALIGN(size, 1024 * 1024);
+	size = VGL_ALIGN(size, 1024 * 1024);
 	SceUID blk = sceKernelAllocMemBlock("phycont_blk", has_cached_mem ? SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW : SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW, size, NULL);
 
 	if (blk < 0)
@@ -325,14 +325,14 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_
 	if (!has_cached_mem && size_ram > 0xC800000) // Vita has a smaller address mapping for uncached mem
 		size_ram = 0xC800000;
 
-	mempool_size[VGL_MEM_VRAM] = ALIGN(size_cdram, 256 * 1024);
-	mempool_size[VGL_MEM_RAM] = ALIGN(size_ram, 4 * 1024);
+	mempool_size[VGL_MEM_VRAM] = VGL_ALIGN(size_cdram, 256 * 1024);
+	mempool_size[VGL_MEM_RAM] = VGL_ALIGN(size_ram, 4 * 1024);
 #ifdef PHYCONT_ON_DEMAND
 	mempool_size[VGL_MEM_SLOW] = 0;
 #else
-	mempool_size[VGL_MEM_SLOW] = ALIGN(size_phycont, 1024 * 1024);
+	mempool_size[VGL_MEM_SLOW] = VGL_ALIGN(size_phycont, 1024 * 1024);
 #endif
-	mempool_size[VGL_MEM_BUDGET] = ALIGN(size_cdlg, 4 * 1024);
+	mempool_size[VGL_MEM_BUDGET] = VGL_ALIGN(size_cdlg, 4 * 1024);
 
 #ifdef HAVE_CUSTOM_HEAP
 	// Initialize heap

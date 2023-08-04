@@ -177,7 +177,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	DISPLAY_HEIGHT = height;
 	DISPLAY_WIDTH_FLOAT = width * 1.0f;
 	DISPLAY_HEIGHT_FLOAT = height * 1.0f;
-	DISPLAY_STRIDE = ALIGN(DISPLAY_WIDTH, 64);
+	DISPLAY_STRIDE = VGL_ALIGN(DISPLAY_WIDTH, 64);
 
 	// Adjusting default values for internal viewport
 	x_port = DISPLAY_WIDTH_FLOAT / 2.0f;

@@ -273,7 +273,7 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 	uint8_t bpp = tex_format_to_bytespp(format);
 
 	// Allocating texture data buffer
-	const int face_size = ALIGN(w, 8) * h * bpp;
+	const int face_size = VGL_ALIGN(w, 8) * h * bpp;
 	void *base_texture_data = tex->faces_counter == 1 ? gpu_alloc_mapped(face_size * 6, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM) : tex->data;
 
 	if (base_texture_data != NULL) {
@@ -290,7 +290,7 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 				src_format, SCE_GXM_TRANSFER_LINEAR,
 				mapped_data, 0, 0, w * src_bpp,
 				dst_fmt, SCE_GXM_TRANSFER_SWIZZLED,
-				texture_data, 0, 0, ALIGN(w, 8) * bpp,
+				texture_data, 0, 0, VGL_ALIGN(w, 8) * bpp,
 				NULL, 0, NULL);
 		} else
 			sceClibMemset(texture_data, 0, face_size);
@@ -316,7 +316,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	uint8_t bpp = tex_format_to_bytespp(format);
 
 	// Allocating texture data buffer
-	const int aligned_w = ALIGN(w, 8);
+	const int aligned_w = VGL_ALIGN(w, 8);
 	const int tex_size = aligned_w * h * bpp;
 	void *texture_data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 
@@ -698,7 +698,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		if (count <= 0 && !texture_data) {
 			// Reallocation in the same mspace failed, try manually.
 			texture_data = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-			vgl_memcpy(texture_data, tex->data, ALIGN(orig_w, 8) * orig_h * bpp);
+			vgl_memcpy(texture_data, tex->data, VGL_ALIGN(orig_w, 8) * orig_h * bpp);
 			gpu_free_texture_data(tex);
 		}
 
@@ -713,8 +713,8 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		for (j = 0; j < level - 1; j++) {
 			if (curWidth <= 1 || curHeight <= 1)
 				break;
-			uint32_t curSrcStride = ALIGN(curWidth, 8);
-			uint32_t curDstStride = ALIGN(curWidth >> 1, 8);
+			uint32_t curSrcStride = VGL_ALIGN(curWidth, 8);
+			uint32_t curDstStride = VGL_ALIGN(curWidth >> 1, 8);
 			uint8_t *dstPtr = curPtr + jumps[j];
 			if (curWidth <= 1024 && curHeight <= 1024) {
 				sceGxmTransferDownscale(
