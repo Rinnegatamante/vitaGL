@@ -601,3 +601,25 @@ void vglTexCoordPointerMapped(const GLvoid *pointer) {
 void vglIndexPointerMapped(const GLvoid *pointer) {
 	index_object = (GLvoid *)pointer;
 }
+
+void vglBufferData(GLenum target, const GLvoid *data) {
+	gpubuffer *gpu_buf;
+	switch (target) {
+	case GL_ARRAY_BUFFER:
+		gpu_buf = (gpubuffer *)vertex_array_unit;
+		break;
+	case GL_ELEMENT_ARRAY_BUFFER:
+		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+#ifndef SKIP_ERROR_HANDLING
+	if (!gpu_buf) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
+	// Allocating a new buffer
+	gpu_buf->ptr = data;
+}
