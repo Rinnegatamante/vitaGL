@@ -2031,7 +2031,7 @@ void glProgramUniform4fv(GLuint prog, GLint location, GLsizei count, const GLflo
 	glUniform4fv(location, count, value);
 }
 
-void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
+inline void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2063,7 +2063,7 @@ void glProgramUniformMatrix2fv(GLuint prog, GLint location, GLsizei count, GLboo
 	glUniformMatrix2fv(location, count, transpose, value);
 }
 
-void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
+inline void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2095,7 +2095,7 @@ void glProgramUniformMatrix3fv(GLuint prog, GLint location, GLsizei count, GLboo
 	glUniformMatrix3fv(location, count, transpose, value);
 }
 
-void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
+inline void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0) {
 		return;

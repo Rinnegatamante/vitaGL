@@ -620,6 +620,5 @@ void vglBufferData(GLenum target, const GLvoid *data) {
 	}
 #endif
 
-	// Allocating a new buffer
 	gpu_buf->ptr = data;
 }

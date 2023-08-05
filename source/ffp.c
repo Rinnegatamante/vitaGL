@@ -1749,7 +1749,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 	}
 }
 
-void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
+inline void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glVertex3f, "FFF", x, y, z))
@@ -1818,11 +1818,11 @@ void glVertex2fv(const GLfloat *v) {
 	glVertex2f(v[0], v[1]);
 }
 
-void glVertex2f(GLfloat x, GLfloat y) {
+inline void glVertex2f(GLfloat x, GLfloat y) {
 	glVertex3f(x, y, 0.0f);
 }
 
-void glVertex2i(GLint x, GLint y) {
+inline void glVertex2i(GLint x, GLint y) {
 	glVertex3f(x, y, 0.0f);
 }
 
@@ -2434,7 +2434,7 @@ void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param) {
 	dirty_frag_unifs = GL_TRUE;
 }
 
-void glTexEnvi(GLenum target, GLenum pname, GLint param) {
+inline void glTexEnvi(GLenum target, GLenum pname, GLint param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glTexEnvf, "UUI", target, pname, param))

@@ -53,7 +53,7 @@ void *color_table = NULL; // Current in-use color table
 int8_t server_texture_unit = 0; // Current in use server side texture unit
 int unpack_row_len = 0; // Current setting for GL_UNPACK_ROW_LENGTH
 
-void _glTexImage2D_CubeIMPL(texture *tex, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *data, int index) {
+static inline __attribute__((always_inline)) void _glTexImage2D_CubeIMPL(texture *tex, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *data, int index) {
 	SceGxmTextureFormat tex_format;
 	SceGxmTransferFormat src_format;
 	uint8_t data_bpp = 0;
@@ -167,7 +167,7 @@ void _glTexImage2D_CubeIMPL(texture *tex, GLint level, GLint internalFormat, GLs
 		vglSetTexGammaMode(&tex->gxm_tex, SCE_GXM_TEXTURE_GAMMA_BGR);
 }
 
-void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *data) {
+static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *data) {
 	SceGxmTextureFormat tex_format;
 	uint8_t data_bpp = 0;
 	GLboolean fast_store = GL_FALSE;

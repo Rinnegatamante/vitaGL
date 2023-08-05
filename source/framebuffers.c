@@ -350,7 +350,7 @@ void glNamedRenderbufferStorage(GLuint target, GLenum internalformat, GLsizei wi
 	rb->depthbuffer_ptr = &rb->depthbuffer;
 }
 
-void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint tex_id, GLint level) {
+inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint tex_id, GLint level) {
 	// Detecting requested framebuffer
 	framebuffer *fb = NULL;
 	switch (target) {
@@ -438,7 +438,7 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, 
 	}
 }
 
-void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum textarget, GLuint tex_id, GLint level) {
+inline void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum textarget, GLuint tex_id, GLint level) {
 	framebuffer *fb = (framebuffer *)target;
 
 #ifndef SKIP_ERROR_HANDLING

@@ -76,7 +76,7 @@ void glMatrixMode(GLenum mode) {
 	}
 }
 
-void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal) {
+inline void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
@@ -109,7 +109,7 @@ void glOrthox(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed 
 	glOrthof((float)left / 65536.0f, (float)right / 65536.0f, (float)bottom / 65536.0f, (float)top / 65536.0f, (float)nearVal / 65536.0f, (float)farVal / 65536.0f);
 }
 
-void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal) {
+inline void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
@@ -381,7 +381,7 @@ void glScalex(GLfixed x, GLfixed y, GLfixed z) {
 	dirty_vert_unifs = GL_TRUE;
 }
 
-void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
+inline void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glRotatef, "FFF", x, y, z))
