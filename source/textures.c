@@ -533,7 +533,7 @@ void glGenTextures(GLsizei n, GLuint *res) {
 			// Resetting texture parameters to their default values
 			texture_slots[i].dirty = GL_FALSE;
 #ifndef TEXTURES_SPEEDHACK
-			texture_slots[i].last_frame = 0;
+			texture_slots[i].last_frame = 0xFFFFFFFF;
 #endif
 			texture_slots[i].faces_counter = 0;
 			texture_slots[i].ref_counter = 0;
@@ -718,13 +718,13 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	uint32_t orig_h = sceGxmTextureGetHeight(&target_texture->gxm_tex);
 	uint32_t stride = VGL_ALIGN(orig_w, 8) * bpp;
 #ifndef TEXTURES_SPEEDHACK
-	if (vgl_framecount - target_texture->last_frame <= FRAME_PURGE_FREQ) {
+	if (target_texture->last_frame != 0xFFFFFFFF && (vgl_framecount - target_texture->last_frame <= FRAME_PURGE_FREQ)) {
 		void *texture_data = gpu_alloc_mapped(orig_h * stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 		vgl_fast_memcpy(texture_data, target_texture->data, orig_h * stride);
 		gpu_free_texture_data(target_texture);
 		sceGxmTextureSetData(&target_texture->gxm_tex, texture_data);
 		target_texture->data = texture_data;
-		target_texture->last_frame = 0;
+		target_texture->last_frame = 0xFFFFFFFF;
 	}
 #endif
 	// Calculating start address of requested texture modification

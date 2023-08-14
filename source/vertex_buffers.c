@@ -125,7 +125,7 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 			vgl_log("%s:%d glGenBuffers failed to alloc a buffer (%d/%lu).\n", __FILE__, __LINE__, i, n);
 #endif
 		gpu_buf->ptr = NULL;
-		gpu_buf->last_frame = 0;
+		gpu_buf->last_frame = 0xFFFFFFFF;
 		res[i] = (GLuint)gpu_buf;
 	}
 }
@@ -160,7 +160,7 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 		if (gl_buffers[j]) {
 			gpubuffer *gpu_buf = (gpubuffer *)gl_buffers[j];
 			if (gpu_buf->ptr) {
-				if (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ)
+				if (gpu_buf->last_frame != 0xFFFFFFFF && (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ))
 					markAsDirty(gpu_buf->ptr);
 				else
 					vgl_free(gpu_buf->ptr);
@@ -202,7 +202,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 
 	// Marking previous content for deletion or deleting it straight if unused
 	if (gpu_buf->ptr) {
-		if (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ)
+		if (gpu_buf->last_frame != 0xFFFFFFFF && (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ))
 			markAsDirty(gpu_buf->ptr);
 		else
 			vgl_free(gpu_buf->ptr);
@@ -218,7 +218,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 #endif
 
 	gpu_buf->size = size;
-	gpu_buf->last_frame = 0;
+	gpu_buf->last_frame = 0xFFFFFFFF;
 
 	if (data)
 		vgl_fast_memcpy(gpu_buf->ptr, data, size);
@@ -246,7 +246,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 
 #ifndef BUFFERS_SPEEDHACK
 	// Allocating a new buffer
-	if (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ) {
+	if (gpu_buf->last_frame != 0xFFFFFFFF && (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ)) {
 		uint8_t *ptr = gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
 
 #ifdef LOG_ERRORS
@@ -267,7 +267,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 		markAsDirty(gpu_buf->ptr);
 
 		gpu_buf->ptr = ptr;
-		gpu_buf->last_frame = 0;
+		gpu_buf->last_frame = 0xFFFFFFFF;
 	} else
 #endif
 	{
@@ -353,7 +353,7 @@ GLboolean glUnmapBuffer(GLenum target) {
 	}
 #endif
 
-	gpu_buf->last_frame = 0;
+	gpu_buf->last_frame = 0xFFFFFFFF;
 	gpu_buf->mapped = GL_FALSE;
 	return GL_TRUE;
 }
