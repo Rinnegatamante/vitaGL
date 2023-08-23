@@ -78,6 +78,12 @@ inline float4 glslTexture2D(sampler2D x, float2 s, float b) { return tex2Dbias(x
 inline float4 textureCube(samplerCUBE x, float3 s) { return texCUBE(x,s); }
 inline float4 textureCube(samplerCUBE x, float4 s) { return texCUBE(x,s); }
 inline float4 textureCube(samplerCUBE x, float3 s, float b) { return texCUBEbias(x,float4(s,b)); }
+#define s x
+#define t y
+#define st xy
+#define ts yx
+#define ss xx
+#define tt yy
 #define texture2D glslTexture2D
 #define lowp
 #define mediump
