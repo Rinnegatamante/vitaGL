@@ -55,6 +55,7 @@ EGLBoolean eglSwapInterval(EGLDisplay display, EGLint interval) {
 #ifdef EGL_PEDANTIC
 	egl_error = EGL_SUCCESS;
 #endif
+	return EGL_TRUE;
 }
 
 EGLBoolean eglSwapBuffers(EGLDisplay display, EGLSurface surface) {
@@ -62,6 +63,7 @@ EGLBoolean eglSwapBuffers(EGLDisplay display, EGLSurface surface) {
 #ifdef EGL_PEDANTIC
 	egl_error = EGL_SUCCESS;
 #endif
+	return EGL_TRUE;
 }
 
 EGLBoolean eglBindAPI(EGLenum api) {
