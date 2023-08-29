@@ -27,6 +27,8 @@
 #include "glsl_utils.h"
 
 #ifdef HAVE_GLSL_TRANSLATOR
+#define MEM_ENLARGER_SIZE (1024 * 1024) // FIXME: Check if this is too big/small
+
 glsl_sema_bind glsl_custom_bindings[MAX_CUSTOM_BINDINGS];
 int glsl_custom_bindings_num = 0;
 int glsl_current_ref_idx = 0;
@@ -621,7 +623,7 @@ LOOP_START:
 		else
 			right++;
 	}
-	char *res = (char *)vglMalloc(1024 * 1024);
+	char *res = (char *)vglMalloc(MEM_ENLARGER_SIZE);
 	if (found < 2) { // Standard match
 		char tmp = *left;
 		left[0] = 0;
@@ -844,14 +846,18 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 	// Nukeing comments (required for * operator replacer to properly work)
 	glsl_nuke_comments(s->source);
 	// Manually handle * operator replacements for vector * matrix and matrix * vector operations support
-	char *dst = vglMalloc(size + 1024 * 1024); // FIXME: This is just an estimation, check if 1MB is enough
+	char *dst = vglMalloc(size + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
 	glsl_inject_mul(s->source, dst);
 	vgl_free(s->source);
 	// Manually handle global variables, adding "static" to them
-	char *dst2 = vglMalloc(strlen(dst) + 1024 * 1024);
+	char *dst2 = vglMalloc(strlen(dst) + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
 	glsl_handle_globals(dst, dst2);
 	vgl_free(dst);
-	s->source = dst2;
+	// Keeping on mem only the strict minimum necessary for the translated shader
+	char *final = vglMalloc(strlen(dst2) + 1);
+	sceClibMemcpy(final, dst2, strlen(dst2) + 1);
+	vgl_free(dst2);
+	s->source = final;
 #ifdef DEBUG_GLSL_TRANSLATOR
 	vgl_log("%s:%d %s: GLSL translation output (%s shader):\n\n%s\n\n", __FILE__, __LINE__, __func__, glsl_is_first_shader ? "first" : "second", s->source);
 #endif
