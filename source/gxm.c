@@ -160,10 +160,42 @@ render_target *getFreeRenderTarget(int w, int h) {
 			return &rt_list[i];
 		}
 	}
+#ifdef RECYCLE_RENDERTARGETS
+	vgl_log("%s:%d Out of rendertargets handles: Recycling an old rendertarget.\n", __FILE__, __LINE__);
+	uint32_t oldest_framecount = 0xFFFFFFFF;
+	render_target *r = NULL;
+	for (i = 0; i < MAX_RENDER_TARGETS_NUM; i++) {
+		if (rt_list[i].last_frame < oldest_framecount) {
+			oldest_framecount = rt_list[i].last_frame;
+			r = &rt_list[i];
+		}
+	}
+	sceGxmDestroyRenderTarget(r->rt);
+	r->max_refs = w > MAX_SHARED_RT_SIZE ? 1 : MAX_SCENES_PER_FRAME;
+	SceGxmRenderTargetParams renderTargetParams;
+	sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
+	renderTargetParams.width = w;
+	renderTargetParams.height = h;
+	renderTargetParams.scenesPerFrame = r->max_refs;
+	renderTargetParams.multisampleMode = msaa_mode;
+	renderTargetParams.driverMemBlock = -1;
+#ifdef LOG_ERRORS
+	int res = sceGxmCreateRenderTarget(&renderTargetParams, &r->rt);
+	if (res)
+		vgl_log("%s:%d Failed to create a shared rendertarget of size %dx%d (%s).\n", __FILE__, __LINE__, w, h, get_gxm_error_literal(res));
+#else
+	sceGxmCreateRenderTarget(&renderTargetParams, &r->rt);
+#endif
+	r->w = w;
+	r->h = h;
+	r->ref_count = 1;
+	return r;
+#else
 #ifdef LOG_ERRORS
 	vgl_log("%s:%d Failed to create a shared rendertarget of size %dx%d (Out of rendertargets handles).\n", __FILE__, __LINE__, w, h);
 #endif
 	return NULL;
+#endif
 }
 
 void __markRtAsDirty(render_target *rt) {
@@ -669,8 +701,20 @@ void sceneReset(void) {
 #endif
 #endif
 			}
+#ifdef RECYCLE_RENDERTARGETS
+			else {
+				render_target *fbo_rt = (render_target *)active_write_fb->target;
+				if (active_write_fb->width != fbo_rt->w || active_write_fb->height != fbo_rt->h) {
+					vgl_log("%s:%d Attempting to use a recycled rendertarget. Re-allocating it.\n", __FILE__, __LINE__);
+					active_write_fb->target = (SceGxmRenderTarget *)getFreeRenderTarget(active_write_fb->width, active_write_fb->height);
+				}
+			}
+#endif
 #ifdef HAVE_SHARED_RENDERTARGETS
 			render_target *fbo_rt = (render_target *)active_write_fb->target;
+#ifdef RECYCLE_RENDERTARGETS
+			fbo_rt->last_frame = vgl_framecount;
+#endif	
 #ifdef LOG_ERRORS
 			int r =
 #endif

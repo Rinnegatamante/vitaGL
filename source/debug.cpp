@@ -337,6 +337,8 @@ char *get_gxm_error_literal(uint32_t code) {
 		return "SCE_GXM_ERROR_INVALID_TEXTURE_DATA_POINTER";
 	case SCE_GXM_ERROR_INVALID_TEXTURE_PALETTE_POINTER:
 		return "SCE_GXM_ERROR_INVALID_TEXTURE_PALETTE_POINTER";
+	case SCE_GXM_ERROR_OUT_OF_RENDER_TARGETS:
+		return "SCE_GXM_ERROR_OUT_OF_RENDER_TARGETS";
 	default:
 		return "Unknown Error";
 	}

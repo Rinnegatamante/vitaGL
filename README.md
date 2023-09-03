@@ -32,6 +32,7 @@ In order to build vitaGL use the following command: `make install`.
 `SAFE_ETC1=1` Disables hardware support for ETC1 textures. Makes ETC1 textures usage less efficient but may solve glitches.<br>
 `SAFE_DRAW=1` Makes some optimizations in the drawing pipeline less efficient but can solve some glitches.<br>
 `SHARED_RENDERTARGETS=1` Makes small framebuffers objects use shared rendertargets instead of dedicated ones.<br>
+`SHARED_RENDERTARGETS=2` Makes small framebuffers objects use shared rendertargets instead of dedicated ones and adds a mechanism for recycling older rendertargets.<br>
 `CIRCULAR_VERTEX_POOL=1` Makes temporary data buffers being handled with a circular pool.<br>
 `HAVE_PTHREAD=1` Use pthread instead of sceKernel for starting garbage collector thread.<br>
 `SINGLE_THREADED_GC=1` Makes the garbage collector run on main thread.<br>

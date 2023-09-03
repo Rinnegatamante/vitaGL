@@ -59,6 +59,9 @@ typedef struct {
 	int h;
 	int ref_count;
 	int max_refs;
+#ifdef RECYCLE_RENDERTARGETS
+	uint32_t last_frame;
+#endif
 } render_target;
 void __markRtAsDirty(render_target *rt);
 #define _markRtAsDirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
