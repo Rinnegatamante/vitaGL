@@ -699,47 +699,69 @@ void glTexImage1D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	glTexImage2D(GL_TEXTURE_1D, level, internalFormat, width, 1, border, format, type, data);
 }
 
-void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {
+void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {	
+	glFinish();
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
 	resolveTexTarget(target);
 	texture *tex = &texture_slots[texture2d_idx];
-	texture *target_texture = &texture_slots[texture2d_idx];
-
 #ifdef HAVE_UNPURE_TEXTURES
-	level -= target_texture->mip_start;
+	level -= tex->mip_start;
 #endif
-
-	// Copying the texture in a new mem location and dirtying old one
-	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&target_texture->gxm_tex);
+	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&tex->gxm_tex);
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
-	uint32_t orig_w = sceGxmTextureGetWidth(&target_texture->gxm_tex);
-	uint32_t orig_h = sceGxmTextureGetHeight(&target_texture->gxm_tex);
+	uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
+	uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
 	uint32_t stride = VGL_ALIGN(orig_w, 8) * bpp;
-#ifndef TEXTURES_SPEEDHACK
-	if (target_texture->last_frame != 0xFFFFFFFF && (vgl_framecount - target_texture->last_frame <= FRAME_PURGE_FREQ)) {
-		void *texture_data = gpu_alloc_mapped(orig_h * stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-		vgl_fast_memcpy(texture_data, target_texture->data, orig_h * stride);
-		gpu_free_texture_data(target_texture);
-		sceGxmTextureSetData(&target_texture->gxm_tex, texture_data);
-		target_texture->data = texture_data;
-		target_texture->last_frame = 0xFFFFFFFF;
-	}
-#endif
-	// Calculating start address of requested texture modification
-	uint8_t *ptr = (uint8_t *)target_texture->data + xoffset * bpp + yoffset * stride;
-	uint8_t *ptr_line = ptr;
-	uint8_t data_bpp = 0;
-	GLboolean fast_store = GL_FALSE;
+	
+	printf("glTexSubImage2D called with %ux%u on a %ux%u texture\n", width, height, orig_w, orig_h);
+		uint32_t *d = (uint32_t *)pixels;
+		if (!d) {
+			printf("but data is null\n");
+			//return;
+		}
+		if (d[0] == 0) {
+			printf("but data[0] is null\n");
+			//return;
+		}
 
 #ifndef SKIP_ERROR_HANDLING
 	if (xoffset + width > orig_w) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	} else if (yoffset + height > orig_h) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
+	} else if (level < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, level)
+	} else if (xoffset < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, xoffset)
+	} else if (yoffset < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, yoffset)
+	} else if (width < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, width)
+	} else if (height < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, height)
+	} else if (tex->status != TEX_VALID) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif	
+	
+#ifndef TEXTURES_SPEEDHACK
+	// Copying the texture in a new mem location and dirtying old one
+	if (tex->last_frame != 0xFFFFFFFF && (vgl_framecount - tex->last_frame <= FRAME_PURGE_FREQ)) {
+		void *texture_data = gpu_alloc_mapped(orig_h * stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+		vgl_fast_memcpy(texture_data, tex->data, orig_h * stride);
+		gpu_free_texture_data(tex);
+		sceGxmTextureSetData(&tex->gxm_tex, texture_data);
+		tex->data = texture_data;
+		tex->last_frame = 0xFFFFFFFF;
 	}
 #endif
+	// Calculating start address of requested texture modification
+	uint8_t *ptr = (uint8_t *)tex->data + xoffset * bpp + yoffset * stride;
+	uint8_t *ptr_line = ptr;
+	uint8_t data_bpp = 0;
+	GLboolean fast_store = GL_FALSE;
 
 	// Support for legacy GL1.0 format
 	switch (format) {
