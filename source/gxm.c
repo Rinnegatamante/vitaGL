@@ -171,6 +171,7 @@ render_target *getFreeRenderTarget(int w, int h) {
 			r = &rt_list[i];
 		}
 	}
+	sceGxmFinish(gxm_context);
 	sceGxmDestroyRenderTarget(r->rt);
 	r->max_refs = w > MAX_SHARED_RT_SIZE ? 1 : MAX_SCENES_PER_FRAME;
 	SceGxmRenderTargetParams renderTargetParams;
