@@ -425,13 +425,15 @@ inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum text
 		fb->is_float = fmt == SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
 
 		// Allocating colorbuffer
-		sceGxmColorSurfaceInit(
-			&fb->colorbuffer,
-			get_color_from_texture(fmt),
-			SCE_GXM_COLOR_SURFACE_LINEAR,
+		sceGxmColorSurfaceInit(&fb->colorbuffer, get_color_from_texture(fmt), SCE_GXM_COLOR_SURFACE_LINEAR,
 			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
 			fb->is_float ? SCE_GXM_OUTPUT_REGISTER_SIZE_64BIT : SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
 			fb->width, fb->height, VGL_ALIGN(fb->width, 8), fb->data);
+		
+		// Invalidating current framebuffer if we update its bound texture to force a scene reset
+		if (in_use_framebuffer == active_write_fb) {
+			in_use_framebuffer = (framebuffer *)0xDEADBEEF;
+		}
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, attachment)
@@ -501,14 +503,15 @@ inline void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum
 		fb->is_float = fmt == SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
 
 		// Allocating colorbuffer
-		sceGxmColorSurfaceInit(
-			&fb->colorbuffer,
-			get_color_from_texture(fmt),
-			SCE_GXM_COLOR_SURFACE_LINEAR,
+		sceGxmColorSurfaceInit(&fb->colorbuffer, get_color_from_texture(fmt), SCE_GXM_COLOR_SURFACE_LINEAR,
 			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
 			fb->is_float ? SCE_GXM_OUTPUT_REGISTER_SIZE_64BIT : SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
 			fb->width, fb->height, VGL_ALIGN(fb->width, 8), fb->data);
-
+		
+		// Invalidating current framebuffer if we update its bound texture to force a scene reset
+		if (in_use_framebuffer == active_write_fb) {
+			in_use_framebuffer = (framebuffer *)0xDEADBEEF;
+		}
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, attachment)
