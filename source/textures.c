@@ -714,17 +714,6 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
 	uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
 	uint32_t stride = VGL_ALIGN(orig_w, 8) * bpp;
-	
-	printf("glTexSubImage2D called with %ux%u on a %ux%u texture\n", width, height, orig_w, orig_h);
-		uint32_t *d = (uint32_t *)pixels;
-		if (!d) {
-			printf("but data is null\n");
-			//return;
-		}
-		if (d[0] == 0) {
-			printf("but data[0] is null\n");
-			//return;
-		}
 
 #ifndef SKIP_ERROR_HANDLING
 	if (xoffset + width > orig_w) {
