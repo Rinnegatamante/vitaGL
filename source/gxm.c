@@ -61,6 +61,7 @@ static SceUID shared_fb; // In-use hared framebuffer identifier
 static SceSharedFbInfo shared_fb_info; // In-use shared framebuffer info struct
 framebuffer *in_use_framebuffer = NULL; // Currently in use framebuffer
 framebuffer *old_framebuffer = NULL; // Framebuffer used in last scene
+uint8_t dirty_framebuffer = GL_FALSE; // Flag wether current in use framebuffer is invalidated
 static GLboolean needs_end_scene = GL_FALSE; // Flag for gxm end scene requirement at scene reset
 static GLboolean needs_scene_reset = GL_TRUE; // Flag for when a scene reset is required
 
@@ -628,7 +629,8 @@ void sceneEnd(void) {
 }
 
 void sceneReset(void) {
-	if (in_use_framebuffer != active_write_fb || needs_scene_reset) {
+	if (in_use_framebuffer != active_write_fb || needs_scene_reset || dirty_framebuffer) {
+		dirty_framebuffer = GL_FALSE;
 		needs_scene_reset = GL_FALSE;
 		in_use_framebuffer = active_write_fb;
 		is_fbo_float = in_use_framebuffer ? in_use_framebuffer->is_float : GL_FALSE;

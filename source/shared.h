@@ -824,6 +824,7 @@ extern uint32_t vertex_array_unit; // Current in-use vertex array buffer unit
 
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
 extern framebuffer *in_use_framebuffer; // Currently in use framebuffer
+extern uint8_t dirty_framebuffer; // Flag wether current in use framebuffer is invalidated
 
 // Scissor test shaders
 extern SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program

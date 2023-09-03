@@ -432,7 +432,7 @@ inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum text
 		
 		// Invalidating current framebuffer if we update its bound texture to force a scene reset
 		if (in_use_framebuffer == active_write_fb) {
-			in_use_framebuffer = (framebuffer *)0xDEADBEEF;
+			dirty_framebuffer = GL_TRUE;
 		}
 		break;
 	default:
@@ -510,7 +510,7 @@ inline void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum
 		
 		// Invalidating current framebuffer if we update its bound texture to force a scene reset
 		if (in_use_framebuffer == active_write_fb) {
-			in_use_framebuffer = (framebuffer *)0xDEADBEEF;
+			dirty_framebuffer = GL_TRUE;
 		}
 		break;
 	default:
