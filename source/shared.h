@@ -121,8 +121,9 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_POINT_01UV); \
 		break; \
 	case GL_LINES: \
-		if (c % 2) \
+		if (c < 2) \
 			return; \
+		c -= c % 2; \
 		p = SCE_GXM_PRIMITIVE_LINES; \
 		sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
 		sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_LINE); \
