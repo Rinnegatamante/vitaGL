@@ -398,6 +398,7 @@ void glEnable(GLenum cap) {
 		ffp_dirty_vert = GL_TRUE;
 		ffp_dirty_frag = GL_TRUE;
 		texture_units[server_texture_unit].state |= (1 << 0);
+		break;
 	case GL_TEXTURE_2D:
 		ffp_dirty_vert = GL_TRUE;
 		ffp_dirty_frag = GL_TRUE;
@@ -525,6 +526,7 @@ void glDisable(GLenum cap) {
 		ffp_dirty_vert = GL_TRUE;
 		ffp_dirty_frag = GL_TRUE;
 		texture_units[server_texture_unit].state &= ~(1 << 0);
+		break;
 	case GL_TEXTURE_2D:
 		ffp_dirty_vert = GL_TRUE;
 		ffp_dirty_frag = GL_TRUE;
@@ -603,7 +605,7 @@ void glClear(GLbitfield mask) {
 
 	void *fbuffer, *vbuffer;
 
-	GLenum orig_depth_test = depth_test_state;
+	orig_depth_test = depth_test_state;
 
 	const GLfloat clear_depth_value = depth_value * 2 - 1;
 

@@ -57,7 +57,6 @@ static inline __attribute__((always_inline)) void _glTexImage2D_CubeIMPL(texture
 	SceGxmTextureFormat tex_format;
 	SceGxmTransferFormat src_format;
 	uint8_t data_bpp = 0;
-	GLboolean fast_store = GL_FALSE;
 	GLboolean gamma_correction = GL_FALSE;
 
 	// Detecting proper read callaback and source bpp
@@ -1787,9 +1786,7 @@ void glGenerateMipmap(GLenum target) {
 
 void glGenerateTextureMipmap(GLuint target) {
 	// Setting some aliases to make code more readable
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = target;
-	texture *tex = &texture_slots[texture2d_idx];
+	texture *tex = &texture_slots[target];
 
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if current texture is valid
@@ -1824,7 +1821,7 @@ void glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	} else if (level < 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, level)
-	} else if (border != 0 || border != 1) {
+	} else if (border != 0 && border != 1) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, border)
 	}
 #endif
@@ -1905,7 +1902,7 @@ void glDeleteSamplers(GLsizei n, const GLuint *smp) {
 
 void glBindSampler(GLuint unit, GLuint smp) {
 #ifndef SKIP_ERROR_HANDLING
-	if (unit < 0 || unit >= COMBINED_TEXTURE_IMAGE_UNITS_NUM) {
+	if (unit >= COMBINED_TEXTURE_IMAGE_UNITS_NUM) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, unit)
 	}
 #endif

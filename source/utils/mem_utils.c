@@ -410,17 +410,17 @@ vglMemType vgl_mem_get_type_by_addr(void *addr) {
 		return VGL_MEM_EXTERNAL;
 	return -1;
 #else
-	if (addr >= mempool_addr[VGL_MEM_VRAM] && (addr < mempool_addr[VGL_MEM_VRAM] + mempool_size[VGL_MEM_VRAM]))
+	if (addr >= mempool_addr[VGL_MEM_VRAM] && (addr < (void *)((uint8_t *)mempool_addr[VGL_MEM_VRAM] + mempool_size[VGL_MEM_VRAM])))
 		return VGL_MEM_VRAM;
-	else if (addr >= mempool_addr[VGL_MEM_RAM] && (addr < mempool_addr[VGL_MEM_RAM] + mempool_size[VGL_MEM_RAM]))
+	else if (addr >= mempool_addr[VGL_MEM_RAM] && (addr < (void *)((uint8_t *)mempool_addr[VGL_MEM_RAM] + mempool_size[VGL_MEM_RAM])))
 		return VGL_MEM_RAM;
 #ifndef PHYCONT_ON_DEMAND
-	else if (addr >= mempool_addr[VGL_MEM_SLOW] && (addr < mempool_addr[VGL_MEM_SLOW] + mempool_size[VGL_MEM_SLOW]))
+	else if (addr >= mempool_addr[VGL_MEM_SLOW] && (addr < (void *)((uint8_t *)mempool_addr[VGL_MEM_SLOW] + mempool_size[VGL_MEM_SLOW])))
 		return VGL_MEM_SLOW;
 #endif
-	else if (addr >= mempool_addr[VGL_MEM_BUDGET] && (addr < mempool_addr[VGL_MEM_BUDGET] + mempool_size[VGL_MEM_BUDGET]))
+	else if (addr >= mempool_addr[VGL_MEM_BUDGET] && (addr < (void *)((uint8_t *)mempool_addr[VGL_MEM_BUDGET] + mempool_size[VGL_MEM_BUDGET])))
 		return VGL_MEM_BUDGET;
-	else if (addr >= mempool_addr[VGL_MEM_EXTERNAL] && (addr < mempool_addr[VGL_MEM_EXTERNAL] + mempool_size[VGL_MEM_EXTERNAL]))
+	else if (addr >= mempool_addr[VGL_MEM_EXTERNAL] && (addr < (void *)((uint8_t *)mempool_addr[VGL_MEM_EXTERNAL] + mempool_size[VGL_MEM_EXTERNAL])))
 		return VGL_MEM_EXTERNAL;
 #endif
 #ifdef PHYCONT_ON_DEMAND

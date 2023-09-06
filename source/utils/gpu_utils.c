@@ -466,8 +466,6 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 		tex->faces_counter++;
 
 	// Calculating swizzled compressed texture size on memory
-	vglMemType new_mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-
 	if (!image_size)
 		image_size = gpu_get_compressed_mip_size(0, w, h, format);
 
@@ -480,19 +478,16 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 	aligned_max_width = aligned_width;
 	aligned_max_height = aligned_height;
 
-	// Getting texture format bpp
-	uint8_t bpp = tex_format_to_bytespp(format);
-
 	// Allocating texture data buffer
 	const int mip_offset = gpu_get_compressed_mip_offset(0, aligned_max_width, aligned_max_height, format);
 	const int face_size = gpu_get_compressed_mipchain_size(0, aligned_max_width, aligned_max_height, format);
 	const int mip_size = face_size - mip_offset;
 	void *base_texture_data = tex->faces_counter == 1 ? gpu_alloc_mapped(face_size * 6, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM) : tex->data;
 	void *texture_data = (uint8_t *)base_texture_data + face_size * index;
-	void *mip_data = texture_data + mip_offset;
 
 	// Initializing texture data buffer
 	if (texture_data != NULL) {
+		void *mip_data = (void *)((uint8_t *)texture_data + mip_offset);
 		if (data != NULL) {
 			if (read_cb != NULL) {
 				// Performing swizzling and DXT compression
@@ -543,8 +538,6 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		gpu_free_texture_data(tex);
 
 	// Calculating swizzled compressed texture size on memory
-	vglMemType new_mtype = use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM;
-
 	if (!image_size)
 		image_size = gpu_get_compressed_mip_size(mip_level, w, h, format);
 
@@ -598,10 +591,9 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		texture_data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 	}
 
-	void *mip_data = texture_data + mip_offset;
-
 	// Initializing texture data buffer
 	if (texture_data != NULL) {
+		void *mip_data = (void *)((uint8_t *)texture_data + mip_offset);
 		if (data != NULL) {
 			if (read_cb != NULL) {
 				// Performing swizzling and DXT compression
@@ -649,7 +641,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 
 void gpu_alloc_mipmaps(int level, texture *tex) {
 	// Getting current mipmap count in passed texture
-	uint32_t count = tex->mip_count - 1;
+	int count = tex->mip_count - 1;
 
 	// Checking if we need at least one more new mipmap level
 	if ((level > count) || (level < 0)) { // Note: level < 0 means we will use max possible mipmaps level

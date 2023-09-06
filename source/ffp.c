@@ -873,7 +873,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			char texenv_shad[8192] = {0};
 			GLboolean unused_mode[5] = {GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE};
 			for (int i = 0; i < mask.num_textures; i++) {
+#ifndef DISABLE_TEXTURE_COMBINER
 				char tmp[1024];
+#endif
 				switch (texture_units[i].env_mode) {
 				case MODULATE:
 					if (unused_mode[MODULATE]) {
@@ -948,7 +950,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 			sprintf(fname, "ux0:data/shader_cache/v%d-%016llX-%016llX-%08X_f.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
 #else
-			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016X_f.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+			sprintf(fname, "ux0:data/shader_cache/v%d-%08X-%016llX_f.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
 #endif
 #else
 #ifdef HAVE_HIGH_FFP_TEXUNITS
@@ -1162,7 +1164,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 
 	// Uploading vertex streams
 	int i, j = 0;
-	float *materials = NULL, *src_materials;
+	float *materials = NULL;
 	for (i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
 		if (mask_state & (1 << i)) {
 			void *ptr;
@@ -1208,11 +1210,15 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 	uint8_t mask_state = reload_ffp_shaders(NULL, NULL);
 	int attr_idxs[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 	int attr_num = 0;
+#ifndef DRAW_SPEEDHACK
 	GLboolean is_full_vbo = GL_TRUE;
+#endif
 	for (int i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
 		if (mask_state & (1 << i)) {
+#ifndef DRAW_SPEEDHACK
 			if (!ffp_vertex_attrib_vbo[i])
 				is_full_vbo = GL_FALSE;
+#endif
 			attr_idxs[attr_num++] = i;
 		}
 	}
@@ -1262,7 +1268,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 	}
 
 	// Uploading vertex streams
-	float *materials = NULL, *src_materials;
+	float *materials = NULL;
 	for (int i = 0; i < attr_num; i++) {
 		void *ptr;
 		int attr_idx = attr_idxs[i];
@@ -2357,7 +2363,7 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 	case GL_TEXTURE_ENV:
 		switch (pname) {
 		case GL_TEXTURE_ENV_COLOR:
-			vgl_fast_memcpy(&texture_units[server_texture_unit].env_color.r, param, sizeof(GLfloat) * 4);
+			vgl_fast_memcpy(&tex_unit->env_color.r, param, sizeof(GLfloat) * 4);
 			break;
 #ifndef DISABLE_TEXTURE_COMBINER
 		case GL_RGB_SCALE:
@@ -2401,10 +2407,10 @@ void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param) {
 	case GL_TEXTURE_ENV:
 		switch (pname) {
 		case GL_TEXTURE_ENV_COLOR:
-			texture_units[server_texture_unit].env_color.r = (float)param[0] / 65536.0f;
-			texture_units[server_texture_unit].env_color.g = (float)param[1] / 65536.0f;
-			texture_units[server_texture_unit].env_color.b = (float)param[2] / 65536.0f;
-			texture_units[server_texture_unit].env_color.a = (float)param[3] / 65536.0f;
+			tex_unit->env_color.r = (float)param[0] / 65536.0f;
+			tex_unit->env_color.g = (float)param[1] / 65536.0f;
+			tex_unit->env_color.b = (float)param[2] / 65536.0f;
+			tex_unit->env_color.a = (float)param[3] / 65536.0f;
 			break;
 #ifndef DISABLE_TEXTURE_COMBINER
 		case GL_RGB_SCALE:

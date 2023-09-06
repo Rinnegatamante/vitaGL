@@ -284,8 +284,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	scissor_test_vertices = gpu_alloc_mapped(1 * sizeof(vector4f), VGL_MEM_RAM);
 
 	// Init texture units
-	int i, j;
-	for (i = 0; i < COMBINED_TEXTURE_IMAGE_UNITS_NUM; i++) {
+	for (int i = 0; i < COMBINED_TEXTURE_IMAGE_UNITS_NUM; i++) {
 		sceClibMemset(&texture_units[i].env_color.r, 0, sizeof(vector4f));
 		texture_units[i].env_mode = MODULATE;
 		texture_units[i].tex_id[0] = 0;
@@ -334,7 +333,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	default_idx_ptr = (uint16_t *)vglMalloc(MAX_IDX_NUMBER * sizeof(uint16_t));
 	default_quads_idx_ptr = (uint16_t *)vglMalloc(MAX_IDX_NUMBER * sizeof(uint16_t));
 	default_line_strips_idx_ptr = (uint16_t *)vglMalloc(MAX_IDX_NUMBER * sizeof(uint16_t));
-	for (i = 0; i < MAX_IDX_NUMBER / 6; i++) {
+	for (int i = 0; i < MAX_IDX_NUMBER / 6; i++) {
 		default_idx_ptr[i * 6] = i * 6;
 		default_idx_ptr[i * 6 + 1] = i * 6 + 1;
 		default_idx_ptr[i * 6 + 2] = i * 6 + 2;
@@ -356,7 +355,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	}
 
 	// Init default vertex attributes configurations
-	for (i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
+	for (int i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
 		// Textureless variant
 		if (i < FFP_VERTEX_ATTRIBS_NUM - 2) {
 			legacy_nt_vertex_attrib_config[i].streamIndex = i;
@@ -439,11 +438,11 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	legacy_pool_size = pool_size;
 
 	// Initializing lights configs
-	for (i = 0; i < MAX_LIGHTS_NUM; i++) {
+	for (int i = 0; i < MAX_LIGHTS_NUM; i++) {
 		float data[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 		vgl_fast_memcpy(&lights_ambients[i].r, &data[0], sizeof(float) * 4);
-		data[3] = 1.0f;
-		data[4] = 0.0f;
+		data[2] = 1.0f;
+		data[3] = 0.0f;
 		vgl_fast_memcpy(&lights_positions[i].r, &data[0], sizeof(float) * 4);
 		lights_attenuations[i].r = 1.0f;
 		lights_attenuations[i].g = 0.0f;
@@ -459,7 +458,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	}
 
 	// Init purge lists
-	for (i = 0; i < FRAME_PURGE_FREQ; i++) {
+	for (int i = 0; i < FRAME_PURGE_FREQ; i++) {
 		frame_purge_list[i][0] = NULL;
 		frame_rt_purge_list[i][0] = NULL;
 	}
@@ -479,14 +478,14 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 	// Defaulting textures into using texture on ID 0 and resetting free textures queue
-	for (i = 1; i < TEXTURES_NUM; i++) {
+	for (int i = 1; i < TEXTURES_NUM; i++) {
 		texture_slots[i].status = TEX_UNUSED;
 		texture_slots[i].gxm_tex = texture_slots[0].gxm_tex;
 		texture_slots[i].palette_data = NULL;
 	}
 
 	// Init texture matrices to identity
-	for (i = 0; i < TEXTURE_COORDS_NUM; i++) {
+	for (int i = 0; i < TEXTURE_COORDS_NUM; i++) {
 		matrix4x4_identity(texture_matrix[i]);
 	}
 

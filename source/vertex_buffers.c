@@ -99,11 +99,9 @@ void glDeleteVertexArrays(GLsizei n, const GLuint *gl_arrays) {
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
-		return;
 	}
 #endif
-	int i, j;
-	for (j = 0; j < n; j++) {
+	for (int j = 0; j < n; j++) {
 		if (gl_arrays[j]) {
 			vao *gpu_buf = (vao *)gl_arrays[j];
 			markAsDirty(gpu_buf->vertex_attrib_pool);
@@ -152,11 +150,9 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
-		return;
 	}
 #endif
-	int i, j;
-	for (j = 0; j < n; j++) {
+	for (int j = 0; j < n; j++) {
 		if (gl_buffers[j]) {
 			gpubuffer *gpu_buf = (gpubuffer *)gl_buffers[j];
 			if (gpu_buf->ptr) {
@@ -239,7 +235,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
-	} else if (size < 0 || offset < 0 || offset + size > gpu_buf->size) {
+	} else if (offset < 0 || offset + size > gpu_buf->size) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
@@ -324,7 +320,7 @@ void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitf
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf || gpu_buf->mapped) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_OPERATION, NULL)
-	} else if (offset < 0 || length < 0 || offset + length > gpu_buf->size) {
+	} else if (offset < 0 || offset + length > gpu_buf->size) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_VALUE, NULL)
 	}
 #endif
@@ -359,6 +355,7 @@ GLboolean glUnmapBuffer(GLenum target) {
 }
 
 void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length) {
+#ifndef SKIP_ERROR_HANDLING
 	gpubuffer *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
@@ -371,10 +368,9 @@ void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length)
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 
-#ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf || !gpu_buf->mapped) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
-	} else if (offset < 0 || length < 0 || offset + length > gpu_buf->size) {
+	} else if (offset < 0 || offset + length > gpu_buf->size) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
@@ -620,5 +616,5 @@ void vglBufferData(GLenum target, const GLvoid *data) {
 	}
 #endif
 
-	gpu_buf->ptr = data;
+	gpu_buf->ptr = (GLvoid *)data;
 }

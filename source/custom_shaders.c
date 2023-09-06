@@ -888,7 +888,6 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 #endif
 
 float *getUniformAliasDataPtr(uniform *u, const char *name, uint32_t size) {
-	int i;
 	while (u) {
 		if (size == u->size) {
 			if (!strcmp(name, sceGxmProgramParameterGetName(u->ptr))) {
@@ -983,11 +982,9 @@ void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLcha
 	}
 #endif
 
-	// Grabbing passed shader
-	shader *s = &shaders[handle - 1];
-
 	GLsizei len = 0;
 #ifdef HAVE_SHARK_LOG
+	shader *s = &shaders[handle - 1];
 	if (s->log) {
 		len = min(strlen(s->log), maxLength - 1);
 		vgl_fast_memcpy(infoLog, s->log, len);
@@ -1348,7 +1345,6 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 	// Grabbing passed program
 	program *p = &progs[progr - 1];
 	int i, cnt;
-	const SceGxmProgramParameter *param;
 	uniform *u;
 	matrix_uniform *m;
 	int matrix_uniform_num = 0;
@@ -1407,7 +1403,7 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 		i = 0;
 		cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
 		while (cnt--) {
-			param = sceGxmProgramGetParameter(p->vshader->prog, cnt);
+			const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, cnt);
 			if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
 				int len = strlen(sceGxmProgramParameterGetName(param)) + 1;
 				if (len > i)
