@@ -36,6 +36,7 @@ uint32_t readBGRA(void *data);
 uint32_t readARGB(void *data);
 uint32_t readRGBA5551(void *data);
 uint32_t readBGRA1555(void *data);
+uint32_t readRGBA1555(void *data);
 uint32_t readRGBA4444(void *data);
 uint32_t readL(void *data);
 uint32_t readLA(void *data);

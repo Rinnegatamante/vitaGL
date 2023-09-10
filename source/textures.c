@@ -311,6 +311,10 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 			else
 				read_cb = readRGBA;
 			break;
+		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
+			data_bpp = 2;
+			read_cb = readRGBA1555;
+			break;
 		case GL_UNSIGNED_SHORT_5_5_5_1:
 			data_bpp = 2;
 			if (internalFormat == GL_RGBA)
