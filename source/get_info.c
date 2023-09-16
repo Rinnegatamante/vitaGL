@@ -148,6 +148,12 @@ const GLubyte *glGetStringi(GLenum name, GLuint index) {
 
 void glGetBooleanv(GLenum pname, GLboolean *params) {
 	switch (pname) {
+	case GL_COLOR_WRITEMASK:
+		params[0] = blend_color_mask & SCE_GXM_COLOR_MASK_R ? GL_TRUE : GL_FALSE;
+		params[1] = blend_color_mask & SCE_GXM_COLOR_MASK_G ? GL_TRUE : GL_FALSE;
+		params[2] = blend_color_mask & SCE_GXM_COLOR_MASK_B ? GL_TRUE : GL_FALSE;
+		params[3] = blend_color_mask & SCE_GXM_COLOR_MASK_A ? GL_TRUE : GL_FALSE;
+		break;
 	case GL_BLEND: // Blending feature state
 		*params = blend_state;
 		break;

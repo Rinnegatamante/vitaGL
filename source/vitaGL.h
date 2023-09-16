@@ -146,6 +146,7 @@ extern "C" {
 #define GL_SCISSOR_BOX                                  0x0C10
 #define GL_SCISSOR_TEST                                 0x0C11
 #define GL_COLOR_CLEAR_VALUE                            0x0C22
+#define GL_COLOR_WRITEMASK                              0x0C23
 #define GL_DOUBLEBUFFER                                 0x0C32
 #define GL_UNPACK_ROW_LENGTH                            0x0CF2
 #define GL_UNPACK_ALIGNMENT                             0x0CF5
