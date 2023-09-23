@@ -637,7 +637,7 @@ void glClear(GLbitfield mask) {
 		SCE_GXM_STENCIL_OP_REPLACE,
 		SCE_GXM_STENCIL_OP_REPLACE,
 		SCE_GXM_STENCIL_OP_REPLACE,
-		0XFF, stencil_mask_front_write & 0xFF);
+		0xFF, stencil_mask_front_write & 0xFF);
 	sceGxmSetFrontStencilRef(gxm_context, stencil_value & 0xFF);
 
 	sceGxmSetBackStencilFunc(gxm_context,
@@ -661,7 +661,7 @@ void glClear(GLbitfield mask) {
 			SCE_GXM_STENCIL_OP_KEEP,
 			SCE_GXM_STENCIL_OP_KEEP,
 			SCE_GXM_STENCIL_OP_KEEP,
-			0XFF, 0xFF);
+			0xFF, 0xFF);
 		sceGxmSetBackStencilFunc(gxm_context,
 			SCE_GXM_STENCIL_FUNC_ALWAYS,
 			SCE_GXM_STENCIL_OP_KEEP,
