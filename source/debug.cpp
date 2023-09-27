@@ -268,10 +268,10 @@ void vgl_debugger_draw() {
 #endif
 
 #ifdef FILE_LOG
+static char msg[512 * 1024];
 void vgl_file_log(const char *format, ...) {
 	__gnuc_va_list arg;
 	va_start(arg, format);
-	char msg[512];
 	vsnprintf(msg, sizeof(msg), format, arg);
 	va_end(arg);
 	FILE *log = fopen("ux0:/data/vitaGL.log", "a+");
