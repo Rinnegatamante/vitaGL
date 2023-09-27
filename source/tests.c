@@ -261,10 +261,8 @@ void update_scissor_test() {
 	sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
 	sceGxmSetFragmentProgram(gxm_context, scissor_test_fragment_program);
 
-	// Invalidating viewport
+	// Invalidating viewport and culling
 	invalidate_viewport();
-
-	// Invalidating culling
 	sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_NONE);
 
 	// Invalidating internal tile based region clip
@@ -319,10 +317,8 @@ void update_scissor_test() {
 
 	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 
-	// Restoring viewport
+	// Restoring viewport and culling
 	validate_viewport();
-
-	// Restoring culling mode
 	change_cull_mode();
 
 	// Reducing GPU workload by performing tile granularity clipping

@@ -207,6 +207,10 @@ typedef struct {
 static shader shaders[MAX_CUSTOM_SHADERS];
 static program progs[MAX_CUSTOM_PROGRAMS];
 
+#ifdef HAVE_SHARK_LOG
+static char *shark_log = NULL;
+#endif
+
 void release_shader(shader *s) {
 	// Deallocating shader and unregistering it from sceGxmShaderPatcher
 	if (s->valid) {
@@ -840,7 +844,6 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 }
 
 #ifdef HAVE_SHARK_LOG
-static char *shark_log = NULL;
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	char newline[1024];
 	GLboolean is_extra_line = shark_log ? GL_TRUE : GL_FALSE;
