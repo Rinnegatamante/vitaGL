@@ -48,6 +48,9 @@ uint32_t get_color_from_texture(SceGxmTextureFormat type) {
 	case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
 		res = SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR;
 		break;
+	case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
+		res = SCE_GXM_COLOR_FORMAT_U8U8U8U8_ARGB;
+		break;
 	case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
 		res = SCE_GXM_COLOR_FORMAT_U4U4U4U4_ABGR;
 		break;
@@ -607,6 +610,10 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			read_cb = readRGB;
 			src_bpp = 3;
 			break;
+		case GL_BGRA:
+			read_cb = readBGRA;
+			src_bpp = 4;
+			break;
 		default:
 			break;
 		}
@@ -635,6 +642,17 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			switch (type) {
 			case GL_UNSIGNED_BYTE:
 				write_cb = writeRGBA;
+				dst_bpp = 4;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
+			}
+			break;
+		case GL_BGRA:
+			switch (type) {
+			case GL_UNSIGNED_BYTE:
+			case GL_UNSIGNED_INT_8_8_8_8_REV:
+				write_cb = writeBGRA;
 				dst_bpp = 4;
 				break;
 			default:
