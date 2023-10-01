@@ -839,8 +839,6 @@ extern GLboolean skip_scene_reset;
 extern uint16_t *depth_clear_indices; // Memblock starting address for clear screen indices
 
 // Clear screen shaders
-extern SceGxmVertexProgram *clear_vertex_program_patched; // Patched vertex program for clearing screen
-extern SceGxmFragmentProgram *clear_fragment_program_float_patched; // Patched fragment program for clearing screen on float fbos
 extern vector4f *clear_vertices; // Memblock starting address for clear screen vertices
 
 extern GLboolean fast_texture_compression; // Hints for texture compression
@@ -910,6 +908,7 @@ void resetDlists(); // Reset display lists state
 
 /* misc.c */
 void change_cull_mode(void); // Updates current cull mode
+void update_polygon_offset(); // Updates current polygon offset mode
 
 /* misc functions */
 void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height); // Converts screen coords to local space

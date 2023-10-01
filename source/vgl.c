@@ -60,7 +60,6 @@ const char clear_v[] = " \
 		return float4(x, y, u_clear_depth, 1.f); \
 	}";
 #endif
-
 SceGxmShaderPatcherId clear_vertex_id;
 SceGxmShaderPatcherId clear_fragment_id;
 const SceGxmProgramParameter *clear_position;
@@ -69,6 +68,26 @@ const SceGxmProgramParameter *clear_color;
 SceGxmVertexProgram *clear_vertex_program_patched;
 SceGxmFragmentProgram *clear_fragment_program_patched;
 SceGxmFragmentProgram *clear_fragment_program_float_patched;
+
+// Framebuffer blit shader
+const char blit_v[] = " \
+	void main(float2 position, float2 texcoord, float4 out vPos : POSITION, float2 out vTexcoord: TEXCOORD0) { \
+		vPos = float4(position, 0.0f, 1.0f); \
+		vTexcoord = texcoord; \
+	}";
+	
+const char blit_f[] = " \
+	float4 main(float2 vTexcoord : TEXCOORD0, uniform sampler2D tex) : COLOR { \
+		return tex2D(tex, vTexcoord); \
+	}";
+SceGxmShaderPatcherId blit_vertex_id;
+SceGxmShaderPatcherId blit_fragment_id;
+SceGxmVertexProgram *blit_vertex_program_patched;
+SceGxmFragmentProgram *blit_fragment_program_patched;
+SceGxmFragmentProgram *blit_fragment_program_float_patched;
+const SceGxmProgramParameter *blit_position;
+const SceGxmProgramParameter *blit_texcoord;
+
 vector4f *clear_vertices = NULL; // Memblock starting address for clear screen vertices
 vector3f *depth_vertices = NULL; // Memblock starting address for depth clear screen vertices
 
@@ -234,7 +253,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		SceGxmProgram *gxm_program_clear_v = (SceGxmProgram *)&clear_v;
 		SceGxmProgram *gxm_program_clear_f = (SceGxmProgram *)&clear_f;
 #else
-	// Compile clear shaders only if shader compiler is up
+	// Compile clear and blit shaders only if shader compiler is up
 	if (is_shark_online) {
 		uint32_t size = strlen(clear_v);
 		SceGxmProgram *p = shark_compile_shader_extended(clear_v, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
@@ -273,6 +292,56 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 				clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4,
 				msaa_mode, NULL, NULL,
 				&clear_fragment_program_float_patched);
+		}
+		
+		size = strlen(blit_v);
+		p = shark_compile_shader_extended(blit_v, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
+		SceGxmProgram *gxm_program_blit_v = (SceGxmProgram *)vglMalloc(size);
+		vgl_fast_memcpy((void *)gxm_program_blit_v, (void *)p, size);
+		shark_clear_output();
+		size = strlen(blit_f);
+		p = shark_compile_shader_extended(blit_f, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
+		SceGxmProgram *gxm_program_blit_f = (SceGxmProgram *)vglMalloc(size);
+		vgl_fast_memcpy((void *)gxm_program_blit_f, (void *)p, size);
+		shark_clear_output();
+
+		// Framebuffer blit shader register
+		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_blit_v,
+			&blit_vertex_id);
+		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, gxm_program_blit_f,
+			&blit_fragment_id);
+
+		const SceGxmProgram *blit_vertex_program = sceGxmShaderPatcherGetProgramFromId(blit_vertex_id);
+		const SceGxmProgram *blit_fragment_program = sceGxmShaderPatcherGetProgramFromId(blit_fragment_id);
+
+		blit_position = sceGxmProgramFindParameterByName(blit_vertex_program, "position");
+		blit_texcoord = sceGxmProgramFindParameterByName(blit_vertex_program, "texcoord");
+		
+		SceGxmVertexAttribute blit_attrs[2];
+		SceGxmVertexStream blit_streams[2];
+		blit_attrs[0].offset = blit_attrs[1].offset = 0;
+		blit_attrs[0].format = blit_attrs[1].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+		blit_attrs[0].componentCount = blit_attrs[1].componentCount = 2;
+		blit_streams[0].stride = blit_streams[1].stride = 2 * sizeof(float);
+		blit_attrs[0].regIndex = sceGxmProgramParameterGetResourceIndex(blit_position);
+		blit_attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(blit_texcoord);
+		blit_attrs[0].streamIndex = 0;
+		blit_attrs[1].streamIndex = 1;
+		blit_streams[0].indexSource = blit_streams[1].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+		
+		patchVertexProgram(gxm_shader_patcher,
+			blit_vertex_id, blit_attrs, 2, blit_streams, 2, &blit_vertex_program_patched);
+		{
+			patchFragmentProgram(gxm_shader_patcher,
+				blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+				msaa_mode, NULL, NULL,
+				&blit_fragment_program_patched);
+		}
+		{
+			patchFragmentProgram(gxm_shader_patcher,
+				blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4,
+				msaa_mode, NULL, NULL,
+				&blit_fragment_program_float_patched);
 		}
 	}
 

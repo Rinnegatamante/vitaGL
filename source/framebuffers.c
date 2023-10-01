@@ -718,6 +718,110 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	}
 }
 
+void glBlitNamedFramebuffer(GLuint readFramebuffer, GLuint drawFramebuffer, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter) {
+	// Invalidate current write framebuffer binding
+	framebuffer *real_write_fb = active_write_fb;
+	active_write_fb = (framebuffer *)drawFramebuffer;
+	
+	switch (mask) {
+	case GL_COLOR_BUFFER_BIT:
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_OPERATION, mask)
+	}
+
+	sceneReset();
+
+	// Invalidating viewport and culling
+	invalidate_viewport();
+	sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_NONE);
+
+	// Invalidate depth test and depth write
+	orig_depth_test = depth_test_state;
+	invalidate_depth_test();
+	change_depth_write(SCE_GXM_DEPTH_WRITE_DISABLED);
+	
+	// Force polygon fill mode and no depth bias
+	sceGxmSetFrontDepthBias(gxm_context, 0, 0);
+	sceGxmSetBackDepthBias(gxm_context, 0, 0);
+	sceGxmSetFrontPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
+	sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
+
+	// Set framebuffer blit shader
+	sceGxmSetVertexProgram(gxm_context, blit_vertex_program_patched);
+	if (is_fbo_float)
+		sceGxmSetFragmentProgram(gxm_context, blit_fragment_program_float_patched);
+	else
+		sceGxmSetFragmentProgram(gxm_context, blit_fragment_program_patched);
+	
+	// Set fragment texture to read framebuffer bound color attachment
+	framebuffer *read_fb = (framebuffer *)readFramebuffer;
+	if (filter == GL_LINEAR) {
+		vglSetTexMagFilter(&read_fb->tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
+		vglSetTexMinFilter(&read_fb->tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
+		vglSetTexMipmapCount(&read_fb->tex->gxm_tex, 0);
+	} else {
+		vglSetTexMagFilter(&read_fb->tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
+		vglSetTexMinFilter(&read_fb->tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
+		vglSetTexMipmapCount(&read_fb->tex->gxm_tex, 0);
+	}
+	sceGxmSetFragmentTexture(gxm_context, 0, &read_fb->tex->gxm_tex); // TODO: Add display support as read framebuffer
+	
+	// Set stencil func to keep original data
+	sceGxmSetFrontStencilFunc(gxm_context,
+		SCE_GXM_STENCIL_FUNC_ALWAYS,
+		SCE_GXM_STENCIL_OP_KEEP,
+		SCE_GXM_STENCIL_OP_KEEP,
+		SCE_GXM_STENCIL_OP_KEEP,
+		0xFF, 0xFF);
+	sceGxmSetBackStencilFunc(gxm_context,
+		SCE_GXM_STENCIL_FUNC_ALWAYS,
+		SCE_GXM_STENCIL_OP_KEEP,
+		SCE_GXM_STENCIL_OP_KEEP,
+		SCE_GXM_STENCIL_OP_KEEP,
+		0xFF, 0xFF);
+	
+	// Filling position and texcoord values
+	float *vertex_data = (float *)gpu_alloc_mapped_temp(16 * sizeof(float));
+	// Position
+	vector4f tmp;
+	vector4f_convert_to_local_space(&tmp, dstX0, dstY0, dstX1 - dstX0, dstY1 - dstY0);
+	vertex_data[0] = vertex_data[2] = tmp.x; // X0
+	vertex_data[1] = vertex_data[7] = tmp.z; // Y0
+	vertex_data[4] = vertex_data[6] = tmp.y; // X1
+	vertex_data[3] = vertex_data[5] = tmp.w; // Y1
+	// Texcoords
+	vertex_data[8] = vertex_data[10] = (float)srcX0 / (float)read_fb->width; // X0
+	vertex_data[9] = vertex_data[15] = (float)srcY0 / (float)read_fb->height; // Y0
+	vertex_data[12] = vertex_data[14] = (float)srcX1 / (float)read_fb->width; // X1
+	vertex_data[11] = vertex_data[13] = (float)srcY1 / (float)read_fb->height; // Y1
+	sceGxmSetVertexStream(gxm_context, 0, vertex_data);
+	sceGxmSetVertexStream(gxm_context, 1, &vertex_data[8]);
+
+	// Draw read framebuffer on top of write framebuffer
+	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+
+	// Restore all invalidated configurations
+	vglSetTexMagFilter(&read_fb->tex->gxm_tex, read_fb->tex->mag_filter);
+	vglSetTexMinFilter(&read_fb->tex->gxm_tex, read_fb->tex->min_filter);
+	vglSetTexMipmapCount(&read_fb->tex->gxm_tex, read_fb->tex->use_mips ? read_fb->tex->mip_count : 0);
+	validate_depth_test();
+	change_depth_write((depth_mask_state && depth_test_state) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
+	change_stencil_settings();
+	sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
+	sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back);
+	update_polygon_offset();
+	validate_viewport();
+	change_cull_mode();
+	
+	// Restoring write framebuffer binding
+	active_write_fb = real_write_fb;
+}
+
+void glBlitFramebuffer(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter) {
+	glBlitNamedFramebuffer((GLuint)active_read_fb, (GLuint)active_write_fb, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+}
+
 /* vgl* */
 
 void vglTexImageDepthBuffer(GLenum target) {

@@ -47,6 +47,8 @@ static const struct {
 	{"glBlendEquationSeparate", (void *)glBlendEquationSeparate},
 	{"glBlendFunc", (void *)glBlendFunc},
 	{"glBlendFuncSeparate", (void *)glBlendFuncSeparate},
+	{"glBlitFramebuffer", (void *)glBlitFramebuffer},
+	{"glBlitNamedFramebuffer", (void *)glBlitNamedFramebuffer},
 	{"glBufferData", (void *)glBufferData},
 	{"glBufferSubData", (void *)glBufferSubData},
 	{"glCallList", (void *)glCallList},

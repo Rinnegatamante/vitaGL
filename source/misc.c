@@ -149,7 +149,7 @@ GLboolean point_sprite_state = GL_FALSE; // Current state for GL_POINT_SPRITE
 viewport gl_viewport; // Current viewport state
 GLboolean skip_viewport_override = GL_FALSE;
 
-static void update_polygon_offset() {
+void update_polygon_offset() {
 	switch (polygon_mode_front) {
 	case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
 		if (pol_offset_line)

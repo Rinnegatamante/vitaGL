@@ -32,4 +32,14 @@ extern const SceGxmProgramParameter *clear_depth;
 extern const SceGxmProgramParameter *clear_color;
 extern SceGxmVertexProgram *clear_vertex_program_patched;
 extern SceGxmFragmentProgram *clear_fragment_program_patched;
+extern SceGxmFragmentProgram *clear_fragment_program_float_patched;
+
+// Framebuffer blit shader
+extern SceGxmShaderPatcherId blit_vertex_id;
+extern SceGxmShaderPatcherId blit_fragment_id;
+extern const SceGxmProgramParameter *blit_position;
+extern const SceGxmProgramParameter *blit_texcoord;
+extern SceGxmVertexProgram *blit_vertex_program_patched;
+extern SceGxmFragmentProgram *blit_fragment_program_patched;
+extern SceGxmFragmentProgram *blit_fragment_program_float_patched;
 #endif
