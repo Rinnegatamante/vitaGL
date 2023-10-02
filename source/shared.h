@@ -552,6 +552,9 @@ extern legacy_vtx_attachment current_vtx;
 extern void *frag_uniforms;
 extern void *vert_uniforms;
 extern SceGxmMultisampleMode msaa_mode;
+extern void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
+extern SceGxmColorSurface gxm_color_surfaces[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces
+extern unsigned int gxm_back_buffer_index; // Display back buffer id
 extern GLboolean use_extra_mem;
 extern blend_config blend_info;
 extern SceGxmVertexAttribute vertex_attrib_config[VERTEX_ATTRIBS_NUM];

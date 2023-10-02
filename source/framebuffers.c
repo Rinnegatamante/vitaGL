@@ -23,9 +23,6 @@
 
 #include "shared.h"
 
-extern void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
-extern unsigned int gxm_back_buffer_index; // Display back buffer id
-
 static framebuffer framebuffers[BUFFERS_NUM]; // Framebuffers array
 static renderbuffer renderbuffers[BUFFERS_NUM]; // Renderbuffers array
 
@@ -756,16 +753,17 @@ void glBlitNamedFramebuffer(GLuint readFramebuffer, GLuint drawFramebuffer, GLin
 	
 	// Set fragment texture to read framebuffer bound color attachment
 	framebuffer *read_fb = (framebuffer *)readFramebuffer;
+	SceGxmTexture *tex = readFramebuffer ? &read_fb->tex->gxm_tex : &gxm_color_surfaces[gxm_back_buffer_index].backgroundTex;
 	if (filter == GL_LINEAR) {
-		vglSetTexMagFilter(&read_fb->tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
-		vglSetTexMinFilter(&read_fb->tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
-		vglSetTexMipmapCount(&read_fb->tex->gxm_tex, 0);
+		vglSetTexMagFilter(tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
+		vglSetTexMinFilter(tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
+		vglSetTexMipmapCount(tex, 0);
 	} else {
-		vglSetTexMagFilter(&read_fb->tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
-		vglSetTexMinFilter(&read_fb->tex->gxm_tex, SCE_GXM_TEXTURE_FILTER_POINT);
-		vglSetTexMipmapCount(&read_fb->tex->gxm_tex, 0);
+		vglSetTexMagFilter(tex, SCE_GXM_TEXTURE_FILTER_POINT);
+		vglSetTexMinFilter(tex, SCE_GXM_TEXTURE_FILTER_POINT);
+		vglSetTexMipmapCount(tex, 0);
 	}
-	sceGxmSetFragmentTexture(gxm_context, 0, &read_fb->tex->gxm_tex); // TODO: Add display support as read framebuffer
+	sceGxmSetFragmentTexture(gxm_context, 0, tex);
 	
 	// Set stencil func to keep original data
 	sceGxmSetFrontStencilFunc(gxm_context,
@@ -802,9 +800,11 @@ void glBlitNamedFramebuffer(GLuint readFramebuffer, GLuint drawFramebuffer, GLin
 	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 
 	// Restore all invalidated configurations
-	vglSetTexMagFilter(&read_fb->tex->gxm_tex, read_fb->tex->mag_filter);
-	vglSetTexMinFilter(&read_fb->tex->gxm_tex, read_fb->tex->min_filter);
-	vglSetTexMipmapCount(&read_fb->tex->gxm_tex, read_fb->tex->use_mips ? read_fb->tex->mip_count : 0);
+	if (readFramebuffer) {
+		vglSetTexMagFilter(tex, read_fb->tex->mag_filter);
+		vglSetTexMinFilter(tex, read_fb->tex->min_filter);
+		vglSetTexMipmapCount(tex, read_fb->tex->use_mips ? read_fb->tex->mip_count : 0);
+	}
 	validate_depth_test();
 	change_depth_write((depth_mask_state && depth_test_state) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 	change_stencil_settings();
