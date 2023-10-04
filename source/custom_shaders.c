@@ -114,6 +114,7 @@
 		while (u) { \
 			ubo *b = u->alias ? u->alias : u; \
 			sceGxmSetVertexUniformBuffer(gxm_context, b->idx, (uint8_t *)ubo_buf[b->bind]->ptr + ubo_offset[b->bind]); \
+			ubo_buf[b->bind]->last_frame = vgl_framecount; \
 			u = (ubo *)u->chain; \
 		} \
 	} \
@@ -121,6 +122,7 @@
 		ubo *u = p->frag_ubos; \
 		while (u) { \
 			sceGxmSetFragmentUniformBuffer(gxm_context, u->idx, (uint8_t *)ubo_buf[u->bind]->ptr + ubo_offset[u->bind]); \
+			ubo_buf[u->bind]->last_frame = vgl_framecount; \
 			u = (ubo *)u->chain; \
 		} \
 	}
