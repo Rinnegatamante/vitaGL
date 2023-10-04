@@ -421,6 +421,7 @@ extern "C" {
 #define GL_DYNAMIC_COPY                                 0x88EA
 #define GL_DEPTH24_STENCIL8                             0x88F0
 #define GL_SAMPLER_BINDING                              0x8919
+#define GL_UNIFORM_BUFFER                               0x8A11
 #define GL_FRAGMENT_SHADER                              0x8B30
 #define GL_VERTEX_SHADER                                0x8B31
 #define GL_MAX_VARYING_FLOATS                           0x8B4B
@@ -562,6 +563,8 @@ void glAttachShader(GLuint prog, GLuint shad);
 void glBegin(GLenum mode);
 void glBindAttribLocation(GLuint program, GLuint index, const GLchar *name);
 void glBindBuffer(GLenum target, GLuint buffer);
+void glBindBufferBase(GLenum target, GLuint index, GLuint buffer);
+void glBindBufferRange(GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
 void glBindFramebuffer(GLenum target, GLuint framebuffer);
 void glBindRenderbuffer(GLenum target, GLuint renderbuffer);
 void glBindSampler(GLuint unit, GLuint smp);
@@ -686,6 +689,7 @@ void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *
 const GLubyte *glGetString(GLenum name);
 const GLubyte *glGetStringi(GLenum name, GLuint index);
 void glGetTexEnviv(GLenum target, GLenum pname, GLint *params);
+GLuint glGetUniformBlockIndex(GLuint prog, const GLchar *uniformBlockName);
 GLint glGetUniformLocation(GLuint prog, const GLchar *name);
 void glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params);
 void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params);
@@ -828,6 +832,7 @@ void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
 void glUniform4fv(GLint location, GLsizei count, const GLfloat *value);
 void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3);
 void glUniform4iv(GLint location, GLsizei count, const GLint *value);
+void glUniformBlockBinding(GLuint prog, GLuint uniformBlockIndex, GLuint uniformBlockBinding);
 void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);

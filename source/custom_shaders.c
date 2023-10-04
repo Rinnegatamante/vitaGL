@@ -108,6 +108,21 @@
 			u = (uniform *)u->chain; \
 		} \
 		dirty_frag_unifs = GL_FALSE; \
+	} \
+	if (p->vert_ubos) { \
+		ubo *u = p->vert_ubos; \
+		while (u) { \
+			ubo *b = u->alias ? u->alias : u; \
+			sceGxmSetVertexUniformBuffer(gxm_context, b->idx, (uint8_t *)ubo_buf[b->bind]->ptr + ubo_offset[b->bind]); \
+			u = (ubo *)u->chain; \
+		} \
+	} \
+	if (p->frag_ubos) { \
+		ubo *u = p->frag_ubos; \
+		while (u) { \
+			sceGxmSetFragmentUniformBuffer(gxm_context, u->idx, (uint8_t *)ubo_buf[u->bind]->ptr + ubo_offset[u->bind]); \
+			u = (ubo *)u->chain; \
+		} \
 	}
 	
 #define setupFragProgram() \
@@ -140,6 +155,8 @@ static SceGxmVertexStream temp_streams[VERTEX_ATTRIBS_NUM];
 static unsigned short orig_stride[VERTEX_ATTRIBS_NUM];
 static SceGxmAttributeFormat orig_fmt[VERTEX_ATTRIBS_NUM];
 static unsigned char orig_size[VERTEX_ATTRIBS_NUM];
+static gpubuffer *ubo_buf[UBOS_NUM];
+static uint32_t ubo_offset[UBOS_NUM];
 
 #ifdef HAVE_GLSL_TRANSLATOR
 typedef struct {
@@ -173,6 +190,15 @@ typedef enum {
 	PROG_LINKED
 } prog_status;
 
+// Uniform buffer object struct
+typedef struct {
+	const SceGxmProgramParameter *ptr;
+	uint32_t bind;
+	uint32_t idx;
+	void *alias;
+	void *chain;
+} ubo;
+
 // Program struct holding vertex/fragment shader info
 typedef struct {
 	shader *vshader;
@@ -194,6 +220,8 @@ typedef struct {
 	const SceGxmProgramParameter *wvp;
 	uniform *vert_uniforms;
 	uniform *frag_uniforms;
+	ubo *vert_ubos;
+	ubo *frag_ubos;
 	GLuint attr_highest_idx;
 	GLboolean has_unaligned_attrs;
 	GLboolean is_fbo_float;
@@ -220,6 +248,11 @@ void release_shader(shader *s) {
 			matrix_uniform *m = (matrix_uniform *)s->mat->chain;
 			vgl_free(s->mat);
 			s->mat = m;
+		}
+		while (s->unif_blk) {
+			block_uniform *b = (block_uniform *)s->unif_blk->chain;
+			vgl_free(s->unif_blk);
+			s->unif_blk = b;
 		}
 #ifdef HAVE_SHARK_LOG
 		if (s->log) {
@@ -367,6 +400,12 @@ static inline __attribute__((always_inline)) void compile_shader(shader *s) {
 				m->ptr = sceGxmProgramFindParameterByName(s->prog, sceShaccCgGetParameterName(param));
 				m->chain = s->mat;
 				s->mat = m;
+			} else if (sceShaccCgGetParameterClass(param) == SCE_SHACCCG_PARAMETERCLASS_UNIFORMBLOCK) {
+				block_uniform *b = (block_uniform *)vglMalloc(sizeof(block_uniform));
+				b->idx = sceShaccCgGetParameterBufferIndex(param);
+				strcpy(b->name, sceShaccCgGetParameterName(param));
+				b->chain = s->unif_blk;
+				s->unif_blk = b;
 			}
 			param = sceShaccCgGetNextParameter(param);
 		}
@@ -902,6 +941,25 @@ float *getUniformAliasDataPtr(uniform *u, const char *name, uint32_t size) {
 	return NULL;
 }
 
+ubo *hasBlockAlias(ubo *u, const char *name) {
+	while (u) {
+		if (!strcmp(name, ((block_uniform*)u->ptr)->name)) {
+			return u;
+		}
+		u = u->chain;
+	}
+	return NULL;
+}
+
+block_uniform *getBlockDetails(block_uniform *b, uint8_t idx) {
+	while (b) {
+		if (b->idx == idx)
+			return b;
+		b = (block_uniform *)b->chain;
+	}
+	return NULL;
+}
+
 /*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -
@@ -942,6 +1000,7 @@ GLuint glCreateShader(GLenum shaderType) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, 0)
 	}
 	shaders[res - 1].mat = NULL;
+	shaders[res - 1].unif_blk = NULL;
 	shaders[res - 1].valid = GL_TRUE;
 #ifdef HAVE_GLSL_TRANSLATOR
 	shaders[res - 1].glsl_source = NULL;
@@ -1199,6 +1258,8 @@ GLuint glCreateProgram(void) {
 			progs[i].fshader = NULL;
 			progs[i].vert_uniforms = NULL;
 			progs[i].frag_uniforms = NULL;
+			progs[i].vert_ubos = NULL;
+			progs[i].frag_ubos = NULL;
 			progs[i].attr_highest_idx = 0;
 #ifdef HAVE_GLSL_TRANSLATOR
 			progs[i].num_glsl_attr = 0;
@@ -1321,6 +1382,16 @@ void glDeleteProgram(GLuint prog) {
 			p->frag_uniforms = (uniform *)p->frag_uniforms->chain;
 			if (old->size != 0xFFFFFFFF && old->size != 0)
 				vgl_free(old->data);
+			vgl_free(old);
+		}
+		while (p->vert_ubos) {
+			ubo *old = p->vert_ubos;
+			p->vert_ubos = (ubo *)p->vert_ubos->chain;
+			vgl_free(old);
+		}
+		while (p->frag_ubos) {
+			ubo *old = p->frag_ubos;
+			p->frag_ubos = (ubo *)p->frag_ubos->chain;
 			vgl_free(old);
 		}
 
@@ -1492,15 +1563,25 @@ void glLinkProgram(GLuint progr) {
 			p->frag_uniforms = u;
 			p->frag_texunits[texunit_idx - 1] = u;
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
-			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
-			u->chain = p->frag_uniforms;
-			u->ptr = param;
-			u->is_vertex = GL_FALSE;
-			u->is_fragment = GL_TRUE;
-			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
-			u->data = (float *)vglMalloc(u->size * sizeof(float));
-			sceClibMemset(u->data, 0, u->size * sizeof(float));
-			p->frag_uniforms = u;
+			if (sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM) {
+				uniform *u = (uniform *)vglMalloc(sizeof(uniform));
+				u->chain = p->frag_uniforms;
+				u->ptr = param;
+				u->is_vertex = GL_FALSE;
+				u->is_fragment = GL_TRUE;
+				u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
+				u->data = (float *)vglMalloc(u->size * sizeof(float));
+				sceClibMemset(u->data, 0, u->size * sizeof(float));
+				p->frag_uniforms = u;
+			}
+		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER) {
+			ubo *u = (ubo *)vglMalloc(sizeof(ubo));
+			u->chain = p->frag_ubos;
+			u->idx = sceGxmProgramParameterGetResourceIndex(param);
+			u->ptr = (const SceGxmProgramParameter *)getBlockDetails(p->fshader->unif_blk, u->idx);
+			u->bind = 0;
+			u->alias = NULL;
+			p->frag_ubos = u;
 		}
 	}
 
@@ -1524,20 +1605,30 @@ void glLinkProgram(GLuint progr) {
 			p->vert_uniforms = u;
 			p->vert_texunits[texunit_idx - 1] = u;
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
-			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
-			u->chain = p->vert_uniforms;
-			u->ptr = param;
-			u->is_vertex = GL_TRUE;
-			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
-			u->data = getUniformAliasDataPtr(p->frag_uniforms, sceGxmProgramParameterGetName(param), u->size);
-			if (u->data) {
-				u->is_fragment = GL_TRUE;
-			} else {
-				u->is_fragment = GL_FALSE;
-				u->data = (float *)vglMalloc(u->size * sizeof(float));
-				sceClibMemset(u->data, 0, u->size * sizeof(float));
+			if (sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM) {
+				uniform *u = (uniform *)vglMalloc(sizeof(uniform));
+				u->chain = p->vert_uniforms;
+				u->ptr = param;
+				u->is_vertex = GL_TRUE;
+				u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
+				u->data = getUniformAliasDataPtr(p->frag_uniforms, sceGxmProgramParameterGetName(param), u->size);
+				if (u->data) {
+					u->is_fragment = GL_TRUE;
+				} else {
+					u->is_fragment = GL_FALSE;
+					u->data = (float *)vglMalloc(u->size * sizeof(float));
+					sceClibMemset(u->data, 0, u->size * sizeof(float));
+				}
+				p->vert_uniforms = u;
 			}
-			p->vert_uniforms = u;
+		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER) {
+			ubo *u = (ubo *)vglMalloc(sizeof(ubo));
+			u->chain = p->vert_ubos;
+			u->idx = sceGxmProgramParameterGetResourceIndex(param);
+			u->ptr = (const SceGxmProgramParameter *)getBlockDetails(p->vshader->unif_blk, u->idx);
+			u->bind = 0;
+			u->alias = hasBlockAlias(p->frag_ubos, ((block_uniform *)u->ptr)->name);
+			p->frag_ubos = u;
 		}
 	}
 
@@ -1583,6 +1674,37 @@ void glUseProgram(GLuint prog) {
 	cur_program = prog;
 	dirty_frag_unifs = GL_TRUE;
 	dirty_vert_unifs = GL_TRUE;
+}
+
+GLuint glGetUniformBlockIndex(GLuint prog, const GLchar *uniformBlockName) {
+	// Grabbing passed program
+	program *p = &progs[prog - 1];
+
+	// Getting the desired location
+	ubo *j = p->vert_ubos;
+	while (j) {
+		block_uniform *b = (block_uniform *)j->ptr;
+		if (!strcmp(b->name, uniformBlockName))
+			return j->alias ? (GLuint)j->alias : (GLuint)j;
+		j = j->chain;
+	}
+	j = p->frag_ubos;
+	while (j) {
+		block_uniform *b = (block_uniform *)j->ptr;
+		if (!strcmp(b->name, uniformBlockName))
+			return (GLuint)j;
+		j = j->chain;
+	}
+
+	return 0xFFFFFFFF;
+}
+
+void glUniformBlockBinding(GLuint prog, GLuint uniformBlockIndex, GLuint uniformBlockBinding) {
+	// Grabbing passed program
+	program *p = &progs[prog - 1];
+	
+	ubo *u = (ubo *)uniformBlockIndex;
+	u->bind = uniformBlockBinding;
 }
 
 GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
@@ -2344,6 +2466,34 @@ void glVertexAttrib4fv(GLuint index, const GLfloat *v) {
 	cur_vao->vertex_attrib_value[index][1] = v[1];
 	cur_vao->vertex_attrib_value[index][2] = v[2];
 	cur_vao->vertex_attrib_value[index][3] = v[3];
+}
+
+void glBindBufferRange(GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size) {
+#ifndef SKIP_ERROR_HANDLING
+	if (target != GL_UNIFORM_BUFFER) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	} else if (index >= UBOS_NUM) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, index)
+	} else if (size <= 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, size)
+	}
+#endif
+
+	ubo_buf[index] = (gpubuffer *)buffer;
+	ubo_offset[index] = offset;
+}
+
+void glBindBufferBase(GLenum target, GLuint index, GLuint buffer) {
+#ifndef SKIP_ERROR_HANDLING
+	if (target != GL_UNIFORM_BUFFER) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	} else if (index >= UBOS_NUM) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, index)
+	}
+#endif
+
+	ubo_buf[index] = (gpubuffer *)buffer;
+	ubo_offset[index] = 0;
 }
 
 void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {

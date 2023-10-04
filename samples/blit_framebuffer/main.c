@@ -3,7 +3,6 @@
 #include <libtoloader.h>
 
 int main() {
-	sceSysmoduleLoadModule(SCE_SYSMODULE_RAZOR_CAPTURE);
 	// Initializing graphics device
 	vglInitExtended(0, 960, 544, 4 * 1024 * 1024, SCE_GXM_MULTISAMPLE_4X);
 

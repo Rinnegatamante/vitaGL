@@ -38,6 +38,7 @@
 #endif
 #define COMBINED_TEXTURE_IMAGE_UNITS_NUM 16 // Available combined texture image units
 #define VERTEX_ATTRIBS_NUM 16 // Available vertex attributes
+#define UBOS_NUM 14 // Available uniform buffers bindings
 #define MODELVIEW_STACK_DEPTH 32 // Depth of modelview matrix stack
 #define GENERIC_STACK_DEPTH 2 // Depth of generic matrix stack
 #define DISPLAY_WIDTH_DEF 960 // Default display width in pixels
@@ -521,6 +522,13 @@ typedef struct {
 	void *chain;
 } matrix_uniform;
 
+// Uniform block struct
+typedef struct {
+	char name[128];
+	uint8_t idx;
+	void *chain;
+} block_uniform;
+
 // Generic shader struct
 typedef struct {
 	GLenum type;
@@ -535,6 +543,7 @@ typedef struct {
 	char *glsl_source;
 #endif
 	matrix_uniform *mat;
+	block_uniform *unif_blk;
 #ifdef HAVE_SHARK_LOG
 	char *log;
 #endif
@@ -828,6 +837,7 @@ extern GLuint cur_program; // Current in use custom program (0 = No custom progr
 extern uint32_t vsync_interval; // Current setting for VSync
 
 extern uint32_t vertex_array_unit; // Current in-use vertex array buffer unit
+extern uint32_t uniform_array_unit; // Current in-use uniform buffer unit
 
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
 extern framebuffer *in_use_framebuffer; // Currently in use framebuffer

@@ -27,6 +27,7 @@
 #define DISABLED_AUX_ATTRIBS_POOL_SIZE (64 * 1024) // Disabled attributes circular pool size in bytes for non default VAOs
 
 uint32_t vertex_array_unit = 0; // Current in-use vertex array buffer unit
+uint32_t uniform_array_unit = 0; // Current in-use uniform buffer unit
 
 void *vertex_object; // Vertex object address for vgl* draw pipeline
 void *color_object; // Color object address for vgl* draw pipeline
@@ -141,6 +142,9 @@ void glBindBuffer(GLenum target, GLuint buffer) {
 	case GL_ELEMENT_ARRAY_BUFFER:
 		cur_vao->index_array_unit = buffer;
 		break;
+	case GL_UNIFORM_BUFFER:
+		uniform_array_unit = buffer;
+		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
@@ -174,6 +178,9 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
 		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+		break;
+	case GL_UNIFORM_BUFFER:
+		gpu_buf = (gpubuffer *)uniform_array_unit;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
@@ -229,6 +236,9 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 	case GL_ELEMENT_ARRAY_BUFFER:
 		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 		break;
+	case GL_UNIFORM_BUFFER:
+		gpu_buf = (gpubuffer *)uniform_array_unit;
+		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
@@ -280,6 +290,9 @@ void *glMapBuffer(GLenum target, GLenum access) {
 	case GL_ELEMENT_ARRAY_BUFFER:
 		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 		break;
+	case GL_UNIFORM_BUFFER:
+		gpu_buf = (gpubuffer *)uniform_array_unit;
+		break;
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
 	}
@@ -313,6 +326,9 @@ void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitf
 	case GL_ELEMENT_ARRAY_BUFFER:
 		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 		break;
+	case GL_UNIFORM_BUFFER:
+		gpu_buf = (gpubuffer *)uniform_array_unit;
+		break;
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
 	}
@@ -339,6 +355,9 @@ GLboolean glUnmapBuffer(GLenum target) {
 	case GL_ELEMENT_ARRAY_BUFFER:
 		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 		break;
+	case GL_UNIFORM_BUFFER:
+		gpu_buf = (gpubuffer *)uniform_array_unit;
+		break;
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, GL_TRUE)
 	}
@@ -364,6 +383,9 @@ void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length)
 	case GL_ELEMENT_ARRAY_BUFFER:
 		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 		break;
+	case GL_UNIFORM_BUFFER:
+		gpu_buf = (gpubuffer *)uniform_array_unit;
+		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
@@ -384,6 +406,9 @@ void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params) {
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
 		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+		break;
+	case GL_UNIFORM_BUFFER:
+		gpu_buf = (gpubuffer *)uniform_array_unit;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
@@ -606,6 +631,9 @@ void vglBufferData(GLenum target, const GLvoid *data) {
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
 		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+		break;
+	case GL_UNIFORM_BUFFER:
+		gpu_buf = (gpubuffer *)uniform_array_unit;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)

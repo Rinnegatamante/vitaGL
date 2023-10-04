@@ -179,7 +179,6 @@ GLboolean change_stencil_config(SceGxmStencilOp *cfg, GLenum new) {
 		break;
 	default:
 		return GL_FALSE;
-		break;
 	}
 	return GL_TRUE;
 }
@@ -213,7 +212,6 @@ GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new) {
 		break;
 	default:
 		return GL_FALSE;
-		break;
 	}
 	return GL_TRUE;
 }

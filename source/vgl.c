@@ -278,9 +278,10 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		clear_position = sceGxmProgramFindParameterByName(clear_vertex_program, "position");
 		clear_depth = sceGxmProgramFindParameterByName(clear_vertex_program, "u_clear_depth");
 		clear_color = sceGxmProgramFindParameterByName(clear_fragment_program, "u_clear_color");
-
-		patchVertexProgram(gxm_shader_patcher,
-			clear_vertex_id, NULL, 0, NULL, 0, &clear_vertex_program_patched);
+		{
+			patchVertexProgram(gxm_shader_patcher,
+				clear_vertex_id, NULL, 0, NULL, 0, &clear_vertex_program_patched);
+		}
 		{
 			patchFragmentProgram(gxm_shader_patcher,
 				clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
@@ -328,9 +329,10 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		blit_attrs[0].streamIndex = 0;
 		blit_attrs[1].streamIndex = 1;
 		blit_streams[0].indexSource = blit_streams[1].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-		
-		patchVertexProgram(gxm_shader_patcher,
-			blit_vertex_id, blit_attrs, 2, blit_streams, 2, &blit_vertex_program_patched);
+		{
+			patchVertexProgram(gxm_shader_patcher,
+				blit_vertex_id, blit_attrs, 2, blit_streams, 2, &blit_vertex_program_patched);
+		}
 		{
 			patchFragmentProgram(gxm_shader_patcher,
 				blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
