@@ -2,7 +2,6 @@
 
 #include <vitasdk.h>
 #include <vitaGL.h>
-#include <libtoloader.h>
 
 char *frag_shader = " \
 	float3 in TexCoord : TEXCOORD0; \
@@ -65,53 +64,53 @@ int main() {
 	glGenBuffers(1, &uboHandle);
 	glBindBuffer(GL_UNIFORM_BUFFER, uboHandle);
 	GLfloat outerColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
-    GLfloat innerColor[] = {1.0f, 1.0f, 0.75f, 1.0f};
-    GLfloat innerRadius = 0.25f, outerRadius = 0.45f;
+	GLfloat innerColor[] = {1.0f, 1.0f, 0.75f, 1.0f};
+	GLfloat innerRadius = 0.25f, outerRadius = 0.45f;
 	float blockBuffer[10];
-    memcpy(blockBuffer, innerColor, 4 * sizeof(GLfloat));
-    memcpy(&blockBuffer[4], outerColor, 4 * sizeof(GLfloat));
-    memcpy(&blockBuffer[8], &innerRadius, sizeof(GLfloat));
-    memcpy(&blockBuffer[9], &outerRadius, sizeof(GLfloat));
+	memcpy(blockBuffer, innerColor, 4 * sizeof(GLfloat));
+	memcpy(&blockBuffer[4], outerColor, 4 * sizeof(GLfloat));
+	memcpy(&blockBuffer[8], &innerRadius, sizeof(GLfloat));
+	memcpy(&blockBuffer[9], &outerRadius, sizeof(GLfloat));
 	glBufferData(GL_UNIFORM_BUFFER, 10 * sizeof(float), blockBuffer, GL_DYNAMIC_DRAW);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboHandle);
 	
 	float positionData[] = {
-        -0.8f, -0.8f, 0.0f,
-         0.8f, -0.8f, 0.0f,
-         0.8f,  0.8f, 0.0f,
-         -0.8f, -0.8f, 0.0f,
-          0.8f, 0.8f, 0.0f,
-          -0.8f, 0.8f, 0.0f
-     };
-    float tcData[] = {
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f
-    };
+		-0.8f, -0.8f, 0.0f,
+		0.8f, -0.8f, 0.0f,
+		0.8f,  0.8f, 0.0f,
+		-0.8f, -0.8f, 0.0f,
+		0.8f, 0.8f, 0.0f,
+		-0.8f, 0.8f, 0.0f
+	 };
+	float tcData[] = {
+		0.0f, 0.0f,
+		1.0f, 0.0f,
+		1.0f, 1.0f,
+		0.0f, 0.0f,
+		1.0f, 1.0f,
+		0.0f, 1.0f
+	};
 	
 	// Create and populate the buffer objects
-    GLuint vboHandles[2];
-    glGenBuffers(2, vboHandles);
-    GLuint positionBufferHandle = vboHandles[0];
-    GLuint tcBufferHandle = vboHandles[1];
-    glBindBuffer(GL_ARRAY_BUFFER, positionBufferHandle);
-    glBufferData(GL_ARRAY_BUFFER, 18 * sizeof(float), positionData, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, tcBufferHandle);
-    glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), tcData, GL_STATIC_DRAW);
+	GLuint vboHandles[2];
+	glGenBuffers(2, vboHandles);
+	GLuint positionBufferHandle = vboHandles[0];
+	GLuint tcBufferHandle = vboHandles[1];
+	glBindBuffer(GL_ARRAY_BUFFER, positionBufferHandle);
+	glBufferData(GL_ARRAY_BUFFER, 18 * sizeof(float), positionData, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, tcBufferHandle);
+	glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), tcData, GL_STATIC_DRAW);
 	
 	// Bind our buffer objects
 	glEnableVertexAttribArray(0);  // Vertex position
-    glEnableVertexAttribArray(1);  // Vertex texture coords
+	glEnableVertexAttribArray(1);  // Vertex texture coords
 	glBindBuffer(GL_ARRAY_BUFFER, positionBufferHandle);
-    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
-    glBindBuffer(GL_ARRAY_BUFFER, tcBufferHandle);
-    glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
+	glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
+	glBindBuffer(GL_ARRAY_BUFFER, tcBufferHandle);
+	glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL );
 	
 	glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
 	// Main loop
 	for (;;) {
