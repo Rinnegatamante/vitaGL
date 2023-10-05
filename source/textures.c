@@ -933,10 +933,10 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 				write_cb = writeR;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_A8L8:
-			if (read_cb == readRG)
+			if (read_cb == readLA)
 				fast_store = GL_TRUE;
 			else
-				write_cb = writeRG;
+				write_cb = writeRA;
 			break;
 		// From here, we assume we're always in fast_store trunk (Not 100% accurate)
 		case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
