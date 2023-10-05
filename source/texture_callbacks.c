@@ -63,7 +63,7 @@ uint32_t readRGBA5551(void *data) {
 }
 
 // Read callback for 16bpp unsigned BGRA1555 format
-uint32_t readBGRA1555(void *data) {
+uint32_t readARGB1555(void *data) {
 	uint16_t clr = *(uint16_t *)data;
 	uint8_t r, g, b, a;
 	b = convert_u16_to_u32_cspace(clr, 11, 11, 0x1F);
@@ -74,7 +74,7 @@ uint32_t readBGRA1555(void *data) {
 }
 
 // Read callback for 16bpp unsigned BGRA1555 format
-uint32_t readRGBA1555(void *data) {
+uint32_t readABGR1555(void *data) {
 	uint16_t clr = *(uint16_t *)data;
 	uint8_t r, g, b, a;
 	r = convert_u16_to_u32_cspace(clr, 11, 11, 0x1F);

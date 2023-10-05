@@ -278,7 +278,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 			break;
 		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
 			data_bpp = 2;
-			read_cb = readBGRA1555;
+			read_cb = readARGB1555;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -313,7 +313,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 			break;
 		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
 			data_bpp = 2;
-			read_cb = readRGBA1555;
+			read_cb = readABGR1555;
 			break;
 		case GL_UNSIGNED_SHORT_5_5_5_1:
 			data_bpp = 2;
@@ -863,7 +863,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			break;
 		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
 			data_bpp = 2;
-			read_cb = readRGBA1555;
+			read_cb = readABGR1555;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -882,7 +882,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			break;
 		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
 			data_bpp = 2;
-			read_cb = readBGRA1555;
+			read_cb = readARGB1555;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
