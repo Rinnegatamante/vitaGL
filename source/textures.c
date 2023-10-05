@@ -803,6 +803,16 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 		}
 		break;
+	case GL_LUMINANCE_ALPHA:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			data_bpp = 2;
+			read_cb = readLA;
+			break;
+		default:
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
+		}
+		break;
 	case GL_RG:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:

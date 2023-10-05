@@ -64,7 +64,7 @@ uint32_t get_color_from_texture(SceGxmTextureFormat type) {
 		res = SCE_GXM_COLOR_FORMAT_F16F16F16F16_RGBA;
 		break;
 	default:
-		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, 0)
+		SET_GL_ERROR_WITH_RET_AND_VALUE(GL_INVALID_ENUM, 0, type)
 	}
 	return res;
 }
