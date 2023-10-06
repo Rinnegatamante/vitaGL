@@ -913,7 +913,7 @@ void upload_ffp_uniforms(); // Uploads required uniforms for the in use ffp shad
 void update_fogging_state(); // Updates current setup for fogging
 void adjust_color_material_state(); // Updates internal settings for GL_COLOR_MATERIAL
 
-/* vertex_buffers.c */
+/* buffers.c */
 void resetVao(vao *v); // Reset vao state
 
 /* display_lists.c */
