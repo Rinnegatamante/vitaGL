@@ -159,6 +159,7 @@ static SceGxmAttributeFormat orig_fmt[VERTEX_ATTRIBS_NUM];
 static unsigned char orig_size[VERTEX_ATTRIBS_NUM];
 static gpubuffer *ubo_buf[UBOS_NUM];
 static uint32_t ubo_offset[UBOS_NUM];
+static uint8_t tex2d_override = 0;
 
 #ifdef HAVE_GLSL_TRANSLATOR
 typedef struct {
@@ -449,7 +450,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		if (p->frag_texunits[i]) {
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
-			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : 0;
+			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&tex->gxm_tex);
@@ -493,7 +494,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		if (p->vert_texunits[i]) {
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
-			uint8_t tex_type = p->vert_texunits[i]->size ? 2 : 0;
+			uint8_t tex_type = p->vert_texunits[i]->size ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&tex->gxm_tex);
@@ -651,7 +652,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		if (p->frag_texunits[i]) {
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
-			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : 0;
+			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&tex->gxm_tex);
@@ -693,7 +694,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		if (p->vert_texunits[i]) {
 #endif
 			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
-			uint8_t tex_type = p->vert_texunits[i]->size ? 2 : 0;
+			uint8_t tex_type = p->vert_texunits[i]->size ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&tex->gxm_tex);
@@ -2892,5 +2893,18 @@ void vglUseLowPrecision(GLboolean val) {
 void vglSetSemanticBindingMode(GLenum mode) {
 #ifdef HAVE_GLSL_TRANSLATOR
 	glsl_sema_mode = mode;
+#endif
+}
+
+void vglOverrideTexFormat(GLenum target) {
+#ifdef HAVE_UNPURE_TEXFORMATS
+	switch (target) {
+	case GL_TEXTURE_1D:
+		tex2d_override = 1;
+		break;
+	default:
+		tex2d_override = 0;
+		break;
+	}
 #endif
 }

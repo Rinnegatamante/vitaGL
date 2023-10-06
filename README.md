@@ -38,6 +38,7 @@ In order to build vitaGL use the following command: `make install`.
 `SINGLE_THREADED_GC=1` Makes the garbage collector run on main thread.<br>
 `PHYCONT_ON_DEMAND=1` Makes the physically contiguous RAM be handled with separate memblocks instead of an heap.<br>
 `UNPURE_TEXTURES=1` Makes legal to upload textures without base level.<br>
+`UNPURE_TEXFORMATS=1` Enables support for texture dimensions different than 2D (tex2D is still required in shader code).<br>
 `HAVE_WRAPPED_ALLOCATORS=1` Allows usage of vgl allocators inside wrapped allocators.<br>
 `HAVE_DEBUGGER=1` Enables lightweighted on screen debugger interface.<br>
 `HAVE_DEBUGGER=2` Enables lightweighted on screen debugger interface with extra information (devkit only).<br>

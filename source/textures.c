@@ -23,6 +23,7 @@
 
 #include "shared.h"
 
+#ifdef HAVE_UNPURE_TEXFORMATS
 #define resolveTexTarget(target) \
 	switch (target) { \
 	case GL_TEXTURE_2D: \
@@ -44,6 +45,26 @@
 		vgl_log("%s:%d Target type unsupported.\n", __FILE__, __LINE__); \
 		break; \
 	}
+#else
+#define resolveTexTarget(target) \
+	switch (target) { \
+	case GL_TEXTURE_2D: \
+		texture2d_idx = tex_unit->tex_id[0]; \
+		break; \
+	case GL_TEXTURE_CUBE_MAP: \
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_X: \
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_Y: \
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_Z: \
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X: \
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y: \
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z: \
+		texture2d_idx = tex_unit->tex_id[2]; \
+		break; \
+	default: \
+		vgl_log("%s:%d Target type unsupported.\n", __FILE__, __LINE__); \
+		break; \
+	}
+#endif
 
 texture_unit texture_units[COMBINED_TEXTURE_IMAGE_UNITS_NUM]; // Available texture units
 texture texture_slots[TEXTURES_NUM]; // Available texture slots
@@ -578,9 +599,11 @@ void glBindTexture(GLenum target, GLuint texture) {
 	case GL_TEXTURE_2D:
 		texture_units[server_texture_unit].tex_id[0] = texture;
 		break;
+#ifdef HAVE_UNPURE_TEXFORMATS
 	case GL_TEXTURE_1D:
 		texture_units[server_texture_unit].tex_id[1] = texture;
 		break;
+#endif
 	case GL_TEXTURE_CUBE_MAP:
 		texture_units[server_texture_unit].tex_id[2] = texture;
 		break;
@@ -681,7 +704,9 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	}
 
 	switch (target) {
+#ifdef HAVE_UNPURE_TEXFORMATS
 	case GL_TEXTURE_1D: // Workaround for 1D textures support
+#endif
 	case GL_TEXTURE_2D:
 		_glTexImage2D_FlatIMPL(tex, level, internalFormat, width, height, format, type, data);
 		break;
@@ -699,7 +724,11 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 }
 
 void glTexImage1D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *data) {
+#ifdef HAVE_UNPURE_TEXFORMATS
 	glTexImage2D(GL_TEXTURE_1D, level, internalFormat, width, 1, border, format, type, data);
+#else
+	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
+#endif
 }
 
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {	
@@ -894,7 +923,9 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	}
 
 	switch (target) {
+#ifdef HAVE_UNPURE_TEXFORMATS
 	case GL_TEXTURE_1D: // Workaround for 1D textures support
+#endif
 	case GL_TEXTURE_2D:
 
 		// Detecting proper write callback
@@ -984,7 +1015,11 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 }
 
 void glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels) {
+#ifdef HAVE_UNPURE_TEXFORMATS
 	glTexSubImage2D(GL_TEXTURE_1D, level, xoffset, 0, width, 1, format, type, pixels);
+#else
+	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
+#endif
 }
 
 void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data) {
@@ -1021,7 +1056,9 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 #endif
 
 	switch (target) {
+#ifdef HAVE_UNPURE_TEXFORMATS
 	case GL_TEXTURE_1D: // Workaround for 1D textures support
+#endif
 	case GL_TEXTURE_2D:
 	case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
 	case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
@@ -1421,7 +1458,9 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 		}
 		break;
+#ifdef HAVE_UNPURE_TEXFORMATS
 	case GL_TEXTURE_1D:
+#endif
 	case GL_TEXTURE_2D:
 		switch (pname) {
 		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
@@ -1619,7 +1658,9 @@ void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 		}
 		break;
+#ifdef HAVE_UNPURE_TEXFORMATS
 	case GL_TEXTURE_1D:
+#endif
 	case GL_TEXTURE_2D:
 		switch (pname) {
 		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
@@ -1850,7 +1891,11 @@ void glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x
 }
 
 void glCopyTexImage1D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border) {
+#ifdef HAVE_UNPURE_TEXFORMATS
 	glCopyTexImage2D(GL_TEXTURE_1D, level, internalformat, x, y, width, 1, border);
+#else
+	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
+#endif
 }
 
 void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height) {
@@ -1867,7 +1912,11 @@ void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffse
 }
 
 void glCopyTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width) {
+#ifdef HAVE_UNPURE_TEXFORMATS
 	glCopyTexSubImage2D(GL_TEXTURE_1D, level, xoffset, 0, x, y, width, 1);
+#else
+	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
+#endif
 }
 
 void gluBuild2DMipmaps(GLenum target, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *data) {
@@ -2047,7 +2096,9 @@ void *vglGetTexDataPointer(GLenum target) {
 	switch (target) {
 	case GL_TEXTURE_CUBE_MAP:
 	case GL_TEXTURE_2D:
+#ifdef HAVE_UNPURE_TEXFORMATS
 	case GL_TEXTURE_1D:
+#endif
 		return tex->data;
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
@@ -2064,7 +2115,9 @@ void vglOverloadTexDataPointer(GLenum target, void *data) {
 	switch (target) {
 	case GL_TEXTURE_CUBE_MAP:
 	case GL_TEXTURE_2D:
+#ifdef HAVE_UNPURE_TEXFORMATS
 	case GL_TEXTURE_1D:
+#endif
 		tex->data = data;
 		break;
 	default:
@@ -2082,7 +2135,9 @@ SceGxmTexture *vglGetGxmTexture(GLenum target) {
 	switch (target) {
 	case GL_TEXTURE_CUBE_MAP:
 	case GL_TEXTURE_2D:
+#ifdef HAVE_UNPURE_TEXFORMATS
 	case GL_TEXTURE_1D:
+#endif
 		return &tex->gxm_tex;
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
