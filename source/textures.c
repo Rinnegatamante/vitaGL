@@ -1165,6 +1165,8 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
 			break;
+		case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3:
+			gamma_correction = GL_TRUE;
 		case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR;
 			break;

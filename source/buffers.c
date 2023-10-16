@@ -17,8 +17,8 @@
  */
 
 /* 
- * vertex_buffers.c:
- * Implementation for vertex buffers related functions
+ * buffers.c:
+ * Implementation for buffers related functions
  */
 
 #include "shared.h"
