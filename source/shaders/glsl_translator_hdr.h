@@ -3,6 +3,9 @@
 
 static const char *glsl_hdr =
 R"(#define GL_ES 1
+inline float4x4 vglMul(float4x4 M1, float4x4 M2) { return M1 * M2; }
+inline float3x3 vglMul(float3x3 M1, float3x3 M2) { return M1 * M2; }
+inline float2x2 vglMul(float2x2 M1, float2x2 M2) { return M1 * M2; }
 inline float4x4 vglMul(float4x4 M, float v) { return v * M; }
 inline float3x3 vglMul(float3x3 M, float v) { return v * M; }
 inline float2x2 vglMul(float2x2 M, float v) { return v * M; }
