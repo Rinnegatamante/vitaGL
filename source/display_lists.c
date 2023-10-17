@@ -396,7 +396,6 @@ void glCallLists(GLsizei n, GLenum type, const void *lists) {
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
-		break;
 	}
 }
 

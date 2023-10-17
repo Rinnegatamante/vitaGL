@@ -665,7 +665,7 @@ void glGenerateTextureMipmap(GLuint target);
 void glGenFramebuffers(GLsizei n, GLuint *framebuffers);
 GLuint glGenLists(GLsizei range);
 void glGenRenderbuffers(GLsizei n, GLuint *renderbuffers);
-void glGenSamplers(GLsizei n, GLuint *samplers);
+void glGenSamplers(GLsizei n, GLuint *smps);
 void glGenTextures(GLsizei n, GLuint *textures);
 void glGenVertexArrays(GLsizei n, GLuint *res);
 void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);

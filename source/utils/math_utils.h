@@ -180,7 +180,7 @@ static inline __attribute__((always_inline)) void matrix4x4_init_perspective(mat
 static inline __attribute__((always_inline)) int matrix3x3_invert(matrix3x3 out, const matrix3x3 in) {
 	float inv[9], det;
 	float *invOut = (float *)&out[0][0];
-	float *m = (float *)&in[0][0];
+	const float *m = (float *)&in[0][0];
 	int i;
 
 	inv[ 0] = m[4] * m[8] - m[5] * m[7];
@@ -209,7 +209,7 @@ static inline __attribute__((always_inline)) int matrix3x3_invert(matrix3x3 out,
 static inline __attribute__((always_inline)) int matrix4x4_invert(matrix4x4 out, const matrix4x4 in) {
 	float inv[16], det;
 	float *invOut = (float *)&out[0][0];
-	float *m = (float *)&in[0][0];
+	const float *m = (float *)&in[0][0];
 	int i;
   
 	inv[ 0] =  m[5] * m[10] * m[15] - m[5] * m[14] * m[11] - m[6] * m[9] * m[15] + m[6] * m[13] * m[11] + m[7] * m[9] * m[14] - m[7] * m[13] * m[10];

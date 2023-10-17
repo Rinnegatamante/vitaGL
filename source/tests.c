@@ -414,6 +414,10 @@ void glDepthFunc(GLenum func) {
 	case GL_ALWAYS:
 		depth_func = SCE_GXM_DEPTH_FUNC_ALWAYS;
 		break;
+#ifndef SKIP_ERROR_HANDLING
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, func);
+#endif
 	}
 
 	// Updating in use depth function

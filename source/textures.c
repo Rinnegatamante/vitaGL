@@ -24,7 +24,7 @@
 #include "shared.h"
 
 #ifdef HAVE_UNPURE_TEXFORMATS
-#define resolveTexTarget(target) \
+#define resolveTexTarget(target, unresolved_action) \
 	switch (target) { \
 	case GL_TEXTURE_2D: \
 		texture2d_idx = tex_unit->tex_id[0]; \
@@ -43,10 +43,11 @@
 		break; \
 	default: \
 		vgl_log("%s:%d Target type unsupported.\n", __FILE__, __LINE__); \
+		{ unresolved_action; } \
 		break; \
 	}
 #else
-#define resolveTexTarget(target) \
+#define resolveTexTarget(target, unresolved_action) \
 	switch (target) { \
 	case GL_TEXTURE_2D: \
 		texture2d_idx = tex_unit->tex_id[0]; \
@@ -62,6 +63,7 @@
 		break; \
 	default: \
 		vgl_log("%s:%d Target type unsupported.\n", __FILE__, __LINE__); \
+		{ unresolved_action; } \
 		break; \
 	}
 #endif
@@ -196,7 +198,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	/*
 	 * Callbacks are actually used to just perform down/up-sampling
 	 * between U8 texture formats. Reads are expected to give as result
-	 * a RGBA sample that will be wrote depending on texture format
+	 * an RGBA sample that will be written depending on texture format
 	 * by the write callback
 	 */
 	uint32_t (*read_cb)(void *) = NULL;
@@ -671,7 +673,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
-	resolveTexTarget(target);
+	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
 	texture *tex = &texture_slots[texture2d_idx];
 
 #ifndef SKIP_ERROR_HANDLING
@@ -736,7 +738,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
-	resolveTexTarget(target);
+	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
 	texture *tex = &texture_slots[texture2d_idx];
 #ifdef HAVE_UNPURE_TEXTURES
 	level -= tex->mip_start;
@@ -803,7 +805,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	/*
 	 * Callbacks are actually used to just perform down/up-sampling
 	 * between U8 texture formats. Reads are expected to give as result
-	 * a RGBA sample that will be wrote depending on texture format
+	 * an RGBA sample that will be written depending on texture format
 	 * by the write callback
 	 */
 	void (*write_cb)(void *, uint32_t) = NULL;
@@ -1026,7 +1028,7 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
-	resolveTexTarget(target);
+	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
 	texture *tex = &texture_slots[texture2d_idx];
 
 #ifdef HAVE_UNPURE_TEXTURES
@@ -1387,7 +1389,7 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
-	resolveTexTarget(target);
+	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
@@ -1587,7 +1589,7 @@ void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
-	resolveTexTarget(target);
+	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
@@ -1932,7 +1934,7 @@ void gluBuild2DMipmaps(GLenum target, GLint internalFormat, GLsizei width, GLsiz
 	glGenerateMipmap(target);
 }
 
-void glGenSamplers(GLsizei n, GLuint *samplers) {
+void glGenSamplers(GLsizei n, GLuint *smps) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (n < 0) {
@@ -1948,7 +1950,7 @@ void glGenSamplers(GLsizei n, GLuint *samplers) {
 		smp->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
 		smp->lod_bias = GL_MAX_TEXTURE_LOD_BIAS;
 		smp->use_mips = GL_TRUE;
-		samplers[i] = (GLuint)smp;
+		smps[i] = (GLuint)smp;
 	}
 }
 
@@ -2092,7 +2094,7 @@ void *vglGetTexDataPointer(GLenum target) {
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
-	resolveTexTarget(target);
+	resolveTexTarget(target, SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL));
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
@@ -2111,7 +2113,7 @@ void vglOverloadTexDataPointer(GLenum target, void *data) {
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
-	resolveTexTarget(target);
+	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {
@@ -2131,7 +2133,7 @@ SceGxmTexture *vglGetGxmTexture(GLenum target) {
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
-	resolveTexTarget(target);
+	resolveTexTarget(target, SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL));
 	texture *tex = &texture_slots[texture2d_idx];
 
 	switch (target) {

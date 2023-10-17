@@ -298,7 +298,7 @@ static inline __attribute__((always_inline)) GLenum gxm_vd_fmt_to_gl(SceGxmAttri
 	case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
 		return GL_UNSIGNED_BYTE;
 	default:
-		break;
+		return GL_FLOAT;
 	}
 }
 
@@ -317,7 +317,7 @@ static inline __attribute__((always_inline)) GLenum gxm_attr_type_to_gl(uint8_t 
 	case 16:
 		return GL_FLOAT_MAT4;
 	default:
-		break;
+		return GL_FLOAT;
 	}
 }
 
@@ -336,7 +336,7 @@ static inline __attribute__((always_inline)) GLenum gxm_unif_type_to_gl(SceGxmPa
 		case 4:
 			return GL_FLOAT_VEC4;
 		default:
-			break;
+			return GL_FLOAT;
 		}
 	case SCE_GXM_PARAMETER_TYPE_U32:
 	case SCE_GXM_PARAMETER_TYPE_S32:
@@ -350,10 +350,10 @@ static inline __attribute__((always_inline)) GLenum gxm_unif_type_to_gl(SceGxmPa
 		case 4:
 			return GL_INT_VEC4;
 		default:
-			break;
+			return GL_INT;
 		}
 	default:
-		break;
+		return GL_FLOAT;
 	}
 }
 
@@ -613,7 +613,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	// Uploading vertex streams
 	for (int i = 0; i < p->attr_num; i++) {
 		uint8_t attr_idx = p->attr_map[i];
-		GLboolean is_active = cur_vao->vertex_attrib_state & (1 << attr_idx) ? GL_TRUE : GL_FALSE;
+		GLboolean is_active = (cur_vao->vertex_attrib_state & (1 << attr_idx)) ? GL_TRUE : GL_FALSE;
 		if (is_active) {
 #ifdef DRAW_SPEEDHACK
 			sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
@@ -833,7 +833,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	// Uploading vertex streams
 	for (int i = 0; i < p->attr_num; i++) {
 		uint8_t attr_idx = p->attr_map[i];
-		GLboolean is_active = cur_vao->vertex_attrib_state & (1 << attr_idx) ? GL_TRUE : GL_FALSE;
+		GLboolean is_active = (cur_vao->vertex_attrib_state & (1 << attr_idx)) ? GL_TRUE : GL_FALSE;
 		if (is_active) {
 #ifdef DRAW_SPEEDHACK
 			sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
@@ -1219,7 +1219,7 @@ void glGetAttachedShaders(GLuint prog, GLsizei maxCount, GLsizei *count, GLuint 
 #endif
 
 	// Returning attached shaders
-	GLuint shad;
+	GLuint shad = 1;
 	*count = 0;
 	if (p->vshader) {
 		for (int i = 1; i <= MAX_CUSTOM_SHADERS; i++) {
@@ -1703,9 +1703,6 @@ GLuint glGetUniformBlockIndex(GLuint prog, const GLchar *uniformBlockName) {
 }
 
 void glUniformBlockBinding(GLuint prog, GLuint uniformBlockIndex, GLuint uniformBlockBinding) {
-	// Grabbing passed program
-	program *p = &progs[prog - 1];
-	
 	ubo *u = (ubo *)uniformBlockIndex;
 	u->bind = uniformBlockBinding;
 }
@@ -2569,6 +2566,8 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 			return i;
 		}
 	}
+
+	return -1;
 }
 
 void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name) {

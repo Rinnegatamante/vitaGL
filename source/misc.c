@@ -424,7 +424,7 @@ void glEnable(GLenum cap) {
 	case GL_CLIP_PLANE5:
 	case GL_CLIP_PLANE6:
 		ffp_dirty_vert = GL_TRUE;
-		clip_planes_mask |= (1 << cap - GL_CLIP_PLANE0);
+		clip_planes_mask |= (1 << (cap - GL_CLIP_PLANE0));
 
 		clip_plane_range[0] = clip_planes_mask ? __builtin_ctz(clip_planes_mask) : 0; // Get the lowest enabled clip plane
 		clip_plane_range[1] = clip_planes_mask ? 8 - (__builtin_clz(clip_planes_mask) - 24) : 0; // Get the highest enabled clip plane
@@ -445,7 +445,7 @@ void glEnable(GLenum cap) {
 	case GL_LIGHT6:
 	case GL_LIGHT7:
 		ffp_dirty_vert = GL_TRUE;
-		light_mask |= (1 << cap - GL_LIGHT0);
+		light_mask |= (1 << (cap - GL_LIGHT0));
 
 		light_range[0] = light_mask ? __builtin_ctz(light_mask) : 0; // Get the lowest enabled light
 		light_range[1] = light_mask ? 8 - (__builtin_clz(light_mask) - 24) : 0; // Get the highest enabled light

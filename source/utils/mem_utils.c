@@ -25,7 +25,7 @@
 
 #define HEAP_COOKIE 0x13371337
 
-GLboolean has_cached_mem = GL_FALSE; // Flag for wether to use cached memory for mempools or not
+GLboolean has_cached_mem = GL_FALSE; // Flag for whether to use cached memory for mempools or not
 
 #ifndef HAVE_CUSTOM_HEAP
 static void *mempool_mspace[VGL_MEM_ALL] = {NULL, NULL, NULL, NULL, NULL}; // mspace creations (VRAM, RAM, PHYCONT RAM, CDLG, EXTERNAL)
