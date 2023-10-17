@@ -95,7 +95,6 @@ GLint gxm_vtx_fmt_to_gl(SceGxmAttributeFormat attr) {
 	case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
 	case SCE_GXM_ATTRIBUTE_FORMAT_U8:
 		return GL_UNSIGNED_BYTE;
-	// Other formats are unused by vitaGL:
 	default:
 		return 0;
 	}
