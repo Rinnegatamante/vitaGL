@@ -75,10 +75,8 @@ EGLBoolean eglBindAPI(EGLenum api) {
 		egl_error = EGL_SUCCESS;
 #endif
 		return EGL_TRUE;
-		break;
 	default:
 		SET_EGL_ERROR_WITH_RET(EGL_BAD_PARAMETER, EGL_FALSE);
-		break;
 	}
 }
 

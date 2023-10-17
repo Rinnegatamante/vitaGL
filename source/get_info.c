@@ -54,7 +54,7 @@ static GLubyte *extensions[] = {
 	"GL_EXT_texture_compression_s3tc",
 	"GL_EXT_texture_env_add",
 #ifndef DISABLE_TEXTURE_COMBINER
-	"GL_EXT_texture_env_combine"
+	"GL_EXT_texture_env_combine",
 #endif
 	"GL_EXT_texture_format_BGRA8888",
 	"GL_IMG_texture_compression_pvrtc",
@@ -95,6 +95,8 @@ GLint gxm_vtx_fmt_to_gl(SceGxmAttributeFormat attr) {
 	case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
 	case SCE_GXM_ATTRIBUTE_FORMAT_U8:
 		return GL_UNSIGNED_BYTE;
+	default:
+		return 0;
 	}
 }
 
@@ -121,9 +123,10 @@ const GLubyte *glGetString(GLenum name) {
 			extension = vglMalloc(size + 1);
 			extension[0] = 0;
 			for (i = 0; i < NUM_EXTENSIONS; i++) {
-				sprintf(extension, "%s%s ", extension, extensions[i]);
+				strcat(extension, extensions[i]);
+				if (i != (NUM_EXTENSIONS - 1))
+					strcat(extension, " ");
 			}
-			extension[size - 1] = 0;
 		}
 		return extension;
 	case GL_SHADING_LANGUAGE_VERSION: // Supported shading language version
@@ -149,10 +152,10 @@ const GLubyte *glGetStringi(GLenum name, GLuint index) {
 void glGetBooleanv(GLenum pname, GLboolean *params) {
 	switch (pname) {
 	case GL_COLOR_WRITEMASK:
-		params[0] = blend_color_mask & SCE_GXM_COLOR_MASK_R ? GL_TRUE : GL_FALSE;
-		params[1] = blend_color_mask & SCE_GXM_COLOR_MASK_G ? GL_TRUE : GL_FALSE;
-		params[2] = blend_color_mask & SCE_GXM_COLOR_MASK_B ? GL_TRUE : GL_FALSE;
-		params[3] = blend_color_mask & SCE_GXM_COLOR_MASK_A ? GL_TRUE : GL_FALSE;
+		params[0] = (blend_color_mask & SCE_GXM_COLOR_MASK_R) ? GL_TRUE : GL_FALSE;
+		params[1] = (blend_color_mask & SCE_GXM_COLOR_MASK_G) ? GL_TRUE : GL_FALSE;
+		params[2] = (blend_color_mask & SCE_GXM_COLOR_MASK_B) ? GL_TRUE : GL_FALSE;
+		params[3] = (blend_color_mask & SCE_GXM_COLOR_MASK_A) ? GL_TRUE : GL_FALSE;
 		break;
 	case GL_BLEND: // Blending feature state
 		*params = blend_state;
@@ -307,7 +310,7 @@ void glGetDoublev(GLenum pname, GLdouble *data) {
 		}
 		break;
 	case GL_ACTIVE_TEXTURE: // Active texture
-		*data = (1.0f * (server_texture_unit + GL_TEXTURE0));
+		*data = (double)(server_texture_unit + GL_TEXTURE0);
 		break;
 	case GL_MAX_MODELVIEW_STACK_DEPTH: // Max modelview stack depth
 		*data = MODELVIEW_STACK_DEPTH;
@@ -637,7 +640,7 @@ GLboolean glIsEnabled(GLenum cap) {
 	case GL_CLIP_PLANE4:
 	case GL_CLIP_PLANE5:
 	case GL_CLIP_PLANE6:
-		ret = clip_planes_mask & (1 << (cap - GL_CLIP_PLANE0)) ? GL_TRUE : GL_FALSE;
+		ret = (clip_planes_mask & (1 << (cap - GL_CLIP_PLANE0))) ? GL_TRUE : GL_FALSE;
 		break;
 	case GL_LIGHT0:
 	case GL_LIGHT1:
@@ -647,7 +650,7 @@ GLboolean glIsEnabled(GLenum cap) {
 	case GL_LIGHT5:
 	case GL_LIGHT6:
 	case GL_LIGHT7:
-		ret = light_mask & (1 << (cap - GL_LIGHT0)) ? GL_TRUE : GL_FALSE;
+		ret = (light_mask & (1 << (cap - GL_LIGHT0))) ? GL_TRUE : GL_FALSE;
 		break;
 	case GL_VERTEX_ARRAY:
 		ret = (ffp_vertex_attrib_state & (1 << 0)) ? GL_TRUE : GL_FALSE;

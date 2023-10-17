@@ -469,7 +469,6 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 	if (!image_size)
 		image_size = gpu_get_compressed_mip_size(0, w, h, format);
 
-	const uint32_t blocksize = (format == SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR) ? 16 : 8;
 	const uint32_t aligned_width = nearest_po2(w);
 	const uint32_t aligned_height = nearest_po2(h);
 	uint32_t max_width, max_height, aligned_max_width, aligned_max_height;
@@ -541,7 +540,6 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 	if (!image_size)
 		image_size = gpu_get_compressed_mip_size(mip_level, w, h, format);
 
-	const uint32_t blocksize = (format == SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR) ? 16 : 8;
 	const uint32_t aligned_width = nearest_po2(w);
 	const uint32_t aligned_height = nearest_po2(h);
 	uint32_t max_width, max_height, aligned_max_width, aligned_max_height;

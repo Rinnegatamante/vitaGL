@@ -313,7 +313,6 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 			&blit_fragment_id);
 
 		const SceGxmProgram *blit_vertex_program = sceGxmShaderPatcherGetProgramFromId(blit_vertex_id);
-		const SceGxmProgram *blit_fragment_program = sceGxmShaderPatcherGetProgramFromId(blit_fragment_id);
 
 		blit_position = sceGxmProgramFindParameterByName(blit_vertex_program, "position");
 		blit_texcoord = sceGxmProgramFindParameterByName(blit_vertex_program, "texcoord");
@@ -519,7 +518,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		lights_attenuations[i].g = 0.0f;
 		lights_attenuations[i].b = 0.0f;
 		if (i == 0) {
-			float data2[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+			const float data2[4] = {1.0f, 1.0f, 1.0f, 1.0f};
 			vgl_fast_memcpy(&lights_diffuses[i].r, &data2[0], sizeof(float) * 4);
 			vgl_fast_memcpy(&lights_speculars[i].r, &data2[0], sizeof(float) * 4);
 		} else {

@@ -359,12 +359,12 @@ GLboolean glUnmapBuffer(GLenum target) {
 		gpu_buf = (gpubuffer *)uniform_array_unit;
 		break;
 	default:
-		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, GL_TRUE)
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, GL_FALSE)
 	}
 
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf || !gpu_buf->mapped) {
-		SET_GL_ERROR_WITH_RET(GL_INVALID_OPERATION, GL_TRUE)
+		SET_GL_ERROR_WITH_RET(GL_INVALID_OPERATION, GL_FALSE)
 	}
 #endif
 

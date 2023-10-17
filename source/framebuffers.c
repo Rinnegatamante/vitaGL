@@ -31,42 +31,30 @@ framebuffer *active_write_fb = NULL; // Current write framebuffer in use
 renderbuffer *active_rb = NULL; // Current renderbuffer in use
 
 uint32_t get_color_from_texture(SceGxmTextureFormat type) {
-	uint32_t res = 0;
 	switch (type) {
 	case SCE_GXM_TEXTURE_FORMAT_U8_R:
-		res = SCE_GXM_COLOR_FORMAT_U8_R;
-		break;
+		return SCE_GXM_COLOR_FORMAT_U8_R;
 	case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
-		res = SCE_GXM_COLOR_FORMAT_U8U8U8_BGR;
-		break;
+		return SCE_GXM_COLOR_FORMAT_U8U8U8_BGR;
 	case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
-		res = SCE_GXM_COLOR_FORMAT_U5U6U5_RGB;
-		break;
+		return SCE_GXM_COLOR_FORMAT_U5U6U5_RGB;
 	case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-		res = SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR;
-		break;
+		return SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR;
 	case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
-		res = SCE_GXM_COLOR_FORMAT_U8U8U8U8_ARGB;
-		break;
+		return SCE_GXM_COLOR_FORMAT_U8U8U8U8_ARGB;
 	case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
-		res = SCE_GXM_COLOR_FORMAT_U4U4U4U4_ABGR;
-		break;
+		return SCE_GXM_COLOR_FORMAT_U4U4U4U4_ABGR;
 	case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA:
-		res = SCE_GXM_COLOR_FORMAT_U4U4U4U4_RGBA;
-		break;
+		return SCE_GXM_COLOR_FORMAT_U4U4U4U4_RGBA;
 	case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
-		res = SCE_GXM_COLOR_FORMAT_U1U5U5U5_ABGR;
-		break;
+		return SCE_GXM_COLOR_FORMAT_U1U5U5U5_ABGR;
 	case SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA:
-		res = SCE_GXM_COLOR_FORMAT_U5U5U5U1_RGBA;
-		break;
+		return SCE_GXM_COLOR_FORMAT_U5U5U5U1_RGBA;
 	case SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA:
-		res = SCE_GXM_COLOR_FORMAT_F16F16F16F16_RGBA;
-		break;
+		return SCE_GXM_COLOR_FORMAT_F16F16F16F16_RGBA;
 	default:
 		SET_GL_ERROR_WITH_RET_AND_VALUE(GL_INVALID_ENUM, 0, type)
 	}
-	return res;
 }
 
 uint32_t get_alpha_channel_size(SceGxmColorFormat type) {
@@ -79,7 +67,6 @@ uint32_t get_alpha_channel_size(SceGxmColorFormat type) {
 	case SCE_GXM_COLOR_FORMAT_U4U4U4U4_RGBA:
 		return 4;
 	case SCE_GXM_COLOR_FORMAT_U1U5U5U5_ABGR:
-	case SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA:
 		return 1;
 	case SCE_GXM_COLOR_FORMAT_F16F16F16F16_RGBA:
 		return 16;
@@ -95,7 +82,7 @@ uint32_t get_alpha_channel_size(SceGxmColorFormat type) {
  */
 
 void glGenFramebuffers(GLsizei n, GLuint *ids) {
-	int i = 0, j = 0;
+	int i, j = 0;
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -116,7 +103,7 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 }
 
 void glGenRenderbuffers(GLsizei n, GLuint *ids) {
-	int i = 0, j = 0;
+	int i, j = 0;
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -207,13 +194,13 @@ void glBindFramebuffer(GLenum target, GLuint fb) {
 }
 
 void glBindRenderbuffer(GLenum target, GLuint rb) {
-	switch (target) {
-	case GL_RENDERBUFFER:
-		active_rb = (renderbuffer *)rb;
-		break;
-	default:
+#ifndef SKIP_ERROR_HANDLING
+	if (target != GL_RENDERBUFFER) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
+#endif
+
+	active_rb = (renderbuffer *)rb;
 }
 
 void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer) {
@@ -234,7 +221,6 @@ void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbu
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
-		break;
 	}
 
 	// Discarding any previously bound hidden depth buffers
@@ -316,7 +302,6 @@ void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, 
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalformat)
-		break;
 	}
 
 	active_rb->depthbuffer_ptr = &active_rb->depthbuffer;
@@ -344,7 +329,6 @@ void glNamedRenderbufferStorage(GLuint target, GLenum internalformat, GLsizei wi
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalformat)
-		break;
 	}
 
 	rb->depthbuffer_ptr = &rb->depthbuffer;
@@ -588,7 +572,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	/*
 	 * Callbacks are actually used to just perform down/up-sampling
 	 * between U8 texture formats. Reads are expected to give as result
-	 * a RGBA sample that will be wrote depending on texture format
+	 * an RGBA sample that will be written depending on texture format
 	 * by the write callback
 	 */
 	void (*write_cb)(void *, uint32_t) = NULL;
@@ -789,10 +773,12 @@ void glBlitNamedFramebuffer(GLuint readFramebuffer, GLuint drawFramebuffer, GLin
 	vertex_data[4] = vertex_data[6] = tmp.y; // X1
 	vertex_data[3] = vertex_data[5] = tmp.w; // Y1
 	// Texcoords
-	vertex_data[8] = vertex_data[10] = (float)srcX0 / (float)read_fb->width; // X0
-	vertex_data[9] = vertex_data[15] = (float)srcY0 / (float)read_fb->height; // Y0
-	vertex_data[12] = vertex_data[14] = (float)srcX1 / (float)read_fb->width; // X1
-	vertex_data[11] = vertex_data[13] = (float)srcY1 / (float)read_fb->height; // Y1
+	float read_w = readFramebuffer ? (float)read_fb->width : DISPLAY_WIDTH_FLOAT;
+	float read_h = readFramebuffer ? (float)read_fb->height : DISPLAY_HEIGHT_FLOAT;
+	vertex_data[8] = vertex_data[10] = (float)srcX0 / read_w; // X0
+	vertex_data[9] = vertex_data[15] = (float)srcY0 / read_h; // Y0
+	vertex_data[12] = vertex_data[14] = (float)srcX1 / read_w; // X1
+	vertex_data[11] = vertex_data[13] = (float)srcY1 / read_h; // Y1
 	sceGxmSetVertexStream(gxm_context, 0, vertex_data);
 	sceGxmSetVertexStream(gxm_context, 1, &vertex_data[8]);
 

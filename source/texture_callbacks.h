@@ -25,21 +25,21 @@
 #define _TEXTURE_CALLBACKS_H_
 
 // Read callbacks
-uint32_t readR(void *data);
-uint32_t readRG(void *data);
-uint32_t readRGB(void *data);
-uint32_t readBGR(void *data);
-uint32_t readRGB565(void *data);
-uint32_t readRGBA(void *data);
-uint32_t readABGR(void *data);
-uint32_t readBGRA(void *data);
-uint32_t readARGB(void *data);
-uint32_t readRGBA5551(void *data);
-uint32_t readARGB1555(void *data);
-uint32_t readABGR1555(void *data);
-uint32_t readRGBA4444(void *data);
-uint32_t readL(void *data);
-uint32_t readLA(void *data);
+uint32_t readR(const void *data);
+uint32_t readRG(const void *data);
+uint32_t readRGB(const void *data);
+uint32_t readBGR(const void *data);
+uint32_t readRGB565(const void *data);
+uint32_t readRGBA(const void *data);
+uint32_t readABGR(const void *data);
+uint32_t readBGRA(const void *data);
+uint32_t readARGB(const void *data);
+uint32_t readRGBA5551(const void *data);
+uint32_t readARGB1555(const void *data);
+uint32_t readABGR1555(const void *data);
+uint32_t readRGBA4444(const void *data);
+uint32_t readL(const void *data);
+uint32_t readLA(const void *data);
 
 // Write callbacks
 void writeR(void *data, uint32_t color);
