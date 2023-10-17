@@ -1058,16 +1058,18 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 #endif
 
 	switch (target) {
-#ifdef HAVE_UNPURE_TEXFORMATS
-	case GL_TEXTURE_1D: // Workaround for 1D textures support
-#endif
-	case GL_TEXTURE_2D:
 	case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
 	case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
 	case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
 	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
 	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
 	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+		if (level != 0) // FIXME: Add proper mipmaps support for cubemaps
+			return;
+#ifdef HAVE_UNPURE_TEXFORMATS
+	case GL_TEXTURE_1D: // Workaround for 1D textures support
+#endif
+	case GL_TEXTURE_2D:
 		// Detecting proper write callback and texture format
 		switch (internalFormat) {
 		case GL_PALETTE4_RGB8_OES:
