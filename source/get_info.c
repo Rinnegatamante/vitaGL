@@ -41,6 +41,7 @@ static GLubyte *extensions[] = {
 	"GL_ARB_texture_compression",
 	"GL_ARB_vertex_buffer_object",
 	"GL_EXT_abgr",
+	"GL_EXT_bgra",
 	"GL_EXT_color_buffer_half_float",
 	"GL_EXT_draw_instanced",
 	"GL_EXT_framebuffer_object",
