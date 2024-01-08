@@ -1188,13 +1188,31 @@ void glAttachShader(GLuint prog, GLuint shad) {
 	// Grabbing passed shader and program
 	shader *s = &shaders[shad - 1];
 	program *p = &progs[prog - 1];
-
+	uint32_t cnt;
+	
 	// Attaching shader to desired program
 	if (p->status == PROG_UNLINKED && s->valid) {
 		switch (s->type) {
 		case GL_VERTEX_SHADER:
 			s->ref_counter++;
 			p->vshader = s;
+#ifdef HAVE_GLSL_TRANSLATOR
+			// If we use VGL_MODE_POSTPONED, we perform attributes binding in glLinkProgram
+			if (glsl_sema_mode != VGL_MODE_POSTPONED) {
+#endif
+				// Setting progressive default attribute bindings
+				cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
+				for (int i = 0; i < cnt; i++) {
+					const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, i);
+					SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
+					if (cat == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
+						p->attr[p->attr_highest_idx].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+						p->attr_highest_idx++;
+					}
+				}
+#ifdef HAVE_GLSL_TRANSLATOR			
+			}
+#endif
 			break;
 		case GL_FRAGMENT_SHADER:
 			s->ref_counter++;
@@ -1530,6 +1548,17 @@ void glLinkProgram(GLuint progr) {
 		glsl_translator_process(p->fshader, 1, &p->fshader->glsl_source, NULL);
 		compile_shader(p->vshader);
 		compile_shader(p->fshader);
+
+		// Setting progressive default attribute bindings
+		uint32_t cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
+		for (int i = 0; i < cnt; i++) {
+			const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, i);
+			SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
+			if (cat == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
+				p->attr[p->attr_highest_idx++].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			}
+		}
+
 		if (p->glsl_attr_map) {
 			for (int i = 0; i < p->num_glsl_attr; i++) {
 				glBindAttribLocation(progr, p->glsl_attr_map[i].idx, p->glsl_attr_map[i].name);
@@ -2515,8 +2544,16 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
 	if (param == NULL || sceGxmProgramParameterGetCategory(param) != SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE)
 		return;
-
-	p->attr[index].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+	uint32_t attrIndex = sceGxmProgramParameterGetResourceIndex(param);
+	
+	// Nulling any previously made bind to the requested attribute
+	for (int i = 0; i < p->attr_highest_idx; i++) {
+		if (p->attr[i].regIndex == attrIndex)
+			p->attr[i].regIndex = 0xDEAD;
+	}
+	
+	// Set new binding to the requested attribute
+	p->attr[index].regIndex = attrIndex;
 	if ((p->attr_highest_idx == 0) || (p->attr_highest_idx - 1 < index))
 		p->attr_highest_idx = index + 1;
 }
