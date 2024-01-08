@@ -30,6 +30,16 @@
 #define MAX_CUSTOM_SHADERS 2048 // Maximum number of linkable custom shaders
 #define MAX_CUSTOM_PROGRAMS 1024 // Maximum number of linkable custom programs
 
+#define setDefaultAttribBindings() \
+	uint32_t cnt = sceGxmProgramGetParameterCount(p->vshader->prog); \
+	for (int i = 0; i < cnt; i++) { \
+		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, i); \
+		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param); \
+		if (cat == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) { \
+			p->attr[p->attr_highest_idx++].regIndex = sceGxmProgramParameterGetResourceIndex(param); \
+		} \
+	}
+
 #define disableDrawAttrib(i) \
 	orig_stride[i] = streams[i].stride; \
 	orig_fmt[i] = attributes[i].format; \
@@ -1188,7 +1198,6 @@ void glAttachShader(GLuint prog, GLuint shad) {
 	// Grabbing passed shader and program
 	shader *s = &shaders[shad - 1];
 	program *p = &progs[prog - 1];
-	uint32_t cnt;
 	
 	// Attaching shader to desired program
 	if (p->status == PROG_UNLINKED && s->valid) {
@@ -1201,15 +1210,7 @@ void glAttachShader(GLuint prog, GLuint shad) {
 			if (glsl_sema_mode != VGL_MODE_POSTPONED) {
 #endif
 				// Setting progressive default attribute bindings
-				cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
-				for (int i = 0; i < cnt; i++) {
-					const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, i);
-					SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
-					if (cat == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
-						p->attr[p->attr_highest_idx].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-						p->attr_highest_idx++;
-					}
-				}
+				setDefaultAttribBindings();
 #ifdef HAVE_GLSL_TRANSLATOR			
 			}
 #endif
@@ -1550,14 +1551,7 @@ void glLinkProgram(GLuint progr) {
 		compile_shader(p->fshader);
 
 		// Setting progressive default attribute bindings
-		uint32_t cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
-		for (int i = 0; i < cnt; i++) {
-			const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, i);
-			SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
-			if (cat == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
-				p->attr[p->attr_highest_idx++].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			}
-		}
+		setDefaultAttribBindings();
 
 		if (p->glsl_attr_map) {
 			for (int i = 0; i < p->num_glsl_attr; i++) {
@@ -2563,7 +2557,7 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
 	if (param == NULL || sceGxmProgramParameterGetCategory(param) != SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE)
 		return -1;
-	int index = sceGxmProgramParameterGetResourceIndex(param);
+	uint32_t index = sceGxmProgramParameterGetResourceIndex(param);
 
 	// If attribute has been already bound, we return its location
 	for (int i = 0; i < p->attr_highest_idx; i++) {
