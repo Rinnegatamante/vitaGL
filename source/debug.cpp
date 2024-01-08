@@ -209,7 +209,7 @@ void vgl_debugger_draw() {
 			break;
 		case SCE_RAZOR_GPU_LIVE_METRICS_GROUP_OVERVIEW_3:
 			ImGui::Text("Vertex jobs: %d (Time: %lluus)", razor_metrics.vertex_job_count, razor_metrics.vertex_job_time / 4);
-			ImGui::Text("BIF: Tiling accelerated memory writes: %d bytes", razor_metrics.bifTaMemoryWrite);
+			ImGui::Text("BIF: Tiling accelerated memory writes: %d bytes", razor_metrics.tiling_accelerated_mem_writes);
 			ImGui::Separator();
 			ImGui::Text("Fragment jobs: %d (Time: %lluus)", razor_metrics.fragment_job_count, razor_metrics.fragment_job_time / 4);
 			ImGui::Text("BIF: ISP parameter fetch memory reads: %d bytes", razor_metrics.isp_parameter_fetches_mem_reads);
