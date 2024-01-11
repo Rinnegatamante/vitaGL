@@ -1198,17 +1198,21 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 			break;
 		case GL_ETC1_RGB8_OES:
 #ifndef DISABLE_HW_ETC1
-			tex_format = SCE_GXM_TEXTURE_FORMAT_ETC1_RGB;
-#else
-			non_native_format = GL_TRUE;
-			decompressed_data = vglMalloc(width * height * 3);
-			etc1_decode_image((etc1_byte *)data, (etc1_byte *)decompressed_data, width, height, 3, width * 3);
-			if (recompress_non_native || target != GL_TEXTURE_2D) {
-				read_cb = readRGB;
-				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
-			} else
-				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
-			data_bpp = 3;
+			if (target == GL_TEXTURE_2D)
+				tex_format = SCE_GXM_TEXTURE_FORMAT_ETC1_RGB;
+			else {
+#endif
+				non_native_format = GL_TRUE;
+				decompressed_data = vglMalloc(width * height * 3);
+				etc1_decode_image((etc1_byte *)data, (etc1_byte *)decompressed_data, width, height, 3, width * 3);
+				if (recompress_non_native && target == GL_TEXTURE_2D) {
+					read_cb = readRGB;
+					tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
+				} else
+					tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
+				data_bpp = 3;
+#ifndef DISABLE_HW_ETC1
+			}
 #endif
 			break;
 		case GL_COMPRESSED_RGBA8_ETC2_EAC:
@@ -1323,7 +1327,22 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 							sceGxmTextureSetHeight(&tex->gxm_tex, height);
 						}
 					} else {
-						gpu_alloc_texture(width, height, tex_format, decompressed_data, tex, data_bpp, NULL, NULL, GL_TRUE);
+						if (target == GL_TEXTURE_2D)
+							gpu_alloc_texture(width, height, tex_format, decompressed_data, tex, data_bpp, NULL, NULL, GL_TRUE);
+						else {
+							SceGxmTransferFormat trans_fmt;
+							switch (tex_format) {
+							case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
+								trans_fmt = SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR;
+								break;
+							case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
+							case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
+							default:
+								trans_fmt = SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR;
+								break;
+							}
+							gpu_alloc_cube_texture(width, height, tex_format, trans_fmt, decompressed_data, tex, data_bpp, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);	
+						}
 					}
 				} else if (read_cb) {
 					gpu_alloc_compressed_texture(level, width, height, tex_format, 0, decompressed_data, tex, data_bpp, read_cb);
