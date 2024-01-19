@@ -96,6 +96,7 @@ inline float4 textureCube(samplerCUBE x, float3 s, float b) { return texCUBEbias
 #define vec4 float4
 #define mix(a,b,c) lerp(a,b,c)
 #define atan(x,y) atan2(x,y)
+#define atan(x) atan(x)
 #define ivec2 int2
 #define ivec3 int3
 #define ivec4 int4
