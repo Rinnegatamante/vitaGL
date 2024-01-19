@@ -37,7 +37,7 @@ __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float 
 		"ldr r3, [sp, #8]\n"
 		"vmov s3, r1\n"
 		"vmov s4, r2\n"
-		"vmov s5, r2\n"
+		"vmov s5, r3\n"
 		"b sceGxmSetViewport\n");
 }
 #endif
