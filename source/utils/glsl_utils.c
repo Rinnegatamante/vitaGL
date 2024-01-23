@@ -680,8 +680,10 @@ void glsl_nuke_comments(char *txt) {
 			char *end = strstr(next, "*/") + 2;
 			sceClibMemset(next, ' ', end - next);
 		}
-		c_s = strstr(next, "//");
-		cpp_s = strstr(next, "/*");
+		if (c_s)
+			c_s = strstr(next, "//");
+		if (cpp_s)
+			cpp_s = strstr(next, "/*");
 	}
 }
 
