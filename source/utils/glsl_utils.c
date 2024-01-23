@@ -659,23 +659,29 @@ LOOP_START:
 }
 
 void glsl_nuke_comments(char *txt) {
-	// Nuke C++ styled comments
-	char *s = strstr(txt, "/*");
-	char *s2;
-	while (s) {
-		s2 = strstr(s, "*/") + 2;
-		sceClibMemset(s, ' ', s2 - s);
-		s = strstr(s2, "/*");
-	}
-	
-	// Nuke C styled comments
-	s = strstr(txt, "//");
-	while (s) {
-		s2 = strstr(s, "\n");
-		if (!s2)
-			s2 = txt + strlen(txt);
-		sceClibMemset(s, ' ', s2 - s);
-		s = strstr(s2, "//");
+	// Nuke C++ and C styled comments
+	char *cpp_s = strstr(txt, "/*");
+	char *c_s = strstr(txt, "//");
+	while (cpp_s || c_s) {
+		char *next;
+		if (cpp_s) {
+			next = (c_s && cpp_s > c_s) ? c_s : cpp_s;
+		} else {
+			next = c_s;
+		}
+		if (next == c_s) {
+			// Nuke C styled comment
+			char *end = strstr(next, "\n");
+			if (!end)
+				end = txt + strlen(txt);
+			sceClibMemset(next, ' ', end - next);
+		} else {
+			// Nuke C++ styled comment
+			char *end = strstr(next, "*/") + 2;
+			sceClibMemset(next, ' ', end - next);
+		}
+		c_s = strstr(next, "//");
+		cpp_s = strstr(next, "/*");
 	}
 }
 
