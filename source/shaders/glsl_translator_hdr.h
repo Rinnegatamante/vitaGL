@@ -107,6 +107,8 @@ inline float4 textureCube(samplerCUBE x, float3 s, float b) { return texCUBEbias
 #define mat4 float4x4
 #define matrix _matrix
 #define vgl varying
+#define POUT(x, y) \
+	varying out x : CLP##y
 #define FOUT(x, y) \
 	varying out x : FOGC
 #define COUT(x, y) \

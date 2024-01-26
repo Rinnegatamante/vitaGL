@@ -95,6 +95,9 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 					case VGL_TYPE_FOG:
 						sprintf(newline, "FOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
 						break;
+					case VGL_TYPE_CLIP:
+						sprintf(newline, "POUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						break;
 					}
 				} else {
 					if (glsl_is_first_shader) {
@@ -204,6 +207,9 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 						break;
 					case VGL_TYPE_FOG:
 						sprintf(newline, "FIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_CLIP:
+						vgl_log("%s:%d %s: Unexpected varying type (VGL_TYPE_CLIP) for %s in fragment shader.\n", __FILE__, __LINE__, __func__, str + 8);
 						break;
 					}
 				} else {
@@ -328,6 +334,9 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 					case VGL_TYPE_FOG:
 						sprintf(newline, "FOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
 						break;
+					case VGL_TYPE_CLIP:
+						sprintf(newline, "POUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						break;
 					}
 				} else {
 					sprintf(newline, "VOUT(%s,\v);", str2 + 8);
@@ -399,6 +408,9 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 						break;
 					case VGL_TYPE_FOG:
 						sprintf(newline, "FIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_CLIP:
+						vgl_log("%s:%d %s: Unexpected varying type (VGL_TYPE_CLIP) for %s in fragment shader.\n", __FILE__, __LINE__, __func__, str + 8);
 						break;
 					}
 				} else {

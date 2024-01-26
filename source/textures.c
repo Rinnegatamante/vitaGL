@@ -42,7 +42,7 @@
 		texture2d_idx = tex_unit->tex_id[1]; \
 		break; \
 	default: \
-		vgl_log("%s:%d Target type unsupported.\n", __FILE__, __LINE__); \
+		vgl_log("%s:%d Target type unsupported (0x%x).\n", __FILE__, __LINE__, target); \
 		{ unresolved_action; } \
 		break; \
 	}
@@ -62,7 +62,7 @@
 		texture2d_idx = tex_unit->tex_id[2]; \
 		break; \
 	default: \
-		vgl_log("%s:%d Target type unsupported.\n", __FILE__, __LINE__); \
+		vgl_log("%s:%d Target type unsupported (0x%x).\n", __FILE__, __LINE__, target); \
 		{ unresolved_action; } \
 		break; \
 	}
