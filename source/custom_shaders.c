@@ -2559,43 +2559,10 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 		return -1;
 	uint32_t index = sceGxmProgramParameterGetResourceIndex(param);
 
-	// If attribute has been already bound, we return its location
+	// Return requested attribute location
 	for (int i = 0; i < p->attr_highest_idx; i++) {
 		if (p->attr[i].regIndex == index)
 			return i;
-	}
-
-	// If attribute is not bound, we bind it and return its location
-	for (int i = 0; i < p->attr_num; i++) {
-		if (p->attr[i].regIndex == 0xDEAD) {
-			p->attr[i].regIndex = index;
-
-			if ((p->attr_highest_idx == 0) || (p->attr_highest_idx - 1 < i))
-				p->attr_highest_idx = i + 1;
-
-			// Checking back if attributes are aligned
-			p->has_unaligned_attrs = GL_FALSE;
-			for (int j = 0; j < p->attr_num; j++) {
-				p->attr_map[j] = j;
-				if (p->attr[j].regIndex == 0xDEAD) {
-					p->has_unaligned_attrs = GL_TRUE;
-					break;
-				}
-			}
-
-			// Fixing attributes mapping cache if in presence of unaligned attributes
-			if (p->has_unaligned_attrs) {
-				int k = 0;
-				for (int j = 0; j < p->attr_highest_idx; j++) {
-					if (p->attr[j].regIndex != 0xDEAD) {
-						p->attr_map[k] = j;
-						k++;
-					}
-				}
-			}
-
-			return i;
-		}
 	}
 
 	return -1;
