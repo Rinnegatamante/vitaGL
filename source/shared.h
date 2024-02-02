@@ -219,11 +219,15 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 #endif
 
 // Restore Polygon mode after a draw call
+#ifdef PRIMITIVES_SPEEDHACK
+#define restore_polygon_mode(p)
+#else
 #define restore_polygon_mode(p) \
 	if (p == SCE_GXM_PRIMITIVE_LINES || p == SCE_GXM_PRIMITIVE_POINTS) { \
 		sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front); \
 		sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back); \
 	}
+#endif
 
 // Error set funcs
 #define SET_GL_ERROR(x) \

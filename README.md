@@ -9,28 +9,41 @@ If you want your homebrew to not be hard dependant from libshacccg.suprx, you ca
 # Build Instructions
 In order to build vitaGL use the following command: `make install`.
 <br>These are all the available flags usable when compiling the library:<br>
+### Debug Flags
 `HAVE_SHARK_LOG=1` Enables logging support in runtime shader compiler.<br>
-`HAVE_CUSTOM_HEAP=1` Replaces sceClib heap implementation with custom one (Less efficient but safer).<br>
-`HAVE_GLSL_SUPPORT=1` Enables experimental GLSL to CG auto translation for shader sources.<br>
 `LOG_ERRORS=1` Errors will be logged with sceClibPrintf.<br>
 `LOG_ERRORS=2` Errors will be logged to ux0:data/vitaGL.log.<br>
-`NO_DEBUG=1` Disables most of the error handling features (Faster CPU code execution but code may be non compliant to all OpenGL standards).<br>
-`NO_TEX_COMBINER=1` Disables texture combiner support (GL_COMBINE) for faster fixed function pipeline code execution.<br>
-`NO_DMAC=1` Disables sceDmacMemcpy usage. In some rare instances, it can improve framerate.<br>
+`HAVE_DEBUGGER=1` Enables lightweighted on screen debugger interface.<br>
+`HAVE_DEBUGGER=2` Enables lightweighted on screen debugger interface with extra information (devkit only).<br>
+`HAVE_RAZOR=1` Enables debugging features through Razor debugger (retail and devkit compatible).<br>
+`HAVE_RAZOR=2` Enables debugging features through Razor debugger (retail and devkit compatible) with ImGui interface.<br>
+`HAVE_DEVKIT=1` Enables extra debugging features through Razor debugger available only for devkit users.<br>
+`HAVE_DEVKIT=2` Enables extra debugging features through Razor debugger available only for devkit users with ImGui interface.<br>
+### Compatibility Flags
+`HAVE_CUSTOM_HEAP=1` Replaces sceClib heap implementation with custom one (Less efficient but safer).<br>
+`HAVE_GLSL_SUPPORT=1` Enables experimental GLSL to CG auto translation for shader sources.<br>
 `SOFTFP_ABI=1` Compiles the library in soft floating point compatibility mode.<br>
 `STORE_DEPTH_STENCIL=1` Makes all framebuffers depth/stencil surfaces to be load/stored on memory. Makes the rendering slower but more compliant with OpenGL standards.<br>
+`HAVE_HIGH_FFP_TEXUNITS=1` Enables support for more than 2 texunits for fixed function pipeline at the cost of some performance loss.<br>
+`HAVE_DISPLAY_LISTS=1` Enables support for display lists at the cost of some performance loss.<br>
+`SAFE_ETC1=1` Disables hardware support for ETC1 textures. Makes ETC1 textures usage less efficient but may solve glitches.<br>
+`SAFE_DRAW=1` Makes some optimizations in the drawing pipeline less efficient but can solve some glitches.<br>
+`UNPURE_TEXFORMATS=1` Enables support for texture dimensions different than 2D (tex2D is still required in shader code).<br>
+`HAVE_VITA3K_SUPPORT=1` Disables several features in order to make vitaGL compatible with Vita3K. Requires vitaShaRK compiled with https://github.com/Rinnegatamante/vitaShaRK/blob/master/source/vitashark.c#L24 uncommented.<br>
+### Speedhack Flags
+`NO_DMAC=1` Disables sceDmacMemcpy usage. In some rare instances, it can improve framerate.<br>
+`NO_TEX_COMBINER=1` Disables texture combiner support (GL_COMBINE) for faster fixed function pipeline code execution.<br>
+`NO_DEBUG=1` Disables most of the error handling features (Faster CPU code execution but code may be non compliant to all OpenGL standards).<br>
 `BUFFERS_SPEEDHACK=1` Enables faster vertex buffer copying. May cause crashes.<br>
 `DRAW_SPEEDHACK=1` Enables faster code for draw calls. May cause crashes.<br>
 `MATH_SPEEDHACK=1` Enables faster code for matrix math calls. May cause glitches.<br>
 `TEXTURES_SPEEDHACK=1` Makes glTexSubImage2D/glTexSubImage1D non fully OpenGL compliant but makes rendering pipeline slightly faster.<br>
 `SAMPLERS_SPEEDHACK=1` Enables faster code for samplers resolution during shaders usage. May cause glitches.<br>
 `SHADER_COMPILER_SPEEDHACK=1` Enables faster code for glShaderSource. May cause errors.<br>
-`HAVE_HIGH_FFP_TEXUNITS=1` Enables support for more than 2 texunits for fixed function pipeline at the cost of some performance loss.<br>
-`HAVE_DISPLAY_LISTS=1` Enables support for display lists at the cost of some performance loss.<br>
+`PRIMITIVES_SPEEDHACK=1` Makes draw calls more efficient but GL_LINES and GL_POINTS primitives usage may cause glitches.<br>
+### Misc Flags
 `HAVE_UNFLIPPED_FBOS=1` Framebuffers objects won't be internally flipped to match OpenGL standards.<br>
 `HAVE_WVP_ON_GPU=1` Moves calculation of the wvp in fixed function pipeline codepath to the GPU. Reduces CPU workload and increases GPU one.<br>
-`SAFE_ETC1=1` Disables hardware support for ETC1 textures. Makes ETC1 textures usage less efficient but may solve glitches.<br>
-`SAFE_DRAW=1` Makes some optimizations in the drawing pipeline less efficient but can solve some glitches.<br>
 `SHARED_RENDERTARGETS=1` Makes small framebuffers objects use shared rendertargets instead of dedicated ones.<br>
 `SHARED_RENDERTARGETS=2` Makes small framebuffers objects use shared rendertargets instead of dedicated ones and adds a mechanism for recycling older rendertargets.<br>
 `CIRCULAR_VERTEX_POOL=1` Makes temporary data buffers being handled with a circular pool.<br>
@@ -38,15 +51,8 @@ In order to build vitaGL use the following command: `make install`.
 `SINGLE_THREADED_GC=1` Makes the garbage collector run on main thread.<br>
 `PHYCONT_ON_DEMAND=1` Makes the physically contiguous RAM be handled with separate memblocks instead of an heap.<br>
 `UNPURE_TEXTURES=1` Makes legal to upload textures without base level.<br>
-`UNPURE_TEXFORMATS=1` Enables support for texture dimensions different than 2D (tex2D is still required in shader code).<br>
 `HAVE_WRAPPED_ALLOCATORS=1` Allows usage of vgl allocators inside wrapped allocators.<br>
-`HAVE_DEBUGGER=1` Enables lightweighted on screen debugger interface.<br>
-`HAVE_DEBUGGER=2` Enables lightweighted on screen debugger interface with extra information (devkit only).<br>
-`HAVE_RAZOR=1` Enables debugging features through Razor debugger (retail and devkit compatible).<br>
-`HAVE_RAZOR=2` Enables debugging features through Razor debugger (retail and devkit compatible) with ImGui interface.<br>
-`HAVE_DEVKIT=1` Enables extra debugging features through Razor debugger available only for devkit users.<br>
-`HAVE_DEVKIT=2` Enables extra debugging features through Razor debugger available only for devkit users with ImGui interface.<br>
-`HAVE_VITA3K_SUPPORT=1` Disables several features in order to make vitaGL compatible with Vita3K. Requires vitaShaRK compiled with https://github.com/Rinnegatamante/vitaShaRK/blob/master/source/vitashark.c#L24 uncommented.<br>
+
 # Samples
 
 You can find samples in the *samples* folder in this repository.

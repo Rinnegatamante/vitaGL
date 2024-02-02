@@ -266,7 +266,7 @@ void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLv
 	{
 		if (type == GL_UNSIGNED_SHORT) {
 			setup_elements_indices(uint16_t);
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16  + baseVertex, ptr, count);
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16 + baseVertex, ptr, count);
 		} else {
 			setup_elements_indices(uint32_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32 + baseVertex, ptr, count);
