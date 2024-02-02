@@ -334,7 +334,7 @@ void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitf
 	}
 
 #ifndef SKIP_ERROR_HANDLING
-	if (!gpu_buf || gpu_buf->mapped) {
+	if (!gpu_buf) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_OPERATION, NULL)
 	} else if (offset < 0 || offset + length > gpu_buf->size) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_VALUE, NULL)
