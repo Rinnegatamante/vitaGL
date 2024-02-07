@@ -31,7 +31,6 @@ In order to build vitaGL use the following command: `make install`.
 `UNPURE_TEXFORMATS=1` Enables support for texture dimensions different than 2D (tex2D is still required in shader code).<br>
 `HAVE_VITA3K_SUPPORT=1` Disables several features in order to make vitaGL compatible with Vita3K. Requires vitaShaRK compiled with https://github.com/Rinnegatamante/vitaShaRK/blob/master/source/vitashark.c#L24 uncommented.<br>
 ### Speedhack Flags
-`NO_DMAC=1` Disables sceDmacMemcpy usage. In some rare instances, it can improve framerate.<br>
 `NO_TEX_COMBINER=1` Disables texture combiner support (GL_COMBINE) for faster fixed function pipeline code execution.<br>
 `NO_DEBUG=1` Disables most of the error handling features (Faster CPU code execution but code may be non compliant to all OpenGL standards).<br>
 `BUFFERS_SPEEDHACK=1` Enables faster vertex buffer copying. May cause crashes.<br>
@@ -42,6 +41,7 @@ In order to build vitaGL use the following command: `make install`.
 `SHADER_COMPILER_SPEEDHACK=1` Enables faster code for glShaderSource. May cause errors.<br>
 `PRIMITIVES_SPEEDHACK=1` Makes draw calls more efficient but GL_LINES and GL_POINTS primitives usage may cause glitches.<br>
 ### Misc Flags
+`NO_DMAC=1` Disables sceDmacMemcpy usage. In some rare instances, it can improve framerate.<br>
 `HAVE_UNFLIPPED_FBOS=1` Framebuffers objects won't be internally flipped to match OpenGL standards.<br>
 `HAVE_WVP_ON_GPU=1` Moves calculation of the wvp in fixed function pipeline codepath to the GPU. Reduces CPU workload and increases GPU one.<br>
 `SHARED_RENDERTARGETS=1` Makes small framebuffers objects use shared rendertargets instead of dedicated ones.<br>
