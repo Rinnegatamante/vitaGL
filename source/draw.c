@@ -25,10 +25,48 @@
 
 GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not supported natively by sceGxm is used
 
+#define setup_8bit_elements_indices() \
+	uint16_t *ptr; \
+	switch (mode) { \
+	case GL_QUADS: \
+		ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(uint16_t)); \
+		for (int i = 0; i < count / 4; i++) { \
+			ptr[i * 6] = src[i * 4]; \
+			ptr[i * 6 + 1] = src[i * 4 + 1]; \
+			ptr[i * 6 + 2] = src[i * 4 + 3]; \
+			ptr[i * 6 + 3] = src[i * 4 + 1]; \
+			ptr[i * 6 + 4] = src[i * 4 + 2]; \
+			ptr[i * 6 + 5] = src[i * 4 + 3]; \
+		} \
+		count = (count / 2) * 3; \
+		break; \
+	case GL_LINE_STRIP: \
+		ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(uint16_t)); \
+		for (int i = 0; i < count - 1; i++) { \
+			ptr[i * 2] = src[i]; \
+			ptr[i * 2 + 1] = src[i + 1]; \
+		} \
+		count = (count - 1) * 2; \
+		break; \
+	case GL_LINE_LOOP: \
+		ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t)); \
+		for (int i = 0; i < count - 1; i++) { \
+			ptr[i * 2] = src[i]; \
+			ptr[i * 2 + 1] = src[i + 1]; \
+		} \
+		ptr[(count - 1) * 2] = src[count - 1]; \
+		ptr[(count - 1) * 2 + 1] = src[0]; \
+		count = count * 2; \
+		break; \
+	default: \
+		ptr = src; \
+		break; \
+	}
+
 #define setup_elements_indices(type_t) \
 	type_t *ptr; \
 	if (gpu_buf != NULL && !prim_is_non_native) { \
-		ptr = (type_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices); \
+		ptr = src; \
 		gpu_buf->last_frame = vgl_framecount; \
 	} else { \
 		switch (mode) { \
@@ -195,7 +233,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
-	if (type != GL_UNSIGNED_SHORT && type != GL_UNSIGNED_INT) {
+	if (type != GL_UNSIGNED_SHORT && type != GL_UNSIGNED_INT && type != GL_UNSIGNED_BYTE) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	} else if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
@@ -211,12 +249,23 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 
 	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
+	
+	// sceGxm doesn't support 8bit indices natively, so we internally convert to 16bit
+	if (type == GL_UNSIGNED_BYTE) {
+		uint16_t *idx16 = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
+		uint8_t *idx8 = (uint8_t *)src;
+		for (GLsizei i = 0; i < count; i++) {
+			idx16[i] = idx8[i];
+		}
+		src = idx16;
+	}
+	
 	if (cur_program != 0)
-		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, type == GL_UNSIGNED_SHORT);
+		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, type != GL_UNSIGNED_INT);
 	else {
 		if (!(ffp_vertex_attrib_state & (1 << 0)))
 			return;
-		_glDrawElements_FixedFunctionIMPL(src, count, 0, type == GL_UNSIGNED_SHORT);
+		_glDrawElements_FixedFunctionIMPL(src, count, 0, type != GL_UNSIGNED_INT);
 	}
 
 #ifndef SKIP_ERROR_HANDLING
@@ -226,9 +275,12 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		if (type == GL_UNSIGNED_SHORT) {
 			setup_elements_indices(uint16_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
-		} else {
+		} else if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices(uint32_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
+		} else {
+			setup_8bit_elements_indices();
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		}
 	}
 	restore_polygon_mode(gxm_p);
