@@ -550,7 +550,6 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 #ifdef STRICT_DRAW_COMPLIANCE
 	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
 	sceClibMemset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
-	if (is_packed[0]) {
 #else
 	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
@@ -575,8 +574,8 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 #ifndef STRICT_DRAW_COMPLIANCE
 		if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[1]] && cur_vao->vertex_attrib_offsets[p->attr_map[1]] > cur_vao->vertex_attrib_offsets[p->attr_map[0]])))
 			is_packed = GL_FALSE;
-#endif
 	}
+#endif
 #ifdef STRICT_DRAW_COMPLIANCE
 	// Gathering real attribute data pointers
 	if (is_packed[0]) {
@@ -751,7 +750,6 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #ifdef STRICT_DRAW_COMPLIANCE
 	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
 	sceClibMemset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
-	if (is_packed[0]) {
 #else
 	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
@@ -776,9 +774,9 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #ifndef STRICT_DRAW_COMPLIANCE
 		if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[1]] && cur_vao->vertex_attrib_offsets[p->attr_map[1]] > cur_vao->vertex_attrib_offsets[p->attr_map[0]])))
 			is_packed = GL_FALSE;
-#endif
 	} else if (!cur_vao->vertex_attrib_vbo[p->attr_map[0]])
 		is_full_vbo = GL_FALSE;
+#endif
 
 	// Detecting highest index value
 	if (!is_full_vbo && !top_idx) {
