@@ -791,7 +791,6 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 	for (int i = 0; i < count; i++) {
 		char *text = s->source + strlen(s->source);
 		strncat(s->source, string[i], length ? length[i] : strlen(string[i]));
-
 		// Nukeing version directive
 		char *str = strstr(text, "#version");
 		if (str) {
@@ -807,6 +806,9 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 				str = strstr(str, "precision ");
 			}
 		}
+		// Nukeing comments
+		glsl_nuke_comments(text);
+		
 		switch (glsl_sema_mode) {
 		case VGL_MODE_SHADER_PAIR:
 			glsl_translate_with_shader_pair(text, s->type, hasFrontFacing);
@@ -819,7 +821,6 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 			break;
 		}
 	}
-
 	// Replacing all marked varying with actual bindings if custom bindings are used
 	if (glsl_custom_bindings_num > 0 || glsl_sema_mode == VGL_MODE_GLOBAL) {
 		char *str = strstr(s->source, "\v");
@@ -864,8 +865,6 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 			str = strstr(str, "\v");
 		}
 	}
-	// Nukeing comments (required for * operator replacer to properly work)
-	glsl_nuke_comments(s->source);
 	// Manually handle * operator replacements for vector * matrix and matrix * vector operations support
 	char *dst = vglMalloc(size + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
 	glsl_inject_mul(s->source, dst);
