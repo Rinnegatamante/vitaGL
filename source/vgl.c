@@ -247,7 +247,9 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	depth_clear_indices[1] = 1;
 	depth_clear_indices[2] = 2;
 	depth_clear_indices[3] = 3;
-
+	
+	uint32_t size;
+	SceGxmProgram *p;
 #ifdef HAVE_VITA3K_SUPPORT // Vita3K can't use ShaccCg extensions due to lack of taiHEN support, so we need to provide precompiled glClear shaders
 	{
 		SceGxmProgram *gxm_program_clear_v = (SceGxmProgram *)&clear_v;
@@ -255,8 +257,8 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 #else
 	// Compile clear and blit shaders only if shader compiler is up
 	if (is_shark_online) {
-		uint32_t size = strlen(clear_v);
-		SceGxmProgram *p = shark_compile_shader_extended(clear_v, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
+		size = strlen(clear_v);
+		p = shark_compile_shader_extended(clear_v, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 		SceGxmProgram *gxm_program_clear_v = (SceGxmProgram *)vglMalloc(size);
 		vgl_fast_memcpy((void *)gxm_program_clear_v, (void *)p, size);
 		shark_clear_output();
