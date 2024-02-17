@@ -101,6 +101,30 @@ GLint gxm_vtx_fmt_to_gl(SceGxmAttributeFormat attr) {
 	}
 }
 
+GLint gxm_depth_func_to_gl(SceGxmDepthFunc func) {
+	// Properly translating openGL function to sceGxm one
+	switch (func) {
+	case SCE_GXM_DEPTH_FUNC_NEVER:
+		return GL_NEVER;
+	case SCE_GXM_DEPTH_FUNC_LESS:
+		return GL_LESS;
+	case SCE_GXM_DEPTH_FUNC_EQUAL:
+		return GL_EQUAL;
+	case SCE_GXM_DEPTH_FUNC_LESS_EQUAL:
+		return GL_LEQUAL;
+	case SCE_GXM_DEPTH_FUNC_GREATER:
+		return GL_GREATER;
+	case SCE_GXM_DEPTH_FUNC_NOT_EQUAL:
+		return GL_NOTEQUAL;
+	case SCE_GXM_DEPTH_FUNC_GREATER_EQUAL:
+		return GL_GEQUAL;
+	case SCE_GXM_DEPTH_FUNC_ALWAYS:
+		return GL_ALWAYS;
+	default:
+		return 0;
+	}
+}
+
 /*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -
@@ -589,6 +613,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		break;
 	case GL_MATRIX_MODE:
 		*data = get_gl_matrix_mode();
+		break;
+	case GL_DEPTH_FUNC:
+		*data = gxm_depth_func_to_gl(depth_func);
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)

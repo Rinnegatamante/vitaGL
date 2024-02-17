@@ -132,6 +132,7 @@ extern "C" {
 #define GL_DEPTH_RANGE                                  0x0B70
 #define GL_DEPTH_TEST                                   0x0B71
 #define GL_DEPTH_WRITEMASK                              0x0B72
+#define GL_DEPTH_FUNC                                   0x0B74
 #define GL_STENCIL_TEST                                 0x0B90
 #define GL_MATRIX_MODE                                  0x0BA0
 #define GL_NORMALIZE                                    0x0BA1
