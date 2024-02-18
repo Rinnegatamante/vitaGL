@@ -2538,10 +2538,12 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 		return;
 	uint32_t attrIndex = sceGxmProgramParameterGetResourceIndex(param);
 	
-	// Nulling any previously made bind to the requested attribute
+	// Swapping any previously made bind to the requested attribute
 	for (int i = 0; i < p->attr_highest_idx; i++) {
-		if (p->attr[i].regIndex == attrIndex)
-			p->attr[i].regIndex = 0xDEAD;
+		if (p->attr[i].regIndex == attrIndex) {
+			p->attr[i].regIndex = p->attr[index].regIndex;
+			break;
+		}
 	}
 	
 	// Set new binding to the requested attribute
