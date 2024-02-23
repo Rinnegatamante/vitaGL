@@ -171,6 +171,10 @@ ifeq ($(HAVE_VITA3K_SUPPORT),1)
 CFLAGS += -DHAVE_VITA3K_SUPPORT -DDISABLE_HW_ETC1
 endif
 
+ifeq ($(HAVE_SHADER_CACHE),1)
+CFLAGS += -DHAVE_SHADER_CACHE
+endif
+
 CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a

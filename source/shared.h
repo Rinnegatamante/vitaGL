@@ -107,6 +107,11 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
+// Cutom shaders pipeline shader cache settings
+#ifdef HAVE_SHADER_CACHE
+extern char vgl_shader_cache_path[256];
+#endif
+
 extern GLboolean prim_is_non_native; // Flag for when a primitive not supported natively by sceGxm is used
 
 // Translates a GL primitive enum to its sceGxm equivalent

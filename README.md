@@ -52,6 +52,7 @@ In order to build vitaGL use the following command: `make install`.
 `PHYCONT_ON_DEMAND=1` Makes the physically contiguous RAM be handled with separate memblocks instead of an heap.<br>
 `UNPURE_TEXTURES=1` Makes legal to upload textures without base level.<br>
 `HAVE_WRAPPED_ALLOCATORS=1` Allows usage of vgl allocators inside wrapped allocators.<br>
+`HAVE_SHADER_CACHE=1` Enables fast automatic file caching (based on XH3 xxHash algorithm) for application provided shaders.<br>
 
 # Samples
 

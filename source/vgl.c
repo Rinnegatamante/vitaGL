@@ -174,11 +174,16 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		return GL_FALSE;
 	}
 
-#ifndef DISABLE_ADVANCED_SHADER_CACHE
+#if !defined(DISABLE_ADVANCED_SHADER_CACHE) || defined(HAVE_SHADER_CACHE)
 	sceIoMkdir("ux0:data/shader_cache", 0777);
 	char fname[256];
 	sprintf(fname, "ux0:data/shader_cache/v%d", SHADER_CACHE_MAGIC);
 	sceIoMkdir(fname, 0777);
+#ifdef HAVE_SHADER_CACHE
+	sceAppMgrAppParamGetString(0, 12, fname , 256);
+	sprintf(vgl_shader_cache_path, "ux0:data/shader_cache/%s", fname);
+	sceIoMkdir(vgl_shader_cache_path, 0777);
+#endif
 #endif
 	// Check if framebuffer size is valid
 	GLboolean res_fallback = GL_FALSE;

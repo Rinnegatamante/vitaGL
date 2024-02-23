@@ -26,6 +26,13 @@
 #include "shared.h"
 #include "utils/glsl_utils.h"
 #include "utils/shacccg_paramquery.h"
+#ifdef HAVE_SHADER_CACHE
+#define XXH_STATIC_LINKING_ONLY
+#define XXH_IMPLEMENTATION
+#define XXH_INLINE_ALL
+#include "utils/xxhash_utils.h"
+char vgl_shader_cache_path[256];
+#endif
 
 #define MAX_CUSTOM_SHADERS 2048 // Maximum number of linkable custom shaders
 #define MAX_CUSTOM_PROGRAMS 1024 // Maximum number of linkable custom programs
@@ -386,50 +393,77 @@ static inline __attribute__((always_inline)) void gxm_unif_to_mat(GLenum *type, 
 	}
 }
 
-static inline __attribute__((always_inline)) void compile_shader(shader *s) {
-	// Compiling shader source
-	s->prog = shark_compile_shader_extended((const char *)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
-	if (s->prog) {
+static inline __attribute__((always_inline)) void compile_shader(shader *s, uint8_t skip_cache) {
+#ifdef HAVE_SHADER_CACHE
+	if (skip_cache)
+		goto COMPILE_SHADER;
+	char fname[256];
+	sprintf(fname, "%s/%llX.gxp", vgl_shader_cache_path, XXH3_64bits(s->prog, s->size));
+	FILE *f = fopen(fname, "rb");
+	if (f) {
 		if (s->source) {
 			vgl_free(s->source);
 			s->source = NULL;
 		}
+		fseek(f, 0, SEEK_END);
+		s->size = ftell(f);
+		fseek(f, 0, SEEK_SET);
 		SceGxmProgram *res = (SceGxmProgram *)vglMalloc(s->size);
-		vgl_fast_memcpy((void *)res, (void *)s->prog, s->size);
-#ifdef LOG_ERRORS
-		int r =
-#endif
-			sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
-#ifdef LOG_ERRORS
-		if (r)
-			vgl_log("%s:%d %s: Program failed to register on sceGxm (%s).\n", __FILE__, __LINE__, __func__, get_gxm_error_literal(r));
-#endif
+		fread(res, 1, s->size, f);
+		fclose(f);
+		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
 		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
-		SceShaccCgCompileOutput *cout = (SceShaccCgCompileOutput *)shark_get_internal_compile_output();
-		SceShaccCgParameter param = sceShaccCgGetFirstParameter(cout);
-		while (param) {
-			if (sceShaccCgGetParameterClass(param) == SCE_SHACCCG_PARAMETERCLASS_MATRIX) {
-				matrix_uniform *m = (matrix_uniform *)vglMalloc(sizeof(matrix_uniform));
-				m->ptr = sceGxmProgramFindParameterByName(s->prog, sceShaccCgGetParameterName(param));
-				m->chain = s->mat;
-				s->mat = m;
-			} else if (sceShaccCgGetParameterClass(param) == SCE_SHACCCG_PARAMETERCLASS_UNIFORMBLOCK) {
-				block_uniform *b = (block_uniform *)vglMalloc(sizeof(block_uniform));
-				b->idx = sceShaccCgGetParameterBufferIndex(param);
-				strcpy(b->name, sceShaccCgGetParameterName(param));
-				b->chain = s->unif_blk;
-				s->unif_blk = b;
+	} else {
+#endif
+COMPILE_SHADER:
+		// Compiling shader source
+		s->prog = shark_compile_shader_extended((const char *)s->prog, &s->size, s->type == GL_FRAGMENT_SHADER ? SHARK_FRAGMENT_SHADER : SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
+		if (s->prog) {
+			if (s->source) {
+				vgl_free(s->source);
+				s->source = NULL;
 			}
-			param = sceShaccCgGetNextParameter(param);
+			SceGxmProgram *res = (SceGxmProgram *)vglMalloc(s->size);
+			vgl_fast_memcpy((void *)res, (void *)s->prog, s->size);
+			int r = sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
+#ifdef LOG_ERRORS
+			if (r)
+				vgl_log("%s:%d %s: Program failed to register on sceGxm (%s).\n", __FILE__, __LINE__, __func__, get_gxm_error_literal(r));
+#endif
+			s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
+			SceShaccCgCompileOutput *cout = (SceShaccCgCompileOutput *)shark_get_internal_compile_output();
+			SceShaccCgParameter param = sceShaccCgGetFirstParameter(cout);
+			while (param) {
+				if (sceShaccCgGetParameterClass(param) == SCE_SHACCCG_PARAMETERCLASS_MATRIX) {
+					matrix_uniform *m = (matrix_uniform *)vglMalloc(sizeof(matrix_uniform));
+					m->ptr = sceGxmProgramFindParameterByName(s->prog, sceShaccCgGetParameterName(param));
+					m->chain = s->mat;
+					s->mat = m;
+				} else if (sceShaccCgGetParameterClass(param) == SCE_SHACCCG_PARAMETERCLASS_UNIFORMBLOCK) {
+					block_uniform *b = (block_uniform *)vglMalloc(sizeof(block_uniform));
+					b->idx = sceShaccCgGetParameterBufferIndex(param);
+					strcpy(b->name, sceShaccCgGetParameterName(param));
+					b->chain = s->unif_blk;
+					s->unif_blk = b;
+				}
+				param = sceShaccCgGetNextParameter(param);
+			}
+		}
+#ifdef HAVE_SHARK_LOG
+		if (s->log)
+			vgl_free(s->log);
+		s->log = shark_log;
+		shark_log = NULL;
+#endif
+		shark_clear_output();
+#ifdef HAVE_SHADER_CACHE
+		if (!skip_cache) {
+			f = fopen(fname, "wb");
+			fwrite(s->prog, 1, s->size, f);
+			fclose(f);
 		}
 	}
-#ifdef HAVE_SHARK_LOG
-	if (s->log)
-		vgl_free(s->log);
-	s->log = shark_log;
-	shark_log = NULL;
 #endif
-	shark_clear_output();
 }
 
 void resetCustomShaders(void) {
@@ -1098,13 +1132,6 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 #endif
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
-
-#ifdef HAVE_GLSL_TRANSLATOR
-	if (glsl_sema_mode != VGL_MODE_POSTPONED) {
-		glsl_translator_process(s, count, string, length);
-		return;
-	}
-#endif
 	
 	uint32_t size = 1;
 
@@ -1172,7 +1199,40 @@ void glCompileShader(GLuint handle) {
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
 	
-	compile_shader(s);
+#ifdef HAVE_GLSL_TRANSLATOR
+#ifdef HAVE_SHADER_CACHE
+	char fname[256];
+	sprintf(fname, "%s/%llX.gxp", vgl_shader_cache_path, XXH3_64bits(s->prog, s->size));
+	FILE *f = fopen(fname, "rb");
+	if (f) {
+		if (s->source) {
+			vgl_free(s->source);
+			s->source = NULL;
+		}
+		fseek(f, 0, SEEK_END);
+		s->size = ftell(f);
+		fseek(f, 0, SEEK_SET);
+		SceGxmProgram *res = (SceGxmProgram *)vglMalloc(s->size);
+		fread(res, 1, s->size, f);
+		fclose(f);
+		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
+		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
+		return;
+	}
+#endif
+	s->glsl_source = s->source;
+	glsl_translator_process(s, 1, &s->glsl_source, NULL);
+#endif
+	compile_shader(s, 0);
+#ifdef HAVE_GLSL_TRANSLATOR
+	vgl_free(s->glsl_source);
+	s->glsl_source = NULL;
+#ifdef HAVE_SHADER_CACHE
+	f = fopen(fname, "wb");
+	fwrite(s->prog, 1, s->size, f);
+	fclose(f);
+#endif
+#endif
 }
 
 void glDeleteShader(GLuint shad) {
@@ -1541,13 +1601,53 @@ void glLinkProgram(GLuint progr) {
 		glsl_sema_mode = VGL_MODE_SHADER_PAIR;
 		if (!p->vshader->glsl_source)
 			p->vshader->glsl_source = p->vshader->source;
-		glsl_translator_process(p->vshader, 1, &p->vshader->glsl_source, NULL);
+#ifdef HAVE_SHADER_CACHE
+		char fname[256];
+		sprintf(fname, "%s/%llX.gxp", vgl_shader_cache_path, XXH3_64bits(p->vshader->glsl_source, strlen(p->vshader->glsl_source)));
+		FILE *f = fopen(fname, "rb");
+		if (f) {
+			fseek(f, 0, SEEK_END);
+			p->vshader->size = ftell(f);
+			fseek(f, 0, SEEK_SET);
+			SceGxmProgram *res = (SceGxmProgram *)vglMalloc(p->vshader->size);
+			fread(res, 1, p->vshader->size, f);
+			fclose(f);
+			sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &p->vshader->id);
+			p->vshader->prog = sceGxmShaderPatcherGetProgramFromId(p->vshader->id);
+		} else {
+#endif
+			glsl_translator_process(p->vshader, 1, &p->vshader->glsl_source, NULL);
+			compile_shader(p->vshader, 1);
+#ifdef HAVE_SHADER_CACHE
+			f = fopen(fname, "wb");
+			fwrite(p->vshader->prog, 1, p->vshader->size, f);
+			fclose(f);
+		}
+#endif
 		if (!p->fshader->glsl_source)
 			p->fshader->glsl_source = p->fshader->source;
-		glsl_translator_process(p->fshader, 1, &p->fshader->glsl_source, NULL);
-		compile_shader(p->vshader);
-		compile_shader(p->fshader);
-
+#ifdef HAVE_SHADER_CACHE
+		sprintf(fname, "%s/%llX.gxp", vgl_shader_cache_path, XXH3_64bits(p->fshader->glsl_source, strlen(p->fshader->glsl_source)));
+		f = fopen(fname, "rb");
+		if (f) {
+			fseek(f, 0, SEEK_END);
+			p->fshader->size = ftell(f);
+			fseek(f, 0, SEEK_SET);
+			SceGxmProgram *res = (SceGxmProgram *)vglMalloc(p->fshader->size);
+			fread(res, 1, p->fshader->size, f);
+			fclose(f);
+			sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &p->fshader->id);
+			p->fshader->prog = sceGxmShaderPatcherGetProgramFromId(p->fshader->id);
+		} else {
+#endif
+			glsl_translator_process(p->fshader, 1, &p->fshader->glsl_source, NULL);
+			compile_shader(p->fshader, 1);
+#ifdef HAVE_SHADER_CACHE
+			f = fopen(fname, "wb");
+			fwrite(p->fshader->prog, 1, p->fshader->size, f);
+			fclose(f);
+		}
+#endif
 		// Setting progressive default attribute bindings
 		setDefaultAttribBindings();
 
