@@ -1223,7 +1223,7 @@ void glCompileShader(GLuint handle) {
 	s->glsl_source = s->source;
 	glsl_translator_process(s, 1, &s->glsl_source, NULL);
 #endif
-	compile_shader(s, 0);
+	compile_shader(s, GL_FALSE);
 #ifdef HAVE_GLSL_TRANSLATOR
 	vgl_free(s->glsl_source);
 	s->glsl_source = NULL;
@@ -1617,7 +1617,7 @@ void glLinkProgram(GLuint progr) {
 		} else {
 #endif
 			glsl_translator_process(p->vshader, 1, &p->vshader->glsl_source, NULL);
-			compile_shader(p->vshader, 1);
+			compile_shader(p->vshader, GL_TRUE);
 #ifdef HAVE_SHADER_CACHE
 			f = fopen(fname, "wb");
 			fwrite(p->vshader->prog, 1, p->vshader->size, f);
@@ -1641,7 +1641,7 @@ void glLinkProgram(GLuint progr) {
 		} else {
 #endif
 			glsl_translator_process(p->fshader, 1, &p->fshader->glsl_source, NULL);
-			compile_shader(p->fshader, 1);
+			compile_shader(p->fshader, GL_TRUE);
 #ifdef HAVE_SHADER_CACHE
 			f = fopen(fname, "wb");
 			fwrite(p->fshader->prog, 1, p->fshader->size, f);

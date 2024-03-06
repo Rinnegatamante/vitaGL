@@ -279,6 +279,7 @@ static const struct {
 	{"glTexEnvx", (void *)glTexEnvx},
 	{"glTexEnvxv", (void *)glTexEnvxv},
 	{"glTexImage2D", (void *)glTexImage2D},
+	{"glTextureImage2D", (void *)glTextureImage2D},
 	{"glTexParameterf", (void *)glTexParameterf},
 	{"glTexParameteri", (void *)glTexParameteri},
 	{"glTexParameteriv", (void *)glTexParameteriv},

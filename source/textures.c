@@ -725,6 +725,58 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	}
 }
 
+void glTextureImage2D(GLuint tex_id, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *data) {
+	texture *tex = &texture_slots[tex_id];
+	
+#ifndef SKIP_ERROR_HANDLING
+	// Checking if texture is too big for sceGxm
+	if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+#ifdef HAVE_UNPURE_TEXTURES
+	if (tex->mip_start < 0)
+		tex->mip_start = level;
+	level -= tex->mip_start;
+#endif
+
+	// Support for legacy GL1.0 internalFormat
+	switch (internalFormat) {
+	case 1:
+		internalFormat = GL_RED;
+		break;
+	case 2:
+		internalFormat = GL_RG;
+		break;
+	case 3:
+		internalFormat = GL_RGB;
+		break;
+	case 4:
+		internalFormat = GL_RGBA;
+		break;
+	}
+
+	switch (target) {
+#ifdef HAVE_UNPURE_TEXFORMATS
+	case GL_TEXTURE_1D: // Workaround for 1D textures support
+#endif
+	case GL_TEXTURE_2D:
+		_glTexImage2D_FlatIMPL(tex, level, internalFormat, width, height, format, type, data);
+		break;
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+		_glTexImage2D_CubeIMPL(tex, level, internalFormat, width, height, format, type, data, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+}
+
 void glTexImage1D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *data) {
 #ifdef HAVE_UNPURE_TEXFORMATS
 	glTexImage2D(GL_TEXTURE_1D, level, internalFormat, width, 1, border, format, type, data);
