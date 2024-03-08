@@ -76,6 +76,394 @@ void *color_table = NULL; // Current in-use color table
 int8_t server_texture_unit = 0; // Current in use server side texture unit
 int unpack_row_len = 0; // Current setting for GL_UNPACK_ROW_LENGTH
 
+static inline __attribute__((always_inline)) void _glTexParameterx(texture *tex, GLenum target, GLenum pname, GLfixed param) {
+	switch (target) {
+	case GL_TEXTURE_CUBE_MAP:
+		switch (pname) {
+		case GL_TEXTURE_WRAP_S:
+		case GL_TEXTURE_WRAP_T:
+#ifndef SKIP_ERROR_HANDLING
+			if (param != GL_CLAMP_TO_EDGE && param != GL_CLAMP) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
+			break;
+		case GL_TEXTURE_MIN_FILTER: // Min filter
+			switch (param) {
+			case GL_NEAREST: // Point
+				tex->use_mips = GL_FALSE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR: // Linear
+				tex->use_mips = GL_FALSE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			case GL_NEAREST_MIPMAP_NEAREST:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR_MIPMAP_NEAREST:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			case GL_NEAREST_MIPMAP_LINEAR:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR_MIPMAP_LINEAR:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
+			if (tex->status == TEX_VALID) {
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+			}
+			break;
+		case GL_TEXTURE_MAG_FILTER: // Mag Filter
+			switch (param) {
+			case GL_NEAREST:
+				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR:
+				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
+			if (tex->status == TEX_VALID)
+				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
+			break;
+		default:
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+		}
+		break;
+#ifdef HAVE_UNPURE_TEXFORMATS
+	case GL_TEXTURE_1D:
+#endif
+	case GL_TEXTURE_2D:
+		switch (pname) {
+		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
+#ifndef SKIP_ERROR_HANDLING
+			if (param != 65536) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
+			break;
+		case GL_TEXTURE_MIN_FILTER: // Min filter
+			switch (param) {
+			case GL_NEAREST: // Point
+				tex->use_mips = GL_FALSE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR: // Linear
+				tex->use_mips = GL_FALSE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			case GL_NEAREST_MIPMAP_NEAREST:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR_MIPMAP_NEAREST:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			case GL_NEAREST_MIPMAP_LINEAR:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR_MIPMAP_LINEAR:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
+			if (tex->status == TEX_VALID) {
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+			}
+			break;
+		case GL_TEXTURE_MAG_FILTER: // Mag Filter
+			switch (param) {
+			case GL_NEAREST:
+				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR:
+				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
+			if (tex->status == TEX_VALID)
+				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
+			break;
+		case GL_TEXTURE_WRAP_S: // U Mode
+			switch (param) {
+			case GL_CLAMP_TO_EDGE: // Clamp
+			case GL_CLAMP:
+				tex->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+				break;
+			case GL_REPEAT: // Repeat
+				tex->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+				break;
+			case GL_MIRRORED_REPEAT: // Mirror
+				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+				break;
+			case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
+				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
+			if (tex->status == TEX_VALID)
+				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+			break;
+		case GL_TEXTURE_WRAP_T: // V Mode
+			switch (param) {
+			case GL_CLAMP_TO_EDGE: // Clamp
+			case GL_CLAMP:
+				tex->v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+				break;
+			case GL_REPEAT: // Repeat
+				tex->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+				break;
+			case GL_MIRRORED_REPEAT: // Mirror
+				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+				break;
+			case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
+				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
+			if (tex->status == TEX_VALID)
+				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+			break;
+		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
+			tex->lod_bias = (uint32_t)((uint32_t)((float)param / 65536.0f) + GL_MAX_TEXTURE_LOD_BIAS);
+			if (tex->status == TEX_VALID)
+				vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
+			break;
+		default:
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+		}
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+}
+
+static inline __attribute__((always_inline)) void _glTexParameteri(texture *tex, GLenum target, GLenum pname, GLint param) {
+	switch (target) {
+	case GL_TEXTURE_CUBE_MAP:
+		switch (pname) {
+		case GL_TEXTURE_WRAP_S:
+		case GL_TEXTURE_WRAP_T:
+#ifndef SKIP_ERROR_HANDLING
+			if (param != GL_CLAMP_TO_EDGE && param != GL_CLAMP) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
+			break;
+		case GL_TEXTURE_MIN_FILTER: // Min filter
+			switch (param) {
+			case GL_NEAREST: // Point
+				tex->use_mips = GL_FALSE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR: // Linear
+				tex->use_mips = GL_FALSE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			case GL_NEAREST_MIPMAP_NEAREST:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR_MIPMAP_NEAREST:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			case GL_NEAREST_MIPMAP_LINEAR:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR_MIPMAP_LINEAR:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
+			if (tex->status == TEX_VALID) {
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+			}
+			break;
+		case GL_TEXTURE_MAG_FILTER: // Mag Filter
+			switch (param) {
+			case GL_NEAREST:
+				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR:
+				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
+			if (tex->status == TEX_VALID)
+				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
+			break;
+		default:
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+		}
+		break;
+#ifdef HAVE_UNPURE_TEXFORMATS
+	case GL_TEXTURE_1D:
+#endif
+	case GL_TEXTURE_2D:
+		switch (pname) {
+		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
+#ifndef SKIP_ERROR_HANDLING
+			if (param != 1) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
+			break;
+		case GL_TEXTURE_MIN_FILTER: // Min filter
+			switch (param) {
+			case GL_NEAREST: // Point
+				tex->use_mips = GL_FALSE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR: // Linear
+				tex->use_mips = GL_FALSE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			case GL_NEAREST_MIPMAP_NEAREST:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR_MIPMAP_NEAREST:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			case GL_NEAREST_MIPMAP_LINEAR:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR_MIPMAP_LINEAR:
+				tex->use_mips = GL_TRUE;
+				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
+				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
+			if (tex->status == TEX_VALID) {
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+			}
+			break;
+		case GL_TEXTURE_MAG_FILTER: // Mag Filter
+			switch (param) {
+			case GL_NEAREST:
+				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+				break;
+			case GL_LINEAR:
+				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
+			if (tex->status == TEX_VALID)
+				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
+			break;
+		case GL_TEXTURE_WRAP_S: // U Mode
+			switch (param) {
+			case GL_CLAMP_TO_EDGE: // Clamp
+			case GL_CLAMP:
+				tex->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+				break;
+			case GL_REPEAT: // Repeat
+				tex->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+				break;
+			case GL_MIRRORED_REPEAT: // Mirror
+				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+				break;
+			case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
+				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
+			if (tex->status == TEX_VALID)
+				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+			break;
+		case GL_TEXTURE_WRAP_T: // V Mode
+			switch (param) {
+			case GL_CLAMP_TO_EDGE: // Clamp
+			case GL_CLAMP:
+				tex->v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
+				break;
+			case GL_REPEAT: // Repeat
+				tex->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+				break;
+			case GL_MIRRORED_REPEAT: // Mirror
+				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
+				break;
+			case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
+				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
+			}
+			if (tex->status == TEX_VALID)
+				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+			break;
+		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
+			tex->lod_bias = (uint32_t)(param + GL_MAX_TEXTURE_LOD_BIAS);
+			if (tex->status == TEX_VALID)
+				vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
+			break;
+		default:
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+		}
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+}
+
 static inline __attribute__((always_inline)) void _glTexImage2D_CubeIMPL(texture *tex, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *data, int index) {
 	SceGxmTextureFormat tex_format;
 	SceGxmTransferFormat src_format;
@@ -525,273 +913,8 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	}
 }
 
-/*
- * ------------------------------
- * - IMPLEMENTATION STARTS HERE -
- * ------------------------------
- */
-
-void glPixelStorei(GLenum pname, GLint param) {
-	switch (pname) {
-	case GL_UNPACK_ROW_LENGTH:
-		unpack_row_len = param;
-		break;
-	default:
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
-	}
-}
-
-void glGenTextures(GLsizei n, GLuint *res) {
-#ifndef SKIP_ERROR_HANDLING
-	// Error handling
-	if (n < 0) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-#endif
-
-	// Reserving a texture and returning its id if available
-	int j = 0;
-	for (GLuint i = 1; i < TEXTURES_NUM; i++) {
-		if (texture_slots[i].status == TEX_UNUSED) {
-			res[j++] = i;
-			texture_slots[i].status = TEX_UNINITIALIZED;
-
-			// Resetting texture parameters to their default values
-			texture_slots[i].dirty = GL_FALSE;
-#ifndef TEXTURES_SPEEDHACK
-			texture_slots[i].last_frame = 0xFFFFFFFF;
-#endif
-			texture_slots[i].faces_counter = 0;
-			texture_slots[i].ref_counter = 0;
-			texture_slots[i].mip_count = 1;
-#ifdef HAVE_UNPURE_TEXTURES
-			texture_slots[i].mip_start = -1;
-#endif
-			texture_slots[i].overridden = GL_FALSE;
-			texture_slots[i].use_mips = GL_FALSE;
-			texture_slots[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			texture_slots[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-			texture_slots[i].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-			texture_slots[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-			texture_slots[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-			texture_slots[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
-		}
-		if (j >= n)
-			return;
-	}
-
-	vgl_log("%s:%d %s: Texture slots limit reached (%d textures hadn't been generated).\n", __FILE__, __LINE__, __func__, n - j);
-}
-
-void glBindTexture(GLenum target, GLuint texture) {
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBindTexture, "UU", target, texture))
-		return;
-#endif
-
-#ifndef SKIP_ERROR_HANDLING
-	if (texture >= TEXTURES_NUM) {
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, texture)
-	}
-#endif
-
-	// Setting current in use texture id for the in use server texture unit
-	switch (target) {
-	case GL_TEXTURE_2D:
-		texture_units[server_texture_unit].tex_id[0] = texture;
-		break;
-#ifdef HAVE_UNPURE_TEXFORMATS
-	case GL_TEXTURE_1D:
-		texture_units[server_texture_unit].tex_id[1] = texture;
-		break;
-#endif
-	case GL_TEXTURE_CUBE_MAP:
-		texture_units[server_texture_unit].tex_id[2] = texture;
-		break;
-	default:
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
-		break;
-	}
-}
-
-void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
-#ifndef SKIP_ERROR_HANDLING
-	// Error handling
-	if (n < 0) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-#endif
-
-	// Deallocating given textures and invalidating used texture ids
-	for (int j = 0; j < n; j++) {
-		GLuint i = gl_textures[j];
-		if (i > 0 && i < TEXTURES_NUM) {
-			if (texture_slots[i].status == TEX_VALID) {
-				if (texture_slots[i].ref_counter > 0)
-					if (texture_slots[i].ref_counter == 1) {
-						framebuffer *fb = NULL;
-						if (active_read_fb && active_read_fb->tex == &texture_slots[i])
-							fb = active_read_fb;
-						else if (active_write_fb && active_write_fb->tex == &texture_slots[i])
-							fb = active_write_fb;
-						if (fb) {
-							gpu_free_texture(&texture_slots[i]);
-							if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
-								markAsDirty(fb->depthbuffer_ptr->depthData);
-								fb->depthbuffer_ptr = NULL;
-								fb->is_depth_hidden = GL_FALSE;
-							}
-							if (fb->target) {
-								markRtAsDirty(fb->target);
-								fb->target = NULL;
-							}
-							fb->tex = NULL;
-						} else
-							texture_slots[i].dirty = GL_TRUE;
-					} else {
-						texture_slots[i].dirty = GL_TRUE;
-					}
-				else
-					gpu_free_texture(&texture_slots[i]);
-			}
-
-			for (int k = 0; k < TEXTURE_IMAGE_UNITS_NUM; k++) {
-				texture_unit *tex_unit = &texture_units[k];
-				if (i == tex_unit->tex_id[0])
-					tex_unit->tex_id[0] = 0;
-				if (i == tex_unit->tex_id[1])
-					tex_unit->tex_id[1] = 0;
-				if (i == tex_unit->tex_id[2])
-					tex_unit->tex_id[2] = 0;
-			}
-		}
-	}
-}
-
-void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *data) {
-	// Setting some aliases to make code more readable
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx;
-	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
-	texture *tex = &texture_slots[texture2d_idx];
-
-#ifndef SKIP_ERROR_HANDLING
-	// Checking if texture is too big for sceGxm
-	if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-#endif
-
-#ifdef HAVE_UNPURE_TEXTURES
-	if (tex->mip_start < 0)
-		tex->mip_start = level;
-	level -= tex->mip_start;
-#endif
-
-	// Support for legacy GL1.0 internalFormat
-	switch (internalFormat) {
-	case 1:
-		internalFormat = GL_RED;
-		break;
-	case 2:
-		internalFormat = GL_RG;
-		break;
-	case 3:
-		internalFormat = GL_RGB;
-		break;
-	case 4:
-		internalFormat = GL_RGBA;
-		break;
-	}
-
-	switch (target) {
-#ifdef HAVE_UNPURE_TEXFORMATS
-	case GL_TEXTURE_1D: // Workaround for 1D textures support
-#endif
-	case GL_TEXTURE_2D:
-		_glTexImage2D_FlatIMPL(tex, level, internalFormat, width, height, format, type, data);
-		break;
-	case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
-	case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
-	case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
-		_glTexImage2D_CubeIMPL(tex, level, internalFormat, width, height, format, type, data, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
-		break;
-	default:
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
-	}
-}
-
-void glTextureImage2D(GLuint tex_id, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *data) {
-	texture *tex = &texture_slots[tex_id];
-	
-#ifndef SKIP_ERROR_HANDLING
-	// Checking if texture is too big for sceGxm
-	if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-#endif
-
-#ifdef HAVE_UNPURE_TEXTURES
-	if (tex->mip_start < 0)
-		tex->mip_start = level;
-	level -= tex->mip_start;
-#endif
-
-	// Support for legacy GL1.0 internalFormat
-	switch (internalFormat) {
-	case 1:
-		internalFormat = GL_RED;
-		break;
-	case 2:
-		internalFormat = GL_RG;
-		break;
-	case 3:
-		internalFormat = GL_RGB;
-		break;
-	case 4:
-		internalFormat = GL_RGBA;
-		break;
-	}
-
-	switch (target) {
-#ifdef HAVE_UNPURE_TEXFORMATS
-	case GL_TEXTURE_1D: // Workaround for 1D textures support
-#endif
-	case GL_TEXTURE_2D:
-		_glTexImage2D_FlatIMPL(tex, level, internalFormat, width, height, format, type, data);
-		break;
-	case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
-	case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
-	case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
-	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
-		_glTexImage2D_CubeIMPL(tex, level, internalFormat, width, height, format, type, data, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
-		break;
-	default:
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
-	}
-}
-
-void glTexImage1D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *data) {
-#ifdef HAVE_UNPURE_TEXFORMATS
-	glTexImage2D(GL_TEXTURE_1D, level, internalFormat, width, 1, border, format, type, data);
-#else
-	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
-#endif
-}
-
-void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {	
-	// Setting some aliases to make code more readable
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx;
-	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
-	texture *tex = &texture_slots[texture2d_idx];
-#ifdef HAVE_UNPURE_TEXTURES
+static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {
+	#ifdef HAVE_UNPURE_TEXTURES
 	level -= tex->mip_start;
 #endif
 	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&tex->gxm_tex);
@@ -1067,21 +1190,7 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	}
 }
 
-void glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels) {
-#ifdef HAVE_UNPURE_TEXFORMATS
-	glTexSubImage2D(GL_TEXTURE_1D, level, xoffset, 0, width, 1, format, type, pixels);
-#else
-	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
-#endif
-}
-
-void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data) {
-	// Setting some aliases to make code more readable
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx;
-	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
-	texture *tex = &texture_slots[texture2d_idx];
-
+void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data) {
 #ifdef HAVE_UNPURE_TEXTURES
 	if (tex->mip_start < 0)
 		tex->mip_start = level;
@@ -1430,6 +1539,322 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 	}
 }
 
+/*
+ * ------------------------------
+ * - IMPLEMENTATION STARTS HERE -
+ * ------------------------------
+ */
+
+void glPixelStorei(GLenum pname, GLint param) {
+	switch (pname) {
+	case GL_UNPACK_ROW_LENGTH:
+		unpack_row_len = param;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
+}
+
+void glGenTextures(GLsizei n, GLuint *res) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (n < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+	// Reserving a texture and returning its id if available
+	int j = 0;
+	for (GLuint i = 1; i < TEXTURES_NUM; i++) {
+		if (texture_slots[i].status == TEX_UNUSED) {
+			res[j++] = i;
+			texture_slots[i].status = TEX_UNINITIALIZED;
+
+			// Resetting texture parameters to their default values
+			texture_slots[i].dirty = GL_FALSE;
+#ifndef TEXTURES_SPEEDHACK
+			texture_slots[i].last_frame = 0xFFFFFFFF;
+#endif
+			texture_slots[i].faces_counter = 0;
+			texture_slots[i].ref_counter = 0;
+			texture_slots[i].mip_count = 1;
+#ifdef HAVE_UNPURE_TEXTURES
+			texture_slots[i].mip_start = -1;
+#endif
+			texture_slots[i].overridden = GL_FALSE;
+			texture_slots[i].use_mips = GL_FALSE;
+			texture_slots[i].min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+			texture_slots[i].mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
+			texture_slots[i].mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
+			texture_slots[i].u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+			texture_slots[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
+			texture_slots[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
+		}
+		if (j >= n)
+			return;
+	}
+
+	vgl_log("%s:%d %s: Texture slots limit reached (%d textures hadn't been generated).\n", __FILE__, __LINE__, __func__, n - j);
+}
+
+void glBindTexture(GLenum target, GLuint texture) {
+#ifdef HAVE_DLISTS
+	// Enqueueing function to a display list if one is being compiled
+	if (_vgl_enqueue_list_func(glBindTexture, "UU", target, texture))
+		return;
+#endif
+
+#ifndef SKIP_ERROR_HANDLING
+	if (texture >= TEXTURES_NUM) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, texture)
+	}
+#endif
+
+	// Setting current in use texture id for the in use server texture unit
+	switch (target) {
+	case GL_TEXTURE_2D:
+		texture_units[server_texture_unit].tex_id[0] = texture;
+		break;
+#ifdef HAVE_UNPURE_TEXFORMATS
+	case GL_TEXTURE_1D:
+		texture_units[server_texture_unit].tex_id[1] = texture;
+		break;
+#endif
+	case GL_TEXTURE_CUBE_MAP:
+		texture_units[server_texture_unit].tex_id[2] = texture;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+		break;
+	}
+}
+
+void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
+#ifndef SKIP_ERROR_HANDLING
+	// Error handling
+	if (n < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+	// Deallocating given textures and invalidating used texture ids
+	for (int j = 0; j < n; j++) {
+		GLuint i = gl_textures[j];
+		if (i > 0 && i < TEXTURES_NUM) {
+			if (texture_slots[i].status == TEX_VALID) {
+				if (texture_slots[i].ref_counter > 0)
+					if (texture_slots[i].ref_counter == 1) {
+						framebuffer *fb = NULL;
+						if (active_read_fb && active_read_fb->tex == &texture_slots[i])
+							fb = active_read_fb;
+						else if (active_write_fb && active_write_fb->tex == &texture_slots[i])
+							fb = active_write_fb;
+						if (fb) {
+							gpu_free_texture(&texture_slots[i]);
+							if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
+								markAsDirty(fb->depthbuffer_ptr->depthData);
+								fb->depthbuffer_ptr = NULL;
+								fb->is_depth_hidden = GL_FALSE;
+							}
+							if (fb->target) {
+								markRtAsDirty(fb->target);
+								fb->target = NULL;
+							}
+							fb->tex = NULL;
+						} else
+							texture_slots[i].dirty = GL_TRUE;
+					} else {
+						texture_slots[i].dirty = GL_TRUE;
+					}
+				else
+					gpu_free_texture(&texture_slots[i]);
+			}
+
+			for (int k = 0; k < TEXTURE_IMAGE_UNITS_NUM; k++) {
+				texture_unit *tex_unit = &texture_units[k];
+				if (i == tex_unit->tex_id[0])
+					tex_unit->tex_id[0] = 0;
+				if (i == tex_unit->tex_id[1])
+					tex_unit->tex_id[1] = 0;
+				if (i == tex_unit->tex_id[2])
+					tex_unit->tex_id[2] = 0;
+			}
+		}
+	}
+}
+
+void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *data) {
+	// Setting some aliases to make code more readable
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx;
+	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
+	texture *tex = &texture_slots[texture2d_idx];
+
+#ifndef SKIP_ERROR_HANDLING
+	// Checking if texture is too big for sceGxm
+	if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+#ifdef HAVE_UNPURE_TEXTURES
+	if (tex->mip_start < 0)
+		tex->mip_start = level;
+	level -= tex->mip_start;
+#endif
+
+	// Support for legacy GL1.0 internalFormat
+	switch (internalFormat) {
+	case 1:
+		internalFormat = GL_RED;
+		break;
+	case 2:
+		internalFormat = GL_RG;
+		break;
+	case 3:
+		internalFormat = GL_RGB;
+		break;
+	case 4:
+		internalFormat = GL_RGBA;
+		break;
+	}
+
+	switch (target) {
+#ifdef HAVE_UNPURE_TEXFORMATS
+	case GL_TEXTURE_1D: // Workaround for 1D textures support
+#endif
+	case GL_TEXTURE_2D:
+		_glTexImage2D_FlatIMPL(tex, level, internalFormat, width, height, format, type, data);
+		break;
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+		_glTexImage2D_CubeIMPL(tex, level, internalFormat, width, height, format, type, data, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+}
+
+void glTextureImage2D(GLuint tex_id, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *data) {
+	texture *tex = &texture_slots[tex_id];
+	
+#ifndef SKIP_ERROR_HANDLING
+	// Checking if texture is too big for sceGxm
+	if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+#ifdef HAVE_UNPURE_TEXTURES
+	if (tex->mip_start < 0)
+		tex->mip_start = level;
+	level -= tex->mip_start;
+#endif
+
+	// Support for legacy GL1.0 internalFormat
+	switch (internalFormat) {
+	case 1:
+		internalFormat = GL_RED;
+		break;
+	case 2:
+		internalFormat = GL_RG;
+		break;
+	case 3:
+		internalFormat = GL_RGB;
+		break;
+	case 4:
+		internalFormat = GL_RGBA;
+		break;
+	}
+
+	switch (target) {
+#ifdef HAVE_UNPURE_TEXFORMATS
+	case GL_TEXTURE_1D: // Workaround for 1D textures support
+#endif
+	case GL_TEXTURE_2D:
+		_glTexImage2D_FlatIMPL(tex, level, internalFormat, width, height, format, type, data);
+		break;
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+		_glTexImage2D_CubeIMPL(tex, level, internalFormat, width, height, format, type, data, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+}
+
+void glTexImage1D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *data) {
+#ifdef HAVE_UNPURE_TEXFORMATS
+	glTexImage2D(GL_TEXTURE_1D, level, internalFormat, width, 1, border, format, type, data);
+#else
+	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
+#endif
+}
+
+void glTextureImage1D(GLuint tex_id, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *data) {
+#ifdef HAVE_UNPURE_TEXFORMATS
+	glTextureImage2D(tex_id, GL_TEXTURE_1D, level, internalFormat, width, 1, border, format, type, data);
+#else
+	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
+#endif
+}
+
+void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {	
+	// Setting some aliases to make code more readable
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx;
+	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
+	texture *tex = &texture_slots[texture2d_idx];
+	
+	_glTexSubImage2D(tex, target, level, xoffset, yoffset, width, height, format, type, pixels);
+}
+
+void glTextureSubImage2D(GLuint tex_id, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {
+	texture *tex = &texture_slots[tex_id];
+	
+	_glTexSubImage2D(tex, target, level, xoffset, yoffset, width, height, format, type, pixels);
+}
+
+void glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels) {
+#ifdef HAVE_UNPURE_TEXFORMATS
+	glTexSubImage2D(GL_TEXTURE_1D, level, xoffset, 0, width, 1, format, type, pixels);
+#else
+	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
+#endif
+}
+
+void glTextureSubImage1D(GLuint tex_id, GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels) {
+#ifdef HAVE_UNPURE_TEXFORMATS
+	glTextureSubImage2D(tex_id, GL_TEXTURE_1D, level, xoffset, 0, width, 1, format, type, pixels);
+#else
+	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
+#endif
+}
+
+void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data) {
+	// Setting some aliases to make code more readable
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx;
+	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
+	texture *tex = &texture_slots[texture2d_idx];
+	
+	_glCompressedTexImage2D(tex, target, level, internalFormat, width, height, border, imageSize, data);
+}
+
+void glCompressedTextureImage2D(GLuint tex_id, GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data) {
+	texture *tex = &texture_slots[tex_id];
+	
+	_glCompressedTexImage2D(tex, target, level, internalFormat, width, height, border, imageSize, data);
+}
+
 void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid *data) {
 	// Checking if a color table is already enabled, if so, deallocating it
 	if (color_table != NULL) {
@@ -1463,198 +1888,14 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 	int texture2d_idx;
 	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
 	texture *tex = &texture_slots[texture2d_idx];
+	
+	_glTexParameteri(tex, target, pname, param);
+}
 
-	switch (target) {
-	case GL_TEXTURE_CUBE_MAP:
-		switch (pname) {
-		case GL_TEXTURE_WRAP_S:
-		case GL_TEXTURE_WRAP_T:
-#ifndef SKIP_ERROR_HANDLING
-			if (param != GL_CLAMP_TO_EDGE && param != GL_CLAMP) {
-				SET_GL_ERROR(GL_INVALID_VALUE)
-			}
-#endif
-			break;
-		case GL_TEXTURE_MIN_FILTER: // Min filter
-			switch (param) {
-			case GL_NEAREST: // Point
-				tex->use_mips = GL_FALSE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR: // Linear
-				tex->use_mips = GL_FALSE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			case GL_NEAREST_MIPMAP_NEAREST:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR_MIPMAP_NEAREST:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			case GL_NEAREST_MIPMAP_LINEAR:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR_MIPMAP_LINEAR:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			default:
-				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-			}
-			if (tex->status == TEX_VALID) {
-				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
-				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
-				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
-			}
-			break;
-		case GL_TEXTURE_MAG_FILTER: // Mag Filter
-			switch (param) {
-			case GL_NEAREST:
-				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR:
-				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			default:
-				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-			}
-			if (tex->status == TEX_VALID)
-				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
-			break;
-		default:
-			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
-		}
-		break;
-#ifdef HAVE_UNPURE_TEXFORMATS
-	case GL_TEXTURE_1D:
-#endif
-	case GL_TEXTURE_2D:
-		switch (pname) {
-		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
-#ifndef SKIP_ERROR_HANDLING
-			if (param != 1) {
-				SET_GL_ERROR(GL_INVALID_VALUE)
-			}
-#endif
-			break;
-		case GL_TEXTURE_MIN_FILTER: // Min filter
-			switch (param) {
-			case GL_NEAREST: // Point
-				tex->use_mips = GL_FALSE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR: // Linear
-				tex->use_mips = GL_FALSE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			case GL_NEAREST_MIPMAP_NEAREST:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR_MIPMAP_NEAREST:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			case GL_NEAREST_MIPMAP_LINEAR:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR_MIPMAP_LINEAR:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			default:
-				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-			}
-			if (tex->status == TEX_VALID) {
-				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
-				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
-				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
-			}
-			break;
-		case GL_TEXTURE_MAG_FILTER: // Mag Filter
-			switch (param) {
-			case GL_NEAREST:
-				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR:
-				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			default:
-				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-			}
-			if (tex->status == TEX_VALID)
-				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
-			break;
-		case GL_TEXTURE_WRAP_S: // U Mode
-			switch (param) {
-			case GL_CLAMP_TO_EDGE: // Clamp
-			case GL_CLAMP:
-				tex->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
-				break;
-			case GL_REPEAT: // Repeat
-				tex->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-				break;
-			case GL_MIRRORED_REPEAT: // Mirror
-				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
-				break;
-			case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
-				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
-				break;
-			default:
-				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-			}
-			if (tex->status == TEX_VALID)
-				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
-			break;
-		case GL_TEXTURE_WRAP_T: // V Mode
-			switch (param) {
-			case GL_CLAMP_TO_EDGE: // Clamp
-			case GL_CLAMP:
-				tex->v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
-				break;
-			case GL_REPEAT: // Repeat
-				tex->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-				break;
-			case GL_MIRRORED_REPEAT: // Mirror
-				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
-				break;
-			case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
-				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
-				break;
-			default:
-				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-			}
-			if (tex->status == TEX_VALID)
-				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
-			break;
-		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
-			tex->lod_bias = (uint32_t)(param + GL_MAX_TEXTURE_LOD_BIAS);
-			if (tex->status == TEX_VALID)
-				vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
-			break;
-		default:
-			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
-		}
-		break;
-	default:
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
-	}
+void glTextureParameteri(GLuint tex_id, GLenum target, GLenum pname, GLint param) {
+	texture *tex = &texture_slots[tex_id];
+	
+	_glTexParameteri(tex, target, pname, param);
 }
 
 void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
@@ -1663,206 +1904,46 @@ void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
 	int texture2d_idx;
 	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
 	texture *tex = &texture_slots[texture2d_idx];
+	
+	_glTexParameterx(tex, target, pname, param);
+}
 
-	switch (target) {
-	case GL_TEXTURE_CUBE_MAP:
-		switch (pname) {
-		case GL_TEXTURE_WRAP_S:
-		case GL_TEXTURE_WRAP_T:
-#ifndef SKIP_ERROR_HANDLING
-			if (param != GL_CLAMP_TO_EDGE && param != GL_CLAMP) {
-				SET_GL_ERROR(GL_INVALID_VALUE)
-			}
-#endif
-			break;
-		case GL_TEXTURE_MIN_FILTER: // Min filter
-			switch (param) {
-			case GL_NEAREST: // Point
-				tex->use_mips = GL_FALSE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR: // Linear
-				tex->use_mips = GL_FALSE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			case GL_NEAREST_MIPMAP_NEAREST:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR_MIPMAP_NEAREST:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			case GL_NEAREST_MIPMAP_LINEAR:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR_MIPMAP_LINEAR:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			default:
-				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-			}
-			if (tex->status == TEX_VALID) {
-				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
-				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
-				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
-			}
-			break;
-		case GL_TEXTURE_MAG_FILTER: // Mag Filter
-			switch (param) {
-			case GL_NEAREST:
-				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR:
-				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			default:
-				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-			}
-			if (tex->status == TEX_VALID)
-				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
-			break;
-		default:
-			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
-		}
-		break;
-#ifdef HAVE_UNPURE_TEXFORMATS
-	case GL_TEXTURE_1D:
-#endif
-	case GL_TEXTURE_2D:
-		switch (pname) {
-		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
-#ifndef SKIP_ERROR_HANDLING
-			if (param != 65536) {
-				SET_GL_ERROR(GL_INVALID_VALUE)
-			}
-#endif
-			break;
-		case GL_TEXTURE_MIN_FILTER: // Min filter
-			switch (param) {
-			case GL_NEAREST: // Point
-				tex->use_mips = GL_FALSE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR: // Linear
-				tex->use_mips = GL_FALSE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			case GL_NEAREST_MIPMAP_NEAREST:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR_MIPMAP_NEAREST:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			case GL_NEAREST_MIPMAP_LINEAR:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR_MIPMAP_LINEAR:
-				tex->use_mips = GL_TRUE;
-				tex->mip_filter = SCE_GXM_TEXTURE_MIP_FILTER_ENABLED;
-				tex->min_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			default:
-				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-			}
-			if (tex->status == TEX_VALID) {
-				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
-				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
-				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
-			}
-			break;
-		case GL_TEXTURE_MAG_FILTER: // Mag Filter
-			switch (param) {
-			case GL_NEAREST:
-				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
-				break;
-			case GL_LINEAR:
-				tex->mag_filter = SCE_GXM_TEXTURE_FILTER_LINEAR;
-				break;
-			default:
-				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-			}
-			if (tex->status == TEX_VALID)
-				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
-			break;
-		case GL_TEXTURE_WRAP_S: // U Mode
-			switch (param) {
-			case GL_CLAMP_TO_EDGE: // Clamp
-			case GL_CLAMP:
-				tex->u_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
-				break;
-			case GL_REPEAT: // Repeat
-				tex->u_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-				break;
-			case GL_MIRRORED_REPEAT: // Mirror
-				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
-				break;
-			case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
-				tex->u_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
-				break;
-			default:
-				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-			}
-			if (tex->status == TEX_VALID)
-				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
-			break;
-		case GL_TEXTURE_WRAP_T: // V Mode
-			switch (param) {
-			case GL_CLAMP_TO_EDGE: // Clamp
-			case GL_CLAMP:
-				tex->v_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
-				break;
-			case GL_REPEAT: // Repeat
-				tex->v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
-				break;
-			case GL_MIRRORED_REPEAT: // Mirror
-				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
-				break;
-			case GL_MIRROR_CLAMP_EXT: // Mirror Clamp
-				tex->v_mode = SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP;
-				break;
-			default:
-				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
-			}
-			if (tex->status == TEX_VALID)
-				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
-			break;
-		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
-			tex->lod_bias = (uint32_t)((uint32_t)((float)param / 65536.0f) + GL_MAX_TEXTURE_LOD_BIAS);
-			if (tex->status == TEX_VALID)
-				vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
-			break;
-		default:
-			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
-		}
-		break;
-	default:
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
-	}
+void glTextureParameterx(GLuint tex_id, GLenum target, GLenum pname, GLfixed param) {
+	texture *tex = &texture_slots[tex_id];
+	
+	_glTexParameterx(tex, target, pname, param);
 }
 
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
-	glTexParameteri(target, pname, (GLint)param);
+	// Setting some aliases to make code more readable
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx;
+	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
+	texture *tex = &texture_slots[texture2d_idx];
+	
+	_glTexParameteri(tex, target, pname, (GLint)param);
+}
+
+void glTextureParameterf(GLuint tex_id, GLenum target, GLenum pname, GLfloat param) {
+	texture *tex = &texture_slots[tex_id];
+	
+	_glTexParameteri(tex, target, pname, (GLint)param);
 }
 
 void glTexParameteriv(GLenum target, GLenum pname, GLint *param) {
-	glTexParameteri(target, pname, param[0]);
+	// Setting some aliases to make code more readable
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx;
+	resolveTexTarget(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
+	texture *tex = &texture_slots[texture2d_idx];
+	
+	_glTexParameteri(tex, target, pname, param[0]);
+}
+
+void glTextureParameteriv(GLuint tex_id, GLenum target, GLenum pname, GLint *param) {
+	texture *tex = &texture_slots[tex_id];
+	
+	_glTexParameteri(tex, target, pname, param[0]);
 }
 
 void glActiveTexture(GLenum texture) {
@@ -1966,9 +2047,34 @@ void glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x
 	vgl_free(tmp);
 }
 
+void glCopyTextureImage2D(GLuint tex_id, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border) {
+#ifndef SKIP_ERROR_HANDLING
+	// Checking if texture is too big for sceGxm
+	if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE || width < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	} else if (level < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, level)
+	} else if (border != 0 && border != 1) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, border)
+	}
+#endif
+	void *tmp = vglMalloc(width * height * 4);
+	glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
+	glTextureImage2D(tex_id, target, level, internalformat, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
+	vgl_free(tmp);
+}
+
 void glCopyTexImage1D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border) {
 #ifdef HAVE_UNPURE_TEXFORMATS
 	glCopyTexImage2D(GL_TEXTURE_1D, level, internalformat, x, y, width, 1, border);
+#else
+	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
+#endif
+}
+
+void glCopyTextureImage1D(GLuint tex_id, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border) {
+#ifdef HAVE_UNPURE_TEXFORMATS
+	glCopyTextureImage2D(tex_id, GL_TEXTURE_1D, level, internalformat, x, y, width, 1, border);
 #else
 	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
 #endif
@@ -1987,9 +2093,30 @@ void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffse
 	vgl_free(tmp);
 }
 
+void glCopyTextureSubImage2D(GLuint tex_id, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height) {
+#ifndef SKIP_ERROR_HANDLING
+	// Checking if texture is too big for sceGxm
+	if (level < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, level)
+	}
+#endif
+	void *tmp = vglMalloc(width * height * 4);
+	glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
+	glTextureSubImage2D(tex_id, target, level, xoffset, yoffset, width, height, GL_RGBA, GL_UNSIGNED_BYTE, tmp);
+	vgl_free(tmp);
+}
+
 void glCopyTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width) {
 #ifdef HAVE_UNPURE_TEXFORMATS
 	glCopyTexSubImage2D(GL_TEXTURE_1D, level, xoffset, 0, x, y, width, 1);
+#else
+	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
+#endif
+}
+
+void glCopyTextureSubImage1D(GLuint tex_id, GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width) {
+#ifdef HAVE_UNPURE_TEXFORMATS
+	glCopyTextureSubImage2D(tex_id, GL_TEXTURE_1D, level, xoffset, 0, x, y, width, 1);
 #else
 	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
 #endif

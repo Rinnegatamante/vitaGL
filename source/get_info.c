@@ -43,6 +43,7 @@ static GLubyte *extensions[] = {
 	"GL_EXT_abgr",
 	"GL_EXT_bgra",
 	"GL_EXT_color_buffer_half_float",
+	"GL_EXT_direct_state_access",
 	"GL_EXT_draw_instanced",
 	"GL_EXT_framebuffer_object",
 	"GL_EXT_map_buffer_range",
