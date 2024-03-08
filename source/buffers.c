@@ -26,6 +26,8 @@
 #define DISABLED_ATTRIBS_POOL_SIZE (256 * 1024) // Disabled attributes circular pool size in bytes for the default VAO
 #define DISABLED_AUX_ATTRIBS_POOL_SIZE (64 * 1024) // Disabled attributes circular pool size in bytes for non default VAOs
 
+uint32_t main_vertex_attrib_pool_size = DISABLED_ATTRIBS_POOL_SIZE;
+uint32_t aux_vertex_attrib_pool_size = DISABLED_AUX_ATTRIBS_POOL_SIZE;
 uint32_t vertex_array_unit = 0; // Current in-use vertex array buffer unit
 uint32_t uniform_array_unit = 0; // Current in-use uniform buffer unit
 
@@ -47,7 +49,7 @@ void resetVao(vao *v) {
 	v->vertex_attrib_state = 0;
 	v->index_array_unit = 0;
 
-	uint32_t circular_pool_size = v == &default_vao ? DISABLED_ATTRIBS_POOL_SIZE : DISABLED_AUX_ATTRIBS_POOL_SIZE;
+	uint32_t circular_pool_size = v == &default_vao ? main_vertex_attrib_pool_size : aux_vertex_attrib_pool_size;
 	v->vertex_attrib_pool = (float *)gpu_alloc_mapped(circular_pool_size, VGL_MEM_RAM);
 	v->vertex_attrib_pool_ptr = v->vertex_attrib_pool;
 	v->vertex_attrib_pool_limit = (float *)((uint8_t *)v->vertex_attrib_pool + circular_pool_size);
@@ -645,4 +647,9 @@ void vglBufferData(GLenum target, const GLvoid *data) {
 #endif
 
 	gpu_buf->ptr = (GLvoid *)data;
+}
+
+void vglSetVertexAttribPoolSize(uint32_t main_size, uint32_t aux_size) {
+	main_vertex_attrib_pool_size = main_size;
+	aux_vertex_attrib_pool_size = aux_size;
 }

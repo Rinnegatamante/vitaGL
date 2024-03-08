@@ -947,6 +947,7 @@ void vglSetParamBufferSize(uint32_t size);
 void vglSetSemanticBindingMode(GLenum mode);
 void vglSetUSSEBufferSize(uint32_t size);
 void vglSetVDMBufferSize(uint32_t size);
+void vglSetVertexAttribPoolSize(uint32_t main_size, uint32_t aux_size);
 void vglSetVertexBufferSize(uint32_t size);
 void vglSetVertexPoolSize(uint32_t size);
 void vglSetupGarbageCollector(int priority, int affinity);

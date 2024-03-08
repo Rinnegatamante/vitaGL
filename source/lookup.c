@@ -376,6 +376,7 @@ static const struct {
 	{"vglSetSemanticBindingMode", (void *)vglSetSemanticBindingMode},
 	{"vglSetUSSEBufferSize", (void *)vglSetUSSEBufferSize},
 	{"vglSetVDMBufferSize", (void *)vglSetVDMBufferSize},
+	{"vglSetVertexAttribPoolSize", (void *)vglSetVertexAttribPoolSize},
 	{"vglSetVertexBufferSize", (void *)vglSetVertexBufferSize},
 	{"vglSetVertexPoolSize", (void *)vglSetVertexPoolSize},
 	{"vglSetupGarbageCollector", (void *)vglSetupGarbageCollector},
