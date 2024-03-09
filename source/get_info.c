@@ -126,6 +126,52 @@ GLint gxm_depth_func_to_gl(SceGxmDepthFunc func) {
 	}
 }
 
+GLenum gxm_stencil_func_to_gl(SceGxmStencilFunc func) {
+	switch (func) {
+	case SCE_GXM_STENCIL_FUNC_NEVER:
+		return GL_NEVER;
+	case SCE_GXM_STENCIL_FUNC_LESS:
+		return GL_LESS;
+	case SCE_GXM_STENCIL_FUNC_LESS_EQUAL:
+		return GL_LEQUAL;
+	case SCE_GXM_STENCIL_FUNC_GREATER:
+		return GL_GREATER;
+	case SCE_GXM_STENCIL_FUNC_GREATER_EQUAL:
+		return GL_GEQUAL;
+	case SCE_GXM_STENCIL_FUNC_EQUAL:
+		return GL_EQUAL;
+	case SCE_GXM_STENCIL_FUNC_NOT_EQUAL:
+		return GL_NOTEQUAL;
+	case SCE_GXM_STENCIL_FUNC_ALWAYS:
+		return GL_ALWAYS;
+	default:
+		return 0;
+	}
+}
+
+GLenum gxm_stencil_op_to_gl(SceGxmStencilOp op) {
+	switch (op) {
+	case SCE_GXM_STENCIL_OP_KEEP:
+		return GL_KEEP;
+	case SCE_GXM_STENCIL_OP_ZERO:
+		return GL_ZERO;
+	case SCE_GXM_STENCIL_OP_REPLACE:
+		return GL_REPLACE;
+	case SCE_GXM_STENCIL_OP_INCR:
+		return GL_INCR;
+	case SCE_GXM_STENCIL_OP_INCR_WRAP:
+		return GL_INCR_WRAP;
+	case SCE_GXM_STENCIL_OP_DECR:
+		return GL_DECR;
+	case SCE_GXM_STENCIL_OP_DECR_WRAP:
+		return GL_DECR_WRAP;
+	case SCE_GXM_STENCIL_OP_INVERT:
+		return GL_INVERT;
+	default:
+		return 0;
+	}
+}
+
 /*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -
@@ -372,6 +418,42 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_STENCIL_FAIL:
+		*data = gxm_stencil_op_to_gl(stencil_fail_front);
+		break;
+	case GL_STENCIL_PASS_DEPTH_FAIL:
+		*data = gxm_stencil_op_to_gl(depth_fail_front);
+		break;
+	case GL_STENCIL_PASS_DEPTH_PASS:
+		*data = gxm_stencil_op_to_gl(depth_pass_front);
+		break;
+	case GL_STENCIL_VALUE_MASK:
+		*data = stencil_mask_front;
+		break;
+	case GL_STENCIL_REF:
+		*data = stencil_ref_front;
+		break;
+	case GL_STENCIL_FUNC:
+		*data = gxm_stencil_func_to_gl(stencil_func_front);
+		break;
+	case GL_FRONT_FACE:
+		*data = gl_front_face;
+		break;
+	case GL_CULL_FACE_MODE:
+		*data = gl_cull_mode;
+		break;
+	case GL_STENCIL_WRITEMASK:
+		*data = stencil_mask_front_write;
+		break;
+	case GL_DEPTH_WRITEMASK:
+		*data = depth_mask_state;
+		break;
+	case GL_COLOR_WRITEMASK:
+		data[0] = (blend_color_mask & SCE_GXM_COLOR_MASK_R) ? GL_TRUE : GL_FALSE;
+		data[1] = (blend_color_mask & SCE_GXM_COLOR_MASK_G) ? GL_TRUE : GL_FALSE;
+		data[2] = (blend_color_mask & SCE_GXM_COLOR_MASK_B) ? GL_TRUE : GL_FALSE;
+		data[3] = (blend_color_mask & SCE_GXM_COLOR_MASK_A) ? GL_TRUE : GL_FALSE;
+		break;
 	case GL_STENCIL_CLEAR_VALUE:
 		*data = stencil_value;
 		break;

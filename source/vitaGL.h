@@ -120,6 +120,8 @@ extern "C" {
 #define GL_CURRENT_COLOR                                0x0B00
 #define GL_POLYGON_MODE                                 0x0B40
 #define GL_CULL_FACE                                    0x0B44
+#define GL_CULL_FACE_MODE                               0x0B45
+#define GL_FRONT_FACE                                   0x0B46
 #define GL_LIGHTING                                     0x0B50
 #define GL_LIGHT_MODEL_AMBIENT                          0x0B53
 #define GL_COLOR_MATERIAL                               0x0B57
@@ -136,6 +138,13 @@ extern "C" {
 #define GL_DEPTH_FUNC                                   0x0B74
 #define GL_STENCIL_TEST                                 0x0B90
 #define GL_STENCIL_CLEAR_VALUE                          0x0B91
+#define GL_STENCIL_FUNC                                 0x0B92
+#define GL_STENCIL_VALUE_MASK                           0x0B93
+#define GL_STENCIL_FAIL                                 0x0B94
+#define GL_STENCIL_PASS_DEPTH_FAIL                      0x0B95
+#define GL_STENCIL_PASS_DEPTH_PASS                      0x0B96
+#define GL_STENCIL_REF                                  0x0B97
+#define GL_STENCIL_WRITEMASK                            0x0B98
 #define GL_MATRIX_MODE                                  0x0BA0
 #define GL_NORMALIZE                                    0x0BA1
 #define GL_VIEWPORT                                     0x0BA2
