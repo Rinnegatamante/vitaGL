@@ -372,6 +372,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_STENCIL_CLEAR_VALUE:
+		*data = stencil_value;
+		break;
 	case GL_MAX_VERTEX_UNIFORM_COMPONENTS:
 	case GL_MAX_FRAGMENT_UNIFORM_COMPONENTS:
 		*data = 2048;

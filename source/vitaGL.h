@@ -135,6 +135,7 @@ extern "C" {
 #define GL_DEPTH_CLEAR_VALUE                            0x0B73
 #define GL_DEPTH_FUNC                                   0x0B74
 #define GL_STENCIL_TEST                                 0x0B90
+#define GL_STENCIL_CLEAR_VALUE                          0x0B91
 #define GL_MATRIX_MODE                                  0x0BA0
 #define GL_NORMALIZE                                    0x0BA1
 #define GL_VIEWPORT                                     0x0BA2
