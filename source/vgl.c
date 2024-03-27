@@ -708,7 +708,13 @@ void *vglMalloc(uint32_t size) {
 		return res;
 
 	// If it fails, as last resort, we try VRAM
-	return vgl_malloc(size, VGL_MEM_VRAM);
+	res = vgl_malloc(size, VGL_MEM_VRAM);
+#ifndef SKIP_ERROR_HANDLING
+	if (!res) {
+		vgl_log("%s:%d: vglMalloc failed allocating 0x%X bytes.\n", __FILE__, __LINE__, size);
+	}
+#endif
+	return res;
 }
 
 size_t vglMallocUsableSize(void *ptr) {
@@ -737,7 +743,13 @@ void *vglMemalign(uint32_t alignment, uint32_t size) {
 		return res;
 
 	// If it fails, as last resort, we try VRAM
-	return vgl_memalign(alignment, size, VGL_MEM_VRAM);
+	res = vgl_memalign(alignment, size, VGL_MEM_VRAM);
+#ifndef SKIP_ERROR_HANDLING
+	if (!res) {
+		vgl_log("%s:%d: vglMemalign failed allocating 0x%X bytes with 0x%X alignment.\n", __FILE__, __LINE__, size, alignment);
+	}
+#endif
+	return res;
 }
 
 void *vglCalloc(uint32_t nmember, uint32_t size) {
@@ -762,7 +774,13 @@ void *vglCalloc(uint32_t nmember, uint32_t size) {
 		return res;
 
 	// If it fails, as last resort, we try VRAM
-	return vgl_calloc(nmember, size, VGL_MEM_VRAM);
+	res = vgl_calloc(nmember, size, VGL_MEM_VRAM);
+#ifndef SKIP_ERROR_HANDLING
+	if (!res) {
+		vgl_log("%s:%d: vglCalloc failed allocating 0x%X blocks of 0x%X bytes.\n", __FILE__, __LINE__, nmember, size);
+	}
+#endif
+	return res;
 }
 
 void *vglRealloc(void *ptr, uint32_t size) {
@@ -778,7 +796,11 @@ void *vglRealloc(void *ptr, uint32_t size) {
 		vgl_fast_memcpy(res, ptr, vgl_malloc_usable_size(ptr));
 		vglFree(ptr);
 	}
-
+#ifndef SKIP_ERROR_HANDLING
+	if (!res) {
+		vgl_log("%s:%d: vglRealloc failed reallocating 0x%X to 0x%X bytes.\n", __FILE__, __LINE__, ptr, size);
+	}
+#endif
 	return res;
 }
 
