@@ -114,7 +114,7 @@ void change_blend_mask() {
 void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBlendFunc, "UU", sfactor, dfactor))
+	if (_vgl_enqueue_list_func(glBlendFunc, DLIST_FUNC_U32_U32, sfactor, dfactor))
 		return;
 #endif
 	switch (sfactor) {
@@ -198,7 +198,7 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBlendFunc, "UUUU", srcRGB, dstRGB, srcAlpha, dstAlpha))
+	if (_vgl_enqueue_list_func(glBlendFunc, DLIST_FUNC_U32_U32_U32_U32, srcRGB, dstRGB, srcAlpha, dstAlpha))
 		return;
 #endif
 	switch (srcRGB) {
@@ -356,7 +356,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 void glBlendEquation(GLenum mode) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBlendEquation, "U", mode))
+	if (_vgl_enqueue_list_func(glBlendEquation, DLIST_FUNC_U32, mode))
 		return;
 #endif
 	switch (mode) {
@@ -385,7 +385,7 @@ void glBlendEquation(GLenum mode) {
 void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBlendEquationSeparate, "UU", modeRGB, modeAlpha))
+	if (_vgl_enqueue_list_func(glBlendEquationSeparate, DLIST_FUNC_U32_U32, modeRGB, modeAlpha))
 		return;
 #endif
 	switch (modeRGB) {
@@ -433,7 +433,7 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
 void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColorMask, "XXXX", red, green, blue, alpha))
+	if (_vgl_enqueue_list_func(glColorMask, DLIST_FUNC_U8_U8_U8_U8, red, green, blue, alpha))
 		return;
 #endif
 	blend_color_mask = SCE_GXM_COLOR_MASK_NONE;

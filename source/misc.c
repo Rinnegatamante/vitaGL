@@ -339,7 +339,7 @@ void glDepthRangex(GLfixed _nearVal, GLfixed _farVal) {
 void glEnable(GLenum cap) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glEnable, "U", cap))
+	if (_vgl_enqueue_list_func(glEnable, DLIST_FUNC_U32, cap))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -465,7 +465,7 @@ void glEnable(GLenum cap) {
 void glDisable(GLenum cap) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glDisable, "U", cap))
+	if (_vgl_enqueue_list_func(glDisable, DLIST_FUNC_U32, cap))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING

@@ -57,7 +57,7 @@ GLint get_gl_matrix_mode() {
 void glMatrixMode(GLenum mode) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glMatrixMode, "U", mode))
+	if (_vgl_enqueue_list_func(glMatrixMode, DLIST_FUNC_U32, mode))
 		return;
 #endif
 	// Changing current in use matrix
@@ -166,7 +166,7 @@ void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLd
 void glLoadIdentity(void) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glLoadIdentity, ""))
+	if (_vgl_enqueue_list_func(glLoadIdentity, DLIST_FUNC_VOID))
 		return;
 #endif
 	// Set current in use matrix to identity one
@@ -320,7 +320,7 @@ void glLoadTransposeMatrixx(const GLfixed *m) {
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTranslatef, "FFF", x, y, z))
+	if (_vgl_enqueue_list_func(glTranslatef, DLIST_FUNC_F32_F32_F32, x, y, z))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -352,7 +352,7 @@ void glTranslatex(GLfixed x, GLfixed y, GLfixed z) {
 void glScalef(GLfloat x, GLfloat y, GLfloat z) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glScalef, "FFF", x, y, z))
+	if (_vgl_enqueue_list_func(glScalef, DLIST_FUNC_F32_F32_F32, x, y, z))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -384,7 +384,7 @@ void glScalex(GLfixed x, GLfixed y, GLfixed z) {
 inline void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glRotatef, "FFF", x, y, z))
+	if (_vgl_enqueue_list_func(glRotatef, DLIST_FUNC_F32_F32_F32, x, y, z))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -426,7 +426,7 @@ void glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z) {
 void glPushMatrix(void) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glPushMatrix, ""))
+	if (_vgl_enqueue_list_func(glPushMatrix, DLIST_FUNC_VOID))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -472,7 +472,7 @@ void glPushMatrix(void) {
 void glPopMatrix(void) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glPopMatrix, ""))
+	if (_vgl_enqueue_list_func(glPopMatrix, DLIST_FUNC_VOID))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING

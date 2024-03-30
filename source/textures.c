@@ -1600,7 +1600,7 @@ void glGenTextures(GLsizei n, GLuint *res) {
 void glBindTexture(GLenum target, GLuint texture) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBindTexture, "UU", target, texture))
+	if (_vgl_enqueue_list_func(glBindTexture, DLIST_FUNC_U32_U32, target, texture))
 		return;
 #endif
 

@@ -110,7 +110,7 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glDrawArrays, "UII", mode, first, count))
+	if (_vgl_enqueue_list_func(glDrawArrays, DLIST_FUNC_U32_I32_I32, mode, first, count))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -229,7 +229,7 @@ void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei prim
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glDrawElements, "UIUU", mode, count, type, gl_indices))
+	if (_vgl_enqueue_list_func(glDrawElements, DLIST_FUNC_U32_I32_U32_U32, mode, count, type, gl_indices))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING

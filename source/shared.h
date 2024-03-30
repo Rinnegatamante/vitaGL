@@ -480,40 +480,49 @@ typedef union {
 } blend_config;
 
 typedef enum {
+	DLIST_ARG_VOID = 0x00,
+	DLIST_ARG_U32 = 0x01,
+	DLIST_ARG_I32 = 0x02,
+	DLIST_ARG_F32 = 0x04,
+	DLIST_ARG_I16 = 0x08,
+	DLIST_ARG_U8 = 0x10
+} dlistArgType;
+
+typedef enum {
 	// No arguments
-	DLIST_FUNC_VOID,
+	DLIST_FUNC_VOID = 0x00000000,
 	// 1 argument
-	DLIST_FUNC_U32,
+	DLIST_FUNC_U32 = 0x00000001,
 	// 2 arguments
-	DLIST_FUNC_I32_I32,
-	DLIST_FUNC_U32_U32,
-	DLIST_FUNC_U32_I32,
-	DLIST_FUNC_U32_F32,
-	DLIST_FUNC_F32_F32,
+	DLIST_FUNC_I32_I32 = 0x00000202,
+	DLIST_FUNC_U32_U32 = 0x00000101,
+	DLIST_FUNC_U32_I32 = 0x00000102,
+	DLIST_FUNC_U32_F32 = 0x00000104,
+	DLIST_FUNC_F32_F32 = 0x00000404,
 	// 3 arguments
-	DLIST_FUNC_I32_I32_I32,
-	DLIST_FUNC_U32_I32_I32,
-	DLIST_FUNC_U32_U32_I32,
-	DLIST_FUNC_U32_I32_U32,
-	DLIST_FUNC_U32_U32_U32,
-	DLIST_FUNC_U32_F32_F32,
-	DLIST_FUNC_U32_U32_F32,
-	DLIST_FUNC_F32_F32_F32,
-	DLIST_FUNC_I16_I16_I16,
-	DLIST_FUNC_U8_U8_U8,
+	DLIST_FUNC_I32_I32_I32 = 0x00020202,
+	DLIST_FUNC_U32_I32_I32 = 0x00010202,
+	DLIST_FUNC_U32_U32_I32 = 0x00010102,
+	DLIST_FUNC_U32_I32_U32 = 0x00010201,
+	DLIST_FUNC_U32_U32_U32 = 0x00010101,
+	DLIST_FUNC_U32_F32_F32 = 0x00010404,
+	DLIST_FUNC_U32_U32_F32 = 0x00010104,
+	DLIST_FUNC_F32_F32_F32 = 0x00040404,
+	DLIST_FUNC_I16_I16_I16 = 0x00080808,
+	DLIST_FUNC_U8_U8_U8 = 0x00101010,
 	// 4 arguments
-	DLIST_FUNC_U32_U32_U32_U32,
-	DLIST_FUNC_I32_I32_I32_I32,
-	DLIST_FUNC_I32_U32_I32_U32,
-	DLIST_FUNC_U32_I32_U32_U32,
-	DLIST_FUNC_F32_F32_F32_F32,
-	DLIST_FUNC_U8_U8_U8_U8,
+	DLIST_FUNC_U32_U32_U32_U32 = 0x01010101,
+	DLIST_FUNC_I32_I32_I32_I32 = 0x02020202,
+	DLIST_FUNC_I32_U32_I32_U32 = 0x02010201,
+	DLIST_FUNC_U32_I32_U32_U32 = 0x01020101,
+	DLIST_FUNC_F32_F32_F32_F32 = 0x04040404,
+	DLIST_FUNC_U8_U8_U8_U8 = 0x10101010,
 } dlistFuncType;
 
 // Display list function call internal struct
 typedef struct {
 	void (*func)();
-	uint8_t args[24];
+	uint8_t args[16];
 	uint32_t type;
 	void *next;
 } list_chain;
@@ -827,7 +836,7 @@ extern renderbuffer *active_rb; // Current renderbuffer in use
 // Display Lists
 extern display_list *curr_display_list; // Current display list being generated
 extern GLboolean display_list_execute; // Flag to check if compiled function should be executed as well
-extern GLboolean _vgl_enqueue_list_func(void (*func)(), const char *type, ...);
+extern GLboolean _vgl_enqueue_list_func(void (*func)(), dlistFuncType type, ...);
 
 // vgl* Draw Pipeline
 extern void *vertex_object;

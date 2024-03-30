@@ -1336,7 +1336,7 @@ void update_fogging_state() {
 void glEnableClientState(GLenum array) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glEnableClientState, "U", array))
+	if (_vgl_enqueue_list_func(glEnableClientState, DLIST_FUNC_U32, array))
 		return;
 #endif
 	ffp_dirty_vert = GL_TRUE;
@@ -1365,7 +1365,7 @@ void glEnableClientState(GLenum array) {
 void glDisableClientState(GLenum array) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glEnableClientState, "U", array))
+	if (_vgl_enqueue_list_func(glEnableClientState, DLIST_FUNC_U32, array))
 		return;
 #endif
 	ffp_dirty_vert = GL_TRUE;
@@ -1394,7 +1394,7 @@ void glDisableClientState(GLenum array) {
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glVertexPointer, "IUIU", size, type, stride, pointer))
+	if (_vgl_enqueue_list_func(glVertexPointer, DLIST_FUNC_I32_U32_I32_U32, size, type, stride, pointer))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -1436,7 +1436,7 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColorPointer, "IUIU", size, type, stride, pointer))
+	if (_vgl_enqueue_list_func(glColorPointer, DLIST_FUNC_I32_U32_I32_U32, size, type, stride, pointer))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -1483,7 +1483,7 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 void glNormalPointer(GLenum type, GLsizei stride, const void *pointer) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glNormalPointer, "UIU", type, stride, pointer))
+	if (_vgl_enqueue_list_func(glNormalPointer, DLIST_FUNC_U32_I32_U32, type, stride, pointer))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -1530,7 +1530,7 @@ void glNormalPointer(GLenum type, GLsizei stride, const void *pointer) {
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTexCoordPointer, "IUIU", size, type, stride, pointer))
+	if (_vgl_enqueue_list_func(glTexCoordPointer, DLIST_FUNC_I32_U32_I32_U32, size, type, stride, pointer))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -1758,7 +1758,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 inline void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glVertex3f, "FFF", x, y, z))
+	if (_vgl_enqueue_list_func(glVertex3f, DLIST_FUNC_F32_F32_F32, x, y, z))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -1801,7 +1801,7 @@ inline void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 void glClientActiveTexture(GLenum texture) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glClientActiveTexture, "U", texture))
+	if (_vgl_enqueue_list_func(glClientActiveTexture, DLIST_FUNC_U32, texture))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -1835,7 +1835,7 @@ inline void glVertex2i(GLint x, GLint y) {
 void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glMaterialfv, "UUU", face, pname, params))
+	if (_vgl_enqueue_list_func(glMaterialfv, DLIST_FUNC_U32_U32_U32, face, pname, params))
 		return;
 #endif
 	switch (pname) {
@@ -1870,7 +1870,7 @@ void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
 void glMaterialf(GLenum face, GLenum pname, GLfloat param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glMaterialf, "UUF", face, pname, param))
+	if (_vgl_enqueue_list_func(glMaterialf, DLIST_FUNC_U32_U32_F32, face, pname, param))
 		return;
 #endif
 	switch (pname) {
@@ -1893,7 +1893,7 @@ void glMateriali(GLenum face, GLenum pname, GLint param) {
 void glMaterialxv(GLenum face, GLenum pname, const GLfixed *params) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glMaterialxv, "UUU", face, pname, params))
+	if (_vgl_enqueue_list_func(glMaterialxv, DLIST_FUNC_U32_U32_U32, face, pname, params))
 		return;
 #endif
 	switch (pname) {
@@ -1947,7 +1947,7 @@ void glMaterialx(GLenum face, GLenum pname, const GLfixed param) {
 void glColor3f(GLfloat red, GLfloat green, GLfloat blue) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor3f, "FFF", red, green, blue))
+	if (_vgl_enqueue_list_func(glColor3f, DLIST_FUNC_F32_F32_F32, red, green, blue))
 		return;
 #endif
 	// Setting current color value
@@ -1962,7 +1962,7 @@ void glColor3f(GLfloat red, GLfloat green, GLfloat blue) {
 void glColor3fv(const GLfloat *v) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor3fv, "U", v))
+	if (_vgl_enqueue_list_func(glColor3fv, DLIST_FUNC_U32, v))
 		return;
 #endif
 	// Setting current color value
@@ -1975,7 +1975,7 @@ void glColor3fv(const GLfloat *v) {
 void glColor3ub(GLubyte red, GLubyte green, GLubyte blue) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor3ub, "XXX", red, green, blue))
+	if (_vgl_enqueue_list_func(glColor3ub, DLIST_FUNC_U8_U8_U8, red, green, blue))
 		return;
 #endif
 	// Setting current color value
@@ -1990,7 +1990,7 @@ void glColor3ub(GLubyte red, GLubyte green, GLubyte blue) {
 void glColor3ubv(const GLubyte *c) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor3ubv, "U", c))
+	if (_vgl_enqueue_list_func(glColor3ubv, DLIST_FUNC_U32, c))
 		return;
 #endif
 	// Setting current color value
@@ -2005,7 +2005,7 @@ void glColor3ubv(const GLubyte *c) {
 void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor4f, "FFFF", red, green, blue, alpha))
+	if (_vgl_enqueue_list_func(glColor4f, DLIST_FUNC_F32_F32_F32_F32, red, green, blue, alpha))
 		return;
 #endif
 	// Setting current color value
@@ -2020,7 +2020,7 @@ void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
 void glColor4fv(const GLfloat *v) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor4fv, "U", v))
+	if (_vgl_enqueue_list_func(glColor4fv, DLIST_FUNC_U32, v))
 		return;
 #endif
 	// Setting current color value
@@ -2032,7 +2032,7 @@ void glColor4fv(const GLfloat *v) {
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor4ub, "XXXX", red, green, blue, alpha))
+	if (_vgl_enqueue_list_func(glColor4ub, DLIST_FUNC_U8_U8_U8_U8, red, green, blue, alpha))
 		return;
 #endif
 	current_vtx.clr.r = (float)red / 255.0f;
@@ -2046,7 +2046,7 @@ void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha) {
 void glColor4ubv(const GLubyte *c) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor4ubv, "U", c))
+	if (_vgl_enqueue_list_func(glColor4ubv, DLIST_FUNC_U32, c))
 		return;
 #endif
 	// Setting current color value
@@ -2061,7 +2061,7 @@ void glColor4ubv(const GLubyte *c) {
 void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor4x, "IIII", red, green, blue, alpha))
+	if (_vgl_enqueue_list_func(glColor4x, DLIST_FUNC_I32_I32_I32_I32, red, green, blue, alpha))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -2083,7 +2083,7 @@ void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha) {
 void glNormal3f(GLfloat x, GLfloat y, GLfloat z) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glNormal3f, "FFF", x, y, z))
+	if (_vgl_enqueue_list_func(glNormal3f, DLIST_FUNC_F32_F32_F32, x, y, z))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -2109,7 +2109,7 @@ void glNormal3x(GLfixed x, GLfixed y, GLfixed z) {
 void glNormal3fv(const GLfloat *v) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glNormal3fv, "U", v))
+	if (_vgl_enqueue_list_func(glNormal3fv, DLIST_FUNC_U32, v))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -2127,7 +2127,7 @@ void glNormal3fv(const GLfloat *v) {
 void glTexCoord2f(GLfloat s, GLfloat t) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTexCoord2f, "FF", s, t))
+	if (_vgl_enqueue_list_func(glTexCoord2f, DLIST_FUNC_F32_F32, s, t))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -2156,7 +2156,7 @@ void glTexCoord2s(GLshort s, GLshort t) {
 void glMultiTexCoord2f(GLenum target, GLfloat s, GLfloat t) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glMultiTexCoord2f, "UFF", target, s, t))
+	if (_vgl_enqueue_list_func(glMultiTexCoord2f, DLIST_FUNC_U32_F32_F32, target, s, t))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -2191,7 +2191,7 @@ void glMultiTexCoord2i(GLenum target, GLint s, GLint t) {
 void glBegin(GLenum mode) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBegin, "U", mode))
+	if (_vgl_enqueue_list_func(glBegin, DLIST_FUNC_U32, mode))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -2217,7 +2217,7 @@ void glBegin(GLenum mode) {
 void glEnd(void) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glEnd, ""))
+	if (_vgl_enqueue_list_func(glEnd, DLIST_FUNC_VOID))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -2352,7 +2352,7 @@ void glEnd(void) {
 void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTexEnvf, "UUU", target, pname, param))
+	if (_vgl_enqueue_list_func(glTexEnvf, DLIST_FUNC_U32_U32_U32, target, pname, param))
 		return;
 #endif
 	// Aliasing texture unit for cleaner code
@@ -2396,7 +2396,7 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTexEnvxv, "UUU", target, pname, param))
+	if (_vgl_enqueue_list_func(glTexEnvxv, DLIST_FUNC_U32_U32_U32, target, pname, param))
 		return;
 #endif
 	// Aliasing texture unit for cleaner code
@@ -2443,7 +2443,7 @@ void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param) {
 inline void glTexEnvi(GLenum target, GLenum pname, GLint param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTexEnvf, "UUI", target, pname, param))
+	if (_vgl_enqueue_list_func(glTexEnvf, DLIST_FUNC_U32_U32_I32, target, pname, param))
 		return;
 #endif
 	// Aliasing texture unit for cleaner code
@@ -3019,7 +3019,7 @@ void glGetTexEnviv(GLenum target, GLenum pname, GLint *params) {
 void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glLightfv, "UUU", light, pname, params))
+	if (_vgl_enqueue_list_func(glLightfv, DLIST_FUNC_U32_U32_U32, light, pname, params))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -3063,7 +3063,7 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 void glLightxv(GLenum light, GLenum pname, const GLfixed *params) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glLightxv, "UUU", light, pname, params))
+	if (_vgl_enqueue_list_func(glLightxv, DLIST_FUNC_U32_U32_U32, light, pname, params))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -3121,7 +3121,7 @@ void glLightxv(GLenum light, GLenum pname, const GLfixed *params) {
 void glLightModelfv(GLenum pname, const GLfloat *params) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glLightModelfv, "UU", pname, params))
+	if (_vgl_enqueue_list_func(glLightModelfv, DLIST_FUNC_U32_U32, pname, params))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -3147,7 +3147,7 @@ void glLightModelfv(GLenum pname, const GLfloat *params) {
 void glLightModelxv(GLenum pname, const GLfixed *params) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glLightModelxv, "UU", pname, params))
+	if (_vgl_enqueue_list_func(glLightModelxv, DLIST_FUNC_U32_U32, pname, params))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -3176,7 +3176,7 @@ void glLightModelxv(GLenum pname, const GLfixed *params) {
 void glFogf(GLenum pname, GLfloat param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glFogf, "UF", pname, param))
+	if (_vgl_enqueue_list_func(glFogf, DLIST_FUNC_U32_F32, pname, param))
 		return;
 #endif
 	switch (pname) {
@@ -3204,7 +3204,7 @@ void glFogf(GLenum pname, GLfloat param) {
 void glFogx(GLenum pname, GLfixed param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glFogx, "UI", pname, param))
+	if (_vgl_enqueue_list_func(glFogx, DLIST_FUNC_U32_I32, pname, param))
 		return;
 #endif
 	switch (pname) {
@@ -3232,7 +3232,7 @@ void glFogx(GLenum pname, GLfixed param) {
 void glFogfv(GLenum pname, const GLfloat *params) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glFogfv, "UU", pname, params))
+	if (_vgl_enqueue_list_func(glFogfv, DLIST_FUNC_U32_U32, pname, params))
 		return;
 #endif
 	switch (pname) {
@@ -3263,7 +3263,7 @@ void glFogfv(GLenum pname, const GLfloat *params) {
 void glFogxv(GLenum pname, const GLfixed *params) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glFogxv, "UU", pname, params))
+	if (_vgl_enqueue_list_func(glFogxv, DLIST_FUNC_U32_U32, pname, params))
 		return;
 #endif
 	switch (pname) {
@@ -3297,7 +3297,7 @@ void glFogxv(GLenum pname, const GLfixed *params) {
 void glFogi(GLenum pname, const GLint param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glFogi, "UI", pname, param))
+	if (_vgl_enqueue_list_func(glFogi, DLIST_FUNC_U32_I32, pname, param))
 		return;
 #endif
 	switch (pname) {
@@ -3325,7 +3325,7 @@ void glFogi(GLenum pname, const GLint param) {
 void glClipPlane(GLenum plane, const GLdouble *equation) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glClipPlane, "UU", plane, equation))
+	if (_vgl_enqueue_list_func(glClipPlane, DLIST_FUNC_U32_U32, plane, equation))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -3350,7 +3350,7 @@ void glClipPlane(GLenum plane, const GLdouble *equation) {
 void glClipPlanef(GLenum plane, const GLfloat *equation) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glClipPlanef, "UU", plane, equation))
+	if (_vgl_enqueue_list_func(glClipPlanef, DLIST_FUNC_U32_U32, plane, equation))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -3375,7 +3375,7 @@ void glClipPlanef(GLenum plane, const GLfloat *equation) {
 void glClipPlanex(GLenum plane, const GLfixed *equation) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glClipPlanex, "UU", plane, equation))
+	if (_vgl_enqueue_list_func(glClipPlanex, DLIST_FUNC_U32_U32, plane, equation))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -3400,7 +3400,7 @@ void glClipPlanex(GLenum plane, const GLfixed *equation) {
 void glShadeModel(GLenum mode) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glShadeModel, "U", mode))
+	if (_vgl_enqueue_list_func(glShadeModel, DLIST_FUNC_U32, mode))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
@@ -3433,7 +3433,7 @@ void glShadeModel(GLenum mode) {
 void glColorMaterial(GLenum face, GLenum mode) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColorMaterial, "UU", face, mode))
+	if (_vgl_enqueue_list_func(glColorMaterial, DLIST_FUNC_U32_U32, face, mode))
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING

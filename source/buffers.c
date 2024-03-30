@@ -134,7 +134,7 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 void glBindBuffer(GLenum target, GLuint buffer) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBindBuffer, "UU", target, buffer))
+	if (_vgl_enqueue_list_func(glBindBuffer, DLIST_FUNC_U32_U32, target, buffer))
 		return;
 #endif
 	switch (target) {
