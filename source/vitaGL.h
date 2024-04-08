@@ -968,6 +968,7 @@ void vglSetDisplayCallback(void (*cb)(void *framebuf));
 void vglSetFragmentBufferSize(uint32_t size);
 void vglSetParamBufferSize(uint32_t size);
 void vglSetSemanticBindingMode(GLenum mode);
+void vglSetTextureCacheFrequency(GLuint freq);
 void vglSetUSSEBufferSize(uint32_t size);
 void vglSetVDMBufferSize(uint32_t size);
 void vglSetVertexAttribPoolSize(uint32_t main_size, uint32_t aux_size);

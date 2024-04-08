@@ -26,12 +26,16 @@
 #include "shared.h"
 #include "utils/glsl_utils.h"
 #include "utils/shacccg_paramquery.h"
-#ifdef HAVE_SHADER_CACHE
+#if defined(HAVE_SHADER_CACHE) || defined(HAVE_TEX_CACHE)
 #define XXH_STATIC_LINKING_ONLY
 #define XXH_IMPLEMENTATION
-#define XXH_INLINE_ALL
 #include "utils/xxhash_utils.h"
+#ifdef HAVE_SHADER_CACHE
 char vgl_shader_cache_path[256];
+#endif
+#ifdef HAVE_TEX_CACHE
+char vgl_file_cache_path[256];
+#endif
 #endif
 
 #define MAX_CUSTOM_SHADERS 2048 // Maximum number of linkable custom shaders
@@ -496,6 +500,9 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
 			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
+#ifdef HAVE_TEX_CACHE
+			restoreTexCache(tex);
+#endif
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&tex->gxm_tex);
 			if (r) {
@@ -697,6 +704,9 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
 			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
+#ifdef HAVE_TEX_CACHE
+			restoreTexCache(tex);
+#endif
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&tex->gxm_tex);
 			if (r) {

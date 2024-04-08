@@ -36,11 +36,12 @@ In order to build vitaGL use the following command: `make install`.
 `BUFFERS_SPEEDHACK=1` Enables faster vertex buffer copying. May cause crashes.<br>
 `DRAW_SPEEDHACK=1` Enables faster code for draw calls. May cause crashes.<br>
 `MATH_SPEEDHACK=1` Enables faster code for matrix math calls. May cause glitches.<br>
-`TEXTURES_SPEEDHACK=1` Makes glTexSubImage2D/glTexSubImage1D non fully OpenGL compliant but makes rendering pipeline slightly faster.<br>
+`TEXTURES_SPEEDHACK=1` Makes glTexSubImage2D/glTexSubImage1D non fully OpenGL compliant but makes rendering pipeline slightly faster. Incompatible with HAVE_TEXTURE_CACHE=1.<br>
 `SAMPLERS_SPEEDHACK=1` Enables faster code for samplers resolution during shaders usage. May cause glitches.<br>
 `SHADER_COMPILER_SPEEDHACK=1` Enables faster code for glShaderSource. May cause errors.<br>
 `PRIMITIVES_SPEEDHACK=1` Makes draw calls more efficient but GL_LINES and GL_POINTS primitives usage may cause glitches.<br>
 ### Misc Flags
+`HAVE_TEXTURE_CACHE=1` Adds file caching for textures not used since a lot of time, acting like a sort of swap implementation to increase effective available memory. (Experimental)<br>
 `NO_DMAC=1` Disables sceDmacMemcpy usage. In some rare instances, it can improve framerate.<br>
 `HAVE_UNFLIPPED_FBOS=1` Framebuffers objects won't be internally flipped to match OpenGL standards.<br>
 `HAVE_WVP_ON_GPU=1` Moves calculation of the wvp in fixed function pipeline codepath to the GPU. Reduces CPU workload and increases GPU one.<br>

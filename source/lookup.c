@@ -390,6 +390,7 @@ static const struct {
 	{"vglSetFragmentBufferSize", (void *)vglSetFragmentBufferSize},
 	{"vglSetParamBufferSize", (void *)vglSetParamBufferSize},
 	{"vglSetSemanticBindingMode", (void *)vglSetSemanticBindingMode},
+	{"vglSetTextureCacheFrequency", (void *)vglSetTextureCacheFrequency},
 	{"vglSetUSSEBufferSize", (void *)vglSetUSSEBufferSize},
 	{"vglSetVDMBufferSize", (void *)vglSetVDMBufferSize},
 	{"vglSetVertexAttribPoolSize", (void *)vglSetVertexAttribPoolSize},

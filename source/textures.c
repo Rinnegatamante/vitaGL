@@ -942,16 +942,23 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif	
-	
+
+#ifdef HAVE_TEX_CACHE
+	restoreTexCache(tex);
+#endif
+
 #ifndef TEXTURES_SPEEDHACK
 	// Copying the texture in a new mem location and dirtying old one
-	if (tex->last_frame != 0xFFFFFFFF && (vgl_framecount - tex->last_frame <= FRAME_PURGE_FREQ)) {
+	if (tex->last_frame != OBJ_NOT_USED && (vgl_framecount - tex->last_frame <= FRAME_PURGE_FREQ)) {
 		void *texture_data = gpu_alloc_mapped(orig_h * stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
 		vgl_fast_memcpy(texture_data, tex->data, orig_h * stride);
 		gpu_free_texture_data(tex);
 		sceGxmTextureSetData(&tex->gxm_tex, texture_data);
 		tex->data = texture_data;
-		tex->last_frame = 0xFFFFFFFF;
+		tex->last_frame = OBJ_NOT_USED;
+#ifdef HAVE_TEX_CACHE
+		tex->upload_frame = vgl_framecount;
+#endif
 	}
 #endif
 	// Calculating start address of requested texture modification
@@ -1573,7 +1580,7 @@ void glGenTextures(GLsizei n, GLuint *res) {
 			// Resetting texture parameters to their default values
 			texture_slots[i].dirty = GL_FALSE;
 #ifndef TEXTURES_SPEEDHACK
-			texture_slots[i].last_frame = 0xFFFFFFFF;
+			texture_slots[i].last_frame = OBJ_NOT_USED;
 #endif
 			texture_slots[i].faces_counter = 0;
 			texture_slots[i].ref_counter = 0;

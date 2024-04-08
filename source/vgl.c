@@ -174,14 +174,24 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		return GL_FALSE;
 	}
 
+#if defined(HAVE_SHADER_CACHE) || defined(HAVE_TEX_CACHE)
+	char titleid[12];
+	sceAppMgrAppParamGetString(0, 12, titleid , 256);
+#ifdef HAVE_TEX_CACHE
+	sceIoMkdir("ux0:data/vgl_cache", 0777);
+	sprintf(vgl_file_cache_path, "ux0:data/vgl_cache/%s", titleid);
+	sceIoMkdir(vgl_file_cache_path, 0777);
+#endif
+#endif
 #if !defined(DISABLE_ADVANCED_SHADER_CACHE) || defined(HAVE_SHADER_CACHE)
 	sceIoMkdir("ux0:data/shader_cache", 0777);
+#ifndef DISABLE_ADVANCED_SHADER_CACHE
 	char fname[256];
 	sprintf(fname, "ux0:data/shader_cache/v%d", SHADER_CACHE_MAGIC);
 	sceIoMkdir(fname, 0777);
+#endif
 #ifdef HAVE_SHADER_CACHE
-	sceAppMgrAppParamGetString(0, 12, fname , 256);
-	sprintf(vgl_shader_cache_path, "ux0:data/shader_cache/%s", fname);
+	sprintf(vgl_shader_cache_path, "ux0:data/shader_cache/%s", titleid);
 	sceIoMkdir(vgl_shader_cache_path, 0777);
 #endif
 #endif
@@ -823,4 +833,8 @@ void vglSetVertexPoolSize(uint32_t size) {
 
 void vglUseCachedMem(GLboolean use) {
 	has_cached_mem = use;
+}
+
+void vglSetTextureCacheFrequency(GLuint freq) {
+	vgl_tex_cache_freq = freq;
 }

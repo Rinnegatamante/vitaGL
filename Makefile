@@ -175,6 +175,10 @@ ifeq ($(HAVE_SHADER_CACHE),1)
 CFLAGS += -DHAVE_SHADER_CACHE
 endif
 
+ifeq ($(HAVE_TEXTURE_CACHE),1)
+CFLAGS += -DHAVE_TEX_CACHE
+endif
+
 CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a

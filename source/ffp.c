@@ -1140,6 +1140,9 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
 		texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
+#ifdef HAVE_TEX_CACHE
+		restoreTexCache(tex);
+#endif
 #ifndef TEXTURES_SPEEDHACK
 		tex->last_frame = vgl_framecount;
 #endif
@@ -1245,6 +1248,9 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
 		texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
+#ifdef HAVE_TEX_CACHE
+		restoreTexCache(tex);
+#endif
 #ifndef TEXTURES_SPEEDHACK
 		tex->last_frame = vgl_framecount;
 #endif
@@ -2243,6 +2249,9 @@ void glEnd(void) {
 		reload_ffp_shaders(legacy_mt_vertex_attrib_config, legacy_mt_vertex_stream_config);
 		for (int i = 0; i < 2; i++) {
 			texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
+#ifdef HAVE_TEX_CACHE
+			restoreTexCache(tex);
+#endif
 #ifndef TEXTURES_SPEEDHACK
 			tex->last_frame = vgl_framecount;
 #endif
@@ -2268,6 +2277,9 @@ void glEnd(void) {
 		ffp_vertex_attrib_state = 0x0007;
 		reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
 		texture *tex = &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]];
+#ifdef HAVE_TEX_CACHE
+		restoreTexCache(tex);
+#endif
 #ifndef TEXTURES_SPEEDHACK
 		tex->last_frame = vgl_framecount;
 #endif

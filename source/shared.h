@@ -24,6 +24,7 @@
 
 #ifndef _SHARED_H_
 #define _SHARED_H_
+#include <vitasdk.h>
 
 // Undocumented texture format for ETC1 textures (Thanks to Bythos)
 #define SCE_GXM_TEXTURE_FORMAT_ETC1_RGB 0x84000000
@@ -61,6 +62,33 @@
 #define LEGACY_NT_VERTEX_STRIDE 22 // Vertex stride for GL1 immediate draw pipeline without texturing
 #define MAX_LIGHTS_NUM 8 // Maximum number of allowed light sources for ffp
 #define MAX_IDX_NUMBER 0xC000 // Maximum allowed number of indices per draw call for glDrawArrays
+
+#define OBJ_NOT_USED 0xFFFFFFFF // Flag for not yet used objects
+#define OBJ_CACHED 0xFFFFFFFE // Flag for file cached objects
+
+// Memory file cache settings
+#ifdef HAVE_TEX_CACHE
+extern char vgl_file_cache_path[256];
+
+#define restoreTexCache(tex) \
+	if (tex->last_frame == OBJ_CACHED) { \
+		char fname[256], hash[24]; \
+		sprintf(hash, "%llX", tex->hash); \
+		sprintf(fname, "%s/%c%c/%s.raw", vgl_file_cache_path, hash[0], hash[1], hash); \
+		FILE *f = fopen(fname, "rb"); \
+		fseek(f, 0, SEEK_END); \
+		size_t sz = ftell(f); \
+		fseek(f, 0, SEEK_SET); \
+		void *texture_data = gpu_alloc_mapped(sz, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM); \
+		fread(texture_data, 1, sz, f); \
+		fclose(f); \
+		sceIoRemove(fname); \
+		sceGxmTextureSetData(&tex->gxm_tex, texture_data); \
+		tex->data = texture_data; \
+		tex->last_frame = OBJ_NOT_USED; \
+		tex->upload_frame = vgl_framecount; \
+	}
+#endif
 
 // Internal constants set in bootup phase
 extern int DISPLAY_WIDTH; // Display width in pixels
@@ -107,7 +135,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
-// Cutom shaders pipeline shader cache settings
+// Custom shaders pipeline shader cache settings
 #ifdef HAVE_SHADER_CACHE
 extern char vgl_shader_cache_path[256];
 #endif

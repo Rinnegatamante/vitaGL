@@ -33,6 +33,8 @@ extern uint32_t vgl_framecount; // Current frame number since application starte
 #define VGL_ALIGN(x, a) (((x) + ((a)-1)) & ~((a)-1))
 #define ALIGNBLOCK(x, a) (((x) + ((a)-1)) / a)
 
+extern uint32_t vgl_tex_cache_freq; // Number of frames prior a texture becomes cacheable if not used
+
 // Texture object status enum
 enum {
 	TEX_UNUSED,
@@ -44,6 +46,10 @@ enum {
 typedef struct {
 #ifndef TEXTURES_SPEEDHACK
 	uint32_t last_frame;
+#endif
+#ifdef HAVE_TEX_CACHE
+	uint32_t upload_frame;
+	uint64_t hash;
 #endif
 	uint8_t status;
 	uint8_t mip_count;
@@ -158,6 +164,16 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 static inline __attribute__((always_inline)) void gpu_free_texture_data(texture *tex) {
 	// Deallocating texture
 	if (tex->data != NULL) {
+#ifdef HAVE_TEX_CACHE
+		if (tex->last_frame == OBJ_CACHED) {
+			char fname[256], hash[24]; \
+			sprintf(hash, "%llX", tex->hash); \
+			sprintf(fname, "%s/%c%c/%s.raw", vgl_file_cache_path, hash[0], hash[1], hash); \
+			sceIoRemove(fname);
+			tex->data = NULL;
+			return;
+		}
+#endif
 #ifndef TEXTURES_SPEEDHACK
 		if (vgl_framecount - tex->last_frame > FRAME_PURGE_FREQ)
 			vgl_free(tex->data);
