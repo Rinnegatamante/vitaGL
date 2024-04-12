@@ -9,15 +9,15 @@ inline float2x2 vglMul(float2x2 M1, float2x2 M2) { return M1 * M2; }
 inline float4x4 vglMul(float4x4 M, float v) { return v * M; }
 inline float3x3 vglMul(float3x3 M, float v) { return v * M; }
 inline float2x2 vglMul(float2x2 M, float v) { return v * M; }
-inline float4x4 vglMul(float M, float4x4 v) { return v * M; }
-inline float3x3 vglMul(float M, float3x3 v) { return v * M; }
-inline float2x2 vglMul(float M, float2x2 v) { return v * M; }
+inline float4x4 vglMul(float v, float4x4 M) { return M * v; }
+inline float3x3 vglMul(float v, float3x3 M) { return M * v; }
+inline float2x2 vglMul(float v, float2x2 M) { return M * v; }
 inline float4 vglMul(float4x4 M, float4 v) { return mul(v, M); }
 inline float3 vglMul(float3x3 M, float3 v) { return mul(v, M); }
 inline float2 vglMul(float2x2 M, float2 v) { return mul(v, M); }
-inline float4 vglMul(float4 M, float4x4 v) { return mul(v, M); }
-inline float3 vglMul(float3 M, float3x3 v) { return mul(v, M); }
-inline float2 vglMul(float2 M, float2x2 v) { return mul(v, M); }
+inline float4 vglMul(float4 v, float4x4 M) { return mul(M, v); }
+inline float3 vglMul(float3 v, float3x3 M) { return mul(M, v); }
+inline float2 vglMul(float2 v, float2x2 M) { return mul(M, v); }
 inline float4 vglMul(float v1, float4 v2) { return v1 * v2; }
 inline float3 vglMul(float v1, float3 v2) { return v1 * v2; }
 inline float2 vglMul(float v1, float2 v2) { return v1 * v2; }
