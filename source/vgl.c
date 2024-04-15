@@ -836,5 +836,7 @@ void vglUseCachedMem(GLboolean use) {
 }
 
 void vglSetTextureCacheFrequency(GLuint freq) {
+#ifdef HAVE_TEX_CACHE
 	vgl_tex_cache_freq = freq;
+#endif
 }
