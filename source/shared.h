@@ -25,6 +25,7 @@
 #ifndef _SHARED_H_
 #define _SHARED_H_
 #include <vitasdk.h>
+#include <vitaGL.h>
 
 // Undocumented texture format for ETC1 textures (Thanks to Bythos)
 #define SCE_GXM_TEXTURE_FORMAT_ETC1_RGB 0x84000000
@@ -66,9 +67,63 @@
 #define OBJ_NOT_USED 0xFFFFFFFF // Flag for not yet used objects
 #define OBJ_CACHED 0xFFFFFFFE // Flag for file cached objects
 
+// Texture object status enum
+enum {
+	TEX_UNUSED,
+	TEX_UNINITIALIZED,
+	TEX_VALID
+};
+
+// Texture object struct
+typedef struct texture {
+#ifndef TEXTURES_SPEEDHACK
+	uint32_t last_frame;
+#endif
+#ifdef HAVE_TEX_CACHE
+	uint32_t upload_frame;
+	uint64_t hash;
+	struct texture *next;
+	struct texture *prev;
+#endif
+	uint8_t status;
+	uint8_t mip_count;
+	uint8_t ref_counter;
+	uint8_t faces_counter;
+	GLboolean use_mips;
+	GLboolean dirty;
+	GLboolean overridden;
+	SceGxmTexture gxm_tex;
+	void *data;
+	void *palette_data;
+	uint32_t type;
+	void (*write_cb)(void *, uint32_t);
+	SceGxmTextureFilter min_filter;
+	SceGxmTextureFilter mag_filter;
+	SceGxmTextureAddrMode u_mode;
+	SceGxmTextureAddrMode v_mode;
+	SceGxmTextureMipFilter mip_filter;
+	uint32_t lod_bias;
+#ifdef HAVE_UNPURE_TEXTURES
+	int8_t mip_start;
+#endif
+} texture;
+
 // Memory file cache settings
 #ifdef HAVE_TEX_CACHE
 extern char vgl_file_cache_path[256];
+extern texture *vgl_uncached_tex_head;
+extern texture *vgl_uncached_tex_tail;
+extern uint32_t vgl_tex_cache_freq; // Number of frames prior a texture becomes cacheable if not used
+
+#define markAsCacheable(tex) \
+	tex->upload_frame = vgl_framecount; \
+	tex->prev = vgl_uncached_tex_tail; \
+	if (tex->prev) \
+		tex->prev->next = tex; \
+	else \
+		vgl_uncached_tex_head = tex; \
+	tex->next = NULL; \
+	vgl_uncached_tex_tail = tex;
 
 #define restoreTexCache(tex) \
 	if (tex->last_frame == OBJ_CACHED) { \
@@ -86,7 +141,7 @@ extern char vgl_file_cache_path[256];
 		sceGxmTextureSetData(&tex->gxm_tex, texture_data); \
 		tex->data = texture_data; \
 		tex->last_frame = OBJ_NOT_USED; \
-		tex->upload_frame = vgl_framecount; \
+		markAsCacheable(tex) \
 	}
 #endif
 

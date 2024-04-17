@@ -68,6 +68,11 @@
 	}
 #endif
 
+#ifdef HAVE_TEX_CACHE
+texture *vgl_uncached_tex_head = NULL;
+texture *vgl_uncached_tex_tail = NULL;
+#endif
+
 texture_unit texture_units[COMBINED_TEXTURE_IMAGE_UNITS_NUM]; // Available texture units
 texture texture_slots[TEXTURES_NUM]; // Available texture slots
 sampler *samplers[COMBINED_TEXTURE_IMAGE_UNITS_NUM] = {NULL}; // Sampler objects bindings
@@ -957,7 +962,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		tex->data = texture_data;
 		tex->last_frame = OBJ_NOT_USED;
 #ifdef HAVE_TEX_CACHE
-		tex->upload_frame = vgl_framecount;
+		markAsCacheable(tex)
 #endif
 	}
 #endif
@@ -1581,6 +1586,10 @@ void glGenTextures(GLsizei n, GLuint *res) {
 			texture_slots[i].dirty = GL_FALSE;
 #ifndef TEXTURES_SPEEDHACK
 			texture_slots[i].last_frame = OBJ_NOT_USED;
+#endif
+#ifdef HAVE_TEX_CACHE
+			texture_slots[i].prev = NULL;
+			texture_slots[i].next = NULL;
 #endif
 			texture_slots[i].faces_counter = 0;
 			texture_slots[i].ref_counter = 0;

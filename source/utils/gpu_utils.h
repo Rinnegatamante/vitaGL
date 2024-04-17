@@ -33,47 +33,6 @@ extern uint32_t vgl_framecount; // Current frame number since application starte
 #define VGL_ALIGN(x, a) (((x) + ((a)-1)) & ~((a)-1))
 #define ALIGNBLOCK(x, a) (((x) + ((a)-1)) / a)
 
-extern uint32_t vgl_tex_cache_freq; // Number of frames prior a texture becomes cacheable if not used
-
-// Texture object status enum
-enum {
-	TEX_UNUSED,
-	TEX_UNINITIALIZED,
-	TEX_VALID
-};
-
-// Texture object struct
-typedef struct {
-#ifndef TEXTURES_SPEEDHACK
-	uint32_t last_frame;
-#endif
-#ifdef HAVE_TEX_CACHE
-	uint32_t upload_frame;
-	uint64_t hash;
-#endif
-	uint8_t status;
-	uint8_t mip_count;
-	uint8_t ref_counter;
-	uint8_t faces_counter;
-	GLboolean use_mips;
-	GLboolean dirty;
-	GLboolean overridden;
-	SceGxmTexture gxm_tex;
-	void *data;
-	void *palette_data;
-	uint32_t type;
-	void (*write_cb)(void *, uint32_t);
-	SceGxmTextureFilter min_filter;
-	SceGxmTextureFilter mag_filter;
-	SceGxmTextureAddrMode u_mode;
-	SceGxmTextureAddrMode v_mode;
-	SceGxmTextureMipFilter mip_filter;
-	uint32_t lod_bias;
-#ifdef HAVE_UNPURE_TEXTURES
-	int8_t mip_start;
-#endif
-} texture;
-
 // Alloc a generic memblock into sceGxm mapped memory with alignment
 void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type);
 
@@ -172,6 +131,21 @@ static inline __attribute__((always_inline)) void gpu_free_texture_data(texture 
 			sceIoRemove(fname);
 			tex->data = NULL;
 			return;
+		} else {
+			if (tex == vgl_uncached_tex_head) {
+				vgl_uncached_tex_head = tex->next;
+			}
+			if (tex == vgl_uncached_tex_tail) {
+				vgl_uncached_tex_tail = tex->prev;
+			}
+			if (tex->next) {
+				tex->next->prev = tex->prev;
+			}
+			if (tex->prev) {
+				tex->prev->next = tex->next;
+			}
+			tex->next = NULL;
+			tex->prev = NULL;
 		}
 #endif
 #ifndef TEXTURES_SPEEDHACK

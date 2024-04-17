@@ -171,37 +171,40 @@ void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type) {
 	// Cache any unused texture to free enough space
 	uint32_t cached_elements = 0;
 	uint32_t cached_bytes = 0;
-	for (GLuint i = 1; i < TEXTURES_NUM; i++) {
-		if (cached_bytes >= size)
+	while (vgl_uncached_tex_head && cached_bytes < size) {
+		texture *tex = vgl_uncached_tex_head; // Just some readability sugar
+		if ((tex->last_frame == OBJ_NOT_USED && tex->upload_frame != vgl_framecount) || (vgl_framecount - tex->last_frame > vgl_tex_cache_freq && tex->last_frame < OBJ_CACHED)) {
+			if (tex->next)
+				tex->next->prev = NULL;
+			tex->last_frame = OBJ_CACHED;
+			SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&tex->gxm_tex);
+			uint8_t bpp = tex_format_to_bytespp(tex_format);
+			uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
+			uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
+			uint32_t size = VGL_ALIGN(orig_w, 8) * bpp * orig_h;
+			char fname[256], hash_str[24];
+			uint64_t hash = XXH3_64bits(tex->data, size);
+			sprintf(hash_str, "%llX", hash);
+			sprintf(fname, "%s/%c%c", vgl_file_cache_path, hash_str[0], hash_str[1]);
+			sceIoMkdir(fname, 0777);
+			sprintf(fname, "%s/%c%c/%s.raw", vgl_file_cache_path, hash_str[0], hash_str[1], hash_str);
+			FILE *f = fopen(fname, "wb");
+			fwrite(tex->data, 1, size, f);
+			fclose(f);
+			vgl_free(tex->data);
+			tex->hash = hash;
+			tex->prev = NULL;
+			tex->next = NULL;
+			cached_elements++;
+			cached_bytes += size;
+		} else {
 			break;
-		texture *tex = &texture_slots[i];
-		if (tex->status == TEX_VALID) {
-			if ((tex->last_frame == OBJ_NOT_USED && tex->upload_frame != vgl_framecount) || (vgl_framecount - tex->last_frame > vgl_tex_cache_freq && tex->last_frame < OBJ_CACHED)) {
-				tex->last_frame = OBJ_CACHED;
-				SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&tex->gxm_tex);
-				uint8_t bpp = tex_format_to_bytespp(tex_format);
-				uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
-				uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
-				uint32_t size = VGL_ALIGN(orig_w, 8) * bpp * orig_h;
-				char fname[256], hash_str[24];
-				uint64_t hash = XXH3_64bits(tex->data, size);
-				sprintf(hash_str, "%llX", hash);
-				sprintf(fname, "%s/%c%c", vgl_file_cache_path, hash_str[0], hash_str[1]);
-				sceIoMkdir(fname, 0777);
-				sprintf(fname, "%s/%c%c/%s.raw", vgl_file_cache_path, hash_str[0], hash_str[1], hash_str);
-				FILE *f = fopen(fname, "wb");
-				fwrite(tex->data, 1, size, f);
-				fclose(f);
-				vgl_free(tex->data);
-				tex->hash = hash;
-				cached_elements++;
-				cached_bytes += size;
-			}
 		}
 	}
 	if (cached_elements) {
-		vgl_log("%s:%d gpu_alloc_mapped_aligned failed with a requested size of %u bytes, cached %d memory locations to recover %d bytes.\n", __FILE__, __LINE__, size, cached_elements, cached_bytes);
-		return gpu_alloc_mapped_aligned(alignment, size, type);
+		vgl_log("%s:%d gpu_alloc_mapped_aligned failed with a requested size of %u bytes, cached %d textures to recover %d bytes.\n", __FILE__, __LINE__, size, cached_elements, cached_bytes);
+		if (cached_bytes >= size)
+			return gpu_alloc_mapped_aligned(alignment, size, type);
 	}
 #endif
 
@@ -347,7 +350,7 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 		tex->last_frame = OBJ_NOT_USED;
 #endif
 #ifdef HAVE_TEX_CACHE
-		tex->upload_frame = vgl_framecount;
+		markAsCacheable(tex)
 #endif
 	}
 }
@@ -408,7 +411,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 		tex->last_frame = OBJ_NOT_USED;
 #endif
 #ifdef HAVE_TEX_CACHE
-		tex->upload_frame = vgl_framecount;
+		markAsCacheable(tex)
 #endif
 	}
 }
@@ -462,7 +465,7 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 	tex->last_frame = OBJ_NOT_USED;
 #endif
 #ifdef HAVE_TEX_CACHE
-	tex->upload_frame = vgl_framecount;
+	markAsCacheable(tex)
 #endif
 }
 
@@ -580,7 +583,7 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 		tex->last_frame = OBJ_NOT_USED;
 #endif
 #ifdef HAVE_TEX_CACHE
-		tex->upload_frame = vgl_framecount;
+		markAsCacheable(tex)
 #endif
 	}
 }
@@ -689,7 +692,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		tex->last_frame = OBJ_NOT_USED;
 #endif
 #ifdef HAVE_TEX_CACHE
-		tex->upload_frame = vgl_framecount;
+		markAsCacheable(tex)
 #endif
 	}
 }
@@ -795,7 +798,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		tex->last_frame = OBJ_NOT_USED;
 #endif
 #ifdef HAVE_TEX_CACHE
-		tex->upload_frame = vgl_framecount;
+		markAsCacheable(tex)
 #endif
 	}
 }
