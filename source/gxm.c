@@ -713,20 +713,19 @@ void sceneReset(void) {
 				}
 			}
 #endif
+#ifdef HAVE_TEX_CACHE
+			// FIXME: This may be useful even without texture cache enabled maybe?
+			if (sceGxmColorSurfaceGetData(&active_write_fb->colorbuffer) != active_write_fb->tex->data)
+				sceGxmColorSurfaceSetData(&active_write_fb->colorbuffer, active_write_fb->tex->data);
+#endif
 #ifdef HAVE_SHARED_RENDERTARGETS
 			render_target *fbo_rt = (render_target *)active_write_fb->target;
 #ifdef RECYCLE_RENDERTARGETS
 			fbo_rt->last_frame = vgl_framecount;
-#endif	
-#ifdef LOG_ERRORS
-			int r =
 #endif
-				sceGxmBeginScene(gxm_context, 0, fbo_rt->rt,
+			int r = sceGxmBeginScene(gxm_context, 0, fbo_rt->rt,
 #else
-#ifdef LOG_ERRORS
-			int r =
-#endif
-				sceGxmBeginScene(gxm_context, 0, active_write_fb->target,
+			int r = sceGxmBeginScene(gxm_context, 0, active_write_fb->target,
 #endif
 					NULL, NULL, NULL,
 					&active_write_fb->colorbuffer,
