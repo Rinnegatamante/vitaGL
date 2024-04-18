@@ -25,7 +25,7 @@
 #ifndef _SHARED_H_
 #define _SHARED_H_
 #include <vitasdk.h>
-#include <vitaGL.h>
+#include "vitaGL.h"
 
 // Undocumented texture format for ETC1 textures (Thanks to Bythos)
 #define SCE_GXM_TEXTURE_FORMAT_ETC1_RGB 0x84000000
@@ -171,8 +171,6 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 #include <psp2/rtc.h>
 #include <psp2/sharedfb.h>
 #include <psp2/sysmodule.h>
-
-#include "vitaGL.h"
 
 #include "utils/atitc_utils.h"
 #include "utils/eac_utils.h"
