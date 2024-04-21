@@ -125,6 +125,17 @@ razor_results razor_metrics;
 GLboolean has_razor_live = GL_FALSE; // Flag for live metrics support with sceRazor
 #endif
 
+static inline __attribute__((always_inline)) int setupRenderTarget(SceGxmRenderTarget **rt, int w, int h, int refs) {
+	SceGxmRenderTargetParams renderTargetParams;
+	sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
+	renderTargetParams.width = w ? w : 1;
+	renderTargetParams.height = h ? h : 1;
+	renderTargetParams.scenesPerFrame = refs;
+	renderTargetParams.multisampleMode = msaa_mode;
+	renderTargetParams.driverMemBlock = -1;
+	return sceGxmCreateRenderTarget(&renderTargetParams, rt);
+}
+
 #ifdef HAVE_SHARED_RENDERTARGETS
 #define MAX_RENDER_TARGETS_NUM 47 // Maximum amount of dedicated render targets usable for fbos
 #define MAX_SHARED_RT_SIZE 256 // Maximum  width value in pixels for shared rendertargets usage
@@ -141,19 +152,10 @@ render_target *getFreeRenderTarget(int w, int h) {
 			}
 		} else {
 			rt_list[i].max_refs = w > MAX_SHARED_RT_SIZE ? 1 : MAX_SCENES_PER_FRAME;
-			SceGxmRenderTargetParams renderTargetParams;
-			sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
-			renderTargetParams.width = w;
-			renderTargetParams.height = h;
-			renderTargetParams.scenesPerFrame = rt_list[i].max_refs;
-			renderTargetParams.multisampleMode = msaa_mode;
-			renderTargetParams.driverMemBlock = -1;
+			int r = setupRenderTargetParams(&rt_list[i].rt, w, h, rt_list[i].max_refs);
 #ifdef LOG_ERRORS
-			int r = sceGxmCreateRenderTarget(&renderTargetParams, &rt_list[i].rt);
 			if (r)
 				vgl_log("%s:%d Failed to create a shared rendertarget of size %dx%d (%s).\n", __FILE__, __LINE__, w, h, get_gxm_error_literal(r));
-#else
-			sceGxmCreateRenderTarget(&renderTargetParams, &rt_list[i].rt);
 #endif
 			rt_list[i].w = w;
 			rt_list[i].h = h;
@@ -174,19 +176,10 @@ render_target *getFreeRenderTarget(int w, int h) {
 	sceGxmFinish(gxm_context);
 	sceGxmDestroyRenderTarget(r->rt);
 	r->max_refs = w > MAX_SHARED_RT_SIZE ? 1 : MAX_SCENES_PER_FRAME;
-	SceGxmRenderTargetParams renderTargetParams;
-	sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
-	renderTargetParams.width = w;
-	renderTargetParams.height = h;
-	renderTargetParams.scenesPerFrame = r->max_refs;
-	renderTargetParams.multisampleMode = msaa_mode;
-	renderTargetParams.driverMemBlock = -1;
+	int res = setupRenderTargetParams(&r->rt, w, h, r->max_refs);
 #ifdef LOG_ERRORS
-	int res = sceGxmCreateRenderTarget(&renderTargetParams, &r->rt);
 	if (res)
 		vgl_log("%s:%d Failed to create a shared rendertarget of size %dx%d (%s).\n", __FILE__, __LINE__, w, h, get_gxm_error_literal(res));
-#else
-	sceGxmCreateRenderTarget(&renderTargetParams, &r->rt);
 #endif
 	r->w = w;
 	r->h = h;
@@ -448,19 +441,8 @@ void termGxmContext(void) {
 }
 
 void createDisplayRenderTarget(void) {
-	// Populating sceGxmRenderTarget parameters
-	SceGxmRenderTargetParams render_target_params;
-	sceClibMemset(&render_target_params, 0, sizeof(SceGxmRenderTargetParams));
-	render_target_params.flags = 0;
-	render_target_params.width = DISPLAY_WIDTH;
-	render_target_params.height = DISPLAY_HEIGHT;
-	render_target_params.scenesPerFrame = 1;
-	render_target_params.multisampleMode = msaa_mode;
-	render_target_params.multisampleLocations = 0;
-	render_target_params.driverMemBlock = -1;
-
 	// Creating render target for the display
-	sceGxmCreateRenderTarget(&render_target_params, &gxm_render_target);
+	setupRenderTarget(&gxm_render_target, DISPLAY_WIDTH, DISPLAY_HEIGHT, 1);
 }
 
 void destroyDisplayRenderTarget(void) {
@@ -686,21 +668,10 @@ void sceneReset(void) {
 #ifdef HAVE_SHARED_RENDERTARGETS
 				active_write_fb->target = (SceGxmRenderTarget *)getFreeRenderTarget(active_write_fb->width, active_write_fb->height);
 #else
-				SceGxmRenderTargetParams renderTargetParams;
-				sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
-				renderTargetParams.flags = 0;
-				renderTargetParams.width = active_write_fb->width ? active_write_fb->width : 1;
-				renderTargetParams.height = active_write_fb->height ? active_write_fb->height : 1;
-				renderTargetParams.scenesPerFrame = 1;
-				renderTargetParams.multisampleMode = msaa_mode;
-				renderTargetParams.multisampleLocations = 0;
-				renderTargetParams.driverMemBlock = -1;
+				int r = setupRenderTarget(&active_write_fb->target, active_write_fb->width, active_write_fb->height, 1);
 #ifdef LOG_ERRORS
-				int r = sceGxmCreateRenderTarget(&renderTargetParams, &active_write_fb->target);
 				if (r)
 					vgl_log("%s:%d Failed to create a rendertarget of size %dx%d for framebuffer 0x%08X (%s).\n", __FILE__, __LINE__, active_write_fb->width, active_write_fb->height, active_write_fb, get_gxm_error_literal(r));
-#else
-				sceGxmCreateRenderTarget(&renderTargetParams, &active_write_fb->target);
 #endif
 #endif
 			}
