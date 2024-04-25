@@ -119,7 +119,6 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 						} else
 							sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);							
 					} else {
-						// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
 						glsl_get_existing_texcoord_bind(idx, start);
 						if (idx == -1) {
 							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
@@ -232,7 +231,6 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 						} else
 							sprintf(newline, "VIN(%s, %d);", str + 8, idx);
 					} else {
-						// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
 						glsl_get_existing_texcoord_bind(idx, start);
 						if (idx == -1) {
 							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
@@ -883,7 +881,6 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 #endif
 	s->prog = (SceGxmProgram *)s->source;
 
-	// FIXME: We rely on the fact shaders are always compiled in couples (fragment+vertex) to ensure proper semantic bindings coherence
 	if (glsl_sema_mode == VGL_MODE_SHADER_PAIR) {
 		glsl_is_first_shader = !glsl_is_first_shader;
 		if (glsl_is_first_shader)

@@ -152,7 +152,7 @@ render_target *getFreeRenderTarget(int w, int h) {
 			}
 		} else {
 			rt_list[i].max_refs = w > MAX_SHARED_RT_SIZE ? 1 : MAX_SCENES_PER_FRAME;
-			int r = setupRenderTargetParams(&rt_list[i].rt, w, h, rt_list[i].max_refs);
+			int r = setupRenderTarget(&rt_list[i].rt, w, h, rt_list[i].max_refs);
 #ifdef LOG_ERRORS
 			if (r)
 				vgl_log("%s:%d Failed to create a shared rendertarget of size %dx%d (%s).\n", __FILE__, __LINE__, w, h, get_gxm_error_literal(r));
@@ -176,7 +176,7 @@ render_target *getFreeRenderTarget(int w, int h) {
 	sceGxmFinish(gxm_context);
 	sceGxmDestroyRenderTarget(r->rt);
 	r->max_refs = w > MAX_SHARED_RT_SIZE ? 1 : MAX_SCENES_PER_FRAME;
-	int res = setupRenderTargetParams(&r->rt, w, h, r->max_refs);
+	int res = setupRenderTarget(&r->rt, w, h, r->max_refs);
 #ifdef LOG_ERRORS
 	if (res)
 		vgl_log("%s:%d Failed to create a shared rendertarget of size %dx%d (%s).\n", __FILE__, __LINE__, w, h, get_gxm_error_literal(res));
@@ -360,7 +360,7 @@ void initGxm(void) {
 	SceGxmInitializeParams gxm_init_params;
 	sceClibMemset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
 #ifdef HAVE_VITA3K_SUPPORT // Vita3K lacks sceGxmVshInitialize support, so we use sceGxmInitialize instead and disable a couple of features (HW ETC1 support and sysapp mode support)
-	gxm_init_params.flags = 0;
+	gxm_init_params.flags = GXM_FLAG_DEFAULT;
 #else
 	gxm_init_params.flags = GXM_FLAG_TEXFORMAT_EXT | (system_app_mode ? GXM_FLAG_SYSAPP : GXM_FLAG_DEFAULT);
 #endif
