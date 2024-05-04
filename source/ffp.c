@@ -1134,7 +1134,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	return draw_mask_state;
 }
 
-void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
+void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 	uint8_t mask_state = reload_ffp_shaders(NULL, NULL);
 
 	// Uploading textures on relative texture units
@@ -1196,11 +1196,11 @@ void _glDrawArrays_FixedFunctionIMPL(GLsizei count) {
 					}
 				} else {
 #ifdef DRAW_SPEEDHACK
-					ptr = (void *)ffp_vertex_attrib_offsets[i];
+					ptr = (void *)ffp_vertex_attrib_offsets[i] + first * ffp_vertex_stream_config[i].stride;
 #else
 					uint32_t size = count * ffp_vertex_stream_config[i].stride; // FIXME: cur_stream here seems to cause issues, figure out why
 					ptr = gpu_alloc_mapped_temp(size);
-					vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[i], size);
+					vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[i] + first * ffp_vertex_stream_config[i].stride, size);
 #endif
 				}
 			}

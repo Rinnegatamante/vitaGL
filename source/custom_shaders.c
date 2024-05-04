@@ -60,16 +60,16 @@ char vgl_file_cache_path[256];
 	attributes[i].componentCount = cur_vao->vertex_attrib_size[attr_idx]; \
 	attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 
-#define handleUnpackedAttrib(count) \
+#define handleUnpackedAttrib(first, count) \
 	if (cur_vao->vertex_attrib_state & (1 << attr_idx)) { \
 		if (cur_vao->vertex_attrib_vbo[attr_idx]) { \
 			gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[attr_idx]; \
-			ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[attr_idx]; \
+			ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[attr_idx] + first * streams[i].stride; \
 			gpu_buf->last_frame = vgl_framecount; \
 			attributes[i].offset = 0; \
 		} else { \
 			ptrs[i] = gpu_alloc_mapped_temp(count * streams[i].stride); \
-			vgl_fast_memcpy(ptrs[i], (void *)cur_vao->vertex_attrib_offsets[attr_idx], count * streams[i].stride); \
+			vgl_fast_memcpy(ptrs[i], (void *)cur_vao->vertex_attrib_offsets[attr_idx] + first * streams[i].stride, count * streams[i].stride); \
 			attributes[i].offset = 0; \
 		} \
 	} else { \
@@ -486,7 +486,7 @@ void resetCustomShaders(void) {
 	}
 }
 
-GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
+GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count) {
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required and upload fragment program
@@ -621,7 +621,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 	// Gathering real attribute data pointers
 	if (is_packed[0]) {
 		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
-		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]], count * streams[0].stride);
+		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]] + first * streams[0].stride, count * streams[0].stride);
 	}
 	for (int i = 0; i < p->attr_num; i++) {
 		uint8_t attr_idx = p->attr_map[i];
@@ -629,14 +629,14 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		if (is_packed[i]) {
 			handlePackedAttrib();
 		} else {
-			handleUnpackedAttrib(count);
+			handleUnpackedAttrib(first, count);
 		}
 	}
 #else
 	// Gathering real attribute data pointers
 	if (is_packed) {
 		ptrs[0] = gpu_alloc_mapped_temp(count * streams[0].stride);
-		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]], count * streams[0].stride);
+		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]] + first * streams[0].stride, count * streams[0].stride);
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			attributes[i].regIndex = p->attr[attr_idx].regIndex;
@@ -646,7 +646,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLsizei count) {
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			attributes[i].regIndex = p->attr[attr_idx].regIndex;
-			handleUnpackedAttrib(count);
+			handleUnpackedAttrib(first, count);
 		}
 	}
 #endif
@@ -851,7 +851,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		if (is_packed[i]) {
 			handlePackedAttrib();
 		} else {
-			handleUnpackedAttrib(top_idx);
+			handleUnpackedAttrib(0, top_idx);
 		}
 	}
 #else
@@ -868,7 +868,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			attributes[i].regIndex = p->attr[attr_idx].regIndex;
-			handleUnpackedAttrib(top_idx);
+			handleUnpackedAttrib(0, top_idx);
 		}
 	}
 #endif

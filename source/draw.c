@@ -126,11 +126,11 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	GLboolean is_draw_legal = GL_TRUE;
 
 	if (cur_program != 0)
-		is_draw_legal = _glDrawArrays_CustomShadersIMPL(first + count);
+		is_draw_legal = _glDrawArrays_CustomShadersIMPL(first, count);
 	else {
 		if (!(ffp_vertex_attrib_state & (1 << 0)))
 			return;
-		_glDrawArrays_FixedFunctionIMPL(first + count);
+		_glDrawArrays_FixedFunctionIMPL(first, count);
 	}
 
 #ifndef SKIP_ERROR_HANDLING
@@ -140,28 +140,28 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 		uint16_t *ptr;
 		switch (mode) {
 		case GL_QUADS:
-			ptr = default_quads_idx_ptr + (first / 2) * 3;
+			ptr = default_quads_idx_ptr;
 			count = (count / 2) * 3;
 			break;
 		case GL_LINE_STRIP:
-			ptr = default_line_strips_idx_ptr + first * 2;
+			ptr = default_line_strips_idx_ptr;
 			count = (count - 1) * 2;
 			break;
 		case GL_LINE_LOOP:
 			ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t));
-			vgl_fast_memcpy(ptr, default_line_strips_idx_ptr + first * 2, (count - 1) * 2 * sizeof(uint16_t));
-			ptr[(count - 1) * 2] = first + count - 1;
-			ptr[(count - 1) * 2 + 1] = first;
+			vgl_fast_memcpy(ptr, default_line_strips_idx_ptr, (count - 1) * 2 * sizeof(uint16_t));
+			ptr[(count - 1) * 2] = count - 1;
+			ptr[(count - 1) * 2 + 1] = 0;
 			count *= 2;
 			break;
 		default:
-			ptr = default_idx_ptr + first;
+			ptr = default_idx_ptr;
 			break;
 		}
 
 #ifndef SKIP_ERROR_HANDLING
-		if (first + count > MAX_IDX_NUMBER) {
-			vgl_log("%s:%d Attempting to draw a model with glDrawArrays which is too big! Consider increasing MAX_IDX_NUMBER value...\n", __FILE__, __LINE__);
+		if (count > MAX_IDX_NUMBER) {
+			vgl_log("%s:%d Attempting to draw a model with glDrawArrays which is too big! Consider increasing MAX_IDX_NUMBER value... (Max requested index: %d)\n", __FILE__, __LINE__, count - 1);
 		}
 #endif
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
@@ -183,11 +183,11 @@ void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei prim
 	GLboolean is_draw_legal = GL_TRUE;
 
 	if (cur_program != 0)
-		is_draw_legal = _glDrawArrays_CustomShadersIMPL(first + count);
+		is_draw_legal = _glDrawArrays_CustomShadersIMPL(first, count);
 	else {
 		if (!(ffp_vertex_attrib_state & (1 << 0)))
 			return;
-		_glDrawArrays_FixedFunctionIMPL(first + count);
+		_glDrawArrays_FixedFunctionIMPL(first, count);
 	}
 
 #ifndef SKIP_ERROR_HANDLING
@@ -197,28 +197,28 @@ void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei prim
 		uint16_t *ptr;
 		switch (mode) {
 		case GL_QUADS:
-			ptr = default_quads_idx_ptr + (first / 2) * 3;
+			ptr = default_quads_idx_ptr;
 			count = (count / 2) * 3;
 			break;
 		case GL_LINE_STRIP:
-			ptr = default_line_strips_idx_ptr + first * 2;
+			ptr = default_line_strips_idx_ptr;
 			count = (count - 1) * 2;
 			break;
 		case GL_LINE_LOOP:
 			ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t));
 			vgl_fast_memcpy(ptr, default_line_strips_idx_ptr + first * 2, (count - 1) * 2 * sizeof(uint16_t));
-			ptr[(count - 1) * 2] = first + count - 1;
-			ptr[(count - 1) * 2 + 1] = first;
+			ptr[(count - 1) * 2] = count - 1;
+			ptr[(count - 1) * 2 + 1] = 0;
 			count *= 2;
 			break;
 		default:
-			ptr = default_idx_ptr + first;
+			ptr = default_idx_ptr;
 			break;
 		}
 
 #ifndef SKIP_ERROR_HANDLING
-		if (first + count > MAX_IDX_NUMBER) {
-			vgl_log("%s:%d Attempting to draw a model with glDrawArrays which is too big! Consider increasing MAX_IDX_NUMBER value...\n", __FILE__, __LINE__);
+		if (count > MAX_IDX_NUMBER) {
+			vgl_log("%s:%d Attempting to draw a model with glDrawArraysInstanced which is too big! Consider increasing MAX_IDX_NUMBER value... (Max requested index: %d)\n", __FILE__, __LINE__, count - 1);
 		}
 #endif
 		sceGxmDrawInstanced(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count * primcount, count);
