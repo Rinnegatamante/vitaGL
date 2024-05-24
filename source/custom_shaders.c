@@ -27,11 +27,10 @@
 #include "utils/glsl_utils.h"
 #include "utils/shacccg_paramquery.h"
 #if defined(HAVE_SHADER_CACHE) || defined(HAVE_TEX_CACHE)
-#pragma GCC visibility push(hidden)
 #define XXH_STATIC_LINKING_ONLY
 #define XXH_IMPLEMENTATION
+#define XXH_NAMESPACE VITAGL_
 #include "utils/xxhash_utils.h"
-#pragma GCC visibility pop
 #ifdef HAVE_SHADER_CACHE
 char vgl_shader_cache_path[256];
 #endif
