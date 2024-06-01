@@ -863,11 +863,15 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, cons
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 GLboolean glUnmapBuffer(GLenum target);
 void glUseProgram(GLuint program);
+void glVertex2d(GLdouble x, GLdouble y);
 void glVertex2f(GLfloat x, GLfloat y);
 void glVertex2i(GLint x, GLint y);
+void glVertex2dv(const GLdouble *v);
 void glVertex2fv(const GLfloat *v);
+void glVertex3d(GLdouble x, GLdouble y, GLdouble z);
 void glVertex3f(GLfloat x, GLfloat y, GLfloat z);
 void glVertex3i(GLint x, GLint y, GLint z);
+void glVertex3dv(const GLdouble *v);
 void glVertex3fv(const GLfloat *v);
 void glVertexAttrib1f(GLuint index, GLfloat v0);
 void glVertexAttrib1fv(GLuint index, const GLfloat *v);
