@@ -134,7 +134,7 @@ extern uint32_t vgl_tex_cache_freq; // Number of frames prior a texture becomes 
 		fseek(f, 0, SEEK_END); \
 		size_t sz = ftell(f); \
 		fseek(f, 0, SEEK_SET); \
-		void *texture_data = gpu_alloc_mapped(sz, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM); \
+		void *texture_data = gpu_alloc_mapped(sz, VGL_MEM_MAIN); \
 		fread(texture_data, 1, sz, f); \
 		fclose(f); \
 		sceIoRemove(fname); \

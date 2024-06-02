@@ -40,7 +40,7 @@ uint32_t vgl_tex_cache_freq = 3600; // Number of frames prior a texture becomes 
 #endif
 
 // VRAM usage setting
-uint8_t use_vram = GL_TRUE;
+vglMemType VGL_MEM_MAIN = VGL_MEM_VRAM;
 uint8_t use_vram_for_usse = GL_FALSE;
 
 // Newlib mempool usage setting
@@ -294,7 +294,7 @@ static inline __attribute__((always_inline)) int tex_format_to_alignment(SceGxmT
 
 void *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 	// Allocating palette data buffer
-	void *texture_palette = gpu_alloc_mapped_aligned(64, 256 * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	void *texture_palette = gpu_alloc_mapped_aligned(64, 256 * sizeof(uint32_t), VGL_MEM_MAIN);
 
 	// Initializing palette
 	if (data == NULL)
@@ -319,7 +319,7 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 
 	// Allocating texture data buffer
 	const int face_size = VGL_ALIGN(w, 8) * h * bpp;
-	void *base_texture_data = tex->faces_counter == 1 ? gpu_alloc_mapped(face_size * 6, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM) : tex->data;
+	void *base_texture_data = tex->faces_counter == 1 ? gpu_alloc_mapped(face_size * 6, VGL_MEM_MAIN) : tex->data;
 
 	if (base_texture_data != NULL) {
 		// Calculating face texture data pointer
@@ -366,7 +366,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	// Allocating texture data buffer
 	const int aligned_w = VGL_ALIGN(w, 8);
 	const int tex_size = aligned_w * h * bpp;
-	void *texture_data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	void *texture_data = gpu_alloc_mapped(tex_size, VGL_MEM_MAIN);
 
 	if (texture_data != NULL) {
 		// Initializing texture data buffer
@@ -436,8 +436,8 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 
 	// Allocating texture and palette data buffers
 	int num_entries = is_p8 ? 256 : 16;
-	tex->palette_data = gpu_alloc_mapped_aligned(64, num_entries * sizeof(uint32_t), use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
-	tex->data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	tex->palette_data = gpu_alloc_mapped_aligned(64, num_entries * sizeof(uint32_t), VGL_MEM_MAIN);
+	tex->data = gpu_alloc_mapped(tex_size, VGL_MEM_MAIN);
 
 	// Populating palette data
 	uint32_t *palette_data = (uint32_t *)tex->palette_data;
@@ -535,7 +535,7 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 	const int mip_offset = gpu_get_compressed_mip_offset(0, aligned_max_width, aligned_max_height, format);
 	const int face_size = gpu_get_compressed_mipchain_size(0, aligned_max_width, aligned_max_height, format);
 	const int mip_size = face_size - mip_offset;
-	void *base_texture_data = tex->faces_counter == 1 ? gpu_alloc_mapped(face_size * 6, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM) : tex->data;
+	void *base_texture_data = tex->faces_counter == 1 ? gpu_alloc_mapped(face_size * 6, VGL_MEM_MAIN) : tex->data;
 	void *texture_data = (uint8_t *)base_texture_data + face_size * index;
 
 	// Initializing texture data buffer
@@ -630,7 +630,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 			texture_data = vgl_realloc(tex->data, tex_size);
 			if (!texture_data) {
 				// Reallocation in the same mspace failed, try manually.
-				texture_data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+				texture_data = gpu_alloc_mapped(tex_size, VGL_MEM_MAIN);
 				const int old_data_size = gpu_get_compressed_mipchain_size(mip_count, aligned_max_width, aligned_max_height, format);
 				vgl_memcpy(texture_data, tex->data, old_data_size);
 				gpu_free_texture_data(tex);
@@ -643,7 +643,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		mip_count = mip_level;
 		tex_width = w;
 		tex_height = h;
-		texture_data = gpu_alloc_mapped(tex_size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+		texture_data = gpu_alloc_mapped(tex_size, VGL_MEM_MAIN);
 	}
 
 	// Initializing texture data buffer
@@ -747,7 +747,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		void *texture_data = count <= 0 ? vgl_realloc(tex->data, size) : tex->data;
 		if (count <= 0 && !texture_data) {
 			// Reallocation in the same mspace failed, try manually.
-			texture_data = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+			texture_data = gpu_alloc_mapped(size, VGL_MEM_MAIN);
 			vgl_memcpy(texture_data, tex->data, VGL_ALIGN(orig_w, 8) * orig_h * bpp);
 			gpu_free_texture_data(tex);
 		}

@@ -955,7 +955,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 #ifndef TEXTURES_SPEEDHACK
 	// Copying the texture in a new mem location and dirtying old one
 	if (tex->last_frame != OBJ_NOT_USED && (vgl_framecount - tex->last_frame <= FRAME_PURGE_FREQ)) {
-		void *texture_data = gpu_alloc_mapped(orig_h * stride, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+		void *texture_data = gpu_alloc_mapped(orig_h * stride, VGL_MEM_MAIN);
 		vgl_fast_memcpy(texture_data, tex->data, orig_h * stride);
 		gpu_free_texture_data(tex);
 		sceGxmTextureSetData(&tex->gxm_tex, texture_data);

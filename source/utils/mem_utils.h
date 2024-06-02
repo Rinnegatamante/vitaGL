@@ -35,7 +35,7 @@
 #define vgl_fast_memcpy sceClibMemcpy
 #endif
 
-extern GLboolean use_vram; // Flag for VRAM usage for allocations
+extern vglMemType VGL_MEM_MAIN; // Flag for VRAM usage for allocations
 
 // Support for older vitasdk versions for CI based on ancient builds
 #ifndef SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_NC_RW

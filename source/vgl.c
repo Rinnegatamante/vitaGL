@@ -160,7 +160,7 @@ void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int
  */
 
 void vglUseVram(GLboolean usage) {
-	use_vram = usage;
+	VGL_MEM_MAIN = usage ? VGL_MEM_VRAM : VGL_MEM_RAM;
 }
 
 void vglUseVramForUSSE(GLboolean usage) {
@@ -693,7 +693,7 @@ void *vglAlloc(uint32_t size, vglMemType type) {
 }
 
 void *vglForceAlloc(uint32_t size) {
-	return gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	return gpu_alloc_mapped(size, VGL_MEM_MAIN);
 }
 
 void *vglMalloc(uint32_t size) {

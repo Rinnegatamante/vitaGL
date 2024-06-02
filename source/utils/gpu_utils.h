@@ -45,7 +45,7 @@ static inline __attribute__((always_inline)) void *gpu_alloc_mapped(size_t size,
 static inline __attribute__((always_inline)) void *gpu_alloc_mapped_temp(size_t size) {
 #ifndef HAVE_CIRCULAR_VERTEX_POOL
 	// Allocating memblock and marking it for garbage collection
-	void *res = gpu_alloc_mapped(size, use_vram ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	void *res = gpu_alloc_mapped(size, VGL_MEM_MAIN);
 
 #ifdef LOG_ERRORS
 	if (!res)
