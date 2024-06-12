@@ -787,7 +787,7 @@ void glPushAttrib(GLbitfield mask) {
 		setup->enabled_bits += (1 << COLOR_BUFFER_BIT);
 		setup->alpha_test_state = alpha_test_state;
 		setup->alpha_func = alpha_func;
-		setup->alpha_ref = alpha_ref;
+		setup->alpha_ref = vgl_alpha_ref;
 		setup->blend_state = blend_state;
 		setup->blend_color_mask = blend_color_mask;
 		setup->blend_func_rgb = blend_func_rgb;
@@ -907,7 +907,7 @@ void glPopAttrib(void) {
 	if (setup->enabled_bits & (1 << COLOR_BUFFER_BIT)) {
 		alpha_test_state = setup->alpha_test_state;
 		alpha_func = setup->alpha_func;
-		alpha_ref = setup->alpha_ref;
+		vgl_alpha_ref = setup->alpha_ref;
 		update_alpha_test_settings();
 		blend_state = setup->blend_state;
 		blend_color_mask = setup->blend_color_mask;

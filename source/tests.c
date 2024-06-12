@@ -58,7 +58,7 @@ GLint stencil_value = 0; // Current stencil test clear value
 
 // Alpha Test
 GLenum alpha_func = GL_ALWAYS; // Current in-use alpha test mode
-GLfloat alpha_ref = 0.0f; // Current in use alpha test reference value
+GLfloat vgl_alpha_ref = 0.0f; // Current in use alpha test reference value
 int alpha_op = ALWAYS; // Current in use alpha test operation
 GLboolean alpha_test_state = GL_FALSE; // Current state for GL_ALPHA_TEST
 
@@ -453,14 +453,14 @@ void glDepthMask(GLboolean flag) {
 void glAlphaFunc(GLenum func, GLfloat ref) {
 	// Updating in use alpha test parameters
 	alpha_func = func;
-	alpha_ref = ref;
+	vgl_alpha_ref = ref;
 	update_alpha_test_settings();
 }
 
 void glAlphaFuncx(GLenum func, GLfixed ref) {
 	// Updating in use alpha test parameters
 	alpha_func = func;
-	alpha_ref = (float)ref / 65536.0f;
+	vgl_alpha_ref = (float)ref / 65536.0f;
 	update_alpha_test_settings();
 }
 

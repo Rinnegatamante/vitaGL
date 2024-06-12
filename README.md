@@ -26,7 +26,7 @@ In order to build vitaGL use the following command: `make install`.
 `STORE_DEPTH_STENCIL=1` Makes all framebuffers depth/stencil surfaces to be load/stored on memory. Makes the rendering slower but more compliant with OpenGL standards.<br>
 `HAVE_HIGH_FFP_TEXUNITS=1` Enables support for more than 2 texunits for fixed function pipeline at the cost of some performance loss.<br>
 `HAVE_DISPLAY_LISTS=1` Enables support for display lists at the cost of some performance loss.<br>
-`SAFE_ETC1=1` Disables hardware support for ETC1 textures. Makes ETC1 textures usage less efficient but may solve glitches.<br>
+`SAFE_ETC1=1` Disables hardware support for ETC1 textures. Makes ETC1 textures usage less efficient but allows for proper debugging in Razor.<br>
 `SAFE_DRAW=1` Makes some optimizations in the drawing pipeline less efficient but can solve some glitches.<br>
 `UNPURE_TEXFORMATS=1` Enables support for texture dimensions different than 2D (tex2D is still required in shader code).<br>
 `HAVE_VITA3K_SUPPORT=1` Disables several features in order to make vitaGL compatible with Vita3K. Requires vitaShaRK compiled with https://github.com/Rinnegatamante/vitaShaRK/blob/master/source/vitashark.c#L24 uncommented.<br>

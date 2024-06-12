@@ -834,7 +834,7 @@ extern GLint stencil_value; // Current stencil test clear value
 
 // Alpha Test
 extern GLenum alpha_func; // Current in use alpha test mode
-extern GLfloat alpha_ref; // Current in use alpha test reference value
+extern GLfloat vgl_alpha_ref; // Current in use alpha test reference value
 extern int alpha_op; // Current in use alpha test operation
 extern GLboolean alpha_test_state; // Current state for GL_ALPHA_TEST
 

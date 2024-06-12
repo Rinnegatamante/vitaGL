@@ -1036,7 +1036,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	if (dirty_frag_unifs) {
 		if (vglReserveFragmentUniformBuffer(ffp_fragment_program, &buffer)) {
 			if (ffp_fragment_params[ALPHA_CUT_UNIF])
-				sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_CUT_UNIF], 0, 1, &alpha_ref);
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_CUT_UNIF], 0, 1, &vgl_alpha_ref);
 			if (ffp_fragment_params[FOG_COLOR_UNIF])
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_COLOR_UNIF], 0, 4, &fog_color.r);
 			if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) {
