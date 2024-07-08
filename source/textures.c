@@ -1213,6 +1213,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 	GLboolean gamma_correction = GL_FALSE;
 	GLboolean non_native_format = GL_FALSE;
 	GLboolean paletted_format = GL_FALSE;
+	GLboolean planar_format = GL_FALSE;
 	void *decompressed_data;
 	uint8_t data_bpp;
 	uint32_t (*read_cb)(void *) = NULL;
@@ -1369,6 +1370,63 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 		case GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR;
 			break;
+		// should be the other way around. looks like SCE bug.
+		case GL_YUV420P_NV12_BT601_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC0;
+			planar_format = GL_TRUE;
+			break;
+		case GL_YVU420P_NV21_BT601_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC0;
+			planar_format = GL_TRUE;
+			break;
+		case GL_YUV420P_NV12_BT709_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC1;
+			planar_format = GL_TRUE;
+			break;
+		case GL_YVU420P_NV21_BT709_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC1;
+			planar_format = GL_TRUE;
+			break;
+		case GL_YUV420P_BT601_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC0;
+			planar_format = GL_TRUE;
+			break;
+		case GL_YVU420P_BT601_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC0;
+			planar_format = GL_TRUE;
+			break;
+		case GL_YUV420P_BT709_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC1;
+			planar_format = GL_TRUE;
+			break;
+		case GL_YVU420P_BT709_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC1;
+			planar_format = GL_TRUE;
+			break;
+		case GL_YUYV422_BT601_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YUYV422_CSC0;
+			break;
+		case GL_YVYU422_BT601_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YVYU422_CSC0;
+			break;
+		case GL_UYVY422_BT601_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UYVY422_CSC0;
+			break;
+		case GL_VYUY422_BT601_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_VYUY422_CSC0;
+			break;
+		case GL_YUYV422_BT709_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YUYV422_CSC1;
+			break;
+		case GL_YVYU422_BT709_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YVYU422_CSC1;
+			break;
+		case GL_UYVY422_BT709_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UYVY422_CSC1;
+			break;
+		case GL_VYUY422_BT709_VGL:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_VYUY422_CSC1;
+			break;
 		case GL_ETC1_RGB8_OES:
 #ifndef DISABLE_HW_ETC1
 			if (target == GL_TEXTURE_2D)
@@ -1438,7 +1496,14 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 
 		// Allocating texture/mipmaps depending on user call
 		tex->type = internalFormat;
-		if (paletted_format) {
+		if (planar_format) {
+#ifndef SKIP_ERROR_HANDLING
+			if (level > 0) {
+				SET_GL_ERROR(GL_INVALID_VALUE)
+			}
+#endif
+			gpu_alloc_yuv420p_texture(width, height, tex_format, data, tex);
+		} else if (paletted_format) {
 #ifndef SKIP_ERROR_HANDLING
 			if (level > 0) {
 				SET_GL_ERROR(GL_INVALID_VALUE)

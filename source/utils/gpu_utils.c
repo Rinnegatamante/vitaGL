@@ -488,8 +488,8 @@ static inline __attribute__((always_inline)) int gpu_get_compressed_mip_size(int
 	case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
 		return ceil(width / 4.0) * ceil(height / 4.0) * 16;
-	default:
-		return 0;
+	default: // YUV422
+		return 2;
 	}
 }
 
@@ -807,4 +807,57 @@ void gpu_free_palette(void *pal) {
 	// Deallocating palette memblock and object
 	if (pal != NULL)
 		vgl_free(pal);
+}
+
+void gpu_alloc_yuv420p_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex) {
+	// If there's already a texture in passed texture object we first dealloc it
+	if (tex->status == TEX_VALID)
+		gpu_free_texture_data(tex);
+
+	// Allocating texture data buffer
+	const int aligned_w = VGL_ALIGN(w, 8);
+	const int tex_size = (aligned_w * h * 12) / 8;
+	void *texture_data = gpu_alloc_mapped(tex_size, use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM);
+
+	if (texture_data != NULL) {
+		// Initializing texture data buffer
+		if (data != NULL) {
+			uint8_t *src = (uint8_t *)data;
+			uint8_t *dst = (uint8_t *)texture_data;
+			if (aligned_w == w) // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
+				vgl_fast_memcpy(texture_data, src, tex_size);
+			else {
+				for (int i = 0; i < h; i++) {
+					vgl_fast_memcpy(dst, src, w);
+					src += w;
+					dst += aligned_w;
+				}
+
+				if (format & 0x9F000000 == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3) {
+					for (int i = 0; i < h; i++) {
+						vgl_fast_memcpy(dst, src, w / 2);
+						src += w / 2;
+						dst += aligned_w / 2;
+					}
+				} else { // Need to handle NV12 different as the UV planes are interleaved
+					for (int i = 0; i < h / 2; i++) {
+						vgl_fast_memcpy(dst, src, w);
+						src += w;
+						dst += aligned_w;
+					}
+				}
+			}
+		} else
+			sceClibMemset(texture_data, 0, tex_size);
+
+		// Initializing texture and validating it
+		tex->mip_count = 1;
+		vglInitLinearTexture(&tex->gxm_tex, texture_data, format, w, h, tex->mip_count);
+		tex->palette_data = NULL;
+		tex->status = TEX_VALID;
+		tex->data = texture_data;
+#ifndef TEXTURES_SPEEDHACK
+		tex->last_frame = 0xFFFFFFFF;
+#endif
+	}
 }
