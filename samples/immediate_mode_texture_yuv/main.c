@@ -3,7 +3,7 @@
 #include <vitaGL.h>
 #include <stdlib.h>
 
-GLenum texture_format = GL_YUV420P_BT601_VGL;
+GLenum texture_format = VGL_YUV420P_BT601;
 GLuint texture = 0;
 
 int main(){

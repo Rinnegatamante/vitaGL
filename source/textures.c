@@ -1371,35 +1371,35 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR;
 			break;
 		// should be the other way around. looks like SCE bug.
-		case GL_YUV420P_NV12_BT601_VGL:
+		case VGL_YUV420P_NV12_BT601:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC0;
 			planar_format = GL_TRUE;
 			break;
-		case GL_YVU420P_NV21_BT601_VGL:
+		case VGL_YVU420P_NV21_BT601:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC0;
 			planar_format = GL_TRUE;
 			break;
-		case GL_YUV420P_NV12_BT709_VGL:
+		case VGL_YUV420P_NV12_BT709:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC1;
 			planar_format = GL_TRUE;
 			break;
-		case GL_YVU420P_NV21_BT709_VGL:
+		case VGL_YVU420P_NV21_BT709:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC1;
 			planar_format = GL_TRUE;
 			break;
-		case GL_YUV420P_BT601_VGL:
+		case VGL_YUV420P_BT601:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC0;
 			planar_format = GL_TRUE;
 			break;
-		case GL_YVU420P_BT601_VGL:
+		case VGL_YVU420P_BT601:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC0;
 			planar_format = GL_TRUE;
 			break;
-		case GL_YUV420P_BT709_VGL:
+		case VGL_YUV420P_BT709:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC1;
 			planar_format = GL_TRUE;
 			break;
-		case GL_YVU420P_BT709_VGL:
+		case VGL_YVU420P_BT709:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC1;
 			planar_format = GL_TRUE;
 			break;
