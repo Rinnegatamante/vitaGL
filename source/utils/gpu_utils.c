@@ -488,8 +488,8 @@ static inline __attribute__((always_inline)) int gpu_get_compressed_mip_size(int
 	case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
 		return ceil(width / 4.0) * ceil(height / 4.0) * 16;
-	default: // YUV422
-		return 2;
+	default:
+		return 0;
 	}
 }
 

@@ -1403,30 +1403,6 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			tex_format = SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC1;
 			planar_format = GL_TRUE;
 			break;
-		case GL_YUYV422_BT601_VGL:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_YUYV422_CSC0;
-			break;
-		case GL_YVYU422_BT601_VGL:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_YVYU422_CSC0;
-			break;
-		case GL_UYVY422_BT601_VGL:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_UYVY422_CSC0;
-			break;
-		case GL_VYUY422_BT601_VGL:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_VYUY422_CSC0;
-			break;
-		case GL_YUYV422_BT709_VGL:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_YUYV422_CSC1;
-			break;
-		case GL_YVYU422_BT709_VGL:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_YVYU422_CSC1;
-			break;
-		case GL_UYVY422_BT709_VGL:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_UYVY422_CSC1;
-			break;
-		case GL_VYUY422_BT709_VGL:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_VYUY422_CSC1;
-			break;
 		case GL_ETC1_RGB8_OES:
 #ifndef DISABLE_HW_ETC1
 			if (target == GL_TEXTURE_2D)
