@@ -119,7 +119,7 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 // Alloc a paletted texture
 void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *));
 
-// Alloc a planar yuv texture
+// Alloc a planar YUV texture
 void gpu_alloc_yuv420p_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex);
 
 // Dealloc a texture data

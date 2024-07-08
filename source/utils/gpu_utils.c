@@ -827,12 +827,14 @@ void gpu_alloc_yuv420p_texture(uint32_t w, uint32_t h, SceGxmTextureFormat forma
 			if (aligned_w == w) // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
 				vgl_fast_memcpy(texture_data, src, tex_size);
 			else {
+				// Copy the Y plane
 				for (int i = 0; i < h; i++) {
 					vgl_fast_memcpy(dst, src, w);
 					src += w;
 					dst += aligned_w;
 				}
 
+				// Copy the U and V planes
 				if (format & 0x9F000000 == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3) {
 					for (int i = 0; i < h; i++) {
 						vgl_fast_memcpy(dst, src, w / 2);
