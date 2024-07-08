@@ -1,5 +1,5 @@
-TITLEID     := VGLIMMTXT
-TARGET		:= immediate_mode_yuv
+TITLEID     := VGLIMMYUV
+TARGET		:= immediate_mode_texture_yuv
 SOURCES		:= .
 			
 INCLUDES	:= include
