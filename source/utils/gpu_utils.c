@@ -834,18 +834,29 @@ void gpu_alloc_yuv420p_texture(uint32_t w, uint32_t h, SceGxmTextureFormat forma
 					dst += aligned_w;
 				}
 
+				// The UV planes should be located at texture_data + aligned_w * h
+				// But for some reason they're being read from the unaligned offset
+				dst = (uint8_t *)texture_data + w * h;
+				const int aligned_uv = VGL_ALIGN(w / 2, 8);
+
 				// Copy the U and V planes
-				if (format & 0x9F000000 == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3) {
-					for (int i = 0; i < h; i++) {
+				if ((format & 0x9F000000) == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3) {
+					for (int i = 0; i < h / 2; i++) {
 						vgl_fast_memcpy(dst, src, w / 2);
 						src += w / 2;
-						dst += aligned_w / 2;
+						dst += aligned_uv;
+					}
+					dst = (uint8_t *)texture_data + w * h + (w * h) / 4;
+					for (int i = 0; i < h / 2; i++) {
+						vgl_fast_memcpy(dst, src, w / 2);
+						src += w / 2;
+						dst += aligned_uv;
 					}
 				} else { // Need to handle NV12 different as the UV planes are interleaved
 					for (int i = 0; i < h / 2; i++) {
 						vgl_fast_memcpy(dst, src, w);
 						src += w;
-						dst += aligned_w;
+						dst += 2 * aligned_uv;
 					}
 				}
 			}
