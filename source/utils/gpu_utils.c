@@ -878,7 +878,6 @@ void gpu_alloc_planar_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format
 
 		// Initializing texture and validating it
 		tex->mip_count = 1;
-		tex->use_mips = GL_TRUE;
 		vglInitLinearTexture(&tex->gxm_tex, texture_data, format, w, h, tex->mip_count);
 		tex->palette_data = NULL;
 		tex->status = TEX_VALID;

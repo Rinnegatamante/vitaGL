@@ -202,7 +202,7 @@ static inline __attribute__((always_inline)) void _glTexParameterx(texture *tex,
 			if (tex->status == TEX_VALID) {
 				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
-				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 1);
 			}
 			break;
 		case GL_TEXTURE_MAG_FILTER: // Mag Filter
@@ -396,7 +396,7 @@ static inline __attribute__((always_inline)) void _glTexParameteri(texture *tex,
 			if (tex->status == TEX_VALID) {
 				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
-				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 1);
 			}
 			break;
 		case GL_TEXTURE_MAG_FILTER: // Mag Filter
@@ -1370,7 +1370,6 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 		case GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR;
 			break;
-		// should be the other way around. looks like SCE bug.
 		case VGL_YUV420P_NV12_BT601:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC0;
 			planar_format = GL_TRUE;
@@ -1578,7 +1577,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 		vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
 		vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
 		vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
-		vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+		vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 1);
 		if (gamma_correction)
 			vglSetTexGammaMode(&tex->gxm_tex, SCE_GXM_TEXTURE_GAMMA_BGR);
 
@@ -2024,10 +2023,11 @@ void glGenerateMipmap(GLenum target) {
 	// Checking if current texture is valid
 	if (tex->status != TEX_VALID)
 		return;
-	// Checking if current texture is compressed
+	// Checking if current texture is compressed/planar
 	else {
 		SceGxmTextureFormat fmt = sceGxmTextureGetFormat(&tex->gxm_tex);
-		if (fmt >= 0x80000000 && fmt <= 0x87000000) {
+		if ((fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP && fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_UBC3)
+			|| fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2 && fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3) {
 			SET_GL_ERROR(GL_INVALID_OPERATION)
 		}
 	}
@@ -2064,7 +2064,8 @@ void glGenerateTextureMipmap(GLuint target) {
 	// Checking if current texture is compressed
 	else {
 		SceGxmTextureFormat fmt = sceGxmTextureGetFormat(&tex->gxm_tex);
-		if (fmt >= 0x80000000 && fmt <= 0x87000000) {
+		if ((fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP && fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_UBC3)
+			|| fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2 && fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3) {
 			SET_GL_ERROR(GL_INVALID_OPERATION)
 		}
 	}
