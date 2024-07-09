@@ -13,7 +13,7 @@ int main(){
 	
 	// Loading YUV420p image to use as texture
 	SceUID fd = sceIoOpen("app0:texture.yuv", SCE_O_RDONLY, 0777);
-	uint16_t w = 960, h = 544;
+	uint16_t w = 594, h = 418;
 	uint8_t *buffer = (uint8_t*)malloc((w * h * 3) / 2);
 	sceIoRead(fd, buffer, (w * h * 3) / 2);
 	sceIoClose(fd);
