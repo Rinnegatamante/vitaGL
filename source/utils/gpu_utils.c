@@ -836,7 +836,7 @@ void gpu_alloc_planar_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format
 				uint8_t *src_u = src_y + w * h;
 				uint8_t *src_v = src_u + half_w * half_h;
 				uint8_t *dst_y = (uint8_t *)texture_data;
-				uint8_t *dst_u = (uint8_t *)texture_data + plane_w * plane_h;
+				uint8_t *dst_u = dst_y + plane_w * plane_h;
 				uint8_t *dst_v = dst_u + half_plane_w * half_plane_h;
 
 				// Copy two Y rows and one UV row at a time
@@ -856,9 +856,9 @@ void gpu_alloc_planar_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format
 				}
 			} else {
 				uint8_t  *src_y = (uint8_t *)data;
-				uint16_t *src_uv = src_y + w * h;
+				uint16_t *src_uv = (uint16_t *)(src_y + w * h);
 				uint8_t  *dst_y = (uint8_t *)texture_data;
-				uint16_t *dst_uv = (uint8_t *)texture_data + plane_w * plane_h;
+				uint16_t *dst_uv = (uint16_t *)(dst_y + plane_w * plane_h);
 
 				// Copy two Y rows and one UV row at a time
 				for (int i = 0; i < half_h; i++) {
