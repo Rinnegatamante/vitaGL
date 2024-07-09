@@ -1376,15 +1376,15 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			planar_format = GL_TRUE;
 			break;
 		case VGL_YVU420P_NV21_BT601:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC0;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC0;
 			planar_format = GL_TRUE;
 			break;
 		case VGL_YUV420P_NV12_BT709:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC1;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC1;
 			planar_format = GL_TRUE;
 			break;
 		case VGL_YVU420P_NV21_BT709:
-			tex_format = SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC1;
+			tex_format = SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC1;
 			planar_format = GL_TRUE;
 			break;
 		case VGL_YUV420P_BT601:
