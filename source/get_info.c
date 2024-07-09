@@ -78,7 +78,6 @@ static GLubyte *extensions[] = {
 	"GL_OES_vertex_array_object",
 	"GL_OES_vertex_half_float",
 	"GL_WIN_phong_shading",
-	"GL_VGL_yuv_texture",
 };
 static GLubyte *extension = NULL;
 
