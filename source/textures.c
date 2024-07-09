@@ -1478,7 +1478,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, level)
 			}
 #endif
-			gpu_alloc_yuv420p_texture(width, height, tex_format, data, tex);
+			gpu_alloc_planar_texture(width, height, tex_format, data, tex);
 		} else if (paletted_format) {
 #ifndef SKIP_ERROR_HANDLING
 			if (level > 0) {
