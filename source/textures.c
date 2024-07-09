@@ -1473,11 +1473,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 		// Allocating texture/mipmaps depending on user call
 		tex->type = internalFormat;
 		if (planar_format) {
-#ifndef SKIP_ERROR_HANDLING
-			if (level > 0) {
-				SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, level)
-			}
-#endif
+			// FIXME: Add mipmaps support for planar textures
 			gpu_alloc_planar_texture(width, height, tex_format, data, tex);
 		} else if (paletted_format) {
 #ifndef SKIP_ERROR_HANDLING
