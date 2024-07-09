@@ -527,6 +527,15 @@ extern "C" {
 #define GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG             0x9138
 #define GL_COMPRESSED_RGBA8_ETC2_EAC                    0x9278
 
+#define VGL_YUV420P_NV12_BT601                       0x18E70
+#define VGL_YVU420P_NV21_BT601                       0x18E71
+#define VGL_YUV420P_NV12_BT709                       0x18E72
+#define VGL_YVU420P_NV21_BT709                       0x18E73
+#define VGL_YUV420P_BT601                            0x18E74
+#define VGL_YVU420P_BT601                            0x18E75
+#define VGL_YUV420P_BT709                            0x18E76
+#define VGL_YVU420P_BT709                            0x18E77
+
 #define EGL_SUCCESS                                  0x3000
 #define EGL_BAD_PARAMETER                            0x300C
 #define EGL_OPENGL_ES_API                            0x30A0

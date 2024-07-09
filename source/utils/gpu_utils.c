@@ -808,3 +808,83 @@ void gpu_free_palette(void *pal) {
 	if (pal != NULL)
 		vgl_free(pal);
 }
+
+void gpu_alloc_planar_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex) {
+	// If there's already a texture in passed texture object we first dealloc it
+	if (tex->status == TEX_VALID)
+		gpu_free_texture_data(tex);
+
+	// Allocating texture data buffer
+	const int plane_w = MAX(nearest_po2(w), 8);
+	const int plane_h = nearest_po2(h);
+	const int half_plane_w = MAX(nearest_po2(w / 2), 8);
+	const int half_plane_h = MAX(nearest_po2(h / 2), 8);
+	const int half_w = w / 2;
+	const int half_h = h / 2;
+	const int aligned_w = VGL_ALIGN(w, 8);
+	const int aligned_half_w = VGL_ALIGN(w / 2, 8);
+	const int tex_size = plane_w * plane_h + half_plane_w * half_plane_h * 2;
+	void *texture_data = gpu_alloc_mapped(tex_size, VGL_MEM_MAIN);
+
+	if (texture_data != NULL) {
+		// Initializing texture data buffer
+		if (data != NULL) {
+			if (plane_w == w && half_plane_w == half_w) // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
+				vgl_fast_memcpy(texture_data, data, tex_size);
+			else if ((format & 0x9F000000) == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3) {
+				uint8_t *src_y = (uint8_t *)data;
+				uint8_t *src_u = src_y + w * h;
+				uint8_t *src_v = src_u + half_w * half_h;
+				uint8_t *dst_y = (uint8_t *)texture_data;
+				uint8_t *dst_u = dst_y + plane_w * plane_h;
+				uint8_t *dst_v = dst_u + half_plane_w * half_plane_h;
+
+				// Copy two Y rows and one UV row at a time
+				for (int i = 0; i < half_h; i++) {
+					vgl_fast_memcpy(dst_y, src_y, w);
+					vgl_fast_memcpy(dst_u, src_u, half_w);
+					vgl_fast_memcpy(dst_v, src_v, half_w);
+					src_y += w;
+					src_u += half_w;
+					src_v += half_w;
+					dst_y += aligned_w;
+					dst_u += aligned_half_w;
+					dst_v += aligned_half_w;
+					vgl_fast_memcpy(dst_y, src_y, w);
+					src_y += w;
+					dst_y += aligned_w;
+				}
+			} else {
+				uint8_t  *src_y = (uint8_t *)data;
+				uint16_t *src_uv = (uint16_t *)(src_y + w * h);
+				uint8_t  *dst_y = (uint8_t *)texture_data;
+				uint16_t *dst_uv = (uint16_t *)(dst_y + plane_w * plane_h);
+
+				// Copy two Y rows and one UV row at a time
+				for (int i = 0; i < half_h; i++) {
+					vgl_fast_memcpy(dst_y, src_y, w);
+					vgl_fast_memcpy(dst_uv, src_uv, half_w * sizeof(uint16_t));
+					src_y += w;
+					src_uv += half_w;
+					dst_y += aligned_w;
+					dst_uv += aligned_half_w;
+					vgl_fast_memcpy(dst_y, src_y, w);
+					src_y += w;
+					dst_y += aligned_w;
+				}
+			}
+		} else
+			sceClibMemset(texture_data, 0, tex_size);
+
+		// Initializing texture and validating it
+		tex->mip_count = 1;
+		tex->use_mips = GL_TRUE;
+		vglInitLinearTexture(&tex->gxm_tex, texture_data, format, w, h, tex->mip_count);
+		tex->palette_data = NULL;
+		tex->status = TEX_VALID;
+		tex->data = texture_data;
+#ifndef TEXTURES_SPEEDHACK
+		tex->last_frame = 0xFFFFFFFF;
+#endif
+	}
+}
