@@ -839,20 +839,26 @@ void gpu_alloc_planar_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format
 				uint8_t *dst_u = dst_y + plane_w * plane_h;
 				uint8_t *dst_v = dst_u + half_plane_w * half_plane_h;
 
-				// Copy two Y rows and one UV row at a time
-				for (int i = 0; i < half_h; i++) {
-					vgl_fast_memcpy(dst_y, src_y, w);
-					vgl_fast_memcpy(dst_u, src_u, half_w);
-					vgl_fast_memcpy(dst_v, src_v, half_w);
-					src_y += w;
-					src_u += half_w;
-					src_v += half_w;
-					dst_y += aligned_w;
-					dst_u += aligned_half_w;
-					dst_v += aligned_half_w;
-					vgl_fast_memcpy(dst_y, src_y, w);
-					src_y += w;
-					dst_y += aligned_w;
+				if (aligned_w == w && aligned_half_w == half_w) { // Plane size is already aligned, we can use a single vgl_fast_memcpy for better performance
+					vgl_fast_memcpy(dst_y, src_y, w * h);
+					vgl_fast_memcpy(dst_u, src_u, half_w * half_h);
+					vgl_fast_memcpy(dst_v, src_v, half_w * half_h);
+				} else {
+					// Copy two Y rows and one UV row at a time
+					for (int i = 0; i < half_h; i++) {
+						vgl_fast_memcpy(dst_y, src_y, w);
+						vgl_fast_memcpy(dst_u, src_u, half_w);
+						vgl_fast_memcpy(dst_v, src_v, half_w);
+						src_y += w;
+						src_u += half_w;
+						src_v += half_w;
+						dst_y += aligned_w;
+						dst_u += aligned_half_w;
+						dst_v += aligned_half_w;
+						vgl_fast_memcpy(dst_y, src_y, w);
+						src_y += w;
+						dst_y += aligned_w;
+					}
 				}
 			} else {
 				uint8_t  *src_y = (uint8_t *)data;
@@ -860,17 +866,22 @@ void gpu_alloc_planar_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format
 				uint8_t  *dst_y = (uint8_t *)texture_data;
 				uint16_t *dst_uv = (uint16_t *)(dst_y + plane_w * plane_h);
 
-				// Copy two Y rows and one UV row at a time
-				for (int i = 0; i < half_h; i++) {
-					vgl_fast_memcpy(dst_y, src_y, w);
-					vgl_fast_memcpy(dst_uv, src_uv, half_w * sizeof(uint16_t));
-					src_y += w;
-					src_uv += half_w;
-					dst_y += aligned_w;
-					dst_uv += aligned_half_w;
-					vgl_fast_memcpy(dst_y, src_y, w);
-					src_y += w;
-					dst_y += aligned_w;
+				if (aligned_w == w && aligned_half_w == half_w) { // Plane size is already aligned, we can use a single vgl_fast_memcpy for better performance
+					vgl_fast_memcpy(dst_y, src_y, w * h);
+					vgl_fast_memcpy(dst_uv, src_uv, half_w * half_h * sizeof(uint16_t));
+				} else {
+					// Copy two Y rows and one UV row at a time
+					for (int i = 0; i < half_h; i++) {
+						vgl_fast_memcpy(dst_y, src_y, w);
+						vgl_fast_memcpy(dst_uv, src_uv, half_w * sizeof(uint16_t));
+						src_y += w;
+						src_uv += half_w;
+						dst_y += aligned_w;
+						dst_uv += aligned_half_w;
+						vgl_fast_memcpy(dst_y, src_y, w);
+						src_y += w;
+						dst_y += aligned_w;
+					}
 				}
 			}
 		} else
