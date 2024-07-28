@@ -1672,8 +1672,10 @@ void glLinkProgram(GLuint progr) {
 	}
 #endif
 
-	if (p->status == PROG_LINKED)
+	if (p->status == PROG_LINKED) {
+		vgl_log("%s:%d: %s: A program has been re-linked. vitaGL doesn't support re-linking, glitches may happen.\n", __FILE__, __LINE__, __func__);
 		return;
+	}
 	p->status = PROG_LINKED;
 
 	// Analyzing fragment shader
