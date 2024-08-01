@@ -1877,7 +1877,7 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	return -1;
 }
 
-void glUniform1i(GLint location, GLint v0) {
+inline void glUniform1i(GLint location, GLint v0) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -1901,7 +1901,7 @@ void glProgramUniform1i(GLuint prog, GLint location, GLint v0) {
 	glUniform1i(location, v0);
 }
 
-void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
+inline void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -1934,7 +1934,7 @@ void glProgramUniform1iv(GLuint prog, GLint location, GLsizei count, const GLint
 	glUniform1iv(location, count, value);
 }
 
-void glUniform1f(GLint location, GLfloat v0) {
+inline void glUniform1f(GLint location, GLfloat v0) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -1955,7 +1955,7 @@ void glProgramUniform1f(GLuint prog, GLint location, GLfloat v0) {
 	glUniform1f(location, v0);
 }
 
-void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
+inline void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -1982,7 +1982,7 @@ void glProgramUniform1fv(GLuint prog, GLint location, GLsizei count, const GLflo
 	glUniform1fv(location, count, value);
 }
 
-void glUniform2i(GLint location, GLint v0, GLint v1) {
+inline void glUniform2i(GLint location, GLint v0, GLint v1) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2004,7 +2004,7 @@ void glProgramUniform2i(GLuint prog, GLint location, GLint v0, GLint v1) {
 	glUniform2i(location, v0, v1);
 }
 
-void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
+inline void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2033,7 +2033,7 @@ void glProgramUniform2iv(GLuint prog, GLint location, GLsizei count, const GLint
 	glUniform2iv(location, count, value);
 }
 
-void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
+inline void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2055,7 +2055,7 @@ void glProgramUniform2f(GLuint prog, GLint location, GLfloat v0, GLfloat v1) {
 	glUniform2f(location, v0, v1);
 }
 
-void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
+inline void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2082,7 +2082,7 @@ void glProgramUniform2fv(GLuint prog, GLint location, GLsizei count, const GLflo
 	glUniform2fv(location, count, value);
 }
 
-void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) {
+inline void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2105,7 +2105,7 @@ void glProgramUniform3i(GLuint prog, GLint location, GLint v0, GLint v1, GLint v
 	glUniform3i(location, v0, v1, v2);
 }
 
-void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
+inline void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2134,7 +2134,7 @@ void glProgramUniform3iv(GLuint prog, GLint location, GLsizei count, const GLint
 	glUniform3iv(location, count, value);
 }
 
-void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
+inline void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2157,7 +2157,7 @@ void glProgramUniform3f(GLuint prog, GLint location, GLfloat v0, GLfloat v1, GLf
 	glUniform3f(location, v0, v1, v2);
 }
 
-void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
+inline void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2184,7 +2184,7 @@ void glProgramUniform3fv(GLuint prog, GLint location, GLsizei count, const GLflo
 	glUniform3fv(location, count, value);
 }
 
-void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) {
+inline void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2208,7 +2208,7 @@ void glProgramUniform4i(GLuint prog, GLint location, GLint v0, GLint v1, GLint v
 	glUniform4i(location, v0, v1, v2, v3);
 }
 
-void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
+inline void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2237,7 +2237,7 @@ void glProgramUniform4iv(GLuint prog, GLint location, GLsizei count, const GLint
 	glUniform4iv(location, count, value);
 }
 
-void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
+inline void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2261,7 +2261,7 @@ void glProgramUniform4f(GLuint prog, GLint location, GLfloat v0, GLfloat v1, GLf
 	glUniform4f(location, v0, v1, v2, v3);
 }
 
-void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
+inline void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
