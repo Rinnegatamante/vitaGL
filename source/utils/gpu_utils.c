@@ -545,7 +545,7 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 			if (read_cb != NULL) {
 				// Performing swizzling and DXT compression
 				uint8_t alignment = tex_format_to_alignment(format);
-				dxt_compress(mip_data, data, aligned_width, aligned_height, alignment == 16);
+				dxt_compress(mip_data, (uint8_t *)data, aligned_width, aligned_height, alignment == 16);
 			} else {
 				// Perform swizzling if necessary.
 				switch (format) {
@@ -653,7 +653,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 			if (read_cb != NULL) {
 				// Performing swizzling and DXT compression
 				uint8_t alignment = tex_format_to_alignment(format);
-				dxt_compress(mip_data, data, aligned_width, aligned_height, alignment == 16);
+				dxt_compress(mip_data, (uint8_t *)data, aligned_width, aligned_height, alignment == 16);
 			} else {
 				// Perform swizzling if necessary.
 				switch (format) {
