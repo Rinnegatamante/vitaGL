@@ -1190,9 +1190,9 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 						uint32_t size = count * cur_streams[i].stride;
 						ptr = gpu_alloc_mapped_temp(size);
 						if (i - light_idx_start < 4)
-							vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[2], size);
+							vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[2] + first * cur_streams[i].stride, size);
 						else
-							vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[6], size);
+							vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[6] + first * cur_streams[i].stride, size);
 					}
 				} else {
 #ifdef DRAW_SPEEDHACK
