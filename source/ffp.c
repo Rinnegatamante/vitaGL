@@ -1174,7 +1174,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 			if (ffp_vertex_attrib_vbo[i]) {
 				gpubuffer *gpu_buf = (gpubuffer *)ffp_vertex_attrib_vbo[i];
 				gpu_buf->last_frame = vgl_framecount;
-				ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[i];
+				ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[i] + first * ffp_vertex_stream_config[i].stride;
 			} else {
 				if (i >= light_idx_start && i < light_idx_start + 5) {
 					if (cur_streams[i].stride == 0) { // Color array not mapped to this material attribute
