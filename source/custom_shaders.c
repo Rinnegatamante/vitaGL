@@ -487,6 +487,202 @@ void resetCustomShaders(void) {
 	}
 }
 
+void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *idx_ptr, const GLint *first, const GLsizei *count, GLint lowest, GLsizei highest, GLsizei drawcount) {
+	program *p = &progs[cur_program - 1];
+
+	// Check if a blend info rebuild is required and upload fragment program
+	setupFragProgram();
+
+	// Uploading fragment textures on relative texture units
+	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
+#ifndef SAMPLERS_SPEEDHACK
+		if (p->frag_texunits[i]) {
+#endif
+			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
+			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : tex2d_override;
+			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
+#ifdef HAVE_TEX_CACHE
+			restoreTexCache(tex);
+#endif
+#ifndef SKIP_ERROR_HANDLING
+			int r = sceGxmTextureValidate(&tex->gxm_tex);
+			if (r) {
+				vgl_log("%s:%d glDrawArrays: Fragment %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
+				return;
+			}
+#endif
+#ifndef TEXTURES_SPEEDHACK
+			tex->last_frame = vgl_framecount;
+#endif
+			sampler *smp = samplers[(int)p->frag_texunits[i]->data];
+			if (smp) {
+				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+				vglSetTexMagFilter(&tex->gxm_tex, smp->mag_filter);
+				vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
+				vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
+				vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
+				vglSetTexLodBias(&tex->gxm_tex, smp->lod_bias);
+				tex->overridden = GL_TRUE;
+			} else if (tex->overridden) {
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
+				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+				vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
+				tex->overridden = GL_FALSE;
+			}
+			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
+#ifndef SAMPLERS_SPEEDHACK
+		}
+#endif
+	}
+
+	// Uploading vertex textures on relative texture units
+	for (int i = 0; i < p->max_vert_texunit_idx; i++) {
+#ifndef SAMPLERS_SPEEDHACK
+		if (p->vert_texunits[i]) {
+#endif
+			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
+			uint8_t tex_type = p->vert_texunits[i]->size ? 2 : tex2d_override;
+			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
+#ifndef SKIP_ERROR_HANDLING
+			int r = sceGxmTextureValidate(&tex->gxm_tex);
+			if (r) {
+				vgl_log("%s:%d glMultiDrawArrays: Vertex %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
+				return;
+			}
+#endif
+#ifndef TEXTURES_SPEEDHACK
+			tex->last_frame = vgl_framecount;
+#endif
+			sampler *smp = samplers[(int)p->vert_texunits[i]->data];
+			if (smp) {
+				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+				vglSetTexMagFilter(&tex->gxm_tex, smp->mag_filter);
+				vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
+				vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
+				vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
+				tex->overridden = GL_TRUE;
+			} else if (tex->overridden) {
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
+				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+				tex->overridden = GL_FALSE;
+			}
+			sceGxmSetVertexTexture(gxm_context, i, &tex->gxm_tex);
+#ifndef SAMPLERS_SPEEDHACK
+		}
+#endif
+	}
+
+	// Aligning attributes
+	SceGxmVertexAttribute *attributes;
+	SceGxmVertexStream *streams;
+	alignAttributes(attributes, streams);
+
+	void *ptrs[VERTEX_ATTRIBS_NUM];
+
+#ifdef STRICT_DRAW_COMPLIANCE
+	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
+	sceClibMemset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
+#else
+	GLboolean is_packed = p->attr_num > 1;
+	if (is_packed) {
+#endif
+		for (int i = 0; i < p->attr_num; i++) {
+			uint8_t attr_idx = p->attr_map[i];
+			if (cur_vao->vertex_attrib_vbo[attr_idx]) {
+#ifdef STRICT_DRAW_COMPLIANCE
+				sceClibMemset(is_packed, 0, p->attr_num * sizeof(GLboolean));
+#else
+				is_packed = GL_FALSE;
+#endif
+				break;
+#ifdef STRICT_DRAW_COMPLIANCE
+			} else {
+				if (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[attr_idx] && cur_vao->vertex_attrib_offsets[attr_idx] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]])) {
+					is_packed[attr_idx] = GL_FALSE;
+				}
+#endif
+			}
+		}
+#ifndef STRICT_DRAW_COMPLIANCE
+		if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[1]] && cur_vao->vertex_attrib_offsets[p->attr_map[1]] > cur_vao->vertex_attrib_offsets[p->attr_map[0]])))
+			is_packed = GL_FALSE;
+	}
+#endif
+#ifdef STRICT_DRAW_COMPLIANCE
+	// Gathering real attribute data pointers
+	if (is_packed[0]) {
+		ptrs[0] = gpu_alloc_mapped_temp(highest * streams[0].stride);
+		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]] + lowest * streams[0].stride, highest * streams[0].stride);
+	}
+	for (int i = 0; i < p->attr_num; i++) {
+		uint8_t attr_idx = p->attr_map[i];
+		attributes[i].regIndex = p->attr[attr_idx].regIndex;
+		if (is_packed[i]) {
+			handlePackedAttrib();
+		} else {
+			handleUnpackedAttrib(first, count);
+		}
+	}
+#else
+	// Gathering real attribute data pointers
+	if (is_packed) {
+		ptrs[0] = gpu_alloc_mapped_temp(highest * streams[0].stride);
+		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]] + lowest * streams[0].stride, highest * streams[0].stride);
+		for (int i = 0; i < p->attr_num; i++) {
+			uint8_t attr_idx = p->attr_map[i];
+			attributes[i].regIndex = p->attr[attr_idx].regIndex;
+			handlePackedAttrib();
+		}
+	} else {
+		for (int i = 0; i < p->attr_num; i++) {
+			uint8_t attr_idx = p->attr_map[i];
+			attributes[i].regIndex = p->attr[attr_idx].regIndex;
+			handleUnpackedAttrib(lowest, highest);
+		}
+	}
+#endif
+
+	// Uploading new vertex program
+	patchVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
+	sceGxmSetVertexProgram(gxm_context, p->vprog);
+
+	// Uploading both fragment and vertex uniforms data
+	uploadUniforms();
+	
+	for (int j = 0; j < drawcount; j++) {
+		// Uploading vertex streams
+		for (int i = 0; i < p->attr_num; i++) {
+			uint8_t attr_idx = p->attr_map[i];
+			GLboolean is_active = (cur_vao->vertex_attrib_state & (1 << attr_idx)) ? GL_TRUE : GL_FALSE;
+			if (is_active) {
+#ifdef STRICT_DRAW_COMPLIANCE
+				if (is_packed[i])
+					sceGxmSetVertexStream(gxm_context, i, ptrs[0] + (first[j] - lowest) * streams[0].stride);
+				else
+					sceGxmSetVertexStream(gxm_context, i, ptrs[i] + (first[j] - lowest) * streams[i].stride);
+#else
+				if (is_packed)
+					sceGxmSetVertexStream(gxm_context, i, ptrs[0] + (first[j] - lowest) * streams[0].stride);
+				else
+					sceGxmSetVertexStream(gxm_context, i, ptrs[i] + (first[j] - lowest) * streams[i].stride);
+#endif
+			}
+		}
+		
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, idx_ptr, count[j]);
+	}
+}
+
 GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count) {
 	program *p = &progs[cur_program - 1];
 

@@ -212,6 +212,63 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	restore_polygon_mode(gxm_p);
 }
 
+void glMultiDrawArrays(GLenum mode, const GLint *first, const GLsizei *count, GLsizei drawcount) {
+#ifndef SKIP_ERROR_HANDLING
+	if (drawcount < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, drawcount)
+	}
+#endif
+
+	sceneReset();
+	
+	GLint lowest = 0x7FFFFFFF;
+	GLsizei highest = 0, highest_count = 0;
+	for (int i = 0; i < drawcount; i++) {
+		if (first[i] < lowest)
+			lowest = first[i];
+		GLsizei last = first[i] + count[i];
+		if (last > highest)
+			highest = last;
+		if (count[i] > highest_count)
+			highest_count = count[i];
+	}
+	
+	SceGxmPrimitiveType gxm_p;
+	gl_primitive_to_gxm(mode, gxm_p, highest_count);
+	
+	uint16_t *idx_ptr;
+	switch (mode) {
+	case GL_QUADS:
+		idx_ptr = default_quads_idx_ptr;
+		highest_count = (highest_count / 2) * 3;
+		break;
+	case GL_LINE_STRIP:
+		idx_ptr = default_line_strips_idx_ptr;
+		highest_count = (highest_count - 1) * 2;
+		break;
+	case GL_LINE_LOOP:
+		idx_ptr = gpu_alloc_mapped_temp(highest_count * 2 * sizeof(uint16_t));
+		vgl_fast_memcpy(idx_ptr, default_line_strips_idx_ptr, (highest_count - 1) * 2 * sizeof(uint16_t));
+		idx_ptr[(highest_count - 1) * 2] = highest_count - 1;
+		idx_ptr[(highest_count - 1) * 2 + 1] = 0;
+		highest_count *= 2;
+		break;
+	default:
+		idx_ptr = default_idx_ptr;
+		break;
+	}
+	
+	if (cur_program != 0)
+		_glMultiDrawArrays_CustomShadersIMPL(gxm_p, idx_ptr, first, count, lowest, highest, drawcount);
+	else {
+		if (!(ffp_vertex_attrib_state & (1 << 0)))
+			return;
+		_glMultiDrawArrays_FixedFunctionIMPL(gxm_p, idx_ptr, first, count, lowest, highest, drawcount);
+	}
+
+	restore_polygon_mode(gxm_p);
+}
+
 void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei primcount) {
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {

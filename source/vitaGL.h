@@ -752,6 +752,7 @@ void glMateriali(GLenum face, GLenum pname, GLint param);
 void glMaterialx(GLenum face, GLenum pname, const GLfixed param);
 void glMaterialxv(GLenum face, GLenum pname, const GLfixed *params);
 void glMatrixMode(GLenum mode);
+void glMultiDrawArrays(GLenum mode, const GLint *first, const GLsizei *count, GLsizei drawcount);
 void glMultiTexCoord2f(GLenum target, GLfloat s, GLfloat t);
 void glMultiTexCoord2fv(GLenum target, GLfloat *f);
 void glMultiTexCoord2i(GLenum target, GLint s, GLint t);

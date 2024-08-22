@@ -202,6 +202,7 @@ static const struct {
 	{"glMaterialx", (void *)glMaterialx},
 	{"glMaterialxv", (void *)glMaterialxv},
 	{"glMatrixMode", (void *)glMatrixMode},
+	{"glMultiDrawArrays", (void *)glMultiDrawArrays},
 	{"glMultiTexCoord2f", (void *)glMultiTexCoord2f},
 	{"glMultiTexCoord2fv", (void *)glMultiTexCoord2fv},
 	{"glMultiTexCoord2i", (void *)glMultiTexCoord2i},

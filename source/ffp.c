@@ -1209,6 +1209,93 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 	}
 }
 
+void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *idx_ptr, const GLint *first, const GLsizei *count, GLint lowest, GLsizei highest, GLsizei drawcount) {
+	uint8_t mask_state = reload_ffp_shaders(NULL, NULL);
+
+	// Uploading textures on relative texture units
+	for (int i = 0; i < ffp_mask.num_textures; i++) {
+		texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
+#ifdef HAVE_TEX_CACHE
+		restoreTexCache(tex);
+#endif
+#ifndef TEXTURES_SPEEDHACK
+		tex->last_frame = vgl_framecount;
+#endif
+		sampler *smp = samplers[i];
+		if (smp) {
+			vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
+			vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
+			vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
+			vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
+			vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
+			tex->overridden = GL_TRUE;
+		} else if (tex->overridden) {
+			vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+			vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
+			vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+			vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+			vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+			tex->overridden = GL_FALSE;
+		}
+		sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
+	}
+
+	// Uploading vertex streams
+	int j = 0;
+	float *materials = NULL;
+	void *ptrs[FFP_VERTEX_ATTRIBS_NUM];
+	uint32_t strides[FFP_VERTEX_ATTRIBS_NUM];
+	for (int i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
+		if (mask_state & (1 << i)) {
+			if (ffp_vertex_attrib_vbo[i]) {
+				gpubuffer *gpu_buf = (gpubuffer *)ffp_vertex_attrib_vbo[i];
+				gpu_buf->last_frame = vgl_framecount;
+				ptrs[j] = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[i] + lowest * ffp_vertex_stream_config[i].stride;
+				strides[j] = ffp_vertex_stream_config[i].stride;
+			} else {
+				if (i >= light_idx_start && i < light_idx_start + 5) {
+					if (cur_streams[i].stride == 0) { // Color array not mapped to this material attribute
+						if (!materials)
+							materials = (float *)gpu_alloc_mapped_temp(19 * sizeof(float));
+						if (i - light_idx_start < 4)
+							vgl_fast_memcpy(materials, lighting_attr_ptr[i - light_idx_start], 4 * sizeof(float));
+						else
+							vgl_fast_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
+						ptrs[j] = materials;
+						strides[j] = 0;
+						materials += 4;
+					} else { // Color array mapped to this attribute (FIXME: This could be optimized by re-using color temp mem)
+						uint32_t size = (highest - lowest) * cur_streams[i].stride;
+						ptrs[j] = gpu_alloc_mapped_temp(size);
+						strides[j] = cur_streams[i].stride;
+						if (i - light_idx_start < 4)
+							vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[2] + lowest * cur_streams[i].stride, size);
+						else
+							vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[6] + lowest * cur_streams[i].stride, size);
+					}
+				} else {
+					strides[j] = ffp_vertex_stream_config[i].stride;
+#ifdef DRAW_SPEEDHACK
+					ptrs[j] = (void *)ffp_vertex_attrib_offsets[i] + lowest * ffp_vertex_stream_config[i].stride;
+#else
+					uint32_t size = (highest - lowest) * ffp_vertex_stream_config[i].stride; // FIXME: cur_stream here seems to cause issues, figure out why
+					ptrs[j] = gpu_alloc_mapped_temp(size);
+					vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[i] + lowest * ffp_vertex_stream_config[i].stride, size);
+#endif
+				}
+			}
+			j++;
+		}
+	}
+	
+	for (int i = 0; i < drawcount; i++) {
+		for (int z = 0; z < j; z++) {
+			sceGxmSetVertexStream(gxm_context, z, ptrs[z] + (first[i] - lowest) * strides[z]);
+		}
+		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, idx_ptr, count[i]);
+	}
+}
+
 void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, GLboolean is_short) {
 	uint8_t mask_state = reload_ffp_shaders(NULL, NULL);
 	int attr_idxs[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
