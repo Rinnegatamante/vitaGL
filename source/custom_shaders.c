@@ -2029,7 +2029,7 @@ GLuint glGetUniformBlockIndex(GLuint prog, const GLchar *uniformBlockName) {
 		j = j->chain;
 	}
 
-	return 0xFFFFFFFF;
+	return GL_INVALID_INDEX;
 }
 
 void glUniformBlockBinding(GLuint prog, GLuint uniformBlockIndex, GLuint uniformBlockBinding) {
