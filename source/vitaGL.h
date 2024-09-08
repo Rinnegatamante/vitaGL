@@ -76,6 +76,8 @@ extern "C" {
 
 #define GL_NONE                               0
 
+#define GL_INVALID_INDEX                      0xFFFFFFFF
+
 #define GL_POINTS                                       0x0000
 #define GL_LINES                                        0x0001
 #define GL_LINE_LOOP                                    0x0002
