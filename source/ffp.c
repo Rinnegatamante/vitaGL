@@ -640,15 +640,14 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-0000000000000000-%d_v.gxp", SHADER_CACHE_MAGIC, mask.raw, WVP_ON_GPU);
 #endif
 #endif
-		FILE *f = fopen(fname, "rb");
-		if (f) {
+		SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
+		if (f >= 0) {
 			// Gathering the precompiled shader from cache
-			fseek(f, 0, SEEK_END);
-			uint32_t size = ftell(f);
-			fseek(f, 0, SEEK_SET);
+			uint32_t size = sceIoLseek(f, 0, SCE_SEEK_END);
+			sceIoLseek(f, 0, SCE_SEEK_SET);
 			ffp_vertex_program = (SceGxmProgram *)vglMalloc(size);
-			fread(ffp_vertex_program, 1, size, f);
-			fclose(f);
+			sceIoRead(f, ffp_vertex_program, size);
+			sceIoClose(f);
 		} else
 #endif
 		{
@@ -669,9 +668,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			shark_clear_output();
 #ifndef DISABLE_FS_SHADER_CACHE
 			// Saving compiled shader in filesystem cache
-			f = fopen(fname, "wb");
-			fwrite(ffp_vertex_program, 1, size, f);
-			fclose(f);
+			f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_TRUNC | SCE_O_CREAT, 0777);
+			sceIoWrite(f, ffp_vertex_program, size);
+			sceIoClose(f);
 #ifdef DUMP_SHADER_SOURCES
 			}
 #ifndef DISABLE_TEXTURE_COMBINER
@@ -688,9 +687,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #endif
 #endif
 			// Saving shader source in filesystem cache
-			f = fopen(fname, "wb");
-			fwrite(vshader, 1, strlen(vshader), f);
-			fclose(f);
+			f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
+			sceIoWrite(f, vshader, strlen(vshader));
+			sceIoClose(f);
 #endif
 #endif
 		}
@@ -852,15 +851,14 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		sprintf(fname, "ux0:data/shader_cache/v%d/%08X-0000000000000000_f.gxp", SHADER_CACHE_MAGIC, mask.raw);
 #endif
 #endif
-		FILE *f = fopen(fname, "rb");
-		if (f) {
+		SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
+		if (f >= 0) {
 			// Gathering the precompiled shader from cache
-			fseek(f, 0, SEEK_END);
-			uint32_t size = ftell(f);
-			fseek(f, 0, SEEK_SET);
+			uint32_t size = sceIoLseek(f, 0, SCE_SEEK_END);
+			sceIoLseek(f, 0, SCE_SEEK_SET);
 			ffp_fragment_program = (SceGxmProgram *)vglMalloc(size);
-			fread(ffp_fragment_program, 1, size, f);
-			fclose(f);
+			sceIoRead(f, ffp_fragment_program, size);
+			sceIoClose(f);
 		} else
 #endif
 		{
@@ -941,9 +939,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			shark_clear_output();
 #ifndef DISABLE_FS_SHADER_CACHE
 			// Saving compiled shader in filesystem cache
-			f = fopen(fname, "wb");
-			fwrite(ffp_fragment_program, 1, size, f);
-			fclose(f);
+			f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
+			sceIoWrite(f, ffp_fragment_program, size);
+			sceIoClose(f);
 #ifdef DUMP_SHADER_SOURCES
 			}
 #ifndef DISABLE_TEXTURE_COMBINER
@@ -960,9 +958,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #endif
 #endif
 			// Saving shader source in filesystem cache
-			f = fopen(fname, "wb");
-			fwrite(fshader, 1, strlen(fshader), f);
-			fclose(f);
+			f = sceIoOpen(fname, SCE_O_CREAT | SCE_O_TRUNC | SCE_O_WRONLY, 0777);
+			sceIoWrite(f, fshader, strlen(fshader));
+			sceIoClose(f);
 #endif
 #endif
 		}

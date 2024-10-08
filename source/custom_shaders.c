@@ -404,18 +404,17 @@ static inline __attribute__((always_inline)) void compile_shader(shader *s, uint
 		goto COMPILE_SHADER;
 	char fname[256];
 	sprintf(fname, "%s/%llX.gxp", vgl_shader_cache_path, XXH3_64bits(s->prog, s->size));
-	FILE *f = fopen(fname, "rb");
-	if (f) {
+	SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
+	if (f >= 0) {
 		if (s->source) {
 			vgl_free(s->source);
 			s->source = NULL;
 		}
-		fseek(f, 0, SEEK_END);
-		s->size = ftell(f);
-		fseek(f, 0, SEEK_SET);
+		s->size = sceIoLseek(f, 0, SCE_SEEK_END);
+		sceIoLseek(f, 0, SCE_SEEK_SET);
 		SceGxmProgram *res = (SceGxmProgram *)vglMalloc(s->size);
-		fread(res, 1, s->size, f);
-		fclose(f);
+		sceIoRead(f, res, s->size);
+		sceIoClose(f);
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
 		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
 	} else {
@@ -463,9 +462,9 @@ COMPILE_SHADER:
 		shark_clear_output();
 #ifdef HAVE_SHADER_CACHE
 		if (!skip_cache) {
-			f = fopen(fname, "wb");
-			fwrite(s->prog, 1, s->size, f);
-			fclose(f);
+			f = sceIoOpen(fname, SCE_O_CREAT | SCE_O_WRONLY | SCE_O_TRUNC, 0777);
+			sceIoWrite(f, s->prog, s->size);
+			sceIoClose(f);
 		}
 	}
 #endif
@@ -1410,18 +1409,17 @@ void glCompileShader(GLuint handle) {
 #ifdef HAVE_SHADER_CACHE
 	char fname[256];
 	sprintf(fname, "%s/%llX.gxp", vgl_shader_cache_path, XXH3_64bits(s->prog, s->size));
-	FILE *f = fopen(fname, "rb");
-	if (f) {
+	SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
+	if (f >= 0) {
 		if (s->source) {
 			vgl_free(s->source);
 			s->source = NULL;
 		}
-		fseek(f, 0, SEEK_END);
-		s->size = ftell(f);
-		fseek(f, 0, SEEK_SET);
+		s->size = sceIoLseek(f, 0, SCE_SEEK_END);
+		sceIoLseek(f, 0, SCE_SEEK_SET);
 		SceGxmProgram *res = (SceGxmProgram *)vglMalloc(s->size);
-		fread(res, 1, s->size, f);
-		fclose(f);
+		sceIoRead(f, res, s->size);
+		sceIoClose(f);
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
 		s->prog = sceGxmShaderPatcherGetProgramFromId(s->id);
 		return;
@@ -1435,9 +1433,9 @@ void glCompileShader(GLuint handle) {
 	vgl_free(s->glsl_source);
 	s->glsl_source = NULL;
 #ifdef HAVE_SHADER_CACHE
-	f = fopen(fname, "wb");
-	fwrite(s->prog, 1, s->size, f);
-	fclose(f);
+	f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
+	sceIoWrite(f, s->prog, s->size);
+	sceIoClose(f);
 #endif
 #endif
 }
@@ -1811,14 +1809,13 @@ void glLinkProgram(GLuint progr) {
 #ifdef HAVE_SHADER_CACHE
 		char fname[256];
 		sprintf(fname, "%s/%llX.gxp", vgl_shader_cache_path, XXH3_64bits(p->vshader->glsl_source, strlen(p->vshader->glsl_source)));
-		FILE *f = fopen(fname, "rb");
-		if (f) {
-			fseek(f, 0, SEEK_END);
-			p->vshader->size = ftell(f);
-			fseek(f, 0, SEEK_SET);
+		SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
+		if (f >= 0) {
+			p->vshader->size = sceIoLseek(f, 0, SCE_SEEK_END);
+			sceIoLseek(f, 0, SCE_SEEK_SET);
 			SceGxmProgram *res = (SceGxmProgram *)vglMalloc(p->vshader->size);
-			fread(res, 1, p->vshader->size, f);
-			fclose(f);
+			sceIoRead(f, res, p->vshader->size);
+			sceIoClose(f);
 			sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &p->vshader->id);
 			p->vshader->prog = sceGxmShaderPatcherGetProgramFromId(p->vshader->id);
 		} else {
@@ -1826,23 +1823,22 @@ void glLinkProgram(GLuint progr) {
 			glsl_translator_process(p->vshader, 1, &p->vshader->glsl_source, NULL);
 			compile_shader(p->vshader, GL_TRUE);
 #ifdef HAVE_SHADER_CACHE
-			f = fopen(fname, "wb");
-			fwrite(p->vshader->prog, 1, p->vshader->size, f);
-			fclose(f);
+			f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
+			sceIoWrite(f, p->vshader->prog, p->vshader->size);
+			sceIoClose(f);
 		}
 #endif
 		if (!p->fshader->glsl_source)
 			p->fshader->glsl_source = p->fshader->source;
 #ifdef HAVE_SHADER_CACHE
 		sprintf(fname, "%s/%llX.gxp", vgl_shader_cache_path, XXH3_64bits(p->fshader->glsl_source, strlen(p->fshader->glsl_source)));
-		f = fopen(fname, "rb");
-		if (f) {
-			fseek(f, 0, SEEK_END);
-			p->fshader->size = ftell(f);
-			fseek(f, 0, SEEK_SET);
+		SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
+		if (f >= 0) {
+			p->fshader->size = sceIoLseek(f, 0, SCE_SEEK_END);
+			sceIoLseek(f, 0, SCE_SEEK_SET);
 			SceGxmProgram *res = (SceGxmProgram *)vglMalloc(p->fshader->size);
-			fread(res, 1, p->fshader->size, f);
-			fclose(f);
+			sceIoRead(f, res, p->fshader->size);
+			sceIoClose(f);
 			sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &p->fshader->id);
 			p->fshader->prog = sceGxmShaderPatcherGetProgramFromId(p->fshader->id);
 		} else {
@@ -1850,9 +1846,9 @@ void glLinkProgram(GLuint progr) {
 			glsl_translator_process(p->fshader, 1, &p->fshader->glsl_source, NULL);
 			compile_shader(p->fshader, GL_TRUE);
 #ifdef HAVE_SHADER_CACHE
-			f = fopen(fname, "wb");
-			fwrite(p->fshader->prog, 1, p->fshader->size, f);
-			fclose(f);
+			f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
+			sceIoWrite(f, p->fshader->prog, p->fshader->size);
+			sceIoClose(f);
 		}
 #endif
 		// Setting progressive default attribute bindings

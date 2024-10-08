@@ -130,13 +130,12 @@ extern uint32_t vgl_tex_cache_freq; // Number of frames prior a texture becomes 
 		char fname[256], hash[24]; \
 		sprintf(hash, "%llX", tex->hash); \
 		sprintf(fname, "%s/%c%c/%s.raw", vgl_file_cache_path, hash[0], hash[1], hash); \
-		FILE *f = fopen(fname, "rb"); \
-		fseek(f, 0, SEEK_END); \
-		size_t sz = ftell(f); \
-		fseek(f, 0, SEEK_SET); \
+		SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777); \
+		size_t sz = sceIoLseek(f, 0, SCE_SEEK_END); \
+		sceIoLseek(f, 0, SCE_SEEK_SET); \
 		void *texture_data = gpu_alloc_mapped(sz, VGL_MEM_MAIN); \
-		fread(texture_data, 1, sz, f); \
-		fclose(f); \
+		sceIoRead(f, texture_data, sz); \
+		sceIoClose(f); \
 		sceIoRemove(fname); \
 		sceGxmTextureSetData(&tex->gxm_tex, texture_data); \
 		tex->data = texture_data; \

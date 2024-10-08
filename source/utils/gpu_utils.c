@@ -188,9 +188,9 @@ void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type) {
 			sprintf(fname, "%s/%c%c", vgl_file_cache_path, hash_str[0], hash_str[1]);
 			sceIoMkdir(fname, 0777);
 			sprintf(fname, "%s/%c%c/%s.raw", vgl_file_cache_path, hash_str[0], hash_str[1], hash_str);
-			FILE *f = fopen(fname, "wb");
-			fwrite(tex->data, 1, size, f);
-			fclose(f);
+			SceUID f = sceIoOpen(fname, SCE_O_CREAT | SCE_O_TRUNC | SCE_O_WRONLY, 0777);
+			sceIoWrite(f, tex->data, size);
+			sceIoClose(f);
 			vgl_free(tex->data);
 			tex->hash = hash;
 			tex->prev = NULL;

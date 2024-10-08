@@ -274,10 +274,10 @@ void vgl_file_log(const char *format, ...) {
 	va_start(arg, format);
 	vsnprintf(msg, sizeof(msg), format, arg);
 	va_end(arg);
-	FILE *log = fopen("ux0:/data/vitaGL.log", "a+");
-	if (log != NULL) {
-		fwrite(msg, 1, strlen(msg), log);
-		fclose(log);
+	SceUID log = sceIoOpen("ux0:/data/vitaGL.log", SCE_O_WRONLY | SCE_O_APPEND | SCE_O_CREAT, 0777);
+	if (log >= 0) {
+		sceIoWrite(log, msg, strlen(msg));
+		sceIoClose(log);
 	}
 }
 #endif
