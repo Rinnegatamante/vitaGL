@@ -1224,6 +1224,12 @@ void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, in
 }
 
 GLuint glCreateShader(GLenum shaderType) {
+#ifndef SKIP_ERROR_HANDLING
+	if (shaderType != GL_FRAGMENT_SHADER && shaderType != GL_VERTEX_SHADER) {
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, 0)
+	}
+#endif
+
 	// Looking for a free shader slot
 	GLuint i, res = 0;
 	for (i = 1; i <= MAX_CUSTOM_SHADERS; i++) {
@@ -1233,23 +1239,16 @@ GLuint glCreateShader(GLenum shaderType) {
 		}
 	}
 
+#ifndef SKIP_ERROR_HANDLING
 	// All shader slots are busy, exiting call
 	if (res == 0) {
 		vgl_log("%s:%d %s: Out of shaders handles. Consider increasing MAX_CUSTOM_SHADERS...\n", __FILE__, __LINE__, __func__);
 		return res;
 	}
+#endif
 
 	// Reserving and initializing shader slot
-	switch (shaderType) {
-	case GL_FRAGMENT_SHADER:
-		shaders[res - 1].type = GL_FRAGMENT_SHADER;
-		break;
-	case GL_VERTEX_SHADER:
-		shaders[res - 1].type = GL_VERTEX_SHADER;
-		break;
-	default:
-		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, 0)
-	}
+	shaders[res - 1].type = shaderType;
 	shaders[res - 1].mat = NULL;
 	shaders[res - 1].unif_blk = NULL;
 	shaders[res - 1].valid = GL_TRUE;
