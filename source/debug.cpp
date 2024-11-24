@@ -283,9 +283,9 @@ void vgl_file_log(const char *format, ...) {
 #endif
 
 #ifdef LOG_ERRORS
-#define ERRROR_CASE(x) \
+#define ERROR_CASE(x) \
 	case x: \
-		return ##x;
+		return "##x";
 char *get_gxm_error_literal(uint32_t code) {
 	switch (code) {
 	ERROR_CASE(SCE_GXM_ERROR_UNINITIALIZED)
