@@ -127,7 +127,7 @@ uint16_t *default_line_strips_idx_ptr; // sceGxm mapped progressive indices buff
 uint8_t *vertex_data_pool[CIRCULAR_VERTEX_POOLS_NUM];
 uint8_t *vertex_data_pool_ptr[CIRCULAR_VERTEX_POOLS_NUM];
 static uint8_t *vertex_data_pool_limit[CIRCULAR_VERTEX_POOLS_NUM];
-int vgl_circular_idx;
+int vgl_circular_idx = 0;
 #else
 static uint8_t *vertex_data_pool;
 static uint8_t *vertex_data_pool_ptr;
@@ -139,7 +139,7 @@ uint8_t *vgl_reserve_data_pool(uint32_t size) {
 	uint8_t *res = vertex_data_pool_ptr[vgl_circular_idx];
 	vertex_data_pool_ptr[vgl_circular_idx] += size;
 	if (vertex_data_pool_ptr[vgl_circular_idx] > vertex_data_pool_limit[vgl_circular_idx]) {
-		vgl_log("%s:%d Circular vertex pool overrun (Total of %u bytes). Considering increasing it with vglSetVertexPoolSize. Falling back to regular allocation.\n", __FILE__, __LINE__, vertex_data_pool_ptr[vgl_circular_idx] - vertex_data_pool_limit[vgl_circular_idx]);
+		vgl_log("%s:%d Circular vertex pool overrun (Total of %u bytes). Consider increasing its size with vglSetVertexPoolSize. Falling back to regular allocation.\n", __FILE__, __LINE__, vertex_data_pool_ptr[vgl_circular_idx] - vertex_data_pool_limit[vgl_circular_idx]);
 		res = (uint8_t *)gpu_alloc_mapped(size, VGL_MEM_MAIN);
 #ifdef LOG_ERRORS
 		if (!res)
