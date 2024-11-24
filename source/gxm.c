@@ -776,7 +776,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 	frame_profiler_cnt += tick - frame_start_profiler_cnt;
 	if ((vgl_framecount % 30) == 0) {
 		vgl_log("-----------------------------------------\n");
-		vgl_log("Last 30 frames took %ums to be processed.\n", frame_profiler_cnt);
+		vgl_log("Last 30 frames took %ums to be processed.\n", frame_profiler_cnt / 1000);
 		vgl_log("%ums spent processing %u fixed-function pipeline non-immediate draw calls.\n", ffp_draw_profiler_cnt / 1000, ffp_draw_cnt);
 		vgl_log("%ums spent setting up fixed-function pipeline states.\n", ffp_reload_profiler_cnt / 1000);
 		vgl_log("%ums spent processing %u shaders pipeline draw calls.\n", shaders_draw_profiler_cnt / 1000, shaders_draw_cnt);
