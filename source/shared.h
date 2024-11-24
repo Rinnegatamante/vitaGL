@@ -67,6 +67,13 @@
 #define OBJ_NOT_USED 0xFFFFFFFF // Flag for not yet used objects
 #define OBJ_CACHED 0xFFFFFFFE // Flag for file cached objects
 
+#ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
+#define CIRCULAR_VERTEX_POOLS_NUM 3
+extern uint8_t *vertex_data_pool[CIRCULAR_VERTEX_POOLS_NUM];
+extern uint8_t *vertex_data_pool_ptr[CIRCULAR_VERTEX_POOLS_NUM];
+extern int vgl_circular_idx;
+#endif
+
 // Texture object status enum
 enum {
 	TEX_UNUSED,
@@ -1041,6 +1048,6 @@ void vgl_debugger_draw(); // Draws ImGui debugger window
 void vgl_debugger_light_draw(uint32_t *fb); // Draws CPU rendered debugger window
 
 /* vitaGL.c */
-uint8_t *reserve_data_pool(uint32_t size);
+uint8_t *vgl_reserve_data_pool(uint32_t size);
 
 #endif

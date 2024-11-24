@@ -27,7 +27,7 @@
 #include "debug_utils.h"
 #include "mem_utils.h"
 
-uint8_t *reserve_data_pool(uint32_t size);
+uint8_t *vgl_reserve_data_pool(uint32_t size);
 extern uint32_t vgl_framecount; // Current frame number since application started
 
 // Align a value to the requested alignment
@@ -56,7 +56,7 @@ static inline __attribute__((always_inline)) void *gpu_alloc_mapped_temp(size_t 
 	markAsDirty(res);
 	return res;
 #else
-	return reserve_data_pool(size);
+	return vgl_reserve_data_pool(size);
 #endif
 }
 

@@ -792,6 +792,10 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 #endif
 
 	vgl_framecount++;
+#ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
+	vgl_circular_idx = vgl_framecount % 3;
+	vertex_data_pool_ptr[vgl_circular_idx] = vertex_data_pool[vgl_circular_idx];
+#endif
 
 	// Marking uniform values as dirty at each frame end just to be safe
 	dirty_frag_unifs = GL_TRUE;

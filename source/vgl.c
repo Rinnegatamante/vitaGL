@@ -123,17 +123,38 @@ uint16_t *default_line_strips_idx_ptr; // sceGxm mapped progressive indices buff
 // Internal functions
 #ifdef HAVE_CIRCULAR_VERTEX_POOL
 #define CIRCULAR_VERTEX_POOL_SIZE_DEF (32 * 1024 * 1024) // Default size in bytes for the circular vertex pool
+#ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
+uint8_t *vertex_data_pool[CIRCULAR_VERTEX_POOLS_NUM];
+uint8_t *vertex_data_pool_ptr[CIRCULAR_VERTEX_POOLS_NUM];
+static uint8_t *vertex_data_pool_limit[CIRCULAR_VERTEX_POOLS_NUM];
+int vgl_circular_idx;
+#else
 static uint8_t *vertex_data_pool;
 static uint8_t *vertex_data_pool_ptr;
 static uint8_t *vertex_data_pool_limit;
+#endif
 static uint32_t vertex_data_pool_size = CIRCULAR_VERTEX_POOL_SIZE_DEF;
-uint8_t *reserve_data_pool(uint32_t size) {
+uint8_t *vgl_reserve_data_pool(uint32_t size) {
+#ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
+	uint8_t *res = vertex_data_pool_ptr[vgl_circular_idx];
+	vertex_data_pool_ptr[vgl_circular_idx] += size;
+	if (vertex_data_pool_ptr[vgl_circular_idx] > vertex_data_pool_limit[vgl_circular_idx]) {
+		vgl_log("%s:%d Circular vertex pool overrun (Total of %u bytes). Considering increasing it with vglSetVertexPoolSize. Falling back to regular allocation.\n", __FILE__, __LINE__, vertex_data_pool_ptr[vgl_circular_idx] - vertex_data_pool_limit[vgl_circular_idx]);
+		res = (uint8_t *)gpu_alloc_mapped(size, VGL_MEM_MAIN);
+#ifdef LOG_ERRORS
+		if (!res)
+			vgl_log("%s:%d gpu_alloc_mapped_temp failed with a requested size of 0x%08X\n", __FILE__, __LINE__, size);
+#endif
+		markAsDirty(res);
+	}
+#else
 	uint8_t *res = vertex_data_pool_ptr;
 	vertex_data_pool_ptr += size;
 	if (vertex_data_pool_ptr > vertex_data_pool_limit) {
 		vertex_data_pool_ptr = vertex_data_pool;
 		return vertex_data_pool_ptr;
 	}
+#endif
 	return res;
 }
 #endif
@@ -410,7 +431,13 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	resetDlists();
 #endif
 
-#ifdef HAVE_CIRCULAR_VERTEX_POOL
+#ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
+	for (int i = 0; i < CIRCULAR_VERTEX_POOLS_NUM; i++) {
+		vertex_data_pool[i] = gpu_alloc_mapped(vertex_data_pool_size / 3, VGL_MEM_RAM);
+		vertex_data_pool_ptr[i] = vertex_data_pool[i];
+		vertex_data_pool_limit[i] = (uint8_t *)vertex_data_pool[i] + vertex_data_pool_size / 3;
+	}
+#elif defined(HAVE_CIRCULAR_VERTEX_POOL)
 	vertex_data_pool = gpu_alloc_mapped(vertex_data_pool_size, VGL_MEM_RAM);
 	vertex_data_pool_ptr = vertex_data_pool;
 	vertex_data_pool_limit = (uint8_t *)vertex_data_pool + vertex_data_pool_size;
