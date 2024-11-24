@@ -27,6 +27,7 @@
 #include "debug_utils.h"
 #include "mem_utils.h"
 
+uint8_t *reserve_data_pool(uint32_t size);
 extern uint32_t vgl_framecount; // Current frame number since application started
 
 // Align a value to the requested alignment
