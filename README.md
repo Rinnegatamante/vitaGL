@@ -15,6 +15,7 @@ In order to build vitaGL use the following command: `make install`.
 | `HAVE_SHARK_LOG=1`|  Enables logging support in runtime shader compiler.|
 |`LOG_ERRORS=1`| Errors will be logged with sceClibPrintf.|
 |`LOG_ERRORS=2`| Errors will be logged to ux0:data/vitaGL.log.|
+|`HAVE_PROFILING=1`| Enables lightweighted profiler for CPU time spent in draw calls.|
 |`HAVE_DEBUGGER=1`| Enables lightweighted on screen debugger interface.|
 |`HAVE_DEBUGGER=2`| Enables lightweighted on screen debugger interface with extra information (devkit only).|
 |`HAVE_RAZOR=1`| Enables debugging features through Razor debugger (retail and devkit compatible).|

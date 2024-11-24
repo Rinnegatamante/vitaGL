@@ -691,6 +691,15 @@ extern SceGxmVertexStream legacy_nt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM 
 extern SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 extern SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 
+#ifdef HAVE_PROFILING
+extern uint32_t frame_profiler_cnt;
+extern uint32_t ffp_draw_profiler_cnt;
+extern uint32_t ffp_reload_profiler_cnt;
+extern uint32_t shaders_draw_profiler_cnt;
+extern uint32_t ffp_draw_cnt;
+extern uint32_t shaders_draw_cnt;
+#endif
+
 // Logging callback for vitaShaRK
 #if defined(HAVE_SHARK_LOG) || defined(LOG_ERRORS)
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line);

@@ -487,6 +487,9 @@ void resetCustomShaders(void) {
 }
 
 void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *idx_ptr, const GLint *first, const GLsizei *count, GLint lowest, GLsizei highest, GLsizei drawcount) {
+#ifdef HAVE_PROFILING
+	uint32_t draw_start = sceKernelGetProcessTimeLow();
+#endif
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required and upload fragment program
@@ -680,9 +683,16 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 		
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, idx_ptr, count[j]);
 	}
+#ifdef HAVE_PROFILING
+	shaders_draw_profiler_cnt += sceKernelGetProcessTimeLow() - draw_start;
+	shaders_draw_cnt++;
+#endif
 }
 
 GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count) {
+#ifdef HAVE_PROFILING
+	uint32_t draw_start = sceKernelGetProcessTimeLow();
+#endif
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required and upload fragment program
@@ -882,11 +892,17 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count) {
 			}
 		}
 	}
-
+#ifdef HAVE_PROFILING
+	shaders_draw_profiler_cnt += sceKernelGetProcessTimeLow() - draw_start;
+	shaders_draw_cnt++;
+#endif
 	return GL_TRUE;
 }
 
 GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, GLboolean is_short) {
+#ifdef HAVE_PROFILING
+	uint32_t draw_start = sceKernelGetProcessTimeLow();
+#endif
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required and upload fragment program
@@ -1104,11 +1120,17 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			}
 		}
 	}
-
+#ifdef HAVE_PROFILING
+	shaders_draw_profiler_cnt += sceKernelGetProcessTimeLow() - draw_start;
+	shaders_draw_cnt++;
+#endif
 	return GL_TRUE;
 }
 
 void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
+#ifdef HAVE_PROFILING
+	uint32_t draw_start = sceKernelGetProcessTimeLow();
+#endif
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required
@@ -1131,6 +1153,10 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 		}
 #endif
 	}
+#ifdef HAVE_PROFILING
+	shaders_draw_profiler_cnt += sceKernelGetProcessTimeLow() - draw_start;
+	shaders_draw_cnt++;
+#endif
 }
 
 #ifdef HAVE_SHARK_LOG

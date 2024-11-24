@@ -70,6 +70,15 @@ GLenum vgl_error = GL_NO_ERROR; // Error returned by glGetError
 SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 GLboolean is_fbo_float = GL_FALSE; // Current framebuffer mode
 
+#ifdef HAVE_PROFILING
+uint32_t frame_profiler_cnt = 0;
+uint32_t ffp_draw_profiler_cnt = 0;
+uint32_t ffp_reload_profiler_cnt = 0;
+uint32_t shaders_draw_profiler_cnt = 0;
+uint32_t ffp_draw_cnt = 0;
+uint32_t shaders_draw_cnt = 0;
+#endif
+
 int DISPLAY_WIDTH; // Display width in pixels
 int DISPLAY_HEIGHT; // Display height in pixels
 int DISPLAY_STRIDE; // Display stride in pixels
@@ -258,15 +267,14 @@ int garbage_collector(unsigned int args, void *arg) {
 		sceKernelWaitSema(gc_mutex[0], 1, NULL);
 #endif
 		// Purging all elements marked for deletion
-		int i;
-		for (i = 0; i < FRAME_PURGE_LIST_SIZE; i++) {
+		for (int i = 0; i < FRAME_PURGE_LIST_SIZE; i++) {
 			if (frame_purge_list[frame_purge_clean_idx][i]) {
 				vgl_free(frame_purge_list[frame_purge_clean_idx][i]);
 				frame_purge_list[frame_purge_clean_idx][i] = NULL;
 			} else
 				break;
 		}
-		for (i = 0; i < FRAME_PURGE_RENDERTARGETS_LIST_SIZE; i++) {
+		for (int i = 0; i < FRAME_PURGE_RENDERTARGETS_LIST_SIZE; i++) {
 			if (frame_rt_purge_list[frame_purge_clean_idx][i]) {
 				sceGxmDestroyRenderTarget(frame_rt_purge_list[frame_purge_clean_idx][i]);
 				frame_rt_purge_list[frame_purge_clean_idx][i] = NULL;
@@ -761,6 +769,28 @@ void vglUseTripleBuffering(GLboolean usage) {
 }
 
 void vglSwapBuffers(GLboolean has_commondialog) {
+#ifdef HAVE_PROFILING
+	// Show profiling results once every 30 frames to not clog CPU
+	uint32_t tick = sceKernelGetProcessTimeLow();
+	static uint32_t frame_start_profiler_cnt = 0;
+	frame_profiler_cnt += tick - frame_start_profiler_cnt;
+	if ((vgl_framecount % 30) == 0) {
+		vgl_log("-----------------------------------------\n");
+		vgl_log("Last 30 frames took %ums to be processed.\n", frame_profiler_cnt);
+		vgl_log("%ums spent processing %u fixed-function pipeline non-immediate draw calls.\n", ffp_draw_profiler_cnt / 1000, ffp_draw_cnt);
+		vgl_log("%ums spent setting up fixed-function pipeline states.\n", ffp_reload_profiler_cnt / 1000);
+		vgl_log("%ums spent processing %u shaders pipeline draw calls.\n", shaders_draw_profiler_cnt / 1000, shaders_draw_cnt);
+		vgl_log("-----------------------------------------\n");
+		frame_profiler_cnt = 0;
+		ffp_draw_profiler_cnt = 0;
+		ffp_reload_profiler_cnt = 0;
+		shaders_draw_profiler_cnt = 0;
+		shaders_draw_cnt = 0;
+		ffp_draw_cnt = 0;
+	}
+	frame_start_profiler_cnt = tick;
+#endif
+
 	vgl_framecount++;
 
 	// Marking uniform values as dirty at each frame end just to be safe

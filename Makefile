@@ -103,6 +103,10 @@ ifeq ($(LOG_ERRORS),1)
 CFLAGS += -DLOG_ERRORS
 endif
 
+ifeq ($(HAVE_PROFILING),1)
+CFLAGS += -DHAVE_PROFILING
+endif
+
 ifeq ($(LOG_ERRORS),2)
 CFLAGS += -DLOG_ERRORS -DFILE_LOG
 endif

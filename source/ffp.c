@@ -462,6 +462,9 @@ void setup_combiner_pass(int i, char *dst) {
 SceGxmVertexStream *cur_streams;
 int light_idx_start;
 uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams) {
+#ifdef HAVE_PROFILING
+	uint32_t reload_ffp_shaders_start = sceKernelGetProcessTimeLow();
+#endif
 	light_idx_start = 0xFF;
 	// Checking if mask changed
 	GLboolean ffp_dirty_frag_blend = ffp_blend_info.raw != blend_info.raw;
@@ -1128,13 +1131,17 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		}
 		dirty_vert_unifs = GL_FALSE;
 	}
-
+#ifdef HAVE_PROFILING
+	ffp_reload_profiler_cnt += sceKernelGetProcessTimeLow() - reload_ffp_shaders_start;
+#endif
 	return draw_mask_state;
 }
 
 void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 	uint8_t mask_state = reload_ffp_shaders(NULL, NULL);
-
+#ifdef HAVE_PROFILING
+	uint32_t draw_start = sceKernelGetProcessTimeLow();
+#endif
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
 		texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
@@ -1205,11 +1212,17 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 			sceGxmSetVertexStream(gxm_context, j++, ptr);
 		}
 	}
+#ifdef HAVE_PROFILING
+	ffp_draw_profiler_cnt += sceKernelGetProcessTimeLow() - draw_start;
+	ffp_draw_cnt++;
+#endif
 }
 
 void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *idx_ptr, const GLint *first, const GLsizei *count, GLint lowest, GLsizei highest, GLsizei drawcount) {
 	uint8_t mask_state = reload_ffp_shaders(NULL, NULL);
-
+#ifdef HAVE_PROFILING
+	uint32_t draw_start = sceKernelGetProcessTimeLow();
+#endif
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
 		texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
@@ -1292,10 +1305,17 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 		}
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, idx_ptr, count[i]);
 	}
+#ifdef HAVE_PROFILING
+	ffp_draw_profiler_cnt += sceKernelGetProcessTimeLow() - draw_start;
+	ffp_draw_cnt++;
+#endif
 }
 
 void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, GLboolean is_short) {
 	uint8_t mask_state = reload_ffp_shaders(NULL, NULL);
+#ifdef HAVE_PROFILING
+	uint32_t draw_start = sceKernelGetProcessTimeLow();
+#endif
 	int attr_idxs[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 	int attr_num = 0;
 #ifndef DRAW_SPEEDHACK
@@ -1398,6 +1418,10 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 		}
 		sceGxmSetVertexStream(gxm_context, i, ptr);
 	}
+#ifdef HAVE_PROFILING
+	ffp_draw_profiler_cnt += sceKernelGetProcessTimeLow() - draw_start;
+	ffp_draw_cnt++;
+#endif
 }
 
 void update_fogging_state() {
