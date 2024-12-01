@@ -161,7 +161,11 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 	for (int j = 0; j < n; j++) {
 		if (gl_buffers[j]) {
 			gpubuffer *gpu_buf = (gpubuffer *)gl_buffers[j];
-			if (gpu_buf->ptr && gpu_buf->type == VGL_MEM_VRAM) {
+#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+			if (gpu_buf->ptr && !gpu_buf->scratch) {
+#else
+			if (gpu_buf->ptr) {
+#endif
 				if (gpu_buf->last_frame != OBJ_NOT_USED && (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ))
 					markAsDirty(gpu_buf->ptr);
 				else
