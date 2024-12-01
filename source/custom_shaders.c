@@ -1857,7 +1857,7 @@ void glLinkProgram(GLuint progr) {
 			p->fshader->glsl_source = p->fshader->source;
 #ifdef HAVE_SHADER_CACHE
 		sprintf(fname, "%s/%llX.gxp", vgl_shader_cache_path, XXH3_64bits(p->fshader->glsl_source, strlen(p->fshader->glsl_source)));
-		SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
+		f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
 		if (f >= 0) {
 			p->fshader->size = sceIoLseek(f, 0, SCE_SEEK_END);
 			sceIoLseek(f, 0, SCE_SEEK_SET);
