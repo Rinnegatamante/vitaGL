@@ -73,6 +73,10 @@ extern uint8_t *vertex_data_pool[CIRCULAR_VERTEX_POOLS_NUM];
 extern uint8_t *vertex_data_pool_ptr[CIRCULAR_VERTEX_POOLS_NUM];
 extern int vgl_circular_idx;
 #endif
+#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+extern GLboolean vgl_dynamic_wants_scratch;
+extern GLboolean vgl_stream_wants_scratch;
+#endif
 
 // Texture object status enum
 enum {
@@ -524,6 +528,9 @@ typedef struct {
 	int32_t size;
 	vglMemType type;
 	uint32_t last_frame;
+#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+	GLboolean scratch;
+#endif
 	GLboolean mapped;
 } gpubuffer;
 

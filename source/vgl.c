@@ -123,6 +123,10 @@ uint16_t *default_line_strips_idx_ptr; // sceGxm mapped progressive indices buff
 // Internal functions
 #ifdef HAVE_CIRCULAR_VERTEX_POOL
 #define CIRCULAR_VERTEX_POOL_SIZE_DEF (32 * 1024 * 1024) // Default size in bytes for the circular vertex pool
+#ifdef HAVE_SCRATCH_MEMORY
+GLboolean vgl_dynamic_wants_scratch = GL_TRUE;
+GLboolean vgl_stream_wants_scratch = GL_TRUE;
+#endif
 #ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
 uint8_t *vertex_data_pool[CIRCULAR_VERTEX_POOLS_NUM];
 uint8_t *vertex_data_pool_ptr[CIRCULAR_VERTEX_POOLS_NUM];
@@ -865,5 +869,12 @@ void vglUseCachedMem(GLboolean use) {
 void vglSetTextureCacheFrequency(GLuint freq) {
 #ifdef HAVE_TEX_CACHE
 	vgl_tex_cache_freq = freq;
+#endif
+}
+
+void vglSetupScratchMemory(GLboolean scratch_for_dynamic, GLboolean scratch_for_stream) {
+#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+	vgl_dynamic_wants_scratch = scratch_for_dynamic;
+	vgl_stream_wants_scratch = scratch_for_stream;
 #endif
 }
