@@ -479,7 +479,7 @@ void initDisplayColorSurfaces(void) {
 		// Allocating color surface memblock
 		if (!system_app_mode) {
 			gxm_color_surfaces_addr[i] = gpu_alloc_mapped_aligned(4096, VGL_ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024), VGL_MEM_VRAM);
-			sceClibMemset(gxm_color_surfaces_addr[i], 0, DISPLAY_STRIDE * DISPLAY_HEIGHT);
+			sceClibMemset(gxm_color_surfaces_addr[i], 0, 4 * DISPLAY_STRIDE * DISPLAY_HEIGHT);
 		}
 
 		// Initializing allocated color surface
