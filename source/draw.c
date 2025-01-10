@@ -531,7 +531,7 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 		else
 #endif
 		{
-			setup_elements_indices_with_base(uint16t)
+			setup_elements_indices_with_base(uint16_t)
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		}
 #else
