@@ -1365,7 +1365,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 
 #ifndef INDICES_SPEEDHACK
 	// Check if highest index is small enough for 16 bit usage and if so, downgrade to 16 bit vertex sources for faster emitted code
-	if (top_idx < 0xFFFF) {
+	if (top_idx && top_idx < 0xFFFF) {
 		index_type &= ~1;
 	}
 #endif
