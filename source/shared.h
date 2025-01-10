@@ -1031,7 +1031,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, GLboolean is_short); // glDrawElements implementation for rendering with ffp
 void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count); // glDrawArrays implementation for rendering with ffp
 void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *idx_buf, const GLint *first, const GLsizei *count, GLint lowest, GLsizei highest, GLsizei drawcount); // glMultiDrawArrays implementation for rendering with ffp
-uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams); // Reloads current in use ffp shaders
+uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams, GLboolean is_short); // Reloads current in use ffp shaders
 void upload_ffp_uniforms(); // Uploads required uniforms for the in use ffp shaders
 void update_fogging_state(); // Updates current setup for fogging
 void adjust_color_material_state(); // Updates internal settings for GL_COLOR_MATERIAL

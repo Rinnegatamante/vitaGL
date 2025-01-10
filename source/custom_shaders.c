@@ -1036,18 +1036,25 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 
 	// Detecting highest index value
 	if (!is_full_vbo && !top_idx) {
-		if (is_short) {
+#ifndef INDICES_SPEEDHACK
+		if (is_short)
+#endif
+		{
 			for (int i = 0; i < count; i++) {
 				if (idx_buf[i] > top_idx)
 					top_idx = idx_buf[i];
 			}
-		} else {
+		}
+#ifndef INDICES_SPEEDHACK
+		else
+		{
 			uint32_t *_idx_buf = (uint32_t *)idx_buf;
 			for (int i = 0; i < count; i++) {
 				if (_idx_buf[i] > top_idx)
 					top_idx = _idx_buf[i];
 			}
 		}
+#endif
 		top_idx++;
 	}
 
@@ -1087,6 +1094,13 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #else // DRAW_SPEEDHACK
 	handleSpeedhackAttrib();
 #endif
+
+#ifndef INDICES_SPEEDHACK
+	for (int i = 0; i < p->attr_num; i++) {
+		streams[i].indexSource = is_short ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT;
+	}
+#endif
+
 	// Uploading new vertex program
 	patchVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 	sceGxmSetVertexProgram(gxm_context, p->vprog);

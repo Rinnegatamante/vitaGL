@@ -461,7 +461,7 @@ void setup_combiner_pass(int i, char *dst) {
 
 SceGxmVertexStream *cur_streams;
 int light_idx_start;
-uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams) {
+uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams, GLboolean is_short) {
 #ifdef HAVE_PROFILING
 	uint32_t reload_ffp_shaders_start = sceKernelGetProcessTimeLow();
 #endif
@@ -834,6 +834,12 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	}
 	cur_streams = streams;
 
+#ifndef INDICES_SPEEDHACK
+	for (int i = 0; i < ffp_vertex_num_params; i++) {
+		streams[i].indexSource = is_short ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT;
+	}
+#endif
+
 	// Creating patched vertex shader
 	patchVertexProgram(gxm_shader_patcher, ffp_vertex_program_id, attrs, ffp_vertex_num_params, streams, ffp_vertex_num_params, &ffp_vertex_program_patched);
 
@@ -1138,7 +1144,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 }
 
 void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
-	uint8_t mask_state = reload_ffp_shaders(NULL, NULL);
+	uint8_t mask_state = reload_ffp_shaders(NULL, NULL, GL_FALSE);
 #ifdef HAVE_PROFILING
 	uint32_t draw_start = sceKernelGetProcessTimeLow();
 #endif
@@ -1219,7 +1225,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 }
 
 void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *idx_ptr, const GLint *first, const GLsizei *count, GLint lowest, GLsizei highest, GLsizei drawcount) {
-	uint8_t mask_state = reload_ffp_shaders(NULL, NULL);
+	uint8_t mask_state = reload_ffp_shaders(NULL, NULL, GL_FALSE);
 #ifdef HAVE_PROFILING
 	uint32_t draw_start = sceKernelGetProcessTimeLow();
 #endif
@@ -1312,7 +1318,7 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 }
 
 void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, GLboolean is_short) {
-	uint8_t mask_state = reload_ffp_shaders(NULL, NULL);
+	uint8_t mask_state = reload_ffp_shaders(NULL, NULL, is_short);
 #ifdef HAVE_PROFILING
 	uint32_t draw_start = sceKernelGetProcessTimeLow();
 #endif
@@ -1334,18 +1340,25 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 #ifndef DRAW_SPEEDHACK
 	// Detecting highest index value
 	if (!is_full_vbo && !top_idx) {
-		if (is_short) {
+#ifndef INDICES_SPEEDHACK
+		if (is_short)
+#endif
+		{
 			for (int i = 0; i < count; i++) {
 				if (idx_buf[i] > top_idx)
 					top_idx = idx_buf[i];
 			}
-		} else {
+		}
+#ifndef INDICES_SPEEDHACK
+		else
+		{
 			uint32_t *_idx_buf = (uint32_t *)idx_buf;
 			for (int i = 0; i < count; i++) {
 				if (_idx_buf[i] > top_idx)
 					top_idx = _idx_buf[i];
 			}
 		}
+#endif
 		top_idx++;
 	}
 #endif
@@ -2371,7 +2384,7 @@ void glEnd(void) {
 	ffp_dirty_vert = GL_TRUE;
 	if (texture_units[1].state) { // Multitexture usage
 		ffp_vertex_attrib_state = 0xFFFF;
-		reload_ffp_shaders(legacy_mt_vertex_attrib_config, legacy_mt_vertex_stream_config);
+		reload_ffp_shaders(legacy_mt_vertex_attrib_config, legacy_mt_vertex_stream_config, GL_FALSE);
 		for (int i = 0; i < 2; i++) {
 			texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
 #ifdef HAVE_TEX_CACHE
@@ -2400,7 +2413,7 @@ void glEnd(void) {
 		}
 	} else if (texture_units[0].state) { // Texturing usage
 		ffp_vertex_attrib_state = 0x0007;
-		reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config);
+		reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config, GL_FALSE);
 		texture *tex = &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]];
 #ifdef HAVE_TEX_CACHE
 		restoreTexCache(tex);
@@ -2427,7 +2440,7 @@ void glEnd(void) {
 		sceGxmSetFragmentTexture(gxm_context, 0, &tex->gxm_tex);
 	} else { // No texturing usage
 		ffp_vertex_attrib_state = 0x0005;
-		reload_ffp_shaders(legacy_nt_vertex_attrib_config, legacy_nt_vertex_stream_config);
+		reload_ffp_shaders(legacy_nt_vertex_attrib_config, legacy_nt_vertex_stream_config, GL_FALSE);
 	}
 
 	// Restoring original attributes state settings

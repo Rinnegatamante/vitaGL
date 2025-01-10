@@ -30,7 +30,7 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 	switch (mode) { \
 	case GL_QUADS: \
 		ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(uint16_t)); \
-		for (int i = 0; i < count / 4; i++) { \
+		for (GLsizei i = 0; i < count / 4; i++) { \
 			ptr[i * 6] = src[i * 4]; \
 			ptr[i * 6 + 1] = src[i * 4 + 1]; \
 			ptr[i * 6 + 2] = src[i * 4 + 3]; \
@@ -42,7 +42,7 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 		break; \
 	case GL_LINE_STRIP: \
 		ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(uint16_t)); \
-		for (int i = 0; i < count - 1; i++) { \
+		for (GLsizei i = 0; i < count - 1; i++) { \
 			ptr[i * 2] = src[i]; \
 			ptr[i * 2 + 1] = src[i + 1]; \
 		} \
@@ -50,7 +50,7 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 		break; \
 	case GL_LINE_LOOP: \
 		ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t)); \
-		for (int i = 0; i < count - 1; i++) { \
+		for (GLsizei i = 0; i < count - 1; i++) { \
 			ptr[i * 2] = src[i]; \
 			ptr[i * 2 + 1] = src[i + 1]; \
 		} \
@@ -72,7 +72,7 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 		switch (mode) { \
 		case GL_QUADS: \
 			ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(type_t)); \
-			for (int i = 0; i < count / 4; i++) { \
+			for (GLsizei i = 0; i < count / 4; i++) { \
 				ptr[i * 6] = src[i * 4]; \
 				ptr[i * 6 + 1] = src[i * 4 + 1]; \
 				ptr[i * 6 + 2] = src[i * 4 + 3]; \
@@ -84,7 +84,7 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 			break; \
 		case GL_LINE_STRIP: \
 			ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(type_t)); \
-			for (int i = 0; i < count - 1; i++) { \
+			for (GLsizei i = 0; i < count - 1; i++) { \
 				ptr[i * 2] = src[i]; \
 				ptr[i * 2 + 1] = src[i + 1]; \
 			} \
@@ -92,7 +92,7 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 			break; \
 		case GL_LINE_LOOP: \
 			ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(type_t)); \
-			for (int i = 0; i < count - 1; i++) { \
+			for (GLsizei i = 0; i < count - 1; i++) { \
 				ptr[i * 2] = src[i]; \
 				ptr[i * 2 + 1] = src[i + 1]; \
 			} \
@@ -113,7 +113,7 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 	switch (mode) { \
 	case GL_QUADS: \
 		ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(type_t)); \
-		for (int i = 0; i < count / 4; i++) { \
+		for (GLsizei i = 0; i < count / 4; i++) { \
 			ptr[i * 6] = src[i * 4] + baseVertex; \
 			ptr[i * 6 + 1] = src[i * 4 + 1] + baseVertex; \
 			ptr[i * 6 + 2] = src[i * 4 + 3] + baseVertex; \
@@ -125,7 +125,7 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 		break; \
 	case GL_LINE_STRIP: \
 		ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(type_t)); \
-		for (int i = 0; i < count - 1; i++) { \
+		for (GLsizei i = 0; i < count - 1; i++) { \
 			ptr[i * 2] = src[i] + baseVertex; \
 			ptr[i * 2 + 1] = src[i + 1] + baseVertex; \
 		} \
@@ -133,7 +133,7 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 		break; \
 	case GL_LINE_LOOP: \
 		ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(type_t)); \
-		for (int i = 0; i < count - 1; i++) { \
+		for (GLsizei i = 0; i < count - 1; i++) { \
 			ptr[i * 2] = src[i] + baseVertex; \
 			ptr[i * 2 + 1] = src[i + 1] + baseVertex; \
 		} \
@@ -143,7 +143,7 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 		break; \
 	default: \
 		ptr = gpu_alloc_mapped_temp(count * sizeof(type_t)); \
-		for (int i = 0; i < count; i++) { \
+		for (GLsizei i = 0; i < count; i++) { \
 			ptr[i] = src[i] + baseVertex; \
 		} \
 		break; \
@@ -417,20 +417,28 @@ void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLv
 #endif
 	{
 #ifdef HAVE_VITA3K_SUPPORT
-		if (type == GL_UNSIGNED_SHORT) {
-			setup_elements_indices_with_base(uint16_t);
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
-		} else {
+#ifndef INDICES_SPEEDHACK
+		if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices_with_base(uint32_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
 		}
+		else
+#endif
+		{
+			setup_elements_indices_with_base(uint16_t);
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
+		}
 #else
+#ifndef INDICES_SPEEDHACK
 		if (type == GL_UNSIGNED_SHORT) {
-			setup_elements_indices(uint16_t);
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16 + baseVertex, ptr, count);
-		} else {
 			setup_elements_indices(uint32_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32 + baseVertex, ptr, count);
+		}
+		else
+#endif
+		{
+			setup_elements_indices(uint16_t);
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16 + baseVertex, ptr, count);
 		}
 #endif
 	}
@@ -469,12 +477,16 @@ void glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, G
 	if (is_draw_legal)
 #endif
 	{
-		if (type == GL_UNSIGNED_SHORT) {
-			setup_elements_indices(uint16_t);
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
-		} else {
+#ifndef INDICES_SPEEDHACK
+		if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices(uint32_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
+		}
+		else
+#endif
+		{
+			setup_elements_indices(uint16_t);
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		}
 	}
 	restore_polygon_mode(gxm_p);
@@ -511,20 +523,28 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 #endif
 	{
 #ifdef HAVE_VITA3K_SUPPORT
-		if (type == GL_UNSIGNED_SHORT) {
-			setup_elements_indices_with_base(uint16_t)
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
-		} else {
+#ifndef INDICES_SPEEDHACK
+		if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices_with_base(uint32_t)
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
 		}
+		else
+#endif
+		{
+			setup_elements_indices_with_base(uint16t)
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
+		}
 #else
-		if (type == GL_UNSIGNED_SHORT) {
+#ifndef INDICES_SPEEDHACK
+		if (type == GL_UNSIGNED_INT) {
+			setup_elements_indices(uint32_t)
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32+ baseVertex, ptr, count);
+		}
+		else
+#endif
+		{
 			setup_elements_indices(uint16_t)
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16 + baseVertex, ptr, count);
-		} else {
-			setup_elements_indices(uint32_t)
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32 + baseVertex, ptr, count);
 		}
 #endif
 	}
@@ -561,12 +581,16 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void
 	if (is_draw_legal)
 #endif
 	{
-		if (type == GL_UNSIGNED_SHORT) {
-			setup_elements_indices(uint16_t);
-			sceGxmDrawInstanced(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count * primcount, count);
-		} else {
+#ifndef INDICES_SPEEDHACK
+		if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices(uint32_t);
 			sceGxmDrawInstanced(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count * primcount, count);
+		}
+		else
+#endif
+		{
+			setup_elements_indices(uint16_t);
+			sceGxmDrawInstanced(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count * primcount, count);
 		}
 	}
 	restore_polygon_mode(gxm_p);
@@ -590,7 +614,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 		_vglDrawObjects_CustomShadersIMPL(implicit_wvp);
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, index_object, count);
 	} else if (ffp_vertex_attrib_state & (1 << 0)) {
-		reload_ffp_shaders(NULL, NULL);
+		reload_ffp_shaders(NULL, NULL, GL_FALSE);
 		if (ffp_vertex_attrib_state & (1 << 1)) {
 			if (texture_slots[tex_unit->tex_id[0]].status != TEX_VALID)
 				return;
