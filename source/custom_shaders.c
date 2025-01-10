@@ -899,7 +899,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count) {
 	return GL_TRUE;
 }
 
-GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, GLboolean is_short) {
+GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, SceGxmIndexSource index_type) {
 #ifdef HAVE_PROFILING
 	uint32_t draw_start = sceKernelGetProcessTimeLow();
 #endif
@@ -1037,7 +1037,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	// Detecting highest index value
 	if (!is_full_vbo && !top_idx) {
 #ifndef INDICES_SPEEDHACK
-		if (is_short)
+		if ((index_type & 1) == 0)
 #endif
 		{
 			for (int i = 0; i < count; i++) {
@@ -1096,8 +1096,13 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #endif
 
 #ifndef INDICES_SPEEDHACK
+	// Check if highest index is small enough for 16 bit usage and if so, downgrade to 16 bit vertex sources for faster emitted code
+	if (top_idx < 0xFFFF) {
+		index_type &= ~1;
+	}
+
 	for (int i = 0; i < p->attr_num; i++) {
-		streams[i].indexSource = is_short ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT;
+		streams[i].indexSource = index_type;
 	}
 #endif
 

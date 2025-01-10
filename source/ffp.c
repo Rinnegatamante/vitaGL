@@ -461,7 +461,7 @@ void setup_combiner_pass(int i, char *dst) {
 
 SceGxmVertexStream *cur_streams;
 int light_idx_start;
-uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams, GLboolean is_short) {
+uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *streams, SceGxmIndexSource index_type) {
 #ifdef HAVE_PROFILING
 	uint32_t reload_ffp_shaders_start = sceKernelGetProcessTimeLow();
 #endif
@@ -836,7 +836,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 #ifndef INDICES_SPEEDHACK
 	for (int i = 0; i < ffp_vertex_num_params; i++) {
-		streams[i].indexSource = is_short ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT;
+		streams[i].indexSource = index_type;
 	}
 #endif
 
@@ -1144,7 +1144,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 }
 
 void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
-	uint8_t mask_state = reload_ffp_shaders(NULL, NULL, GL_FALSE);
+	uint8_t mask_state = reload_ffp_shaders(NULL, NULL, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
 #ifdef HAVE_PROFILING
 	uint32_t draw_start = sceKernelGetProcessTimeLow();
 #endif
@@ -1225,7 +1225,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 }
 
 void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *idx_ptr, const GLint *first, const GLsizei *count, GLint lowest, GLsizei highest, GLsizei drawcount) {
-	uint8_t mask_state = reload_ffp_shaders(NULL, NULL, GL_FALSE);
+	uint8_t mask_state = reload_ffp_shaders(NULL, NULL, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
 #ifdef HAVE_PROFILING
 	uint32_t draw_start = sceKernelGetProcessTimeLow();
 #endif
@@ -1317,8 +1317,8 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #endif
 }
 
-void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, GLboolean is_short) {
-	uint8_t mask_state = reload_ffp_shaders(NULL, NULL, is_short);
+void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, SceGxmIndexSource index_type) {
+	uint8_t mask_state = reload_ffp_shaders(NULL, NULL, index_type);
 #ifdef HAVE_PROFILING
 	uint32_t draw_start = sceKernelGetProcessTimeLow();
 #endif
@@ -1341,7 +1341,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 	// Detecting highest index value
 	if (!is_full_vbo && !top_idx) {
 #ifndef INDICES_SPEEDHACK
-		if (is_short)
+		if ((index_type & 1) == 0)
 #endif
 		{
 			for (int i = 0; i < count; i++) {
@@ -1360,6 +1360,13 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 		}
 #endif
 		top_idx++;
+	}
+#endif
+
+#ifndef INDICES_SPEEDHACK
+	// Check if highest index is small enough for 16 bit usage and if so, downgrade to 16 bit vertex sources for faster emitted code
+	if (top_idx < 0xFFFF) {
+		index_type &= ~1;
 	}
 #endif
 
@@ -2384,7 +2391,7 @@ void glEnd(void) {
 	ffp_dirty_vert = GL_TRUE;
 	if (texture_units[1].state) { // Multitexture usage
 		ffp_vertex_attrib_state = 0xFFFF;
-		reload_ffp_shaders(legacy_mt_vertex_attrib_config, legacy_mt_vertex_stream_config, GL_FALSE);
+		reload_ffp_shaders(legacy_mt_vertex_attrib_config, legacy_mt_vertex_stream_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
 		for (int i = 0; i < 2; i++) {
 			texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
 #ifdef HAVE_TEX_CACHE
@@ -2413,7 +2420,7 @@ void glEnd(void) {
 		}
 	} else if (texture_units[0].state) { // Texturing usage
 		ffp_vertex_attrib_state = 0x0007;
-		reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config, GL_FALSE);
+		reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
 		texture *tex = &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]];
 #ifdef HAVE_TEX_CACHE
 		restoreTexCache(tex);
@@ -2440,7 +2447,7 @@ void glEnd(void) {
 		sceGxmSetFragmentTexture(gxm_context, 0, &tex->gxm_tex);
 	} else { // No texturing usage
 		ffp_vertex_attrib_state = 0x0005;
-		reload_ffp_shaders(legacy_nt_vertex_attrib_config, legacy_nt_vertex_stream_config, GL_FALSE);
+		reload_ffp_shaders(legacy_nt_vertex_attrib_config, legacy_nt_vertex_stream_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
 	}
 
 	// Restoring original attributes state settings

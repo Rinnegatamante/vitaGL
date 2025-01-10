@@ -361,11 +361,11 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 	}
 	
 	if (cur_program != 0)
-		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, type != GL_UNSIGNED_INT);
+		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, type != GL_UNSIGNED_INT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
 	else {
 		if (!(ffp_vertex_attrib_state & (1 << 0)))
 			return;
-		_glDrawElements_FixedFunctionIMPL(src, count, 0, type != GL_UNSIGNED_INT);
+		_glDrawElements_FixedFunctionIMPL(src, count, 0, type != GL_UNSIGNED_INT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
 	}
 
 #ifndef SKIP_ERROR_HANDLING
@@ -405,11 +405,11 @@ void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLv
 	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
-		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, type == GL_UNSIGNED_SHORT);
+		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
 	else {
 		if (!(ffp_vertex_attrib_state & (1 << 0)))
 			return;
-		_glDrawElements_FixedFunctionIMPL(src, count, 0, type == GL_UNSIGNED_SHORT);
+		_glDrawElements_FixedFunctionIMPL(src, count, 0, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
 	}
 
 #ifndef SKIP_ERROR_HANDLING
@@ -466,11 +466,11 @@ void glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, G
 	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
-		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end + 1, type == GL_UNSIGNED_SHORT);
+		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end + 1, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
 	else {
 		if (!(ffp_vertex_attrib_state & (1 << 0)))
 			return;
-		_glDrawElements_FixedFunctionIMPL(src, count, end + 1, type == GL_UNSIGNED_SHORT);
+		_glDrawElements_FixedFunctionIMPL(src, count, end + 1, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
 	}
 
 #ifndef SKIP_ERROR_HANDLING
@@ -511,11 +511,11 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
-		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end + 1, type == GL_UNSIGNED_SHORT);
+		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end + 1, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
 	else {
 		if (!(ffp_vertex_attrib_state & (1 << 0)))
 			return;
-		_glDrawElements_FixedFunctionIMPL(src, count, end + 1, type == GL_UNSIGNED_SHORT);
+		_glDrawElements_FixedFunctionIMPL(src, count, end + 1, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
 	}
 
 #ifndef SKIP_ERROR_HANDLING
@@ -538,7 +538,7 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 #ifndef INDICES_SPEEDHACK
 		if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices(uint32_t)
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32+ baseVertex, ptr, count);
+			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32 + baseVertex, ptr, count);
 		}
 		else
 #endif
@@ -570,11 +570,11 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void
 	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
-		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, type == GL_UNSIGNED_SHORT);
+		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INSTANCE_16BIT : SCE_GXM_INDEX_SOURCE_INSTANCE_32BIT);
 	else {
 		if (!(ffp_vertex_attrib_state & (1 << 0)))
 			return;
-		_glDrawElements_FixedFunctionIMPL(src, count, 0, type == GL_UNSIGNED_SHORT);
+		_glDrawElements_FixedFunctionIMPL(src, count, 0, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INSTANCE_16BIT : SCE_GXM_INDEX_SOURCE_INSTANCE_32BIT);
 	}
 
 #ifndef SKIP_ERROR_HANDLING
@@ -614,7 +614,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 		_vglDrawObjects_CustomShadersIMPL(implicit_wvp);
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, index_object, count);
 	} else if (ffp_vertex_attrib_state & (1 << 0)) {
-		reload_ffp_shaders(NULL, NULL, GL_FALSE);
+		reload_ffp_shaders(NULL, NULL, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
 		if (ffp_vertex_attrib_state & (1 << 1)) {
 			if (texture_slots[tex_unit->tex_id[0]].status != TEX_VALID)
 				return;
