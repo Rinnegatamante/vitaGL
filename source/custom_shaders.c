@@ -654,6 +654,12 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 	}
 #endif
 
+#ifndef INDICES_SPEEDHACK
+	for (int i = 0; i < p->attr_num; i++) {
+		streams[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+	}
+#endif
+
 	// Uploading new vertex program
 	patchVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
@@ -859,6 +865,13 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count) {
 #else // DRAW_SPEEDHACK
 	handleSpeedhackAttrib();
 #endif
+
+#ifndef INDICES_SPEEDHACK
+	for (int i = 0; i < p->attr_num; i++) {
+		streams[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+	}
+#endif
+
 	// Uploading new vertex program
 	patchVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
