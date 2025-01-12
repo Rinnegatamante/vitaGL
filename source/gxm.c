@@ -77,6 +77,7 @@ uint32_t ffp_reload_profiler_cnt = 0;
 uint32_t shaders_draw_profiler_cnt = 0;
 uint32_t ffp_draw_cnt = 0;
 uint32_t shaders_draw_cnt = 0;
+static uint32_t gpu_stall_cnt = 0;
 #endif
 
 int DISPLAY_WIDTH; // Display width in pixels
@@ -780,6 +781,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		vgl_log("%ums spent processing %u fixed-function pipeline non-immediate draw calls.\n", ffp_draw_profiler_cnt / 1000, ffp_draw_cnt);
 		vgl_log("%ums spent setting up fixed-function pipeline states.\n", ffp_reload_profiler_cnt / 1000);
 		vgl_log("%ums spent processing %u shaders pipeline draw calls.\n", shaders_draw_profiler_cnt / 1000, shaders_draw_cnt);
+		vgl_log("%ums spent waiting for GPU to process frames.\n", gpu_stall_cnt / 1000);
 		vgl_log("-----------------------------------------\n");
 		frame_profiler_cnt = 0;
 		ffp_draw_profiler_cnt = 0;
@@ -787,6 +789,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		shaders_draw_profiler_cnt = 0;
 		shaders_draw_cnt = 0;
 		ffp_draw_cnt = 0;
+		gpu_stall_cnt = 0;
 	}
 	frame_start_profiler_cnt = tick;
 #endif
@@ -929,8 +932,13 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 #endif
 			struct display_queue_callback_data queue_cb_data;
 			queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
-			sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index],
-				gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
+#ifdef HAVE_PROFILING
+			tick = sceKernelGetProcessTimeLow();
+#endif
+			sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index], gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
+#ifdef HAVE_PROFILING
+			gpu_stall_cnt += sceKernelGetProcessTimeLow() - tick;
+#endif
 			gxm_front_buffer_index = gxm_back_buffer_index;
 			gxm_back_buffer_index = (gxm_back_buffer_index + 1) % gxm_display_buffer_count;
 		}
