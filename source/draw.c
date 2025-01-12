@@ -430,7 +430,7 @@ void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLv
 		}
 #else
 #ifndef INDICES_SPEEDHACK
-		if (type == GL_UNSIGNED_SHORT) {
+		if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices(uint32_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32 + baseVertex, ptr, count);
 		}
