@@ -42,7 +42,7 @@ In order to build vitaGL use the following command: `make install`.
 |`NO_DEBUG=1`| Disables most of the error handling features (Faster CPU code execution but code may be non compliant to all OpenGL standards).|
 |`BUFFERS_SPEEDHACK=1`| Enables faster vertex buffer copying. May cause crashes.|
 |`DRAW_SPEEDHACK=1`| Enables faster code for draw calls. May cause crashes.|
-|`INDICES_SPEEDHACK=1`| Produces faster draw code but disables support for 32 bit (GL_UNSIGNED_INT) indexed draws and instanced draws.|
+|`INDICES_SPEEDHACK=1`| Produces faster draw code but disables support for instanced draws and makes 32 bit (GL_UNSIGNED_INT) indexed draws potentially cause glitches.|
 |`MATH_SPEEDHACK=1`| Enables faster code for matrix math calls. May cause glitches.|
 |`TEXTURES_SPEEDHACK=1`| Makes glTexSubImage2D/glTexSubImage1D non fully OpenGL compliant but makes rendering pipeline slightly faster. Incompatible with HAVE_TEXTURE_CACHE=1.|
 |`SAMPLERS_SPEEDHACK=1`| Enables faster code for samplers resolution during shaders usage. May cause glitches.|

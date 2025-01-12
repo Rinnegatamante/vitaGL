@@ -1049,16 +1049,13 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 
 	// Detecting highest index value
 	if (!is_full_vbo && !top_idx) {
-#ifndef INDICES_SPEEDHACK
 		if ((index_type & 1) == 0)
-#endif
 		{
 			for (int i = 0; i < count; i++) {
 				if (idx_buf[i] > top_idx)
 					top_idx = idx_buf[i];
 			}
 		}
-#ifndef INDICES_SPEEDHACK
 		else
 		{
 			uint32_t *_idx_buf = (uint32_t *)idx_buf;
@@ -1067,7 +1064,6 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 					top_idx = _idx_buf[i];
 			}
 		}
-#endif
 		top_idx++;
 	}
 

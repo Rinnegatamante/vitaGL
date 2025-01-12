@@ -417,25 +417,21 @@ void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLv
 #endif
 	{
 #ifdef HAVE_VITA3K_SUPPORT
-#ifndef INDICES_SPEEDHACK
 		if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices_with_base(uint32_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
 		}
 		else
-#endif
 		{
 			setup_elements_indices_with_base(uint16_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		}
 #else
-#ifndef INDICES_SPEEDHACK
 		if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices(uint32_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32 + baseVertex, ptr, count);
 		}
 		else
-#endif
 		{
 			setup_elements_indices(uint16_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16 + baseVertex, ptr, count);
@@ -477,13 +473,11 @@ void glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, G
 	if (is_draw_legal)
 #endif
 	{
-#ifndef INDICES_SPEEDHACK
 		if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices(uint32_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
 		}
 		else
-#endif
 		{
 			setup_elements_indices(uint16_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
@@ -523,25 +517,21 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 #endif
 	{
 #ifdef HAVE_VITA3K_SUPPORT
-#ifndef INDICES_SPEEDHACK
 		if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices_with_base(uint32_t)
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
 		}
 		else
-#endif
 		{
 			setup_elements_indices_with_base(uint16_t)
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
 		}
 #else
-#ifndef INDICES_SPEEDHACK
 		if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices(uint32_t)
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32 + baseVertex, ptr, count);
 		}
 		else
-#endif
 		{
 			setup_elements_indices(uint16_t)
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16 + baseVertex, ptr, count);
@@ -581,13 +571,11 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void
 	if (is_draw_legal)
 #endif
 	{
-#ifndef INDICES_SPEEDHACK
 		if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices(uint32_t);
 			sceGxmDrawInstanced(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count * primcount, count);
 		}
 		else
-#endif
 		{
 			setup_elements_indices(uint16_t);
 			sceGxmDrawInstanced(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count * primcount, count);
