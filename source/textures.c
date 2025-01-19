@@ -1721,6 +1721,11 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 				else
 					gpu_free_texture(&texture_slots[i]);
 			}
+#ifndef SKIP_ERROR_HANDLING
+			else if (texture_slots[i].status == TEX_UNUSED) {
+				vgl_log("%s:%d %s: Attempted to delete an unassigned texture slot (0x%X).\n", __FILE__, __LINE__, __func__, i);
+			}
+#endif
 
 			for (int k = 0; k < TEXTURE_IMAGE_UNITS_NUM; k++) {
 				texture_unit *tex_unit = &texture_units[k];
