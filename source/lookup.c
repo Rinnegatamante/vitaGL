@@ -25,6 +25,7 @@
 #include "vitaGL.h"
 
 //#define EXPOSE_VGL_FUNCS // Define this to enable exposure of vgl* functions in vglGetProcAddress/eglGetProcAddress
+//#define FAKE_UNRESOLVED_FUNCS // Define this to enable fake bogus mapping in vglGetProcAddress for unimplemented functions
 
 static const struct {
 	const char *name;
@@ -469,10 +470,18 @@ void *vglGetProcAddress(const char *name) {
 		}
 	}
 
+#ifdef FAKE_UNRESOLVED_FUNCS
+	static int unresolved_id = 1;
+#ifndef SKIP_ERROR_HANDLING
+	vgl_log("%s:%d vglGetProcAddress: Requested an unimplemented function (%s). Returning 0x%08x\n", __FILE__, __LINE__, name, unresolved_id);
+#endif
+	return unresolved_id++;
+#else
 #ifndef SKIP_ERROR_HANDLING
 	vgl_log("%s:%d vglGetProcAddress: Requested an unimplemented function (%s).\n", __FILE__, __LINE__, name);
 #endif
 	return NULL;
+#endif
 }
 
 void *vglGetFuncName(uint32_t func) {
