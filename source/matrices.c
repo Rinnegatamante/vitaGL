@@ -76,6 +76,66 @@ void glMatrixMode(GLenum mode) {
 	}
 }
 
+void glMatrixLoadf(GLenum mode, const GLfloat *m) {
+	// Setting requested matrix
+	matrix4x4 *mat;
+	switch (mode) {
+	case GL_MODELVIEW: // Modelview matrix
+		mat = &modelview_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_PROJECTION: // Projection matrix
+		mat = &projection_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_TEXTURE: // Texture matrix
+		mat = &texture_matrix[server_texture_unit];
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+	}
+	
+	// Properly ordering matrix
+	int i, j;
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			(*mat)[i][j] = m[j * 4 + i];
+		}
+	}
+
+	dirty_vert_unifs = GL_TRUE;
+}
+
+void glMatrixLoadd(GLenum mode, const GLdouble *m) {
+	// Setting requested matrix
+	matrix4x4 *mat;
+	switch (mode) {
+	case GL_MODELVIEW: // Modelview matrix
+		mat = &modelview_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_PROJECTION: // Projection matrix
+		mat = &projection_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_TEXTURE: // Texture matrix
+		mat = &texture_matrix[server_texture_unit];
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+	}
+	
+	// Properly ordering matrix
+	int i, j;
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			(*mat)[i][j] = m[j * 4 + i];
+		}
+	}
+
+	dirty_vert_unifs = GL_TRUE;
+}
+
 inline void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -163,6 +223,27 @@ void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLd
 	glFrustumf(left, right, bottom, top, nearVal, farVal);
 }
 
+void glMatrixLoadIdentity(GLenum mode) {
+	// Setting requested matrix
+	switch (mode) {
+	case GL_MODELVIEW: // Modelview matrix
+		matrix4x4_identity(modelview_matrix);
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_PROJECTION: // Projection matrix
+		matrix4x4_identity(projection_matrix);
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_TEXTURE: // Texture matrix
+		matrix4x4_identity(texture_matrix[server_texture_unit]);
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+	}
+
+	dirty_vert_unifs = GL_TRUE;
+}
+
 void glLoadIdentity(void) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
@@ -194,6 +275,80 @@ void glMultMatrixf(const GLfloat *m) {
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
+}
+
+void glMatrixMultd(GLenum mode, const GLdouble *m) {
+	// Setting requested matrix
+	matrix4x4 *mat;
+	switch (mode) {
+	case GL_MODELVIEW: // Modelview matrix
+		mat = &modelview_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_PROJECTION: // Projection matrix
+		mat = &projection_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_TEXTURE: // Texture matrix
+		mat = &texture_matrix[server_texture_unit];
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+	}
+	
+	// Properly ordering matrix
+	matrix4x4 res, src;
+	int i, j;
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			src[i][j] = m[j * 4 + i];
+		}
+	}
+
+	// Multiplicating passed matrix with in use one
+	matrix4x4_multiply(res, *mat, src);
+
+	// Copying result to in use matrix
+	matrix4x4_copy(*mat, res);
+
+	dirty_vert_unifs = GL_TRUE;
+}
+
+void glMatrixMultf(GLenum mode, const GLfloat *m) {
+	// Setting requested matrix
+	matrix4x4 *mat;
+	switch (mode) {
+	case GL_MODELVIEW: // Modelview matrix
+		mat = &modelview_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_PROJECTION: // Projection matrix
+		mat = &projection_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_TEXTURE: // Texture matrix
+		mat = &texture_matrix[server_texture_unit];
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+	}
+	
+	// Properly ordering matrix
+	matrix4x4 res, src;
+	int i, j;
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			src[i][j] = m[j * 4 + i];
+		}
+	}
+
+	// Multiplicating passed matrix with in use one
+	matrix4x4_multiply(res, *mat, src);
+
+	// Copying result to in use matrix
+	matrix4x4_copy(*mat, res);
+
 	dirty_vert_unifs = GL_TRUE;
 }
 
@@ -314,6 +469,258 @@ void glLoadTransposeMatrixx(const GLfixed *m) {
 
 	if (matrix != &texture_matrix[server_texture_unit])
 		mvp_modified = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;
+}
+
+void glMatrixRotatef(GLenum mode, GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
+	// Setting requested matrix
+	matrix4x4 *mat;
+	switch (mode) {
+	case GL_MODELVIEW: // Modelview matrix
+		mat = &modelview_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_PROJECTION: // Projection matrix
+		mat = &projection_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_TEXTURE: // Texture matrix
+		mat = &texture_matrix[server_texture_unit];
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+	}
+	
+	// Performing rotation on in use matrix depending on user call
+	float rad = DEG_TO_RAD(angle);
+	matrix4x4_rotate(*mat, rad, x, y, z);
+	dirty_vert_unifs = GL_TRUE;
+}
+
+void glMatrixRotated(GLenum matrixMode, GLdouble angle, GLdouble x, GLdouble y, GLdouble z) {
+	glMatrixRotatef(matrixMode, angle, x, y, z);
+}
+
+void glMatrixScalef(GLenum mode, GLfloat x, GLfloat y, GLfloat z) {
+	// Setting requested matrix
+	matrix4x4 *mat;
+	switch (mode) {
+	case GL_MODELVIEW: // Modelview matrix
+		mat = &modelview_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_PROJECTION: // Projection matrix
+		mat = &projection_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_TEXTURE: // Texture matrix
+		mat = &texture_matrix[server_texture_unit];
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+	}
+	
+	// Scaling in use matrix
+	matrix4x4_scale(*mat, x, y, z);
+	dirty_vert_unifs = GL_TRUE;
+}
+
+void glMatrixScaled(GLenum matrixMode, GLdouble x, GLdouble y, GLdouble z) {
+	glMatrixScalef(matrixMode, x, y, z);
+}
+
+void glMatrixTranslatef(GLenum mode, GLfloat x, GLfloat y, GLfloat z) {
+	// Setting requested matrix
+	matrix4x4 *mat;
+	switch (mode) {
+	case GL_MODELVIEW: // Modelview matrix
+		mat = &modelview_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_PROJECTION: // Projection matrix
+		mat = &projection_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_TEXTURE: // Texture matrix
+		mat = &texture_matrix[server_texture_unit];
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+	}
+	
+	// Translating in use matrix
+	matrix4x4_translate(*mat, x, y, z);
+	dirty_vert_unifs = GL_TRUE;
+}
+
+void glMatrixTranslated(GLenum matrixMode, GLdouble x, GLdouble y, GLdouble z) {
+	glMatrixTranslatef(matrixMode, x, y, z);
+}
+
+void glMatrixOrtho(GLenum mode, GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal) {
+	// Setting requested matrix
+	matrix4x4 *mat;
+	switch (mode) {
+	case GL_MODELVIEW: // Modelview matrix
+		mat = &modelview_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_PROJECTION: // Projection matrix
+		mat = &projection_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_TEXTURE: // Texture matrix
+		mat = &texture_matrix[server_texture_unit];
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+	}
+	
+#ifdef MATH_SPEEDHACK
+	// Initializing ortho matrix with requested parameters
+	matrix4x4_init_orthographic(*mat, left, right, bottom, top, nearVal, farVal);
+#else
+	matrix4x4 res, ortho_matrix;
+	matrix4x4_init_orthographic(ortho_matrix, left, right, bottom, top, nearVal, farVal);
+	matrix4x4_multiply(res, *mat, ortho_matrix);
+	matrix4x4_copy(*mat, res);
+#endif
+
+	dirty_vert_unifs = GL_TRUE;
+}
+
+void glMatrixFrustum(GLenum mode, GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal) {
+	// Setting requested matrix
+	matrix4x4 *mat;
+	switch (mode) {
+	case GL_MODELVIEW: // Modelview matrix
+		mat = &modelview_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_PROJECTION: // Projection matrix
+		mat = &projection_matrix;
+		mvp_modified = GL_TRUE;
+		break;
+	case GL_TEXTURE: // Texture matrix
+		mat = &texture_matrix[server_texture_unit];
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+	}
+	
+#ifdef MATH_SPEEDHACK
+	// Initializing frustum matrix with requested parameters
+	matrix4x4_init_frustum(*mat, left, right, bottom, top, nearVal, farVal);
+#else
+	matrix4x4 res, frustum_matrix;
+	matrix4x4_init_frustum(frustum_matrix, left, right, bottom, top, nearVal, farVal);
+	matrix4x4_multiply(res, *mat, frustum_matrix);
+	matrix4x4_copy(*mat, res);
+#endif
+
+	dirty_vert_unifs = GL_TRUE;
+}
+
+void glMatrixPush(GLenum mode) {
+	// Setting requested matrix
+	matrix4x4 *mat;
+	switch (mode) {
+	case GL_MODELVIEW: // Modelview matrix
+		{
+#ifndef SKIP_ERROR_HANDLING
+			// Error handling
+			if (modelview_stack_counter >= MODELVIEW_STACK_DEPTH) {
+				SET_GL_ERROR(GL_STACK_OVERFLOW)
+			} else
+#endif
+			{
+				// Copying current matrix into the matrix stack and increasing stack counter
+				matrix4x4_copy(modelview_matrix_stack[modelview_stack_counter++], modelview_matrix);
+			}
+		}
+		break;
+	case GL_PROJECTION: // Projection matrix
+		{
+#ifndef SKIP_ERROR_HANDLING
+			// Error handling
+			if (projection_stack_counter >= GENERIC_STACK_DEPTH) {
+				SET_GL_ERROR(GL_STACK_OVERFLOW)
+			} else
+#endif
+			{
+				// Copying current matrix into the matrix stack and increasing stack counter
+				matrix4x4_copy(projection_matrix_stack[projection_stack_counter++], projection_matrix);
+			}
+		}
+		break;
+	case GL_TEXTURE: // Texture matrix
+		{
+			texture_unit *tex_unit = &texture_units[server_texture_unit];
+#ifndef SKIP_ERROR_HANDLING
+			// Error handling
+			if (tex_unit->texture_stack_counter >= GENERIC_STACK_DEPTH) {
+				SET_GL_ERROR(GL_STACK_OVERFLOW)
+			} else
+#endif
+			{
+				// Copying current matrix into the matrix stack and increasing stack counter
+				matrix4x4_copy(tex_unit->texture_matrix_stack[tex_unit->texture_stack_counter++], texture_matrix[server_texture_unit]);
+			}
+		}
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+	}
+}
+
+void glMatrixPop(GLenum mode) {
+	// Setting requested matrix
+	matrix4x4 *mat;
+	switch (mode) {
+	case GL_MODELVIEW: // Modelview matrix
+		{
+#ifndef SKIP_ERROR_HANDLING
+			// Error handling
+			if (modelview_stack_counter == 0) {
+				SET_GL_ERROR(GL_STACK_UNDERFLOW)
+			}
+#endif
+			// Copying last matrix on stack into current matrix and decreasing stack counter
+			matrix4x4_copy(modelview_matrix, modelview_matrix_stack[--modelview_stack_counter]);
+			mvp_modified = GL_TRUE;
+		}
+		break;
+	case GL_PROJECTION: // Projection matrix
+		{
+#ifndef SKIP_ERROR_HANDLING
+			// Error handling
+			if (projection_stack_counter == 0) {
+				SET_GL_ERROR(GL_STACK_UNDERFLOW)
+			}
+#endif
+			// Copying last matrix on stack into current matrix and decreasing stack counter
+			matrix4x4_copy(projection_matrix, projection_matrix_stack[--projection_stack_counter]);
+			mvp_modified = GL_TRUE;
+		}
+		break;
+	case GL_TEXTURE: // Texture matrix
+		{
+			texture_unit *tex_unit = &texture_units[server_texture_unit];
+
+#ifndef SKIP_ERROR_HANDLING
+			// Error handling
+			if (tex_unit->texture_stack_counter == 0) {
+				SET_GL_ERROR(GL_STACK_UNDERFLOW)
+			}
+#endif
+			// Copying last matrix on stack into current matrix and decreasing stack counter
+			matrix4x4_copy(texture_matrix[server_texture_unit], tex_unit->texture_matrix_stack[--tex_unit->texture_stack_counter]);
+		}
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+	}
+
 	dirty_vert_unifs = GL_TRUE;
 }
 
@@ -443,8 +850,10 @@ void glPushMatrix(void) {
 			SET_GL_ERROR(GL_STACK_OVERFLOW)
 		} else
 #endif
+		{
 			// Copying current matrix into the matrix stack and increasing stack counter
 			matrix4x4_copy(modelview_matrix_stack[modelview_stack_counter++], *matrix);
+		}
 
 	} else if (matrix == &projection_matrix) {
 #ifndef SKIP_ERROR_HANDLING
@@ -453,8 +862,10 @@ void glPushMatrix(void) {
 			SET_GL_ERROR(GL_STACK_OVERFLOW)
 		} else
 #endif
+		{
 			// Copying current matrix into the matrix stack and increasing stack counter
 			matrix4x4_copy(projection_matrix_stack[projection_stack_counter++], *matrix);
+		}
 	} else if (matrix == &texture_matrix[server_texture_unit]) {
 		texture_unit *tex_unit = &texture_units[server_texture_unit];
 
@@ -464,8 +875,10 @@ void glPushMatrix(void) {
 			SET_GL_ERROR(GL_STACK_OVERFLOW)
 		} else
 #endif
+		{
 			// Copying current matrix into the matrix stack and increasing stack counter
 			matrix4x4_copy(tex_unit->texture_matrix_stack[tex_unit->texture_stack_counter++], *matrix);
+		}
 	}
 }
 
