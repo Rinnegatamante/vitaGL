@@ -448,6 +448,11 @@ void *vglGetProcAddress(const char *name) {
 	if (!name || !*name) {
 		return NULL;
 	}
+	
+	// Check only for actual OpenGL/VitaGL/EGL functions only
+	if ((!(name[0] == 'g' && name[1] == 'l')) && (!((name[0] == 'e' || name[0] == 'v') && name[1] == 'g' && name[2] == 'l'))) {
+		return NULL;
+	}
 
 	// strip any extension markers
 	const int len = strlen(name);
