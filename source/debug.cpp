@@ -22,6 +22,14 @@ extern "C" {
 #ifdef HAVE_RAZOR
 extern razor_results razor_metrics;
 #endif
+
+void glPushGroupMarker(GLsizei length, const GLchar *marker) {
+	sceGxmPushUserMarker(gxm_context, marker);
+}
+
+void glPopGroupMarker(void) {
+	sceGxmPopUserMarker(gxm_context);
+}
 };
 
 #ifdef HAVE_RAZOR_INTERFACE

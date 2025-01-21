@@ -799,6 +799,7 @@ void glPolygonMode(GLenum face, GLenum mode);
 void glPolygonOffset(GLfloat factor, GLfloat units);
 void glPolygonOffsetx(GLfixed factor, GLfixed units);
 void glPopAttrib(void);
+void glPopGroupMarker(void);
 void glPopMatrix(void);
 void glProgramBinary(GLuint program, GLenum binaryFormat, const void *binary, GLsizei length);
 void glProgramUniform1f(GLuint program, GLint location, GLfloat v0);
@@ -821,6 +822,7 @@ void glProgramUniformMatrix2fv(GLuint program, GLint location, GLsizei count, GL
 void glProgramUniformMatrix3fv(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void glProgramUniformMatrix4fv(GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 void glPushAttrib(GLbitfield mask);
+void glPushGroupMarker(GLsizei length, const GLchar *marker);
 void glPushMatrix(void);
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data);
 void glRectf(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2);
