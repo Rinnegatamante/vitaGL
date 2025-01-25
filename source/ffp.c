@@ -169,44 +169,48 @@ uint8_t ffp_vertex_attrib_fixed_pos_mask = 0;
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 typedef union shader_mask {
 	struct {
-		uint64_t alpha_test_mode : 3;
-		uint64_t num_textures : 2;
-		uint64_t has_colors : 1;
-		uint64_t fog_mode : 2;
-		uint64_t clip_planes_num : 3;
-		uint64_t lights_num : 4;
-		uint64_t tex_env_mode_pass0 : 3;
-		uint64_t tex_env_mode_pass1 : 3;
-		uint64_t shading_mode : 1;
-		uint64_t normalize : 1;
-		uint64_t tex_env_mode_pass2 : 3;
-		uint64_t fixed_mask : 4;
-		uint64_t pos_fixed_mask : 2;
-		uint64_t point_sprite : 1;
+		uint64_t alpha_test_mode : 3; // Frag
+		uint64_t num_textures : 2; // Frag/Vert
+		uint64_t has_colors : 1; // Frag/Vert
+		uint64_t fog_mode : 2; // Frag
+		uint64_t clip_planes_num : 3; // Vert
+		uint64_t lights_num : 4; // Frag/Vert
+		uint64_t tex_env_mode_pass0 : 3; // Frag
+		uint64_t tex_env_mode_pass1 : 3; // Frag
+		uint64_t shading_mode : 1; // Frag/Vert
+		uint64_t normalize : 1; // Vert
+		uint64_t tex_env_mode_pass2 : 3; // Frag
+		uint64_t fixed_mask : 4; // Vert
+		uint64_t pos_fixed_mask : 2; // Vert
+		uint64_t point_sprite : 1; // Frag
 		uint64_t UNUSED : 31;
 	};
 	uint64_t raw;
 } shader_mask;
+#define VERTEX_SHADER_MASK   (0b0000000000000000000000000000000011111100011000000111111100111000)
+#define FRAGMENT_SHADER_MASK (0b0000000000000000000000000000000100000011101111111111100011111111)
 #else
 typedef union shader_mask {
 	struct {
-		uint32_t alpha_test_mode : 3;
-		uint32_t num_textures : 2;
-		uint32_t has_colors : 1;
-		uint32_t fog_mode : 2;
-		uint32_t clip_planes_num : 3;
-		uint32_t lights_num : 4;
-		uint32_t tex_env_mode_pass0 : 3;
-		uint32_t tex_env_mode_pass1 : 3;
-		uint32_t shading_mode : 1;
-		uint32_t normalize : 1;
-		uint32_t fixed_mask : 3;
-		uint32_t pos_fixed_mask : 2;
-		uint32_t point_sprite : 1;
+		uint32_t alpha_test_mode : 3; // Frag
+		uint32_t num_textures : 2; // Frag/Vert
+		uint32_t has_colors : 1; // Frag/Vert
+		uint32_t fog_mode : 2; // Frag
+		uint32_t clip_planes_num : 3; // Vert
+		uint32_t lights_num : 4; // Frag/Vert
+		uint32_t tex_env_mode_pass0 : 3; // Frag
+		uint32_t tex_env_mode_pass1 : 3; // Frag
+		uint32_t shading_mode : 1; // Frag/Vert
+		uint32_t normalize : 1; // Vert
+		uint32_t fixed_mask : 3; // Vert
+		uint32_t pos_fixed_mask : 2; // Vert
+		uint32_t point_sprite : 1; // Frag
 		uint32_t UNUSED : 2;
 	};
 	uint32_t raw;
 } shader_mask;
+#define VERTEX_SHADER_MASK   (0b0001111111000000111111100111000)
+#define FRAGMENT_SHADER_MASK (0b0010000001111111111100011111111)
 #endif
 #ifndef DISABLE_TEXTURE_COMBINER
 typedef union combiner_mask {
@@ -230,18 +234,24 @@ typedef union combiner_mask {
 
 #ifndef DISABLE_RAM_SHADER_CACHE
 typedef struct {
-	SceGxmProgram *frag;
-	SceGxmProgram *vert;
-	SceGxmShaderPatcherId frag_id;
-	SceGxmShaderPatcherId vert_id;
+	SceGxmProgram *prog;
+	SceGxmShaderPatcherId id;
 	shader_mask mask;
 #ifndef DISABLE_TEXTURE_COMBINER
 	combiner_mask cmb_mask;
 #endif
-} cached_shader;
-cached_shader shader_cache[SHADER_CACHE_SIZE];
-uint8_t shader_cache_size = 0;
-int shader_cache_idx = -1;
+} cached_fragment_shader;
+typedef struct {
+	SceGxmProgram *prog;
+	SceGxmShaderPatcherId id;
+	shader_mask mask;
+} cached_vertex_shader;
+cached_fragment_shader frag_shader_cache[SHADER_CACHE_SIZE];
+cached_vertex_shader vert_shader_cache[SHADER_CACHE_SIZE];
+uint8_t frag_shader_cache_size = 0;
+uint8_t vert_shader_cache_size = 0;
+int frag_shader_cache_idx = -1;
+int vert_shader_cache_idx = -1;
 #endif
 
 typedef enum {
@@ -570,6 +580,10 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			draw_mask_state |= (1 << 6);
 		}
 	}
+	
+	uint32_t vert_shader_mask = mask.raw & VERTEX_SHADER_MASK;
+	uint32_t frag_shader_mask = mask.raw & FRAGMENT_SHADER_MASK;
+
 #ifdef DISABLE_TEXTURE_COMBINER
 	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
 #else
@@ -582,37 +596,50 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		ffp_dirty_vert = GL_FALSE;
 		ffp_dirty_frag = GL_FALSE;
 	} else {
+		ffp_dirty_frag_blend = GL_TRUE; // We need to relink fragment with vertex shader if mask changed
+
+		if ((ffp_mask.raw & VERTEX_SHADER_MASK) == vert_shader_mask) {
+			ffp_dirty_vert = false;
+		} else {
 #ifndef DISABLE_RAM_SHADER_CACHE
-		for (int i = 0; i < shader_cache_size; i++) {
+			for (int i = 0; i < vert_shader_cache_size; i++) {
+				if (vert_shader_cache[i].mask.raw == vert_shader_mask) {
+					ffp_vertex_program = vert_shader_cache[i].prog;
+					ffp_vertex_program_id = vert_shader_cache[i].id;
+					reload_vertex_uniforms();
+					ffp_dirty_vert = GL_FALSE;
+					break;
+				}
+			}
+#endif
+			dirty_vert_unifs = GL_TRUE;
+		}
+
+		if ((ffp_mask.raw & FRAGMENT_SHADER_MASK) == frag_shader_mask) {
+			ffp_dirty_frag = false;
+		} else {
+#ifndef DISABLE_RAM_SHADER_CACHE
+			for (int i = 0; i < frag_shader_cache_size; i++) {
 #ifdef DISABLE_TEXTURE_COMBINER
-			if (shader_cache[i].mask.raw == mask.raw) {
+				if (frag_shader_cache[i].mask.raw == frag_shader_mask) {
 #else
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-			if (shader_cache[i].mask.raw == mask.raw && shader_cache[i].cmb_mask.raw_high == cmb_mask.raw_high && shader_cache[i].cmb_mask.raw_low == cmb_mask.raw_low) { // Fixed function pipeline config didn't change
+				if (frag_shader_cache[i].mask.raw == frag_shader_mask && frag_shader_cache[i].cmb_mask.raw_high == cmb_mask.raw_high && frag_shader_cache[i].cmb_mask.raw_low == cmb_mask.raw_low) {
 #else
-			if (shader_cache[i].mask.raw == mask.raw && shader_cache[i].cmb_mask.raw == cmb_mask.raw) {
+				if (frag_shader_cache[i].mask.raw == frag_shader_mask && frag_shader_cache[i].cmb_mask.raw == cmb_mask.raw) {
 #endif
 #endif
-				ffp_vertex_program = shader_cache[i].vert;
-				ffp_fragment_program = shader_cache[i].frag;
-				ffp_vertex_program_id = shader_cache[i].vert_id;
-				ffp_fragment_program_id = shader_cache[i].frag_id;
-				ffp_dirty_frag_blend = GL_TRUE;
-
-				if (ffp_dirty_vert)
-					reload_vertex_uniforms();
-
-				if (ffp_dirty_frag)
+					ffp_fragment_program = frag_shader_cache[i].prog;
+					ffp_fragment_program_id = frag_shader_cache[i].id;
 					reload_fragment_uniforms();
-
-				ffp_dirty_vert = GL_FALSE;
-				ffp_dirty_frag = GL_FALSE;
-				break;
+					ffp_dirty_frag = GL_FALSE;
+					break;
+				}
 			}
-		}
 #endif
-		dirty_frag_unifs = GL_TRUE;
-		dirty_vert_unifs = GL_TRUE;
+			dirty_frag_unifs = GL_TRUE;
+		}
+
 		ffp_mask.raw = mask.raw;
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
@@ -623,25 +650,15 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #endif
 #endif
 	}
-#ifndef DISABLE_RAM_SHADER_CACHE
-	GLboolean new_shader_flag = ffp_dirty_vert || ffp_dirty_frag;
-#endif
+
 	// Checking if vertex shader requires a recompilation
 	if (ffp_dirty_vert) {
 #ifndef DISABLE_FS_SHADER_CACHE
 		char fname[256];
-#ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-		sprintf(fname, "ux0:data/shader_cache/v%d/v/%016llX-%016llX-%08X-%d.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low, WVP_ON_GPU);
+		sprintf(fname, "ux0:data/shader_cache/v%d/v/%016llX-%d.gxp", SHADER_CACHE_MAGIC, vert_shader_mask, WVP_ON_GPU);
 #else
-		sprintf(fname, "ux0:data/shader_cache/v%d/v/%08X-%016llX-%d.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw, WVP_ON_GPU);
-#endif
-#else
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-		sprintf(fname, "ux0:data/shader_cache/v%d/v/%016llX-0000000000000000-%d.gxp", SHADER_CACHE_MAGIC, mask.raw, WVP_ON_GPU);
-#else
-		sprintf(fname, "ux0:data/shader_cache/v%d/v/%08X-0000000000000000-%d.gxp", SHADER_CACHE_MAGIC, mask.raw, WVP_ON_GPU);
-#endif
+		sprintf(fname, "ux0:data/shader_cache/v%d/v/%08X-%d.gxp", SHADER_CACHE_MAGIC, vert_shader_mask, WVP_ON_GPU);
 #endif
 		SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
 		if (f >= 0) {
@@ -666,28 +683,20 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifdef DUMP_SHADER_SOURCES
 			if (t) {
 #endif
-			ffp_vertex_program = (SceGxmProgram *)vglMalloc(size);
-			vgl_fast_memcpy((void *)ffp_vertex_program, (void *)t, size);
-			shark_clear_output();
+				ffp_vertex_program = (SceGxmProgram *)vglMalloc(size);
+				vgl_fast_memcpy((void *)ffp_vertex_program, (void *)t, size);
+				shark_clear_output();
 #ifndef DISABLE_FS_SHADER_CACHE
 			// Saving compiled shader in filesystem cache
-			f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_TRUNC | SCE_O_CREAT, 0777);
-			sceIoWrite(f, ffp_vertex_program, size);
-			sceIoClose(f);
+				f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_TRUNC | SCE_O_CREAT, 0777);
+				sceIoWrite(f, ffp_vertex_program, size);
+				sceIoClose(f);
 #ifdef DUMP_SHADER_SOURCES
 			}
-#ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-			sprintf(fname, "ux0:data/shader_cache/v%d/v/%016llX-%016llX-%08X-%d.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low, WVP_ON_GPU);
+			sprintf(fname, "ux0:data/shader_cache/v%d/v/%016llX-%d.cg", SHADER_CACHE_MAGIC, vert_shader_mask, WVP_ON_GPU);
 #else
-			sprintf(fname, "ux0:data/shader_cache/v%d/v/%08X-%016llX-%d.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw, WVP_ON_GPU);
-#endif
-#else
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-			sprintf(fname, "ux0:data/shader_cache/v%d/v/%016llX-0000000000000000-%d.cg", SHADER_CACHE_MAGIC, mask.raw, WVP_ON_GPU);
-#else
-			sprintf(fname, "ux0:data/shader_cache/v%d/v/%08X-0000000000000000-%d.cg", SHADER_CACHE_MAGIC, mask.raw, WVP_ON_GPU);
-#endif
+			sprintf(fname, "ux0:data/shader_cache/v%d/v/%08X-%d.cg", SHADER_CACHE_MAGIC, vert_shader_mask, WVP_ON_GPU);
 #endif
 			// Saving shader source in filesystem cache
 			f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
@@ -697,6 +706,18 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #endif
 		}
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_vertex_program, &ffp_vertex_program_id);
+
+		// Adding new shader to RAM cache
+		vert_shader_cache_idx = (vert_shader_cache_idx + 1) % SHADER_CACHE_SIZE;
+		if (vert_shader_cache_size < SHADER_CACHE_SIZE) {
+			vert_shader_cache_size++;
+		} else {
+			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, vert_shader_cache[vert_shader_cache_idx].id);
+			vgl_free(vert_shader_cache[vert_shader_cache_idx].prog);
+		}
+		vert_shader_cache[vert_shader_cache_idx].mask.raw = vert_shader_mask;
+		vert_shader_cache[vert_shader_cache_idx].prog = ffp_vertex_program;
+		vert_shader_cache[vert_shader_cache_idx].id = ffp_vertex_program_id;
 
 		// Checking for existing uniforms in the shader
 		reload_vertex_uniforms();
@@ -849,15 +870,15 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		char fname[256];
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-		sprintf(fname, "ux0:data/shader_cache/v%d/f/%016llX-%016llX-%08X.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
+		sprintf(fname, "ux0:data/shader_cache/v%d/f/%016llX-%016llX-%08X.cg", SHADER_CACHE_MAGIC, frag_shader_mask, cmb_mask.raw_high, cmb_mask.raw_low);
 #else
-		sprintf(fname, "ux0:data/shader_cache/v%d/f/%08X-%016llX.gxp", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+		sprintf(fname, "ux0:data/shader_cache/v%d/f/%08X-%016llX.gxp", SHADER_CACHE_MAGIC, frag_shader_mask, cmb_mask.raw);
 #endif
 #else
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-		sprintf(fname, "ux0:data/shader_cache/v%d/f/%016llX-0000000000000000.gxp", SHADER_CACHE_MAGIC, mask.raw);
+		sprintf(fname, "ux0:data/shader_cache/v%d/f/%016llX-0000000000000000.gxp", SHADER_CACHE_MAGIC, frag_shader_mask);
 #else
-		sprintf(fname, "ux0:data/shader_cache/v%d/f/%08X-0000000000000000.gxp", SHADER_CACHE_MAGIC, mask.raw);
+		sprintf(fname, "ux0:data/shader_cache/v%d/f/%08X-0000000000000000.gxp", SHADER_CACHE_MAGIC, frag_shader_mask);
 #endif
 #endif
 		SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
@@ -955,15 +976,15 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			}
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-			sprintf(fname, "ux0:data/shader_cache/v%d/f/%016llX-%016llX-%08X.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw_high, cmb_mask.raw_low);
+			sprintf(fname, "ux0:data/shader_cache/v%d/f/%016llX-%016llX-%08X.cg", SHADER_CACHE_MAGIC, frag_shader_mask, cmb_mask.raw_high, cmb_mask.raw_low);
 #else
-			sprintf(fname, "ux0:data/shader_cache/v%d/f/%08X-%016llX.cg", SHADER_CACHE_MAGIC, mask.raw, cmb_mask.raw);
+			sprintf(fname, "ux0:data/shader_cache/v%d/f/%08X-%016llX.cg", SHADER_CACHE_MAGIC, frag_shader_mask, cmb_mask.raw);
 #endif
 #else
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-			sprintf(fname, "ux0:data/shader_cache/v%d/f/%016llX-0000000000000000.cg", SHADER_CACHE_MAGIC, mask.raw);
+			sprintf(fname, "ux0:data/shader_cache/v%d/f/%016llX-0000000000000000.cg", SHADER_CACHE_MAGIC, frag_shader_mask);
 #else
-			sprintf(fname, "ux0:data/shader_cache/v%d/f/%08X-0000000000000000.cg", SHADER_CACHE_MAGIC, mask.raw);
+			sprintf(fname, "ux0:data/shader_cache/v%d/f/%08X-0000000000000000.cg", SHADER_CACHE_MAGIC, frag_shader_mask);
 #endif
 #endif
 			// Saving shader source in filesystem cache
@@ -974,13 +995,32 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #endif
 		}
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_fragment_program, &ffp_fragment_program_id);
+		
+		// Adding new shader to RAM cache
+		frag_shader_cache_idx = (frag_shader_cache_idx + 1) % SHADER_CACHE_SIZE;
+		if (frag_shader_cache_size < SHADER_CACHE_SIZE) {
+			frag_shader_cache_size++;
+		} else {
+			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, frag_shader_cache[frag_shader_cache_idx].id);
+			vgl_free(frag_shader_cache[frag_shader_cache_idx].prog);
+		}
+		frag_shader_cache[frag_shader_cache_idx].mask.raw = frag_shader_mask;
+#ifndef DISABLE_TEXTURE_COMBINER
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+		frag_shader_cache[frag_shader_cache_idx].cmb_mask.raw_low = cmb_mask.raw_low;
+		frag_shader_cache[frag_shader_cache_idx].cmb_mask.raw_high = cmb_mask.raw_high;
+#else
+		frag_shader_cache[frag_shader_cache_idx].cmb_mask.raw = cmb_mask.raw;
+#endif
+#endif
+		frag_shader_cache[frag_shader_cache_idx].prog = ffp_fragment_program;
+		frag_shader_cache[frag_shader_cache_idx].id = ffp_fragment_program_id;
 
 		// Checking for existing uniforms in the shader
 		reload_fragment_uniforms();
 
 		// Clearing dirty flags
 		ffp_dirty_frag = GL_FALSE;
-		ffp_dirty_frag_blend = GL_TRUE;
 	}
 
 	// Checking if fragment shader requires a blend settings change
@@ -990,32 +1030,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		// Updating current fixed function pipeline blend config
 		ffp_blend_info.raw = blend_info.raw;
 	}
-#ifndef DISABLE_RAM_SHADER_CACHE
-	if (new_shader_flag) {
-		shader_cache_idx = (shader_cache_idx + 1) % SHADER_CACHE_SIZE;
-		if (shader_cache_size < SHADER_CACHE_SIZE)
-			shader_cache_size++;
-		else {
-			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, shader_cache[shader_cache_idx].vert_id);
-			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, shader_cache[shader_cache_idx].frag_id);
-			vgl_free(shader_cache[shader_cache_idx].frag);
-			vgl_free(shader_cache[shader_cache_idx].vert);
-		}
-		shader_cache[shader_cache_idx].mask.raw = mask.raw;
-#ifndef DISABLE_TEXTURE_COMBINER
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-		shader_cache[shader_cache_idx].cmb_mask.raw_low = cmb_mask.raw_low;
-		shader_cache[shader_cache_idx].cmb_mask.raw_high = cmb_mask.raw_high;
-#else
-		shader_cache[shader_cache_idx].cmb_mask.raw = cmb_mask.raw;
-#endif
-#endif
-		shader_cache[shader_cache_idx].frag = ffp_fragment_program;
-		shader_cache[shader_cache_idx].vert = ffp_vertex_program;
-		shader_cache[shader_cache_idx].frag_id = ffp_fragment_program_id;
-		shader_cache[shader_cache_idx].vert_id = ffp_vertex_program_id;
-	}
-#endif
+
 	sceGxmSetVertexProgram(gxm_context, ffp_vertex_program_patched);
 	sceGxmSetFragmentProgram(gxm_context, ffp_fragment_program_patched);
 
