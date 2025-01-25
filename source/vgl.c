@@ -214,6 +214,10 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	char fname[256];
 	sprintf(fname, "ux0:data/shader_cache/v%d", SHADER_CACHE_MAGIC);
 	sceIoMkdir(fname, 0777);
+	sprintf(fname, "ux0:data/shader_cache/v%d/v", SHADER_CACHE_MAGIC);
+	sceIoMkdir(fname, 0777);
+	sprintf(fname, "ux0:data/shader_cache/v%d/f", SHADER_CACHE_MAGIC);
+	sceIoMkdir(fname, 0777);
 #endif
 #ifdef HAVE_SHADER_CACHE
 	sprintf(vgl_shader_cache_path, "ux0:data/shader_cache/%s", titleid);
