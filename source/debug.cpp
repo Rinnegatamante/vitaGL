@@ -39,7 +39,7 @@ void glPopGroupMarker(void) {
 #ifdef HAVE_DEBUG_INTERFACE
 #if !defined(HAVE_RAZOR_INTERFACE) || defined(HAVE_LIGHT_RAZOR)
 #include "utils/font_utils.h"
-int dbg_y = 8;
+static int dbg_y = -18;
 uint32_t *frame_buf;
 
 void vgl_debugger_draw_character(int character, int x, int y) {
@@ -85,25 +85,37 @@ void vgl_debugger_draw_mem_usage(const char *str, vglMemType type) {
 #if defined(HAVE_RAZOR_INTERFACE) && !defined(HAVE_LIGHT_RAZOR)
 	ImGui::Text("%s: %luMBs / %luMBs (%.2f%%)", str, used, tot, ratio);
 #else
-	vgl_debugger_draw_string_format(5, dbg_y, "%s: %luMBs / %luMBs (%.2f%%)", str, used, tot, ratio);
-	dbg_y += 20;
+	vgl_debugger_draw_string_format(5, dbg_y += 20, "%s: %luMBs / %luMBs (%.2f%%)", str, used, tot, ratio);
+#endif
+}
+
+void vgl_debugger_draw_shader_patcher_metrics() {
+#if defined(HAVE_RAZOR_INTERFACE) && !defined(HAVE_LIGHT_RAZOR)
+	ImGui::Text("SP Buffer Mem Usage: %luKBs", sceGxmShaderPatcherGetBufferMemAllocated(gxm_shader_patcher) / 1024);
+	ImGui::Text("SP Fragment USSE Mem Usage: %luKBs", sceGxmShaderPatcherGetFragmentUsseMemAllocated(gxm_shader_patcher) / 1024);
+	ImGui::Text("SP Vertex USSE Mem Usage: %luKBs", sceGxmShaderPatcherGetVertexUsseMemAllocated(gxm_shader_patcher) / 1024);
+	ImGui::Text("SP Host Mem Usage: %luKBs", sceGxmShaderPatcherGetHostMemAllocated(gxm_shader_patcher) / 1024);
+#else
+	vgl_debugger_draw_string_format(5, dbg_y += 20, "SP Buffer Mem Usage: %luKBs", sceGxmShaderPatcherGetBufferMemAllocated(gxm_shader_patcher) / 1024);
+	vgl_debugger_draw_string_format(5, dbg_y += 20, "SP Fragment USSE Mem Usage: %luKBs", sceGxmShaderPatcherGetFragmentUsseMemAllocated(gxm_shader_patcher) / 1024);
+	vgl_debugger_draw_string_format(5, dbg_y += 20, "SP Vertex USSE Mem Usage: %luKBs", sceGxmShaderPatcherGetVertexUsseMemAllocated(gxm_shader_patcher) / 1024);
+	vgl_debugger_draw_string_format(5, dbg_y += 20, "SP Host Mem Usage: %luKBs", sceGxmShaderPatcherGetHostMemAllocated(gxm_shader_patcher) / 1024);
 #endif
 }
 
 #if !defined(HAVE_RAZOR_INTERFACE) || defined(HAVE_LIGHT_RAZOR)
 void vgl_debugger_light_draw(uint32_t *fb) {
 	frame_buf = fb;
-	dbg_y = 8;
+	dbg_y = -18;
 	vgl_debugger_draw_mem_usage("RAM Usage", VGL_MEM_RAM);
 	vgl_debugger_draw_mem_usage("VRAM Usage", VGL_MEM_VRAM);
 	vgl_debugger_draw_mem_usage("Phycont RAM Usage", VGL_MEM_SLOW);
 	vgl_debugger_draw_mem_usage("CDLG RAM Usage", VGL_MEM_BUDGET);
+	vgl_debugger_draw_shader_patcher_metrics();
 #ifndef SKIP_ERROR_HANDLING
-	vgl_debugger_draw_string_format(5, dbg_y, "Frame Number: %lu", vgl_framecount);
-	dbg_y += 20;
+	vgl_debugger_draw_string_format(5, dbg_y += 20, "Frame Number: %lu", vgl_framecount);
 #elif defined(HAVE_LIGHT_RAZOR)
-	vgl_debugger_draw_string_format(5, dbg_y, "Frame Number: %lu", razor_metrics.frame_number);
-	dbg_y += 20;
+	vgl_debugger_draw_string_format(5, dbg_y += 20, "Frame Number: %lu", razor_metrics.frame_number);
 #endif
 #ifdef HAVE_LIGHT_RAZOR
 	vgl_debugger_draw_string_format(5, dbg_y, "GPU activity: %dus (%.0f%%)", razor_metrics.gpu_activity_duration_time, 100.f * razor_metrics.gpu_activity_duration_time / razor_metrics.frame_duration);
@@ -235,6 +247,7 @@ void vgl_debugger_draw() {
 	vgl_debugger_draw_mem_usage("VRAM Usage", VGL_MEM_VRAM);
 	vgl_debugger_draw_mem_usage("Phycont RAM Usage", VGL_MEM_SLOW);
 	vgl_debugger_draw_mem_usage("CDLG RAM Usage", VGL_MEM_BUDGET);
+	vgl_debugger_draw_shader_patcher_metrics();
 		
 	ImGui::End();
 	
