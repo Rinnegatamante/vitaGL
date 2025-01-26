@@ -294,7 +294,7 @@ static inline __attribute__((always_inline)) int tex_format_to_alignment(SceGxmT
 
 void *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 	// Allocating palette data buffer
-	void *texture_palette = gpu_alloc_mapped_aligned(64, 256 * sizeof(uint32_t), VGL_MEM_MAIN);
+	void *texture_palette = gpu_alloc_mapped_aligned(SCE_GXM_PALETTE_ALIGNMENT, 256 * sizeof(uint32_t), VGL_MEM_MAIN);
 
 	// Initializing palette
 	if (data == NULL)
@@ -436,7 +436,7 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 
 	// Allocating texture and palette data buffers
 	int num_entries = is_p8 ? 256 : 16;
-	tex->palette_data = gpu_alloc_mapped_aligned(64, num_entries * sizeof(uint32_t), VGL_MEM_MAIN);
+	tex->palette_data = gpu_alloc_mapped_aligned(SCE_GXM_PALETTE_ALIGNMENT, num_entries * sizeof(uint32_t), VGL_MEM_MAIN);
 	tex->data = gpu_alloc_mapped(tex_size, VGL_MEM_MAIN);
 
 	// Populating palette data

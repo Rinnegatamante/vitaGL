@@ -525,7 +525,7 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 		depth_stencil_samples *= 4;
 
 	// Allocating depth surface
-	void *depth_buffer = gpu_alloc_mapped(4 * depth_stencil_samples, VGL_MEM_VRAM);
+	void *depth_buffer = gpu_alloc_mapped_aligned(SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT, 4 * depth_stencil_samples, VGL_MEM_VRAM);
 
 #ifdef STORE_DEPTH_STENCIL
 	// Initializing mask update bit to 1
@@ -535,7 +535,7 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 	// Allocating stencil surface
 	void *stencil_buffer = NULL;
 	if (has_stencil)
-		stencil_buffer = gpu_alloc_mapped(1 * depth_stencil_samples, VGL_MEM_VRAM);
+		stencil_buffer = gpu_alloc_mapped_aligned(SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT, depth_stencil_samples, VGL_MEM_VRAM);
 
 	// Initializing depth and stencil surfaces
 	sceGxmDepthStencilSurfaceInit(surface,
@@ -562,7 +562,7 @@ void termDepthStencilSurfaces(void) {
 
 void startShaderPatcher(void) {
 	// Allocating Shader Patcher buffer
-	gxm_shader_patcher_buffer_addr = gpu_alloc_mapped_aligned(4096, shader_patcher_buffer_size, VGL_MEM_VRAM);
+	gxm_shader_patcher_buffer_addr = gpu_alloc_mapped_aligned(4, shader_patcher_buffer_size, VGL_MEM_VRAM);
 
 	// Allocating Shader Patcher vertex USSE buffer
 	unsigned int shader_patcher_vertex_usse_offset;
