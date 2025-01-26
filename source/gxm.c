@@ -37,6 +37,11 @@ static uint32_t gxm_vertex_buf_size = SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE; /
 static uint32_t gxm_fragment_buf_size = SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE; // Fragment ring buffer size for sceGxm
 static uint32_t gxm_usse_buf_size = SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE; // Fragment ring buffer size for sceGxm
 
+// Shader Patcher memory configuration
+static unsigned int shader_patcher_buffer_size = 1024 * 1024;
+static unsigned int shader_patcher_vertex_usse_size = 1024 * 1024;
+static unsigned int shader_patcher_fragment_usse_size = 1024 * 1024;
+
 static void *vdm_ring_buffer_addr; // VDM ring buffer memblock starting address
 static void *vertex_ring_buffer_addr; // vertex ring buffer memblock starting address
 static void *fragment_ring_buffer_addr; // fragment ring buffer memblock starting address
@@ -556,11 +561,6 @@ void termDepthStencilSurfaces(void) {
 }
 
 void startShaderPatcher(void) {
-	// Constants for shader patcher buffers
-	static const unsigned int shader_patcher_buffer_size = 1024 * 1024;
-	static const unsigned int shader_patcher_vertex_usse_size = 1024 * 1024;
-	static const unsigned int shader_patcher_fragment_usse_size = 1024 * 1024;
-
 	// Allocating Shader Patcher buffer
 	gxm_shader_patcher_buffer_addr = gpu_alloc_mapped_aligned(4096, shader_patcher_buffer_size, VGL_MEM_VRAM);
 
@@ -971,4 +971,10 @@ void glFlush(void) {
 
 void vglSetDisplayCallback(void (*cb)(void *framebuf)) {
 	vgl_display_cb = cb;
+}
+
+void vglSetupShaderPatcher(uint32_t buffer_mem_size, uint32_t vertex_usse_mem_size, uint32_t fragment_usse_mem_size) {
+	shader_patcher_buffer_size = buffer_mem_size;
+	shader_patcher_vertex_usse_size = vertex_usse_mem_size;
+	shader_patcher_fragment_usse_size = fragment_usse_mem_size;
 }

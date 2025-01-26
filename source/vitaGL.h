@@ -1016,6 +1016,7 @@ void vglSetVertexBufferSize(uint32_t size);
 void vglSetVertexPoolSize(uint32_t size);
 void vglSetupGarbageCollector(int priority, int affinity);
 void vglSetupScratchMemory(GLboolean scratch_for_dynamic, GLboolean scratch_for_stream);
+void vglSetupShaderPatcher(uint32_t buffer_mem_size, uint32_t vertex_usse_mem_size, uint32_t fragment_usse_mem_size);
 void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, int32_t use_fastprecision, int32_t use_fastint);
 void vglSwapBuffers(GLboolean has_commondialog);
 void vglTexImageDepthBuffer(GLenum target);

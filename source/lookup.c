@@ -422,6 +422,7 @@ static const struct {
 	{"vglSetVertexPoolSize", (void *)vglSetVertexPoolSize},
 	{"vglSetupGarbageCollector", (void *)vglSetupGarbageCollector},
 	{"vglSetupScratchMemory", (void *)vglSetupScratchMemory},
+	{"vglSetupShaderPatcher", (void *)vglSetupShaderPatcher},
 	{"vglSetupRuntimeShaderCompiler", (void *)vglSetupRuntimeShaderCompiler},
 	{"vglSwapBuffers", (void *)vglSwapBuffers},
 	{"vglTexImageDepthBuffer", (void *)vglTexImageDepthBuffer},
