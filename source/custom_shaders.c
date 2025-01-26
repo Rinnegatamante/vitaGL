@@ -632,7 +632,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 		if (is_packed[i]) {
 			handlePackedAttrib();
 		} else {
-			handleUnpackedAttrib(first, count);
+			handleUnpackedAttrib(lowest, highest);
 		}
 	}
 #else
