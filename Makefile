@@ -195,6 +195,10 @@ ifeq ($(HAVE_TEXTURE_CACHE),1)
 CFLAGS += -DHAVE_TEX_CACHE
 endif
 
+ifeq ($(DISABLE_FFP_MULTITEXTURE),1)
+CFLAGS += -DDISABLE_FFP_MULTITEXTURE
+endif
+
 CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a

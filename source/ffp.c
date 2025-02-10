@@ -498,7 +498,11 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 	// Counting number of enabled texture units
 	mask.num_textures = 0;
+#ifdef DISABLE_FFP_MULTITEXTURE
+	for (int i = 0; i < 1; i++) {
+#else
 	for (int i = 0; i < TEXTURE_COORDS_NUM; i++) {
+#endif
 		if (texture_units[i].state && (ffp_vertex_attrib_state & (1 << texcoord_idxs[i]))) {
 			mask.num_textures++;
 			switch (i) {
@@ -1953,7 +1957,10 @@ void glClientActiveTexture(GLenum texture) {
 #ifndef SKIP_ERROR_HANDLING
 	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE15)) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, texture)
-	} else
+	}
+	if (texture - GL_TEXTURE0 > TEXTURE_COORDS_NUM) {
+		vgl_log("%s:%d Attempting to use a too high client texture unit (GL_TEXTURE%d).\n", __FILE__, __LINE__, texture - GL_TEXTURE0);
+	}
 #endif
 		client_texture_unit = texture - GL_TEXTURE0;
 }

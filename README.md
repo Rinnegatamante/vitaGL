@@ -64,6 +64,7 @@ In order to build vitaGL use the following command: `make install`.
 |`SINGLE_THREADED_GC=1`| Makes the garbage collector run on main thread.|
 |`PHYCONT_ON_DEMAND=1`| Makes the physically contiguous RAM be handled with separate memblocks instead of an heap.|
 |`UNPURE_TEXTURES=1`| Makes legal to upload textures without base level.|
+|`DISABLE_FFP_MULTITEXTURE=1`| Disables multitexture processing during draw calls performed with fixed function pipeline.|
 |`HAVE_WRAPPED_ALLOCATORS=1`| Allows usage of vgl allocators inside wrapped allocators.|
 |`HAVE_SHADER_CACHE=1`| Enables fast automatic file caching (based on XH3 xxHash algorithm) for application provided shaders.|
 
