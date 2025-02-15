@@ -153,20 +153,24 @@ static inline __attribute__((always_inline)) void gpu_free_texture_data(texture 
 		}
 #endif
 #ifndef TEXTURES_SPEEDHACK
-		if (vgl_framecount - tex->last_frame > FRAME_PURGE_FREQ)
+		if (vgl_framecount - tex->last_frame > FRAME_PURGE_FREQ) {
 			vgl_free(tex->data);
-		else
+		} else
 #endif
+		{
 			markAsDirty(tex->data);
+		}
 		tex->data = NULL;
 	}
 	if (tex->palette_data != NULL) {
 #ifndef TEXTURES_SPEEDHACK
-		if (vgl_framecount - tex->last_frame > FRAME_PURGE_FREQ)
+		if (vgl_framecount - tex->last_frame > FRAME_PURGE_FREQ) {
 			vgl_free(tex->palette_data);
-		else
+		} else
 #endif
+		{
 			markAsDirty(tex->palette_data);
+		}
 		tex->palette_data = NULL;
 	}
 }

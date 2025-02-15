@@ -28,6 +28,7 @@
 
 // Debug flags
 //#define DEBUG_MEMCPY // Enable this to use newlib memcpy in order to have proper trace info in coredumps
+//#define DEBUG_GC // Enable this to enable logging for the garbage collector
 
 #ifdef DEBUG_MEMCPY
 #define vgl_fast_memcpy memcpy
@@ -51,7 +52,15 @@ extern int frame_elem_purge_idx; // Index for currently populatable purge list e
 extern int frame_rt_purge_idx; // Index for currently populatable purge list rendertarget
 
 // Macro to mark a pointer or a rendertarget as dirty for garbage collection
+#ifdef DEBUG_GC
+#define markAsDirty(x) \
+	if (frame_elem_purge_idx >= FRAME_PURGE_LIST_SIZE) { \
+		vgl_log("%s:%d Garbage collector overflow. Consider increasing FRAME_PURGE_LIST_SIZE.\n", __FILE__, __LINE__); \
+	} \
+	frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x
+#else
 #define markAsDirty(x) frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x
+#endif
 #ifdef HAVE_SHARED_RENDERTARGETS
 typedef struct {
 	SceGxmRenderTarget *rt;

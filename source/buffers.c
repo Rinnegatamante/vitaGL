@@ -166,10 +166,11 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 #else
 			if (gpu_buf->ptr) {
 #endif
-				if (gpu_buf->last_frame != OBJ_NOT_USED && (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ))
+				if (gpu_buf->last_frame != OBJ_NOT_USED && (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ)) {
 					markAsDirty(gpu_buf->ptr);
-				else
+				} else {
 					vgl_free(gpu_buf->ptr);
+				}
 			}
 			vgl_free(gpu_buf);
 		}
@@ -220,10 +221,11 @@ inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLe
 #else
 	if (gpu_buf->ptr) {
 #endif
-		if (gpu_buf->last_frame != OBJ_NOT_USED && (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ))
+		if (gpu_buf->last_frame != OBJ_NOT_USED && (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ)) {
 			markAsDirty(gpu_buf->ptr);
-		else
+		} else {
 			vgl_free(gpu_buf->ptr);
+		}
 	}
 
 	// Allocating a new buffer
