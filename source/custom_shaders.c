@@ -1175,8 +1175,11 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 #ifndef SAMPLERS_SPEEDHACK
 		if (p->frag_texunits[i]) {
 #endif
-			texture_unit *tex_unit = &texture_units[i];
-			sceGxmSetFragmentTexture(gxm_context, i, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
+			texture *tex = &texture_slots[texture_units[i].tex_id[0]];
+#ifndef TEXTURES_SPEEDHACK
+			tex->last_frame = vgl_framecount;
+#endif
+			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
 #ifndef SAMPLERS_SPEEDHACK
 		}
 #endif
