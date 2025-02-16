@@ -23,7 +23,6 @@
 
 #include "shared.h"
 
-matrix4x4 *matrix = NULL; // Current in-use matrix mode
 static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH]; // Modelview matrices stack
 static uint8_t modelview_stack_counter = 0; // Modelview matrices stack counter
 static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH]; // Projection matrices stack
@@ -35,6 +34,7 @@ matrix4x4 projection_matrix; // Projection Matrix
 matrix4x4 modelview_matrix; // ModelView Matrix
 matrix4x4 normal_matrix; // Normal Matrix
 matrix4x4 texture_matrix[TEXTURE_COORDS_NUM]; // Texture Matrix
+matrix4x4 *matrix = &modelview_matrix; // Current in-use matrix mode
 
 GLint get_gl_matrix_mode() {
 	if (matrix == &texture_matrix[server_texture_unit]) {
