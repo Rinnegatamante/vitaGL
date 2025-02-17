@@ -33,7 +33,9 @@ glsl_sema_bind glsl_custom_bindings[MAX_CUSTOM_BINDINGS];
 int glsl_custom_bindings_num = 0;
 int glsl_current_ref_idx = 0;
 char glsl_texcoords_binds[MAX_CG_TEXCOORD_ID][64];
+char glsl_colors_binds[MAX_CG_COLOR_ID][64];
 GLboolean glsl_texcoords_used[MAX_CG_TEXCOORD_ID];
+GLboolean glsl_colors_used[MAX_CG_COLOR_ID];
 GLboolean glsl_is_first_shader = GL_TRUE;
 GLboolean glsl_precision_low = GL_FALSE;
 GLenum glsl_sema_mode = VGL_MODE_GLOBAL;
@@ -76,66 +78,125 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 				start++;
 				end[0] = 0;
 				idx = -1;
+				vglSemanticType hint_type = VGL_TYPE_TEXCOORD;
 				// Check first if the varying has a known binding
 				for (int j = 0; j < glsl_custom_bindings_num; j++) {
-					if (!strcmp(glsl_custom_bindings[j].name, start)) {
+					if (!strcmp(glsl_custom_bindings[j].name, start))
 						idx = j;
-					}
 				}
 				if (idx != -1) {
 					switch (glsl_custom_bindings[idx].type) {
 					case VGL_TYPE_TEXCOORD:
-						strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
-						glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
-						sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						{
+							if (glsl_custom_bindings[idx].idx != -1) {
+								strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
+								glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+								sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+							} else {
+								goto HINT_DETECTION_PAIR;
+							}
+						}
 						break;
 					case VGL_TYPE_COLOR:
-						sprintf(newline, "COUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						if (glsl_custom_bindings[idx].idx != -1) {
+							strcpy(glsl_colors_binds[glsl_custom_bindings[idx].idx], start);
+							glsl_colors_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+							sprintf(newline, "COUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						} else {
+							hint_type = VGL_TYPE_COLOR;
+							goto HINT_DETECTION_PAIR;							
+						}
 						break;
 					case VGL_TYPE_FOG:
-						sprintf(newline, "FOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						sprintf(newline, "FOUT(%s,%d);", str2 + 8, 0);
 						break;
 					case VGL_TYPE_CLIP:
 						sprintf(newline, "POUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
 						break;
 					}
 				} else {
+HINT_DETECTION_PAIR:
 					if (glsl_is_first_shader) {
 						// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
-						glsl_get_existing_texcoord_bind(idx, start);
+						if (hint_type == VGL_TYPE_TEXCOORD) {
+							glsl_get_existing_texcoord_bind(idx, start);
+						} else if (hint_type == VGL_TYPE_COLOR) {
+							glsl_get_existing_color_bind(idx, start);
+						}
 						if (idx == -1) {
 							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
-								sprintf(newline, "VOUT(%s,\v);", str2 + 8);
-							} else {
-								glsl_reserve_texcoord_bind(idx, start);
-#ifndef SKIP_ERROR_HANDLING
-								if (idx == -1) {
-									idx = 9;
-									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+								if (hint_type == VGL_TYPE_TEXCOORD) {
+									sprintf(newline, "VOUT(%s,\v);", str2 + 8);
+								} else if (hint_type == VGL_TYPE_COLOR) {
+									sprintf(newline, "COUT(%s,\f);", str2 + 8);
 								}
+							} else {
+								if (hint_type == VGL_TYPE_TEXCOORD) {
+									glsl_reserve_texcoord_bind(idx, start);
+#ifndef SKIP_ERROR_HANDLING								
+									idx = MAX_CG_TEXCOORD_ID - 1;
+									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
 #endif
-								sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+									sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+								} else if (hint_type == VGL_TYPE_COLOR) {
+									glsl_reserve_color_bind(idx, start);
+#ifndef SKIP_ERROR_HANDLING								
+									idx = MAX_CG_COLOR_ID - 1;
+									vgl_log("%s:%d %s: An error occurred during GLSL translation (COLOR overflow).\n", __FILE__, __LINE__, __func__);
+#endif
+									sprintf(newline, "COUT(%s,%d);", str2 + 8, idx);							
+								}
 							}
-						} else
-							sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);							
+						} else {
+							if (hint_type == VGL_TYPE_TEXCOORD) {
+								sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+							} else if (hint_type == VGL_TYPE_COLOR) {
+								sprintf(newline, "COUT(%s,%d);", str2 + 8, idx);
+							}
+						}
 					} else {
-						glsl_get_existing_texcoord_bind(idx, start);
+						if (hint_type == VGL_TYPE_TEXCOORD) {
+							glsl_get_existing_texcoord_bind(idx, start);
+						} else if (hint_type == VGL_TYPE_COLOR) {
+							glsl_get_existing_color_bind(idx, start);							
+						}
 						if (idx == -1) {
 							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
-								sprintf(newline, "VOUT(%s,\v);", str2 + 8);
-							} else {
-								glsl_reserve_texcoord_bind(idx, start)
-#ifndef SKIP_ERROR_HANDLING
-								if (idx == -1) {
-									idx = 9;
-									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+								if (hint_type == VGL_TYPE_TEXCOORD) {
+									sprintf(newline, "VOUT(%s,\v);", str2 + 8);
+								} else if (hint_type == VGL_TYPE_COLOR) {
+									sprintf(newline, "COUT(%s,\f);", str2 + 8);
 								}
+							} else {
+								if (hint_type == VGL_TYPE_TEXCOORD) {
+									glsl_reserve_texcoord_bind(idx, start)
+#ifndef SKIP_ERROR_HANDLING
+									if (idx == -1) {
+										idx = MAX_CG_TEXCOORD_ID - 1;
+										vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+									}
 #endif
-								vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, idx);
-								sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+									vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, idx);
+									sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+								} else if (hint_type == VGL_TYPE_COLOR) {
+									glsl_reserve_color_bind(idx, start)
+#ifndef SKIP_ERROR_HANDLING
+									if (idx == -1) {
+										idx = MAX_CG_COLOR_ID - 1;
+										vgl_log("%s:%d %s: An error occurred during GLSL translation (COLOR overflow).\n", __FILE__, __LINE__, __func__);	
+									}
+#endif
+									vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to COLOR%d.\n", __FILE__, __LINE__, __func__, start, idx);
+									sprintf(newline, "COUT(%s,%d);", str2 + 8, idx);	
+								}
 							}
-						} else
-							sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+						} else {
+							if (hint_type == VGL_TYPE_TEXCOORD) {
+								sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
+							} else if (hint_type == VGL_TYPE_COLOR) {
+								sprintf(newline, "COUT(%s,%d);", str2 + 8, idx);
+							}
+						}
 					}
 				}
 				sceClibMemcpy(str2, newline, strlen(newline));
@@ -188,6 +249,7 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 				start++;
 				end[0] = 0;
 				idx = -1;
+				vglSemanticType hint_type = VGL_TYPE_TEXCOORD;
 				// Check first if the varying has a known binding
 				for (int j = 0; j < glsl_custom_bindings_num; j++) {
 					if (!strcmp(glsl_custom_bindings[j].name, start)) {
@@ -197,57 +259,114 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 				if (idx != -1) {
 					switch (glsl_custom_bindings[idx].type) {
 					case VGL_TYPE_TEXCOORD:
-						strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
-						glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
-						sprintf(newline, "VIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
+						if (glsl_custom_bindings[idx].idx != -1) {
+							strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
+							glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+							sprintf(newline, "VIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
+						} else {
+							goto HINT_DETECTION_PAIR_2;
+						}
 						break;
 					case VGL_TYPE_COLOR:
-						sprintf(newline, "CIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
+						if (glsl_custom_bindings[idx].idx != -1) {
+							strcpy(glsl_colors_binds[glsl_custom_bindings[idx].idx], start);
+							glsl_colors_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+							sprintf(newline, "CIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
+						} else {
+							hint_type = VGL_TYPE_COLOR;
+							goto HINT_DETECTION_PAIR_2;
+						}
 						break;
 					case VGL_TYPE_FOG:
-						sprintf(newline, "FIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
+						sprintf(newline, "FIN(%s, %d);", str + 8, 0);
 						break;
 					case VGL_TYPE_CLIP:
 						vgl_log("%s:%d %s: Unexpected varying type (VGL_TYPE_CLIP) for %s in fragment shader.\n", __FILE__, __LINE__, __func__, str + 8);
 						break;
 					}
 				} else {
+HINT_DETECTION_PAIR_2:
 					if (glsl_is_first_shader) {
 						// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
-						glsl_get_existing_texcoord_bind(idx, start);
+						if (hint_type == VGL_TYPE_TEXCOORD) {
+							glsl_get_existing_texcoord_bind(idx, start);
+						} else {
+							glsl_get_existing_color_bind(idx, start);							
+						}
 						if (idx == -1) {
 							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
-								sprintf(newline, "VIN(%s, \v);", str + 8);
-							} else {
-								glsl_reserve_texcoord_bind(idx, start);
-#ifndef SKIP_ERROR_HANDLING
-								if (idx == -1) {
-									idx = 9;
-									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+								if (hint_type == VGL_TYPE_TEXCOORD) {
+									sprintf(newline, "VIN(%s, \v);", str + 8);
+								} else if (hint_type == VGL_TYPE_COLOR) {
+									sprintf(newline, "CIN(%s, \f);", str + 8);									
 								}
+							} else {
+								if (hint_type == VGL_TYPE_TEXCOORD) {
+									glsl_reserve_texcoord_bind(idx, start);
+#ifndef SKIP_ERROR_HANDLING
+									if (idx == -1) {
+										idx = MAX_CG_TEXCOORD_ID - 1;
+										vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+									}
 #endif
-								sprintf(newline, "VIN(%s, %d);", str + 8, idx);
+									sprintf(newline, "VIN(%s, %d);", str + 8, idx);
+								} else if (hint_type == VGL_TYPE_COLOR) {
+									glsl_reserve_color_bind(idx, start);
+#ifndef SKIP_ERROR_HANDLING
+									if (idx == -1) {
+										idx = MAX_CG_COLOR_ID - 1;
+										vgl_log("%s:%d %s: An error occurred during GLSL translation (COLOR overflow).\n", __FILE__, __LINE__, __func__);
+									}
+#endif
+									sprintf(newline, "CIN(%s, %d);", str + 8, idx);
+								}
+								
 							}
-						} else
-							sprintf(newline, "VIN(%s, %d);", str + 8, idx);
+						} else {
+							if (hint_type == VGL_TYPE_TEXCOORD) {
+								sprintf(newline, "VIN(%s, %d);", str + 8, idx);
+							} else if (hint_type == VGL_TYPE_COLOR) {
+								sprintf(newline, "CIN(%s, %d);", str + 8, idx);
+							}
+						}
 					} else {
-						glsl_get_existing_texcoord_bind(idx, start);
-						if (idx == -1) {
-							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
-								sprintf(newline, "VIN(%s, \v);", str + 8);
-							} else {
-								glsl_reserve_texcoord_bind(idx, start)
+						if (hint_type == VGL_TYPE_TEXCOORD) {
+							glsl_get_existing_texcoord_bind(idx, start);
+							if (idx == -1) {
+								if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
+									sprintf(newline, "VIN(%s, \v);", str + 8);
+								} else {
+									glsl_reserve_texcoord_bind(idx, start)
 #ifndef SKIP_ERROR_HANDLING
-								if (idx == -1) {
-									idx = 9;
-									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
-								}
+									if (idx == -1) {
+										idx = MAX_CG_TEXCOORD_ID - 1;
+										vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+									}
 #endif
-								vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, idx);
+									vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, idx);
+									sprintf(newline, "VIN(%s, %d);", str + 8, idx);
+								}
+							} else
 								sprintf(newline, "VIN(%s, %d);", str + 8, idx);
-							}
-						} else
-							sprintf(newline, "VIN(%s, %d);", str + 8, idx);
+						} else if (hint_type == VGL_TYPE_COLOR) {
+							glsl_get_existing_color_bind(idx, start);
+							if (idx == -1) {
+								if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
+									sprintf(newline, "CIN(%s, \f);", str + 8);
+								} else {
+									glsl_reserve_texcoord_bind(idx, start)
+#ifndef SKIP_ERROR_HANDLING
+									if (idx == -1) {
+										idx = MAX_CG_COLOR_ID - 1;
+										vgl_log("%s:%d %s: An error occurred during GLSL translation (COLOR overflow).\n", __FILE__, __LINE__, __func__);
+									}
+#endif
+									vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to COLOR%d.\n", __FILE__, __LINE__, __func__, start, idx);
+									sprintf(newline, "CIN(%s, %d);", str + 8, idx);
+								}
+							} else
+								sprintf(newline, "CIN(%s, %d);", str + 8, idx);
+						}
 					}
 				}
 				sceClibMemcpy(str, newline, strlen(newline));
@@ -710,6 +829,7 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 			vgl_log("%s:%d %s: Unexpected shader type, translation may be imperfect.\n", __FILE__, __LINE__, __func__);
 			glsl_is_first_shader = GL_TRUE;
 			sceClibMemset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
+			sceClibMemset(glsl_colors_used, 0, sizeof(GLboolean) * MAX_CG_COLOR_ID);
 		}
 	} else
 		glsl_current_ref_idx++;
@@ -821,6 +941,7 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 	}
 	// Replacing all marked varying with actual bindings if custom bindings are used
 	if (glsl_custom_bindings_num > 0 || glsl_sema_mode == VGL_MODE_GLOBAL) {
+		// Texcoords
 		char *str = strstr(s->source, "\v");
 		while (str) {
 			char *start = str;
@@ -855,12 +976,54 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 			*end = ',';
 #ifndef SKIP_ERROR_HANDLING
 			if (idx == -1) {
-				idx = 9;
+				idx = MAX_CG_TEXCOORD_ID - 1;
 				vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
 			}
 #endif
 			*str = '0' + idx;
 			str = strstr(str, "\v");
+		}
+		// Colors
+		str = strstr(s->source, "\f");
+		while (str) {
+			char *start = str;
+			while (*start != ',') {
+				start--;
+			}
+			char *end = start;
+			while (*start != ' ' && *start != '\t') {
+				start--;
+			}
+			start++;
+			int idx = -1;
+			*end = 0;
+			if (glsl_sema_mode == VGL_MODE_GLOBAL) {
+				for (int j = 0; j < MAX_CG_COLOR_ID; j++) {
+					idx = j;
+					for (int i = 0; i < glsl_custom_bindings_num; i++) {
+						// Check if amongst the currently known bindings, used in the shader, there's one mapped to the attempted index
+						if (glsl_custom_bindings[i].type == VGL_TYPE_COLOR && glsl_custom_bindings[i].idx == j && glsl_custom_bindings[i].ref_idx == glsl_current_ref_idx) {
+							idx = -1;
+							break;
+						}
+					}
+					if (idx != -1)
+						break;
+				}
+				if (idx != -1)
+					vglAddSemanticBinding(start, idx, VGL_TYPE_COLOR);
+			} else {
+				glsl_reserve_color_bind(idx, start);
+			}
+			*end = ',';
+#ifndef SKIP_ERROR_HANDLING
+			if (idx == -1) {
+				idx = MAX_CG_COLOR_ID - 1;
+				vgl_log("%s:%d %s: An error occurred during GLSL translation (COLOR overflow).\n", __FILE__, __LINE__, __func__);
+			}
+#endif
+			*str = '0' + idx;
+			str = strstr(str, "\f");
 		}
 	}
 	// Manually handle * operator replacements for vector * matrix and matrix * vector operations support

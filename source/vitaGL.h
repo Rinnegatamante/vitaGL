@@ -981,6 +981,7 @@ typedef enum {
 
 // vgl*
 void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum type);
+void vglAddSemanticBindingHint(const GLchar *const *varying, GLenum type);
 void *vglAlloc(uint32_t size, vglMemType type);
 void vglBufferData(GLenum target, const GLvoid *data);
 void *vglCalloc(uint32_t nmember, uint32_t size);

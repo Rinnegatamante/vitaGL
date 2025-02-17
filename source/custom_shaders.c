@@ -3246,6 +3246,21 @@ void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum typ
 #endif
 }
 
+void vglAddSemanticBindingHint(const GLchar *const *varying, GLenum type) {
+#ifdef HAVE_GLSL_TRANSLATOR
+#ifndef SKIP_ERROR_HANDLING
+	if (glsl_custom_bindings_num >= MAX_CUSTOM_BINDINGS) {
+		vgl_log("%s:%d %s: Too many custom bindings supplied. Consider increasing MAX_CUSTOM_BINDINGS.\n", __FILE__, __LINE__, __func__);
+		return;
+	}			
+#endif
+	strcpy(glsl_custom_bindings[glsl_custom_bindings_num].name, varying);
+	glsl_custom_bindings[glsl_custom_bindings_num].idx = -1;
+	glsl_custom_bindings[glsl_custom_bindings_num].type = type;
+	glsl_custom_bindings[glsl_custom_bindings_num++].ref_idx = glsl_current_ref_idx;
+#endif
+}
+
 void vglUseLowPrecision(GLboolean val) {
 #ifdef HAVE_GLSL_TRANSLATOR
 	glsl_precision_low = val;

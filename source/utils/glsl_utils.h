@@ -29,6 +29,7 @@
 
 //#define DEBUG_GLSL_TRANSLATOR // Define this to enable logging of GLSL translator output prior compilation
 #define MAX_CG_TEXCOORD_ID 10 // Maximum number of bindable TEXCOORD semantic
+#define MAX_CG_COLOR_ID 2 // Maximum number of bindable COLOR semantic
 #define MAX_CUSTOM_BINDINGS 64 // Maximum number of custom semantic bindings usable with vglAddSemanticBinding
 
 typedef struct {
@@ -42,7 +43,9 @@ extern glsl_sema_bind glsl_custom_bindings[MAX_CUSTOM_BINDINGS];
 extern int glsl_custom_bindings_num;
 extern int glsl_current_ref_idx;
 extern char glsl_texcoords_binds[MAX_CG_TEXCOORD_ID][64];
+extern char glsl_colors_binds[MAX_CG_COLOR_ID][64];
 extern GLboolean glsl_texcoords_used[MAX_CG_TEXCOORD_ID];
+extern GLboolean glsl_colors_used[MAX_CG_COLOR_ID];
 extern GLboolean glsl_is_first_shader;
 extern GLboolean glsl_precision_low;
 extern GLenum glsl_sema_mode;
@@ -55,12 +58,30 @@ extern GLenum prev_shader_type;
 			break; \
 		} \
 	}
+	
+#define glsl_get_existing_color_bind(idx, s) \
+	for (int j = 0; j < MAX_CG_COLOR_ID; j++) { \
+		if (glsl_colors_used[j] && !strcmp(glsl_colors_binds[j], s)) { \
+			idx = j; \
+			break; \
+		} \
+	}
 
 #define glsl_reserve_texcoord_bind(idx, s) \
 	for (int j = 0; j < MAX_CG_TEXCOORD_ID; j++) { \
 		if (!glsl_texcoords_used[j]) { \
 			glsl_texcoords_used[j] = GL_TRUE; \
 			strcpy(glsl_texcoords_binds[j], s); \
+			idx = j; \
+			break; \
+		} \
+	}
+	
+#define glsl_reserve_color_bind(idx, s) \
+	for (int j = 0; j < MAX_CG_COLOR_ID; j++) { \
+		if (!glsl_colors_used[j]) { \
+			glsl_colors_used[j] = GL_TRUE; \
+			strcpy(glsl_colors_binds[j], s); \
 			idx = j; \
 			break; \
 		} \

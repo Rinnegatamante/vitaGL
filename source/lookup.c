@@ -374,6 +374,7 @@ static const struct {
 #ifdef EXPOSE_VGL_FUNCS
 	// *vgl
 	{"vglAddSemanticBinding", (void *)vglAddSemanticBinding},
+	{"vglAddSemanticBindingHint", (void *)vglAddSemanticBindingHint},
 	{"vglColorPointer", (void *)vglColorPointer},
 	{"vglColorPointerMapped", (void *)vglColorPointerMapped},
 	{"vglDrawObjects", (void *)vglDrawObjects},
