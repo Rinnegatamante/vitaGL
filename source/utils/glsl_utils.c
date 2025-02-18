@@ -976,6 +976,7 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 	
 	char *text = s->source + strlen(s->source);
 	strcat(s->source, out);
+	vglFree(out);
 
 	switch (glsl_sema_mode) {
 		case VGL_MODE_SHADER_PAIR:
