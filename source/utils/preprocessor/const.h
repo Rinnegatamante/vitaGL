@@ -1,0 +1,100 @@
+#pragma once
+
+#define LESSTHAN2_EQUAL	                0
+#define GREATERTHAN2_EQUAL              1
+#define MINUS_GREATERTHAN_ASTERISK      2
+#define AMP2                            3
+#define PIPE2                           4
+#define EQUALS2                         5
+#define EXCLAM_EQUAL                    6
+#define LESSTHAN_EQUAL                  7
+#define GREATERTHAN_EQUAL               8
+#define LESSTHAN2                       9
+#define GREATERTHAN2                    10
+#define PLUS2                           11
+#define MINUS2                          12
+#define MINUS_GREATERTHAN               13
+#define PLUS_EQUALS                     14
+#define MINUS_EQUALS                    15
+#define ASTERISK_EQUALS                 16
+#define SLASH_EQUALS                    17
+#define PERCENT_EQUALS                  18
+#define AMP_EQUALS                      19
+#define PIPE_EQUALS                     20
+#define HAT_EQUALS                      21
+#define DOT_ASTERISK                    22
+#define LESSTHAN                        23
+#define GREATERTHAN                     24
+#define EXCLAM                          25
+#define EQUALS                          26
+#define COMMA                           27
+#define SEMICOLON                       28
+#define DOT3                            29
+#define DOT                             30
+#define OPEN_BRACKET                    31
+#define CLOSE_BRACKET                   32
+#define OPEN_BRACE                      33
+#define CLOSE_BRACE                     34 
+#define OPEN_SQUARE                     35
+#define CLOSE_SQUARE                    36 
+#define PLUS                            37
+#define MINUS                           38
+#define ASTERISK                        39
+#define SLASH                           40
+#define PERCENT                         41
+#define AMP                             42
+#define PIPE                            43
+#define HAT                             44
+#define TILDE                           45
+#define QUESTION                        46
+#define COLON2                          47
+#define COLON                           48
+#define HASH2                           49
+#define AT                              50
+#define BACKSLASH                       51
+
+#define DEFINE                          52
+#define UNDEF                           53
+#define INCLUDE                         54
+#define IF                              55
+#define IFDEF                           56
+#define IFNDEF                          57
+#define ELIF                            58
+#define ELSE                            59
+#define ENDIF                           60
+#define LINE                            61
+#define ERROR                           62
+#define WARNING                         63
+#define PRAGMA                          64
+#define HASH                            65
+
+#define NUMBER                          66           // eg 123, 123.0, 1.5e-20, 0xFFUL
+#define IDENTIFIER                      67           // eg main, return, int
+#define STRING                          68           // "hello, world!\n"
+#define CHAR                            69           // '\n'
+#define WSTRING                         70
+#define WCHAR                           71
+
+#define UNARY_PLUS                      72
+#define UNARY_MINUS                     73
+#define UNARY_COMPLEMENT                74
+#define UNARY_NOT                       75
+#define BINARY_PLUS                     76
+#define BINARY_MINUS                    77
+#define BINARY_TIMES                    78
+#define BINARY_DIVIDE                   79
+#define BINARY_AND                      80
+#define BINARY_OR                       81
+#define BINARY_EQUAL                    82
+#define BINARY_NOT_EQUAL                83
+#define BINARY_LESS_THAN_OR_EQUAL       84
+#define BINARY_LESS_THAN                85
+#define BINARY_GREATER_THAN_OR_EQUAL    86
+#define BINARY_GREATER_THAN             87
+#define BINARY_BITWISE_AND              88
+#define BINARY_BITWISE_OR               89
+#define BINARY_BITWISE_XOR              90
+#define BINARY_LEFT_SHIFT               91
+#define BINARY_RIGHT_SHIFT              92
+#define DEFINE_FUNC                     93
+#define NOEXPAND                        94

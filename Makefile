@@ -1,5 +1,5 @@
 TARGET          := libvitaGL
-SOURCES         := source source/utils
+SOURCES         := source source/utils source/utils/preprocessor
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))
 CPPFILES := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.cpp))
@@ -199,7 +199,7 @@ ifeq ($(DISABLE_FFP_MULTITEXTURE),1)
 CFLAGS += -DDISABLE_FFP_MULTITEXTURE
 endif
 
-CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11 -Wno-write-strings
+CXXFLAGS  = $(CFLAGS) -fexceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a
 

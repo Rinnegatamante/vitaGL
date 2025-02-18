@@ -25,8 +25,10 @@
 #include <string.h>
 #include "../shared.h"
 #include "glsl_utils.h"
+#include "preprocessor/preprocessor_c.h"
 
 #ifdef HAVE_GLSL_TRANSLATOR
+#define HAVE_GLSL_PREPROCESSOR
 #define MEM_ENLARGER_SIZE (1024 * 1024) // FIXME: Check if this is too big/small
 
 glsl_sema_bind glsl_custom_bindings[MAX_CUSTOM_BINDINGS];
@@ -71,10 +73,19 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 				}
 			} else { // Varying
 				char *end = strstr(t, ";");
+				GLboolean name_started = GL_FALSE;
+				int extra_chars = -1;
 				char *start = end;
-				while (*start != ' ' && *start != '\t') {
+				while ((*start != ' ' && *start != '\t') || !name_started) {
+					if (!name_started && *start != ' ' && *start != '\t' && *start != ';')
+						name_started = GL_TRUE;
+					if (!name_started) {
+						end--;
+						extra_chars++;
+					}
 					start--;
 				}
+				end++;
 				start++;
 				end[0] = 0;
 				idx = -1;
@@ -116,6 +127,7 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 					}
 				} else {
 HINT_DETECTION_PAIR:
+					idx = -1;
 					if (glsl_is_first_shader) {
 						// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
 						if (hint_type == VGL_TYPE_TEXCOORD) {
@@ -133,16 +145,20 @@ HINT_DETECTION_PAIR:
 							} else {
 								if (hint_type == VGL_TYPE_TEXCOORD) {
 									glsl_reserve_texcoord_bind(idx, start);
-#ifndef SKIP_ERROR_HANDLING								
-									idx = MAX_CG_TEXCOORD_ID - 1;
-									vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+#ifndef SKIP_ERROR_HANDLING
+									if (idx == -1) {
+										idx = MAX_CG_TEXCOORD_ID - 1;
+										vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+									}
 #endif
 									sprintf(newline, "VOUT(%s,%d);", str2 + 8, idx);
 								} else if (hint_type == VGL_TYPE_COLOR) {
 									glsl_reserve_color_bind(idx, start);
-#ifndef SKIP_ERROR_HANDLING								
-									idx = MAX_CG_COLOR_ID - 1;
-									vgl_log("%s:%d %s: An error occurred during GLSL translation (COLOR overflow).\n", __FILE__, __LINE__, __func__);
+#ifndef SKIP_ERROR_HANDLING
+									if (idx == -1) {
+										idx = MAX_CG_COLOR_ID - 1;
+										vgl_log("%s:%d %s: An error occurred during GLSL translation (COLOR overflow).\n", __FILE__, __LINE__, __func__);
+									}
 #endif
 									sprintf(newline, "COUT(%s,%d);", str2 + 8, idx);							
 								}
@@ -200,6 +216,9 @@ HINT_DETECTION_PAIR:
 					}
 				}
 				sceClibMemcpy(str2, newline, strlen(newline));
+				if (extra_chars) {
+					sceClibMemset(str2 + strlen(newline), ' ', extra_chars);
+				}
 				str2 = strstr(t, "varying");
 				while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
 					str2 = strstr(str2 + 7, "varying");
@@ -242,10 +261,19 @@ HINT_DETECTION_PAIR:
 				t = min(str, str2);
 			if (t == str) { // Varying
 				char *end = strstr(str, ";");
+				GLboolean name_started = GL_FALSE;
+				int extra_chars = -1;
 				char *start = end;
-				while (*start != ' ' && *start != '\t') {
+				while ((*start != ' ' && *start != '\t') || !name_started) {
+					if (!name_started && *start != ' ' && *start != '\t' && *start != ';')
+						name_started = GL_TRUE;
+					if (!name_started) {
+						end--;
+						extra_chars++;
+					}
 					start--;
 				}
+				end++;
 				start++;
 				end[0] = 0;
 				idx = -1;
@@ -286,6 +314,7 @@ HINT_DETECTION_PAIR:
 					}
 				} else {
 HINT_DETECTION_PAIR_2:
+					idx = -1;
 					if (glsl_is_first_shader) {
 						// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
 						if (hint_type == VGL_TYPE_TEXCOORD) {
@@ -370,6 +399,9 @@ HINT_DETECTION_PAIR_2:
 					}
 				}
 				sceClibMemcpy(str, newline, strlen(newline));
+				if (extra_chars > 0) {
+					sceClibMemset(str + strlen(newline), ' ', extra_chars);
+				}
 				str = strstr(str, "varying");
 				while (str && !(str[7] == ' ' || str[7] == '\t')) {
 					str = strstr(str + 7, "varying");
@@ -817,6 +849,7 @@ void glsl_nuke_comments(char *txt) {
 }
 
 void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *string, const GLint *length) {
+	uint32_t source_size = 1;
 	uint32_t size = 1;
 	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE, hasPointCoord = GL_FALSE;
 	GLboolean hasPointSize = GL_FALSE, hasFragDepth = GL_FALSE, hasFrontFacing = GL_FALSE;
@@ -838,31 +871,66 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 		size += strlen("#define VGL_IS_VERTEX_SHADER\n");
 	
 	for (int i = 0; i < count; i++) {
-		if (s->type == GL_VERTEX_SHADER) {
-			// Checking if shader requires gl_PointSize
-			if (!hasPointSize)
-				hasPointSize = strstr(string[i], "gl_PointSize") ? GL_TRUE : GL_FALSE;
-			// Checking if shader requires gl_InstanceID
-			if (!hasInstanceID)
-				hasInstanceID = strstr(string[i], "gl_InstanceID") ? GL_TRUE : GL_FALSE;
-			// Checking if shader requires gl_VertexID
-			if (!hasVertexID)
-				hasVertexID = strstr(string[i], "gl_VertexID") ? GL_TRUE : GL_FALSE;
-		} else {
-			// Checking if shader requires gl_PointCoord
-			if (!hasPointCoord)
-				hasPointCoord = strstr(string[i], "gl_PointCoord") ? GL_TRUE : GL_FALSE;
-			// Checking if shader requires gl_FrontFacing
-			if (!hasFrontFacing)
-				hasFrontFacing = strstr(string[i], "gl_FrontFacing") ? GL_TRUE : GL_FALSE;
-			// Checking if shader requires gl_FragCoord
-			if (!hasFragCoord)
-				hasFragCoord = strstr(string[i], "gl_FragCoord") ? GL_TRUE : GL_FALSE;
-			// Checking if shader requires gl_FragDepth
-			if (!hasFragDepth)
-				hasFragDepth = strstr(string[i], "gl_FragDepth") ? GL_TRUE : GL_FALSE;
+		source_size += length ? length[i] : strlen(string[i]);
+	}
+	char *input = vglMalloc(source_size);
+	input[0] = 0;
+	for (int i = 0; i < count; i++) {
+		strncat(input, string[i], length ? length[i] : strlen(string[i]));
+	}
+	
+	// Nukeing version directive
+	char *str = strstr(input, "#version");
+	if (str) {
+		str[0] = str[1] = '/';
+	}
+		
+	// Nukeing precision directives
+	str = strstr(input, "precision ");
+	while (str) {
+		str[0] = ' ';
+		str++;
+		if (str[0] == ';') {
+			str[0] = ' ';
+			str = strstr(str, "precision ");
 		}
-		size += length ? length[i] : strlen(string[i]);
+	}
+
+#ifdef HAVE_GLSL_PREPROCESSOR
+	char *out = vglMalloc(strlen(input));
+	glsl_preprocess("full", input, out);
+	vglFree(input);
+	size += strlen(out);
+#else
+	char *out = input;
+	// Nukeing comments
+	glsl_nuke_comments(out);
+	size+= strlen(out);
+#endif
+	
+	if (s->type == GL_VERTEX_SHADER) {
+		// Checking if shader requires gl_PointSize
+		if (!hasPointSize)
+			hasPointSize = strstr(out, "gl_PointSize") ? GL_TRUE : GL_FALSE;
+		// Checking if shader requires gl_InstanceID
+		if (!hasInstanceID)
+			hasInstanceID = strstr(out, "gl_InstanceID") ? GL_TRUE : GL_FALSE;
+		// Checking if shader requires gl_VertexID
+		if (!hasVertexID)
+			hasVertexID = strstr(out, "gl_VertexID") ? GL_TRUE : GL_FALSE;
+	} else {
+		// Checking if shader requires gl_PointCoord
+		if (!hasPointCoord)
+			hasPointCoord = strstr(out, "gl_PointCoord") ? GL_TRUE : GL_FALSE;
+		// Checking if shader requires gl_FrontFacing
+		if (!hasFrontFacing)
+			hasFrontFacing = strstr(out, "gl_FrontFacing") ? GL_TRUE : GL_FALSE;
+		// Checking if shader requires gl_FragCoord
+		if (!hasFragCoord)
+			hasFragCoord = strstr(out, "gl_FragCoord") ? GL_TRUE : GL_FALSE;
+		// Checking if shader requires gl_FragDepth
+		if (!hasFragDepth)
+			hasFragDepth = strstr(out, "gl_FragDepth") ? GL_TRUE : GL_FALSE;
 	}
 	
 	if (hasPointSize)
@@ -906,28 +974,10 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 	if (glsl_precision_low)
 		strcat(s->source, glsl_precision_hdr);
 	
-	for (int i = 0; i < count; i++) {
-		char *text = s->source + strlen(s->source);
-		strncat(s->source, string[i], length ? length[i] : strlen(string[i]));
-		// Nukeing version directive
-		char *str = strstr(text, "#version");
-		if (str) {
-			str[0] = str[1] = '/';
-		}
-		// Nukeing precision directives
-		str = strstr(text, "precision ");
-		while (str) {
-			str[0] = ' ';
-			str++;
-			if (str[0] == ';') {
-				str[0] = ' ';
-				str = strstr(str, "precision ");
-			}
-		}
-		// Nukeing comments
-		glsl_nuke_comments(text);
-		
-		switch (glsl_sema_mode) {
+	char *text = s->source + strlen(s->source);
+	strcat(s->source, out);
+
+	switch (glsl_sema_mode) {
 		case VGL_MODE_SHADER_PAIR:
 			glsl_translate_with_shader_pair(text, s->type, hasFrontFacing);
 			break;
@@ -937,8 +987,8 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 		default:
 			vgl_log("%s:%d %s: Invalid semantic binding resolution mode supplied.\n", __FILE__, __LINE__, __func__);
 			break;
-		}
 	}
+	
 	// Replacing all marked varying with actual bindings if custom bindings are used
 	if (glsl_custom_bindings_num > 0 || glsl_sema_mode == VGL_MODE_GLOBAL) {
 		// Texcoords

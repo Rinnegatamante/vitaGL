@@ -1,0 +1,1 @@
+void glsl_preprocess(char *mode, const char *fname, char *output);
