@@ -678,8 +678,10 @@ void writeLine(list<Token> line)
         prev.type = -1;
         for (Token tok : line)
         {
-            if (prev.type != -1)
-                str += " ";
+            if (!(tok.type == 30 && tok2Str(tok).c_str()[0] == '.')) {
+                if (prev.type != -1 && (!(prev.type == 30 && tok2Str(prev).c_str()[0] == '.')))
+                    str += " ";
+            }
 
             str += tok2Str(tok);
             prev = tok;
