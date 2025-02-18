@@ -678,8 +678,8 @@ void writeLine(list<Token> line)
         prev.type = -1;
         for (Token tok : line)
         {
-            if (!(tok.type == 30 || tok.type == 35 || tok.type == 36)) {
-                if (prev.type != -1 && (!(prev.type == 30 || prev.type == 35 || prev.type == 36)))
+            if (!(tok.type < 52)) {
+                if (prev.type != -1 && (!(prev.type < 52)))
                     str += " ";
             }
 
