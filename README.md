@@ -26,7 +26,8 @@ In order to build vitaGL use the following command: `make install`.
 | Flag | Description |
 | --- | --- |
 |`HAVE_CUSTOM_HEAP=1`| Replaces sceClib heap implementation with custom one (Less efficient but safer).|
-|`HAVE_GLSL_SUPPORT=1`| Enables experimental GLSL to CG auto translation for shader sources.|
+|`HAVE_GLSL_SUPPORT=1`| Enables experimental GLSL to CG auto translation for shader sources with preprocessor pass (Recommended).|
+|`HAVE_GLSL_SUPPORT=2`| Enables experimental GLSL to CG auto translation for shader sources without preprocessor pass.|
 |`SOFTFP_ABI=1`| Compiles the library in soft floating point compatibility mode.|
 |`STORE_DEPTH_STENCIL=1`| Makes all framebuffers depth/stencil surfaces to be load/stored on memory. Makes the rendering slower but more compliant with OpenGL standards.|
 |`HAVE_HIGH_FFP_TEXUNITS=1`| Enables support for more than 2 texunits for fixed function pipeline at the cost of some performance loss.|

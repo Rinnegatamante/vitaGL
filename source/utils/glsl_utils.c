@@ -28,7 +28,6 @@
 #include "preprocessor/preprocessor_c.h"
 
 #ifdef HAVE_GLSL_TRANSLATOR
-#define HAVE_GLSL_PREPROCESSOR
 #define MEM_ENLARGER_SIZE (1024 * 1024) // FIXME: Check if this is too big/small
 
 glsl_sema_bind glsl_custom_bindings[MAX_CUSTOM_BINDINGS];
