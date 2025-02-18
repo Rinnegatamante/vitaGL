@@ -1,4 +1,4 @@
-#ifdef HAVE_GLSL_TRANSLATOR
+#ifdef HAVE_GLSL_PREPROCESSOR
 // Credits: https://github.com/john-blackburn/preprocessor
 #define _CRT_SECURE_NO_WARNINGS
 

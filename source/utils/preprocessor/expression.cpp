@@ -1,4 +1,4 @@
-#ifdef HAVE_GLSL_TRANSLATOR
+#ifdef HAVE_GLSL_PREPROCESSOR
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdlib.h>
