@@ -456,11 +456,20 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 					str = strstr(str + 9, "attribute");
 				}
 			} else { // Varying
-				char *end = strstr(t, ";");
+				char *end = strstr(str, ";");
+				GLboolean name_started = GL_FALSE;
+				int extra_chars = -1;
 				char *start = end;
-				while (*start != ' ' && *start != '\t') {
+				while ((*start != ' ' && *start != '\t') || !name_started) {
+					if (!name_started && *start != ' ' && *start != '\t' && *start != ';')
+						name_started = GL_TRUE;
+					if (!name_started) {
+						end--;
+						extra_chars++;
+					}
 					start--;
 				}
+				end++;
 				start++;
 				end[0] = 0;
 				idx = -1;
@@ -474,13 +483,29 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 				if (idx != -1) {
 					switch (glsl_custom_bindings[idx].type) {
 					case VGL_TYPE_TEXCOORD:
-						sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						{
+							if (glsl_custom_bindings[idx].idx != -1) {
+								strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
+								glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+								sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+							} else {
+								sprintf(newline, "VOUT(%s,\v);", str2 + 8);
+							}
+						}
 						break;
 					case VGL_TYPE_COLOR:
-						sprintf(newline, "COUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						{
+							if (glsl_custom_bindings[idx].idx != -1) {
+								strcpy(glsl_colors_binds[glsl_custom_bindings[idx].idx], start);
+								glsl_colors_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+								sprintf(newline, "COUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+							} else {
+								sprintf(newline, "COUT(%s,\f);", str2 + 8);
+							}
+						}
 						break;
 					case VGL_TYPE_FOG:
-						sprintf(newline, "FOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
+						sprintf(newline, "FOUT(%s,%d);", str2 + 8, 0);
 						break;
 					case VGL_TYPE_CLIP:
 						sprintf(newline, "POUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
@@ -490,6 +515,9 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 					sprintf(newline, "VOUT(%s,\v);", str2 + 8);
 				}
 				sceClibMemcpy(str2, newline, strlen(newline));
+				if (extra_chars > 0) {
+					sceClibMemset(str2 + strlen(newline), ' ', extra_chars);
+				}
 				str2 = strstr(t, "varying");
 				while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
 					str2 = strstr(str2 + 7, "varying");
@@ -532,10 +560,19 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 				t = min(str, str2);
 			if (t == str) { // Varying
 				char *end = strstr(str, ";");
+				GLboolean name_started = GL_FALSE;
+				int extra_chars = -1;
 				char *start = end;
-				while (*start != ' ' && *start != '\t') {
+				while ((*start != ' ' && *start != '\t') || !name_started) {
+					if (!name_started && *start != ' ' && *start != '\t' && *start != ';')
+						name_started = GL_TRUE;
+					if (!name_started) {
+						end--;
+						extra_chars++;
+					}
 					start--;
 				}
+				end++;
 				start++;
 				end[0] = 0;
 				idx = -1;
@@ -549,10 +586,26 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 				if (idx != -1) {
 					switch (glsl_custom_bindings[idx].type) {
 					case VGL_TYPE_TEXCOORD:
-						sprintf(newline, "VIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
+						{
+							if (glsl_custom_bindings[idx].idx != -1) {
+								strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
+								glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+								sprintf(newline, "VIN(%s,%d);", str + 8, glsl_custom_bindings[idx].idx);
+							} else {
+								sprintf(newline, "VIN(%s,\v);", str + 8);
+							}
+						}
 						break;
 					case VGL_TYPE_COLOR:
-						sprintf(newline, "CIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
+						{
+							if (glsl_custom_bindings[idx].idx != -1) {
+								strcpy(glsl_colors_binds[glsl_custom_bindings[idx].idx], start);
+								glsl_colors_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+								sprintf(newline, "CIN(%s,%d);", str + 8, glsl_custom_bindings[idx].idx);
+							} else {
+								sprintf(newline, "CIN(%s,\f);", str + 8);
+							}
+						}
 						break;
 					case VGL_TYPE_FOG:
 						sprintf(newline, "FIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
@@ -565,6 +618,9 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 					sprintf(newline, "VIN(%s, \v);", str + 8);
 				}
 				sceClibMemcpy(str, newline, strlen(newline));
+				if (extra_chars > 0) {
+					sceClibMemset(str + strlen(newline), ' ', extra_chars);
+				}
 				str = strstr(str, "varying");
 				while (str && !(str[7] == ' ' || str[7] == '\t')) {
 					str = strstr(str + 7, "varying");
