@@ -951,10 +951,17 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 		}
 	}
 
+#if defined(DEBUG_GLSL_PREPROCESSOR) || defined(DEBUG_GLSL_TRANSLATOR)
+	vgl_log("%s:%d %s: GLSL translation input:\n\n%s\n\n", __FILE__, __LINE__, __func__, input);
+#endif
+
 #ifdef HAVE_GLSL_PREPROCESSOR
 	char *out = vglMalloc(strlen(input));
 	glsl_preprocess("full", input, out);
 	vglFree(input);
+#ifdef DEBUG_GLSL_PREPROCESSOR
+	vgl_log("%s:%d %s: GLSL preprocessor output:\n\n%s\n\n", __FILE__, __LINE__, __func__, out);
+#endif
 	size += strlen(out);
 #else
 	char *out = input;
