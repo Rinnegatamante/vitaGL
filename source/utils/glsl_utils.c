@@ -939,17 +939,6 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 	if (str) {
 		str[0] = str[1] = '/';
 	}
-		
-	// Nukeing precision directives
-	str = strstr(input, "precision ");
-	while (str) {
-		str[0] = ' ';
-		str++;
-		if (str[0] == ';') {
-			str[0] = ' ';
-			str = strstr(str, "precision ");
-		}
-	}
 
 #if defined(DEBUG_GLSL_PREPROCESSOR) || defined(DEBUG_GLSL_TRANSLATOR)
 	vgl_log("%s:%d %s: GLSL translation input:\n\n%s\n\n", __FILE__, __LINE__, __func__, input);
@@ -969,6 +958,17 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 	glsl_nuke_comments(out);
 	size+= strlen(out);
 #endif
+	
+	// Nukeing precision directives
+	str = strstr(out, "precision ");
+	while (str) {
+		str[0] = ' ';
+		str++;
+		if (str[0] == ';') {
+			str[0] = ' ';
+			str = strstr(str, "precision ");
+		}
+	}
 	
 	if (s->type == GL_VERTEX_SHADER) {
 		// Checking if shader requires gl_PointSize

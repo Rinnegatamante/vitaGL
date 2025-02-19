@@ -157,6 +157,7 @@ map<string, string> g_attributeMap;    // for __has_cpp_attribute
 // forward declaration
 void processFile(string fname, map<string,Var>& vars, const list<string>& includePaths, list<string>& included);
 
+#include <vitasdk.h>
 #include "../debug_utils.h"
 
 // ######################################################################
