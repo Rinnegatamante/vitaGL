@@ -157,10 +157,13 @@ map<string, string> g_attributeMap;    // for __has_cpp_attribute
 // forward declaration
 void processFile(string fname, map<string,Var>& vars, const list<string>& includePaths, list<string>& included);
 
+#include "../debug_utils.h"
+
 // ######################################################################
 
 void wrtError(string msg)
 {
+	vgl_log("GLSL Preprocessor: ERROR: line %s: %s\n", to_string(g_lineno).c_str(), msg.c_str());
     throw "ERROR, line " + to_string(g_lineno) + ", " + g_fname + ": " + msg;
 }
 
