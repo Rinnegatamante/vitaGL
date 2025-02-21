@@ -504,6 +504,10 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	for (int i = 0; i < TEXTURE_COORDS_NUM; i++) {
 #endif
 		if (texture_units[i].state && (ffp_vertex_attrib_state & (1 << texcoord_idxs[i]))) {
+			if (i != mask.num_textures) {
+				vgl_log("%s:%d Malformed textures setup. First malformed setup is GL_TEXTURE%d.\n", __FILE__, __LINE__, i);
+				break;
+			}
 			mask.num_textures++;
 			switch (i) {
 			case 0:
@@ -587,7 +591,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	
 	uint32_t vert_shader_mask = mask.raw & VERTEX_SHADER_MASK;
 	uint32_t frag_shader_mask = mask.raw & FRAGMENT_SHADER_MASK;
-
 #ifdef DISABLE_TEXTURE_COMBINER
 	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
 #else
@@ -952,15 +955,15 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 			sprintf(fshader, ffp_frag_src, texenv_shad, alpha_op,
 				mask.num_textures, mask.has_colors, mask.fog_mode,
-				mask.tex_env_mode_pass0 != COMBINE ? mask.tex_env_mode_pass0 : 50,
-				mask.tex_env_mode_pass1 != COMBINE ? mask.tex_env_mode_pass1 : 51,
-				mask.tex_env_mode_pass2 != COMBINE ? mask.tex_env_mode_pass2 : 52,
+				(mask.tex_env_mode_pass0 != COMBINE) ? mask.tex_env_mode_pass0 : 50,
+				(mask.tex_env_mode_pass1 != COMBINE) ? mask.tex_env_mode_pass1 : 51,
+				(mask.tex_env_mode_pass2 != COMBINE) ? mask.tex_env_mode_pass2 : 52,
 				mask.lights_num, mask.shading_mode, mask.point_sprite);
 #else
 			sprintf(fshader, ffp_frag_src, texenv_shad, alpha_op,
 				mask.num_textures, mask.has_colors, mask.fog_mode,
-				mask.tex_env_mode_pass0 != COMBINE ? mask.tex_env_mode_pass0 : 50,
-				mask.tex_env_mode_pass1 != COMBINE ? mask.tex_env_mode_pass1 : 51,
+				(mask.tex_env_mode_pass0 != COMBINE) ? mask.tex_env_mode_pass0 : 50,
+				(mask.tex_env_mode_pass1 != COMBINE) ? mask.tex_env_mode_pass1 : 51,
 				mask.lights_num, mask.shading_mode, mask.point_sprite);
 #endif
 			uint32_t size = strlen(fshader);
