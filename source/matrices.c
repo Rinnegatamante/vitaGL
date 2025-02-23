@@ -23,10 +23,10 @@
 
 #include "shared.h"
 
-static matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH]; // Modelview matrices stack
-static uint8_t modelview_stack_counter = 0; // Modelview matrices stack counter
-static matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH]; // Projection matrices stack
-static uint8_t projection_stack_counter = 0; // Projection matrices stack counter
+matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH]; // Modelview matrices stack
+static uint8_t modelview_stack_counter = 1; // Modelview matrices stack counter
+matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH]; // Projection matrices stack
+static uint8_t projection_stack_counter = 1; // Projection matrices stack counter
 GLboolean mvp_modified = GL_TRUE; // Check if ModelViewProjection matrix needs to be recreated
 
 matrix4x4 mvp_matrix; // ModelViewProjection Matrix

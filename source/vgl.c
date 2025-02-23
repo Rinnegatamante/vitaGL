@@ -605,10 +605,18 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		texture_slots[i].gxm_tex = texture_slots[0].gxm_tex;
 		texture_slots[i].palette_data = NULL;
 	}
+	
+	// Init modelview and projection matrices as well as first stack entries to identity
+	matrix4x4_identity(modelview_matrix);
+	matrix4x4_identity(projection_matrix);
+	matrix4x4_identity(modelview_matrix_stack[0]);
+	matrix4x4_identity(projection_matrix_stack[0]);
 
-	// Init texture matrices to identity
+	// Init texture matrices as well as first stack entries to identity
 	for (int i = 0; i < TEXTURE_COORDS_NUM; i++) {
 		matrix4x4_identity(texture_matrix[i]);
+		matrix4x4_identity(texture_units[i].texture_matrix_stack[0]);
+		texture_units[i].texture_stack_counter = 1;
 	}
 
 #ifdef HAVE_RAZOR_INTERFACE
