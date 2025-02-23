@@ -16,6 +16,18 @@ R"(#define clip_planes_num %d
 #define fixed_mode_mask %d
 #define fixed_mode_pos %d
 #define calculate_wvp %d
+#define interp %d
+
+#if interp == 1
+#define TEXCOORD0 TEXCOORD0_HALF
+#define TEXCOORD1 TEXCOORD1_HALF
+#define TEXCOORD2 TEXCOORD2_HALF
+#define TEXCOORD3 TEXCOORD3_HALF
+#define TEXCOORD4 TEXCOORD4_HALF
+#define TEXCOORD5 TEXCOORD5_HALF
+#define TEXCOORD6 TEXCOORD6_HALF
+#define TEXCOORD7 TEXCOORD7_HALF
+#endif
 
 #define GLFixedToFloat(fx) (float(bit_cast<short2>(fx).y + (bit_cast<unsigned short2>(fx).x * (1.0f / 65536.0f))))
 #define GLFixed2ToFloat2(fx2) (float2(GLFixedToFloat(fx2.x), GLFixedToFloat(fx2.y)))

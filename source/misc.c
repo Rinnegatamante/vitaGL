@@ -123,6 +123,7 @@ GLfloat point_size = 1.0f;
 GLboolean fast_texture_compression = GL_FALSE; // Hints for texture compression
 GLboolean recompress_non_native = GL_FALSE;
 vector4f clear_rgba_val; // Current clear color for glClear
+GLboolean fast_perspective_correction_hint = GL_FALSE;
 
 // Polygon Mode
 GLfloat pol_factor = 0.0f; // Current factor for glPolygonOffset
@@ -765,6 +766,9 @@ void glHint(GLenum target, GLenum mode) {
 			fast_texture_compression = GL_FALSE;
 			break;
 		}
+		break;
+	case GL_PERSPECTIVE_CORRECTION_HINT:
+		fast_perspective_correction_hint = GL_FASTEST ? GL_TRUE: GL_FALSE;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)

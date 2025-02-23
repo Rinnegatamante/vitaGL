@@ -183,12 +183,13 @@ typedef union shader_mask {
 		uint64_t fixed_mask : 4; // Vert
 		uint64_t pos_fixed_mask : 2; // Vert
 		uint64_t point_sprite : 1; // Frag
-		uint64_t UNUSED : 31;
+		uint64_t fast_perspective_correction : 1; // Frag/Vert
+		uint64_t UNUSED : 30;
 	};
 	uint64_t raw;
 } shader_mask;
-#define VERTEX_SHADER_MASK   (0b0000000000000000000000000000000011111100011000000111111100111000)
-#define FRAGMENT_SHADER_MASK (0b0000000000000000000000000000000100000011101111111111100011111111)
+#define VERTEX_SHADER_MASK   (0b0000000000000000000000000000001011111100011000000111111100111000)
+#define FRAGMENT_SHADER_MASK (0b0000000000000000000000000000001100000011101111111111100011111111)
 #else
 typedef union shader_mask {
 	struct {
@@ -205,12 +206,13 @@ typedef union shader_mask {
 		uint32_t fixed_mask : 3; // Vert
 		uint32_t pos_fixed_mask : 2; // Vert
 		uint32_t point_sprite : 1; // Frag
-		uint32_t UNUSED : 2;
+		uint32_t fast_perspective_correction : 1; // Frag/Vert
+		uint32_t UNUSED : 1;
 	};
 	uint32_t raw;
 } shader_mask;
-#define VERTEX_SHADER_MASK   (0b0001111111000000111111100111000)
-#define FRAGMENT_SHADER_MASK (0b0010000001111111111100011111111)
+#define VERTEX_SHADER_MASK   (0b0101111111000000111111100111000)
+#define FRAGMENT_SHADER_MASK (0b0110000001111111111100011111111)
 #endif
 #ifndef DISABLE_TEXTURE_COMBINER
 typedef union combiner_mask {
@@ -493,6 +495,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	mask.normalize = normalize;
 	mask.fixed_mask = ffp_vertex_attrib_fixed_mask;
 	mask.pos_fixed_mask = ffp_vertex_attrib_fixed_pos_mask;
+	mask.fast_perspective_correction = fast_perspective_correction_hint;
 	uint16_t draw_mask_state = ffp_vertex_attrib_state;
 
 	// Counting number of enabled texture units
@@ -690,7 +693,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 			// Compiling the new shader
 			char vshader[8192];
-			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode, mask.normalize, mask.fixed_mask, mask.pos_fixed_mask, WVP_ON_GPU);
+			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode, mask.normalize, mask.fixed_mask, mask.pos_fixed_mask, WVP_ON_GPU, mask.fast_perspective_correction);
 			uint32_t size = strlen(vshader);
 			SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 #ifdef DUMP_SHADER_SOURCES
@@ -963,13 +966,13 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				(mask.tex_env_mode_pass0 != COMBINE) ? mask.tex_env_mode_pass0 : 50,
 				(mask.tex_env_mode_pass1 != COMBINE) ? mask.tex_env_mode_pass1 : 51,
 				(mask.tex_env_mode_pass2 != COMBINE) ? mask.tex_env_mode_pass2 : 52,
-				mask.lights_num, mask.shading_mode, mask.point_sprite);
+				mask.lights_num, mask.shading_mode, mask.point_sprite, mask.fast_perspective_correction);
 #else
 			sprintf(fshader, ffp_frag_src, texenv_shad, alpha_op,
 				mask.num_textures, mask.has_colors, mask.fog_mode,
 				(mask.tex_env_mode_pass0 != COMBINE) ? mask.tex_env_mode_pass0 : 50,
 				(mask.tex_env_mode_pass1 != COMBINE) ? mask.tex_env_mode_pass1 : 51,
-				mask.lights_num, mask.shading_mode, mask.point_sprite);
+				mask.lights_num, mask.shading_mode, mask.point_sprite, mask.fast_perspective_correction);
 #endif
 			uint32_t size = strlen(fshader);
 			SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);

@@ -162,6 +162,7 @@ extern "C" {
 #define GL_COLOR_CLEAR_VALUE                            0x0C22
 #define GL_COLOR_WRITEMASK                              0x0C23
 #define GL_DOUBLEBUFFER                                 0x0C32
+#define GL_PERSPECTIVE_CORRECTION_HINT                  0x0C50
 #define GL_UNPACK_ROW_LENGTH                            0x0CF2
 #define GL_UNPACK_ALIGNMENT                             0x0CF5
 #define GL_PACK_ALIGNMENT                               0x0D05

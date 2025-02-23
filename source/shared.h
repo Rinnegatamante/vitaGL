@@ -194,7 +194,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 // Fixed-function pipeline shader cache settings
 #ifndef DISABLE_FS_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 22 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 23 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
@@ -977,6 +977,7 @@ extern vector4f *clear_vertices; // Memblock starting address for clear screen v
 
 extern GLboolean fast_texture_compression; // Hints for texture compression
 extern GLboolean recompress_non_native;
+extern GLboolean fast_perspective_correction_hint;
 extern GLfloat point_size; // Size of points for fixed function pipeline
 
 /* gxm.c */

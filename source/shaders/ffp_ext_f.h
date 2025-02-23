@@ -18,6 +18,18 @@ uniform float pass2_a_scale;
 #define lights_num %d
 #define shading_mode %d
 #define point_sprite %d
+#define interp %d
+
+#if interp == 1
+#define TEXCOORD0 TEXCOORD0_HALF
+#define TEXCOORD1 TEXCOORD1_HALF
+#define TEXCOORD2 TEXCOORD2_HALF
+#define TEXCOORD3 TEXCOORD3_HALF
+#define TEXCOORD4 TEXCOORD4_HALF
+#define TEXCOORD5 TEXCOORD5_HALF
+#define TEXCOORD6 TEXCOORD6_HALF
+#define TEXCOORD7 TEXCOORD7_HALF
+#endif
 
 #if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
 uniform float4 lights_ambients[lights_num];
