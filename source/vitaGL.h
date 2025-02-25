@@ -155,6 +155,7 @@ extern "C" {
 #define GL_PROJECTION_MATRIX                            0x0BA7
 #define GL_TEXTURE_MATRIX                               0x0BA8
 #define GL_ALPHA_TEST                                   0x0BC0
+#define GL_ALPHA_TEST_REF                               0x0BC2
 #define GL_BLEND_DST                                    0x0BE0
 #define GL_BLEND_SRC                                    0x0BE1
 #define GL_BLEND                                        0x0BE2

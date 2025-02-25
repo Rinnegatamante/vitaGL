@@ -280,6 +280,9 @@ void glGetBooleanv(GLenum pname, GLboolean *params) {
 void glGetFloatv(GLenum pname, GLfloat *data) {
 	int i, j;
 	switch (pname) {
+	case GL_ALPHA_TEST_REF:
+		*data = vgl_alpha_ref;
+		break;
 	case GL_DEPTH_CLEAR_VALUE:
 		data[0] = depth_value;
 		break;
@@ -355,6 +358,9 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 void glGetDoublev(GLenum pname, GLdouble *data) {
 	int i, j;
 	switch (pname) {
+	case GL_ALPHA_TEST_REF:
+		*data = vgl_alpha_ref;
+		break;
 	case GL_POLYGON_OFFSET_FACTOR: // Polygon offset factor
 		*data = pol_factor;
 		break;
@@ -419,6 +425,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_ALPHA_TEST_REF:
+		*data = vgl_alpha_ref;
+		break;
 	case GL_SHADE_MODEL:
 		*data = shading_mode == SMOOTH ? GL_SMOOTH : GL_PHONG_WIN;
 		break;
