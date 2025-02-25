@@ -718,6 +718,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 GLboolean glIsEnabled(GLenum cap) {
 	GLboolean ret = GL_FALSE;
 	switch (cap) {
+	case GL_ALPHA_TEST:
+		ret = alpha_test_state;
+		break;
 	case GL_TEXTURE_1D:
 		ret = texture_units[server_texture_unit].state & (1 << 0);
 		break;
