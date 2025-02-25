@@ -72,12 +72,6 @@
 #define WVP_ON_GPU 0
 #endif
 
-typedef enum {
-	//FLAT, // FIXME: Not easy to implement with ShaccCg constraints
-	SMOOTH,
-	PHONG
-} shadingMode;
-
 // Internal stuffs
 static uint32_t vertex_count = 0; // Vertex counter for vertex list
 static SceGxmPrimitiveType prim; // Current in use primitive for rendering

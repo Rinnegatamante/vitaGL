@@ -613,6 +613,13 @@ typedef enum {
 	DLIST_FUNC_U8_U8_U8_U8     = DLIST_ARG_U8  | (DLIST_ARG_U8 << 8)  | (DLIST_ARG_U8 << 16)  | (DLIST_ARG_U8 << 24),
 } dlistFuncType;
 
+// Available ffp shading models
+typedef enum {
+	//FLAT, // FIXME: Not easy to implement with ShaccCg constraints
+	SMOOTH,
+	PHONG
+} shadingMode;
+
 // Display list function call internal struct
 typedef struct {
 	void (*func)();
@@ -883,6 +890,7 @@ extern vector4f clear_rgba_val; // Current clear color for glClear
 extern viewport gl_viewport; // Current viewport state
 extern GLboolean is_fbo_float; // Current framebuffer mode
 extern vao *cur_vao; // Current in-use vertex array object
+extern shadingMode shading_mode;
 
 // Culling
 extern GLboolean no_polygons_mode; // GL_TRUE when cull mode is set to GL_FRONT_AND_BACK

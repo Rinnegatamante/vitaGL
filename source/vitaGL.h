@@ -126,6 +126,7 @@ extern "C" {
 #define GL_FRONT_FACE                                   0x0B46
 #define GL_LIGHTING                                     0x0B50
 #define GL_LIGHT_MODEL_AMBIENT                          0x0B53
+#define GL_SHADE_MODEL                                  0x0B54
 #define GL_COLOR_MATERIAL                               0x0B57
 #define GL_FOG                                          0x0B60
 #define GL_FOG_DENSITY                                  0x0B62

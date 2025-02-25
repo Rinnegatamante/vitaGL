@@ -419,6 +419,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_SHADE_MODEL:
+		*data = shading_mode == SMOOTH ? GL_SMOOTH : GL_PHONG_WIN;
+		break;
 	case GL_STENCIL_FAIL:
 		*data = gxm_stencil_op_to_gl(stencil_fail_front);
 		break;
