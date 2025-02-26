@@ -712,6 +712,23 @@ extern SceGxmVertexStream legacy_nt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM 
 extern SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
 extern SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 
+// Fixed function pipeline attribute masks
+enum {
+	FFP_ATTRIB_POSITION = 0,
+	FFP_ATTRIB_TEX0 = 1,
+	FFP_ATTRIB_COLOR = 2,
+	FFP_ATTRIB_DIFFUSE = 3,
+	FFP_ATTRIB_SPECULAR = 4,
+	FFP_ATTRIB_EMISSION = 5,
+	FFP_ATTRIB_NORMAL = 6,
+	FFP_ATTRIB_TEX1 = 7,
+	FFP_ATTRIB_TEX2 = 8,
+	FFP_ATTRIB_MASK_ALL = 0xFFFF
+};
+
+extern uint8_t ffp_texcoord_binds[3];
+#define FFP_ATTRIB_TEX(i) (ffp_texcoord_binds[i])
+
 #ifdef HAVE_PROFILING
 extern uint32_t frame_profiler_cnt;
 extern uint32_t ffp_draw_profiler_cnt;

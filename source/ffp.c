@@ -72,6 +72,17 @@
 #define WVP_ON_GPU 0
 #endif
 
+#define setInterleavedComp(fmt, size, _stride, offs, attrib) \
+	ffp_vertex_attrib_offsets[attrib] = (uint32_t)pointer + offs; \
+	ffp_vertex_attrib_vbo[attrib] = vertex_array_unit; \
+	attributes = &ffp_vertex_attrib_config[attrib]; \
+	streams = &ffp_vertex_stream_config[attrib]; \
+	attributes->format = fmt; \
+	attributes->componentCount = size; \
+	streams->stride = stride ? stride : _stride;
+
+uint8_t ffp_texcoord_binds[3] = {FFP_ATTRIB_TEX0, FFP_ATTRIB_TEX1, FFP_ATTRIB_TEX2};
+
 // Internal stuffs
 static uint32_t vertex_count = 0; // Vertex counter for vertex list
 static SceGxmPrimitiveType prim; // Current in use primitive for rendering
@@ -150,13 +161,6 @@ static uint32_t ffp_vertex_attrib_offsets[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0,
 static uint32_t ffp_vertex_attrib_vbo[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 static GLenum ffp_mode;
 uint16_t ffp_vertex_attrib_state = 0;
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 2, FFP_VERTEX_ATTRIBS_NUM - 1};
-uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM] = {1, 2, 3};
-#else
-uint8_t texcoord_idxs[TEXTURE_COORDS_NUM] = {1, FFP_VERTEX_ATTRIBS_NUM - 1};
-uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM] = {1, 2};
-#endif
 uint8_t ffp_vertex_attrib_fixed_mask = 0;
 uint8_t ffp_vertex_attrib_fixed_pos_mask = 0;
 
@@ -482,7 +486,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #endif
 #endif
 	mask.alpha_test_mode = alpha_op;
-	mask.has_colors = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
+	mask.has_colors = (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_COLOR)) ? GL_TRUE : GL_FALSE;
 	mask.fog_mode = internal_fog_mode;
 	mask.shading_mode = shading_mode;
 	mask.point_sprite = point_sprite_state;
@@ -499,7 +503,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #else
 	for (int i = 0; i < TEXTURE_COORDS_NUM; i++) {
 #endif
-		if (texture_units[i].state && (ffp_vertex_attrib_state & (1 << texcoord_idxs[i]))) {
+		if (texture_units[i].state && (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_TEX(i)))) {
 			if (i != mask.num_textures) {
 				vgl_log("%s:%d Malformed textures setup. First malformed setup is GL_TEXTURE%d.\n", __FILE__, __LINE__, i);
 				break;
@@ -533,7 +537,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				break;
 			}
 		} else {
-			draw_mask_state &= ~(1 << texcoord_idxs[i]);
+			draw_mask_state &= ~(1 << FFP_ATTRIB_TEX(i));
 		}
 	}
 
@@ -791,10 +795,10 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		// Vertex texture coordinates (First pass)
 		if (mask.num_textures > 0) {
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord0");
-			vgl_fast_memcpy(&ffp_vertex_attribute[1], &ffp_vertex_attrib_config[texcoord_idxs[0]], sizeof(SceGxmVertexAttribute));
+			vgl_fast_memcpy(&ffp_vertex_attribute[1], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX0], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[1].streamIndex = 1;
 			ffp_vertex_attribute[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			ffp_vertex_stream[1].stride = ffp_vertex_stream_config[texcoord_idxs[0]].stride;
+			ffp_vertex_stream[1].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX0].stride;
 			ffp_vertex_stream[1].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 		}
@@ -812,11 +816,11 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			setupLightingAttribute(GL_EMISSION, GL_EMISSION);
 			
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "normals");
-			if (ffp_vertex_attrib_state & (1 << 6)) {
-				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[6], sizeof(SceGxmVertexAttribute));
+			if (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_NORMAL)) {
+				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_NORMAL], sizeof(SceGxmVertexAttribute));
 				ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[6].stride;
+				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
 			} else {
 				ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
@@ -830,10 +834,10 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		} else if (mask.has_colors) {
 			// Vertex colors
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
-			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[2], sizeof(SceGxmVertexAttribute));
+			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_COLOR], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[2].stride;
+			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 		}
@@ -841,20 +845,20 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		// Vertex texture coordinates (Second pass)
 		if (mask.num_textures > 1) {
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord1");
-			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[texcoord_idxs[1]], sizeof(SceGxmVertexAttribute));
+			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX1], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[texcoord_idxs[1]].stride;
+			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX1].stride;
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 			// Vertex texture coordinates (Third pass)
 			if (mask.num_textures > 2) {
 				param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord2");
-				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[texcoord_idxs[2]], sizeof(SceGxmVertexAttribute));
+				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX2], sizeof(SceGxmVertexAttribute));
 				ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[texcoord_idxs[2]].stride;
+				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX2].stride;
 				ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 				ffp_vertex_num_params++;
 			}
@@ -1499,19 +1503,19 @@ void glEnableClientState(GLenum array) {
 	ffp_dirty_frag = GL_TRUE;
 	switch (array) {
 	case GL_VERTEX_ARRAY:
-		ffp_vertex_attrib_state |= (1 << 0);
+		ffp_vertex_attrib_state |= (1 << FFP_ATTRIB_POSITION);
 		break;
 	case GL_TEXTURE_COORD_ARRAY:
-		ffp_vertex_attrib_state |= (1 << texcoord_idxs[client_texture_unit]);
+		ffp_vertex_attrib_state |= (1 << FFP_ATTRIB_TEX(client_texture_unit));
 		break;
 	case GL_COLOR_ARRAY:
-		ffp_vertex_attrib_state |= (1 << 2);
+		ffp_vertex_attrib_state |= (1 << FFP_ATTRIB_COLOR);
 		break;
 	case GL_NORMAL_ARRAY:
-		ffp_vertex_attrib_state |= (1 << 3);
-		ffp_vertex_attrib_state |= (1 << 4);
-		ffp_vertex_attrib_state |= (1 << 5);
-		ffp_vertex_attrib_state |= (1 << 6);
+		ffp_vertex_attrib_state |= (1 << FFP_ATTRIB_DIFFUSE);
+		ffp_vertex_attrib_state |= (1 << FFP_ATTRIB_SPECULAR);
+		ffp_vertex_attrib_state |= (1 << FFP_ATTRIB_EMISSION);
+		ffp_vertex_attrib_state |= (1 << FFP_ATTRIB_NORMAL);
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, array)
@@ -1528,19 +1532,19 @@ void glDisableClientState(GLenum array) {
 	ffp_dirty_frag = GL_TRUE;
 	switch (array) {
 	case GL_VERTEX_ARRAY:
-		ffp_vertex_attrib_state &= ~(1 << 0);
+		ffp_vertex_attrib_state &= ~(1 << FFP_ATTRIB_POSITION);
 		break;
 	case GL_TEXTURE_COORD_ARRAY:
-		ffp_vertex_attrib_state &= ~(1 << texcoord_idxs[client_texture_unit]);
+		ffp_vertex_attrib_state &= ~(1 << FFP_ATTRIB_TEX(client_texture_unit));
 		break;
 	case GL_COLOR_ARRAY:
-		ffp_vertex_attrib_state &= ~(1 << 2);
+		ffp_vertex_attrib_state &= ~(1 << FFP_ATTRIB_COLOR);
 		break;
 	case GL_NORMAL_ARRAY:
-		ffp_vertex_attrib_state &= ~(1 << 3);
-		ffp_vertex_attrib_state &= ~(1 << 4);
-		ffp_vertex_attrib_state &= ~(1 << 5);
-		ffp_vertex_attrib_state &= ~(1 << 6);
+		ffp_vertex_attrib_state &= ~(1 << FFP_ATTRIB_DIFFUSE);
+		ffp_vertex_attrib_state &= ~(1 << FFP_ATTRIB_SPECULAR);
+		ffp_vertex_attrib_state &= ~(1 << FFP_ATTRIB_EMISSION);
+		ffp_vertex_attrib_state &= ~(1 << FFP_ATTRIB_NORMAL);
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, array)
@@ -1559,11 +1563,11 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 	}
 #endif
 
-	ffp_vertex_attrib_offsets[0] = (uint32_t)pointer;
-	ffp_vertex_attrib_vbo[0] = vertex_array_unit;
+	ffp_vertex_attrib_offsets[FFP_ATTRIB_POSITION] = (uint32_t)pointer;
+	ffp_vertex_attrib_vbo[FFP_ATTRIB_POSITION] = vertex_array_unit;
 
-	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[0];
-	SceGxmVertexStream *streams = &ffp_vertex_stream_config[0];
+	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[FFP_ATTRIB_POSITION];
+	SceGxmVertexStream *streams = &ffp_vertex_stream_config[FFP_ATTRIB_POSITION];
 
 	unsigned short bpe;
 	switch (type) {
@@ -1601,11 +1605,11 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 	}
 #endif
 
-	ffp_vertex_attrib_offsets[2] = (uint32_t)pointer;
-	ffp_vertex_attrib_vbo[2] = vertex_array_unit;
+	ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] = (uint32_t)pointer;
+	ffp_vertex_attrib_vbo[FFP_ATTRIB_COLOR] = vertex_array_unit;
 
-	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[2];
-	SceGxmVertexStream *streams = &ffp_vertex_stream_config[2];
+	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[FFP_ATTRIB_COLOR];
+	SceGxmVertexStream *streams = &ffp_vertex_stream_config[FFP_ATTRIB_COLOR];
 
 	unsigned short bpe;
 	switch (type) {
@@ -1648,11 +1652,11 @@ void glNormalPointer(GLenum type, GLsizei stride, const void *pointer) {
 	}
 #endif
 
-	ffp_vertex_attrib_offsets[6] = (uint32_t)pointer;
-	ffp_vertex_attrib_vbo[6] = vertex_array_unit;
+	ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] = (uint32_t)pointer;
+	ffp_vertex_attrib_vbo[FFP_ATTRIB_NORMAL] = vertex_array_unit;
 
-	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[6];
-	SceGxmVertexStream *streams = &ffp_vertex_stream_config[6];
+	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[FFP_ATTRIB_NORMAL];
+	SceGxmVertexStream *streams = &ffp_vertex_stream_config[FFP_ATTRIB_NORMAL];
 
 	unsigned short bpe;
 	switch (type) {
@@ -1695,26 +1699,26 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *po
 	}
 #endif
 
-	ffp_vertex_attrib_offsets[texcoord_idxs[client_texture_unit]] = (uint32_t)pointer;
-	ffp_vertex_attrib_vbo[texcoord_idxs[client_texture_unit]] = vertex_array_unit;
+	ffp_vertex_attrib_offsets[FFP_ATTRIB_TEX(client_texture_unit)] = (uint32_t)pointer;
+	ffp_vertex_attrib_vbo[FFP_ATTRIB_TEX(client_texture_unit)] = vertex_array_unit;
 
-	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[texcoord_idxs[client_texture_unit]];
-	SceGxmVertexStream *streams = &ffp_vertex_stream_config[texcoord_idxs[client_texture_unit]];
+	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(client_texture_unit)];
+	SceGxmVertexStream *streams = &ffp_vertex_stream_config[FFP_ATTRIB_TEX(client_texture_unit)];
 
 	unsigned short bpe;
 	switch (type) {
 	case GL_FLOAT:
-		ffp_vertex_attrib_fixed_mask &= ~(1 << texcoord_fixed_idxs[client_texture_unit]);
+		ffp_vertex_attrib_fixed_mask &= ~(1 << (client_texture_unit + 1));
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		bpe = 4;
 		break;
 	case GL_SHORT:
-		ffp_vertex_attrib_fixed_mask &= ~(1 << texcoord_fixed_idxs[client_texture_unit]);
+		ffp_vertex_attrib_fixed_mask &= ~(1 << (client_texture_unit + 1));
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_S16;
 		bpe = 2;
 		break;
 	case GL_FIXED:
-		ffp_vertex_attrib_fixed_mask |= (1 << texcoord_fixed_idxs[client_texture_unit]);
+		ffp_vertex_attrib_fixed_mask |= (1 << (client_texture_unit + 1));
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		bpe = 4;
 		break;
@@ -1736,175 +1740,40 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 
 	switch (format) {
 	case GL_V2F:
-		// Vertex2f
-		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer;
-		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[0];
-		streams = &ffp_vertex_stream_config[0];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 2;
-		streams->stride = stride ? stride : 8;
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 2, 8, 0, FFP_ATTRIB_POSITION) // Vertex2f
 		break;
 	case GL_V3F:
-		// Vertex3f
-		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer;
-		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[0];
-		streams = &ffp_vertex_stream_config[0];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 3;
-		streams->stride = stride ? stride : 12;
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 12, 0, FFP_ATTRIB_POSITION) // Vertex3f
 		break;
 	case GL_C4UB_V2F:
-		// Color4Ub
-		ffp_vertex_attrib_offsets[2] = (uint32_t)pointer;
-		ffp_vertex_attrib_vbo[2] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[2];
-		streams = &ffp_vertex_stream_config[2];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_U8N;
-		attributes->componentCount = 4;
-		streams->stride = stride ? stride : 12;
-
-		// Vertex2f
-		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 4;
-		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[0];
-		streams = &ffp_vertex_stream_config[0];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 2;
-		streams->stride = stride ? stride : 12;
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_U8N, 4, 12, 0, FFP_ATTRIB_COLOR) // Color4Ub
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 2, 12, 4, FFP_ATTRIB_POSITION) // Vertex2f
 		break;
 	case GL_C4UB_V3F:
-		// Color4Ub
-		ffp_vertex_attrib_offsets[2] = (uint32_t)pointer;
-		ffp_vertex_attrib_vbo[2] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[2];
-		streams = &ffp_vertex_stream_config[2];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_U8N;
-		attributes->componentCount = 4;
-		streams->stride = stride ? stride : 16;
-
-		// Vertex3f
-		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 4;
-		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[0];
-		streams = &ffp_vertex_stream_config[0];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 3;
-		streams->stride = stride ? stride : 16;
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_U8N, 4, 16, 0, FFP_ATTRIB_COLOR) // Color4Ub
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 16, 4, FFP_ATTRIB_POSITION) // Vertex3f
 		break;
 	case GL_C3F_V3F:
-		// Color3f
-		ffp_vertex_attrib_offsets[2] = (uint32_t)pointer;
-		ffp_vertex_attrib_vbo[2] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[2];
-		streams = &ffp_vertex_stream_config[2];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 3;
-		streams->stride = stride ? stride : 24;
-
-		// Vertex3f
-		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 12;
-		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[0];
-		streams = &ffp_vertex_stream_config[0];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 3;
-		streams->stride = stride ? stride : 24;
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 24, 0, FFP_ATTRIB_COLOR) // Color3f
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 24, 12, FFP_ATTRIB_POSITION) // Vertex3f
 		break;
 	case GL_T2F_V3F:
-		// Texcoord2f
-		ffp_vertex_attrib_offsets[1] = (uint32_t)pointer;
-		ffp_vertex_attrib_vbo[1] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[1];
-		streams = &ffp_vertex_stream_config[1];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 2;
-		streams->stride = stride ? stride : 20;
-
-		// Vertex3f
-		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 8;
-		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[0];
-		streams = &ffp_vertex_stream_config[0];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 3;
-		streams->stride = stride ? stride : 20;
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 2, 20, 0, FFP_ATTRIB_TEX0) // Texcoord2f
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 20, 8, FFP_ATTRIB_POSITION) // Vertex3f
 		break;
 	case GL_T4F_V4F:
-		// Texcoord4f
-		ffp_vertex_attrib_offsets[1] = (uint32_t)pointer;
-		ffp_vertex_attrib_vbo[1] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[1];
-		streams = &ffp_vertex_stream_config[1];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 4;
-		streams->stride = stride ? stride : 32;
-
-		// Vertex4f
-		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 16;
-		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[0];
-		streams = &ffp_vertex_stream_config[0];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 4;
-		streams->stride = stride ? stride : 32;
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 32, 0, FFP_ATTRIB_TEX0) // Texcoord4f
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 32, 16, FFP_ATTRIB_POSITION) // Vertex4f
 		break;
 	case GL_T2F_C4UB_V3F:
-		// Texcoord2f
-		ffp_vertex_attrib_offsets[1] = (uint32_t)pointer;
-		ffp_vertex_attrib_vbo[1] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[1];
-		streams = &ffp_vertex_stream_config[1];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 2;
-		streams->stride = stride ? stride : 24;
-
-		// Color4ub
-		ffp_vertex_attrib_offsets[2] = (uint32_t)pointer + 8;
-		ffp_vertex_attrib_vbo[2] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[2];
-		streams = &ffp_vertex_stream_config[2];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_U8N;
-		attributes->componentCount = 4;
-		streams->stride = stride ? stride : 24;
-
-		// Vertex3f
-		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 12;
-		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[0];
-		streams = &ffp_vertex_stream_config[0];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 3;
-		streams->stride = stride ? stride : 24;
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 2, 24, 0, FFP_ATTRIB_TEX0) // Texcoord2f
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_U8N, 4, 24, 8, FFP_ATTRIB_COLOR) // Color4ub
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 24, 12, FFP_ATTRIB_POSITION) // Vertex3f
 		break;
 	case GL_T2F_C3F_V3F:
-		// Texcoord2f
-		ffp_vertex_attrib_offsets[1] = (uint32_t)pointer;
-		ffp_vertex_attrib_vbo[1] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[1];
-		streams = &ffp_vertex_stream_config[1];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 2;
-		streams->stride = stride ? stride : 32;
-
-		// Color3f
-		ffp_vertex_attrib_offsets[2] = (uint32_t)pointer + 8;
-		ffp_vertex_attrib_vbo[2] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[2];
-		streams = &ffp_vertex_stream_config[2];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 3;
-		streams->stride = stride ? stride : 32;
-
-		// Vertex3f
-		ffp_vertex_attrib_offsets[0] = (uint32_t)pointer + 20;
-		ffp_vertex_attrib_vbo[0] = vertex_array_unit;
-		attributes = &ffp_vertex_attrib_config[0];
-		streams = &ffp_vertex_stream_config[0];
-		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-		attributes->componentCount = 3;
-		streams->stride = stride ? stride : 32;
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 2, 32, 0, FFP_ATTRIB_TEX0) // Texcoord2f
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 32, 8, FFP_ATTRIB_COLOR) // Color3f
+		setInterleavedComp(SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 32, 20, FFP_ATTRIB_POSITION) // Vertex3f
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, format)
@@ -2414,7 +2283,7 @@ void glEnd(void) {
 	ffp_dirty_frag = GL_TRUE;
 	ffp_dirty_vert = GL_TRUE;
 	if (texture_units[1].state) { // Multitexture usage
-		ffp_vertex_attrib_state = 0xFFFF;
+		ffp_vertex_attrib_state = FFP_ATTRIB_MASK_ALL;
 		reload_ffp_shaders(legacy_mt_vertex_attrib_config, legacy_mt_vertex_stream_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
 		for (int i = 0; i < 2; i++) {
 			texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
@@ -2443,7 +2312,7 @@ void glEnd(void) {
 			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
 		}
 	} else if (texture_units[0].state) { // Texturing usage
-		ffp_vertex_attrib_state = 0x0007;
+		ffp_vertex_attrib_state = (1 << FFP_ATTRIB_POSITION) | (1 << FFP_ATTRIB_TEX0) | (1 << FFP_ATTRIB_COLOR);
 		reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
 		texture *tex = &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]];
 #ifdef HAVE_TEX_CACHE
@@ -2470,7 +2339,7 @@ void glEnd(void) {
 		}
 		sceGxmSetFragmentTexture(gxm_context, 0, &tex->gxm_tex);
 	} else { // No texturing usage
-		ffp_vertex_attrib_state = 0x0005;
+		ffp_vertex_attrib_state = (1 << FFP_ATTRIB_POSITION) | (1 << FFP_ATTRIB_COLOR);
 		reload_ffp_shaders(legacy_nt_vertex_attrib_config, legacy_nt_vertex_stream_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
 	}
 
@@ -3630,16 +3499,16 @@ void glColorMaterial(GLenum face, GLenum mode) {
 void glGetPointerv(GLenum pname, void **params) {
 	switch (pname) {
 	case GL_VERTEX_ARRAY_POINTER:
-		*params = (void *)ffp_vertex_attrib_offsets[0];
+		*params = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_POSITION];
 		break;
 	case GL_TEXTURE_COORD_ARRAY_POINTER:
-		*params = (void *)ffp_vertex_attrib_offsets[texcoord_idxs[client_texture_unit]];
+		*params = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_TEX(client_texture_unit)];
 		break;
 	case GL_COLOR_ARRAY_POINTER:
-		*params = (void *)ffp_vertex_attrib_offsets[2];
+		*params = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR];
 		break;
 	case GL_NORMAL_ARRAY_POINTER:
-		*params = (void *)ffp_vertex_attrib_offsets[6];
+		*params = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL];
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)

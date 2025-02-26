@@ -523,13 +523,13 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		*data = ffp_vertex_stream_config[2].stride;
 		break;
 	case GL_TEXTURE_COORD_ARRAY_SIZE:
-		*data = ffp_vertex_attrib_config[texcoord_idxs[client_texture_unit]].componentCount;
+		*data = ffp_vertex_attrib_config[FFP_ATTRIB_TEX(client_texture_unit)].componentCount;
 		break;
 	case GL_TEXTURE_COORD_ARRAY_TYPE:
-		*data = (ffp_vertex_attrib_fixed_mask & (1 << texcoord_fixed_idxs[client_texture_unit])) ? GL_FIXED : gxm_vtx_fmt_to_gl(ffp_vertex_attrib_config[texcoord_idxs[client_texture_unit]].format);
+		*data = (ffp_vertex_attrib_fixed_mask & (1 << (client_texture_unit + 1))) ? GL_FIXED : gxm_vtx_fmt_to_gl(ffp_vertex_attrib_config[FFP_ATTRIB_TEX(client_texture_unit)].format);
 		break;
 	case GL_TEXTURE_COORD_ARRAY_STRIDE:
-		*data = ffp_vertex_stream_config[texcoord_idxs[client_texture_unit]].stride;
+		*data = ffp_vertex_stream_config[FFP_ATTRIB_TEX(client_texture_unit)].stride;
 		break;
 	case GL_UNPACK_ROW_LENGTH:
 		*data = unpack_row_len;
@@ -795,7 +795,7 @@ GLboolean glIsEnabled(GLenum cap) {
 		ret = (ffp_vertex_attrib_state & (1 << 2)) ? GL_TRUE : GL_FALSE;
 		break;
 	case GL_TEXTURE_COORD_ARRAY:
-		ret = (ffp_vertex_attrib_state & (1 << texcoord_idxs[client_texture_unit])) ? GL_TRUE : GL_FALSE;
+		ret = (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_TEX(client_texture_unit))) ? GL_TRUE : GL_FALSE;
 		break;
 	case GL_FOG:
 		ret = fogging;
