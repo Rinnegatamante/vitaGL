@@ -1459,13 +1459,13 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 			gpu_buf->last_frame = vgl_framecount;
 			ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[attr_idx];
 		} else {
-			if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(i)) {
-				if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(i)].stride == 0) { // Color array not mapped to this material attribute
+			if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(attr_idx)) {
+				if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(attr_idx)].stride == 0) { // Color array not mapped to this material attribute
 					if (!materials) {
 						materials = (float *)gpu_alloc_mapped_temp(19 * sizeof(float));
 					}
-					if (i != FFP_ATTRIB_NORMAL) {
-						vgl_fast_memcpy(materials, lighting_attr_ptr[FFP_ATTRIB_LIGHT_COEFF(i)], 4 * sizeof(float));
+					if (attr_idx != FFP_ATTRIB_NORMAL) {
+						vgl_fast_memcpy(materials, lighting_attr_ptr[FFP_ATTRIB_LIGHT_COEFF(attr_idx)], 4 * sizeof(float));
 					} else {
 						vgl_fast_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
 					}
@@ -1473,15 +1473,15 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 					materials += 4;
 				} else { // Color array mapped to this attribute (FIXME: This could be optimized by re-using color temp mem)
 #ifdef DRAW_SPEEDHACK
-					if (i != FFP_ATTRIB_NORMAL) {
+					if (attr_idx != FFP_ATTRIB_NORMAL) {
 						ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR];
 					} else {
 						ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL];
 					}
 #else
-					uint32_t size = top_idx * ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(i)].stride;
+					uint32_t size = top_idx * ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(attr_idx)].stride;
 					ptr = gpu_alloc_mapped_temp(size);
-					if (i != FFP_ATTRIB_NORMAL) {
+					if (attr_idx != FFP_ATTRIB_NORMAL) {
 						vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR], size);
 					} else {
 						vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL], size);
