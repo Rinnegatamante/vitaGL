@@ -1209,10 +1209,15 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 		}
 		sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
 	}
+	
+	// Preparing materials temp buffer if lights are enabled
+	float *materials;
+	if (ffp_lighting_streams) {
+		materials = (float *)gpu_alloc_mapped_temp(19 * sizeof(float));
+	}
 
 	// Uploading vertex streams
 	int j = 0;
-	float *materials = NULL;
 	for (int i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
 		if (mask_state & (1 << i)) {
 			void *ptr;
@@ -1223,9 +1228,6 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 			} else {
 				if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(i)) {
 					if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(i)].stride == 0) { // Color array not mapped to this material attribute
-						if (!materials) {
-							materials = (float *)gpu_alloc_mapped_temp(19 * sizeof(float));
-						}
 						if (i == FFP_ATTRIB_NORMAL) {
 							vgl_fast_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
 						} else {
@@ -1241,11 +1243,13 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 							ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + first * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
 						}
 #else
-						uint32_t size = count * ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(i)].stride;
-						ptr = gpu_alloc_mapped_temp(size);
 						if (i != FFP_ATTRIB_NORMAL) {
+							uint32_t size = count * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+							ptr = gpu_alloc_mapped_temp(size);
 							vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + first * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride, size);
 						} else {
+							uint32_t size = count * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
+							ptr = gpu_alloc_mapped_temp(size);
 							vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + first * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride, size);
 						}
 #endif
@@ -1301,10 +1305,15 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 		}
 		sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
 	}
+	
+	// Preparing materials temp buffer if lights are enabled
+	float *materials;
+	if (ffp_lighting_streams) {
+		materials = (float *)gpu_alloc_mapped_temp(19 * sizeof(float));
+	}
 
 	// Uploading vertex streams
 	int j = 0;
-	float *materials = NULL;
 	void *ptrs[FFP_VERTEX_ATTRIBS_NUM];
 	uint32_t strides[FFP_VERTEX_ATTRIBS_NUM];
 	for (int i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
@@ -1317,9 +1326,6 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 			} else {
 				if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(i)) {
 					if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(i)].stride == 0) { // Color array not mapped to this material attribute
-						if (!materials) {
-							materials = (float *)gpu_alloc_mapped_temp(19 * sizeof(float));
-						}
 						if (i != FFP_ATTRIB_NORMAL) {
 							vgl_fast_memcpy(materials, lighting_attr_ptr[FFP_ATTRIB_LIGHT_COEFF(i)], 4 * sizeof(float));
 						} else {
@@ -1336,12 +1342,15 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 							ptrs[j] = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
 						}
 #else
-						uint32_t size = (highest - lowest) * ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(i)].stride;
-						ptrs[j] = gpu_alloc_mapped_temp(size);
-						strides[j] = ffp_vertex_stream_config[i].stride;
 						if (i != FFP_ATTRIB_NORMAL) {
+							uint32_t size = (highest - lowest) * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+							ptrs[j] = gpu_alloc_mapped_temp(size);
+							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
 							vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride, size);
 						} else {
+							uint32_t size = (highest - lowest) * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
+							ptrs[j] = gpu_alloc_mapped_temp(size);
+							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
 							vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride, size);
 						}
 #endif
@@ -1450,8 +1459,13 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 		sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
 	}
 
+	// Preparing materials temp buffer if lights are enabled
+	float *materials;
+	if (ffp_lighting_streams) {
+		materials = (float *)gpu_alloc_mapped_temp(19 * sizeof(float));
+	}
+
 	// Uploading vertex streams
-	float *materials = NULL;
 	for (int i = 0; i < attr_num; i++) {
 		void *ptr;
 		int attr_idx = attr_idxs[i];
@@ -1462,9 +1476,6 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 		} else {
 			if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(attr_idx)) {
 				if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(attr_idx)].stride == 0) { // Color array not mapped to this material attribute
-					if (!materials) {
-						materials = (float *)gpu_alloc_mapped_temp(19 * sizeof(float));
-					}
 					if (attr_idx != FFP_ATTRIB_NORMAL) {
 						vgl_fast_memcpy(materials, lighting_attr_ptr[FFP_ATTRIB_LIGHT_COEFF(attr_idx)], 4 * sizeof(float));
 					} else {
@@ -1480,11 +1491,13 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 						ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL];
 					}
 #else
-					uint32_t size = top_idx * ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(attr_idx)].stride;
-					ptr = gpu_alloc_mapped_temp(size);
 					if (attr_idx != FFP_ATTRIB_NORMAL) {
+						uint32_t size = top_idx * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+						ptr = gpu_alloc_mapped_temp(size);
 						vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR], size);
 					} else {
+						uint32_t size = top_idx * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
+						ptr = gpu_alloc_mapped_temp(size);
 						vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL], size);
 					}
 #endif
