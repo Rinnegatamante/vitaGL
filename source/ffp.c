@@ -579,19 +579,20 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		}
 		// Force enabling lights related streams
 		if (mask.lights_num > 0) {
-			draw_mask_state |= (1 << 3);
-			draw_mask_state |= (1 << 4);
-			draw_mask_state |= (1 << 5);
-			draw_mask_state |= (1 << 6);
+			draw_mask_state |= (1 << FFP_ATTRIB_COLOR);
+			draw_mask_state |= (1 << FFP_ATTRIB_DIFFUSE);
+			draw_mask_state |= (1 << FFP_ATTRIB_SPECULAR);
+			draw_mask_state |= (1 << FFP_ATTRIB_EMISSION);
+			draw_mask_state |= (1 << FFP_ATTRIB_NORMAL);
 		}
 	}
 	
 	// Force disabling lights state
 	if (mask.lights_num == 0) {
-		draw_mask_state &= ~(1 << 3);
-		draw_mask_state &= ~(1 << 4);
-		draw_mask_state &= ~(1 << 5);
-		draw_mask_state &= ~(1 << 6);
+		draw_mask_state &= ~(1 << FFP_ATTRIB_DIFFUSE);
+		draw_mask_state &= ~(1 << FFP_ATTRIB_SPECULAR);
+		draw_mask_state &= ~(1 << FFP_ATTRIB_EMISSION);
+		draw_mask_state &= ~(1 << FFP_ATTRIB_NORMAL);
 	}
 	
 	uint32_t vert_shader_mask = mask.raw & VERTEX_SHADER_MASK;
