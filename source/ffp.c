@@ -772,7 +772,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 		// Lighting data
 		if (mask.lights_num > 0) {
-			ffp_lighting_streams = &ffp_vertex_stream[ffp_vertex_num_params];
+			ffp_lighting_streams = &attrs[ffp_vertex_num_params];
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "diff");
 			attrs[ffp_vertex_num_params++].regIndex = sceGxmProgramParameterGetResourceIndex(param);
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "spec");
