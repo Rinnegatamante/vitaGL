@@ -398,13 +398,6 @@ void reload_fragment_uniforms() {
 	}
 }
 
-float3 lerp(float3 a, float3 b, float w)
-{
-  return a + w*(b-a);
-}
-
-Arg2 + Arg2 * (Arg1 - Arg2);
-
 #ifndef DISABLE_TEXTURE_COMBINER
 void setup_combiner_pass(int i, char *dst) {
 	char tmp[2048];
