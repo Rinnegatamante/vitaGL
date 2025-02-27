@@ -2159,12 +2159,6 @@ void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha) {
 	if (_vgl_enqueue_list_func(glColor4x, DLIST_FUNC_I32_I32_I32_I32, red, green, blue, alpha))
 		return;
 #endif
-#ifndef SKIP_ERROR_HANDLING
-	// Error handling
-	if (phase != MODEL_CREATION) {
-		SET_GL_ERROR(GL_INVALID_OPERATION)
-	}
-#endif
 
 	// Setting current color value
 	current_vtx.clr.r = (float)red / 65536.0f;
