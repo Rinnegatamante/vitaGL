@@ -4,7 +4,7 @@
 const char *calc_funcs[] = {
 	"%s * %s", // GL_MODULATE
 	"%s + %s - 0.5f", // GL_ADD_SIGNED
-	"lerp(%s, %s, %s)", // GL_INTERPOLATE
+	"(%s * %s + %s * (1 - %s))", // GL_INTERPOLATE
 	"%s + %s", // GL_ADD
 	"%s", // GL_REPLACE
 	"%s - %s" // GL_SUBTRACT
@@ -30,7 +30,7 @@ R"(float4 texenv5%d(sampler2D tex, float2 texcoord, float4 prepass, float4 fragc
 	float4 res;
 	
 	res.rgb = (%s) * pass%d_rgb_scale;
-	res.a = (%s)  * pass%d_a_scale;
+	res.a = (%s) * pass%d_a_scale;
 	
 	return clamp(res, 0.0f, 1.0f);
 }

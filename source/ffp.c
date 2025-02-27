@@ -398,50 +398,60 @@ void reload_fragment_uniforms() {
 	}
 }
 
+float3 lerp(float3 a, float3 b, float w)
+{
+  return a + w*(b-a);
+}
+
+Arg2 + Arg2 * (Arg1 - Arg2);
+
 #ifndef DISABLE_TEXTURE_COMBINER
 void setup_combiner_pass(int i, char *dst) {
 	char tmp[2048];
 	char arg0_rgb[32], arg1_rgb[32], arg2_rgb[32];
 	char arg0_a[32], arg1_a[32], arg2_a[32];
 	char *args[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-	int args_count;
+	int extra_args_count;
 
-	if (texture_units[i].combiner.rgb_func == INTERPOLATE) { // Arg0, Arg2, Arg1, Arg2
+	// Note: arg0_rgb is implicit cause it's always used
+	// Note: We append arg0_a at the end of RGB pass since always used
+	if (texture_units[i].combiner.rgb_func == INTERPOLATE) { // Arg0, Arg1, Arg2
 		sprintf(arg2_rgb, op_modes[texture_units[i].combiner.op_mode_rgb_2], operands[texture_units[i].combiner.op_rgb_2]);
 		args[0] = arg2_rgb;
 		args[1] = arg1_rgb;
 		args[2] = arg2_rgb;
 		args[3] = arg0_a;
-		args_count = 4;
+		extra_args_count = 4;
 	}
 	if (texture_units[i].combiner.rgb_func != REPLACE) { // Arg0, Arg1
 		sprintf(arg1_rgb, op_modes[texture_units[i].combiner.op_mode_rgb_1], operands[texture_units[i].combiner.op_rgb_1]);
-		if (!args[0]) {
+		if (texture_units[i].combiner.rgb_func != INTERPOLATE) {
 			args[0] = arg1_rgb;
 			args[1] = arg0_a;
-			args_count = 2;
+			extra_args_count = 2;
 		}
 	} else { // Arg0
 		args[0] = arg0_a;
-		args_count = 1;
+		extra_args_count = 1;
 	}
-	if (texture_units[i].combiner.a_func == INTERPOLATE) { // Arg0, Arg2, Arg1, Arg2
+	if (texture_units[i].combiner.a_func == INTERPOLATE) { // Arg0, Arg1, Arg2
 		sprintf(arg2_a, op_modes[texture_units[i].combiner.op_mode_a_2], operands[texture_units[i].combiner.op_a_2]);
-		args[args_count++] = arg2_a;
-		args[args_count++] = arg1_a;
-		args[args_count++] = arg2_a;
+		args[extra_args_count++] = arg2_a;
+		args[extra_args_count++] = arg1_a;
+		args[extra_args_count++] = arg2_a;
 	}
 	if (texture_units[i].combiner.a_func != REPLACE) { // Arg0, Arg1
 		sprintf(arg1_a, op_modes[texture_units[i].combiner.op_mode_a_1], operands[texture_units[i].combiner.op_a_1]);
-		args[args_count++] = arg1_a;
+		if (texture_units[i].combiner.a_func != INTERPOLATE) {
+			args[extra_args_count++] = arg1_a;
+		}
 	}
-
 	// Common arguments
 	sprintf(arg0_rgb, op_modes[texture_units[i].combiner.op_mode_rgb_0], operands[texture_units[i].combiner.op_rgb_0]);
 	sprintf(arg0_a, op_modes[texture_units[i].combiner.op_mode_a_0], operands[texture_units[i].combiner.op_a_0]);
 
 	sprintf(tmp, combine_src, i, calc_funcs[texture_units[i].combiner.rgb_func], i, calc_funcs[texture_units[i].combiner.a_func], i);
-	switch (args_count) {
+	switch (extra_args_count) {
 	case 1:
 		sprintf(dst, tmp, arg0_rgb, args[0]);
 		break;

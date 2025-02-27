@@ -194,7 +194,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 // Fixed-function pipeline shader cache settings
 #ifndef DISABLE_FS_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 23 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 24 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
@@ -495,7 +495,7 @@ typedef struct {
 
 // Texture environment mode
 typedef enum {
-	MODULATE,
+	MODULATE = 0,
 	DECAL,
 	BLEND,
 	ADD,
