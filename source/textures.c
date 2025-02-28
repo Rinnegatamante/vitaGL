@@ -1188,7 +1188,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 					ptr += bpp;
 				}
 				if (unpack_row_len) {
-					data = (uint8_t *)pixels + unpack_row_len * bpp;
+					data = (uint8_t *)pixels + unpack_row_len * data_bpp;
 					pixels = data;
 				}
 				ptr = ptr_line + stride;
