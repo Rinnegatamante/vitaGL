@@ -1,10 +1,7 @@
 const char *ffp_frag_src =
-R"(uniform float pass0_rgb_scale;
-uniform float pass0_a_scale;
-uniform float pass1_rgb_scale;
-uniform float pass1_a_scale;
-uniform float pass2_rgb_scale;
-uniform float pass2_a_scale;
+R"(uniform float2 pass0_scale;
+uniform float2 pass1_scale;
+uniform float2 pass2_scale;
 
 %s
 

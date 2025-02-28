@@ -284,13 +284,10 @@ typedef enum {
 	LIGHTS_ATTENUATIONS_F_UNIF,
 	LIGHT_GLOBAL_AMBIENT_F_UNIF,
 	SHININESS_F_UNIF,
-	RGB_SCALE_PASS_0_UNIF,
-	ALPHA_SCALE_PASS_0_UNIF,
-	RGB_SCALE_PASS_1_UNIF,
-	ALPHA_SCALE_PASS_1_UNIF,
+	SCALE_PASS_0_UNIF,
+	SCALE_PASS_1_UNIF,
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-	RGB_SCALE_PASS_2_UNIF,
-	ALPHA_SCALE_PASS_2_UNIF
+	SCALE_PASS_2_UNIF,
 #endif
 } frag_uniform_type;
 
@@ -374,13 +371,10 @@ void reload_fragment_uniforms() {
 	ffp_fragment_params[FOG_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fogColor");
 	ffp_fragment_params[TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "texEnvColor");
 #ifndef DISABLE_TEXTURE_COMBINER
-	ffp_fragment_params[RGB_SCALE_PASS_0_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass0_rgb_scale");
-	ffp_fragment_params[ALPHA_SCALE_PASS_0_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass0_a_scale");
-	ffp_fragment_params[RGB_SCALE_PASS_1_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass1_rgb_scale");
-	ffp_fragment_params[ALPHA_SCALE_PASS_1_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass1_a_scale");
+	ffp_fragment_params[SCALE_PASS_0_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass0_scale");
+	ffp_fragment_params[SCALE_PASS_1_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass1_scale");
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-	ffp_fragment_params[RGB_SCALE_PASS_2_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass2_rgb_scale");
-	ffp_fragment_params[ALPHA_SCALE_PASS_2_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass2_a_scale");
+	ffp_fragment_params[SCALE_PASS_2_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass2_scale");
 #endif
 #endif
 	ffp_fragment_params[TINT_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tintColor");
@@ -1088,18 +1082,15 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				}
 			}
 #ifndef DISABLE_TEXTURE_COMBINER
-			if (ffp_fragment_params[RGB_SCALE_PASS_0_UNIF]) {
-				sceGxmSetUniformDataF(buffer, ffp_fragment_params[RGB_SCALE_PASS_0_UNIF], 0, 1, &texture_units[0].rgb_scale);
-				sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_SCALE_PASS_0_UNIF], 0, 1, &texture_units[0].a_scale);
+			if (ffp_fragment_params[SCALE_PASS_0_UNIF]) {
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[SCALE_PASS_0_UNIF], 0, 2, &texture_units[0].rgb_scale);
 			}
-			if (ffp_fragment_params[RGB_SCALE_PASS_1_UNIF]) {
-				sceGxmSetUniformDataF(buffer, ffp_fragment_params[RGB_SCALE_PASS_1_UNIF], 0, 1, &texture_units[1].rgb_scale);
-				sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_SCALE_PASS_1_UNIF], 0, 1, &texture_units[1].a_scale);
+			if (ffp_fragment_params[SCALE_PASS_1_UNIF]) {
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[SCALE_PASS_1_UNIF], 0, 2, &texture_units[1].rgb_scale);
 			}
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-			if (ffp_fragment_params[RGB_SCALE_PASS_2_UNIF]) {
-				sceGxmSetUniformDataF(buffer, ffp_fragment_params[RGB_SCALE_PASS_2_UNIF], 0, 1, &texture_units[2].rgb_scale);
-				sceGxmSetUniformDataF(buffer, ffp_fragment_params[ALPHA_SCALE_PASS_2_UNIF], 0, 1, &texture_units[2].a_scale);
+			if (ffp_fragment_params[SCALE_PASS_2_UNIF]) {
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[SCALE_PASS_2_UNIF], 0, 2, &texture_units[2].rgb_scale);
 			}
 #endif
 #endif
