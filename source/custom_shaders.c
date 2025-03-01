@@ -198,8 +198,28 @@ shark_opt compiler_opts = SHARK_OPT_FAST;
 
 GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
 
+#ifdef STRICT_UNIFORMS_COMPLIANCE
+#define UNIFORM_MAGIC (0xDEADDEAD)
+static inline __attribute__((always_inline)) uniform *getUniformFromPtr(GLint ptr, uint32_t *offset) {
+	uint32_t *p = (uint32_t *)ptr;
+	offs = 0;
+	while (*p != UNIFORM_MAGIC) {
+		offs += 1;
+		ptr--;
+		p = (uint32_t *)ptr;
+	}
+	*offset = offs;
+	return (uniform *)p;
+}
+#else
+#define getUniformFromPtr(ptr, offs) (ptr)
+#endif
+
 // Uniform struct
 typedef struct {
+#ifdef STRICT_UNIFORMS_COMPLIANCE
+	uint32_t magic;
+#endif
 	const SceGxmProgramParameter *ptr;
 	void *chain;
 	float *data;
@@ -1941,6 +1961,9 @@ void glLinkProgram(GLuint progr) {
 			if (p->max_frag_texunit_idx < texunit_idx)
 				p->max_frag_texunit_idx = texunit_idx;
 			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
+#ifdef STRICT_UNIFORMS_COMPLIANCE
+			u->magic = UNIFORM_MAGIC;
+#endif
 			u->chain = p->frag_uniforms;
 			u->ptr = param;
 			u->size = sceGxmProgramParameterIsSamplerCube(param) ? 0xFFFFFFFF : 0;
@@ -1950,6 +1973,9 @@ void glLinkProgram(GLuint progr) {
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
 			if (sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM) {
 				uniform *u = (uniform *)vglMalloc(sizeof(uniform));
+#ifdef STRICT_UNIFORMS_COMPLIANCE
+				u->magic = UNIFORM_MAGIC;
+#endif
 				u->chain = p->frag_uniforms;
 				u->ptr = param;
 				u->is_vertex = GL_FALSE;
@@ -1983,6 +2009,9 @@ void glLinkProgram(GLuint progr) {
 			if (p->max_vert_texunit_idx < texunit_idx)
 				p->max_vert_texunit_idx = texunit_idx;
 			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
+#ifdef STRICT_UNIFORMS_COMPLIANCE
+			u->magic = UNIFORM_MAGIC;
+#endif
 			u->chain = p->vert_uniforms;
 			u->ptr = param;
 			u->size = sceGxmProgramParameterIsSamplerCube(param) ? 0xFFFFFFFF : 0;
@@ -1992,6 +2021,9 @@ void glLinkProgram(GLuint progr) {
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
 			if (sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM) {
 				uniform *u = (uniform *)vglMalloc(sizeof(uniform));
+#ifdef STRICT_UNIFORMS_COMPLIANCE
+				u->magic = UNIFORM_MAGIC;
+#endif
 				u->chain = p->vert_uniforms;
 				u->ptr = param;
 				u->is_vertex = GL_TRUE;
@@ -2118,7 +2150,7 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	// Getting the desired location
 	while (j) {
 		if (j->ptr == u)
-			return -((GLint)j);
+			return (GLint)j;
 		j = j->chain;
 	}
 
@@ -2131,13 +2163,14 @@ inline void glUniform1i(GLint location, GLint v0) {
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
 	if (u->size == 0 || u->size == 0xFFFFFFFF) // Sampler
 		u->data = (float *)v0;
 	else // Regular Uniform
-		u->data[0] = (float)v0;
+		u->data[offs] = (float)v0;
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -2155,7 +2188,8 @@ inline void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	if (u->size == 0 || u->size == 0xFFFFFFFF) // Sampler
 		u->data = (float *)value[0];
@@ -2168,7 +2202,7 @@ inline void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 		}
 #endif
 		for (int i = 0; i < count; i++) {
-			u->data[i] = (float)value[i];
+			u->data[offs + i] = (float)value[i];
 		}
 	}
 
@@ -2188,10 +2222,11 @@ inline void glUniform1f(GLint location, GLfloat v0) {
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-	u->data[0] = v0;
+	u->data[offs] = v0;
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -2209,7 +2244,8 @@ inline void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
@@ -2218,7 +2254,7 @@ inline void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	vgl_fast_memcpy(u->data, value, count * sizeof(float));
+	vgl_fast_memcpy(&u->data[offs], value, count * sizeof(float));
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -2236,11 +2272,12 @@ inline void glUniform2i(GLint location, GLint v0, GLint v1) {
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-	u->data[0] = (float)v0;
-	u->data[1] = (float)v1;
+	u->data[offs] = (float)v0;
+	u->data[offs + 1] = (float)v1;
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -2258,7 +2295,8 @@ inline void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
@@ -2268,7 +2306,7 @@ inline void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 	}
 #endif
 	for (int i = 0; i < count * 2; i++) {
-		u->data[i] = (float)value[i];
+		u->data[offs + i] = (float)value[i];
 	}
 
 	if (u->is_vertex)
@@ -2287,11 +2325,12 @@ inline void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-	u->data[0] = v0;
-	u->data[1] = v1;
+	u->data[offs] = v0;
+	u->data[offs + 1] = v1;
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -2309,7 +2348,8 @@ inline void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
@@ -2318,7 +2358,7 @@ inline void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	vgl_fast_memcpy(u->data, value, count * 2 * sizeof(float));
+	vgl_fast_memcpy(&u->data[offs], value, count * 2 * sizeof(float));
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -2336,12 +2376,13 @@ inline void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) {
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-	u->data[0] = (float)v0;
-	u->data[1] = (float)v1;
-	u->data[2] = (float)v2;
+	u->data[offs] = (float)v0;
+	u->data[offs + 1] = (float)v1;
+	u->data[offs + 2] = (float)v2;
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -2359,7 +2400,8 @@ inline void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
@@ -2369,7 +2411,7 @@ inline void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
 	}
 #endif
 	for (int i = 0; i < count * 3; i++) {
-		u->data[i] = (float)value[i];
+		u->data[offs + i] = (float)value[i];
 	}
 
 	if (u->is_vertex)
@@ -2388,12 +2430,13 @@ inline void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-	u->data[0] = v0;
-	u->data[1] = v1;
-	u->data[2] = v2;
+	u->data[offs] = v0;
+	u->data[offs + 1] = v1;
+	u->data[offs + 2] = v2;
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -2411,7 +2454,8 @@ inline void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
@@ -2420,7 +2464,7 @@ inline void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	vgl_fast_memcpy(u->data, value, count * 3 * sizeof(float));
+	vgl_fast_memcpy(&u->data[offs], value, count * 3 * sizeof(float));
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -2438,13 +2482,14 @@ inline void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) 
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-	u->data[0] = (float)v0;
-	u->data[1] = (float)v1;
-	u->data[2] = (float)v2;
-	u->data[3] = (float)v3;
+	u->data[offs] = (float)v0;
+	u->data[offs + 1] = (float)v1;
+	u->data[offs + 2] = (float)v2;
+	u->data[offs + 3] = (float)v3;
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -2462,7 +2507,8 @@ inline void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
@@ -2472,7 +2518,7 @@ inline void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 	}
 #endif
 	for (int i = 0; i < count * 4; i++) {
-		u->data[i] = (float)value[i];
+		u->data[offs + i] = (float)value[i];
 	}
 
 	if (u->is_vertex)
@@ -2491,13 +2537,14 @@ inline void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfl
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-	u->data[0] = v0;
-	u->data[1] = v1;
-	u->data[2] = v2;
-	u->data[3] = v3;
+	u->data[offs] = v0;
+	u->data[offs + 1] = v1;
+	u->data[offs + 2] = v2;
+	u->data[offs + 3] = v3;
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -2515,7 +2562,8 @@ inline void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
@@ -2524,7 +2572,7 @@ inline void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
-	vgl_fast_memcpy(u->data, value, count * 4 * sizeof(float));
+	vgl_fast_memcpy(&u->data[offs], value, count * 4 * sizeof(float));
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -2542,7 +2590,8 @@ inline void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpos
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
@@ -2553,10 +2602,10 @@ inline void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpos
 #endif
 	if (transpose) {
 		for (int i = 0; i < count; i++) {
-			matrix2x2_transpose(&u->data[i * 4], &value[i * 4]);
+			matrix2x2_transpose(&u->data[(offs + i) * 4], &value[i * 4]);
 		}
 	} else
-		vgl_fast_memcpy(u->data, value, count * 4 * sizeof(float));
+		vgl_fast_memcpy(&u->data[offs * 4], value, count * 4 * sizeof(float));
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -2574,7 +2623,8 @@ inline void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpos
 		return;
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
@@ -2585,10 +2635,10 @@ inline void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpos
 #endif
 	if (transpose) {
 		for (int i = 0; i < count; i++) {
-			matrix3x3_transpose(&u->data[i * 9], &value[i * 9]);
+			matrix3x3_transpose(&u->data[(offs + i) * 9], &value[i * 9]);
 		}
 	} else
-		vgl_fast_memcpy(u->data, value, count * 9 * sizeof(float));
+		vgl_fast_memcpy(&u->data[offs * 9], value, count * 9 * sizeof(float));
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;
@@ -2607,7 +2657,8 @@ inline void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpos
 	}
 
 	// Grabbing passed uniform
-	uniform *u = (uniform *)-location;
+	int offs = 0;
+	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef SKIP_ERROR_HANDLING
@@ -2618,10 +2669,10 @@ inline void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpos
 #endif
 	if (transpose) {
 		for (int i = 0; i < count; i++) {
-			matrix4x4_transpose(&u->data[i * 16], &value[i * 16]);
+			matrix4x4_transpose(&u->data[(offs + i) * 16], &value[i * 16]);
 		}
 	} else
-		vgl_fast_memcpy(u->data, value, count * 16 * sizeof(float));
+		vgl_fast_memcpy(&u->data[offs * 16], value, count * 16 * sizeof(float));
 
 	if (u->is_vertex)
 		dirty_vert_unifs = GL_TRUE;

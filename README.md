@@ -34,6 +34,7 @@ In order to build vitaGL use the following command: `make install`.
 |`HAVE_DISPLAY_LISTS=1`| Enables support for display lists at the cost of some performance loss.|
 |`SAFE_ETC1=1`| Disables hardware support for ETC1 textures. Makes ETC1 textures usage less efficient but allows for proper debugging in Razor.|
 |`SAFE_DRAW=1`| Makes some optimizations in the drawing pipeline less efficient but can solve some glitches.|
+|`SAFE_UNIFORMS=1`| Makes some optimizations in the shaders pipeline less efficient but makes uniform location indexing for basic type arrays compliant.|
 |`UNPURE_TEXFORMATS=1`| Enables support for texture dimensions different than 2D (tex2D is still required in shader code).|
 |`HAVE_VITA3K_SUPPORT=1`| Disables several features in order to make vitaGL compatible with Vita3K. Requires vitaShaRK compiled with https://github.com/Rinnegatamante/vitaShaRK/blob/master/source/vitashark.c#L24 uncommented.|
 ### Speedhack Flags
