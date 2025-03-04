@@ -2094,13 +2094,15 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	program *p = &progs[prog - 1];
 
 #ifdef HAVE_GLSL_TRANSLATOR
-	// texture and matrix are reserved keywords in CG but are not in GLSL
+	// texture, sampler and matrix are reserved keywords in CG but are not in GLSL
 	if (!strcmp(name, "texture"))
 		name = "vgl_tex";
 	else if (!strcmp(name, "Texture"))
 		name = "Vgl_tex";
 	else if (!strcmp(name, "matrix"))
 		name = "_matrix";
+	else if (!strcmp(name, "sampler"))
+		name = "_sampler";
 #endif
 
 	// Checking if parameter is a vertex or fragment related one
@@ -3012,13 +3014,15 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 	
 	// Copying uniform name
 #ifdef HAVE_GLSL_TRANSLATOR
-	// texture and matrix are reserved keywords in CG but are not in GLSL
+	// texture, sampler and matrix are reserved keywords in CG but are not in GLSL
 	if (!strcmp(pname, "vgl_tex"))
 		pname = "texture";
 	else if (!strcmp(pname, "Vgl_tex"))
 		pname = "Texture";
 	else if (!strcmp(name, "_matrix"))
 		name = "matrix";
+	else if (!strcmp(name, "_sampler"))
+		name = "sampler";
 #endif
 	bufSize = min(strlen(pname), bufSize - 1);
 	if (length)
