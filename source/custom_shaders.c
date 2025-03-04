@@ -107,8 +107,8 @@ char vgl_file_cache_path[256];
 	void *buffer; \
 	if (p->vert_uniforms && dirty_vert_unifs) { \
 		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer); \
-		uniform *u = p->vert_uniforms; \
-		while (u) { \
+		for (int z = 0; z < p->vert_uniforms_num; z++) { \
+			uniform *u = &p->vert_uniforms[z]; \
 			if (u->ptr == p->wvp) { \
 				if (mvp_modified) { \
 					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix); \
@@ -117,17 +117,15 @@ char vgl_file_cache_path[256];
 				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix); \
 			} else if (u->size > 0 && u->size < 0xFFFFFFFF) \
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
-			u = (uniform *)u->chain; \
 		} \
 		dirty_vert_unifs = GL_FALSE; \
 	} \
 	if (p->frag_uniforms && dirty_frag_unifs) { \
 		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer); \
-		uniform *u = p->frag_uniforms; \
-		while (u) { \
+		for (int z = 0; z < p->frag_uniforms_num; z++) { \
+			uniform *u = &p->frag_uniforms[z]; \
 			if (u->size > 0 && u->size < 0xFFFFFFFF) \
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
-			u = (uniform *)u->chain; \
 		} \
 		dirty_frag_unifs = GL_FALSE; \
 	} \
@@ -201,7 +199,6 @@ GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
 // Uniform struct
 typedef struct {
 	const SceGxmProgramParameter *ptr;
-	void *chain;
 	float *data;
 	uint32_t size;
 	GLboolean is_fragment;
@@ -245,6 +242,8 @@ typedef struct {
 	const SceGxmProgramParameter *wvp;
 	uniform *vert_uniforms;
 	uniform *frag_uniforms;
+	uint32_t vert_uniforms_num;
+	uint32_t frag_uniforms_num;
 	ubo *vert_ubos;
 	ubo *frag_ubos;
 	GLuint attr_highest_idx;
@@ -1237,19 +1236,19 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 }
 #endif
 
-float *getUniformAliasDataPtr(uniform *u, const char *name, uint32_t size) {
-	while (u) {
+static inline __attribute__((always_inline)) float *getUniformAliasDataPtr(uniform *src, uint32_t cnt, const char *name, uint32_t size) {
+	for (int i = 0; i < cnt; i++) {
+		uniform *u = &src[i];
 		if (size == u->size) {
 			if (!strcmp(name, sceGxmProgramParameterGetName(u->ptr))) {
 				return u->data;
 			}
 		}
-		u = u->chain;
 	}
 	return NULL;
 }
 
-ubo *hasBlockAlias(ubo *u, const char *name) {
+static inline __attribute__((always_inline)) ubo *hasBlockAlias(ubo *u, const char *name) {
 	while (u) {
 		if (!strcmp(name, ((block_uniform*)u->ptr)->name)) {
 			return u;
@@ -1259,7 +1258,7 @@ ubo *hasBlockAlias(ubo *u, const char *name) {
 	return NULL;
 }
 
-block_uniform *getBlockDetails(block_uniform *b, uint8_t idx) {
+static inline __attribute__((always_inline)) block_uniform *getBlockDetails(block_uniform *b, uint8_t idx) {
 	while (b) {
 		if (b->idx == idx)
 			return b;
@@ -1599,6 +1598,8 @@ GLuint glCreateProgram(void) {
 			progs[i].fshader = NULL;
 			progs[i].vert_uniforms = NULL;
 			progs[i].frag_uniforms = NULL;
+			progs[i].vert_uniforms_num = 0;
+			progs[i].frag_uniforms_num = 0;
 			progs[i].vert_ubos = NULL;
 			progs[i].frag_ubos = NULL;
 			progs[i].attr_highest_idx = 0;
@@ -1711,20 +1712,18 @@ void glDeleteProgram(GLuint prog) {
 	// Releasing both vertex and fragment programs from sceGxmShaderPatcher
 	if (p->status) {
 		sceGxmFinish(gxm_context);
-		while (p->vert_uniforms) {
-			uniform *old = p->vert_uniforms;
-			p->vert_uniforms = (uniform *)p->vert_uniforms->chain;
-			if (old->size != 0xFFFFFFFF && old->size != 0 && !(old->is_fragment && old->is_vertex))
-				vgl_free(old->data);
-			vgl_free(old);
+		for (int i = 0; i < p->vert_uniforms_num; i++) {
+			uniform *u = &p->vert_uniforms[i];
+			if (u->size != 0xFFFFFFFF && u->size != 0 && !(u->is_fragment && u->is_vertex))
+				vgl_free(u->data);
 		}
-		while (p->frag_uniforms) {
-			uniform *old = p->frag_uniforms;
-			p->frag_uniforms = (uniform *)p->frag_uniforms->chain;
-			if (old->size != 0xFFFFFFFF && old->size != 0)
-				vgl_free(old->data);
-			vgl_free(old);
+		vgl_free(p->vert_uniforms);
+		for (int i = 0; i < p->frag_uniforms_num; i++) {
+			uniform *u = &p->frag_uniforms[i];
+			if (u->size != 0xFFFFFFFF && u->size != 0)
+				vgl_free(u->data);
 		}
+		vgl_free(p->frag_uniforms);
 		while (p->vert_ubos) {
 			ubo *old = p->vert_ubos;
 			p->vert_ubos = (ubo *)p->vert_ubos->chain;
@@ -1760,7 +1759,6 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 	// Grabbing passed program
 	program *p = &progs[progr - 1];
 	int i, cnt;
-	uniform *u;
 	matrix_uniform *m;
 	int matrix_uniform_num = 0;
 
@@ -1798,19 +1796,15 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 		break;
 	case GL_ACTIVE_UNIFORM_MAX_LENGTH:
 		i = 0;
-		u = p->vert_uniforms;
-		while (u) {
-			int len = strlen(sceGxmProgramParameterGetName(u->ptr)) + 1;
+		for (int j = 0; j < p->vert_uniforms_num; j++) {
+			int len = strlen(sceGxmProgramParameterGetName(p->vert_uniforms[j].ptr)) + 1;
 			if (len > i)
 				i = len;
-			u = u->chain;
 		}
-		u = p->frag_uniforms;
-		while (u) {
-			int len = strlen(sceGxmProgramParameterGetName(u->ptr)) + 1;
+		for (int j = 0; j < p->frag_uniforms_num; j++) {
+			int len = strlen(sceGxmProgramParameterGetName(p->frag_uniforms[j].ptr)) + 1;
 			if (len > i)
 				i = len;
-			u = u->chain;
 		}
 		*params = i;
 		break;
@@ -1828,18 +1822,7 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 		*params = i;
 		break;
 	case GL_ACTIVE_UNIFORMS:
-		i = 0;
-		u = p->vert_uniforms;
-		while (u) {
-			i++;
-			u = u->chain;
-		}
-		u = p->frag_uniforms;
-		while (u) {
-			i++;
-			u = u->chain;
-		}
-		*params = i;
+		*params = p->vert_uniforms_num + p->frag_uniforms_num;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -1927,7 +1910,7 @@ void glLinkProgram(GLuint progr) {
 	p->status = PROG_LINKED;
 
 	// Analyzing fragment shader
-	uint32_t i, cnt;
+	uint32_t i, cnt, j;
 	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
 		p->frag_texunits[i] = GL_FALSE;
 		p->vert_texunits[i] = GL_FALSE;
@@ -1936,29 +1919,8 @@ void glLinkProgram(GLuint progr) {
 	for (i = 0; i < cnt; i++) {
 		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->fshader->prog, i);
 		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
-		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-			uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
-			if (p->max_frag_texunit_idx < texunit_idx)
-				p->max_frag_texunit_idx = texunit_idx;
-			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
-			u->chain = p->frag_uniforms;
-			u->ptr = param;
-			u->size = sceGxmProgramParameterIsSamplerCube(param) ? 0xFFFFFFFF : 0;
-			u->data = NULL;
-			p->frag_uniforms = u;
-			p->frag_texunits[texunit_idx - 1] = u;
-		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
-			if (sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM) {
-				uniform *u = (uniform *)vglMalloc(sizeof(uniform));
-				u->chain = p->frag_uniforms;
-				u->ptr = param;
-				u->is_vertex = GL_FALSE;
-				u->is_fragment = GL_TRUE;
-				u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
-				u->data = (float *)vglMalloc(u->size * sizeof(float));
-				sceClibMemset(u->data, 0, u->size * sizeof(float));
-				p->frag_uniforms = u;
-			}
+		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER || (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM && sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM)) {
+			p->frag_uniforms_num++;
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER) {
 			ubo *u = (ubo *)vglMalloc(sizeof(ubo));
 			u->chain = p->frag_ubos;
@@ -1969,6 +1931,31 @@ void glLinkProgram(GLuint progr) {
 			p->frag_ubos = u;
 		}
 	}
+	p->frag_uniforms = (uniform *)vglMalloc(sizeof(uniform) * p->frag_uniforms_num);
+	j = 0;
+	for (i = 0; i < cnt; i++) {
+		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->fshader->prog, i);
+		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
+		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+			uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
+			if (p->max_frag_texunit_idx < texunit_idx)
+				p->max_frag_texunit_idx = texunit_idx;
+			uniform *u = &p->frag_uniforms[j++];
+			u->ptr = param;
+			u->size = sceGxmProgramParameterIsSamplerCube(param) ? 0xFFFFFFFF : 0;
+			u->data = NULL;
+			p->frag_texunits[texunit_idx - 1] = u;
+		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM && sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM) {
+			uniform *u = &p->frag_uniforms[j++];
+			u->ptr = param;
+			u->is_vertex = GL_FALSE;
+			u->is_fragment = GL_TRUE;
+			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
+			u->data = (float *)vglMalloc(u->size * sizeof(float));
+			sceClibMemset(u->data, 0, u->size * sizeof(float));
+		}
+	}
+	
 
 	// Analyzing vertex shader
 	p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "gl_ModelViewProjectionMatrix");
@@ -1978,34 +1965,8 @@ void glLinkProgram(GLuint progr) {
 		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
 			p->attr_num++;
-		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-			uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
-			if (p->max_vert_texunit_idx < texunit_idx)
-				p->max_vert_texunit_idx = texunit_idx;
-			uniform *u = (uniform *)vglMalloc(sizeof(uniform));
-			u->chain = p->vert_uniforms;
-			u->ptr = param;
-			u->size = sceGxmProgramParameterIsSamplerCube(param) ? 0xFFFFFFFF : 0;
-			u->data = NULL;
-			p->vert_uniforms = u;
-			p->vert_texunits[texunit_idx - 1] = u;
-		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
-			if (sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM) {
-				uniform *u = (uniform *)vglMalloc(sizeof(uniform));
-				u->chain = p->vert_uniforms;
-				u->ptr = param;
-				u->is_vertex = GL_TRUE;
-				u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
-				u->data = getUniformAliasDataPtr(p->frag_uniforms, sceGxmProgramParameterGetName(param), u->size);
-				if (u->data) {
-					u->is_fragment = GL_TRUE;
-				} else {
-					u->is_fragment = GL_FALSE;
-					u->data = (float *)vglMalloc(u->size * sizeof(float));
-					sceClibMemset(u->data, 0, u->size * sizeof(float));
-				}
-				p->vert_uniforms = u;
-			}
+		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER || (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM && sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM)) {
+			p->vert_uniforms_num++;
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER) {
 			ubo *u = (ubo *)vglMalloc(sizeof(ubo));
 			u->chain = p->vert_ubos;
@@ -2014,6 +1975,35 @@ void glLinkProgram(GLuint progr) {
 			u->bind = 0;
 			u->alias = hasBlockAlias(p->frag_ubos, ((block_uniform *)u->ptr)->name);
 			p->frag_ubos = u;
+		}
+	}
+	p->vert_uniforms = (uniform *)vglMalloc(sizeof(uniform) * p->vert_uniforms_num);
+	j = 0;
+	for (i = 0; i < cnt; i++) {
+		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, i);
+		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
+		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+			uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
+			if (p->max_vert_texunit_idx < texunit_idx)
+				p->max_vert_texunit_idx = texunit_idx;
+			uniform *u = &p->vert_uniforms[j++];
+			u->ptr = param;
+			u->size = sceGxmProgramParameterIsSamplerCube(param) ? 0xFFFFFFFF : 0;
+			u->data = NULL;
+			p->vert_texunits[texunit_idx - 1] = u;
+		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM && sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM) {
+			uniform *u = &p->vert_uniforms[j++];
+			u->ptr = param;
+			u->is_vertex = GL_TRUE;
+			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
+			u->data = getUniformAliasDataPtr(p->frag_uniforms, p->frag_uniforms_num, sceGxmProgramParameterGetName(param), u->size);
+			if (u->data) {
+				u->is_fragment = GL_TRUE;
+			} else {
+				u->is_fragment = GL_FALSE;
+				u->data = (float *)vglMalloc(u->size * sizeof(float));
+				sceClibMemset(u->data, 0, u->size * sizeof(float));
+			}
 		}
 	}
 
@@ -2107,21 +2097,25 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 
 	// Checking if parameter is a vertex or fragment related one
 	uniform *j;
+	uint32_t cnt;
 	const SceGxmProgramParameter *u = sceGxmProgramFindParameterByName(p->vshader->prog, name);
 	if (u == NULL) {
 		u = sceGxmProgramFindParameterByName(p->fshader->prog, name);
-		if (u == NULL)
+		if (u == NULL) {
 			return -1;
-		else
+		} else {
 			j = p->frag_uniforms;
-	} else
+			cnt = p->frag_uniforms_num;
+		}
+	} else {
 		j = p->vert_uniforms;
+		cnt = p->vert_uniforms_num;
+	}
 
 	// Getting the desired location
-	while (j) {
-		if (j->ptr == u)
-			return -((GLint)j);
-		j = j->chain;
+	for (uint32_t i = 0; i < cnt; i++) {
+		if (j[i].ptr == u)
+			return -((GLint)&j[i]);
 	}
 
 	return -1;
@@ -2964,22 +2958,21 @@ void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *leng
 }
 
 void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name) {
+	// Grabbing passed program
+	program *p = &progs[prog - 1];
+
 #ifndef SKIP_ERROR_HANDLING
-	if (bufSize < 0) {
+	if (bufSize < 0 || (index >= p->vert_uniforms_num + p->frag_uniforms_num)) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
 
-	// Grabbing passed program
-	program *p = &progs[prog - 1];
-
-	// FIXME: We assume the func is never called by going out of bounds towards the active uniforms
-	uniform *u = p->vert_uniforms ? p->vert_uniforms : p->frag_uniforms;
-	while (index) {
-		u = u->chain;
-		if (!u)
-			u = p->frag_uniforms;
-		index--;
+	// Grabbing desired uniform
+	uniform *u;
+	if (index >= p->vert_uniforms_num) {
+		u = &p->frag_uniforms[index - p->vert_uniforms_num];
+	} else {
+		u = &p->vert_uniforms[index];
 	}
 
 	// Detecting uniform type
