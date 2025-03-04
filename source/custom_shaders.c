@@ -198,23 +198,6 @@ shark_opt compiler_opts = SHARK_OPT_FAST;
 
 GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
 
-#ifdef STRICT_UNIFORMS_COMPLIANCE
-#define UNIFORM_MAGIC (0xDEADDEAD)
-static inline __attribute__((always_inline)) uniform *getUniformFromPtr(GLint ptr, uint32_t *offset) {
-	uint32_t *p = (uint32_t *)ptr;
-	offs = 0;
-	while (*p != UNIFORM_MAGIC) {
-		offs += 1;
-		ptr--;
-		p = (uint32_t *)ptr;
-	}
-	*offset = offs;
-	return (uniform *)p;
-}
-#else
-#define getUniformFromPtr(ptr, offs) (ptr)
-#endif
-
 // Uniform struct
 typedef struct {
 #ifdef STRICT_UNIFORMS_COMPLIANCE
@@ -227,6 +210,23 @@ typedef struct {
 	GLboolean is_fragment;
 	GLboolean is_vertex;
 } uniform;
+
+#ifdef STRICT_UNIFORMS_COMPLIANCE
+#define UNIFORM_MAGIC (0xDEADDEAD)
+static inline __attribute__((always_inline)) uniform *getUniformFromPtr(GLint ptr, uint32_t *offset) {
+	uint32_t *p = (uint32_t *)ptr;
+	uint32_t offs = 0;
+	while (*p != UNIFORM_MAGIC) {
+		offs += 1;
+		ptr--;
+		p = (uint32_t *)ptr;
+	}
+	*offset = offs;
+	return (uniform *)p;
+}
+#else
+#define getUniformFromPtr(ptr, offs) (ptr)
+#endif
 
 // Program status enum
 typedef enum {
