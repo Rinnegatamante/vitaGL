@@ -2135,14 +2135,14 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 			j = p->frag_uniforms;
 			cnt = p->frag_uniforms_num;
 #ifdef STRICT_UNIFORMS_COMPLIANCE
-			ret.is_vertex = 0;
+			ret.is_vertex = GL_FALSE;
 #endif
 		}
 	} else {
 		j = p->vert_uniforms;
 		cnt = p->vert_uniforms_num;
 #ifdef STRICT_UNIFORMS_COMPLIANCE
-		ret.is_vertex = 1;
+		ret.is_vertex = GL_TRUE;
 #endif
 	}
 

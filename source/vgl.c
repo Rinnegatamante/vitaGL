@@ -440,10 +440,10 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 #endif
 
 #ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
-	for (int i = 0; i < CIRCULAR_VERTEX_POOLS_NUM; i++) {
-		vertex_data_pool[i] = gpu_alloc_mapped(vertex_data_pool_size / 3, VGL_MEM_RAM);
+	for (int i = 0; i < gxm_display_buffer_count; i++) {
+		vertex_data_pool[i] = gpu_alloc_mapped(vertex_data_pool_size / gxm_display_buffer_count, VGL_MEM_RAM);
 		vertex_data_pool_ptr[i] = vertex_data_pool[i];
-		vertex_data_pool_limit[i] = (uint8_t *)vertex_data_pool[i] + vertex_data_pool_size / 3;
+		vertex_data_pool_limit[i] = (uint8_t *)vertex_data_pool[i] + vertex_data_pool_size / gxm_display_buffer_count;
 	}
 #elif defined(HAVE_CIRCULAR_VERTEX_POOL)
 	vertex_data_pool = gpu_alloc_mapped(vertex_data_pool_size, VGL_MEM_RAM);

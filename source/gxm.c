@@ -796,7 +796,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 
 	vgl_framecount++;
 #ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
-	vgl_circular_idx = vgl_framecount % 3;
+	vgl_circular_idx = vgl_framecount % gxm_display_buffer_count;
 	vertex_data_pool_ptr[vgl_circular_idx] = vertex_data_pool[vgl_circular_idx];
 #endif
 
