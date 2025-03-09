@@ -49,7 +49,7 @@ static void *fragment_usse_ring_buffer_addr; // fragment USSE ring buffer memblo
 
 static SceGxmRenderTarget *gxm_render_target; // Display render target
 SceGxmColorSurface gxm_color_surfaces[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces
-static uint8_t gxm_display_buffer_count = DISPLAY_MAX_BUFFER_COUNT; // Default display buffer count
+uint8_t gxm_display_buffer_count = DISPLAY_MAX_BUFFER_COUNT; // Display buffers count
 void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
 static SceGxmSyncObject *gxm_sync_objects[DISPLAY_MAX_BUFFER_COUNT]; // Display sync objects
 unsigned int gxm_front_buffer_index; // Display front buffer id
