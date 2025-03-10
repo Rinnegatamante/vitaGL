@@ -305,7 +305,7 @@ GLboolean ffp_dirty_vert = GL_TRUE;
 GLboolean dirty_frag_unifs = GL_TRUE;
 GLboolean dirty_vert_unifs = GL_TRUE;
 blend_config ffp_blend_info;
-shader_mask ffp_mask = {.raw = 0};
+shader_mask ffp_mask = {.raw = 0xFFFFFFFF};
 GLenum color_material_mode = GL_AMBIENT_AND_DIFFUSE;
 GLboolean color_material_state = GL_FALSE;
 #ifndef DISABLE_TEXTURE_COMBINER
