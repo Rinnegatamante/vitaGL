@@ -25,6 +25,12 @@
 
 #include "texture_swizzler.h"
 
+#ifdef HAVE_TEX_CACHE
+#define XXH_STATIC_LINKING_ONLY
+#define XXH_NAMESPACE VITAGL_
+#include "xxhash_utils.h"
+#endif
+
 #define STB_DXT_IMPLEMENTATION
 #include "stb_dxt.h"
 
