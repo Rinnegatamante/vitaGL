@@ -67,6 +67,10 @@
 #define OBJ_NOT_USED 0xFFFFFFFF // Flag for not yet used objects
 #define OBJ_CACHED 0xFFFFFFFE // Flag for file cached objects
 
+#ifdef SAFER_DRAW_SPEEDHACK
+#define SAFE_DRAW_COUNT_THRESHOLD (32) // Minimum number of vertices for a draw to be handled with speedhack
+#endif
+
 #ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
 #define CIRCULAR_VERTEX_POOLS_NUM 3
 extern uint8_t *vertex_data_pool[CIRCULAR_VERTEX_POOLS_NUM];
