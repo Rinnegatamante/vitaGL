@@ -1435,7 +1435,6 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 							}
 							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
 						}
-					}
 #endif
 					}
 				} else {
@@ -1625,8 +1624,8 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 							ptr = gpu_alloc_mapped_temp(size);
 							vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL], size);
 						}
-					}
 #endif
+					}
 				}
 			} else {
 #ifdef DRAW_SPEEDHACK
@@ -1639,9 +1638,8 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 				} else
 #endif
 				{
-						ptr = gpu_alloc_mapped_temp(size);
-						vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[attr_idx], size);
-					}
+					ptr = gpu_alloc_mapped_temp(size);
+					vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[attr_idx], size);
 				}
 #endif
 			}
