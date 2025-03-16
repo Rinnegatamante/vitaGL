@@ -1271,24 +1271,24 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 						}
 #else
 						if (id != FFP_ATTRIB_NORMAL) {
+							uint32_t size = count * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
 #ifdef SAFER_DRAW_SPEEDHACK
-							if (count > SAFE_DRAW_COUNT_THRESHOLD) {
+							if (size > SAFE_DRAW_SIZE_THRESHOLD) {
 								ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + first * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
 							} else
 #endif
 							{
-								uint32_t size = count * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
 								ptr = gpu_alloc_mapped_temp(size);
 								vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + first * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride, size);
 							}
 						} else {
+							uint32_t size = count * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
 #ifdef SAFER_DRAW_SPEEDHACK
-							if (count > SAFE_DRAW_COUNT_THRESHOLD) {
+							if (size > SAFE_DRAW_SIZE_THRESHOLD) {
 								ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + first * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
 							} else
 #endif
 							{
-								uint32_t size = count * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
 								ptr = gpu_alloc_mapped_temp(size);
 								vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + first * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride, size);
 							}
@@ -1299,13 +1299,13 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 #ifdef DRAW_SPEEDHACK
 					ptr = (void *)ffp_vertex_attrib_offsets[id] + first * ffp_vertex_stream_config[id].stride;
 #else
+					uint32_t size = count * ffp_vertex_stream_config[id].stride;
 #ifdef SAFER_DRAW_SPEEDHACK
-					if (count > SAFE_DRAW_COUNT_THRESHOLD) {
-							ptr = (void *)ffp_vertex_attrib_offsets[id] + first * ffp_vertex_stream_config[id].stride;
+					if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+						ptr = (void *)ffp_vertex_attrib_offsets[id] + first * ffp_vertex_stream_config[id].stride;
 					} else
 #endif
 					{
-						uint32_t size = count * ffp_vertex_stream_config[id].stride;
 						ptr = gpu_alloc_mapped_temp(size);
 						vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[id] + first * ffp_vertex_stream_config[id].stride, size);
 					}
@@ -1410,28 +1410,30 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
 						}
 #else
-#ifdef SAFER_DRAW_SPEEDHACK
-					if (highest - lowest > SAFE_DRAW_COUNT_THRESHOLD) {
-						if (id != FFP_ATTRIB_NORMAL) {
-							ptrs[j] = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
-							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
-						} else {
-							ptrs[j] = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-						}
-					} else
-#endif
-					{
 						if (id != FFP_ATTRIB_NORMAL) {
 							uint32_t size = (highest - lowest) * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
-							ptrs[j] = gpu_alloc_mapped_temp(size);
+#ifdef SAFER_DRAW_SPEEDHACK
+							if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+								ptrs[j] = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+							} else
+#endif
+							{
+								ptrs[j] = gpu_alloc_mapped_temp(size);
+								vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride, size);
+							}
 							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
-							vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride, size);
 						} else {
 							uint32_t size = (highest - lowest) * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-							ptrs[j] = gpu_alloc_mapped_temp(size);
+#ifdef SAFER_DRAW_SPEEDHACK
+							if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+								ptrs[j] = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
+							} else
+#endif
+							{
+								ptrs[j] = gpu_alloc_mapped_temp(size);
+								vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride, size);
+							}
 							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-							vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride, size);
 						}
 					}
 #endif
@@ -1441,13 +1443,13 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #ifdef DRAW_SPEEDHACK
 					ptrs[j] = (void *)ffp_vertex_attrib_offsets[id] + lowest * ffp_vertex_stream_config[id].stride;
 #else
+					uint32_t size = (highest - lowest) * ffp_vertex_stream_config[id].stride;
 #ifdef SAFER_DRAW_SPEEDHACK
-					if (highest - lowest > SAFE_DRAW_COUNT_THRESHOLD) {
+					if (size > SAFE_DRAW_SIZE_THRESHOLD) {
 						ptrs[j] = (void *)ffp_vertex_attrib_offsets[id] + lowest * ffp_vertex_stream_config[id].stride;
 					} else
 #endif
 					{
-						uint32_t size = (highest - lowest) * ffp_vertex_stream_config[id].stride;
 						ptrs[j] = gpu_alloc_mapped_temp(size);
 						vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[id] + lowest * ffp_vertex_stream_config[id].stride, size);
 					}
@@ -1601,22 +1603,25 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 						ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL];
 					}
 #else
+					if (attr_idx != FFP_ATTRIB_NORMAL) {
+						uint32_t size = top_idx * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
 #ifdef SAFER_DRAW_SPEEDHACK
-					if (count > SAFE_DRAW_COUNT_THRESHOLD) {
-						if (attr_idx != FFP_ATTRIB_NORMAL) {
+						if (size > SAFE_DRAW_SIZE_THRESHOLD) {
 							ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR];
-						} else {
-							ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL];
-						}
-					} else
+						} else
 #endif
-					{
-						if (attr_idx != FFP_ATTRIB_NORMAL) {
-							uint32_t size = top_idx * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+						{
 							ptr = gpu_alloc_mapped_temp(size);
 							vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR], size);
-						} else {
-							uint32_t size = top_idx * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
+						}
+					} else {
+						uint32_t size = top_idx * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
+#ifdef SAFER_DRAW_SPEEDHACK
+						if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+							ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL];
+						} else
+#endif
+						{
 							ptr = gpu_alloc_mapped_temp(size);
 							vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL], size);
 						}
@@ -1627,15 +1632,16 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 #ifdef DRAW_SPEEDHACK
 				ptr = (void *)ffp_vertex_attrib_offsets[attr_idx];
 #else
+				uint32_t size = top_idx * ffp_vertex_stream_config[attr_idx].stride;
 #ifdef SAFER_DRAW_SPEEDHACK
-				if (count > SAFE_DRAW_COUNT_THRESHOLD) {
-					ptr = (void *)ffp_vertex_attrib_offsets[attr_idx];	
+				if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+					ptr = (void *)ffp_vertex_attrib_offsets[attr_idx];
 				} else
 #endif
 				{
-					uint32_t size = top_idx * ffp_vertex_stream_config[attr_idx].stride;
-					ptr = gpu_alloc_mapped_temp(size);
-					vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[attr_idx], size);
+						ptr = gpu_alloc_mapped_temp(size);
+						vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[attr_idx], size);
+					}
 				}
 #endif
 			}
