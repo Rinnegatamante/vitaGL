@@ -86,6 +86,12 @@ uint8_t ffp_texcoord_binds[3] = {FFP_ATTRIB_TEX0, FFP_ATTRIB_TEX1, FFP_ATTRIB_TE
 static uint32_t vertex_count = 0; // Vertex counter for vertex list
 static SceGxmPrimitiveType prim; // Current in use primitive for rendering
 
+#ifdef HAVE_UNPURE_TEXCOORDS
+static uint8_t base_texture_id = 0; // First enabled texture to use during draws
+#else
+#define base_texture_id (0)
+#endif
+
 // Lighting
 GLboolean lighting_state = GL_FALSE; // Current lighting processor state
 GLboolean lights_aligned; // Are clip planes in a contiguous range
@@ -399,20 +405,21 @@ void setup_combiner_pass(int i, char *dst) {
 	char arg0_a[32], arg1_a[32], arg2_a[32];
 	char *args[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 	int extra_args_count;
+	texture_unit *tex_unit = &texture_units[base_texture_id + i];
 
 	// Note: arg0_rgb is implicit cause it's always used
 	// Note: We append arg0_a at the end of RGB pass since always used
-	if (texture_units[i].combiner.rgb_func == INTERPOLATE) { // Arg0, Arg1, Arg2
-		sprintf(arg2_rgb, op_modes[texture_units[i].combiner.op_mode_rgb_2], operands[texture_units[i].combiner.op_rgb_2]);
+	if (tex_unit->combiner.rgb_func == INTERPOLATE) { // Arg0, Arg1, Arg2
+		sprintf(arg2_rgb, op_modes[tex_unit->combiner.op_mode_rgb_2], operands[tex_unit->combiner.op_rgb_2]);
 		args[0] = arg2_rgb;
 		args[1] = arg1_rgb;
 		args[2] = arg2_rgb;
 		args[3] = arg0_a;
 		extra_args_count = 4;
 	}
-	if (texture_units[i].combiner.rgb_func != REPLACE) { // Arg0, Arg1
-		sprintf(arg1_rgb, op_modes[texture_units[i].combiner.op_mode_rgb_1], operands[texture_units[i].combiner.op_rgb_1]);
-		if (texture_units[i].combiner.rgb_func != INTERPOLATE) {
+	if (tex_unit->combiner.rgb_func != REPLACE) { // Arg0, Arg1
+		sprintf(arg1_rgb, op_modes[tex_unit->combiner.op_mode_rgb_1], operands[tex_unit->combiner.op_rgb_1]);
+		if (tex_unit->combiner.rgb_func != INTERPOLATE) {
 			args[0] = arg1_rgb;
 			args[1] = arg0_a;
 			extra_args_count = 2;
@@ -421,23 +428,23 @@ void setup_combiner_pass(int i, char *dst) {
 		args[0] = arg0_a;
 		extra_args_count = 1;
 	}
-	if (texture_units[i].combiner.a_func == INTERPOLATE) { // Arg0, Arg1, Arg2
-		sprintf(arg2_a, op_modes[texture_units[i].combiner.op_mode_a_2], operands[texture_units[i].combiner.op_a_2]);
+	if (tex_unit->combiner.a_func == INTERPOLATE) { // Arg0, Arg1, Arg2
+		sprintf(arg2_a, op_modes[tex_unit->combiner.op_mode_a_2], operands[tex_unit->combiner.op_a_2]);
 		args[extra_args_count++] = arg2_a;
 		args[extra_args_count++] = arg1_a;
 		args[extra_args_count++] = arg2_a;
 	}
-	if (texture_units[i].combiner.a_func != REPLACE) { // Arg0, Arg1
-		sprintf(arg1_a, op_modes[texture_units[i].combiner.op_mode_a_1], operands[texture_units[i].combiner.op_a_1]);
-		if (texture_units[i].combiner.a_func != INTERPOLATE) {
+	if (tex_unit->combiner.a_func != REPLACE) { // Arg0, Arg1
+		sprintf(arg1_a, op_modes[tex_unit->combiner.op_mode_a_1], operands[tex_unit->combiner.op_a_1]);
+		if (tex_unit->combiner.a_func != INTERPOLATE) {
 			args[extra_args_count++] = arg1_a;
 		}
 	}
 	// Common arguments
-	sprintf(arg0_rgb, op_modes[texture_units[i].combiner.op_mode_rgb_0], operands[texture_units[i].combiner.op_rgb_0]);
-	sprintf(arg0_a, op_modes[texture_units[i].combiner.op_mode_a_0], operands[texture_units[i].combiner.op_a_0]);
+	sprintf(arg0_rgb, op_modes[tex_unit->combiner.op_mode_rgb_0], operands[tex_unit->combiner.op_rgb_0]);
+	sprintf(arg0_a, op_modes[tex_unit->combiner.op_mode_a_0], operands[tex_unit->combiner.op_a_0]);
 
-	sprintf(tmp, combine_src, i, calc_funcs[texture_units[i].combiner.rgb_func], i, calc_funcs[texture_units[i].combiner.a_func], i);
+	sprintf(tmp, combine_src, i, calc_funcs[tex_unit->combiner.rgb_func], i, calc_funcs[tex_unit->combiner.a_func], i);
 	switch (extra_args_count) {
 	case 1:
 		sprintf(dst, tmp, arg0_rgb, args[0]);
@@ -493,38 +500,45 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 	// Counting number of enabled texture units
 	mask.num_textures = 0;
+#ifdef HAVE_UNPURE_TEXCOORDS
+	base_texture_id = 0;
+#endif
 #ifdef DISABLE_FFP_MULTITEXTURE
 	for (int i = 0; i < 1; i++) {
 #else
 	for (int i = 0; i < TEXTURE_COORDS_NUM; i++) {
 #endif
 		if (texture_units[i].state && (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_TEX(i)))) {
+#ifdef HAVE_UNPURE_TEXCOORDS
 			if (i != mask.num_textures) {
-				vgl_log("%s:%d Malformed textures setup. First malformed setup is GL_TEXTURE%d.\n", __FILE__, __LINE__, i);
-				break;
+				if (base_texture_id == 0)
+					base_texture_id = i;
+				draw_mask_state &= ~(1 << FFP_ATTRIB_TEX(i));
+				draw_mask_state |= (1 << FFP_ATTRIB_TEX(i - base_texture_id));
 			}
+#endif
 			mask.num_textures++;
-			switch (i) {
+			switch (i - base_texture_id) {
 			case 0:
-				mask.tex_env_mode_pass0 = texture_units[0].env_mode;
+				mask.tex_env_mode_pass0 = texture_units[base_texture_id].env_mode;
 #ifndef DISABLE_TEXTURE_COMBINER
 				if (mask.tex_env_mode_pass0 == COMBINE)
-					cmb_mask.pass0.raw = texture_units[0].combiner.raw;
+					cmb_mask.pass0.raw = texture_units[base_texture_id].combiner.raw;
 #endif
 				break;
 			case 1:
-				mask.tex_env_mode_pass1 = texture_units[1].env_mode;
+				mask.tex_env_mode_pass1 = texture_units[base_texture_id + 1].env_mode;
 #ifndef DISABLE_TEXTURE_COMBINER
 				if (mask.tex_env_mode_pass1 == COMBINE)
-					cmb_mask.pass1.raw = texture_units[1].combiner.raw;
+					cmb_mask.pass1.raw = texture_units[base_texture_id + 1].combiner.raw;
 #endif
 				break;
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 			case 2:
-				mask.tex_env_mode_pass2 = texture_units[2].env_mode;
+				mask.tex_env_mode_pass2 = texture_units[base_texture_id + 2].env_mode;
 #ifndef DISABLE_TEXTURE_COMBINER
 				if (mask.tex_env_mode_pass2 == COMBINE)
-					cmb_mask.pass2.raw = texture_units[2].combiner.raw;
+					cmb_mask.pass2.raw = texture_units[base_texture_id + 2].combiner.raw;
 #endif
 				break;
 #endif
@@ -743,7 +757,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	}
 
 	ffp_vertex_num_params = 1;
-	if (attrs) { // Immediate mode and non-immediate only when #textures == 1 and no lights
+	if (attrs && base_texture_id == 0) { // Immediate mode and non-immediate only when #textures == 1 and no lights
 		// Vertex positions
 		const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(ffp_vertex_program, "position");
 		attrs[0].regIndex = sceGxmProgramParameterGetResourceIndex(param);
@@ -794,10 +808,10 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		// Vertex texture coordinates (First pass)
 		if (mask.num_textures > 0) {
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord0");
-			vgl_fast_memcpy(&ffp_vertex_attribute[1], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX0], sizeof(SceGxmVertexAttribute));
+			vgl_fast_memcpy(&ffp_vertex_attribute[1], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id)], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[1].streamIndex = 1;
 			ffp_vertex_attribute[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			ffp_vertex_stream[1].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX0].stride;
+			ffp_vertex_stream[1].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id)].stride;
 			ffp_vertex_stream[1].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 		}
@@ -847,20 +861,20 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		// Vertex texture coordinates (Second pass)
 		if (mask.num_textures > 1) {
 			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord1");
-			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX1], sizeof(SceGxmVertexAttribute));
+			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id + 1)], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX1].stride;
+			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id + 1)].stride;
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 			// Vertex texture coordinates (Third pass)
 			if (mask.num_textures > 2) {
 				param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord2");
-				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX2], sizeof(SceGxmVertexAttribute));
+				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id + 2)], sizeof(SceGxmVertexAttribute));
 				ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX2].stride;
+				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id + 2)].stride;
 				ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 				ffp_vertex_num_params++;
 			}
@@ -919,7 +933,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifndef DISABLE_TEXTURE_COMBINER
 				char tmp[1024];
 #endif
-				switch (texture_units[i].env_mode) {
+				switch (texture_units[base_texture_id + i].env_mode) {
 				case MODULATE:
 					if (unused_mode[MODULATE]) {
 						sprintf(texenv_shad, "%s\n%s", texenv_shad, modulate_src);
@@ -1078,19 +1092,19 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				sceGxmSetUniformDataF(buffer, ffp_fragment_params[FOG_COLOR_UNIF], 0, 4, &fog_color.r);
 			if (ffp_fragment_params[TEX_ENV_COLOR_UNIF]) {
 				for (int i = 0; i < mask.num_textures; i++) {
-					sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 4 * i, 4, (const float *)&texture_units[i].env_color.r);
+					sceGxmSetUniformDataF(buffer, ffp_fragment_params[TEX_ENV_COLOR_UNIF], 4 * i, 4, (const float *)&texture_units[base_texture_id + i].env_color.r);
 				}
 			}
 #ifndef DISABLE_TEXTURE_COMBINER
 			if (ffp_fragment_params[SCALE_PASS_0_UNIF]) {
-				sceGxmSetUniformDataF(buffer, ffp_fragment_params[SCALE_PASS_0_UNIF], 0, 2, &texture_units[0].rgb_scale);
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[SCALE_PASS_0_UNIF], 0, 2, &texture_units[base_texture_id].rgb_scale);
 			}
 			if (ffp_fragment_params[SCALE_PASS_1_UNIF]) {
-				sceGxmSetUniformDataF(buffer, ffp_fragment_params[SCALE_PASS_1_UNIF], 0, 2, &texture_units[1].rgb_scale);
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[SCALE_PASS_1_UNIF], 0, 2, &texture_units[base_texture_id + 1].rgb_scale);
 			}
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 			if (ffp_fragment_params[SCALE_PASS_2_UNIF]) {
-				sceGxmSetUniformDataF(buffer, ffp_fragment_params[SCALE_PASS_2_UNIF], 0, 2, &texture_units[2].rgb_scale);
+				sceGxmSetUniformDataF(buffer, ffp_fragment_params[SCALE_PASS_2_UNIF], 0, 2, &texture_units[base_texture_id + 2].rgb_scale);
 			}
 #endif
 #endif
@@ -1138,7 +1152,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
 #endif
 		if (ffp_vertex_params[TEX_MATRIX_UNIF]) {
-			sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16 * mask.num_textures, (const float *)texture_matrix);
+			sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16 * mask.num_textures, (const float *)&texture_matrix[base_texture_id]);
 		}
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[POINT_SIZE_UNIF], 0, 1, &point_size);
 		if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) {
@@ -1172,13 +1186,14 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 }
 
 void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
+	return;
 	uint8_t mask_state = reload_ffp_shaders(NULL, NULL, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
 #ifdef HAVE_PROFILING
 	uint32_t draw_start = sceKernelGetProcessTimeLow();
 #endif
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
-		texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
+		texture *tex = &texture_slots[texture_units[base_texture_id + i].tex_id[texture_units[base_texture_id + i].state > 1 ? 0 : 1]];
 #ifdef HAVE_TEX_CACHE
 		restoreTexCache(tex);
 #endif
@@ -1214,30 +1229,48 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 	int j = 0;
 	for (int i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
 		if (mask_state & (1 << i)) {
+			int id;
+#ifdef HAVE_UNPURE_TEXCOORDS
+			if (FFP_ATTRIB_IS_TEX(i) && base_texture_id != 0) {
+				switch (i) {
+				case FFP_ATTRIB_TEX0:
+					id = FFP_ATTRIB_TEX1;
+					break;
+				case FFP_ATTRIB_TEX1:
+					id = FFP_ATTRIB_TEX2;
+					break;
+				default:
+					break;
+				}		
+			} else
+#endif
+			{
+				id = i;
+			}
 			void *ptr;
-			if (ffp_vertex_attrib_vbo[i]) {
-				gpubuffer *gpu_buf = (gpubuffer *)ffp_vertex_attrib_vbo[i];
+			if (ffp_vertex_attrib_vbo[id]) {
+				gpubuffer *gpu_buf = (gpubuffer *)ffp_vertex_attrib_vbo[id];
 				gpu_buf->last_frame = vgl_framecount;
-				ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[i] + first * ffp_vertex_stream_config[i].stride;
+				ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[id] + first * ffp_vertex_stream_config[id].stride;
 			} else {
-				if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(i)) {
-					if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(i)].stride == 0) { // Color array not mapped to this material attribute
-						if (i == FFP_ATTRIB_NORMAL) {
+				if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(id)) {
+					if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(id)].stride == 0) { // Color array not mapped to this material attribute
+						if (id == FFP_ATTRIB_NORMAL) {
 							vgl_fast_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
 						} else {
- 							vgl_fast_memcpy(materials, lighting_attr_ptr[FFP_ATTRIB_LIGHT_COEFF(i)], 4 * sizeof(float));
+ 							vgl_fast_memcpy(materials, lighting_attr_ptr[FFP_ATTRIB_LIGHT_COEFF(id)], 4 * sizeof(float));
 						}
 						ptr = materials;
 						materials += 4;
 					} else { // Color array mapped to this attribute (FIXME: This could be optimized by re-using color temp mem)
 #ifdef DRAW_SPEEDHACK
-						if (i != FFP_ATTRIB_NORMAL) {
+						if (id != FFP_ATTRIB_NORMAL) {
 							ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + first * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
 						} else {
 							ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + first * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
 						}
 #else
-						if (i != FFP_ATTRIB_NORMAL) {
+						if (id != FFP_ATTRIB_NORMAL) {
 #ifdef SAFER_DRAW_SPEEDHACK
 							if (count > SAFE_DRAW_COUNT_THRESHOLD) {
 								ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + first * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
@@ -1264,17 +1297,17 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 					}
 				} else {
 #ifdef DRAW_SPEEDHACK
-					ptr = (void *)ffp_vertex_attrib_offsets[i] + first * ffp_vertex_stream_config[i].stride;
+					ptr = (void *)ffp_vertex_attrib_offsets[id] + first * ffp_vertex_stream_config[id].stride;
 #else
 #ifdef SAFER_DRAW_SPEEDHACK
 					if (count > SAFE_DRAW_COUNT_THRESHOLD) {
-							ptr = (void *)ffp_vertex_attrib_offsets[i] + first * ffp_vertex_stream_config[i].stride;
+							ptr = (void *)ffp_vertex_attrib_offsets[id] + first * ffp_vertex_stream_config[id].stride;
 					} else
 #endif
 					{
-						uint32_t size = count * ffp_vertex_stream_config[i].stride; // FIXME: cur_stream here seems to cause issues, figure out why
+						uint32_t size = count * ffp_vertex_stream_config[id].stride;
 						ptr = gpu_alloc_mapped_temp(size);
-						vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[i] + first * ffp_vertex_stream_config[i].stride, size);
+						vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[id] + first * ffp_vertex_stream_config[id].stride, size);
 					}
 #endif
 				}
@@ -1295,7 +1328,7 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #endif
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
-		texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
+		texture *tex = &texture_slots[texture_units[base_texture_id + i].tex_id[texture_units[base_texture_id + i].state > 1 ? 0 : 1]];
 #ifdef HAVE_TEX_CACHE
 		restoreTexCache(tex);
 #endif
@@ -1333,16 +1366,34 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 	uint32_t strides[FFP_VERTEX_ATTRIBS_NUM];
 	for (int i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
 		if (mask_state & (1 << i)) {
-			if (ffp_vertex_attrib_vbo[i]) {
-				gpubuffer *gpu_buf = (gpubuffer *)ffp_vertex_attrib_vbo[i];
+			int id;
+#ifdef HAVE_UNPURE_TEXCOORDS
+			if (FFP_ATTRIB_IS_TEX(i) && base_texture_id != 0) {
+				switch (i) {
+				case FFP_ATTRIB_TEX0:
+					id = FFP_ATTRIB_TEX1;
+					break;
+				case FFP_ATTRIB_TEX1:
+					id = FFP_ATTRIB_TEX2;
+					break;
+				default:
+					break;
+				}		
+			} else
+#endif
+			{
+				id = i;
+			}
+			if (ffp_vertex_attrib_vbo[id]) {
+				gpubuffer *gpu_buf = (gpubuffer *)ffp_vertex_attrib_vbo[id];
 				gpu_buf->last_frame = vgl_framecount;
-				ptrs[j] = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[i] + lowest * ffp_vertex_stream_config[i].stride;
-				strides[j] = ffp_vertex_stream_config[i].stride;
+				ptrs[j] = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[i] + lowest * ffp_vertex_stream_config[id].stride;
+				strides[j] = ffp_vertex_stream_config[id].stride;
 			} else {
-				if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(i)) {
-					if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(i)].stride == 0) { // Color array not mapped to this material attribute
-						if (i != FFP_ATTRIB_NORMAL) {
-							vgl_fast_memcpy(materials, lighting_attr_ptr[FFP_ATTRIB_LIGHT_COEFF(i)], 4 * sizeof(float));
+				if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(id)) {
+					if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(id)].stride == 0) { // Color array not mapped to this material attribute
+						if (id != FFP_ATTRIB_NORMAL) {
+							vgl_fast_memcpy(materials, lighting_attr_ptr[FFP_ATTRIB_LIGHT_COEFF(id)], 4 * sizeof(float));
 						} else {
 							vgl_fast_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
 						}
@@ -1351,7 +1402,7 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 						materials += 4;
 					} else { // Color array mapped to this attribute (FIXME: This could be optimized by re-using color temp mem)
 #ifdef DRAW_SPEEDHACK
-						if (i != FFP_ATTRIB_NORMAL) {
+						if (id != FFP_ATTRIB_NORMAL) {
 							ptrs[j] = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
 							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
 						} else {
@@ -1361,7 +1412,7 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #else
 #ifdef SAFER_DRAW_SPEEDHACK
 					if (highest - lowest > SAFE_DRAW_COUNT_THRESHOLD) {
-						if (i != FFP_ATTRIB_NORMAL) {
+						if (id != FFP_ATTRIB_NORMAL) {
 							ptrs[j] = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
 							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
 						} else {
@@ -1371,7 +1422,7 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 					} else
 #endif
 					{
-						if (i != FFP_ATTRIB_NORMAL) {
+						if (id != FFP_ATTRIB_NORMAL) {
 							uint32_t size = (highest - lowest) * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
 							ptrs[j] = gpu_alloc_mapped_temp(size);
 							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
@@ -1386,19 +1437,19 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #endif
 					}
 				} else {
-					strides[j] = ffp_vertex_stream_config[i].stride;
+					strides[j] = ffp_vertex_stream_config[id].stride;
 #ifdef DRAW_SPEEDHACK
-					ptrs[j] = (void *)ffp_vertex_attrib_offsets[i] + lowest * ffp_vertex_stream_config[i].stride;
+					ptrs[j] = (void *)ffp_vertex_attrib_offsets[id] + lowest * ffp_vertex_stream_config[id].stride;
 #else
 #ifdef SAFER_DRAW_SPEEDHACK
 					if (highest - lowest > SAFE_DRAW_COUNT_THRESHOLD) {
-						ptrs[j] = (void *)ffp_vertex_attrib_offsets[i] + lowest * ffp_vertex_stream_config[i].stride;
+						ptrs[j] = (void *)ffp_vertex_attrib_offsets[id] + lowest * ffp_vertex_stream_config[id].stride;
 					} else
 #endif
 					{
-						uint32_t size = (highest - lowest) * ffp_vertex_stream_config[i].stride;
+						uint32_t size = (highest - lowest) * ffp_vertex_stream_config[id].stride;
 						ptrs[j] = gpu_alloc_mapped_temp(size);
-						vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[i] + lowest * ffp_vertex_stream_config[i].stride, size);
+						vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[id] + lowest * ffp_vertex_stream_config[id].stride, size);
 					}
 #endif
 				}
@@ -1431,11 +1482,33 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 #endif
 	for (int i = 0; i < FFP_VERTEX_ATTRIBS_NUM; i++) {
 		if (mask_state & (1 << i)) {
+#ifdef HAVE_UNPURE_TEXCOORDS
+			if (FFP_ATTRIB_IS_TEX(i) && base_texture_id != 0) {
+				int tex_id;
+				switch (i) {
+				case FFP_ATTRIB_TEX0:
+					tex_id = FFP_ATTRIB_TEX1;
+					break;
+				case FFP_ATTRIB_TEX1:
+					tex_id = FFP_ATTRIB_TEX2;
+					break;
+				default:
+					break;
+				}
 #ifndef DRAW_SPEEDHACK
-			if (!ffp_vertex_attrib_vbo[i])
-				is_full_vbo = GL_FALSE;
+				if (!ffp_vertex_attrib_vbo[tex_id])
+					is_full_vbo = GL_FALSE;
 #endif
-			attr_idxs[attr_num++] = i;
+				attr_idxs[attr_num++] = tex_id;				
+			} else
+#endif
+			{
+#ifndef DRAW_SPEEDHACK
+				if (!ffp_vertex_attrib_vbo[i])
+					is_full_vbo = GL_FALSE;
+#endif
+				attr_idxs[attr_num++] = i;
+			}
 		}
 	}
 
@@ -1470,7 +1543,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
-		texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
+		texture *tex = &texture_slots[texture_units[base_texture_id + i].tex_id[texture_units[base_texture_id + i].state > 1 ? 0 : 1]];
 #ifdef HAVE_TEX_CACHE
 		restoreTexCache(tex);
 #endif

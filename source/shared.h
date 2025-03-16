@@ -740,6 +740,7 @@ enum {
 
 extern uint8_t ffp_texcoord_binds[3];
 #define FFP_ATTRIB_TEX(i) (ffp_texcoord_binds[i])
+#define FFP_ATTRIB_IS_TEX(i) (i == FFP_ATTRIB_TEX0 || i == FFP_ATTRIB_TEX1 || i == FFP_ATTRIB_TEX2)
 #define FFP_ATTRIB_IS_LIGHT(i) (i >= FFP_ATTRIB_COLOR && i <= FFP_ATTRIB_NORMAL)
 #define FFP_ATTRIB_LIGHT_COEFF(i) (i - (FFP_ATTRIB_COLOR - FFP_AMBIENT_COEFF))
 
