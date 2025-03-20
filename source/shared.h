@@ -68,7 +68,7 @@
 #define OBJ_CACHED 0xFFFFFFFE // Flag for file cached objects
 
 #ifdef SAFER_DRAW_SPEEDHACK
-#define SAFE_DRAW_SIZE_THRESHOLD (0x6000) // Minimum bytes of vertices data for a draw to be handled with speedhack
+#define SAFE_DRAW_SIZE_THRESHOLD (0x8000) // Minimum bytes of vertices data for a draw to be handled with speedhack
 #endif
 
 #ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
