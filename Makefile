@@ -27,6 +27,10 @@ ifeq ($(NO_DMAC),1)
 CFLAGS += -DDISABLE_DMAC
 endif
 
+ifeq ($(NO_CLIB),1)
+CFLAGS += -DDISABLE_CLIB
+endif
+
 ifeq ($(NO_TEX_COMBINER),1)
 CFLAGS += -DDISABLE_TEXTURE_COMBINER
 endif

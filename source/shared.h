@@ -67,6 +67,8 @@
 #define OBJ_NOT_USED 0xFFFFFFFF // Flag for not yet used objects
 #define OBJ_CACHED 0xFFFFFFFE // Flag for file cached objects
 
+#include "utils/mem_utils.h"
+
 #ifdef SAFER_DRAW_SPEEDHACK
 #define SAFE_DRAW_SIZE_THRESHOLD (0x8000) // Minimum bytes of vertices data for a draw to be handled with speedhack
 #endif

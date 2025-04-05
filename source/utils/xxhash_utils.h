@@ -241,6 +241,8 @@
  * xxHash prototypes and implementation
  */
 
+#include "mem_utils.h"
+
 #if defined (__cplusplus)
 extern "C" {
 #endif
@@ -2358,7 +2360,7 @@ static void XXH_free(void* p) { free(p); }
  */
 static void* XXH_memcpy(void* dest, const void* src, size_t size)
 {
-    return memcpy(dest,src,size);
+    return vgl_fast_memcpy(dest,src,size);
 }
 
 #include <limits.h>   /* ULLONG_MAX */
@@ -3106,7 +3108,7 @@ XXH_PUBLIC_API void XXH32_copyState(XXH32_state_t* dstState, const XXH32_state_t
 XXH_PUBLIC_API XXH_errorcode XXH32_reset(XXH32_state_t* statePtr, XXH32_hash_t seed)
 {
     XXH_ASSERT(statePtr != NULL);
-    memset(statePtr, 0, sizeof(*statePtr));
+    vgl_memset(statePtr, 0, sizeof(*statePtr));
     statePtr->v[0] = seed + XXH_PRIME32_1 + XXH_PRIME32_2;
     statePtr->v[1] = seed + XXH_PRIME32_2;
     statePtr->v[2] = seed + 0;
@@ -3535,7 +3537,7 @@ XXH_PUBLIC_API void XXH64_copyState(XXH_NOESCAPE XXH64_state_t* dstState, const 
 XXH_PUBLIC_API XXH_errorcode XXH64_reset(XXH_NOESCAPE XXH64_state_t* statePtr, XXH64_hash_t seed)
 {
     XXH_ASSERT(statePtr != NULL);
-    memset(statePtr, 0, sizeof(*statePtr));
+    vgl_memset(statePtr, 0, sizeof(*statePtr));
     statePtr->v[0] = seed + XXH_PRIME64_1 + XXH_PRIME64_2;
     statePtr->v[1] = seed + XXH_PRIME64_2;
     statePtr->v[2] = seed + 0;
@@ -6132,7 +6134,7 @@ XXH3_reset_internal(XXH3_state_t* statePtr,
     XXH_ASSERT(offsetof(XXH3_state_t, nbStripesPerBlock) > initStart);
     XXH_ASSERT(statePtr != NULL);
     /* set members from bufferedSize to nbStripesPerBlock (excluded) to 0 */
-    memset((char*)statePtr + initStart, 0, initLength);
+    vgl_memset((char*)statePtr + initStart, 0, initLength);
     statePtr->acc[0] = XXH_PRIME32_3;
     statePtr->acc[1] = XXH_PRIME64_1;
     statePtr->acc[2] = XXH_PRIME64_2;
@@ -6996,7 +6998,7 @@ XXH3_generateSecret(XXH_NOESCAPE void* secretBuffer, size_t secretSize, XXH_NOES
     {   size_t pos = 0;
         while (pos < secretSize) {
             size_t const toCopy = XXH_MIN((secretSize - pos), customSeedSize);
-            memcpy((char*)secretBuffer + pos, customSeed, toCopy);
+            vgl_fast_memcpy((char*)secretBuffer + pos, customSeed, toCopy);
             pos += toCopy;
     }   }
 
@@ -7021,7 +7023,7 @@ XXH3_generateSecret_fromSeed(XXH_NOESCAPE void* secretBuffer, XXH64_hash_t seed)
     XXH_ALIGN(XXH_SEC_ALIGN) xxh_u8 secret[XXH_SECRET_DEFAULT_SIZE];
     XXH3_initCustomSecret(secret, seed);
     XXH_ASSERT(secretBuffer != NULL);
-    memcpy(secretBuffer, secret, XXH_SECRET_DEFAULT_SIZE);
+    vgl_fast_memcpy(secretBuffer, secret, XXH_SECRET_DEFAULT_SIZE);
 }
 
 

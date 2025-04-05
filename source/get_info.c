@@ -291,10 +291,10 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 		data[1] = z_port + z_scale;
 		break;
 	case GL_COLOR_CLEAR_VALUE:
-		sceClibMemcpy(data, &clear_rgba_val.r, 4 * sizeof(float));
+		vgl_fast_memcpy(data, &clear_rgba_val.r, 4 * sizeof(float));
 		break;
 	case GL_CURRENT_COLOR:
-		sceClibMemcpy(data, &current_vtx.clr.r, 4 * sizeof(float));
+		vgl_fast_memcpy(data, &current_vtx.clr.r, 4 * sizeof(float));
 		break;
 	case GL_POLYGON_OFFSET_FACTOR: // Polygon offset factor
 		*data = pol_factor;

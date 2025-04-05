@@ -882,7 +882,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 				uint32_t *src = (uint32_t *)data;
 				uint32_t *dst = target_data;
 				for (int y = 0; y < height; y++) {
-					sceClibMemcpy(&dst[pot_w * y], &src[width * y], width * 4);
+					vgl_fast_memcpy(&dst[pot_w * y], &src[width * y], width * 4);
 				}
 			}
 			
@@ -1520,7 +1520,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 							uint32_t *src = (uint32_t *)decompressed_data;
 							uint32_t *dst = target_data;
 							for (int y = 0; y < height; y++) {
-								sceClibMemcpy(&dst[pot_w * y], &src[width * y], width * 4);
+								vgl_fast_memcpy(&dst[pot_w * y], &src[width * y], width * 4);
 							}
 						}
 						

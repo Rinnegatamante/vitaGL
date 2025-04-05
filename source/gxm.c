@@ -142,7 +142,7 @@ GLboolean has_razor_live = GL_FALSE; // Flag for live metrics support with sceRa
 
 static inline __attribute__((always_inline)) int setupRenderTarget(SceGxmRenderTarget **rt, int w, int h, int refs) {
 	SceGxmRenderTargetParams renderTargetParams;
-	sceClibMemset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
+	vgl_memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
 	renderTargetParams.width = w ? w : 1;
 	renderTargetParams.height = h ? h : 1;
 	renderTargetParams.scenesPerFrame = refs;
@@ -237,7 +237,7 @@ static void display_queue_callback(const void *callbackData) {
 	// Populating sceDisplay framebuffer parameters
 	SceDisplayFrameBuf display_fb;
 	const struct display_queue_callback_data *cb_data = callbackData;
-	sceClibMemset(&display_fb, 0, sizeof(SceDisplayFrameBuf));
+	vgl_memset(&display_fb, 0, sizeof(SceDisplayFrameBuf));
 	display_fb.size = sizeof(SceDisplayFrameBuf);
 	display_fb.base = cb_data->addr;
 	display_fb.pitch = DISPLAY_STRIDE;
@@ -372,7 +372,7 @@ void initGxm(void) {
 
 	// Initializing sceGxm init parameters
 	SceGxmInitializeParams gxm_init_params;
-	sceClibMemset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
+	vgl_memset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
 #ifdef HAVE_VITA3K_SUPPORT // Vita3K lacks sceGxmVshInitialize support, so we use sceGxmInitialize instead and disable a couple of features (HW ETC1 support and sysapp mode support)
 	gxm_init_params.flags = GXM_FLAG_DEFAULT;
 #else
@@ -413,7 +413,7 @@ void initGxmContext(void) {
 
 	// Setting sceGxm context parameters
 	SceGxmContextParams gxm_context_params;
-	sceClibMemset(&gxm_context_params, 0, sizeof(SceGxmContextParams));
+	vgl_memset(&gxm_context_params, 0, sizeof(SceGxmContextParams));
 	gxm_context_params.hostMem = vglMalloc(SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
 	gxm_context_params.hostMemSize = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
 	gxm_context_params.vdmRingBufferMem = vdm_ring_buffer_addr;
@@ -468,7 +468,7 @@ void initDisplayColorSurfaces(void) {
 	// Getting access to the shared framebuffer on system app mode
 	while (system_app_mode) {
 		shared_fb = sceSharedFbOpen(1);
-		sceClibMemset(&shared_fb_info, 0, sizeof(SceSharedFbInfo));
+		vgl_memset(&shared_fb_info, 0, sizeof(SceSharedFbInfo));
 		sceSharedFbGetInfo(shared_fb, &shared_fb_info);
 		if (shared_fb_info.index == 1)
 			sceSharedFbClose(shared_fb);
@@ -485,7 +485,7 @@ void initDisplayColorSurfaces(void) {
 		// Allocating color surface memblock
 		if (!system_app_mode) {
 			gxm_color_surfaces_addr[i] = gpu_alloc_mapped_aligned(4096, VGL_ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024), VGL_MEM_VRAM);
-			sceClibMemset(gxm_color_surfaces_addr[i], 0, 4 * DISPLAY_STRIDE * DISPLAY_HEIGHT);
+			vgl_memset(gxm_color_surfaces_addr[i], 0, 4 * DISPLAY_STRIDE * DISPLAY_HEIGHT);
 		}
 
 		// Initializing allocated color surface
@@ -529,7 +529,7 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 
 #ifdef STORE_DEPTH_STENCIL
 	// Initializing mask update bit to 1
-	sceClibMemset(depth_buffer, 0x80, 4 * depth_stencil_samples);
+	vgl_memset(depth_buffer, 0x80, 4 * depth_stencil_samples);
 #endif
 
 	// Allocating stencil surface
@@ -574,7 +574,7 @@ void startShaderPatcher(void) {
 
 	// Populating shader patcher parameters
 	SceGxmShaderPatcherParams shader_patcher_params;
-	sceClibMemset(&shader_patcher_params, 0, sizeof(SceGxmShaderPatcherParams));
+	vgl_memset(&shader_patcher_params, 0, sizeof(SceGxmShaderPatcherParams));
 	shader_patcher_params.userData = NULL;
 	shader_patcher_params.hostAllocCallback = shader_patcher_host_alloc_cb;
 	shader_patcher_params.hostFreeCallback = shader_patcher_host_free_cb;
@@ -818,7 +818,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 	if (has_commondialog) {
 		// Populating SceCommonDialog parameters
 		SceCommonDialogUpdateParam updateParam;
-		sceClibMemset(&updateParam, 0, sizeof(updateParam));
+		vgl_memset(&updateParam, 0, sizeof(updateParam));
 		updateParam.renderTarget.colorFormat = SCE_GXM_COLOR_FORMAT_A8B8G8R8;
 		updateParam.renderTarget.surfaceType = SCE_GXM_COLOR_SURFACE_LINEAR;
 		updateParam.renderTarget.width = DISPLAY_WIDTH;
@@ -846,7 +846,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 				if (razor_res.result_data) {
 					if ((frame_idx % UPDATE_RATIO) == 1) {
 						if (!razor_res.overflow_count) {
-							sceClibMemset(&razor_metrics, 0, sizeof(razor_results));
+							vgl_memset(&razor_metrics, 0, sizeof(razor_results));
 							SceUID pid = sceKernelGetProcessId();
 							SceRazorGpuResult r;
 							r.ptr = (uintptr_t)razor_res.result_data;
@@ -913,10 +913,10 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 									}
 									break;
 								case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_PARAMETER_BUFFER:
-									sceClibMemcpy(&razor_metrics.peak_usage_value, &r.pbuf->peak_usage_value, 6);
+									vgl_fast_memcpy(&razor_metrics.peak_usage_value, &r.pbuf->peak_usage_value, 6);
 									break;
 								case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_FRAME:
-									sceClibMemcpy(&razor_metrics.frame_start_time, &r.frame->start_time, 20);
+									vgl_fast_memcpy(&razor_metrics.frame_start_time, &r.frame->start_time, 20);
 									break;
 								default:
 									break;

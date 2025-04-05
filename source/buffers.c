@@ -40,8 +40,8 @@ static vao default_vao; // Vertex Array Object used when no vao is bound
 vao *cur_vao = &default_vao; // Current in-use vertex array object
 
 void resetVao(vao *v) {
-	sceClibMemset(v->vertex_attrib_offsets, 0, sizeof(uint32_t) * VERTEX_ATTRIBS_NUM);
-	sceClibMemset(v->vertex_attrib_vbo, 0, sizeof(uint32_t) * VERTEX_ATTRIBS_NUM);
+	vgl_memset(v->vertex_attrib_offsets, 0, sizeof(uint32_t) * VERTEX_ATTRIBS_NUM);
+	vgl_memset(v->vertex_attrib_vbo, 0, sizeof(uint32_t) * VERTEX_ATTRIBS_NUM);
 	for (int i = 0; i < VERTEX_ATTRIBS_NUM; i++) {
 		v->vertex_attrib_size[i] = 4;
 		v->vertex_attrib_config[i].regIndex = i;

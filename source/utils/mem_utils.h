@@ -27,12 +27,13 @@
 #define SCE_KERNEL_MAX_MAIN_CDIALOG_MEM_SIZE 0x8C6000
 
 // Debug flags
-//#define DEBUG_MEMCPY // Enable this to use newlib memcpy in order to have proper trace info in coredumps
 //#define DEBUG_GC // Enable this to enable logging for the garbage collector
 
-#ifdef DEBUG_MEMCPY
+#ifdef NO_CLIB
+#define vgl_memset memset
 #define vgl_fast_memcpy memcpy
 #else
+#define vgl_memset sceClibMemset
 #define vgl_fast_memcpy sceClibMemcpy
 #endif
 
@@ -93,16 +94,12 @@ void vgl_free(void *ptr);
 
 // Helper function for fastest memory copy on uncached mem
 static inline __attribute__((always_inline)) void vgl_memcpy(void *dst, const void *src, size_t size) {
-#ifndef DEBUG_MEMCPY
 #ifndef DISABLE_DMAC
 	if (size >= 0x2000 && (uint32_t)src < 0x81000000 && (uint32_t)dst < 0x81000000)
 		sceDmacMemcpy(dst, src, size);
 	else
 #endif
 		vgl_fast_memcpy(dst, src, size);
-#else
-	memcpy(dst, src, size);
-#endif
 }
 
 #endif

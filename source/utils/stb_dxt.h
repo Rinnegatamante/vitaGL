@@ -52,6 +52,8 @@
 #ifndef STB_INCLUDE_STB_DXT_H
 #define STB_INCLUDE_STB_DXT_H
 
+#include "mem_utils.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -205,7 +207,7 @@ static void stb__DitherBlock(unsigned char *dest, unsigned char *block) {
 	for (ch = 0; ch < 3; ++ch) {
 		unsigned char *bp = block + ch, *dp = dest + ch;
 		unsigned char *quant = (ch == 1) ? stb__QuantGTab + 8 : stb__QuantRBTab + 8;
-		sceClibMemset(err, 0, sizeof(err));
+		vgl_memset(err, 0, sizeof(err));
 		for (y = 0; y < 4; ++y) {
 			dp[0] = quant[bp[0] + ((3 * ep2[1] + 5 * ep2[0]) >> 4)];
 			ep1[0] = bp[0] - dp[0];
@@ -676,7 +678,7 @@ void stb_compress_dxt_block(unsigned char *dest, const unsigned char *src, int a
 		dest += 8;
 		// make a new copy of the data in which alpha is opaque,
 		// because code uses a fast test for color constancy
-		sceClibMemcpy(data, src, 4 * 16);
+		vgl_fast_memcpy(data, src, 4 * 16);
 		for (i = 0; i < 16; ++i)
 			data[i][3] = 255;
 		src = &data[0][0];

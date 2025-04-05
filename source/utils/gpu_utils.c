@@ -304,7 +304,7 @@ void *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 
 	// Initializing palette
 	if (data == NULL)
-		sceClibMemset(texture_palette, 0, 256 * sizeof(uint32_t));
+		vgl_memset(texture_palette, 0, 256 * sizeof(uint32_t));
 	else if (bpe == 4)
 		vgl_fast_memcpy(texture_palette, data, w * sizeof(uint32_t));
 
@@ -344,7 +344,7 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 				texture_data, 0, 0, VGL_ALIGN(w, 8) * bpp,
 				NULL, 0, NULL);
 		} else
-			sceClibMemset(texture_data, 0, face_size);
+			vgl_memset(texture_data, 0, face_size);
 
 		// Initializing texture and validating it
 		tex->mip_count = 0;
@@ -402,7 +402,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 				}
 			}
 		} else
-			sceClibMemset(texture_data, 0, tex_size);
+			vgl_memset(texture_data, 0, tex_size);
 
 		// Initializing texture and validating it
 		tex->mip_count = 1;
@@ -577,7 +577,7 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 				}
 			}
 		} else
-			sceClibMemset(mip_data, 0, mip_size);
+			vgl_memset(mip_data, 0, mip_size);
 
 		// Initializing texture and validating it
 		tex->mip_count = 0;
@@ -686,7 +686,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 			}
 
 		} else
-			sceClibMemset(mip_data, 0, mip_size);
+			vgl_memset(mip_data, 0, mip_size);
 
 		// Initializing texture and validating it
 		tex->mip_count = mip_count + 1;
@@ -891,7 +891,7 @@ void gpu_alloc_planar_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format
 				}
 			}
 		} else
-			sceClibMemset(texture_data, 0, tex_size);
+			vgl_memset(texture_data, 0, tex_size);
 
 		// Initializing texture and validating it
 		tex->mip_count = 1;

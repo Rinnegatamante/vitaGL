@@ -71,6 +71,7 @@ In order to build vitaGL use the following command: `make install`.
 |`DISABLE_FFP_MULTITEXTURE=1`| Disables multitexture processing during draw calls performed with fixed function pipeline.|
 |`HAVE_WRAPPED_ALLOCATORS=1`| Allows usage of vgl allocators inside wrapped allocators.|
 |`HAVE_SHADER_CACHE=1`| Enables fast automatic file caching (based on XH3 xxHash algorithm) for application provided shaders.|
+|`NO_CLIB=1`| Disables sceClib functions usage for easier debugging at the cost of slightly slower CPU code.|
 
 # Samples
 

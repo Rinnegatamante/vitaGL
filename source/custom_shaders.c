@@ -639,7 +639,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 
 #ifdef STRICT_DRAW_COMPLIANCE
 	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
-	sceClibMemset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
+	vgl_memset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
 #else
 	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
@@ -648,7 +648,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 			uint8_t attr_idx = p->attr_map[i];
 			if (cur_vao->vertex_attrib_vbo[attr_idx]) {
 #ifdef STRICT_DRAW_COMPLIANCE
-				sceClibMemset(is_packed, 0, p->attr_num * sizeof(GLboolean));
+				vgl_memset(is_packed, 0, p->attr_num * sizeof(GLboolean));
 #else
 				is_packed = GL_FALSE;
 #endif
@@ -848,7 +848,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count) {
 #ifndef DRAW_SPEEDHACK
 #ifdef STRICT_DRAW_COMPLIANCE
 	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
-	sceClibMemset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
+	vgl_memset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
 #else
 	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
@@ -857,7 +857,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count) {
 			uint8_t attr_idx = p->attr_map[i];
 			if (cur_vao->vertex_attrib_vbo[attr_idx]) {
 #ifdef STRICT_DRAW_COMPLIANCE
-				sceClibMemset(is_packed, 0, p->attr_num * sizeof(GLboolean));
+				vgl_memset(is_packed, 0, p->attr_num * sizeof(GLboolean));
 #else
 				is_packed = GL_FALSE;
 #endif
@@ -1078,7 +1078,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	GLboolean is_full_vbo = GL_TRUE;
 #ifdef STRICT_DRAW_COMPLIANCE
 	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
-	sceClibMemset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
+	vgl_memset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
 #else
 	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
@@ -1087,7 +1087,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			uint8_t attr_idx = p->attr_map[i];
 			if (cur_vao->vertex_attrib_vbo[attr_idx]) {
 #ifdef STRICT_DRAW_COMPLIANCE
-				sceClibMemset(is_packed, 0, p->attr_num * sizeof(GLboolean));
+				vgl_memset(is_packed, 0, p->attr_num * sizeof(GLboolean));
 #else
 				is_packed = GL_FALSE;
 #endif
@@ -1717,7 +1717,7 @@ void glGetProgramBinary(GLuint prog, GLsizei bufSize, GLsizei *length, GLenum *b
 	// Saving info related to bound attributes locations
 	GLuint *b = (GLuint *)binary;
 	b[0] = p->attr_highest_idx;
-	sceClibMemcpy(&b[1], p->attr, sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM);
+	vgl_fast_memcpy(&b[1], p->attr, sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM);
 	GLsizei size = sizeof(GLuint) + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM;
 
 	// Dumping vertex binary
@@ -1761,7 +1761,7 @@ void glProgramBinary(GLuint prog, GLenum binaryFormat, const void *binary, GLsiz
 	// Restoring bound attributes info
 	GLuint *b = (GLuint *)binary;
 	p->attr_highest_idx = b[0];
-	sceClibMemcpy(p->attr, &b[1], sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM);
+	vgl_fast_memcpy(p->attr, &b[1], sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM);
 	GLsizei size = sizeof(GLuint) + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM;
 
 	// Restoring shaders
@@ -2027,7 +2027,7 @@ void glLinkProgram(GLuint progr) {
 			u->is_fragment = GL_TRUE;
 			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
 			u->data = (float *)vglMalloc(u->size * sizeof(float));
-			sceClibMemset(u->data, 0, u->size * sizeof(float));
+			vgl_memset(u->data, 0, u->size * sizeof(float));
 		}
 	}
 	
@@ -2077,7 +2077,7 @@ void glLinkProgram(GLuint progr) {
 			} else {
 				u->is_fragment = GL_FALSE;
 				u->data = (float *)vglMalloc(u->size * sizeof(float));
-				sceClibMemset(u->data, 0, u->size * sizeof(float));
+				vgl_memset(u->data, 0, u->size * sizeof(float));
 			}
 		}
 	}

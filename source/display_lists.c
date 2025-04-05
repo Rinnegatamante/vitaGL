@@ -43,7 +43,7 @@ display_list display_lists[NUM_DISPLAY_LISTS];
 static uint32_t dlist_offs = 0;
 
 void resetDlists() {
-	sceClibMemset(&display_lists[0], 0, sizeof(display_list) * NUM_DISPLAY_LISTS);
+	vgl_memset(&display_lists[0], 0, sizeof(display_list) * NUM_DISPLAY_LISTS);
 }
 
 GLboolean _vgl_enqueue_list_func(void (*func)(), dlistFuncType type, ...) {
@@ -77,27 +77,27 @@ GLboolean _vgl_enqueue_list_func(void (*func)(), dlistFuncType type, ...) {
 			switch (arg_type) {
 			case DLIST_ARG_U32:
 				uarg = va_arg(arglist, uint32_t);
-				sceClibMemcpy(&new_tail->args[i], &uarg, sizeof(uarg));
+				vgl_fast_memcpy(&new_tail->args[i], &uarg, sizeof(uarg));
 				i += sizeof(uarg);
 				break;
 			case DLIST_ARG_I32:
 				iarg = va_arg(arglist, int32_t);
-				sceClibMemcpy(&new_tail->args[i], &iarg, sizeof(iarg));
+				vgl_fast_memcpy(&new_tail->args[i], &iarg, sizeof(iarg));
 				i += sizeof(iarg);
 				break;
 			case DLIST_ARG_F32:
 				farg = (float)va_arg(arglist, double);
-				sceClibMemcpy(&new_tail->args[i], &farg, sizeof(farg));
+				vgl_fast_memcpy(&new_tail->args[i], &farg, sizeof(farg));
 				i += sizeof(farg);
 				break;
 			case DLIST_ARG_I16:
 				sarg = (int16_t)va_arg(arglist, int);
-				sceClibMemcpy(&new_tail->args[i], &sarg, sizeof(sarg));
+				vgl_fast_memcpy(&new_tail->args[i], &sarg, sizeof(sarg));
 				i += sizeof(sarg);
 				break;
 			case DLIST_ARG_U8:
 				suarg = (uint8_t)va_arg(arglist, int);
-				sceClibMemcpy(&new_tail->args[i], &suarg, sizeof(suarg));
+				vgl_fast_memcpy(&new_tail->args[i], &suarg, sizeof(suarg));
 				i += sizeof(suarg);
 				break;
 			case DLIST_ARG_VOID:

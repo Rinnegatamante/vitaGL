@@ -65,7 +65,7 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 				t = min(str, str2);
 			if (t == str) { // Attribute
 				// Replace attribute with 'vgl in' that will get extended in a 'varying in' by the preprocessor
-				sceClibMemcpy(t, "vgl in    ", 10);
+				vgl_fast_memcpy(t, "vgl in    ", 10);
 				str = strstr(t, "attribute");
 				while (str && !(str[9] == ' ' || str[9] == '\t')) {
 					str = strstr(str + 9, "attribute");
@@ -214,9 +214,9 @@ HINT_DETECTION_PAIR:
 						}
 					}
 				}
-				sceClibMemcpy(str2, newline, strlen(newline));
+				vgl_fast_memcpy(str2, newline, strlen(newline));
 				if (extra_chars) {
-					sceClibMemset(str2 + strlen(newline), ' ', extra_chars);
+					vgl_memset(str2 + strlen(newline), ' ', extra_chars);
 				}
 				str2 = strstr(t, "varying");
 				while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
@@ -229,7 +229,7 @@ HINT_DETECTION_PAIR:
 		if (hasFrontFacing) {
 			char *str = strstr(text, "gl_FrontFacing");
 			while (str) {
-				sceClibMemcpy(str, "(vgl_Face > 0)", 14);
+				vgl_fast_memcpy(str, "(vgl_Face > 0)", 14);
 				str = strstr(str, "gl_FrontFacing");
 			}
 		}
@@ -397,9 +397,9 @@ HINT_DETECTION_PAIR_2:
 						}
 					}
 				}
-				sceClibMemcpy(str, newline, strlen(newline));
+				vgl_fast_memcpy(str, newline, strlen(newline));
 				if (extra_chars > 0) {
-					sceClibMemset(str + strlen(newline), ' ', extra_chars);
+					vgl_memset(str + strlen(newline), ' ', extra_chars);
 				}
 				str = strstr(str, "varying");
 				while (str && !(str[7] == ' ' || str[7] == '\t')) {
@@ -407,9 +407,9 @@ HINT_DETECTION_PAIR_2:
 				}
 			} else { // "texture" Uniform
 				if (t[0] == 't')
-					sceClibMemcpy(t, "vgl_tex", 7);
+					vgl_fast_memcpy(t, "vgl_tex", 7);
 				else
-					sceClibMemcpy(t, "Vgl_tex", 7);
+					vgl_fast_memcpy(t, "Vgl_tex", 7);
 				str2 = strcasestr(t, "texture");
 				while (str2) {
 					char *str2_end = str2 + 7;
@@ -450,7 +450,7 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 				t = min(str, str2);
 			if (t == str) { // Attribute
 				// Replace attribute with 'vgl in' that will get extended in a 'varying in' by the preprocessor
-				sceClibMemcpy(t, "vgl in    ", 10);
+				vgl_fast_memcpy(t, "vgl in    ", 10);
 				str = strstr(t, "attribute");
 				while (str && !(str[9] == ' ' || str[9] == '\t')) {
 					str = strstr(str + 9, "attribute");
@@ -514,9 +514,9 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 				} else {
 					sprintf(newline, "VOUT(%s,\v);", str2 + 8);
 				}
-				sceClibMemcpy(str2, newline, strlen(newline));
+				vgl_fast_memcpy(str2, newline, strlen(newline));
 				if (extra_chars > 0) {
-					sceClibMemset(str2 + strlen(newline), ' ', extra_chars);
+					vgl_memset(str2 + strlen(newline), ' ', extra_chars);
 				}
 				str2 = strstr(t, "varying");
 				while (str2 && !(str2[7] == ' ' || str2[7] == '\t')) {
@@ -529,7 +529,7 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 		if (hasFrontFacing) {
 			char *str = strstr(text, "gl_FrontFacing");
 			while (str) {
-				sceClibMemcpy(str, "(vgl_Face > 0)", 14);
+				vgl_fast_memcpy(str, "(vgl_Face > 0)", 14);
 				str = strstr(str, "gl_FrontFacing");
 			}
 		}
@@ -617,9 +617,9 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 				} else {
 					sprintf(newline, "VIN(%s, \v);", str + 8);
 				}
-				sceClibMemcpy(str, newline, strlen(newline));
+				vgl_fast_memcpy(str, newline, strlen(newline));
 				if (extra_chars > 0) {
-					sceClibMemset(str + strlen(newline), ' ', extra_chars);
+					vgl_memset(str + strlen(newline), ' ', extra_chars);
 				}
 				str = strstr(str, "varying");
 				while (str && !(str[7] == ' ' || str[7] == '\t')) {
@@ -627,9 +627,9 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 				}
 			} else { // "texture" Uniform
 				if (t[0] == 't')
-					sceClibMemcpy(t, "vgl_tex", 7);
+					vgl_fast_memcpy(t, "vgl_tex", 7);
 				else
-					sceClibMemcpy(t, "Vgl_tex", 7);
+					vgl_fast_memcpy(t, "Vgl_tex", 7);
 				str2 = strcasestr(t, "texture");
 				while (str2) {
 					char *str2_end = str2 + 7;
@@ -890,11 +890,11 @@ void glsl_nuke_comments(char *txt) {
 			char *end = strstr(next, "\n");
 			if (!end)
 				end = txt + strlen(txt);
-			sceClibMemset(next, ' ', end - next);
+			vgl_memset(next, ' ', end - next);
 		} else {
 			// Nuke C++ styled comment
 			char *end = strstr(next, "*/") + 2;
-			sceClibMemset(next, ' ', end - next);
+			vgl_memset(next, ' ', end - next);
 		}
 		if (c_s)
 			c_s = strstr(next, "//");
@@ -916,8 +916,8 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 		if (prev_shader_type == s->type) {
 			vgl_log("%s:%d %s: Unexpected shader type, translation may be imperfect.\n", __FILE__, __LINE__, __func__);
 			glsl_is_first_shader = GL_TRUE;
-			sceClibMemset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
-			sceClibMemset(glsl_colors_used, 0, sizeof(GLboolean) * MAX_CG_COLOR_ID);
+			vgl_memset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
+			vgl_memset(glsl_colors_used, 0, sizeof(GLboolean) * MAX_CG_COLOR_ID);
 		}
 	} else
 		glsl_current_ref_idx++;
@@ -1149,7 +1149,7 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 	vgl_free(dst);
 	// Keeping on mem only the strict minimum necessary for the translated shader
 	char *final = vglMalloc(strlen(dst2) + 1);
-	sceClibMemcpy(final, dst2, strlen(dst2) + 1);
+	vgl_fast_memcpy(final, dst2, strlen(dst2) + 1);
 	vgl_free(dst2);
 	s->source = final;
 #ifdef DEBUG_GLSL_TRANSLATOR
@@ -1160,7 +1160,7 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 	if (glsl_sema_mode == VGL_MODE_SHADER_PAIR) {
 		glsl_is_first_shader = !glsl_is_first_shader;
 		if (glsl_is_first_shader)
-			sceClibMemset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
+			vgl_memset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
 	}
 	s->size = strlen(s->source);
 }

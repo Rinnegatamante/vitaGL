@@ -162,7 +162,7 @@ int etc1_decode_image(const etc1_byte* pIn, etc1_byte* pOut,
                 const etc1_byte* q = block + (cy * 4) * 3;
                 etc1_byte* p = pOut + pixelSize * x + stride * (y + cy);
                 if (pixelSize == 3) {
-                    memcpy(p, q, xEnd * 3);
+                    vgl_fast_memcpy(p, q, xEnd * 3);
                 } else {
                     for (etc1_uint32 cx = 0; cx < xEnd; cx++) {
                         etc1_byte r = *q++;

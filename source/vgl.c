@@ -401,7 +401,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 
 	// Init texture units
 	for (int i = 0; i < COMBINED_TEXTURE_IMAGE_UNITS_NUM; i++) {
-		sceClibMemset(&texture_units[i].env_color.r, 0, sizeof(vector4f));
+		vgl_memset(&texture_units[i].env_color.r, 0, sizeof(vector4f));
 		texture_units[i].env_mode = MODULATE;
 		texture_units[i].tex_id[0] = 0;
 		texture_units[i].tex_id[1] = 0;
@@ -574,8 +574,8 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 			vgl_fast_memcpy(&lights_diffuses[i].r, &data2[0], sizeof(float) * 4);
 			vgl_fast_memcpy(&lights_speculars[i].r, &data2[0], sizeof(float) * 4);
 		} else {
-			sceClibMemset(&lights_diffuses[i].r, 0, sizeof(float) * 4);
-			sceClibMemset(&lights_speculars[i].r, 0, sizeof(float) * 4);
+			vgl_memset(&lights_diffuses[i].r, 0, sizeof(float) * 4);
+			vgl_memset(&lights_speculars[i].r, 0, sizeof(float) * 4);
 		}
 	}
 

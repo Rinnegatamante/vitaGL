@@ -60,7 +60,7 @@ typedef float matrix4x4[4][4];
 
 // Creates an identity matrix
 static inline __attribute__((always_inline)) void matrix4x4_identity(matrix4x4 m) {
-	sceClibMemset(m, 0, sizeof(matrix4x4));
+	vgl_memset(m, 0, sizeof(matrix4x4));
 	m[0][0] = m[1][1] = m[2][2] = m[3][3] = 1.0f;
 }
 
@@ -80,7 +80,7 @@ static inline __attribute__((always_inline)) void matrix4x4_rotate(matrix4x4 m, 
 	sincosf_c(rad, cs);
 
 	matrix4x4 m1, m2;
-	sceClibMemset(m1, 0, sizeof(matrix4x4));
+	vgl_memset(m1, 0, sizeof(matrix4x4));
 	const float c = 1 - cs[1];
 	float axis[3] = {x, y, z};
 	normalize3_neon(axis, axis);
@@ -118,7 +118,7 @@ static inline __attribute__((always_inline)) void matrix4x4_translate(matrix4x4 
 // Scale a matrix
 static inline __attribute__((always_inline)) void matrix4x4_scale(matrix4x4 m, float x, float y, float z) {
 	matrix4x4 m1, m2;
-	sceClibMemset(m1, 0, sizeof(matrix4x4));
+	vgl_memset(m1, 0, sizeof(matrix4x4));
 	m1[0][0] = x;
 	m1[1][1] = y;
 	m1[2][2] = z;
@@ -150,7 +150,7 @@ static inline __attribute__((always_inline)) void matrix4x4_transpose(matrix4x4 
 
 // Init a matrix with different settings (ortho, frustum, perspective)
 static inline __attribute__((always_inline)) void matrix4x4_init_orthographic(matrix4x4 m, float left, float right, float bottom, float top, float near, float far) {
-	sceClibMemset(m, 0, sizeof(matrix4x4));
+	vgl_memset(m, 0, sizeof(matrix4x4));
 	m[0][0] = 2.0f / (right - left);
 	m[0][3] = -(right + left) / (right - left);
 	m[1][1] = 2.0f / (top - bottom);
@@ -160,7 +160,7 @@ static inline __attribute__((always_inline)) void matrix4x4_init_orthographic(ma
 	m[3][3] = 1.0f;
 }
 static inline __attribute__((always_inline)) void matrix4x4_init_frustum(matrix4x4 m, float left, float right, float bottom, float top, float near, float far) {
-	sceClibMemset(m, 0, sizeof(matrix4x4));
+	vgl_memset(m, 0, sizeof(matrix4x4));
 	m[0][0] = (2.0f * near) / (right - left);
 	m[0][2] = (right + left) / (right - left);
 	m[1][1] = (2.0f * near) / (top - bottom);
