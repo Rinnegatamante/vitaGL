@@ -2140,6 +2140,7 @@ void glsl_preprocess(char *mode, const char *infile, char *output) {
 	std::list<std::string> dummy;
 	std::list<std::string> defines;
 	defines.push_back("#define GL_ES 1");
+	defines.push_back("#define VITAGL");
 	std::map<std::string, std::string> hasCppAttributeMap;
 	std::string out = preprocessor::preprocess(mode, infile, "", defines, dummy, dummy, dummy, hasCppAttributeMap, false);
 	strcpy(output, out.c_str());
