@@ -100,6 +100,9 @@ inline float4 textureCube(samplerCUBE x, float3 s, float b) { return texCUBEbias
 #define ivec2 int2
 #define ivec3 int3
 #define ivec4 int4
+#define bvec2 bool2
+#define bvec3 bool3
+#define bvec4 bool4
 #define fract(x) frac(x)
 #define mod(x,y) fmod(x,y)
 #define mat2 float2x2
