@@ -1186,7 +1186,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 }
 
 void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
-	return;
 	uint8_t mask_state = reload_ffp_shaders(NULL, NULL, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
 #ifdef HAVE_PROFILING
 	uint32_t draw_start = sceKernelGetProcessTimeLow();
