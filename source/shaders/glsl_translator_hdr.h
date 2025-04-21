@@ -97,8 +97,15 @@ inline float4 texture2DLod(sampler2D x, float2 coord, float lod) { return tex2Dl
 #define vec3 float3
 #define vec4 float4
 #define mix(a,b,c) lerp(a,b,c)
-#define atan(x,y) atan2(x,y)
-#define atan(x) atan(x)
+#define atan vgl_atan
+inline float vgl_atan(float x, float y) { return atan2(x, y); }
+inline float2 vgl_atan(float2 x, float2 y) { return atan2(x, y); }
+inline float3 vgl_atan(float3 x, float3 y) { return atan2(x, y); }
+inline float4 vgl_atan(float4 x, float4 y) { return atan2(x, y); }
+inline float vgl_atan(float x) { return atan(x); }
+inline float2 vgl_atan(float2 x) { return atan(x); }
+inline float3 vgl_atan(float3 x) { return atan(x); }
+inline float4 vgl_atan(float4 x) { return atan(x); }
 #define ivec2 int2
 #define ivec3 int3
 #define ivec4 int4
