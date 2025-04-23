@@ -1623,8 +1623,8 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 							ptr = gpu_alloc_mapped_temp(size);
 							vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL], size);
 						}
-#endif
 					}
+#endif
 				}
 			} else {
 #ifdef DRAW_SPEEDHACK
