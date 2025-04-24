@@ -219,6 +219,10 @@ ifeq ($(DISABLE_FFP_MULTITEXTURE),1)
 CFLAGS += -DDISABLE_FFP_MULTITEXTURE
 endif
 
+ifeq ($(DISABLE_W_CLAMPING),1)
+CFLAGS += -DISABLE_W_CLAMPING
+endif
+
 CXXFLAGS  = $(CFLAGS) -fexceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a

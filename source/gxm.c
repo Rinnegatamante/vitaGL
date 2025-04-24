@@ -428,7 +428,9 @@ void initGxmContext(void) {
 
 	// Initializing sceGxm context
 	sceGxmCreateContext(&gxm_context_params, &gxm_context);
+#ifdef DISABLE_W_CLAMPING
 	sceGxmSetWClampEnable(gxm_context, SCE_GXM_WCLAMP_MODE_DISABLED);
+#endif
 
 	// Initializing circular pool for uniform buffers
 	vglSetupUniformCircularPool();

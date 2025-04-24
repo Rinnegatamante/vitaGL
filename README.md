@@ -72,6 +72,7 @@ In order to build vitaGL use the following command: `make install`.
 |`HAVE_WRAPPED_ALLOCATORS=1`| Allows usage of vgl allocators inside wrapped allocators.|
 |`HAVE_SHADER_CACHE=1`| Enables fast automatic file caching (based on XH3 xxHash algorithm) for application provided shaders.|
 |`NO_CLIB=1`| Disables sceClib functions usage for easier debugging at the cost of slightly slower CPU code.|
+|`DISABLE_W_CLAMPING=1`| Disables W clamping during viewport calculation. Might fix some glitches.|
 
 # Samples
 
