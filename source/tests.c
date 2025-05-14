@@ -321,7 +321,13 @@ void update_scissor_test() {
 
 	// Reducing GPU workload by performing tile granularity clipping
 	if (scissor_test_state)
+	{
+#ifdef HAVE_UNFLIPPED_FBOS
 		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
+#else
+		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.gl_x, region.gl_y, region.gl_x + region.gl_w - 1, region.gl_y + region.gl_h - 1);
+#endif
+	}
 
 	// Restoring original stencil test settings
 	change_stencil_settings();
@@ -354,11 +360,8 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 	region.x = x < 0 ? 0 : x;
 	region.w = width;
 	region.h = height;
-#ifdef HAVE_UNFLIPPED_FBOS
 	region.y = (is_rendering_display ? DISPLAY_HEIGHT : in_use_framebuffer->height) - y - height;
-#else
-	region.y = is_rendering_display ? (DISPLAY_HEIGHT - y - height) : y;
-#endif
+
 	region.gl_x = x;
 	region.gl_y = y;
 	region.gl_w = width;
