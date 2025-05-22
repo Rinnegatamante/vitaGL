@@ -1775,7 +1775,20 @@ void glProgramBinary(GLuint prog, GLenum binaryFormat, const void *binary, GLsiz
 	glAttachShader(prog, fs);
 
 	// Linking program and marking for deletion temporary shaders
+#ifdef HAVE_GLSL_TRANSLATOR
+	// VGL_MODE_POSTPONED would trigger a shader compilation, so we temporarily change mode to skip it
+	GLboolean was_postponed = GL_FALSE;
+	if (glsl_sema_mode == VGL_MODE_POSTPONED) {
+		glsl_sema_mode = VGL_MODE_SHADER_PAIR;
+		was_postponed = GL_TRUE;
+	}
+#endif
 	glLinkProgram(prog);
+#ifdef HAVE_GLSL_TRANSLATOR
+	if (was_postponed) {
+		glsl_sema_mode = VGL_MODE_POSTPONED;
+	}
+#endif
 	glDeleteShader(vs);
 	glDeleteShader(fs);
 }
