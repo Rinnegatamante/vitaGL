@@ -1115,7 +1115,6 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 	case GL_TEXTURE_1D: // Workaround for 1D textures support
 #endif
 	case GL_TEXTURE_2D:
-
 		// Detecting proper write callback
 		switch (tex_format) {
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
@@ -1164,7 +1163,6 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 			fast_store = GL_TRUE;
 			break;
 		}
-
 		if (fast_store) { // Internal format and input format are the same, we can take advantage of this
 			uint8_t *data = (uint8_t *)pixels;
 			uint32_t line_size = width * bpp;
@@ -1195,7 +1193,18 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 				ptr_line = ptr;
 			}
 		}
-
+		break;
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
+	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
+	case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
+		if (xoffset == 0 && yoffset == 0 && width == orig_w && height == orig_h) {
+			_glTexImage2D_CubeIMPL(tex, level, format, width, height, format, type, pixels, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+		} else {
+			vgl_log("%s:%d %s: Partial edits of cubemaps not supported.\n", __FILE__, __LINE__, __func__);
+		}
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
