@@ -14,6 +14,7 @@ uniform float2 pass1_scale;
 #define shading_mode %d
 #define point_sprite %d
 #define interp %d
+#define srgb_mode %d
 
 #if interp == 1
 #define TEXCOORD0 TEXCOORD0_HALF
@@ -189,6 +190,13 @@ float4 main(
 	texColor.rgb = lerp(fogColor.rgb, texColor.rgb, vFog);
 #endif
 
+#if srgb_mode == 1
+	float3 cutoff = float3(texColor.r < 0.0031308f ? 1.0f : 0.0f, texColor.g < 0.0031308f ? 1.0f : 0.0f, texColor.b < 0.0031308f ? 1.0f : 0.0f);
+	float3 higher = float3(1.055f) * pow(texColor.rgb, float3(1.0f / 2.4f)) - float3(0.055f);
+	float3 lower = texColor.rgb * float3(12.92f);
+	return float4(lerp(higher, lower, cutoff), texColor.a);
+#else
 	return texColor;
+#endif
 }
 )";

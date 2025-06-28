@@ -127,6 +127,7 @@ vector4f clip_planes_eq[MAX_CLIP_PLANES_NUM]; // Current equation for user clip 
 glPhase phase = NONE; // Current drawing phase for legacy openGL
 int legacy_pool_size = 0; // Mempool size for GL1 immediate draw pipeline
 int8_t client_texture_unit = 0; // Current in use client side texture unit
+GLboolean srgb_mode = GL_FALSE; // SRGB mode for color output
 
 legacy_vtx_attachment current_vtx = {
 	.uv = {0.0f, 0.0f},
@@ -187,12 +188,13 @@ typedef union shader_mask {
 		uint64_t pos_fixed_mask : 2; // Vert
 		uint64_t point_sprite : 1; // Frag
 		uint64_t fast_perspective_correction : 1; // Frag/Vert
-		uint64_t UNUSED : 30;
+		uint64_t srgb_mode : 1; // Frag
+		uint64_t UNUSED : 29;
 	};
 	uint64_t raw;
 } shader_mask;
 #define VERTEX_SHADER_MASK   (0b0000000000000000000000000000001011111100011000000111111100111000)
-#define FRAGMENT_SHADER_MASK (0b0000000000000000000000000000001100000011101111111111100011111111)
+#define FRAGMENT_SHADER_MASK (0b0000000000000000000000000000011100000011101111111111100011111111)
 #else
 typedef union shader_mask {
 	struct {
@@ -210,12 +212,12 @@ typedef union shader_mask {
 		uint32_t pos_fixed_mask : 2; // Vert
 		uint32_t point_sprite : 1; // Frag
 		uint32_t fast_perspective_correction : 1; // Frag/Vert
-		uint32_t UNUSED : 1;
+		uint32_t srgb_mode : 1; // Frag
 	};
 	uint32_t raw;
 } shader_mask;
 #define VERTEX_SHADER_MASK   (0b0101111111000000111111100111000)
-#define FRAGMENT_SHADER_MASK (0b0110000001111111111100011111111)
+#define FRAGMENT_SHADER_MASK (0b1110000001111111111100011111111)
 #endif
 #ifndef DISABLE_TEXTURE_COMBINER
 typedef union combiner_mask {
@@ -496,6 +498,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	mask.fixed_mask = ffp_vertex_attrib_fixed_mask;
 	mask.pos_fixed_mask = ffp_vertex_attrib_fixed_pos_mask;
 	mask.fast_perspective_correction = fast_perspective_correction_hint;
+	mask.srgb_mode = srgb_mode;
 	uint16_t draw_mask_state = ffp_vertex_attrib_state;
 
 	// Counting number of enabled texture units
@@ -980,13 +983,13 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				(mask.tex_env_mode_pass0 != COMBINE) ? mask.tex_env_mode_pass0 : 50,
 				(mask.tex_env_mode_pass1 != COMBINE) ? mask.tex_env_mode_pass1 : 51,
 				(mask.tex_env_mode_pass2 != COMBINE) ? mask.tex_env_mode_pass2 : 52,
-				mask.lights_num, mask.shading_mode, mask.point_sprite, mask.fast_perspective_correction);
+				mask.lights_num, mask.shading_mode, mask.point_sprite, mask.fast_perspective_correction, mask.srgb_mode);
 #else
 			sprintf(fshader, ffp_frag_src, texenv_shad, alpha_op,
 				mask.num_textures, mask.has_colors, mask.fog_mode,
 				(mask.tex_env_mode_pass0 != COMBINE) ? mask.tex_env_mode_pass0 : 50,
 				(mask.tex_env_mode_pass1 != COMBINE) ? mask.tex_env_mode_pass1 : 51,
-				mask.lights_num, mask.shading_mode, mask.point_sprite, mask.fast_perspective_correction);
+				mask.lights_num, mask.shading_mode, mask.point_sprite, mask.fast_perspective_correction, mask.srgb_mode);
 #endif
 			uint32_t size = strlen(fshader);
 			SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);

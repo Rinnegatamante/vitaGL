@@ -349,6 +349,10 @@ void glEnable(GLenum cap) {
 	}
 #endif
 	switch (cap) {
+	case GL_FRAMEBUFFER_SRGB:
+		ffp_dirty_frag = GL_TRUE;
+		srgb_mode = GL_TRUE;
+		break;
 	case GL_POINT_SPRITE:
 		ffp_dirty_frag = GL_TRUE;
 		point_sprite_state = GL_TRUE;
@@ -475,6 +479,10 @@ void glDisable(GLenum cap) {
 	}
 #endif
 	switch (cap) {
+	case GL_FRAMEBUFFER_SRGB:
+		ffp_dirty_frag = GL_TRUE;
+		srgb_mode = GL_FALSE;
+		break;
 	case GL_POINT_SPRITE:
 		ffp_dirty_frag = GL_TRUE;
 		ffp_dirty_vert = GL_TRUE;

@@ -200,7 +200,7 @@ extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
 // Fixed-function pipeline shader cache settings
 #ifndef DISABLE_FS_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 25 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 26 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 #endif
 
@@ -977,6 +977,7 @@ extern vector4f clip_planes_eq[MAX_CLIP_PLANES_NUM]; // Current equation for use
 extern framebuffer *active_read_fb; // Current readback framebuffer in use
 extern framebuffer *active_write_fb; // Current write framebuffer in use
 extern renderbuffer *active_rb; // Current renderbuffer in use
+extern GLboolean srgb_mode; // SRGB mode for color output
 
 // Display Lists
 extern display_list *curr_display_list; // Current display list being generated
