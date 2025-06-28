@@ -1555,13 +1555,17 @@ void glCompileShader(GLuint handle) {
 		return;
 	}
 #endif
-	s->glsl_source = s->source;
-	glsl_translator_process(s, 1, &s->glsl_source, NULL);
+	if (s->glsl_source != (char *)0xDEADBEEF) {
+		s->glsl_source = s->source;
+		glsl_translator_process(s, 1, &s->glsl_source, NULL);
+	}
 #endif
 	compile_shader(s, GL_FALSE);
 #ifdef HAVE_GLSL_TRANSLATOR
-	vgl_free(s->glsl_source);
-	s->glsl_source = NULL;
+	if (s->glsl_source != (char *)0xDEADBEEF) {
+		vgl_free(s->glsl_source);
+		s->glsl_source = NULL;
+	}
 #ifdef HAVE_SHADER_CACHE
 	f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
 	sceIoWrite(f, s->prog, s->size);
@@ -1581,7 +1585,7 @@ void glDeleteShader(GLuint shad) {
 		release_shader(s);
 	
 #ifdef HAVE_GLSL_TRANSLATOR
-	if (s->glsl_source) {
+	if (s->glsl_source && s->glsl_source != (char *)0xDEADBEEF) {
 		vgl_free(s->glsl_source);
 	}
 #endif
@@ -1947,7 +1951,9 @@ void glLinkProgram(GLuint progr) {
 			p->vshader->prog = sceGxmShaderPatcherGetProgramFromId(p->vshader->id);
 		} else {
 #endif
-			glsl_translator_process(p->vshader, 1, &p->vshader->glsl_source, NULL);
+			if (p->vshader->glsl_source != (char *)0xDEADBEEF) {
+				glsl_translator_process(p->vshader, 1, &p->vshader->glsl_source, NULL);
+			}
 			compile_shader(p->vshader, GL_TRUE);
 #ifdef HAVE_SHADER_CACHE
 			f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
@@ -1970,7 +1976,9 @@ void glLinkProgram(GLuint progr) {
 			p->fshader->prog = sceGxmShaderPatcherGetProgramFromId(p->fshader->id);
 		} else {
 #endif
-			glsl_translator_process(p->fshader, 1, &p->fshader->glsl_source, NULL);
+			if (p->fshader->glsl_source != (char *)0xDEADBEEF) {
+				glsl_translator_process(p->fshader, 1, &p->fshader->glsl_source, NULL);
+			}
 			compile_shader(p->fshader, GL_TRUE);
 #ifdef HAVE_SHADER_CACHE
 			f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
@@ -3349,7 +3357,11 @@ void vglCgShaderSource(GLuint handle, GLsizei count, const GLchar *const *string
 		}
 		s->prog = (SceGxmProgram *)s->source;
 	}
-	
+
+#ifdef HAVE_GLSL_TRANSLATOR
+	s->glsl_source = (char *)0xDEADBEEF;
+#endif
+
 	s->size = size - 1;
 }
 
