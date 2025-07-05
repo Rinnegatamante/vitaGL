@@ -1,6 +1,14 @@
 #ifndef __clear_v__
 #define __clear_v__
 
+/*
+	float4 main(unsigned int idx : INDEX, uniform float4 position, uniform float u_clear_depth) : POSITION {
+		float x = (idx == 1 || idx == 2) ? position[1] : position[0];
+		float y = (idx == 2 || idx == 3) ? position[3] : position[2];
+		return float4(x, y, u_clear_depth, 1.f);
+	}
+*/
+
 static unsigned int size_clear_v = 408;
 static unsigned char clear_v[] __attribute__((aligned(16))) = {
 	0x47, 0x58, 0x50, 0x00, 0x01, 0x05, 0x50, 0x03, 0x97, 0x01, 0x00, 0x00, 0x14, 0x62, 0x01, 0x13, 

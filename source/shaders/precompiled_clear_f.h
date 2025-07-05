@@ -1,6 +1,12 @@
 #ifndef __clear_f__
 #define __clear_f__
 
+/*
+	float4 main(uniform float4 u_clear_color) : COLOR {
+		return u_clear_color;
+	}
+*/
+
 static unsigned int size_clear_f = 236;
 static unsigned char clear_f[] __attribute__((aligned(16))) = {
 	0x47, 0x58, 0x50, 0x00, 0x01, 0x05, 0x50, 0x03, 0xea, 0x00, 0x00, 0x00, 0x31, 0xc7, 0xbe, 0x93, 
