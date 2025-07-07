@@ -1,4 +1,4 @@
-<p align="center"><img width="50%" height="50%" src="./vitagl.png"></p>
+<p align="center"><img width="50%" src="./vitagl.png"></p>
 vitaGL is an opensource openGL driver for PSVITA development. It acts as a wrapper between openGL and sceGxm and allows to use a subset of openGL functions with full hardware acceleration by translating the code to sceGxm equivalent.
 
 # Prerequisites
