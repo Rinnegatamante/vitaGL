@@ -744,6 +744,7 @@ void glLineWidthx(GLfixed width);
 void glLinkProgram(GLuint progr);
 void glListBase(GLuint base);
 void glLoadIdentity(void);
+void glLoadMatrixd(const GLdouble *m);
 void glLoadMatrixf(const GLfloat *m);
 void glLoadMatrixx(const GLfixed *m);
 void glLoadTransposeMatrixf(const GLfloat *m);

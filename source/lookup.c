@@ -191,6 +191,7 @@ static const struct {
 	{"glLinkProgram", (void *)glLinkProgram},
 	{"glListBase", (void *)glListBase},
 	{"glLoadIdentity", (void *)glLoadIdentity},
+	{"glLoadMatrixd", (void *)glLoadMatrixd},
 	{"glLoadMatrixf", (void *)glLoadMatrixf},
 	{"glLoadMatrixx", (void *)glLoadMatrixx},
 	{"glLoadTransposeMatrixf", (void *)glLoadTransposeMatrixf},
