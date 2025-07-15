@@ -27,8 +27,6 @@
 #include "../shaders/glsl_translator_hdr.h"
 #endif
 
-//#define DEBUG_GLSL_TRANSLATOR // Define this to enable logging of GLSL translator output prior compilation
-//#define DEBUG_GLSL_PREPROCESSOR // Define this to enable logging of GLSL preprocessor output prior compilation
 #define MAX_CG_TEXCOORD_ID 10 // Maximum number of bindable TEXCOORD semantic
 #define MAX_CG_COLOR_ID 2 // Maximum number of bindable COLOR semantic
 #define MAX_CUSTOM_BINDINGS 64 // Maximum number of custom semantic bindings usable with vglAddSemanticBinding

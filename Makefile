@@ -223,6 +223,14 @@ ifeq ($(DISABLE_W_CLAMPING),1)
 CFLAGS += -DISABLE_W_CLAMPING
 endif
 
+ifeq ($(DEBUG_GLSL_TRANSLATOR),1)
+CFLAGS += -DDEBUG_GLSL_TRANSLATOR
+endif
+
+ifeq ($(DEBUG_GLSL_PREPROCESSOR),1)
+CFLAGS += -DDEBUG_GLSL_PREPROCESSOR
+endif
+
 CXXFLAGS  = $(CFLAGS) -fexceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a
