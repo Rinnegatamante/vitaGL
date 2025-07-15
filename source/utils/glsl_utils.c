@@ -656,7 +656,7 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 void glsl_handle_globals(char *txt, char *out) {
 	char *src = txt;
 	out[0] = 0;
-	char *type = strstr(txt + strlen(glsl_hdr), "\n");
+	char *type = txt + strlen(glsl_hdr);
 	char *last_func_start = strstr(txt + strlen(glsl_hdr), "{");
 	char *last_func_end = strstr(last_func_start, "}");
 	// First pass: marking all global variables
@@ -677,19 +677,22 @@ void glsl_handle_globals(char *txt, char *out) {
 HANDLE_VAR:
 			if (last_func_start && last_func_end && type > last_func_start && var_end < last_func_end) { // Var is inside a function, skipping
 				type = strstr(type, "}");
-				type = strstr(type, "\n");
+				if (type)
+					type++;
 			} else if (last_func_end && type > last_func_end) { // Var is after last function, need to update last function
 				last_func_start = strstr(last_func_start + 1, "{");
 				last_func_end = strstr(last_func_end + 1, "}");
 				goto HANDLE_VAR;
 			} else if (var_end < last_func_start || !last_func_start) { // Var is prior a function, handling it
 				type[0] = '\v';
-				type = strstr(type, "\n");
+				type = var_end + 1;
 			} else { // Var is a function, skipping
-				type = strstr(type, "\n");
+				type = var_end + 1;
 			}
 		} else {
-			type = strstr(type, "\n");
+			type = strstr(type, ";");
+			if (type)
+				type++;
 		}
 	}
 	// Second pass: replacing all marked variables
