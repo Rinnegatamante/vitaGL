@@ -272,6 +272,11 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 		c -= c % 4; \
 		prim_is_non_native = GL_TRUE; \
 		break; \
+	case GL_QUAD_STRIP: \
+		if ((c < 4) || (c % 2) || no_polygons_mode) \
+			return; \
+		p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP; \
+		break; \
 	default: \
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, x) \
 	}
@@ -314,6 +319,9 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 	case GL_QUADS: \
 		p = SCE_GXM_PRIMITIVE_TRIANGLES; \
 		prim_is_non_native = GL_TRUE; \
+		break; \
+	case GL_QUAD_STRIP: \
+		p = SCE_GXM_PRIMITIVE_TRIANGLE_STRIP; \
 		break; \
 	default: \
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, x) \
