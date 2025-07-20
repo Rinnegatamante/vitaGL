@@ -203,7 +203,7 @@ void glBindRenderbuffer(GLenum target, GLuint rb) {
 	active_rb = (renderbuffer *)rb;
 }
 
-void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer) {
+void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint rb) {
 #ifndef SKIP_ERROR_HANDLING
 	if (renderbuffertarget != GL_RENDERBUFFER) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, renderbuffertarget)
@@ -233,8 +233,8 @@ void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbu
 	case GL_DEPTH_STENCIL_ATTACHMENT:
 	case GL_DEPTH_ATTACHMENT:
 	case GL_STENCIL_ATTACHMENT:
-		if (active_rb)
-			fb->depthbuffer_ptr = active_rb->depthbuffer_ptr;
+		if (rb)
+			fb->depthbuffer_ptr = ((renderbuffer *)rb)->depthbuffer_ptr;
 		else
 			fb->depthbuffer_ptr = NULL;
 		break;
@@ -243,7 +243,7 @@ void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbu
 	}
 }
 
-void glNamedFramebufferRenderbuffer(GLuint target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer) {
+void glNamedFramebufferRenderbuffer(GLuint target, GLenum attachment, GLenum renderbuffertarget, GLuint rb) {
 #ifndef SKIP_ERROR_HANDLING
 	if (renderbuffertarget != GL_RENDERBUFFER) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, renderbuffertarget)
@@ -262,8 +262,8 @@ void glNamedFramebufferRenderbuffer(GLuint target, GLenum attachment, GLenum ren
 	case GL_DEPTH_STENCIL_ATTACHMENT:
 	case GL_DEPTH_ATTACHMENT:
 	case GL_STENCIL_ATTACHMENT:
-		if (active_rb)
-			fb->depthbuffer_ptr = active_rb->depthbuffer_ptr;
+		if (rb)
+			fb->depthbuffer_ptr = ((renderbuffer *)rb)->depthbuffer_ptr;
 		else
 			fb->depthbuffer_ptr = NULL;
 		break;
