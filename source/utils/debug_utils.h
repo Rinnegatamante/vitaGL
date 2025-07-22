@@ -24,6 +24,10 @@
 #ifndef _DEBUG_UTILS_H_
 #define _DEBUG_UTILS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Debugging tool
 char *get_gxm_error_literal(uint32_t code);
 #ifdef FILE_LOG
@@ -33,6 +37,10 @@ void vgl_file_log(const char *format, ...);
 #define vgl_log sceClibPrintf
 #else
 #define vgl_log(...)
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif
