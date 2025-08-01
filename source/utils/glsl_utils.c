@@ -973,6 +973,14 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 		}
 	}
 	
+	// Replacing any gl_FragData[0] reference to gl_FragColor
+	str = strstr(out, "gl_FragData[0]");
+	while (str) {
+		strcpy(str, "gl_FragColor");
+		str[12] = str[13] = ' ';
+		str = strstr(str, "gl_FragData[0]");
+	}	
+	
 	if (s->type == GL_VERTEX_SHADER) {
 		// Checking if shader requires gl_PointSize
 		if (!hasPointSize)
