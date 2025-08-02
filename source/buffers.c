@@ -185,6 +185,9 @@ inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLe
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	} else if (!gpu_buf) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
+	} else if (size == 0) {
+		vgl_log("%s:%d glNamedBufferData called with size 0. Skipping...\n", __FILE__, __LINE__);
+		return;
 	}
 #endif
 #if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
@@ -276,6 +279,9 @@ inline void glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizeiptr size
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	} else if (offset < 0 || offset + size > gpu_buf->size) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
+	} else if (size == 0) {
+		vgl_log("%s:%d glNamedBufferSubData called with size 0. Skipping...\n", __FILE__, __LINE__);
+		return;
 	}
 #endif
 
