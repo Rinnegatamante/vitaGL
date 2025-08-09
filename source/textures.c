@@ -926,7 +926,6 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
 	uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
 	uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
-	uint32_t stride = 0;
 	uint32_t jumps[16];
 	uint32_t po2_w = 0;
 	uint32_t po2_h;
@@ -972,8 +971,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 				size += jumps[j];
 			}
 		} else {
-			stride = VGL_ALIGN(orig_w, 8) * bpp;
-			size = orig_h * stride;
+			size = orig_h * VGL_ALIGN(orig_w, 8) * bpp;
 		}
 		void *texture_data = gpu_alloc_mapped(size, VGL_MEM_MAIN);
 		vgl_fast_memcpy(texture_data, tex->data, size);
@@ -1203,14 +1201,14 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 			mip_stride = VGL_ALIGN(mip_stride, 8) * bpp;
 		} else {
 			mip_w = orig_w;
-			mip_stride = stride ? stride : VGL_ALIGN(orig_w, 8) * bpp;
+			mip_stride = VGL_ALIGN(orig_w, 8) * bpp;
 		}
 		ptr += xoffset * bpp + yoffset * mip_stride;
 		if (fast_store) { // Internal format and input format are the same, we can take advantage of this
 			uint8_t *data = (uint8_t *)pixels;
 			uint32_t line_size = width * bpp;
 			uint32_t src_stride = (unpack_row_len ? unpack_row_len : width) * bpp;
-			if (xoffset == 0 && src_stride == mip_w * bpp && src_stride == stride) {
+			if (xoffset == 0 && src_stride == mip_w * bpp && src_stride == mip_stride) {
 				vgl_fast_memcpy(ptr, data, line_size * height);
 			} else {
 				for (int i = 0; i < height; i++) {
