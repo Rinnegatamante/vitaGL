@@ -926,7 +926,9 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
 	uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
 	uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
-	uint32_t stride = VGL_ALIGN(orig_w, 8) * bpp;
+	uint32_t jumps[16];
+	uint32_t po2_w = 0;
+	uint32_t po2_h;
 
 #ifndef SKIP_ERROR_HANDLING
 	if (xoffset + width > orig_w) {
@@ -955,8 +957,24 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 #ifndef TEXTURES_SPEEDHACK
 	// Copying the texture in a new mem location and dirtying old one
 	if (tex->last_frame != OBJ_NOT_USED && (vgl_framecount - tex->last_frame <= FRAME_PURGE_FREQ)) {
-		void *texture_data = gpu_alloc_mapped(orig_h * stride, VGL_MEM_MAIN);
-		vgl_fast_memcpy(texture_data, tex->data, orig_h * stride);
+		uint32_t size;
+		if (tex->mip_count > 1) {
+			po2_w = nearest_po2(orig_w);
+			po2_h = nearest_po2(orig_h);
+			uint32_t w = po2_w;
+			uint32_t h = po2_h;
+			size = 0;
+			for (int j = 0; j < tex->mip_count; j++) {
+				jumps[j] = MAX(w, 8) * h * bpp;
+				w /= 2;
+				h /= 2;
+				size += jumps[j];
+			}
+		} else {
+			size = orig_h * VGL_ALIGN(orig_w, 8) * bpp;
+		}
+		void *texture_data = gpu_alloc_mapped(size, VGL_MEM_MAIN);
+		vgl_fast_memcpy(texture_data, tex->data, size);
 		gpu_free_texture_data(tex);
 		sceGxmTextureSetData(&tex->gxm_tex, texture_data);
 		tex->data = texture_data;
@@ -967,8 +985,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 	}
 #endif
 	// Calculating start address of requested texture modification
-	uint8_t *ptr = (uint8_t *)tex->data + xoffset * bpp + yoffset * stride;
-	uint8_t *ptr_line = ptr;
+	uint8_t *ptr = (uint8_t *)tex->data;
 	uint8_t data_bpp = 0;
 	GLboolean fast_store = GL_FALSE;
 
@@ -1163,20 +1180,45 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 			fast_store = GL_TRUE;
 			break;
 		}
+		uint32_t mip_w, mip_stride;
+		if (level > 0) {
+			if (po2_w == 0) { // We didn't calculate already the mip jump chain, so we do it now
+				po2_w = nearest_po2(orig_w);
+				po2_h = nearest_po2(orig_h);
+				mip_stride = po2_w;
+				uint32_t _mip_h = po2_h;
+				for (int j = 0; j < level; j++) {
+					ptr += MAX(mip_stride, 8) * _mip_h * bpp;
+					mip_stride /= 2;
+					_mip_h /= 2;
+				}
+			} else {
+				for (int j = 0; j < level; j++) {
+					ptr += jumps[j];
+				}
+			}
+			mip_w = orig_w / (2 * level);
+			mip_stride = VGL_ALIGN(mip_stride, 8) * bpp;
+		} else {
+			mip_w = orig_w;
+			mip_stride = VGL_ALIGN(orig_w, 8) * bpp;
+		}
+		ptr += xoffset * bpp + yoffset * mip_stride;
 		if (fast_store) { // Internal format and input format are the same, we can take advantage of this
 			uint8_t *data = (uint8_t *)pixels;
 			uint32_t line_size = width * bpp;
 			uint32_t src_stride = (unpack_row_len ? unpack_row_len : width) * bpp;
-			if (xoffset == 0 && src_stride == orig_w * bpp && src_stride == stride) {
+			if (xoffset == 0 && src_stride == mip_w * bpp && src_stride == mip_stride) {
 				vgl_fast_memcpy(ptr, data, line_size * height);
 			} else {
 				for (int i = 0; i < height; i++) {
 					vgl_fast_memcpy(ptr, data, line_size);
 					data += src_stride;
-					ptr += stride;
+					ptr += mip_stride;
 				}
 			}
 		} else { // Executing texture modification via callbacks
+			uint8_t *ptr_line = ptr;
 			uint8_t *data = (uint8_t *)pixels;
 			for (int i = 0; i < height; i++) {
 				for (int j = 0; j < width; j++) {
@@ -1189,7 +1231,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 					data = (uint8_t *)pixels + unpack_row_len * data_bpp;
 					pixels = data;
 				}
-				ptr = ptr_line + stride;
+				ptr = ptr_line + mip_stride;
 				ptr_line = ptr;
 			}
 		}
