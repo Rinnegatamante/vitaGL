@@ -25,44 +25,7 @@
 
 GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not supported natively by sceGxm is used
 
-#define setup_8bit_elements_indices() \
-	uint16_t *ptr; \
-	switch (mode) { \
-	case GL_QUADS: \
-		ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(uint16_t)); \
-		for (GLsizei i = 0; i < count / 4; i++) { \
-			ptr[i * 6] = src[i * 4]; \
-			ptr[i * 6 + 1] = src[i * 4 + 1]; \
-			ptr[i * 6 + 2] = src[i * 4 + 3]; \
-			ptr[i * 6 + 3] = src[i * 4 + 1]; \
-			ptr[i * 6 + 4] = src[i * 4 + 2]; \
-			ptr[i * 6 + 5] = src[i * 4 + 3]; \
-		} \
-		count = (count / 2) * 3; \
-		break; \
-	case GL_LINE_STRIP: \
-		ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(uint16_t)); \
-		for (GLsizei i = 0; i < count - 1; i++) { \
-			ptr[i * 2] = src[i]; \
-			ptr[i * 2 + 1] = src[i + 1]; \
-		} \
-		count = (count - 1) * 2; \
-		break; \
-	case GL_LINE_LOOP: \
-		ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t)); \
-		for (GLsizei i = 0; i < count - 1; i++) { \
-			ptr[i * 2] = src[i]; \
-			ptr[i * 2 + 1] = src[i + 1]; \
-		} \
-		ptr[(count - 1) * 2] = src[count - 1]; \
-		ptr[(count - 1) * 2 + 1] = src[0]; \
-		count = count * 2; \
-		break; \
-	default: \
-		ptr = src; \
-		break; \
-	}
-
+#ifndef INDICES_DRAW_SPEEDHACK
 #define setup_elements_indices(type_t) \
 	type_t *ptr; \
 	if (gpu_buf != NULL && !prim_is_non_native) { \
@@ -106,6 +69,88 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 			break; \
 		} \
 	}
+#else
+#define setup_elements_indices(type_t) \
+	type_t *ptr; \
+	if (gpu_buf != NULL && !prim_is_non_native) { \
+		ptr = src; \
+		gpu_buf->last_frame = vgl_framecount; \
+	} else { \
+		switch (mode) { \
+		case GL_QUADS: \
+			ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(type_t)); \
+			for (GLsizei i = 0; i < count / 4; i++) { \
+				ptr[i * 6] = src[i * 4]; \
+				ptr[i * 6 + 1] = src[i * 4 + 1]; \
+				ptr[i * 6 + 2] = src[i * 4 + 3]; \
+				ptr[i * 6 + 3] = src[i * 4 + 1]; \
+				ptr[i * 6 + 4] = src[i * 4 + 2]; \
+				ptr[i * 6 + 5] = src[i * 4 + 3]; \
+			} \
+			count = (count / 2) * 3; \
+			break; \
+		case GL_LINE_STRIP: \
+			ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(type_t)); \
+			for (GLsizei i = 0; i < count - 1; i++) { \
+				ptr[i * 2] = src[i]; \
+				ptr[i * 2 + 1] = src[i + 1]; \
+			} \
+			count = (count - 1) * 2; \
+			break; \
+		case GL_LINE_LOOP: \
+			ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(type_t)); \
+			for (GLsizei i = 0; i < count - 1; i++) { \
+				ptr[i * 2] = src[i]; \
+				ptr[i * 2 + 1] = src[i + 1]; \
+			} \
+			ptr[(count - 1) * 2] = src[count - 1]; \
+			ptr[(count - 1) * 2 + 1] = src[0]; \
+			count = count * 2; \
+			break; \
+		default: \
+			ptr = src; \
+			break; \
+		} \
+	}
+#endif
+
+#define setup_8bit_elements_indices() \
+	uint16_t *ptr; \
+	switch (mode) { \
+	case GL_QUADS: \
+		ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(uint16_t)); \
+		for (GLsizei i = 0; i < count / 4; i++) { \
+			ptr[i * 6] = src[i * 4]; \
+			ptr[i * 6 + 1] = src[i * 4 + 1]; \
+			ptr[i * 6 + 2] = src[i * 4 + 3]; \
+			ptr[i * 6 + 3] = src[i * 4 + 1]; \
+			ptr[i * 6 + 4] = src[i * 4 + 2]; \
+			ptr[i * 6 + 5] = src[i * 4 + 3]; \
+		} \
+		count = (count / 2) * 3; \
+		break; \
+	case GL_LINE_STRIP: \
+		ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(uint16_t)); \
+		for (GLsizei i = 0; i < count - 1; i++) { \
+			ptr[i * 2] = src[i]; \
+			ptr[i * 2 + 1] = src[i + 1]; \
+		} \
+		count = (count - 1) * 2; \
+		break; \
+	case GL_LINE_LOOP: \
+		ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(uint16_t)); \
+		for (GLsizei i = 0; i < count - 1; i++) { \
+			ptr[i * 2] = src[i]; \
+			ptr[i * 2 + 1] = src[i + 1]; \
+		} \
+		ptr[(count - 1) * 2] = src[count - 1]; \
+		ptr[(count - 1) * 2 + 1] = src[0]; \
+		count = count * 2; \
+		break; \
+	default: \
+		ptr = src; \
+		break; \
+	}
 
 #ifdef HAVE_VITA3K_SUPPORT
 #define setup_elements_indices_with_base(type_t) \
@@ -148,7 +193,7 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 		} \
 		break; \
 	}
-#endif
+#endif	
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 #ifdef HAVE_DLISTS
