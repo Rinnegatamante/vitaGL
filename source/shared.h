@@ -1111,4 +1111,17 @@ void vgl_debugger_light_draw(uint32_t *fb); // Draws CPU rendered debugger windo
 /* vitaGL.c */
 uint8_t *vgl_reserve_data_pool(uint32_t size);
 
+// Taken from here: https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+static inline __attribute__((always_inline)) uint32_t nearest_po2(uint32_t val) {
+	val--;
+	val |= val >> 1;
+	val |= val >> 2;
+	val |= val >> 4;
+	val |= val >> 8;
+	val |= val >> 16;
+	val++;
+
+	return val;
+}
+
 #endif

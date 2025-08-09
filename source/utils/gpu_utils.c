@@ -52,19 +52,6 @@ uint8_t use_vram_for_usse = GL_FALSE;
 // Newlib mempool usage setting
 GLboolean use_extra_mem = GL_TRUE;
 
-// Taken from here: https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-static inline __attribute__((always_inline)) uint32_t nearest_po2(uint32_t val) {
-	val--;
-	val |= val >> 1;
-	val |= val >> 2;
-	val |= val >> 4;
-	val |= val >> 8;
-	val |= val >> 16;
-	val++;
-
-	return val;
-}
-
 static inline __attribute__((always_inline)) uint64_t morton_1(uint64_t x) {
 	x = x & 0x5555555555555555;
 	x = (x | (x >> 1)) & 0x3333333333333333;
@@ -721,7 +708,6 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		// Calculating new texture data buffer size
 		uint32_t jumps[16];
 		uint32_t size = 0;
-		int j;
 		if (level < 0 || count <= 0) {
 			int mips = 0;
 			while ((w > 1) && (h > 1)) {
@@ -738,7 +724,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 			else
 				level++;
 		} else {
-			for (j = 0; j < level; j++) {
+			for (int j = 0; j < level; j++) {
 				jumps[j] = MAX(w, 8) * h * bpp;
 				w /= 2;
 				h /= 2;
@@ -766,7 +752,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 			curWidth--;
 		if (curHeight % 2)
 			curHeight--;
-		for (j = 0; j < level - 1; j++) {
+		for (int j = 0; j < level - 1; j++) {
 			if (curWidth <= 1 || curHeight <= 1)
 				break;
 			uint32_t curSrcStride = VGL_ALIGN(curWidth, 8);
