@@ -34,13 +34,6 @@
 #define STB_DXT_IMPLEMENTATION
 #include "stb_dxt.h"
 
-#ifndef MAX
-#define MAX(a, b) (((a) < (b)) ? (b) : (a))
-#endif
-#ifndef MIN
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#endif
-
 #ifdef HAVE_TEX_CACHE
 uint32_t vgl_tex_cache_freq = 3600; // Number of frames prior a texture becomes cacheable if not used
 #endif

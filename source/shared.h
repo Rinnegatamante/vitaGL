@@ -69,6 +69,13 @@
 
 #include "utils/mem_utils.h"
 
+#ifndef MAX
+#define MAX(a, b) (((a) < (b)) ? (b) : (a))
+#endif
+#ifndef MIN
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+
 #ifdef SAFER_DRAW_SPEEDHACK
 #define SAFE_DRAW_SIZE_THRESHOLD (0x8000) // Minimum bytes of vertices data for a draw to be handled with speedhack
 #endif
