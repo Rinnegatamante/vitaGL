@@ -767,6 +767,7 @@ LOOP_START:
 		case '<':
 		case ',':
 		case '+':
+		case '?':
 			if (para_left == 0 && quad_para_left == 0)
 				found = 1;
 			break;
@@ -775,12 +776,6 @@ LOOP_START:
 				break;
 			if (para_left == 0 && quad_para_left == 0)
 				found = 1;
-			break;
-		case '?':
-			if (para_left == 0 && quad_para_left == 0) {
-				found = 1;
-				left++;
-			}
 			break;
 		default:
 			break;
