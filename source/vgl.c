@@ -142,21 +142,6 @@ uint8_t *vgl_reserve_data_pool(uint32_t size) {
 }
 #endif
 
-void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height) {
-	float target_w, target_h;
-	if (is_rendering_display) {
-		target_w = DISPLAY_WIDTH_FLOAT;
-		target_h = DISPLAY_HEIGHT_FLOAT;
-	} else {
-		target_w = in_use_framebuffer->width;
-		target_h = in_use_framebuffer->height;
-	}
-	out->x = (float)(2 * x) / target_w - 1.0f;
-	out->y = (float)(2 * (x + width)) / target_w - 1.0f;
-	out->z = 1.0f - (float)(2 * y) / target_h;
-	out->w = 1.0f - (float)(2 * (y + height)) / target_h;
-}
-
 /*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -

@@ -1108,7 +1108,20 @@ void change_cull_mode(void); // Updates current cull mode
 void update_polygon_offset(); // Updates current polygon offset mode
 
 /* misc functions */
-void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height); // Converts screen coords to local space
+static inline __attribute__((always_inline)) void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height) { // Converts screen coords to local space
+	float target_w, target_h;
+	if (is_rendering_display) {
+		target_w = DISPLAY_WIDTH_FLOAT;
+		target_h = DISPLAY_HEIGHT_FLOAT;
+	} else {
+		target_w = in_use_framebuffer->width;
+		target_h = in_use_framebuffer->height;
+	}
+	out->x = (float)(2 * x) / target_w - 1.0f;
+	out->y = (float)(2 * (x + width)) / target_w - 1.0f;
+	out->z = 1.0f - (float)(2 * y) / target_h;
+	out->w = 1.0f - (float)(2 * (y + height)) / target_h;
+}
 
 /* debug.cpp */
 void vgl_debugger_init(); // Inits ImGui debugger context
