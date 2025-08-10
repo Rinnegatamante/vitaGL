@@ -193,32 +193,46 @@ void update_polygon_offset() {
 	}
 }
 
+static enum {
+	GL_CW_BACK = GL_CW + GL_BACK,
+	GL_CCW_BACK = GL_CCW + GL_BACK,
+#ifndef HAVE_UNFLIPPED_FBOS
+	GL_CCW_BACK_DISPLAY = GL_CCW + GL_BACK + 1,
+#endif
+} vglCullMode;
+
 void change_cull_mode() {
 	// Setting proper cull mode in sceGxm depending to current openGL machine state
 	if (cull_face_state) {
 #ifdef HAVE_UNFLIPPED_FBOS
-		if ((gl_front_face == GL_CW) && (gl_cull_mode == GL_BACK))
+		switch (gl_front_face + gl_cull_mode) {
+		case GL_CW_BACK:
 			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CCW);
-		else if ((gl_front_face == GL_CCW) && (gl_cull_mode == GL_BACK))
+			break;
+		case GL_CCW_BACK:
 			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CW);
-		else if ((gl_front_face == GL_CCW) && (gl_cull_mode == GL_FRONT))
-			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CCW);
-		else if ((gl_front_face == GL_CW) && (gl_cull_mode == GL_FRONT))
-			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CW);
-#else
-		if ((gl_front_face == GL_CW) && (gl_cull_mode == GL_BACK))
-			sceGxmSetCullMode(gxm_context, is_rendering_display ? SCE_GXM_CULL_CCW : SCE_GXM_CULL_CW);
-		else if ((gl_front_face == GL_CCW) && (gl_cull_mode == GL_BACK))
-			sceGxmSetCullMode(gxm_context, is_rendering_display ? SCE_GXM_CULL_CW : SCE_GXM_CULL_CCW);
-		else if ((gl_front_face == GL_CCW) && (gl_cull_mode == GL_FRONT))
-			sceGxmSetCullMode(gxm_context, is_rendering_display ? SCE_GXM_CULL_CCW : SCE_GXM_CULL_CW);
-		else if ((gl_front_face == GL_CW) && (gl_cull_mode == GL_FRONT))
-			sceGxmSetCullMode(gxm_context, is_rendering_display ? SCE_GXM_CULL_CW : SCE_GXM_CULL_CCW);
-#endif
-		else if (gl_cull_mode == GL_FRONT_AND_BACK)
+			break;
+		default:
 			no_polygons_mode = GL_TRUE;
-	} else
+			break;
+		}
+#else
+		switch (gl_front_face + gl_cull_mode + is_rendering_display) {
+		case GL_CW_BACK:
+		case GL_CCW_BACK_DISPLAY:
+			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CW);
+			break;
+		case GL_CCW_BACK:
+			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CCW);
+			break;
+		default:
+			no_polygons_mode = GL_TRUE;
+			break;
+		}
+#endif	
+	} else {
 		sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_NONE);
+	}
 }
 
 /*
