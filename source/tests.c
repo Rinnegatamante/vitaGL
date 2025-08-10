@@ -321,11 +321,7 @@ void update_scissor_test() {
 
 	// Reducing GPU workload by performing tile granularity clipping
 	if (scissor_test_state) {
-#ifdef HAVE_UNFLIPPED_FBOS
 		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
-#else
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.gl_x, region.gl_y, region.gl_x + region.gl_w - 1, region.gl_y + region.gl_h - 1);
-#endif
 	}
 
 	// Restoring original stencil test settings
@@ -354,12 +350,21 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-
+	
+	uint32_t active_w = is_rendering_display ? DISPLAY_WIDTH : in_use_framebuffer->width;
+	uint32_t active_h = is_rendering_display ? DISPLAY_HEIGHT : in_use_framebuffer->height;
+	
 	// Converting openGL scissor test region to sceGxm one
 	region.x = x < 0 ? 0 : x;
 	region.w = width;
 	region.h = height;
-	region.y = (is_rendering_display ? DISPLAY_HEIGHT : in_use_framebuffer->height) - y - height;
+#ifdef HAVE_UNFLIPPED_FBOS
+	if (!is_rendering_display)
+		region.y = y;
+	else
+#else
+		region.y = active_h - y - height;
+#endif
 
 	region.gl_x = x;
 	region.gl_y = y;
@@ -369,17 +374,10 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 	// Optimizing region
 	if (region.y < 0)
 		region.y = 0;
-	if (is_rendering_display) {
-		if (region.x + region.w > DISPLAY_WIDTH)
-			region.w = DISPLAY_WIDTH - region.x;
-		if (region.y + region.h > DISPLAY_HEIGHT)
-			region.h = DISPLAY_HEIGHT - region.y;
-	} else {
-		if (region.x + region.w > in_use_framebuffer->width)
-			region.w = in_use_framebuffer->width - region.x;
-		if (region.y + region.h > in_use_framebuffer->height)
-			region.h = in_use_framebuffer->height - region.y;
-	}
+	if (region.x + region.w > active_w)
+		region.w = active_w - region.x;
+	if (region.y + region.h > active_h)
+		region.h = active_h - region.y;
 
 	// Updating in use scissor test parameters if GL_SCISSOR_TEST is enabled
 	if (scissor_test_state) {
