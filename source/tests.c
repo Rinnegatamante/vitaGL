@@ -263,12 +263,14 @@ void update_scissor_test() {
 	invalidate_viewport();
 	sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_NONE);
 
+#ifndef DISABLE_TILE_CLIPPER
 	// Invalidating internal tile based region clip
 	if (is_rendering_display) {
 		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
 	} else {
 		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, in_use_framebuffer->width - 1, in_use_framebuffer->height - 1);
 	}
+#endif
 	
 	if (scissor_test_state) {
 		// Calculating scissor test region vertices
@@ -323,6 +325,7 @@ void update_scissor_test() {
 	validate_viewport();
 	change_cull_mode();
 
+#ifndef DISABLE_TILE_CLIPPER
 	// Reducing GPU workload by performing tile granularity clipping
 	if (scissor_test_state) {
 #ifndef HAVE_UNFLIPPED_FBOS
@@ -333,6 +336,7 @@ void update_scissor_test() {
 #endif
 			sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
 	}
+#endif
 
 	// Restoring original stencil test settings
 	change_stencil_settings();

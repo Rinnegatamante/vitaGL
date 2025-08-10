@@ -732,8 +732,10 @@ void sceneReset(void) {
 		} else
 			setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 
+#ifndef DISABLE_TILE_CLIPPER
 		if (scissor_test_state)
 			sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
+#endif
 	}
 }
 
