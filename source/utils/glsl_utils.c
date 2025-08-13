@@ -845,10 +845,7 @@ LOOP_START:
 		left[0] = 0;
 		strcpy(res, txt);
 		left[0] = tmp;
-		if (res[strlen(res) - 1] == 'n')
-			strcat(res, " vglMul(");
-		else
-			strcat(res, "vglMul(");
+		strcat(res, " vglMul(");
 		tmp = *right;
 		right[0] = 0;
 		*star = ',';
