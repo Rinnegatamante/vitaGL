@@ -736,7 +736,8 @@ LOOP_START:
 		switch (*left) {
 		case 'n':
 			if (!strncmp(left - 5, "return", 6)) {
-				left++;
+				if (left[1] == ' ' || left[1] == '\t')
+					left++;
 				found = 1;
 			}
 			break;
@@ -844,7 +845,10 @@ LOOP_START:
 		left[0] = 0;
 		strcpy(res, txt);
 		left[0] = tmp;
-		strcat(res, "vglMul(");
+		if (res[strlen(res) - 1] == 'n')
+			strcat(res, " vglMul(");
+		else
+			strcat(res, "vglMul(");
 		tmp = *right;
 		right[0] = 0;
 		*star = ',';
