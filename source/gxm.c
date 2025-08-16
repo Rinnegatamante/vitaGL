@@ -117,6 +117,10 @@ pthread_t gc_thread;
 SceUID gc_thread;
 #endif
 
+#ifdef HAVE_CPU_TRACER
+int sceRazorCpuSync();
+#endif
+
 #ifdef HAVE_RAZOR
 #define RAZOR_BUF_SIZE (256 * 1024) // Size in bytes for a live metrics data buffer
 #define UPDATE_RATIO 30 // Number of frames between two live metrics updates
@@ -943,6 +947,9 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 			sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index], gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
 #ifdef HAVE_PROFILING
 			gpu_stall_cnt += sceKernelGetProcessTimeLow() - tick;
+#endif
+#ifdef HAVE_CPU_TRACER
+			sceRazorCpuSync();
 #endif
 			gxm_front_buffer_index = gxm_back_buffer_index;
 			gxm_back_buffer_index = (gxm_back_buffer_index + 1) % gxm_display_buffer_count;

@@ -239,6 +239,10 @@ ifeq ($(DEBUG_GLSL_PREPROCESSOR),1)
 CFLAGS += -DDEBUG_GLSL_PREPROCESSOR
 endif
 
+ifeq ($(HAVE_CPU_TRACER),1)
+CFLAGS += -DHAVE_CPU_TRACER
+endif
+
 CXXFLAGS  = $(CFLAGS) -fexceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a
