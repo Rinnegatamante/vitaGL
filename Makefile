@@ -243,6 +243,10 @@ ifeq ($(HAVE_CPU_TRACER),1)
 CFLAGS += -DHAVE_CPU_TRACER
 endif
 
+ifeq ($(DEPTH_STENCIL_HACK),1)
+CFLAGS += -DDEPTH_STENCIL_HACK
+endif
+
 CXXFLAGS  = $(CFLAGS) -fexceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a

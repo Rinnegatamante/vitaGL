@@ -40,7 +40,7 @@ In order to build vitaGL use the following command: `make install`.
 |`SAFE_UNIFORMS=1`| Makes some optimizations in the shaders pipeline less efficient but makes uniform location indexing for basic type arrays compliant.|
 |`UNPURE_TEXFORMATS=1`| Enables support for texture dimensions different than 2D (tex2D is still required in shader code).|
 |`HAVE_VITA3K_SUPPORT=1`| Disables several features in order to make vitaGL compatible with Vita3K. Requires vitaShaRK compiled with https://github.com/Rinnegatamante/vitaShaRK/blob/master/source/vitashark.c#L24 uncommented.|
-### Speedhack Flags
+### Hack Flags
 | Flag | Description |
 | --- | --- |
 |`NO_TEX_COMBINER=1`| Disables texture combiner support (GL_COMBINE) for faster fixed function pipeline code execution.|
@@ -55,6 +55,7 @@ In order to build vitaGL use the following command: `make install`.
 |`SAMPLERS_SPEEDHACK=1`| Enables faster code for samplers resolution during shaders usage. May cause glitches.|
 |`SHADER_COMPILER_SPEEDHACK=1`| Enables faster code for glShaderSource. May cause errors.|
 |`PRIMITIVES_SPEEDHACK=1`| Makes draw calls more efficient but GL_LINES and GL_POINTS primitives usage may cause glitches.|
+|`DEPTH_STENCIL_HACK=1`| Makes depth and stencil buffers have no memory costs but can cause crashes in some circumstances.|
 ### Misc Flags
 | Flag | Description |
 | --- | --- |
