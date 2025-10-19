@@ -612,9 +612,6 @@ void sceneReset(void) {
 			}
 			needs_end_scene = GL_TRUE;
 		}
-		
-		// Setting visibility buffer for occlusion queries
-		sceGxmSetVisibilityBuffer(gxm_context, queries_buffer, MAX_QUERIES_NUM * sizeof(uint32_t));
 
 		// Starting drawing scene
 		is_rendering_display = !active_write_fb;
