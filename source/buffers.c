@@ -23,8 +23,6 @@
 
 #include "shared.h"
 
-#define MAX_QUERIES_NUM (128) // Maximum number of usable queries
-
 #define DISABLED_ATTRIBS_POOL_SIZE (256 * 1024) // Disabled attributes circular pool size in bytes for the default VAO
 #define DISABLED_AUX_ATTRIBS_POOL_SIZE (64 * 1024) // Disabled attributes circular pool size in bytes for non default VAOs
 
@@ -43,6 +41,8 @@ vao *cur_vao = &default_vao; // Current in-use vertex array object
 
 query *active_query = NULL; // Active query object
 static query queries[MAX_QUERIES_NUM]; // Available query objects pool
+uint32_t *queries_buffer = NULL; // Buffer used for visibility testing
+SceGxmNotification query_fence; // Fence used for occlusion queries sync
 
 void resetVao(vao *v) {
 	vgl_memset(v->vertex_attrib_offsets, 0, sizeof(uint32_t) * VERTEX_ATTRIBS_NUM);
@@ -76,11 +76,15 @@ void resetVao(vao *v) {
 }
 
 void resetQueries() {
+	queries_buffer = gpu_alloc_mapped(MAX_QUERIES_NUM * 4 * sizeof(uint32_t), VGL_MEM_RAM);
+	sceGxmSetVisibilityBuffer(gxm_context, queries_buffer, MAX_QUERIES_NUM * sizeof(uint32_t));
+	query_fence.value = 0;
+	query_fence.address = sceGxmGetNotificationRegion();
+	*query_fence.address = 0;
+	
 	for (GLuint i = 0; i < MAX_QUERIES_NUM; i++) {
-		queries[i].data = NULL;
-		queries[i].fence.value = 0;
-		queries[i].fence.address = sceGxmGetNotificationRegion() + i;
-		*queries[i].fence.address = 0;
+		queries[i].id = 0xFF;
+		queries[i].sync = 0;
 	}
 }
 
@@ -97,11 +101,9 @@ void glGenQueries(GLsizei n, GLuint *ids) {
 	}
 #endif
 	for (GLuint i = 0; i < MAX_QUERIES_NUM; i++) {
-		if (queries[i].data == NULL) {
+		if (queries[i].id == 0xFF) {
 			ids[n - 1] = (GLuint)&queries[i];
-			queries[i].data = gpu_alloc_mapped(16 * sizeof(uint32_t), VGL_MEM_RAM);
-			queries[i].fence.value = 0;
-			*queries[i].fence.address = 0;
+			queries[i].id = i;
 			n--;
 			if (n == 0) {
 				break;
@@ -117,15 +119,11 @@ void glDeleteQueries(GLsizei n, const GLuint *ids) {
 	}
 #endif
 	for (GLuint i = 0; i < n; i++) {
-		markAsDirty(queries[ids[i]].data);
-		queries[ids[i]].data = NULL;
+		queries[ids[i]].id = 0xFF;
 	}
 }
 
 void glBeginQuery(GLenum target, GLuint id) {
-#if !defined(STORE_DEPTH_STENCIL) && !defined(SKIP_ERROR_HANDLING)
-	vgl_log("%s:%d Occlusion queries require STORE_DEPTH_STENCIL=1 in order to work properly.\n", __FILE__, __LINE__);
-#endif
 	switch (target) {
 	case GL_SAMPLES_PASSED:
 		sceGxmSetFrontVisibilityTestOp(gxm_context, SCE_GXM_VISIBILITY_TEST_OP_INCREMENT);
@@ -140,9 +138,13 @@ void glBeginQuery(GLenum target, GLuint id) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 	active_query = (query *)id;
-	sceClibMemset(active_query->data, 0, sizeof(uint32_t) * 16);
+	queries_buffer[active_query->id] = 0;
+	queries_buffer[active_query->id + MAX_QUERIES_NUM] = 0;
+	queries_buffer[active_query->id + MAX_QUERIES_NUM * 2] = 0;
+	queries_buffer[active_query->id + MAX_QUERIES_NUM * 3] = 0;
 	active_query->mode = target;
-	sceneReset();
+	sceGxmSetFrontVisibilityTestIndex(gxm_context, active_query->id);
+	sceGxmSetBackVisibilityTestIndex(gxm_context, active_query->id);
 	sceGxmSetFrontVisibilityTestEnable(gxm_context, SCE_GXM_VISIBILITY_TEST_ENABLED);
 	sceGxmSetBackVisibilityTestEnable(gxm_context, SCE_GXM_VISIBILITY_TEST_ENABLED);
 }
@@ -150,8 +152,8 @@ void glBeginQuery(GLenum target, GLuint id) {
 void glEndQuery(GLenum target) {
 	sceGxmSetFrontVisibilityTestEnable(gxm_context, SCE_GXM_VISIBILITY_TEST_DISABLED);
 	sceGxmSetBackVisibilityTestEnable(gxm_context, SCE_GXM_VISIBILITY_TEST_DISABLED);
+	active_query->sync = query_fence.value + 1;
 	active_query = NULL;
-	sceneReset();
 }
 
 void glGetQueryObjectiv(GLuint id, GLenum pname, GLint *params) {
@@ -159,22 +161,26 @@ void glGetQueryObjectiv(GLuint id, GLenum pname, GLint *params) {
 
 	switch (pname) {
 	case GL_QUERY_RESULT:
-		sceGxmNotificationWait(&q->fence);
-		*params = q->data[0] + q->data[4] + q->data[8] + q->data[12];
+		if (q->sync > *query_fence.address) {
+			dirty_query = GL_TRUE;
+			sceneReset();
+			sceGxmNotificationWait(&query_fence);
+		}
+		*params = queries_buffer[q->id] + queries_buffer[q->id + MAX_QUERIES_NUM] + queries_buffer[q->id + MAX_QUERIES_NUM * 2] + queries_buffer[q->id + MAX_QUERIES_NUM * 3];
 		if (q->mode != GL_SAMPLES_PASSED) {
 			*params = *params > 0 ? GL_TRUE : GL_FALSE;
 		}
 		break;
 	case GL_QUERY_RESULT_NO_WAIT:
-		if (*q->fence.address == q->fence.value) {
-			*params = q->data[0] + q->data[4] + q->data[8] + q->data[12];
+		if (q->sync <= *query_fence.address) {
+			*params = queries_buffer[q->id] + queries_buffer[q->id + MAX_QUERIES_NUM] + queries_buffer[q->id + MAX_QUERIES_NUM * 2] + queries_buffer[q->id + MAX_QUERIES_NUM * 3];
 			if (q->mode != GL_SAMPLES_PASSED) {
 				*params = *params > 0 ? GL_TRUE : GL_FALSE;
 			}
 		}
 		break;
 	case GL_QUERY_RESULT_AVAILABLE:
-		*params = (*q->fence.address == q->fence.value) ? GL_TRUE : GL_FALSE;
+		*params = (q->sync <= *query_fence.address) ? GL_TRUE : GL_FALSE;
 		break;
 	case GL_QUERY_TARGET:
 		*params = q->mode;
