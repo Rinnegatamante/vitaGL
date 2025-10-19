@@ -69,7 +69,6 @@ framebuffer *old_framebuffer = NULL; // Framebuffer used in last scene
 uint8_t dirty_framebuffer = GL_FALSE; // Flag wether current in use framebuffer is invalidated
 static GLboolean needs_end_scene = GL_FALSE; // Flag for gxm end scene requirement at scene reset
 static GLboolean needs_scene_reset = GL_TRUE; // Flag for when a scene reset is required
-static query *in_use_query = NULL; // Currently used query object
 
 SceGxmContext *gxm_context; // sceGxm context instance
 GLenum vgl_error = GL_NO_ERROR; // Error returned by glGetError
@@ -575,27 +574,24 @@ void stopShaderPatcher(void) {
 
 static inline __attribute__((always_inline)) void sceneEnd(void) {
 	// Ends current gxm scene
-	if (in_use_query) {
-		in_use_query->fence.value++;
-		sceGxmEndScene(gxm_context, NULL, &in_use_query->fence);
-	} else {
-		sceGxmEndScene(gxm_context, NULL, NULL);
-	}
+	query_fence.value++;
+	sceGxmEndScene(gxm_context, NULL, &query_fence);
 	if (system_app_mode && vsync_interval)
 		sceDisplayWaitVblankStartMulti(vsync_interval);
 }
 
 void sceneReset(void) {
-	if (in_use_framebuffer != active_write_fb || needs_scene_reset || dirty_framebuffer || active_query != in_use_query) {
+	if (in_use_framebuffer != active_write_fb || needs_scene_reset || dirty_framebuffer || last_active_query) {
 		dirty_framebuffer = GL_FALSE;
 		needs_scene_reset = GL_FALSE;
 		in_use_framebuffer = active_write_fb;
 		is_fbo_float = in_use_framebuffer ? in_use_framebuffer->is_float : GL_FALSE;
 
 		// Ending drawing scene
-		if (needs_end_scene || active_query != in_use_query)
+		if (needs_end_scene) {
 			sceneEnd();
-		else {
+			last_active_query = NULL;
+		} else {
 			if (legacy_pool_size) {
 				legacy_pool = (float *)gpu_alloc_mapped_temp(legacy_pool_size);
 				legacy_pool_ptr = legacy_pool;
@@ -606,13 +602,8 @@ void sceneReset(void) {
 			needs_end_scene = GL_TRUE;
 		}
 		
-		// Setting visibility buffer based on active query
-		if (active_query != in_use_query) {
-			in_use_query = active_query;
-			if (in_use_query) {
-				sceGxmSetVisibilityBuffer(gxm_context, in_use_query->data, 16);
-			}
-		}
+		// Setting visibility buffer for occlusion queries
+		sceGxmSetVisibilityBuffer(gxm_context, queries_buffer, MAX_QUERIES_NUM * sizeof(uint32_t));
 
 		// Starting drawing scene
 		is_rendering_display = !active_write_fb;

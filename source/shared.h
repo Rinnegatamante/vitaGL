@@ -63,6 +63,7 @@
 #define LEGACY_NT_VERTEX_STRIDE 22 // Vertex stride for GL1 immediate draw pipeline without texturing
 #define MAX_LIGHTS_NUM 8 // Maximum number of allowed light sources for ffp
 #define MAX_IDX_NUMBER 0xC000 // Maximum allowed number of indices per draw call for glDrawArrays
+#define MAX_QUERIES_NUM (128) // Maximum number of usable occlusion queries
 
 #define OBJ_NOT_USED 0xFFFFFFFF // Flag for not yet used objects
 #define OBJ_CACHED 0xFFFFFFFE // Flag for file cached objects
@@ -498,9 +499,9 @@ typedef struct {
 
 // Query struct
 typedef struct {
-	uint32_t *data;
 	GLenum mode;
-	SceGxmNotification fence;
+	uint32_t sync;
+	uint8_t id;
 } query;
 
 // Renderbuffer struct
@@ -1044,6 +1045,9 @@ extern vector4f *clear_vertices; // Memblock starting address for clear screen v
 
 // Occlusion queries
 extern query *active_query; // Active query object
+extern query *last_active_query; // Last active query object
+extern uint32_t *queries_buffer; // Buffer used for visibility testing
+extern SceGxmNotification query_fence; // Fence used for occlusion queries sync
 
 extern GLboolean fast_texture_compression; // Hints for texture compression
 extern GLboolean recompress_non_native;
