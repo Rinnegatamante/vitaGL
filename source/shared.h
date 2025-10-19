@@ -496,6 +496,13 @@ typedef struct {
 	texture *tex;
 } framebuffer;
 
+// Query struct
+typedef struct {
+	uint32_t *data;
+	GLenum mode;
+	SceGxmNotification fence;
+} query;
+
 // Renderbuffer struct
 typedef struct {
 	GLboolean active;
@@ -1035,6 +1042,9 @@ extern uint16_t *depth_clear_indices; // Memblock starting address for clear scr
 // Clear screen shaders
 extern vector4f *clear_vertices; // Memblock starting address for clear screen vertices
 
+// Occlusion queries
+extern query *active_query; // Active query object
+
 extern GLboolean fast_texture_compression; // Hints for texture compression
 extern GLboolean recompress_non_native;
 extern GLboolean fast_perspective_correction_hint;
@@ -1094,6 +1104,7 @@ void adjust_color_material_state(); // Updates internal settings for GL_COLOR_MA
 
 /* buffers.c */
 void resetVao(vao *v); // Reset vao state
+void resetQueries(); // Reset occlusion queries state
 
 /* display_lists.c */
 void resetDlists(); // Reset display lists state

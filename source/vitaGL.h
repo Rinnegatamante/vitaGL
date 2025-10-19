@@ -335,6 +335,7 @@ extern "C" {
 #define GL_MINOR_VERSION                                0x821C
 #define GL_NUM_EXTENSIONS                               0x821D
 #define GL_RG                                           0x8227
+#define GL_QUERY_TARGET                                 0x82EA
 #define GL_UNSIGNED_SHORT_5_6_5                         0x8363
 #define GL_UNSIGNED_SHORT_1_5_5_5_REV                   0x8366
 #define GL_UNSIGNED_INT_8_8_8_8_REV                     0x8367
@@ -416,6 +417,8 @@ extern "C" {
 #define GL_RGBA16F                                      0x881A
 #define GL_BLEND_EQUATION_ALPHA                         0x883D
 #define GL_POINT_SPRITE                                 0x8861
+#define GL_QUERY_RESULT                                 0x8866
+#define GL_QUERY_RESULT_AVAILABLE                       0x8867
 #define GL_MAX_VERTEX_ATTRIBS                           0x8869
 #define GL_VERTEX_ATTRIB_ARRAY_NORMALIZED               0x886A
 #define GL_MAX_TEXTURE_COORDS                           0x8871
@@ -438,6 +441,7 @@ extern "C" {
 #define GL_DYNAMIC_READ                                 0x88E9
 #define GL_DYNAMIC_COPY                                 0x88EA
 #define GL_DEPTH24_STENCIL8                             0x88F0
+#define GL_SAMPLES_PASSED                               0x8914
 #define GL_SAMPLER_BINDING                              0x8919
 #define GL_UNIFORM_BUFFER                               0x8A11
 #define GL_FRAGMENT_SHADER                              0x8B30
@@ -485,6 +489,7 @@ extern "C" {
 #define GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG              0x8C01
 #define GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG             0x8C02
 #define GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG             0x8C03
+#define GL_ANY_SAMPLES_PASSED                           0x8C2F
 #define GL_SRGB                                         0x8C40
 #define GL_SRGB8                                        0x8C41
 #define GL_SRGB_ALPHA                                   0x8C42
@@ -521,6 +526,7 @@ extern "C" {
 #define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS             0x8B4D
 #define GL_HALF_FLOAT_OES                               0x8D61
 #define GL_ETC1_RGB8_OES                                0x8D64
+#define GL_ANY_SAMPLES_PASSED_CONSERVATIVE              0x8D6A
 #define GL_SHADER_BINARY_FORMATS                        0x8DF8
 #define GL_NUM_SHADER_BINARY_FORMATS                    0x8DF9
 #define GL_SHADER_COMPILER                              0x8DFA
@@ -532,6 +538,7 @@ extern "C" {
 #define GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX 0x9049
 #define GL_COMPRESSED_RGBA_PVRTC_2BPPV2_IMG             0x9137
 #define GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG             0x9138
+#define GL_QUERY_RESULT_NO_WAIT                         0x9194
 #define GL_COMPRESSED_RGBA8_ETC2_EAC                    0x9278
 
 #define VGL_YUV420P_NV12_BT601                       0x18E70
@@ -589,6 +596,7 @@ void glAlphaFunc(GLenum func, GLfloat ref);
 void glAlphaFuncx(GLenum func, GLfixed ref);
 void glAttachShader(GLuint prog, GLuint shad);
 void glBegin(GLenum mode);
+void glBeginQuery(GLenum target, GLuint id);
 void glBindAttribLocation(GLuint program, GLuint index, const GLchar *name);
 void glBindBuffer(GLenum target, GLuint buffer);
 void glBindBufferBase(GLenum target, GLuint index, GLuint buffer);
@@ -652,6 +660,7 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers);
 void glDeleteFramebuffers(GLsizei n, const GLuint *framebuffers);
 void glDeleteLists(GLuint list, GLsizei range);
 void glDeleteProgram(GLuint prog);
+void glDeleteQueries(GLsizei n, const GLuint *ids);
 void glDeleteRenderbuffers(GLsizei n, const GLuint *renderbuffers);
 void glDeleteSamplers(GLsizei n, const GLuint *smp);
 void glDeleteShader(GLuint shad);
@@ -677,6 +686,7 @@ void glEnableClientState(GLenum array);
 void glEnableVertexAttribArray(GLuint index);
 void glEnd(void);
 void glEndList(void);
+void glEndQuery(GLenum target);
 void glFinish(void);
 void glFlush(void);
 void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length);
@@ -697,6 +707,7 @@ void glGenBuffers(GLsizei n, GLuint *buffers);
 void glGenerateMipmap(GLenum target);
 void glGenerateTextureMipmap(GLuint target);
 void glGenFramebuffers(GLsizei n, GLuint *framebuffers);
+void glGenQueries(GLsizei n, GLuint *ids);
 GLuint glGenLists(GLsizei range);
 void glGenRenderbuffers(GLsizei n, GLuint *renderbuffers);
 void glGenSamplers(GLsizei n, GLuint *smps);
@@ -718,6 +729,7 @@ void glGetPointerv(GLenum pname, void **params);
 void glGetProgramBinary(GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary);
 void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 void glGetProgramiv(GLuint program, GLenum pname, GLint *params);
+void glGetQueryObjectiv(GLuint id, GLenum pname, GLint *params);
 void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 void glGetShaderiv(GLuint handle, GLenum pname, GLint *params);
 void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *source);

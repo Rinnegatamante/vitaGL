@@ -69,6 +69,7 @@ framebuffer *old_framebuffer = NULL; // Framebuffer used in last scene
 uint8_t dirty_framebuffer = GL_FALSE; // Flag wether current in use framebuffer is invalidated
 static GLboolean needs_end_scene = GL_FALSE; // Flag for gxm end scene requirement at scene reset
 static GLboolean needs_scene_reset = GL_TRUE; // Flag for when a scene reset is required
+static query *in_use_query = NULL; // Currently used query object
 
 SceGxmContext *gxm_context; // sceGxm context instance
 GLenum vgl_error = GL_NO_ERROR; // Error returned by glGetError
@@ -574,20 +575,25 @@ void stopShaderPatcher(void) {
 
 static inline __attribute__((always_inline)) void sceneEnd(void) {
 	// Ends current gxm scene
-	sceGxmEndScene(gxm_context, NULL, NULL);
+	if (in_use_query) {
+		in_use_query->fence.value++;
+		sceGxmEndScene(gxm_context, NULL, &in_use_query->fence);
+	} else {
+		sceGxmEndScene(gxm_context, NULL, NULL);
+	}
 	if (system_app_mode && vsync_interval)
 		sceDisplayWaitVblankStartMulti(vsync_interval);
 }
 
 void sceneReset(void) {
-	if (in_use_framebuffer != active_write_fb || needs_scene_reset || dirty_framebuffer) {
+	if (in_use_framebuffer != active_write_fb || needs_scene_reset || dirty_framebuffer || active_query != in_use_query) {
 		dirty_framebuffer = GL_FALSE;
 		needs_scene_reset = GL_FALSE;
 		in_use_framebuffer = active_write_fb;
 		is_fbo_float = in_use_framebuffer ? in_use_framebuffer->is_float : GL_FALSE;
 
 		// Ending drawing scene
-		if (needs_end_scene)
+		if (needs_end_scene || active_query != in_use_query)
 			sceneEnd();
 		else {
 			if (legacy_pool_size) {
@@ -598,6 +604,14 @@ void sceneReset(void) {
 #endif
 			}
 			needs_end_scene = GL_TRUE;
+		}
+		
+		// Setting visibility buffer based on active query
+		if (active_query != in_use_query) {
+			in_use_query = active_query;
+			if (in_use_query) {
+				sceGxmSetVisibilityBuffer(gxm_context, in_use_query->data, 16);
+			}
 		}
 
 		// Starting drawing scene

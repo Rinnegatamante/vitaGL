@@ -23,6 +23,8 @@
 
 #include "shared.h"
 
+#define MAX_QUERIES_NUM (128) // Maximum number of usable queries
+
 #define DISABLED_ATTRIBS_POOL_SIZE (256 * 1024) // Disabled attributes circular pool size in bytes for the default VAO
 #define DISABLED_AUX_ATTRIBS_POOL_SIZE (64 * 1024) // Disabled attributes circular pool size in bytes for non default VAOs
 
@@ -38,6 +40,9 @@ void *index_object; // Index object address for vgl* draw pipeline
 
 static vao default_vao; // Vertex Array Object used when no vao is bound
 vao *cur_vao = &default_vao; // Current in-use vertex array object
+
+query *active_query = NULL; // Active query object
+static query queries[MAX_QUERIES_NUM]; // Available query objects pool
 
 void resetVao(vao *v) {
 	vgl_memset(v->vertex_attrib_offsets, 0, sizeof(uint32_t) * VERTEX_ATTRIBS_NUM);
@@ -70,11 +75,114 @@ void resetVao(vao *v) {
 	cur_vao = vao_bkp;
 }
 
+void resetQueries() {
+	for (GLuint i = 0; i < MAX_QUERIES_NUM; i++) {
+		queries[i].data = NULL;
+		queries[i].fence.value = 0;
+		queries[i].fence.address = sceGxmGetNotificationRegion() + i;
+		*queries[i].fence.address = 0;
+	}
+}
+
 /*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -
  * ------------------------------
  */
+ 
+void glGenQueries(GLsizei n, GLuint *ids) {
+#ifndef SKIP_ERROR_HANDLING
+	if (n < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+	for (GLuint i = 0; i < MAX_QUERIES_NUM; i++) {
+		if (queries[i].data == NULL) {
+			ids[n - 1] = (GLuint)&queries[i];
+			queries[i].data = gpu_alloc_mapped(16 * sizeof(uint32_t), VGL_MEM_RAM);
+			queries[i].fence.value = 0;
+			*queries[i].fence.address = 0;
+			n--;
+			if (n == 0) {
+				break;
+			}
+		}
+	}
+}
+
+void glDeleteQueries(GLsizei n, const GLuint *ids) {
+#ifndef SKIP_ERROR_HANDLING
+	if (n < 0) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+	for (GLuint i = 0; i < n; i++) {
+		markAsDirty(queries[ids[i]].data);
+		queries[ids[i]].data = NULL;
+	}
+}
+
+void glBeginQuery(GLenum target, GLuint id) {
+#if !defined(STORE_DEPTH_STENCIL) && !defined(SKIP_ERROR_HANDLING)
+	vgl_log("%s:%d Occlusion queries require STORE_DEPTH_STENCIL=1 in order to work properly.\n", __FILE__, __LINE__);
+#endif
+	switch (target) {
+	case GL_SAMPLES_PASSED:
+		sceGxmSetFrontVisibilityTestOp(gxm_context, SCE_GXM_VISIBILITY_TEST_OP_INCREMENT);
+		sceGxmSetBackVisibilityTestOp(gxm_context, SCE_GXM_VISIBILITY_TEST_OP_INCREMENT);
+		break;
+	case GL_ANY_SAMPLES_PASSED:
+	case GL_ANY_SAMPLES_PASSED_CONSERVATIVE:
+		sceGxmSetFrontVisibilityTestOp(gxm_context, SCE_GXM_VISIBILITY_TEST_OP_SET);
+		sceGxmSetBackVisibilityTestOp(gxm_context, SCE_GXM_VISIBILITY_TEST_OP_SET);
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+	active_query = (query *)id;
+	sceClibMemset(active_query->data, 0, sizeof(uint32_t) * 16);
+	active_query->mode = target;
+	sceneReset();
+	sceGxmSetFrontVisibilityTestEnable(gxm_context, SCE_GXM_VISIBILITY_TEST_ENABLED);
+	sceGxmSetBackVisibilityTestEnable(gxm_context, SCE_GXM_VISIBILITY_TEST_ENABLED);
+}
+
+void glEndQuery(GLenum target) {
+	sceGxmSetFrontVisibilityTestEnable(gxm_context, SCE_GXM_VISIBILITY_TEST_DISABLED);
+	sceGxmSetBackVisibilityTestEnable(gxm_context, SCE_GXM_VISIBILITY_TEST_DISABLED);
+	active_query = NULL;
+	sceneReset();
+}
+
+void glGetQueryObjectiv(GLuint id, GLenum pname, GLint *params) {
+	query *q = (query *)id;
+
+	switch (pname) {
+	case GL_QUERY_RESULT:
+		sceGxmNotificationWait(&q->fence);
+		*params = q->data[0] + q->data[4] + q->data[8] + q->data[12];
+		if (q->mode != GL_SAMPLES_PASSED) {
+			*params = *params > 0 ? GL_TRUE : GL_FALSE;
+		}
+		break;
+	case GL_QUERY_RESULT_NO_WAIT:
+		if (*q->fence.address == q->fence.value) {
+			*params = q->data[0] + q->data[4] + q->data[8] + q->data[12];
+			if (q->mode != GL_SAMPLES_PASSED) {
+				*params = *params > 0 ? GL_TRUE : GL_FALSE;
+			}
+		}
+		break;
+	case GL_QUERY_RESULT_AVAILABLE:
+		*params = (*q->fence.address == q->fence.value) ? GL_TRUE : GL_FALSE;
+		break;
+	case GL_QUERY_TARGET:
+		*params = q->mode;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+}
 
 void glGenVertexArrays(GLsizei n, GLuint *res) {
 #ifndef SKIP_ERROR_HANDLING

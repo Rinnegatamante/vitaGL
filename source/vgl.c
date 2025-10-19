@@ -374,6 +374,9 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	// Init default vao
 	resetVao(cur_vao);
 	
+	// Init occlusion queries
+	resetQueries();
+	
 #ifdef HAVE_DLISTS
 	// Init display lists
 	resetDlists();
