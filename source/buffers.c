@@ -186,7 +186,7 @@ void glGetQueryObjectiv(GLuint id, GLenum pname, GLint *params) {
 		*params = q->mode;
 		break;
 	default:
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
 }
 

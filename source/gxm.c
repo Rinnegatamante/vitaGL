@@ -489,6 +489,7 @@ void initDisplayColorSurfaces(void) {
 void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, GLboolean has_stencil) {
 	// Calculating sizes for depth and stencil surfaces
 	unsigned int depth_stencil_width = VGL_ALIGN(w, SCE_GXM_TILE_SIZEX);
+#ifndef DEPTH_STENCIL_HACK
 	unsigned int depth_stencil_height = VGL_ALIGN(h, SCE_GXM_TILE_SIZEY);
 	unsigned int depth_stencil_samples = depth_stencil_width * depth_stencil_height;
 	if (msaa_mode == SCE_GXM_MULTISAMPLE_2X)
@@ -496,7 +497,6 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 	else if (msaa_mode == SCE_GXM_MULTISAMPLE_4X)
 		depth_stencil_samples *= 4;
 
-#ifndef DEPTH_STENCIL_HACK
 	// Allocating depth surface
 	void *depth_buffer = gpu_alloc_mapped_aligned(SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT, 4 * depth_stencil_samples, VGL_MEM_VRAM);
 
