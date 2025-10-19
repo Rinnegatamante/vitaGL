@@ -40,7 +40,6 @@ static vao default_vao; // Vertex Array Object used when no vao is bound
 vao *cur_vao = &default_vao; // Current in-use vertex array object
 
 query *active_query = NULL; // Active query object
-query *last_active_query = NULL; // Last active query object
 static query queries[MAX_QUERIES_NUM]; // Available query objects pool
 uint32_t *queries_buffer = NULL; // Buffer used for visibility testing
 SceGxmNotification query_fence; // Fence used for occlusion queries sync
@@ -78,6 +77,7 @@ void resetVao(vao *v) {
 
 void resetQueries() {
 	queries_buffer = gpu_alloc_mapped(MAX_QUERIES_NUM * 4 * sizeof(uint32_t), VGL_MEM_RAM);
+	sceGxmSetVisibilityBuffer(gxm_context, queries_buffer, MAX_QUERIES_NUM * sizeof(uint32_t));
 	query_fence.value = 0;
 	query_fence.address = sceGxmGetNotificationRegion();
 	*query_fence.address = 0;
@@ -153,7 +153,6 @@ void glEndQuery(GLenum target) {
 	sceGxmSetFrontVisibilityTestEnable(gxm_context, SCE_GXM_VISIBILITY_TEST_DISABLED);
 	sceGxmSetBackVisibilityTestEnable(gxm_context, SCE_GXM_VISIBILITY_TEST_DISABLED);
 	active_query->sync = query_fence.value + 1;
-	last_active_query = active_query;
 	active_query = NULL;
 }
 
@@ -162,7 +161,8 @@ void glGetQueryObjectiv(GLuint id, GLenum pname, GLint *params) {
 
 	switch (pname) {
 	case GL_QUERY_RESULT:
-		if (q->sync < *query_fence.address) {
+		if (q->sync > *query_fence.address) {
+			dirty_query = GL_TRUE;
 			sceneReset();
 			sceGxmNotificationWait(&query_fence);
 		}
@@ -172,7 +172,7 @@ void glGetQueryObjectiv(GLuint id, GLenum pname, GLint *params) {
 		}
 		break;
 	case GL_QUERY_RESULT_NO_WAIT:
-		if (q->sync >= *query_fence.address) {
+		if (q->sync <= *query_fence.address) {
 			*params = queries_buffer[q->id] + queries_buffer[q->id + MAX_QUERIES_NUM] + queries_buffer[q->id + MAX_QUERIES_NUM * 2] + queries_buffer[q->id + MAX_QUERIES_NUM * 3];
 			if (q->mode != GL_SAMPLES_PASSED) {
 				*params = *params > 0 ? GL_TRUE : GL_FALSE;
@@ -180,7 +180,7 @@ void glGetQueryObjectiv(GLuint id, GLenum pname, GLint *params) {
 		}
 		break;
 	case GL_QUERY_RESULT_AVAILABLE:
-		*params = (q->sync >= *query_fence.address) ? GL_TRUE : GL_FALSE;
+		*params = (q->sync <= *query_fence.address) ? GL_TRUE : GL_FALSE;
 		break;
 	case GL_QUERY_TARGET:
 		*params = q->mode;

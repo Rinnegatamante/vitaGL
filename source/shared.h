@@ -1048,6 +1048,7 @@ extern query *active_query; // Active query object
 extern query *last_active_query; // Last active query object
 extern uint32_t *queries_buffer; // Buffer used for visibility testing
 extern SceGxmNotification query_fence; // Fence used for occlusion queries sync
+extern GLboolean dirty_query;
 
 extern GLboolean fast_texture_compression; // Hints for texture compression
 extern GLboolean recompress_non_native;
