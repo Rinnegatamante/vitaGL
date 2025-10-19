@@ -68,8 +68,4 @@ int main(){
 		// Performing buffer swap
 		vglSwapBuffers(GL_FALSE);
 	}
-	
-	// Terminating graphics device
-	vglEnd();
-	
 }

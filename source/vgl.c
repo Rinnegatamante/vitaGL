@@ -597,56 +597,6 @@ GLboolean vglInit(int pool_size) {
 	return vglInitExtended(pool_size, DISPLAY_WIDTH_DEF, DISPLAY_HEIGHT_DEF, 0x1000000, SCE_GXM_MULTISAMPLE_4X);
 }
 
-void vglEnd(void) {
-	// Wait for rendering to be finished
-	waitRenderingDone();
-
-	// Deallocating default vertices buffers
-	vglFree(clear_vertices);
-	vglFree(depth_vertices);
-	vglFree(depth_clear_indices);
-	vglFree(scissor_test_vertices);
-
-	// Releasing shader programs from sceGxmShaderPatcher
-	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, scissor_test_fragment_program);
-	sceGxmShaderPatcherReleaseVertexProgram(gxm_shader_patcher, clear_vertex_program_patched);
-	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, clear_fragment_program_patched);
-
-	// Unregistering shader programs from sceGxmShaderPatcher
-	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, clear_vertex_id);
-	sceGxmShaderPatcherUnregisterProgram(gxm_shader_patcher, clear_fragment_id);
-
-	// Terminating shader patcher
-	stopShaderPatcher();
-
-	// Deallocating depth and stencil surfaces for display
-	termDepthStencilSurfaces();
-
-	// Terminating display's color surfaces
-	termDisplayColorSurfaces();
-
-	// Destroing display's render target
-	destroyDisplayRenderTarget();
-
-	// Terminating sceGxm context
-	termGxmContext();
-
-	// Terminating sceGxm
-	sceGxmTerminate();
-
-#ifdef HAVE_RAZOR
-	// Terminating sceRazor debugger
-#ifdef HAVE_DEVKIT
-	sceSysmoduleUnloadModule(SCE_SYSMODULE_RAZOR_HUD);
-	sceSysmoduleUnloadModule(SCE_SYSMODULE_RAZOR_CAPTURE);
-#else
-	sceKernelStopUnloadModule(razor_modid, 0, NULL, 0, NULL, NULL);
-#endif
-#endif
-
-	vgl_inited = GL_FALSE;
-}
-
 void vglWaitVblankStart(GLboolean enable) {
 	vsync_interval = enable ? 1 : 0;
 }

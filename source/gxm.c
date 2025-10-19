@@ -440,35 +440,9 @@ void initGxmContext(void) {
 	vglSetupUniformCircularPool();
 }
 
-void termGxmContext(void) {
-	// Deallocating ring buffers
-	vgl_free(vdm_ring_buffer_addr);
-	vgl_free(vertex_ring_buffer_addr);
-	vgl_free(fragment_ring_buffer_addr);
-	gpu_fragment_usse_free_mapped(fragment_usse_ring_buffer_addr);
-
-	// Destroying sceGxm context
-	sceGxmDestroyContext(gxm_context);
-
-	if (system_app_mode) {
-		sceSharedFbBegin(shared_fb, &shared_fb_info);
-		sceGxmUnmapMemory(shared_fb_info.fb_base);
-		sceSharedFbEnd(shared_fb);
-		sceSharedFbClose(shared_fb);
-	}
-
-	// Shutting down runtime shader compiler
-	glReleaseShaderCompiler();
-}
-
 void createDisplayRenderTarget(void) {
 	// Creating render target for the display
 	setupRenderTarget(&gxm_render_target, DISPLAY_WIDTH, DISPLAY_HEIGHT, 1);
-}
-
-void destroyDisplayRenderTarget(void) {
-	// Destroying render target for the display
-	sceGxmDestroyRenderTarget(gxm_render_target);
 }
 
 void initDisplayColorSurfaces(void) {
@@ -511,16 +485,6 @@ void initDisplayColorSurfaces(void) {
 	}
 }
 
-void termDisplayColorSurfaces(void) {
-	// Deallocating display's color surfaces and destroying sync objects
-	int i;
-	for (i = 0; i < gxm_display_buffer_count; i++) {
-		if (!system_app_mode)
-			vgl_free(gxm_color_surfaces_addr[i]);
-		sceGxmSyncObjectDestroy(gxm_sync_objects[i]);
-	}
-}
-
 void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, GLboolean has_stencil) {
 	// Calculating sizes for depth and stencil surfaces
 	unsigned int depth_stencil_width = VGL_ALIGN(w, SCE_GXM_TILE_SIZEX);
@@ -559,12 +523,6 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 
 void initDepthStencilSurfaces(void) {
 	initDepthStencilBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, &gxm_depth_stencil_surface, GL_TRUE);
-}
-
-void termDepthStencilSurfaces(void) {
-	// Deallocating depth and stencil surfaces memblocks
-	vgl_free(gxm_depth_stencil_surface.depthData);
-	vgl_free(gxm_depth_stencil_surface.stencilData);
 }
 
 void startShaderPatcher(void) {
@@ -614,13 +572,7 @@ void stopShaderPatcher(void) {
 	gpu_fragment_usse_free_mapped(gxm_shader_patcher_fragment_usse_addr);
 }
 
-void waitRenderingDone(void) {
-	// Wait for rendering to be finished
-	sceGxmDisplayQueueFinish();
-	sceGxmFinish(gxm_context);
-}
-
-void sceneEnd(void) {
+static inline __attribute__((always_inline)) void sceneEnd(void) {
 	// Ends current gxm scene
 	sceGxmEndScene(gxm_context, NULL, NULL);
 	if (system_app_mode && vsync_interval)

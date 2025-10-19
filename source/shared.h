@@ -1043,17 +1043,12 @@ extern GLfloat point_size; // Size of points for fixed function pipeline
 /* gxm.c */
 void initGxm(void); // Inits sceGxm
 void initGxmContext(void); // Inits sceGxm context
-void termGxmContext(void); // Terms sceGxm context
 void createDisplayRenderTarget(void); // Creates render target for the display
-void destroyDisplayRenderTarget(void); // Destroys render target for the display
 void initDisplayColorSurfaces(void); // Creates color surfaces for the display
-void termDisplayColorSurfaces(void); // Destroys color surfaces for the display
 void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, GLboolean has_stencil); // Creates depth and stencil surfaces
 void initDepthStencilSurfaces(void); // Creates depth and stencil surfaces for the display
-void termDepthStencilSurfaces(void); // Destroys depth and stencil surfaces for the display
 void startShaderPatcher(void); // Creates a shader patcher instance
 void stopShaderPatcher(void); // Destroys a shader patcher instance
-void waitRenderingDone(void); // Waits for rendering to be finished
 void sceneReset(void); // Resets drawing scene if required
 GLboolean startShaderCompiler(void); // Starts a shader compiler instance
 

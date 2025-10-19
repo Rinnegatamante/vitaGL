@@ -392,7 +392,6 @@ static const struct {
 	{"vglAlloc", (void *)vglAlloc},
 	{"vglCalloc", (void *)vglCalloc},
 	{"vglCgShaderSource", (void *)vglCgShaderSource},
-	{"vglEnd", (void *)vglEnd},
 	{"vglForceAlloc", (void *)vglForceAlloc},
 	{"vglFree", (void *)vglFree},
 	{"vglGetFuncName", (void *)vglGetFuncName},

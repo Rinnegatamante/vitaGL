@@ -992,7 +992,6 @@ void *vglAlloc(uint32_t size, vglMemType type);
 void vglBufferData(GLenum target, const GLvoid *data);
 void *vglCalloc(uint32_t nmember, uint32_t size);
 void vglCgShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length);
-void vglEnd(void);
 void *vglForceAlloc(uint32_t size);
 void vglFree(void *addr);
 void *vglGetFuncName(uint32_t func);

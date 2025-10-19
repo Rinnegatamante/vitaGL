@@ -380,7 +380,4 @@ int main() {
 		vglSwapBuffers(GL_FALSE);
 		old_buttons = pad.buttons;
 	}
-	
-	// Terminating graphics device
-	vglEnd();
 }
