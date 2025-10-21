@@ -1470,9 +1470,16 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	shader *s = &shaders[handle - 1];
 	
 	uint32_t size = 1;
+	size_t lengths[32];
 
 	for (int i = 0; i < count; i++) {
-		size += length ? length[i] : strlen(string[i]);
+		if (length && length[i] >= 0) {
+			lengths[i] = length[i];
+			size += length[i];
+		} else {
+			lengths[i] = strlen(string[i]);
+			size += strlen(string[i]);
+		}
 	}
 
 #if defined(SHADER_COMPILER_SPEEDHACK) && !defined(HAVE_GLSL_TRANSLATOR)
@@ -1485,7 +1492,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 		s->source[0] = 0;
 
 		for (int i = 0; i < count; i++) {
-			strncat(s->source, string[i], length ? length[i] : strlen(string[i]));
+			strncat(s->source, string[i], lengths[i]);
 		}
 		s->prog = (SceGxmProgram *)s->source;
 	}
