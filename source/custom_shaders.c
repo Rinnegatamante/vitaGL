@@ -1608,6 +1608,9 @@ void glAttachShader(GLuint prog, GLuint shad) {
 		switch (s->type) {
 		case GL_VERTEX_SHADER:
 			s->ref_counter++;
+			if (p->vshader) {
+				p->vshader->ref_counter--;
+			}
 			p->vshader = s;
 #ifdef HAVE_GLSL_TRANSLATOR
 			// If we use VGL_MODE_POSTPONED, we perform attributes binding in glLinkProgram
@@ -1621,6 +1624,9 @@ void glAttachShader(GLuint prog, GLuint shad) {
 			break;
 		case GL_FRAGMENT_SHADER:
 			s->ref_counter++;
+			if (p->fshader) {
+				p->fshader->ref_counter--;
+			}
 			p->fshader = s;
 			break;
 		default:
