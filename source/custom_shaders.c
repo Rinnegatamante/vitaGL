@@ -1843,6 +1843,11 @@ void glDeleteProgram(GLuint prog) {
 			p->frag_ubos = (ubo *)p->frag_ubos->chain;
 			vgl_free(old);
 		}
+#ifdef HAVE_GLSL_TRANSLATOR
+		if (p->glsl_attr_map) {
+			vgl_free(p->glsl_attr_map);
+		}
+#endif
 
 		// Checking if attached shaders are marked for deletion and should be deleted
 		if (p->vshader) {
@@ -2011,6 +2016,7 @@ void glLinkProgram(GLuint progr) {
 				glBindAttribLocation(progr, p->glsl_attr_map[i].idx, p->glsl_attr_map[i].name);
 			}
 			vgl_free(p->glsl_attr_map);
+			p->glsl_attr_map = NULL;
 		}
 		glsl_sema_mode = VGL_MODE_POSTPONED;
 	}
