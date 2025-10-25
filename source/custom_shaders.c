@@ -1610,6 +1610,8 @@ void glAttachShader(GLuint prog, GLuint shad) {
 			s->ref_counter++;
 			if (p->vshader) {
 				p->vshader->ref_counter--;
+				if (p->vshader->dirty && p->vshader->ref_counter == 0)
+					release_shader(p->vshader);
 			}
 			p->vshader = s;
 #ifdef HAVE_GLSL_TRANSLATOR
@@ -1626,6 +1628,8 @@ void glAttachShader(GLuint prog, GLuint shad) {
 			s->ref_counter++;
 			if (p->fshader) {
 				p->fshader->ref_counter--;
+				if (p->fshader->dirty && p->fshader->ref_counter == 0)
+					release_shader(p->fshader);
 			}
 			p->fshader = s;
 			break;
