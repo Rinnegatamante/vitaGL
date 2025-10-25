@@ -30,17 +30,63 @@
 #ifdef HAVE_GLSL_TRANSLATOR
 #define MEM_ENLARGER_SIZE (1024 * 1024) // FIXME: Check if this is too big/small
 
+#define glsl_get_existing_texcoord_bind(idx, s) \
+	for (int j = 0; j < MAX_CG_TEXCOORD_ID; j++) { \
+		if (glsl_bindings_map.texcoord_used[j] && !strcmp(glsl_bindings_map.texcoord_names[j], s)) { \
+			idx = j; \
+			break; \
+		} \
+	}
+	
+#define glsl_get_existing_color_bind(idx, s) \
+	for (int j = 0; j < MAX_CG_COLOR_ID; j++) { \
+		if (glsl_bindings_map.color_used[j] && !strcmp(glsl_bindings_map.color_names[j], s)) { \
+			idx = j; \
+			break; \
+		} \
+	}
+
+#define glsl_reserve_texcoord_bind(idx, s) \
+	for (int j = 0; j < MAX_CG_TEXCOORD_ID; j++) { \
+		if (!glsl_bindings_map.texcoord_used[j]) { \
+			glsl_bindings_map.texcoord_used[j] = GL_TRUE; \
+			strcpy(glsl_bindings_map.texcoord_names[j], s); \
+			idx = j; \
+			break; \
+		} \
+	}
+	
+#define glsl_reserve_color_bind(idx, s) \
+	for (int j = 0; j < MAX_CG_COLOR_ID; j++) { \
+		if (!glsl_bindings_map.color_used[j]) { \
+			glsl_bindings_map.color_used[j] = GL_TRUE; \
+			strcpy(glsl_bindings_map.color_names[j], s); \
+			idx = j; \
+			break; \
+		} \
+	}
+
+#define glsl_replace_marker(m, r) \
+	type = strstr(txt + strlen(glsl_hdr), m); \
+	while (type) { \
+		char *res = (char *)vglMalloc(MEM_ENLARGER_SIZE); \
+		type[0] = 0; \
+		strcpy(res, txt); \
+		strcat(res, r); \
+		strcat(res, type + 1); \
+		strcpy(out, res); \
+		vgl_free(res); \
+		txt = out; \
+		type = strstr(txt + strlen(glsl_hdr), m); \
+	}
+
 glsl_sema_bind glsl_custom_bindings[MAX_CUSTOM_BINDINGS];
 int glsl_custom_bindings_num = 0;
 int glsl_current_ref_idx = 0;
-char glsl_texcoords_binds[MAX_CG_TEXCOORD_ID][64];
-char glsl_colors_binds[MAX_CG_COLOR_ID][64];
-GLboolean glsl_texcoords_used[MAX_CG_TEXCOORD_ID];
-GLboolean glsl_colors_used[MAX_CG_COLOR_ID];
 GLboolean glsl_is_first_shader = GL_TRUE;
 GLboolean glsl_precision_low = GL_FALSE;
-GLenum glsl_sema_mode = VGL_MODE_GLOBAL;
-GLenum prev_shader_type = GL_NONE;
+GLenum glsl_sema_mode = VGL_MODE_POSTPONED;
+binds_map glsl_bindings_map;
 
 void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFrontFacing) {
 	char newline[128];
@@ -91,16 +137,17 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 				vglSemanticType hint_type = VGL_TYPE_TEXCOORD;
 				// Check first if the varying has a known binding
 				for (int j = 0; j < glsl_custom_bindings_num; j++) {
-					if (!strcmp(glsl_custom_bindings[j].name, start))
+					if (!strcmp(glsl_custom_bindings[j].name, start)) {
 						idx = j;
+					}
 				}
 				if (idx != -1) {
 					switch (glsl_custom_bindings[idx].type) {
 					case VGL_TYPE_TEXCOORD:
 						{
 							if (glsl_custom_bindings[idx].idx != -1) {
-								strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
-								glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+								strcpy(glsl_bindings_map.texcoord_names[glsl_custom_bindings[idx].idx], start);
+								glsl_bindings_map.texcoord_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
 								sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
 							} else {
 								goto HINT_DETECTION_PAIR;
@@ -109,8 +156,8 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 						break;
 					case VGL_TYPE_COLOR:
 						if (glsl_custom_bindings[idx].idx != -1) {
-							strcpy(glsl_colors_binds[glsl_custom_bindings[idx].idx], start);
-							glsl_colors_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+							strcpy(glsl_bindings_map.color_names[glsl_custom_bindings[idx].idx], start);
+							glsl_bindings_map.color_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
 							sprintf(newline, "COUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
 						} else {
 							hint_type = VGL_TYPE_COLOR;
@@ -287,8 +334,8 @@ HINT_DETECTION_PAIR:
 					switch (glsl_custom_bindings[idx].type) {
 					case VGL_TYPE_TEXCOORD:
 						if (glsl_custom_bindings[idx].idx != -1) {
-							strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
-							glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+							strcpy(glsl_bindings_map.texcoord_names[glsl_custom_bindings[idx].idx], start);
+							glsl_bindings_map.texcoord_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
 							sprintf(newline, "VIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 						} else {
 							goto HINT_DETECTION_PAIR_2;
@@ -296,8 +343,8 @@ HINT_DETECTION_PAIR:
 						break;
 					case VGL_TYPE_COLOR:
 						if (glsl_custom_bindings[idx].idx != -1) {
-							strcpy(glsl_colors_binds[glsl_custom_bindings[idx].idx], start);
-							glsl_colors_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+							strcpy(glsl_bindings_map.color_names[glsl_custom_bindings[idx].idx], start);
+							glsl_bindings_map.color_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
 							sprintf(newline, "CIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 						} else {
 							hint_type = VGL_TYPE_COLOR;
@@ -485,8 +532,8 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 					case VGL_TYPE_TEXCOORD:
 						{
 							if (glsl_custom_bindings[idx].idx != -1) {
-								strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
-								glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+								strcpy(glsl_bindings_map.texcoord_names[glsl_custom_bindings[idx].idx], start);
+								glsl_bindings_map.texcoord_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
 								sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
 							} else {
 								sprintf(newline, "VOUT(%s,\v);", str2 + 8);
@@ -496,8 +543,8 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 					case VGL_TYPE_COLOR:
 						{
 							if (glsl_custom_bindings[idx].idx != -1) {
-								strcpy(glsl_colors_binds[glsl_custom_bindings[idx].idx], start);
-								glsl_colors_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+								strcpy(glsl_bindings_map.color_names[glsl_custom_bindings[idx].idx], start);
+								glsl_bindings_map.color_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
 								sprintf(newline, "COUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
 							} else {
 								sprintf(newline, "COUT(%s,\f);", str2 + 8);
@@ -588,8 +635,8 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 					case VGL_TYPE_TEXCOORD:
 						{
 							if (glsl_custom_bindings[idx].idx != -1) {
-								strcpy(glsl_texcoords_binds[glsl_custom_bindings[idx].idx], start);
-								glsl_texcoords_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+								strcpy(glsl_bindings_map.texcoord_names[glsl_custom_bindings[idx].idx], start);
+								glsl_bindings_map.texcoord_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
 								sprintf(newline, "VIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 							} else {
 								sprintf(newline, "VIN(%s, \v);", str + 8);
@@ -599,8 +646,8 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 					case VGL_TYPE_COLOR:
 						{
 							if (glsl_custom_bindings[idx].idx != -1) {
-								strcpy(glsl_colors_binds[glsl_custom_bindings[idx].idx], start);
-								glsl_colors_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+								strcpy(glsl_bindings_map.color_names[glsl_custom_bindings[idx].idx], start);
+								glsl_bindings_map.color_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
 								sprintf(newline, "CIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 							} else {
 								sprintf(newline, "CIN(%s, \f);", str + 8);
@@ -902,8 +949,8 @@ void glsl_nuke_comments(char *txt) {
 	}
 }
 
-void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *string, const GLint *length) {
-	uint32_t source_size = 1;
+void glsl_translator_process(shader *s) {
+	uint32_t source_size = 1 + strlen(s->source);
 	uint32_t size = 1;
 	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE, hasPointCoord = GL_FALSE;
 	GLboolean hasPointSize = GL_FALSE, hasFragDepth = GL_FALSE, hasFrontFacing = GL_FALSE;
@@ -911,27 +958,15 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 	if (glsl_precision_low)
 		size += strlen(glsl_precision_hdr);
 #ifndef SKIP_ERROR_HANDLING
-	if (glsl_sema_mode == VGL_MODE_SHADER_PAIR) {
-		if (prev_shader_type == s->type) {
-			vgl_log("%s:%d %s: Unexpected shader type, translation may be imperfect.\n", __FILE__, __LINE__, __func__);
-			glsl_is_first_shader = GL_TRUE;
-			vgl_memset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
-			vgl_memset(glsl_colors_used, 0, sizeof(GLboolean) * MAX_CG_COLOR_ID);
-		}
-	} else
+	if (glsl_sema_mode == VGL_MODE_GLOBAL)
 		glsl_current_ref_idx++;
 #endif
 	if (s->type == GL_VERTEX_SHADER)
 		size += strlen("#define VGL_IS_VERTEX_SHADER\n");
 	
-	for (int i = 0; i < count; i++) {
-		source_size += length ? length[i] : strlen(string[i]);
-	}
 	char *input = vglMalloc(source_size);
-	input[0] = 0;
-	for (int i = 0; i < count; i++) {
-		strncat(input, string[i], length ? length[i] : strlen(string[i]));
-	}
+	vgl_fast_memcpy(input, s->source, source_size - 1);
+	input[source_size - 1] = 0;
 	
 	// Nukeing version directive
 	char *str = strstr(input, "#version");
@@ -946,7 +981,7 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 #ifdef HAVE_GLSL_PREPROCESSOR
 	char *out = vglMalloc(strlen(input));
 	glsl_preprocess("full", input, out);
-	vglFree(input);
+	vgl_free(input);
 #ifdef DEBUG_GLSL_PREPROCESSOR
 	vgl_log("%s:%d %s: GLSL preprocessor output:\n\n%s\n\n", __FILE__, __LINE__, __func__, out);
 #endif
@@ -1017,6 +1052,7 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 	if (hasPointCoord)
 		size += strlen("varying in float2 gl_PointCoord : SPRITECOORD;\n");
 	
+	vgl_free(s->source);
 	s->source = (char *)vglMalloc(size);
 	s->source[0] = 0;
 	
@@ -1045,7 +1081,7 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 	
 	char *text = s->source + strlen(s->source);
 	strcat(s->source, out);
-	vglFree(out);
+	vgl_free(out);
 
 	switch (glsl_sema_mode) {
 		case VGL_MODE_SHADER_PAIR:
@@ -1162,13 +1198,39 @@ void glsl_translator_process(shader *s, GLsizei count, const GLchar *const *stri
 #ifdef DEBUG_GLSL_TRANSLATOR
 	vgl_log("%s:%d %s: GLSL translation output (%s shader):\n\n%s\n\n", __FILE__, __LINE__, __func__, glsl_is_first_shader ? "first" : "second", s->source);
 #endif
-	s->prog = (SceGxmProgram *)s->source;
 
+	vgl_fast_memcpy(&s->semantics, &glsl_bindings_map, sizeof(binds_map));
 	if (glsl_sema_mode == VGL_MODE_SHADER_PAIR) {
 		glsl_is_first_shader = !glsl_is_first_shader;
-		if (glsl_is_first_shader)
-			vgl_memset(glsl_texcoords_used, 0, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
+		if (glsl_is_first_shader) {
+			vgl_memset(glsl_bindings_map.texcoord_used, GL_FALSE, sizeof(GLboolean) * MAX_CG_TEXCOORD_ID);
+			vgl_memset(glsl_bindings_map.color_used, GL_FALSE, sizeof(GLboolean) * MAX_CG_COLOR_ID);
+		}
 	}
 	s->size = strlen(s->source);
+	s->is_glsl = GL_FALSE;
+}
+
+void glsl_translator_set_process(shader *vs, shader *fs) {
+	if (vs->prog || fs->prog) {
+		glsl_is_first_shader = GL_FALSE;
+		if (vs->prog) {
+			vgl_fast_memcpy(&glsl_bindings_map, &vs->semantics, sizeof(binds_map));
+#ifdef DEBUG_GLSL_TRANSLATOR
+			vgl_log("%s:%d %s: Overloading semantic bindings with precompiled vertex shader ones.\n", __FILE__, __LINE__, __func__);
+#endif
+		} else {
+			vgl_fast_memcpy(&glsl_bindings_map, &fs->semantics, sizeof(binds_map));
+#ifdef DEBUG_GLSL_TRANSLATOR
+			vgl_log("%s:%d %s: Overloading semantic bindings with precompiled fragment shader ones.\n", __FILE__, __LINE__, __func__);
+#endif
+		}
+	}
+	if (!vs->prog) {
+		glsl_translator_process(vs);
+	}
+	if (!fs->prog) {
+		glsl_translator_process(fs);
+	}
 }
 #endif

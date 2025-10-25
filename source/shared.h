@@ -677,19 +677,31 @@ typedef struct {
 	void *chain;
 } block_uniform;
 
+#ifdef HAVE_GLSL_TRANSLATOR
+#define MAX_CG_TEXCOORD_ID 10 // Maximum number of bindable TEXCOORD semantic
+#define MAX_CG_COLOR_ID 2 // Maximum number of bindable COLOR semantic
+typedef struct {
+	char texcoord_names[MAX_CG_TEXCOORD_ID][64];
+	char color_names[MAX_CG_COLOR_ID][64];
+	GLboolean texcoord_used[MAX_CG_TEXCOORD_ID];
+	GLboolean color_used[MAX_CG_COLOR_ID];
+} binds_map;
+#endif
+
 // Generic shader struct
 typedef struct {
 	GLenum type;
 	GLboolean valid;
 	GLboolean dirty;
+#ifdef HAVE_GLSL_TRANSLATOR
+	GLboolean is_glsl;
+	binds_map semantics;
+#endif
 	int16_t ref_counter;
 	SceGxmShaderPatcherId id;
 	const SceGxmProgram *prog;
 	uint32_t size;
 	char *source;
-#ifdef HAVE_GLSL_TRANSLATOR
-	char *glsl_source;
-#endif
 	matrix_uniform *mat;
 	block_uniform *unif_blk;
 #ifdef HAVE_SHARK_LOG

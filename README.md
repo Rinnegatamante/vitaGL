@@ -53,7 +53,6 @@ In order to build vitaGL use the following command: `make install`.
 |`MATH_SPEEDHACK=1`| Enables faster code for matrix math calls. May cause glitches.|
 |`TEXTURES_SPEEDHACK=1`| Makes glTexSubImage2D/glTexSubImage1D non fully OpenGL compliant but makes rendering pipeline slightly faster. Incompatible with HAVE_TEXTURE_CACHE=1.|
 |`SAMPLERS_SPEEDHACK=1`| Enables faster code for samplers resolution during shaders usage. May cause glitches.|
-|`SHADER_COMPILER_SPEEDHACK=1`| Enables faster code for glShaderSource. May cause errors.|
 |`PRIMITIVES_SPEEDHACK=1`| Makes draw calls more efficient but GL_LINES and GL_POINTS primitives usage may cause glitches.|
 |`DEPTH_STENCIL_HACK=1`| Makes depth and stencil buffers have no memory costs but can cause crashes in some circumstances.|
 ### Misc Flags
