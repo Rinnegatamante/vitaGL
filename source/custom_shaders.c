@@ -493,7 +493,7 @@ void unserialize_shader(void *in, size_t sz, shader *s, GLboolean load_bindings)
 	buf += sizeof(uint32_t) * (matrix_uniforms_num + 1);
 #ifdef HAVE_GLSL_TRANSLATOR
 	if (load_bindings) {
-		vgl_fast_memcpy(buf, &s->semantics, sizeof(binds_map));
+		vgl_fast_memcpy(&s->semantics, buf, sizeof(binds_map));
 		buf += sizeof(binds_map);
 	}
 #endif
