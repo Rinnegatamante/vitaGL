@@ -1753,11 +1753,11 @@ void glGetProgramBinary(GLuint prog, GLsizei bufSize, GLsizei *length, GLenum *b
 	uint8_t *buf = (uint8_t *)binary + size;
 
 	// Dumping vertex binary
-	serialize_shader(&buf[sizeof(uint32_t)], &buf, p->vshader, GL_FALSE);
+	serialize_shader(&buf[sizeof(uint32_t)], (size_t *)buf, p->vshader, GL_FALSE);
 
 	// Dumping fragment binary
 	buf += sizeof(uint32_t) + *(uint32_t *)buf;
-	serialize_shader(&buf[sizeof(uint32_t)], &buf, p->fshader, GL_FALSE);
+	serialize_shader(&buf[sizeof(uint32_t)], (size_t *)buf, p->fshader, GL_FALSE);
 
 	if (length)
 		*length = ((uintptr_t)buf - (uintptr_t)binary) + sizeof(uint32_t) + *(uint32_t *)buf;

@@ -796,7 +796,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	case GL_RGBA:
 		tex->write_cb = writeRGBA;
 		if (fast_store && data_bpp == 2) {
-			if (read_cb == readRGBA5551)
+			if ((uintptr_t)read_cb == (uintptr_t)readRGBA5551)
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
 			else
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA;
@@ -865,7 +865,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 						
 			// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
 			void *target_data = (void *)data;
-			if (read_cb != readRGBA) {
+			if ((uintptr_t)read_cb != (uintptr_t)readRGBA) {
 				target_data = vglMalloc(pot_w * pot_h * 4);
 				uint8_t *src = (uint8_t *)data;
 				uint32_t *dst = target_data;
@@ -1135,25 +1135,25 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		// Detecting proper write callback
 		switch (tex_format) {
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
-			if (read_cb == readRGB)
+			if ((uintptr_t)read_cb == (uintptr_t)readRGB)
 				fast_store = GL_TRUE;
 			else
 				write_cb = writeRGB;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8_RGB:
-			if (read_cb == readBGR)
+			if ((uintptr_t)read_cb == (uintptr_t)readBGR)
 				fast_store = GL_TRUE;
 			else
 				write_cb = writeBGR;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-			if (read_cb == readRGBA)
+			if ((uintptr_t)read_cb == (uintptr_t)readRGBA)
 				fast_store = GL_TRUE;
 			else
 				write_cb = writeRGBA;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
-			if (read_cb == readBGRA)
+			if ((uintptr_t)read_cb == (uintptr_t)readBGRA)
 				fast_store = GL_TRUE;
 			else
 				write_cb = writeBGRA;
@@ -1162,13 +1162,13 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		case SCE_GXM_TEXTURE_FORMAT_U8_RRRR:
 		case SCE_GXM_TEXTURE_FORMAT_U8_R111:
 		case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
-			if (read_cb == readR || read_cb == readL)
+			if ((uintptr_t)read_cb == (uintptr_t)readR || (uintptr_t)read_cb == (uintptr_t)readL)
 				fast_store = GL_TRUE;
 			else
 				write_cb = writeR;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_A8L8:
-			if (read_cb == readLA)
+			if ((uintptr_t)read_cb == (uintptr_t)readLA)
 				fast_store = GL_TRUE;
 			else
 				write_cb = writeRA;
@@ -1554,7 +1554,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 						
 						// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
 						void *target_data = decompressed_data;
-						if (read_cb != readRGBA) {
+						if ((uintptr_t)read_cb != (uintptr_t)readRGBA) {
 							target_data = vglMalloc(pot_w * pot_h * 4);
 							uint8_t *src = (uint8_t *)decompressed_data;
 							uint32_t *dst = target_data;
