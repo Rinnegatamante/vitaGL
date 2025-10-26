@@ -706,6 +706,12 @@ void glsl_handle_globals(char *txt, char *out) {
 	char *type = txt + strlen(glsl_hdr);
 	char *last_func_start = strstr(txt + strlen(glsl_hdr), "{");
 	char *last_func_end = strstr(last_func_start, "}");
+	char *next_func_start = strstr(last_func_start + 1, "{");
+	// Branch inside a function, skipping until end of function
+	while (next_func_start && next_func_start < last_func_end) {
+		last_func_end = strstr(last_func_end + 1, "}");
+		next_func_start = strstr(next_func_start + 1, "{");
+	}
 	// First pass: marking all global variables
 	while (type) {
 		while (*type == ' ' || *type == '\t' || *type == '\r' || *type == '\n') {
@@ -714,21 +720,29 @@ void glsl_handle_globals(char *txt, char *out) {
 		if (*type == 0)
 			break;
 		if (!strncmp(type, "float", 5) ||
-		    !strncmp(type, "int", 3) || 
-		    !strncmp(type, "vec", 3) ||
-		    !strncmp(type, "ivec", 4) ||
-		    !strncmp(type, "mat", 3) ||
-		    !strncmp(type, "const", 5)
+			!strncmp(type, "int", 3) || 
+			!strncmp(type, "vec", 3) ||
+			!strncmp(type, "ivec", 4) ||
+			!strncmp(type, "mat", 3) ||
+			!strncmp(type, "const", 5) ||
+			!strncmp(type, "lowp", 4) ||
+			!strncmp(type, "mediump", 7) ||
+			!strncmp(type, "highp", 5)
 		) {
 			char *var_end = strstr(type, ";");
 HANDLE_VAR:
 			if (last_func_start && last_func_end && type > last_func_start && var_end < last_func_end) { // Var is inside a function, skipping
-				type = strstr(type, "}");
-				if (type)
-					type++;
+				type = last_func_end + 1;
 			} else if (last_func_end && type > last_func_end) { // Var is after last function, need to update last function
-				last_func_start = strstr(last_func_start + 1, "{");
+				last_func_start = next_func_start;
 				last_func_end = strstr(last_func_end + 1, "}");
+				if (last_func_start)
+					next_func_start = strstr(last_func_start + 1, "{");
+				// Branch inside a function, skipping until end of function
+				while (next_func_start && next_func_start < last_func_end) {
+					last_func_end = strstr(last_func_end + 1, "}");
+					next_func_start = strstr(next_func_start + 1, "{");
+				}
 				goto HANDLE_VAR;
 			} else if (var_end < last_func_start || !last_func_start) { // Var is prior a function, handling it
 				type[0] = '\v';
@@ -749,6 +763,9 @@ HANDLE_VAR:
 	glsl_replace_marker("\vvec", "static i");
 	glsl_replace_marker("\vat", "static m");
 	glsl_replace_marker("\vonst", "static c");
+	glsl_replace_marker("\vowp", "static l");
+	glsl_replace_marker("\vediump", "static m");
+	glsl_replace_marker("\vighp", "static h");
 	
 	if (strlen(out) == 0)
 		strcpy(out, src);
