@@ -657,7 +657,7 @@ void *vglMalloc(uint32_t size) {
 	res = vgl_malloc(size, VGL_MEM_VRAM);
 #ifndef SKIP_ERROR_HANDLING
 	if (!res) {
-		vgl_log("%s:%d: vglMalloc failed allocating 0x%X bytes (Call generated from 0x08%x).\n", __FILE__, __LINE__, size, __builtin_return_address(0));
+		vgl_log("%s:%d: vglMalloc failed allocating 0x%X bytes (Call generated from 0x%08X).\n", __FILE__, __LINE__, size, __builtin_return_address(0));
 	}
 #endif
 	return res;
