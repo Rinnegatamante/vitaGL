@@ -457,13 +457,13 @@ void *serialize_shader(void *out, size_t *sz, shader *s, GLboolean save_bindings
 		m = (matrix_uniform *)m->chain;
 	}
 	void *_out = out;
-	if (!_out) {
 #ifdef HAVE_GLSL_TRANSLATOR
-		if (save_bindings)
-			*sz = (1 + matrix_uniforms_num) * sizeof(uint32_t) + s->size + sizeof(binds_map);
-		else
+	if (save_bindings)
+		*sz = (1 + matrix_uniforms_num) * sizeof(uint32_t) + s->size + sizeof(binds_map);
+	else
 #endif
-			*sz = (1 + matrix_uniforms_num) * sizeof(uint32_t) + s->size;
+		*sz = (1 + matrix_uniforms_num) * sizeof(uint32_t) + s->size;
+	if (!_out) {
 		_out = vglMalloc(*sz);
 	}
 	uint8_t *buf = (uint8_t *)_out;
