@@ -748,7 +748,7 @@ HANDLE_VAR:
 				type[0] = '\v';
 				type = var_end + 1;
 			} else { // Var is a function, skipping
-				type = var_end + 1;
+				type = last_func_end + 1;
 			}
 		} else {
 			type = strstr(type, ";");
