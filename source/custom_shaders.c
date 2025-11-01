@@ -173,19 +173,22 @@ char vgl_file_cache_path[256];
 			if (u->ptr == p->ffp_binds[FFP_MVP_MATRIX]) { \
 				if (mvp_modified) { \
 					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix); \
+					recalculate_normal_matrix(); \
+					mvp_modified = GL_FALSE; \
 				} \
 				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_MVP_MATRIX], 0, 16, (const float *)mvp_matrix); \
 			} else if (u->ptr == p->ffp_binds[FFP_MV_MATRIX]) { \
 				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_MV_MATRIX], 0, 16, (const float *)modelview_matrix); \
 			} else if (u->ptr == p->ffp_binds[FFP_NORMAL_MATRIX]) { \
 				if (mvp_modified) { \
+					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix); \
 					recalculate_normal_matrix(); \
+					mvp_modified = GL_FALSE; \
 				} \
 				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_NORMAL_MATRIX], 0, 9, (const float *)normal_matrix); \
 			} else if (u->size > 0 && u->size < 0xFFFFFFFF) \
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
 		} \
-		mvp_modified = GL_FALSE; \
 		dirty_vert_unifs = GL_FALSE; \
 	} \
 	if (p->frag_uniforms && dirty_frag_unifs) { \
