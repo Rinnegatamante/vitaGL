@@ -1073,13 +1073,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #endif
 		// Recalculating normal matrix if necessary (TODO: This should be recalculated only when MV changes)
 		if (mask.lights_num > 0) {
-			matrix3x3 inverted;
-			matrix3x3 top_modelview_matrix;
-			vgl_fast_memcpy(top_modelview_matrix[0], modelview_matrix[0], sizeof(float) * 3);
-			vgl_fast_memcpy(top_modelview_matrix[1], modelview_matrix[1], sizeof(float) * 3);
-			vgl_fast_memcpy(top_modelview_matrix[2], modelview_matrix[2], sizeof(float) * 3);
-			matrix3x3_invert(inverted, top_modelview_matrix);
-			matrix3x3_transpose(normal_matrix, inverted);
+			recalculate_normal_matrix();
 		}
 
 		mvp_modified = GL_FALSE;

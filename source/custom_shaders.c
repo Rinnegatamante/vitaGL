@@ -179,6 +179,9 @@ char vgl_file_cache_path[256];
 			} else if (u->ptr == p->ffp_binds[FFP_MV_MATRIX]) { \
 				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_MV_MATRIX], 0, 16, (const float *)modelview_matrix); \
 			} else if (u->ptr == p->ffp_binds[FFP_NORMAL_MATRIX]) { \
+				if (mvp_modified) { \
+					recalculate_normal_matrix(); \
+				} \
 				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_NORMAL_MATRIX], 0, 9, (const float *)normal_matrix); \
 			} else if (u->size > 0 && u->size < 0xFFFFFFFF) \
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \

@@ -379,6 +379,15 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 #define patchFragmentProgram sceGxmShaderPatcherCreateFragmentProgram
 #endif
 
+#define recalculate_normal_matrix() \
+	matrix3x3 inverted; \
+	matrix3x3 top_modelview_matrix; \
+	vgl_fast_memcpy(top_modelview_matrix[0], modelview_matrix[0], sizeof(float) * 3); \
+	vgl_fast_memcpy(top_modelview_matrix[1], modelview_matrix[1], sizeof(float) * 3); \
+	vgl_fast_memcpy(top_modelview_matrix[2], modelview_matrix[2], sizeof(float) * 3); \
+	matrix3x3_invert(inverted, top_modelview_matrix); \
+	matrix3x3_transpose(normal_matrix, inverted);
+
 #define rebuild_frag_shader(x, y, z, w) patchFragmentProgram(gxm_shader_patcher, x, w, msaa_mode, &blend_info.info, z, y) // Creates a new patched fragment program with proper blend settings
 
 #ifdef HAVE_SOFTFP_ABI
