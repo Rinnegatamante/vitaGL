@@ -189,17 +189,7 @@ char vgl_file_cache_path[256];
 		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer); \
 		for (int z = 0; z < p->frag_uniforms_num; z++) { \
 			uniform *u = &p->frag_uniforms[z]; \
-			if (u->ptr == p->ffp_binds[FFP_MVP_MATRIX]) { \
-				if (mvp_modified) { \
-					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix); \
-					mvp_modified = GL_FALSE; \
-				} \
-				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_MVP_MATRIX], 0, 16, (const float *)mvp_matrix); \
-			} else if (u->ptr == p->ffp_binds[FFP_MV_MATRIX]) { \
-				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_MV_MATRIX], 0, 16, (const float *)modelview_matrix); \
-			} else if (u->ptr == p->ffp_binds[FFP_NORMAL_MATRIX]) { \
-				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_NORMAL_MATRIX], 0, 9, (const float *)normal_matrix); \
-			} else if (u->size > 0 && u->size < 0xFFFFFFFF) \
+			if (u->size > 0 && u->size < 0xFFFFFFFF) \
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
 		} \
 		dirty_frag_unifs = GL_FALSE; \
@@ -2085,11 +2075,6 @@ void glLinkProgram(GLuint progr) {
 	p->status = PROG_LINKED;
 
 	// Analyzing fragment shader
-#ifdef HAVE_FFP_SHADER_SUPPORT
-	for (int i = 0; i < FFP_BINDS_NUM; i++) {
-		p->ffp_binds[i] = sceGxmProgramFindParameterByName(p->fshader->prog, ffp_bind_names[i]);
-	}
-#endif
 	uint32_t i, cnt, j;
 	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
 		p->frag_texunits[i] = GL_FALSE;
@@ -2140,13 +2125,7 @@ void glLinkProgram(GLuint progr) {
 	// Analyzing vertex shader
 #ifdef HAVE_FFP_SHADER_SUPPORT
 	for (int i = 0; i < FFP_BINDS_NUM; i++) {
-		const SceGxmProgramParameter *ffp_param = sceGxmProgramFindParameterByName(p->vshader->prog, ffp_bind_names[i]);
-#ifndef SKIP_ERROR_HANDLING
-		if (p->ffp_binds[i] && ffp_param) {
-			vgl_log("%s:%d: %s: Legacy uniform bind %s used in both fragment and vertex shader. This behaviour is currently unsupported.\n", __FILE__, __LINE__, __func__, ffp_bind_names[i]);
-		}
-#endif
-		p->ffp_binds[i] = ffp_param;
+		p->ffp_binds[i] = sceGxmProgramFindParameterByName(p->vshader->prog, ffp_bind_names[i]);
 	}
 #endif
 	cnt = sceGxmProgramGetParameterCount(p->vshader->prog);

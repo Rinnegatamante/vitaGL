@@ -975,7 +975,9 @@ void glsl_translator_process(shader *s) {
 	if (glsl_precision_low)
 		size += strlen(glsl_precision_hdr);
 #ifdef HAVE_FFP_SHADER_SUPPORT
-	size += strlen(glsl_ffp_hdr);
+	if (s->type == GL_VERTEX_SHADER) {
+		size += strlen(glsl_ffp_hdr);
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	if (glsl_sema_mode == VGL_MODE_GLOBAL)
@@ -1045,10 +1047,12 @@ void glsl_translator_process(shader *s) {
 
 #ifdef HAVE_FFP_SHADER_SUPPORT
 	GLboolean has_ffp_bind[FFP_BINDS_NUM];
-	for (int i = 0; i < FFP_BINDS_NUM; i++) {
-		has_ffp_bind[i] = strstr(out, ffp_bind_names[i]) ? GL_TRUE : GL_FALSE;
-		if (has_ffp_bind[i])
-			size += strlen(ffp_bind_defines[i]);
+	if (s->type == GL_VERTEX_SHADER) {
+		for (int i = 0; i < FFP_BINDS_NUM; i++) {
+			has_ffp_bind[i] = strstr(out, ffp_bind_names[i]) ? GL_TRUE : GL_FALSE;
+			if (has_ffp_bind[i])
+				size += strlen(ffp_bind_defines[i]);
+		}
 	}
 #endif
 
@@ -1095,11 +1099,13 @@ void glsl_translator_process(shader *s) {
 		strcat(s->source, glsl_precision_hdr);
 	
 #ifdef HAVE_FFP_SHADER_SUPPORT
-	for (int i = 0; i < FFP_BINDS_NUM; i++) {
-		if (has_ffp_bind[i])
-			strcat(s->source, ffp_bind_defines[i]);
+	if (s->type == GL_VERTEX_SHADER) {
+		for (int i = 0; i < FFP_BINDS_NUM; i++) {
+			if (has_ffp_bind[i])
+				strcat(s->source, ffp_bind_defines[i]);
+		}
+		strcat(s->source, glsl_ffp_hdr);
 	}
-	strcat(s->source, glsl_ffp_hdr);
 #endif
 	
 	char *text = s->source + strlen(s->source);
