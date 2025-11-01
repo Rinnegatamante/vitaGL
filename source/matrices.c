@@ -32,7 +32,7 @@ GLboolean mvp_modified = GL_TRUE; // Check if ModelViewProjection matrix needs t
 matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 matrix4x4 projection_matrix; // Projection Matrix
 matrix4x4 modelview_matrix; // ModelView Matrix
-matrix4x4 normal_matrix; // Normal Matrix
+matrix3x3 normal_matrix; // Normal Matrix
 matrix4x4 texture_matrix[TEXTURE_COORDS_NUM]; // Texture Matrix
 matrix4x4 *matrix = &modelview_matrix; // Current in-use matrix mode
 

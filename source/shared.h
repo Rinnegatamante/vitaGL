@@ -1050,7 +1050,7 @@ extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix
 extern matrix4x4 projection_matrix; // Projection Matrix
 extern matrix4x4 modelview_matrix; // ModelView Matrix
 extern matrix4x4 texture_matrix[TEXTURE_COORDS_NUM]; // Texture Matrix
-extern matrix4x4 normal_matrix; // Normal Matrix
+extern matrix3x3 normal_matrix; // Normal Matrix
 extern matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH]; // Modelview matrices stack
 extern matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH]; // Projection matrices stack
 extern GLboolean mvp_modified; // Check if ModelViewProjection matrix needs to be recreated
