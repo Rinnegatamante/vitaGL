@@ -155,4 +155,16 @@ R"(#define float half
 #define int4 short4
 )";
 
+static const char *glsl_ffp_hdr =
+R"(#ifdef VGL_HAS_MVP
+uniform float4x4 gl_ModelViewProjectionMatrix;
+#endif
+#ifdef VGL_HAS_MV
+uniform float4x4 gl_ModelViewMatrix;
+#endif
+#ifdef VGL_HAS_NM
+uniform float3x3 gl_NormalMatrix;
+#endif
+)";
+
 #endif

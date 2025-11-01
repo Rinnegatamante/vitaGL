@@ -243,6 +243,10 @@ ifeq ($(DEPTH_STENCIL_HACK),1)
 CFLAGS += -DDEPTH_STENCIL_HACK
 endif
 
+ifeq ($(HAVE_FFP_SHADER_SUPPORT),1)
+CFLAGS += -DHAVE_FFP_SHADER_SUPPORT
+endif
+
 CXXFLAGS  = $(CFLAGS) -fexceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a

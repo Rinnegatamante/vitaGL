@@ -709,6 +709,27 @@ typedef struct {
 #endif
 } shader;
 
+#ifdef HAVE_FFP_SHADER_SUPPORT
+enum {
+	FFP_MVP_MATRIX,
+	FFP_MV_MATRIX,
+	FFP_NORMAL_MATRIX,
+	FFP_BINDS_NUM
+};
+
+const char *ffp_bind_names[] = {
+	"gl_ModelViewProjectionMatrix",
+	"gl_ModelViewMatrix",
+	"gl_NormalMatrix",
+};
+
+const char *ffp_bind_defines[] = {
+	"#define VGL_HAS_MVP\n",
+	"#define VGL_HAS_MV\n",
+	"#define VGL_HAS_NM\n",
+};
+#endif
+
 #include "shaders.h"
 
 // Internal stuffs

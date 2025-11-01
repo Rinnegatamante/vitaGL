@@ -124,20 +124,15 @@ char vgl_file_cache_path[256];
 	} else { \
 		disableDrawAttrib(i) \
 	}
-	
+
+#ifndef HAVE_FFP_SHADER_SUPPORT
 #define uploadUniforms() \
 	void *buffer; \
 	if (p->vert_uniforms && dirty_vert_unifs) { \
 		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer); \
 		for (int z = 0; z < p->vert_uniforms_num; z++) { \
 			uniform *u = &p->vert_uniforms[z]; \
-			if (u->ptr == p->wvp) { \
-				if (mvp_modified) { \
-					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix); \
-					mvp_modified = GL_FALSE; \
-				} \
-				sceGxmSetUniformDataF(buffer, p->wvp, 0, 16, (const float *)mvp_matrix); \
-			} else if (u->size > 0 && u->size < 0xFFFFFFFF) \
+			if (u->size > 0 && u->size < 0xFFFFFFFF) \
 				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
 		} \
 		dirty_vert_unifs = GL_FALSE; \
@@ -168,6 +163,65 @@ char vgl_file_cache_path[256];
 			u = (ubo *)u->chain; \
 		} \
 	}
+#else
+#define uploadUniforms() \
+	void *buffer; \
+	if (p->vert_uniforms && dirty_vert_unifs) { \
+		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer); \
+		for (int z = 0; z < p->vert_uniforms_num; z++) { \
+			uniform *u = &p->vert_uniforms[z]; \
+			if (u->ptr == p->ffp_binds[FFP_MVP_MATRIX]) { \
+				if (mvp_modified) { \
+					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix); \
+					mvp_modified = GL_FALSE; \
+				} \
+				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_MVP_MATRIX], 0, 16, (const float *)mvp_matrix); \
+			} else if (u->ptr == p->ffp_binds[FFP_MV_MATRIX]) { \
+				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_MV_MATRIX], 0, 16, (const float *)modelview_matrix); \
+			} else if (u->ptr == p->ffp_binds[FFP_NORMAL_MATRIX]) { \
+				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_NORMAL_MATRIX], 0, 9, (const float *)normal_matrix); \
+			} else if (u->size > 0 && u->size < 0xFFFFFFFF) \
+				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
+		} \
+		dirty_vert_unifs = GL_FALSE; \
+	} \
+	if (p->frag_uniforms && dirty_frag_unifs) { \
+		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer); \
+		for (int z = 0; z < p->frag_uniforms_num; z++) { \
+			uniform *u = &p->frag_uniforms[z]; \
+			if (u->ptr == p->ffp_binds[FFP_MVP_MATRIX]) { \
+				if (mvp_modified) { \
+					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix); \
+					mvp_modified = GL_FALSE; \
+				} \
+				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_MVP_MATRIX], 0, 16, (const float *)mvp_matrix); \
+			} else if (u->ptr == p->ffp_binds[FFP_MV_MATRIX]) { \
+				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_MV_MATRIX], 0, 16, (const float *)modelview_matrix); \
+			} else if (u->ptr == p->ffp_binds[FFP_NORMAL_MATRIX]) { \
+				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_NORMAL_MATRIX], 0, 9, (const float *)normal_matrix); \
+			} else if (u->size > 0 && u->size < 0xFFFFFFFF) \
+				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
+		} \
+		dirty_frag_unifs = GL_FALSE; \
+	} \
+	if (p->vert_ubos) { \
+		ubo *u = p->vert_ubos; \
+		while (u) { \
+			ubo *b = u->alias ? u->alias : u; \
+			sceGxmSetVertexUniformBuffer(gxm_context, b->idx, (uint8_t *)ubo_buf[b->bind]->ptr + ubo_offset[b->bind]); \
+			ubo_buf[b->bind]->last_frame = vgl_framecount; \
+			u = (ubo *)u->chain; \
+		} \
+	} \
+	if (p->frag_ubos) { \
+		ubo *u = p->frag_ubos; \
+		while (u) { \
+			sceGxmSetFragmentUniformBuffer(gxm_context, u->idx, (uint8_t *)ubo_buf[u->bind]->ptr + ubo_offset[u->bind]); \
+			ubo_buf[u->bind]->last_frame = vgl_framecount; \
+			u = (ubo *)u->chain; \
+		} \
+	}
+#endif
 	
 #define setupFragProgram() \
 	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float)) { \
@@ -274,7 +328,9 @@ typedef struct {
 	GLuint attr_num;
 	GLuint attr_idx;
 	GLuint stream_num;
-	const SceGxmProgramParameter *wvp;
+#ifdef HAVE_FFP_SHADER_SUPPORT
+	const SceGxmProgramParameter *ffp_binds[FFP_BINDS_NUM];
+#endif
 	uniform *vert_uniforms;
 	uniform *frag_uniforms;
 	uint32_t vert_uniforms_num;
@@ -1699,7 +1755,11 @@ GLuint glCreateProgram(void) {
 			progs[i].attr_idx = 0;
 			progs[i].max_frag_texunit_idx = 0;
 			progs[i].max_vert_texunit_idx = 0;
-			progs[i].wvp = NULL;
+#ifdef HAVE_FFP_SHADER_SUPPORT
+			for (int j = 0; j < FFP_BINDS_NUM; j++) {
+				progs[i].ffp_binds[j] = NULL;
+			}
+#endif
 			progs[i].vshader = NULL;
 			progs[i].fshader = NULL;
 			progs[i].vert_uniforms = NULL;
@@ -2025,6 +2085,11 @@ void glLinkProgram(GLuint progr) {
 	p->status = PROG_LINKED;
 
 	// Analyzing fragment shader
+#ifdef HAVE_FFP_SHADER_SUPPORT
+	for (int i = 0; i < FFP_BINDS_NUM; i++) {
+		p->ffp_binds[i] = sceGxmProgramFindParameterByName(p->fshader->prog, ffp_bind_names[i]);
+	}
+#endif
 	uint32_t i, cnt, j;
 	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
 		p->frag_texunits[i] = GL_FALSE;
@@ -2073,7 +2138,17 @@ void glLinkProgram(GLuint progr) {
 	
 
 	// Analyzing vertex shader
-	p->wvp = sceGxmProgramFindParameterByName(p->vshader->prog, "gl_ModelViewProjectionMatrix");
+#ifdef HAVE_FFP_SHADER_SUPPORT
+	for (int i = 0; i < FFP_BINDS_NUM; i++) {
+		const SceGxmProgramParameter *ffp_param = sceGxmProgramFindParameterByName(p->vshader->prog, ffp_bind_names[i]);
+#ifndef SKIP_ERROR_HANDLING
+		if (p->ffp_binds[i] && ffp_param) {
+			vgl_log("%s:%d: %s: Legacy uniform bind %s used in both fragment and vertex shader. This behaviour is currently unsupported.\n", __FILE__, __LINE__, __func__, ffp_bind_names[i]);
+		}
+#endif
+		p->ffp_binds[i] = ffp_param;
+	}
+#endif
 	cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
 	for (i = 0; i < cnt; i++) {
 		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, i);
