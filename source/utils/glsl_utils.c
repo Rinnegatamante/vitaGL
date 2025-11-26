@@ -80,6 +80,14 @@
 		type = strstr(txt + strlen(glsl_hdr), m); \
 	}
 
+#ifdef HAVE_FFP_SHADER_SUPPORT
+const char *ffp_bind_defines[FFP_BINDS_NUM] = {
+	"#define VGL_HAS_MVP\n",
+	"#define VGL_HAS_MV\n",
+	"#define VGL_HAS_NM\n",
+};
+#endif
+
 glsl_sema_bind glsl_custom_bindings[MAX_CUSTOM_BINDINGS];
 int glsl_custom_bindings_num = 0;
 int glsl_current_ref_idx = 0;

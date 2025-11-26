@@ -241,6 +241,14 @@ char vgl_file_cache_path[256];
 		attributes = cur_vao->vertex_attrib_config; \
 		streams = cur_vao->vertex_stream_config; \
 	}
+	
+#ifdef HAVE_FFP_SHADER_SUPPORT
+const char *ffp_bind_names[FFP_BINDS_NUM] = {
+	"gl_ModelViewProjectionMatrix",
+	"gl_ModelViewMatrix",
+	"gl_NormalMatrix",
+};
+#endif
 
 // Internal stuffs
 GLboolean is_shark_online = GL_FALSE; // Current vitaShaRK status

@@ -726,17 +726,7 @@ enum {
 	FFP_BINDS_NUM
 };
 
-const char *ffp_bind_names[] = {
-	"gl_ModelViewProjectionMatrix",
-	"gl_ModelViewMatrix",
-	"gl_NormalMatrix",
-};
-
-const char *ffp_bind_defines[] = {
-	"#define VGL_HAS_MVP\n",
-	"#define VGL_HAS_MV\n",
-	"#define VGL_HAS_NM\n",
-};
+extern const char *ffp_bind_names[FFP_BINDS_NUM];
 #endif
 
 #include "shaders.h"
