@@ -25,6 +25,7 @@ In order to build vitaGL use the following command: `make install`.
 |`HAVE_CPU_TRACER=1`| Makes the library insert a Razor CPU sync at every buffer swap for better frame timelines in the profiler.|
 |`DEBUG_GLSL_TRANSLATOR=1`| Enables logging of GLSL translator input and output prior shader compilation process.|
 |`DEBUG_GLSL_PREPROCESSOR=1`| Enables logging of GLSL preprocessor input and output prior shader compilation process.|
+|`DEBUG_GC=1`| Enables sanity checks for the internal garbage collector.|
 ### Compatibility Flags
 | Flag | Description |
 | --- | --- |

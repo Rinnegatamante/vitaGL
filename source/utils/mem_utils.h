@@ -26,9 +26,6 @@
 
 #define SCE_KERNEL_MAX_MAIN_CDIALOG_MEM_SIZE 0x8C6000
 
-// Debug flags
-//#define DEBUG_GC // Enable this to enable logging for the garbage collector
-
 #ifdef DISABLE_CLIB
 #include <string.h>
 #define vgl_memset memset
@@ -75,10 +72,26 @@ typedef struct {
 #endif
 } render_target;
 void __markRtAsDirty(render_target *rt);
+#ifdef DEBUG_GC
+#define _markRtAsDirty(x) \
+	if (frame_rt_purge_idx >= FRAME_PURGE_RENDERTARGETS_LIST_SIZE) { \
+		vgl_log("%s:%d Garbage collector overflow. Consider increasing FRAME_PURGE_RENDERTARGETS_LIST_SIZE.\n", __FILE__, __LINE__); \
+	} \
+	frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
+#else
 #define _markRtAsDirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
+#endif
 #define markRtAsDirty(x) __markRtAsDirty((render_target *)x)
 #else
+#ifdef DEBUG_GC
+#define markRtAsDirty(x) \
+	if (frame_rt_purge_idx >= FRAME_PURGE_RENDERTARGETS_LIST_SIZE) { \
+		vgl_log("%s:%d Garbage collector overflow. Consider increasing FRAME_PURGE_RENDERTARGETS_LIST_SIZE.\n", __FILE__, __LINE__); \
+	} \
+	frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
+#else
 #define markRtAsDirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
+#endif
 #endif
 
 void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_t size_cdlg);

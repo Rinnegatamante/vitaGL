@@ -247,6 +247,10 @@ ifeq ($(HAVE_FFP_SHADER_SUPPORT),1)
 CFLAGS += -DHAVE_FFP_SHADER_SUPPORT
 endif
 
+ifeq ($(DEBUG_GC),1)
+CFLAGS += -DDEBUG_GC
+endif
+
 CXXFLAGS  = $(CFLAGS) -fexceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a
