@@ -708,11 +708,11 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
  * add to it static keyword only if not uniform. This is required cause CG handles
  * global variables by default as uniforms.
  */
-void glsl_handle_globals(char *txt, char *out) {
+void glsl_handle_globals(char *txt, char *out, GLsizei preamble_size) {
 	char *src = txt;
 	out[0] = 0;
-	char *type = txt + strlen(glsl_hdr);
-	char *last_func_start = strstr(txt + strlen(glsl_hdr), "{");
+	char *type = txt + preamble_size;
+	char *last_func_start = strstr(type, "{");
 	char *last_func_end = strstr(last_func_start, "}");
 	char *next_func_start = strstr(last_func_start + 1, "{");
 	// Branch inside a function, skipping until end of function
@@ -1130,7 +1130,8 @@ void glsl_translator_process(shader *s) {
 	}
 #endif
 	
-	char *text = s->source + strlen(s->source);
+	GLsizei preamble_size = strlen(s->source);
+	char *text = s->source + preamble_size;
 	strcat(s->source, out);
 	vgl_free(out);
 
@@ -1239,7 +1240,7 @@ void glsl_translator_process(shader *s) {
 	vgl_free(s->source);
 	// Manually handle global variables, adding "static" to them
 	char *dst2 = vglMalloc(strlen(dst) + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
-	glsl_handle_globals(dst, dst2);
+	glsl_handle_globals(dst, dst2, preamble_size);
 	vgl_free(dst);
 	// Keeping on mem only the strict minimum necessary for the translated shader
 	char *final = vglMalloc(strlen(dst2) + 1);
