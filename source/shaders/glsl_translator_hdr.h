@@ -165,6 +165,13 @@ uniform float4x4 gl_ModelViewMatrix;
 #ifdef VGL_HAS_NM
 uniform float3x3 gl_NormalMatrix;
 #endif
+#ifdef VGL_HAS_FOG
+struct vgl_Fog {
+	float density;
+	float4 color;
+};
+uniform vgl_Fog gl_Fog;
+#endif
 )";
 
 #endif

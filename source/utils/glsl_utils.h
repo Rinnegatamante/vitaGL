@@ -47,7 +47,6 @@ extern GLenum prev_shader_type;
 void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFrontFacing);
 void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacing);
 
-void glsl_inject_mul(char *txt, char *out);
 void glsl_nuke_comments(char *txt);
 
 void glsl_translator_process(shader *s);

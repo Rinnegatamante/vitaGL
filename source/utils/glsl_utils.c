@@ -67,7 +67,7 @@
 	}
 
 #define glsl_replace_marker(m, r) \
-	type = strstr(txt + strlen(glsl_hdr), m); \
+	type = strstr(txt + preamble_size, m); \
 	while (type) { \
 		char *res = (char *)vglMalloc(MEM_ENLARGER_SIZE); \
 		type[0] = 0; \
@@ -77,7 +77,7 @@
 		strcpy(out, res); \
 		vgl_free(res); \
 		txt = out; \
-		type = strstr(txt + strlen(glsl_hdr), m); \
+		type = strstr(txt + preamble_size, m); \
 	}
 
 #ifdef HAVE_FFP_SHADER_SUPPORT
@@ -85,6 +85,7 @@ const char *ffp_bind_defines[FFP_BINDS_NUM] = {
 	"#define VGL_HAS_MVP\n",
 	"#define VGL_HAS_MV\n",
 	"#define VGL_HAS_NM\n",
+	"#define VGL_HAS_FOG\n",
 };
 #endif
 
@@ -786,8 +787,8 @@ HANDLE_VAR:
  * and vector * matrix operations. This implementation is very likely non exhaustive
  * since, for a proper implementation, ideally we'd want a proper GLSL parser.
  */
-void glsl_inject_mul(char *txt, char *out) {
-	char *star = strstr(txt + strlen(glsl_hdr), "*");
+void glsl_inject_mul(char *txt, char *out, GLsizei preamble_size) {
+	char *star = strstr(txt + preamble_size, "*");
 	while (star) {
 		if (star[1] == '=') // FIXME: *= still not handled
 			star = strstr(star + 1, "*");
@@ -928,7 +929,7 @@ LOOP_START:
 		strcpy(out, res);
 		vgl_free(res);
 		txt = out;
-		star = strstr(txt + strlen(glsl_hdr), "*");
+		star = strstr(txt + preamble_size, "*");
 	} else { // [ bracket match, we assume a matrix is not involved
 		uint32_t jump = right - txt;
 		strcpy(res, txt);
@@ -984,9 +985,7 @@ void glsl_translator_process(shader *s) {
 	if (glsl_precision_low)
 		size += strlen(glsl_precision_hdr);
 #ifdef HAVE_FFP_SHADER_SUPPORT
-	if (s->type == GL_VERTEX_SHADER) {
-		size += strlen(glsl_ffp_hdr);
-	}
+	size += strlen(glsl_ffp_hdr);
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	if (glsl_sema_mode == VGL_MODE_GLOBAL)
@@ -1058,12 +1057,10 @@ void glsl_translator_process(shader *s) {
 
 #ifdef HAVE_FFP_SHADER_SUPPORT
 	GLboolean has_ffp_bind[FFP_BINDS_NUM];
-	if (s->type == GL_VERTEX_SHADER) {
-		for (int i = 0; i < FFP_BINDS_NUM; i++) {
-			has_ffp_bind[i] = strstr(out, ffp_bind_names[i]) ? GL_TRUE : GL_FALSE;
-			if (has_ffp_bind[i])
-				size += strlen(ffp_bind_defines[i]);
-		}
+	for (int i = 0; i < FFP_BINDS_NUM; i++) {
+		has_ffp_bind[i] = strstr(out, ffp_bind_names[i]) ? GL_TRUE : GL_FALSE;
+		if (has_ffp_bind[i])
+			size += strlen(ffp_bind_defines[i]);
 	}
 #endif
 
@@ -1121,13 +1118,11 @@ void glsl_translator_process(shader *s) {
 		strcat(s->source, glsl_precision_hdr);
 	
 #ifdef HAVE_FFP_SHADER_SUPPORT
-	if (s->type == GL_VERTEX_SHADER) {
-		for (int i = 0; i < FFP_BINDS_NUM; i++) {
-			if (has_ffp_bind[i])
-				strcat(s->source, ffp_bind_defines[i]);
-		}
-		strcat(s->source, glsl_ffp_hdr);
+	for (int i = 0; i < FFP_BINDS_NUM; i++) {
+		if (has_ffp_bind[i])
+			strcat(s->source, ffp_bind_defines[i]);
 	}
+	strcat(s->source, glsl_ffp_hdr);
 #endif
 	
 	GLsizei preamble_size = strlen(s->source);
@@ -1234,9 +1229,10 @@ void glsl_translator_process(shader *s) {
 			str = strstr(str, "\f");
 		}
 	}
+
 	// Manually handle * operator replacements for vector * matrix and matrix * vector operations support
 	char *dst = vglMalloc(size + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
-	glsl_inject_mul(s->source, dst);
+	glsl_inject_mul(s->source, dst, preamble_size);
 	vgl_free(s->source);
 	// Manually handle global variables, adding "static" to them
 	char *dst2 = vglMalloc(strlen(dst) + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
