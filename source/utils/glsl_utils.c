@@ -978,7 +978,8 @@ void glsl_translator_process(shader *s) {
 	uint32_t source_size = 1 + strlen(s->source);
 	uint32_t size = 1;
 	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE, hasPointCoord = GL_FALSE;
-	GLboolean hasPointSize = GL_FALSE, hasFragDepth = GL_FALSE, hasFrontFacing = GL_FALSE;
+	GLboolean hasPointSize = GL_FALSE, hasFragDepth = GL_FALSE, hasFrontFacing = GL_FALSE, hasFrontColor = GL_FALSE;
+	GLboolean hasColor = GL_FALSE;
 	size += strlen(glsl_hdr);
 	if (glsl_precision_low)
 		size += strlen(glsl_precision_hdr);
@@ -1046,11 +1047,13 @@ void glsl_translator_process(shader *s) {
 		hasPointSize = strstr(out, "gl_PointSize") ? GL_TRUE : GL_FALSE;
 		hasInstanceID = strstr(out, "gl_InstanceID") ? GL_TRUE : GL_FALSE;
 		hasVertexID = strstr(out, "gl_VertexID") ? GL_TRUE : GL_FALSE;
+		hasFrontColor = strstr(out, "gl_FrontColor") ? GL_TRUE : GL_FALSE;
 	} else {
 		hasPointCoord = strstr(out, "gl_PointCoord") ? GL_TRUE : GL_FALSE;
 		hasFrontFacing = strstr(out, "gl_FrontFacing") ? GL_TRUE : GL_FALSE;
 		hasFragCoord = strstr(out, "gl_FragCoord") ? GL_TRUE : GL_FALSE;
 		hasFragDepth = strstr(out, "gl_FragDepth") ? GL_TRUE : GL_FALSE;
+		hasColor = strstr(out, "gl_Color") ? GL_TRUE : GL_FALSE;
 	}
 
 #ifdef HAVE_FFP_SHADER_SUPPORT
@@ -1064,20 +1067,27 @@ void glsl_translator_process(shader *s) {
 	}
 #endif
 
-	if (hasPointSize)
-		size += strlen("varying out float gl_PointSize : PSIZE;\n");
-	if (hasFrontFacing)
-		size += strlen("varying in float vgl_Face : FACE;\n");
-	if (hasFragCoord)
-		size += strlen("varying in float4 gl_FragCoord : WPOS;\n");
-	if (hasInstanceID)
-		size += strlen("varying in int gl_InstanceID : INSTANCE;\n");
-	if (hasVertexID)
-		size += strlen("varying in int gl_VertexID : INDEX;\n");
-	if (hasFragDepth)
-		size += strlen("varying out float gl_FragDepth : DEPTH;\n");
-	if (hasPointCoord)
-		size += strlen("varying in float2 gl_PointCoord : SPRITECOORD;\n");
+	if (s->type == GL_VERTEX_SHADER) {
+		if (hasPointSize)
+			size += strlen("varying out float gl_PointSize : PSIZE;\n");
+		if (hasInstanceID)
+			size += strlen("varying in int gl_InstanceID : INSTANCE;\n");
+		if (hasVertexID)
+			size += strlen("varying in int gl_VertexID : INDEX;\n");
+		if (hasFrontColor)
+			size += strlen("varying out float4 gl_FrontColor : COLOR;\n");
+	} else {
+		if (hasFrontFacing)
+			size += strlen("varying in float vgl_Face : FACE;\n");
+		if (hasFragCoord)
+			size += strlen("varying in float4 gl_FragCoord : WPOS;\n");
+		if (hasFragDepth)
+			size += strlen("varying out float gl_FragDepth : DEPTH;\n");
+		if (hasPointCoord)
+			size += strlen("varying in float2 gl_PointCoord : SPRITECOORD;\n");
+		if (hasColor)
+			size += strlen("varying in float4 gl_Color : COLOR;\n");
+	}
 	
 	vgl_free(s->source);
 	s->source = (char *)vglMalloc(size);
@@ -1092,6 +1102,8 @@ void glsl_translator_process(shader *s) {
 			strcat(s->source, "varying in int gl_InstanceID : INSTANCE;\n");
 		if (hasVertexID)
 			strcat(s->source, "varying in int gl_VertexID : INDEX;\n");
+		if (hasFrontColor)
+			strcat(s->source, "varying out float4 gl_FrontColor : COLOR;\n");
 	} else {
 		if (hasFrontFacing)
 			strcat(s->source, "varying in float vgl_Face : FACE;\n");
@@ -1101,6 +1113,8 @@ void glsl_translator_process(shader *s) {
 			strcat(s->source, "varying out float gl_FragDepth : DEPTH;\n");
 		if (hasPointCoord)
 			strcat(s->source, "varying in float2 gl_PointCoord : SPRITECOORD;\n");
+		if (hasColor)
+			strcat(s->source, "varying in float4 gl_Color : COLOR;\n");
 	}
 	strcat(s->source, glsl_hdr);
 	if (glsl_precision_low)
