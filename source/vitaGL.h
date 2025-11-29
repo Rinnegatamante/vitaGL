@@ -957,21 +957,47 @@ EGLBoolean eglSwapBuffers(EGLDisplay display, EGLSurface surface);
 #endif
 
 // VGL_EXT_gpu_objects_array extension
+// glColorPointer equivalent for legacy vgl* draw pipeline.
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
+
+// Overloads the color object with a pre-GPU mapped memory block with a copy-less action for legacy vgl* draw pipeline.
 void vglColorPointerMapped(GLenum type, const GLvoid *pointer);
+
+// Performs a draw with the legacy vgl* draw pipeline.
 void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp);
+
+// Sets up the index list to use for the subsequent legacy vgl* draw pipeline draw action.
 void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
+
+// Overloads the index list with a pre-GPU mapped memory block with a copy-less action for legacy vgl* draw pipeline.
 void vglIndexPointerMapped(const GLvoid *pointer);
+
+// glTexCoordPointer equivalent for legacy vgl* draw pipeline.
 void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
+
+// Overloads the texture coords object with a pre-GPU mapped memory block with a copy-less action for legacy vgl* draw pipeline.
 void vglTexCoordPointerMapped(const GLvoid *pointer);
+
+// glVertexPointer equivalent for legacy vgl* draw pipeline.
 void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
+
+// Overloads the vertex object with a pre-GPU mapped memory block with a copy-less action for legacy vgl* draw pipeline.
 void vglVertexPointerMapped(GLint size, const GLvoid *pointer);
 
 // VGL_EXT_gxp_shaders extension implementation
+// glBindAttribLocation equivalent for legacy vgl* draw pipeline.
 void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type);
+
+// glBindAttribLocation equivalent for legacy vgl* draw pipeline with packed attributes support.
 GLint vglBindPackedAttribLocation(GLuint prog, const GLchar *name, const GLuint num, const GLenum type, GLuint offset, GLint stride);
+
+// glVertexAttribPointer equivalent for legacy vgl* draw pipeline.
 void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLuint count, const GLvoid *pointer);
+
+//Overloads a vertex attrib pointer with a pre-GPU mapped memory block with a copy-less action for legacy vgl* draw pipeline.
 void vglVertexAttribPointerMapped(GLuint index, const GLvoid *pointer);
+
+// Get the compiled shader binary of a given GL shader.
 void vglGetShaderBinary(GLuint index, GLsizei bufSize, GLsizei *length, void *binary);
 
 typedef enum {
@@ -984,67 +1010,162 @@ typedef enum {
 } vglMemType;
 
 typedef enum {
-	VGL_TYPE_NONE,
-	VGL_TYPE_TEXCOORD,
-	VGL_TYPE_COLOR,
-	VGL_TYPE_FOG,
-	VGL_TYPE_CLIP
+	VGL_TYPE_NONE, // No semantic
+	VGL_TYPE_TEXCOORD, // TEXCOORD#
+	VGL_TYPE_COLOR, // COLOR#
+	VGL_TYPE_FOG, // FOG
+	VGL_TYPE_CLIP // CLP#
 } vglSemanticType;
 
 typedef enum {
-	VGL_MODE_SHADER_PAIR,
-	VGL_MODE_GLOBAL,
-	VGL_MODE_POSTPONED
+	VGL_MODE_SHADER_PAIR, // Assumes glCompileShader is always called in couple of Vertex + Fragment shaders that will then be linked in the same program. Great results if this premise is respected.
+	VGL_MODE_GLOBAL, // Uses a global semantics pool for translating shaders. Less accuracy than VGL_MODE_SHADER_PAIR but has no premise that must be respected.
+	VGL_MODE_POSTPONED // Moves shaders compilation into glLinkProgram. Best results since will always have correct shader couples for the translation for accurate semantic bindings resolution.
 } vglSemanticMode;
 
 // vgl*
+// Add a new global custom semantic binding for the GLSL translator. Requires HAVE_GLSL_SUPPORT.
 void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum type);
+
+// Add a new global custom semantic binding hint for the GLSL translator. Requires HAVE_GLSL_SUPPORT.
 void vglAddSemanticBindingHint(const GLchar *const *varying, GLenum type);
+
+// Alloc memory from vitaGL internal memory pools. Needs to be freed with vglFree.
 void *vglAlloc(uint32_t size, vglMemType type);
+
+// Alloc temporary memory from vitaGL internal scratch pool. Allocation is extremely fast if CIRCULAR_VERTEX_POOL is used. Memory lifetime is guaranteed for 3 frames.
 void *vglAllocFromScratch(size_t size);
+
+// Overloads a buffer object with a pre-GPU mapped memory block with a copy-less action.
 void vglBufferData(GLenum target, const GLvoid *data);
+
+// calloc implementation for vitaGL internal memory pools.
 void *vglCalloc(uint32_t nmember, uint32_t size);
+
+// Equivalent of glShaderSource but forcing Nvidia CG language compilation. Useful for mixing between GLSL and CG with GLSL translator enabled.
 void vglCgShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length);
+
+// Alloc memory from vitaGL internal memory pools. If the memory pools exhausted, vitaGL will attempt to free enough memory to not fail this allocation. Needs to be freed with vglFree.
 void *vglForceAlloc(uint32_t size);
+
+// Frees a previously allocated memory block in the vitaGL internal memory pools.
 void vglFree(void *addr);
-void *vglGetFuncName(uint32_t func);
+
+// Get a GL function name given a function address.
+char *vglGetFuncName(uint32_t func);
+
+// Get the internal sceGxm texture descriptor of a GL texture.
 SceGxmTexture *vglGetGxmTexture(GLenum target);
+
+// Get a GL function address given a function name.
 void *vglGetProcAddress(const char *name);
+
+// Get the internal texture data pointer of a GL texture.
 void *vglGetTexDataPointer(GLenum target);
+
+// Simple vitaGL init function. Legacy pool size is the amount of memory to reserve to handle immediate mode usage.
 GLboolean vglInit(int legacy_pool_size);
+
+// vitaGL init function with customizable resolution, RAM threshold and MSAA setup.
 GLboolean vglInitExtended(int legacy_pool_size, int width, int height, int ram_threshold, SceGxmMultisampleMode msaa);
+
+// vitaGL init function with customizable resolution, memory pools sizes and MSAA setup.
 GLboolean vglInitWithCustomSizes(int legacy_pool_size, int width, int height, int ram_pool_size, int cdram_pool_size, int phycont_pool_size, int cdlg_pool_size, SceGxmMultisampleMode msaa);
+
+// vitaGL init function with customizable resolution, memory pools thresholds and MSAA setup.
 GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, int cdlg_threshold, SceGxmMultisampleMode msaa);
+
+// malloc implementation for vitaGL internal memory pools.
 void *vglMalloc(uint32_t size);
+
+// malloc_usable_size implementation for vitaGL internal memory pools.
 size_t vglMallocUsableSize(void *ptr);
+
+// memalign implementation for vitaGL internal memory pools.
 void *vglMemalign(uint32_t alignment, uint32_t size);
+
+// Gets the total amount of free memory in a given internal memory pool.
 size_t vglMemFree(vglMemType type);
+
+// Gets the total amount of free and used memory in a given internal memory pool.
 size_t vglMemTotal(vglMemType type);
+
+// Replaces original texture data pointer with a new one in a GL texture.
 void vglOverloadTexDataPointer(GLenum target, void *data);
+
+// Allows to override texture format of a GL texture. Requires HAVE_UNPURE_TEXFORMATS.
 void vglOverrideTexFormat(GLenum target);
+
+// realloc implementation for vitaGL internal memory pools.
 void *vglRealloc(void *ptr, uint32_t size);
+
+// Setup a callback executed everytime a new frame is sent to the display. Useful to setup a CPU rendered overlay on-screen.
 void vglSetDisplayCallback(void (*cb)(void *framebuf));
+
+// Setup the fragment ring buffer size of sceGxm. Must be called before vglInit*. Default value: SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE.
 void vglSetFragmentBufferSize(uint32_t size);
+
+// Setup the parameter buffer size of sceGxm. Must be called before vglInit*. Default value: SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE.
 void vglSetParamBufferSize(uint32_t size);
+
+// Change the currently used semantics binding resolution mode for the GLSL translator. Requires HAVE_GLSL_SUPPORT.
 void vglSetSemanticBindingMode(GLenum mode);
+
+// Change the lifetime for a texture to be considered cacheable. Requires HAVE_TEXTURE_CACHE.
 void vglSetTextureCacheFrequency(GLuint freq);
+
+// Setup the fragment USSE ring buffer size of sceGxm. Must be called before vglInit*. Default value: SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE.
 void vglSetUSSEBufferSize(uint32_t size);
+
+// Setup the VDM ring buffer size of sceGxm. Must be called before vglInit*. Default value: SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE.
 void vglSetVDMBufferSize(uint32_t size);
+
+// Setup the circular pools size used for generic attribute values. There is a unique pool per vertex array object. Default values: Main: 256 * 1024, Auxiliary: 64 * 1024.
 void vglSetVertexAttribPoolSize(uint32_t main_size, uint32_t aux_size);
+
+// Setup the vertex ring buffer size of sceGxm. Must be called before vglInit*. Default value: SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE.
 void vglSetVertexBufferSize(uint32_t size);
+
+// Change the total memory to use for internal circular vertex pools to use in vitaGL. Requires CIRCULAR_VERTEX_POOL. Default value: 32 * 1024 * 1024.
 void vglSetVertexPoolSize(uint32_t size);
+
+// Change the priority and affinity to use for the garbage collector thread. Must be called before vglInit*.
 void vglSetupGarbageCollector(int priority, int affinity);
+
+// Change what kind of vertex buffer objects are considered eligible for scratch memory usage in order to reduce allocation costs. Requires CIRCULAR_VERTEX_POOL and USE_SCRATCH_MEMORY.
 void vglSetupScratchMemory(GLboolean scratch_for_dynamic, GLboolean scratch_for_stream);
+
+// Setup the buffer sizes of the sceGxm shader patcher. Must be called before vglInit*. Default values: 1024 * 1024 each.
 void vglSetupShaderPatcher(uint32_t buffer_mem_size, uint32_t vertex_usse_mem_size, uint32_t fragment_usse_mem_size);
+
+// Change optimizations configuration for the runtime shader compiler.
 void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, int32_t use_fastprecision, int32_t use_fastint);
+
+// Perform a display buffer swap. Equivalent of eglSwapBuffers but allows support with Common Dialog.
 void vglSwapBuffers(GLboolean has_commondialog);
+
+// Loads the depth buffer of the currently bound renderbuffer into the currently bound GL texture.
 void vglTexImageDepthBuffer(GLenum target);
+
+// Makes vitaGL use cached memory instead of uncached memory for its internal memory pools. Must be called before vglInit*.
 void vglUseCachedMem(GLboolean use);
+
+// Makes the GLSL translator use low precision variables (eg: float -> half). Requires HAVE_GLSL_SUPPORT.
 void vglUseLowPrecision(GLboolean val);
+
+// Allows to swap between triple and double buffering. vitaGL by default uses triple buffering.
 void vglUseTripleBuffering(GLboolean usage);
+
+// Allows to set a preference on what kind of memory should be used first for certain kind of internal allocations like textures and vertex data. By default vitaGL will try to exhaust VRAM first (GL_TRUE behaviour).
 void vglUseVram(GLboolean usage);
+
+// Allows to set a preference on the kind of memory to use for the internal USSE buffers in sceGxm. By default vitaGL will not use VRAM memory.
 void vglUseVramForUSSE(GLboolean usage);
+
+// Allows vitaGL to use newlib memory once all internal mempools are exhausted. Default value: GL_TRUE.
 void vglUseExtraMem(GLboolean usage);
+
+// Simplified function to enable or disable V-Sync. For more fine granularity on the swap interval use eglSwapInterval.
 void vglWaitVblankStart(GLboolean enable);
 
 #ifdef __cplusplus

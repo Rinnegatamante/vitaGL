@@ -395,6 +395,7 @@ static const struct {
 	{"vglVertexAttribPointer", (void *)vglVertexAttribPointer},
 	{"vglVertexAttribPointerMapped", (void *)vglVertexAttribPointerMapped},
 	{"vglAlloc", (void *)vglAlloc},
+	{"vglAllocFromScratch", (void *)vglAllocFromScratch},
 	{"vglCalloc", (void *)vglCalloc},
 	{"vglCgShaderSource", (void *)vglCgShaderSource},
 	{"vglForceAlloc", (void *)vglForceAlloc},
@@ -493,11 +494,11 @@ void *vglGetProcAddress(const char *name) {
 #endif
 }
 
-void *vglGetFuncName(uint32_t func) {
+char *vglGetFuncName(uint32_t func) {
 	// search for function name
 	for (size_t i = 0; i < vgl_numproc; ++i) {
 		if ((void *)func == vgl_proctable[i].proc)
-			return vgl_proctable[i].name;
+			return (char *)vgl_proctable[i].name;
 	}
 	
 #ifndef SKIP_ERROR_HANDLING
