@@ -783,3 +783,7 @@ void vglSetupScratchMemory(GLboolean scratch_for_dynamic, GLboolean scratch_for_
 	vgl_stream_wants_scratch = scratch_for_stream;
 #endif
 }
+
+void *vglAllocFromScratch(size_t size) {
+	return gpu_alloc_mapped_temp(size);
+}
