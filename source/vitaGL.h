@@ -1108,7 +1108,7 @@ void vglSetFragmentBufferSize(uint32_t size);
 // Setup the parameter buffer size of sceGxm. Must be called before vglInit*. Default value: SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE.
 void vglSetParamBufferSize(uint32_t size);
 
-// Change the currently used semantics binding resolution mode for the GLSL translator. Requires HAVE_GLSL_SUPPORT.
+// Change the currently used semantics binding resolution mode for the GLSL translator. Default value: VGL_MODE_POSTPONED. Requires HAVE_GLSL_SUPPORT.
 void vglSetSemanticBindingMode(GLenum mode);
 
 // Change the lifetime for a texture to be considered cacheable. Requires HAVE_TEXTURE_CACHE.
