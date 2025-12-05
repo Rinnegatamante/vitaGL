@@ -73,7 +73,8 @@ inline int notEqual(float a, float b) { return (a != b ? 1 : 0); }
 inline int2 notEqual(float2 a, float2 b) { return int2(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0); }
 inline int3 notEqual(float3 a, float3 b) { return int3(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0, a.z != b.z ? 1 : 0); }
 inline int4 notEqual(float4 a, float4 b) { return int4(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0, a.z != b.z ? 1 : 0, a.w != b.w ? 1 : 0); }
-#define texture2DProj(x,y) tex2Dproj(x,y)
+inline float4 texture2DProj(sampler2D s, float3 c) { return tex2D(s, c); }
+inline float4 texture2DProj(sampler2D s, float4 c) { return tex2D(s, c.xyw); }
 #define inversesqrt rsqrt
 #define samplerCube samplerCUBE
 inline float4 glslTexture2D(sampler2D x, float2 s) { return tex2D(x,s); }
