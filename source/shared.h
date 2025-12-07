@@ -81,6 +81,10 @@
 #define SAFE_DRAW_SIZE_THRESHOLD (0x8000) // Minimum bytes of vertices data for a draw to be handled with speedhack
 #endif
 
+#ifdef HAVE_GBUFFER_SUPPORT
+#define GBUFFER_SIZE 14
+#endif
+
 #ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
 #define CIRCULAR_VERTEX_POOLS_NUM 3
 extern uint8_t *vertex_data_pool[CIRCULAR_VERTEX_POOLS_NUM];
@@ -504,6 +508,9 @@ typedef struct {
 	void *data;
 	uint32_t data_type;
 	texture *tex;
+#ifdef HAVE_GBUFFER_SUPPORT
+	texture *gbuffer[GBUFFER_SIZE];
+#endif
 } framebuffer;
 
 // Query struct

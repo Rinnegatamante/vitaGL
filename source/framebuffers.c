@@ -96,6 +96,11 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 			framebuffers[i].depthbuffer_ptr = NULL;
 			framebuffers[i].target = NULL;
 			framebuffers[i].tex = NULL;
+#ifdef HAVE_GBUFFER_SUPPORT
+			for (int z = 0; z < GBUFFER_SIZE; z++) {
+				framebuffers[i].gbuffer[z] = NULL;
+			}
+#endif
 		}
 		if (j >= n)
 			break;
@@ -375,6 +380,10 @@ inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum text
 	int old_w = fb->width, old_h = fb->height;
 	SceGxmTextureFormat fmt = sceGxmTextureGetFormat(&tex->gxm_tex);
 
+#ifdef HAVE_GBUFFER_SUPPORT
+	int gbuffer_idx;
+#endif
+
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
@@ -431,6 +440,43 @@ inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum text
 			dirty_framebuffer = GL_TRUE;
 		}
 		break;
+#ifdef HAVE_GBUFFER_SUPPORT
+	case GL_COLOR_ATTACHMENT1:
+	case GL_COLOR_ATTACHMENT2:
+	case GL_COLOR_ATTACHMENT3:
+	case GL_COLOR_ATTACHMENT4:
+	case GL_COLOR_ATTACHMENT5:
+	case GL_COLOR_ATTACHMENT6:
+	case GL_COLOR_ATTACHMENT7:
+	case GL_COLOR_ATTACHMENT8:
+	case GL_COLOR_ATTACHMENT9:
+	case GL_COLOR_ATTACHMENT10:
+	case GL_COLOR_ATTACHMENT11:
+	case GL_COLOR_ATTACHMENT12:
+	case GL_COLOR_ATTACHMENT13:
+	case GL_COLOR_ATTACHMENT14:
+	
+		// Clearing previously attached texture
+		gbuffer_idx = attachment - GL_COLOR_ATTACHMENT1;
+		if (fb->gbuffer[gbuffer_idx]) {
+			fb->gbuffer[gbuffer_idx]->ref_counter--;
+			if (fb->gbuffer[gbuffer_idx]->dirty && fb->gbuffer[gbuffer_idx]->ref_counter == 0) {
+				gpu_free_texture(fb->gbuffer[gbuffer_idx]);
+			}
+		}
+		
+		// Detaching attached texture if passed texture ID is 0
+		if (tex_id == 0) {
+			fb->gbuffer[gbuffer_idx] = NULL;
+			return;
+		}
+
+		// Increasing texture reference counter
+		fb->gbuffer[gbuffer_idx] = tex;
+		tex->ref_counter++;
+
+		break;
+#endif	
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, attachment)
 	}
@@ -511,6 +557,43 @@ inline void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum
 			dirty_framebuffer = GL_TRUE;
 		}
 		break;
+#ifdef HAVE_GBUFFER_SUPPORT
+	case GL_COLOR_ATTACHMENT1:
+	case GL_COLOR_ATTACHMENT2:
+	case GL_COLOR_ATTACHMENT3:
+	case GL_COLOR_ATTACHMENT4:
+	case GL_COLOR_ATTACHMENT5:
+	case GL_COLOR_ATTACHMENT6:
+	case GL_COLOR_ATTACHMENT7:
+	case GL_COLOR_ATTACHMENT8:
+	case GL_COLOR_ATTACHMENT9:
+	case GL_COLOR_ATTACHMENT10:
+	case GL_COLOR_ATTACHMENT11:
+	case GL_COLOR_ATTACHMENT12:
+	case GL_COLOR_ATTACHMENT13:
+	case GL_COLOR_ATTACHMENT14:
+	
+		// Clearing previously attached texture
+		gbuffer_idx = attachment - GL_COLOR_ATTACHMENT1;
+		if (fb->gbuffer[gbuffer_idx]) {
+			fb->gbuffer[gbuffer_idx]->ref_counter--;
+			if (fb->gbuffer[gbuffer_idx]->dirty && fb->gbuffer[gbuffer_idx]->ref_counter == 0) {
+				gpu_free_texture(fb->gbuffer[gbuffer_idx]);
+			}
+		}
+		
+		// Detaching attached texture if passed texture ID is 0
+		if (tex_id == 0) {
+			fb->gbuffer[gbuffer_idx] = NULL;
+			return;
+		}
+
+		// Increasing texture reference counter
+		fb->gbuffer[gbuffer_idx] = tex;
+		tex->ref_counter++;
+
+		break;
+#endif	
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, attachment)
 	}

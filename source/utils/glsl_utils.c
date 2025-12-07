@@ -981,6 +981,9 @@ void glsl_translator_process(shader *s) {
 	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE, hasPointCoord = GL_FALSE;
 	GLboolean hasPointSize = GL_FALSE, hasFragDepth = GL_FALSE, hasFrontFacing = GL_FALSE, hasFrontColor = GL_FALSE;
 	GLboolean hasColor = GL_FALSE;
+#ifdef HAVE_GBUFFER_SUPPORT
+	GLboolean hasGBuffer[GBUFFER_SIZE] = {};
+#endif
 	size += strlen(glsl_hdr);
 	if (glsl_precision_low)
 		size += strlen(glsl_precision_hdr);
@@ -1040,7 +1043,7 @@ void glsl_translator_process(shader *s) {
 		strcpy(str, "gl_FragColor");
 		str[12] = str[13] = ' ';
 		str = strstr(str, "gl_FragData[0]");
-	}	
+	}
 	
 	if (s->type == GL_VERTEX_SHADER) {
 		hasPointSize = strstr(out, "gl_PointSize") ? GL_TRUE : GL_FALSE;
@@ -1053,6 +1056,22 @@ void glsl_translator_process(shader *s) {
 		hasFragCoord = strstr(out, "gl_FragCoord") ? GL_TRUE : GL_FALSE;
 		hasFragDepth = strstr(out, "gl_FragDepth") ? GL_TRUE : GL_FALSE;
 		hasColor = strstr(out, "gl_Color") ? GL_TRUE : GL_FALSE;
+#ifdef HAVE_GBUFFER_SUPPORT
+		char *gbuffer_preamble = NULL;
+		for (int i = 0; i < GBUFFER_SIZE; i++) {
+			char tkn[40];
+			sprintf(tkn, "gl_FragData[%d]", i + 1);
+			hasGBuffer[i] = strstr(out, tkn) ? GL_TRUE: GL_FALSE;
+			if (hasGBuffer[i]) {
+				if (!gbuffer_preamble) {
+					gbuffer_preamble = vglMalloc(32 * 1024);
+					gbuffer_preamble[0] = 0;
+				}
+				sprintf(tkn, "uniform half4 vgl_gbuf%d : BUFFER[%d];\n", i + 1, i);
+				strcat(gbuffer_preamble, tkn);
+			}
+		}
+#endif
 	}
 
 #ifdef HAVE_FFP_SHADER_SUPPORT
@@ -1084,6 +1103,10 @@ void glsl_translator_process(shader *s) {
 			size += strlen("varying in float2 gl_PointCoord : SPRITECOORD;\n");
 		if (hasColor)
 			size += strlen("varying in float4 gl_Color : COLOR;\n");
+#ifdef HAVE_GBUFFER_SUPPORT
+		if (gbuffer_preamble)
+			size += strlen(gbuffer_preamble);
+#endif
 	}
 	
 	vgl_free(s->source);
@@ -1112,6 +1135,12 @@ void glsl_translator_process(shader *s) {
 			strcat(s->source, "varying in float2 gl_PointCoord : SPRITECOORD;\n");
 		if (hasColor)
 			strcat(s->source, "varying in float4 gl_Color : COLOR;\n");
+#ifdef HAVE_GBUFFER_SUPPORT
+		if (gbuffer_preamble) {
+			strcat(s->source, gbuffer_preamble);
+			vgl_free(gbuffer_preamble);
+		}
+#endif
 	}
 	strcat(s->source, glsl_hdr);
 	if (glsl_precision_low)
