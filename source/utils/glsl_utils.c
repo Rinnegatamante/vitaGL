@@ -835,8 +835,6 @@ LOOP_START:
 			break;
 		case '!':
 		case '=':
-			found = 1;
-			break;
 		case '>':
 		case '<':
 		case ',':
