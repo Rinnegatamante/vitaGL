@@ -1141,6 +1141,9 @@ void vglSetupShaderPatcher(uint32_t buffer_mem_size, uint32_t vertex_usse_mem_si
 // Change optimizations configuration for the runtime shader compiler.
 void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, int32_t use_fastprecision, int32_t use_fastint);
 
+// Load a precompiled gxp binary to a given shader handle
+void vglShaderGxpBinary(GLsizei count, const GLuint *handles, const void *binary, GLsizei length);
+
 // Perform a display buffer swap. Equivalent of eglSwapBuffers but allows support with Common Dialog.
 void vglSwapBuffers(GLboolean has_commondialog);
 

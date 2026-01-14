@@ -3494,3 +3494,13 @@ void vglOverrideTexFormat(GLenum target) {
 	}
 #endif
 }
+
+void vglShaderGxpBinary(GLsizei count, const GLuint *handles, const void *binary, GLsizei length) {
+	// Grabbing passed shader
+	shader *s = &shaders[handles[0] - 1];
+	
+	s->size = length;
+	s->prog = (SceGxmProgram *)vglMalloc(s->size);
+	vgl_fast_memcpy((SceGxmProgram *)s->prog, binary, s->size);
+	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
+}
