@@ -504,27 +504,26 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 	// Initializing mask update bit to 1
 	vgl_memset(depth_buffer, 0x80, 4 * depth_stencil_samples);
 #endif
-#else
-	// Vita's GPU can run without actual depth/stencil memory as far as no partial rendering is hit, so we just trick sceGxm into thinking it received a valid buffer
-	void *depth_buffer = gpu_alloc_mapped_aligned(SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT, 1, VGL_MEM_VRAM);
-	vgl_free(depth_buffer);
 #endif
 
 	// Allocating stencil surface
+#ifndef DEPTH_STENCIL_HACK
 	void *stencil_buffer = NULL;
 	if (has_stencil)
-#ifndef DEPTH_STENCIL_HACK
 		stencil_buffer = gpu_alloc_mapped_aligned(SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT, depth_stencil_samples, VGL_MEM_VRAM);
-#else
-		stencil_buffer = depth_buffer;
 #endif
 
 	// Initializing depth and stencil surfaces
-	sceGxmDepthStencilSurfaceInit(surface,
-		stencil_buffer ? SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M_S8 : SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M,
+	vglDepthStencilSurfaceInit(surface,
+		has_stencil ? SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M_S8 : SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M,
 		SCE_GXM_DEPTH_STENCIL_SURFACE_LINEAR,
 		msaa_mode == SCE_GXM_MULTISAMPLE_4X ? depth_stencil_width * 2 : depth_stencil_width,
+#ifdef DEPTH_STENCIL_HACK
+		// Vita's GPU can run without actual depth/stencil memory as far as no partial rendering is hit
+		NULL, NULL);
+#else
 		depth_buffer, stencil_buffer);
+#endif
 
 #ifdef STORE_DEPTH_STENCIL
 	sceGxmDepthStencilSurfaceSetForceLoadMode(surface, SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED);
