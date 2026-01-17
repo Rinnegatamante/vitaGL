@@ -608,7 +608,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				if (vert_shader_cache[i].mask.raw == vert_shader_mask) {
 					ffp_vertex_program = vert_shader_cache[i].prog;
 					ffp_vertex_program_id = vert_shader_cache[i].id;
-					vgl_fast_memcpy(ffp_vertex_params, vert_shader_cache[0].vert_unifs, VERTEX_UNIFORMS_NUM * 4);
+					vgl_fast_memcpy(ffp_vertex_params, vert_shader_cache[i].vert_unifs, VERTEX_UNIFORMS_NUM * 4);
 					ffp_dirty_vert = GL_FALSE;
 					break;
 				}
