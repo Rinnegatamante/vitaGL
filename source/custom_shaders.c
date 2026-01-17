@@ -2133,6 +2133,7 @@ void glLinkProgram(GLuint progr) {
 		ptr += 4;
 	}
 	p->frag_uniforms = (uniform *)vglMalloc(sizeof(uniform) * p->frag_uniforms_num);
+	ptr = _ptr;
 	j = 0;
 	for (i = 0; i < cnt; i++) {
 		SceGxmProgramParameter *param = (SceGxmProgramParameter *)ptr;
