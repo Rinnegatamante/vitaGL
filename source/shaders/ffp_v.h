@@ -100,7 +100,7 @@ void main(
 	float2 out vTexcoord2 : TEXCOORD1,
 #endif
 #endif
-#if lights_num > 0 && shading_mode == 1 //GL_PHONG_WIN
+#if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
 	float3 out vNormal : TEXCOORD2,
 	float3 out vEcPosition : TEXCOORD3,
 	float4 out vDiffuse : TEXCOORD4,

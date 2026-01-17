@@ -44,12 +44,14 @@ char vgl_file_cache_path[256];
 
 #define setDefaultAttribBindings() \
 	uint32_t cnt = sceGxmProgramGetParameterCount(p->vshader->prog); \
+	uint32_t *ptr = vglProgramGetParameterBase(p->vshader->prog); \
 	for (int i = 0; i < cnt; i++) { \
-		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, i); \
+		SceGxmProgramParameter *param = (SceGxmProgramParameter *)ptr; \
 		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param); \
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) { \
 			p->attr[p->attr_highest_idx++].regIndex = sceGxmProgramParameterGetResourceIndex(param); \
 		} \
+		ptr += 4; \
 	}
 
 #define disableDrawAttrib(i) \
@@ -567,12 +569,15 @@ void unserialize_shader(void *in, size_t sz, shader *s, GLboolean load_bindings)
 	s->prog = (SceGxmProgram *)vglMalloc(s->size);
 	vgl_fast_memcpy((SceGxmProgram *)s->prog, buf, s->size);
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
-	uint32_t *_m = (uint32_t *)in + 1;
-	for (int i = 0; i < matrix_uniforms_num; i++) {
-		matrix_uniform *m = vglMalloc(sizeof(matrix_uniform));
-		m->chain = s->mat;
-		m->ptr = sceGxmProgramGetParameter(s->prog, _m[i]);
-		s->mat = m;
+	if (matrix_uniforms_num) {
+		uint32_t *_m = (uint32_t *)in + 1;
+		uint32_t *ptr = vglProgramGetParameterBase(s->prog);
+		for (int i = 0; i < matrix_uniforms_num; i++) {
+			matrix_uniform *m = vglMalloc(sizeof(matrix_uniform));
+			m->chain = s->mat;
+			m->ptr = (SceGxmProgramParameter *)(ptr + _m[i] * 4);
+			s->mat = m;
+		}
 	}
 }
 
@@ -1932,6 +1937,7 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 	program *p = &progs[progr - 1];
 	int i, cnt;
 	matrix_uniform *m;
+	uint32_t *ptr;
 	int matrix_uniform_num = 0;
 
 	switch (pname) {
@@ -1983,13 +1989,15 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 	case GL_ACTIVE_ATTRIBUTE_MAX_LENGTH:
 		i = 0;
 		cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
+		uint32_t *ptr = vglProgramGetParameterBase(p->vshader->prog);
 		while (cnt--) {
-			const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, cnt);
+			SceGxmProgramParameter *param = (SceGxmProgramParameter *)ptr;
 			if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
 				int len = strlen(sceGxmProgramParameterGetName(param)) + 1;
 				if (len > i)
 					i = len;
 			}
+			ptr += 4;
 		}
 		*params = i;
 		break;
@@ -2106,8 +2114,10 @@ void glLinkProgram(GLuint progr) {
 		p->vert_texunits[i] = GL_FALSE;
 	}
 	cnt = sceGxmProgramGetParameterCount(p->fshader->prog);
+	uint32_t *_ptr = vglProgramGetParameterBase(p->fshader->prog);
+	uint32_t *ptr = _ptr;
 	for (i = 0; i < cnt; i++) {
-		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->fshader->prog, i);
+		SceGxmProgramParameter *param = (SceGxmProgramParameter *)ptr;
 		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER || (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM && sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM)) {
 			p->frag_uniforms_num++;
@@ -2120,11 +2130,12 @@ void glLinkProgram(GLuint progr) {
 			u->alias = NULL;
 			p->frag_ubos = u;
 		}
+		ptr += 4;
 	}
 	p->frag_uniforms = (uniform *)vglMalloc(sizeof(uniform) * p->frag_uniforms_num);
 	j = 0;
 	for (i = 0; i < cnt; i++) {
-		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->fshader->prog, i);
+		SceGxmProgramParameter *param = (SceGxmProgramParameter *)ptr;
 		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
 			uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
@@ -2144,6 +2155,7 @@ void glLinkProgram(GLuint progr) {
 			u->data = (float *)vglMalloc(u->size * sizeof(float));
 			vgl_memset(u->data, 0, u->size * sizeof(float));
 		}
+		ptr += 4;
 	}
 	
 
@@ -2155,8 +2167,10 @@ void glLinkProgram(GLuint progr) {
 	}
 #endif
 	cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
+	_ptr = vglProgramGetParameterBase(p->vshader->prog);
+	ptr = _ptr;
 	for (i = 0; i < cnt; i++) {
-		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, i);
+		SceGxmProgramParameter *param = (SceGxmProgramParameter *)ptr;
 		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
 			p->attr_num++;
@@ -2171,11 +2185,13 @@ void glLinkProgram(GLuint progr) {
 			u->alias = hasBlockAlias(p->frag_ubos, ((block_uniform *)u->ptr)->name);
 			p->frag_ubos = u;
 		}
+		ptr += 4;
 	}
 	p->vert_uniforms = (uniform *)vglMalloc(sizeof(uniform) * p->vert_uniforms_num);
 	j = 0;
+	ptr = _ptr;
 	for (i = 0; i < cnt; i++) {
-		const SceGxmProgramParameter *param = sceGxmProgramGetParameter(p->vshader->prog, i);
+		SceGxmProgramParameter *param = (SceGxmProgramParameter *)ptr;
 		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
 		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
 			uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
@@ -2200,6 +2216,7 @@ void glLinkProgram(GLuint progr) {
 				vgl_memset(u->data, 0, u->size * sizeof(float));
 			}
 		}
+		ptr += 4;
 	}
 
 	// Creating fragment and vertex program via sceGxmShaderPatcher if using vgl* draw pipeline
@@ -3170,11 +3187,13 @@ void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *leng
 	program *p = &progs[prog - 1];
 
 	int i, cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
-	const SceGxmProgramParameter *param;
+	uint32_t *ptr = vglProgramGetParameterBase(p->vshader->prog);
+	SceGxmProgramParameter *param;
 	for (i = 0; i < cnt; i++) {
-		param = sceGxmProgramGetParameter(p->vshader->prog, i);
+		param = (SceGxmProgramParameter *)ptr;
 		if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE && (sceGxmProgramParameterGetResourceIndex(param) / 4) == index)
 			break;
+		ptr += 4;
 	}
 
 	// Copying attribute name

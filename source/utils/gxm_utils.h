@@ -95,6 +95,11 @@ static inline __attribute__((always_inline)) void vglInitSwizzledTexture(SceGxmT
 	tex->control_words[2] = (uint32_t)data & 0xFFFFFFFC;
 	tex->control_words[3] = ((texFormat & 0x7000) << 16) | 0x80000000;
 }
+static inline __attribute__((always_inline)) uint32_t *vglProgramGetParameterBase(const SceGxmProgram *program) {
+	uint32_t *ptr = (uint32_t *)program + 10;
+	return (uint32_t *)((uint32_t)ptr + *ptr);
+}
+
 #else
 // Default sceGxm functions
 #define vglSetTexUMode sceGxmTextureSetUAddrMode
@@ -109,5 +114,6 @@ static inline __attribute__((always_inline)) void vglInitSwizzledTexture(SceGxmT
 #define vglInitLinearTexture sceGxmTextureInitLinear
 #define vglInitCubeTexture sceGxmTextureInitCube
 #define vglInitSwizzledTexture sceGxmTextureInitSwizzledArbitrary
+#define vglProgramGetParameterBase(x) ((uint32_t *)sceGxmProgramGetParameter(x, 0))
 #endif
 #endif

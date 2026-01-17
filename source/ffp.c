@@ -356,22 +356,26 @@ void adjust_color_material_state() {
 void reload_vertex_uniforms() {
 	sceClibMemset(ffp_vertex_params, 0, VERTEX_UNIFORMS_NUM * 4);
 	int cnt = sceGxmProgramGetParameterCount(ffp_vertex_program);
+	uint32_t *ptr = vglProgramGetParameterBase(ffp_vertex_program);
 	for (int i = 0; i < cnt; i++) {
-		const SceGxmProgramParameter *p = sceGxmProgramGetParameter(ffp_vertex_program, i);
+		SceGxmProgramParameter *p = (SceGxmProgramParameter *)ptr;
 		if (sceGxmProgramParameterGetCategory(p) == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
 			ffp_vertex_params[sceGxmProgramParameterGetName(p)[0] - 'A'] = p;
 		}
+		ptr += 4;
 	}
 }
 
 void reload_fragment_uniforms() {
 	sceClibMemset(ffp_fragment_params, 0, FRAGMENT_UNIFORMS_NUM * 4);
 	int cnt = sceGxmProgramGetParameterCount(ffp_fragment_program);
+	uint32_t *ptr = vglProgramGetParameterBase(ffp_fragment_program);
 	for (int i = 0; i < cnt; i++) {
-		const SceGxmProgramParameter *p = sceGxmProgramGetParameter(ffp_fragment_program, i);
+		SceGxmProgramParameter *p = (SceGxmProgramParameter *)ptr;
 		if (sceGxmProgramParameterGetCategory(p) == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
 			ffp_fragment_params[sceGxmProgramParameterGetName(p)[0] - 'A'] = p;
 		}
+		ptr += 4;
 	}
 }
 
