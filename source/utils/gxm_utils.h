@@ -102,8 +102,10 @@ static inline __attribute__((always_inline)) uint32_t *vglProgramGetParameterBas
 static inline __attribute__((always_inline)) int vglDepthStencilSurfaceInit(SceGxmDepthStencilSurface *surface, SceGxmDepthStencilFormat depthStencilFormat, SceGxmDepthStencilSurfaceType surfaceType, unsigned int strideInSamples, void *depthData, void *stencilData) {
 	uint32_t *s = (uint32_t *)surface;
 	s[0] = surfaceType & 0x11000 | 0x100000 | depthStencilFormat & 0x7EEE000 | 8 * ((strideInSamples >> 5) - 1) & 0x7F8;
+#ifndef DEPTH_STENCIL_HACK
 	s[1] = (uint32_t)depthData;
 	s[2] = (uint32_t)stencilData;
+#endif
 	s[3] = 0x3F800000;
 	s[4] = 0x300;
 	return 0;
