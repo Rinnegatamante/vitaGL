@@ -264,10 +264,12 @@ typedef enum {
 	TINT_COLOR_UNIF, // L
 	FOG_RANGE_UNIF, // M
 	FOG_FAR_UNIF, // N
+#ifndef DISABLE_TEXTURE_COMBINER
 	SCALE_PASS_0_UNIF, // O
 	SCALE_PASS_1_UNIF, // P
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 	SCALE_PASS_2_UNIF, // Q
+#endif
 #endif
 	FRAGMENT_UNIFORMS_NUM
 } frag_uniform_type;
