@@ -1,7 +1,7 @@
 const char *ffp_frag_src =
-R"(uniform float2 pass0_scale;
-uniform float2 pass1_scale;
-uniform float2 pass2_scale;
+R"(uniform float2 Opass0_scale;
+uniform float2 Ppass1_scale;
+uniform float2 Qpass2_scale;
 
 %s
 
@@ -30,44 +30,44 @@ uniform float2 pass2_scale;
 #endif
 
 #if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
-uniform float4 lights_ambients[lights_num];
-uniform float4 lights_diffuses[lights_num];
-uniform float4 lights_speculars[lights_num];
-uniform float4 lights_positions[lights_num];
-uniform float3 lights_attenuations[lights_num];
-uniform float4 light_global_ambient;
-uniform float shininess;
+uniform float4 Alights_ambients[lights_num];
+uniform float4 Blights_diffuses[lights_num];
+uniform float4 Clights_speculars[lights_num];
+uniform float4 Dlights_positions[lights_num];
+uniform float3 Elights_attenuations[lights_num];
+uniform float4 Flight_global_ambient;
+uniform float Gshininess;
 
 void point_light(short i, float3 normal, float3 position, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
-	float3 VP = lights_positions[i].xyz - position;
+	float3 VP = Dlights_positions[i].xyz - position;
 	float d = length(VP);
 	VP = normalize(VP);
-	float attenuation = 1.0f / (lights_attenuations[i].x +
-		lights_attenuations[i].y * d +
-		lights_attenuations[i].z * d * d);
+	float attenuation = 1.0f / (Elights_attenuations[i].x +
+		Elights_attenuations[i].y * d +
+		Elights_attenuations[i].z * d * d);
 	float nDotVP = max(0.0f, dot(normal, VP));
 
-	Ambient += lights_ambients[i] * attenuation;
-	Diffuse += lights_diffuses[i] * nDotVP * attenuation;
+	Ambient += Alights_ambients[i] * attenuation;
+	Diffuse += Blights_diffuses[i] * nDotVP * attenuation;
 	if (nDotVP != 0.0f) {
 		float nDotHV = max(0.0f, dot(normal, normalize(VP + float3(0.0f, 0.0f, 1.0f))));
-		Specular += lights_speculars[i] * pow(nDotHV, shininess) * attenuation;
+		Specular += Clights_speculars[i] * pow(nDotHV, Gshininess) * attenuation;
 	}
 }
 
 void directional_light(short i, float3 normal, float3 position, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
-	float nDotVP = max(0.0f, dot(normal, normalize(lights_positions[i].xyz)));
+	float nDotVP = max(0.0f, dot(normal, normalize(Dlights_positions[i].xyz)));
 		
-	Ambient += lights_ambients[i];
-	Diffuse += lights_diffuses[i] * nDotVP;
+	Ambient += Alights_ambients[i];
+	Diffuse += Blights_diffuses[i] * nDotVP;
 	if (nDotVP != 0.0f) {
-		float nDotHV = max(0.0f, dot(normal, normalize(lights_positions[i].xyz - position)));
-		Specular += lights_speculars[i] * pow(nDotHV, shininess);
+		float nDotHV = max(0.0f, dot(normal, normalize(Dlights_positions[i].xyz - position)));
+		Specular += Clights_speculars[i] * pow(nDotHV, Gshininess);
 	}
 }
 
 void calculate_light(short i, float3 ecPosition, float3 N, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
-	if (lights_positions[i].w == 1.0f)
+	if (Dlights_positions[i].w == 1.0f)
 		point_light(i, N, ecPosition, Ambient, Diffuse, Specular);
 	else
 		directional_light(i, N, ecPosition, Ambient, Diffuse, Specular);
@@ -102,21 +102,21 @@ float4 main(
 #endif
 #if num_textures > 0
 	uniform sampler2D tex[num_textures],
-	uniform float4 texEnvColor[num_textures],
+	uniform float4 ItexEnvColor[num_textures],
 #endif
-	uniform float alphaCut,
-	uniform float4 fogColor,
-	uniform float4 tintColor,
-	uniform float fog_range,
-	uniform float fog_far,
-	uniform float fog_density
+	uniform float JalphaCut,
+	uniform float4 KfogColor,
+	uniform float4 LtintColor,
+	uniform float Mfog_range,
+	uniform float Nfog_far,
+	uniform float Hfog_density
 	)
 {
 #if alpha_test_mode == 6
 	discard;
 #endif
 #if has_colors == 0 && lights_num == 0
-	float4 vColor = tintColor;
+	float4 vColor = LtintColor;
 #endif
 	// Lighting
 #if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
@@ -127,7 +127,7 @@ float4 main(
 		calculate_light(i, vEcPosition, vNormal, Ambient, Diffuse, Specular);
 	}
 	float4 fragColor = vColor;
-	vColor = vEmission + fragColor * light_global_ambient;
+	vColor = vEmission + fragColor * Flight_global_ambient;
 	vColor += Ambient * fragColor + Diffuse * vDiffuse + Specular * vSpecular;
 	vColor = clamp(vColor, 0.0f, 1.0f);
 #endif	
@@ -137,11 +137,11 @@ float4 main(
 #endif
 	// Texture Environment
 	float4 prevColor = vColor;
-	prevColor = pass0_func(tex[0], vTexcoord, prevColor, vColor, texEnvColor[0]);
+	prevColor = pass0_func(tex[0], vTexcoord, prevColor, vColor, ItexEnvColor[0]);
 #if num_textures > 1
-	prevColor = pass1_func(tex[1], vTexcoord2, prevColor, vColor, texEnvColor[1]);
+	prevColor = pass1_func(tex[1], vTexcoord2, prevColor, vColor, ItexEnvColor[1]);
 #if num_textures > 2
-	prevColor = pass2_func(tex[2], vTexcoord3, prevColor, vColor, texEnvColor[2]);
+	prevColor = pass2_func(tex[2], vTexcoord3, prevColor, vColor, ItexEnvColor[2]);
 #endif
 #endif
 	float4 texColor = prevColor;
@@ -151,32 +151,32 @@ float4 main(
 	
 	// Alpha Test
 #if alpha_test_mode == 0
-	if (texColor.a < alphaCut){
+	if (texColor.a < JalphaCut){
 		discard;
 	}
 #endif
 #if alpha_test_mode == 1
-	if (texColor.a <= alphaCut){
+	if (texColor.a <= JalphaCut){
 		discard;
 	}
 #endif
 #if alpha_test_mode == 2
-	if (texColor.a == alphaCut){
+	if (texColor.a == JalphaCut){
 		discard;
 	}
 #endif
 #if alpha_test_mode == 3
-	if (texColor.a != alphaCut){
+	if (texColor.a != JalphaCut){
 		discard;
 	}
 #endif
 #if alpha_test_mode == 4
-	if (texColor.a > alphaCut){
+	if (texColor.a > JalphaCut){
 		discard;
 	}
 #endif
 #if alpha_test_mode == 5
-	if (texColor.a >= alphaCut){
+	if (texColor.a >= JalphaCut){
 		discard;
 	}
 #endif
@@ -185,18 +185,18 @@ float4 main(
 #if fog_mode < 3
 	float fog_dist = coords.z / coords.w;
 #if fog_mode == 0 // GL_LINEAR
-	float vFog = (fog_far - fog_dist) / fog_range;
+	float vFog = (Nfog_far - fog_dist) / Mfog_range;
 #else
 	const float LOG2E = 1.442695f;
 #if fog_mode == 1  // GL_EXP
-	float vFog = exp(-fog_density * fog_dist * LOG2E);
+	float vFog = exp(-Hfog_density * fog_dist * LOG2E);
 #endif
 #if fog_mode == 2  // GL_EXP2
-	float vFog = exp(-fog_density * fog_density * fog_dist * fog_dist * LOG2E);
+	float vFog = exp(-Hfog_density * Hfog_density * fog_dist * fog_dist * LOG2E);
 #endif
 #endif
 	vFog = clamp(vFog, 0.0f, 1.0f);
-	texColor.rgb = lerp(fogColor.rgb, texColor.rgb, vFog);
+	texColor.rgb = lerp(KfogColor.rgb, texColor.rgb, vFog);
 #endif
 
 #if srgb_mode == 1

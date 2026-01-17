@@ -58,13 +58,6 @@
 
 #define SHADER_CACHE_SIZE 256
 
-#define VERTEX_UNIFORMS_NUM 13
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-#define FRAGMENT_UNIFORMS_NUM 20
-#else
-#define FRAGMENT_UNIFORMS_NUM 18
-#endif
-
 #ifdef HAVE_WVP_ON_GPU
 #define WVP_ON_GPU 1
 #else
@@ -239,9 +232,50 @@ typedef union combiner_mask {
 } combiner_mask;
 #endif
 
+typedef enum {
+	LIGHTS_AMBIENTS_V_UNIF, // A
+	LIGHTS_DIFFUSES_V_UNIF, // B
+	LIGHTS_SPECULARS_V_UNIF, // C
+	LIGHTS_POSITIONS_V_UNIF, // D
+	LIGHTS_ATTENUATIONS_V_UNIF, // E
+	LIGHT_GLOBAL_AMBIENT_V_UNIF, // F
+	SHININESS_V_UNIF, // G
+	CLIP_PLANES_EQUATION_UNIF, // H
+	MODELVIEW_MATRIX_UNIF, // I
+	WVP_MATRIX_UNIF, // J
+	TEX_MATRIX_UNIF, // K
+	NORMAL_MATRIX_UNIF, // L
+	POINT_SIZE_UNIF, // M
+	VERTEX_UNIFORMS_NUM
+} vert_uniform_type;
+
+typedef enum {
+	LIGHTS_AMBIENTS_F_UNIF, // A
+	LIGHTS_DIFFUSES_F_UNIF, // B
+	LIGHTS_SPECULARS_F_UNIF, // C
+	LIGHTS_POSITIONS_F_UNIF, // D
+	LIGHTS_ATTENUATIONS_F_UNIF, // E
+	LIGHT_GLOBAL_AMBIENT_F_UNIF, // F
+	SHININESS_F_UNIF, // G
+	FOG_DENSITY_UNIF, // H
+	TEX_ENV_COLOR_UNIF, // I
+	ALPHA_CUT_UNIF, // J
+	FOG_COLOR_UNIF, // K
+	TINT_COLOR_UNIF, // L
+	FOG_RANGE_UNIF, // M
+	FOG_FAR_UNIF, // N
+	SCALE_PASS_0_UNIF, // O
+	SCALE_PASS_1_UNIF, // P
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+	SCALE_PASS_2_UNIF, // Q
+#endif
+	FRAGMENT_UNIFORMS_NUM
+} frag_uniform_type;
+
 #ifndef DISABLE_RAM_SHADER_CACHE
 typedef struct {
 	SceGxmProgram *prog;
+	SceGxmProgramParameter *frag_unifs[FRAGMENT_UNIFORMS_NUM];
 	SceGxmShaderPatcherId id;
 	shader_mask mask;
 #ifndef DISABLE_TEXTURE_COMBINER
@@ -250,6 +284,7 @@ typedef struct {
 } cached_fragment_shader;
 typedef struct {
 	SceGxmProgram *prog;
+	SceGxmProgramParameter *vert_unifs[VERTEX_UNIFORMS_NUM];
 	SceGxmShaderPatcherId id;
 	shader_mask mask;
 } cached_vertex_shader;
@@ -260,44 +295,6 @@ uint8_t vert_shader_cache_size = 0;
 int frag_shader_cache_idx = -1;
 int vert_shader_cache_idx = -1;
 #endif
-
-typedef enum {
-	CLIP_PLANES_EQUATION_UNIF,
-	MODELVIEW_MATRIX_UNIF,
-	WVP_MATRIX_UNIF,
-	TEX_MATRIX_UNIF,
-	LIGHTS_AMBIENTS_V_UNIF,
-	LIGHTS_DIFFUSES_V_UNIF,
-	LIGHTS_SPECULARS_V_UNIF,
-	LIGHTS_POSITIONS_V_UNIF,
-	LIGHTS_ATTENUATIONS_V_UNIF,
-	LIGHT_GLOBAL_AMBIENT_V_UNIF,
-	SHININESS_V_UNIF,
-	NORMAL_MATRIX_UNIF,
-	POINT_SIZE_UNIF
-} vert_uniform_type;
-
-typedef enum {
-	ALPHA_CUT_UNIF,
-	FOG_COLOR_UNIF,
-	TEX_ENV_COLOR_UNIF,
-	TINT_COLOR_UNIF,
-	FOG_RANGE_UNIF,
-	FOG_FAR_UNIF,
-	FOG_DENSITY_UNIF,
-	LIGHTS_AMBIENTS_F_UNIF,
-	LIGHTS_DIFFUSES_F_UNIF,
-	LIGHTS_SPECULARS_F_UNIF,
-	LIGHTS_POSITIONS_F_UNIF,
-	LIGHTS_ATTENUATIONS_F_UNIF,
-	LIGHT_GLOBAL_AMBIENT_F_UNIF,
-	SHININESS_F_UNIF,
-	SCALE_PASS_0_UNIF,
-	SCALE_PASS_1_UNIF,
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-	SCALE_PASS_2_UNIF,
-#endif
-} frag_uniform_type;
 
 uint8_t ffp_vertex_num_params = 1;
 const SceGxmProgramParameter *ffp_vertex_params[VERTEX_UNIFORMS_NUM];
@@ -355,48 +352,24 @@ void adjust_color_material_state() {
 }
 
 void reload_vertex_uniforms() {
-	ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "clip_planes_eq");
-	ffp_vertex_params[MODELVIEW_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "modelview");
-	ffp_vertex_params[WVP_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "wvp");
-	ffp_vertex_params[TEX_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "texmat");
-	ffp_vertex_params[POINT_SIZE_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "point_size");
-	ffp_vertex_params[NORMAL_MATRIX_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "normal_mat");
-	if (ffp_vertex_params[NORMAL_MATRIX_UNIF]) {
-		ffp_vertex_params[LIGHTS_AMBIENTS_V_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_ambients");
-		if (ffp_vertex_params[LIGHTS_AMBIENTS_V_UNIF]) {
-			ffp_vertex_params[LIGHTS_DIFFUSES_V_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_diffuses");
-			ffp_vertex_params[LIGHTS_SPECULARS_V_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_speculars");
-			ffp_vertex_params[LIGHTS_POSITIONS_V_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_positions");
-			ffp_vertex_params[LIGHTS_ATTENUATIONS_V_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "lights_attenuations");
-			ffp_vertex_params[LIGHT_GLOBAL_AMBIENT_V_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "light_global_ambient");
-			ffp_vertex_params[SHININESS_V_UNIF] = sceGxmProgramFindParameterByName(ffp_vertex_program, "shininess");
+	sceClibMemset(ffp_vertex_params, 0, VERTEX_UNIFORMS_NUM * 4);
+	int cnt = sceGxmProgramGetParameterCount(ffp_vertex_program);
+	for (int i = 0; i < cnt; i++) {
+		const SceGxmProgramParameter *p = sceGxmProgramGetParameter(ffp_vertex_program, i);
+		if (sceGxmProgramParameterGetCategory(p) == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
+			ffp_vertex_params[sceGxmProgramParameterGetName(p)[0] - 'A'] = p;
 		}
 	}
 }
 
 void reload_fragment_uniforms() {
-	ffp_fragment_params[ALPHA_CUT_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "alphaCut");
-	ffp_fragment_params[FOG_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fogColor");
-	ffp_fragment_params[TEX_ENV_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "texEnvColor");
-#ifndef DISABLE_TEXTURE_COMBINER
-	ffp_fragment_params[SCALE_PASS_0_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass0_scale");
-	ffp_fragment_params[SCALE_PASS_1_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass1_scale");
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-	ffp_fragment_params[SCALE_PASS_2_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "pass2_scale");
-#endif
-#endif
-	ffp_fragment_params[TINT_COLOR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "tintColor");
-	ffp_fragment_params[FOG_RANGE_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_range");
-	ffp_fragment_params[FOG_FAR_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_far");
-	ffp_fragment_params[FOG_DENSITY_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "fog_density");
-	ffp_fragment_params[LIGHTS_AMBIENTS_F_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "lights_ambients");
-	if (ffp_fragment_params[LIGHTS_AMBIENTS_F_UNIF]) {
-		ffp_fragment_params[LIGHTS_DIFFUSES_F_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "lights_diffuses");
-		ffp_fragment_params[LIGHTS_SPECULARS_F_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "lights_speculars");
-		ffp_fragment_params[LIGHTS_POSITIONS_F_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "lights_positions");
-		ffp_fragment_params[LIGHTS_ATTENUATIONS_F_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "lights_attenuations");
-		ffp_fragment_params[LIGHT_GLOBAL_AMBIENT_F_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "light_global_ambient");
-		ffp_fragment_params[SHININESS_F_UNIF] = sceGxmProgramFindParameterByName(ffp_fragment_program, "shininess");
+	sceClibMemset(ffp_fragment_params, 0, FRAGMENT_UNIFORMS_NUM * 4);
+	int cnt = sceGxmProgramGetParameterCount(ffp_fragment_program);
+	for (int i = 0; i < cnt; i++) {
+		const SceGxmProgramParameter *p = sceGxmProgramGetParameter(ffp_fragment_program, i);
+		if (sceGxmProgramParameterGetCategory(p) == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
+			ffp_fragment_params[sceGxmProgramParameterGetName(p)[0] - 'A'] = p;
+		}
 	}
 }
 
@@ -446,7 +419,7 @@ void setup_combiner_pass(int i, char *dst) {
 	sprintf(arg0_rgb, op_modes[tex_unit->combiner.op_mode_rgb_0], operands[tex_unit->combiner.op_rgb_0]);
 	sprintf(arg0_a, op_modes[tex_unit->combiner.op_mode_a_0], operands[tex_unit->combiner.op_a_0]);
 
-	sprintf(tmp, combine_src, i, calc_funcs[tex_unit->combiner.rgb_func], i, calc_funcs[tex_unit->combiner.a_func], i);
+	sprintf(tmp, combine_src, i, calc_funcs[tex_unit->combiner.rgb_func], 'O' + i, i, calc_funcs[tex_unit->combiner.a_func], 'O' + i, i);
 	switch (extra_args_count) {
 	case 1:
 		sprintf(dst, tmp, arg0_rgb, args[0]);
@@ -633,7 +606,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				if (vert_shader_cache[i].mask.raw == vert_shader_mask) {
 					ffp_vertex_program = vert_shader_cache[i].prog;
 					ffp_vertex_program_id = vert_shader_cache[i].id;
-					reload_vertex_uniforms();
+					vgl_fast_memcpy(ffp_vertex_params, vert_shader_cache[0].vert_unifs, VERTEX_UNIFORMS_NUM * 4);
 					ffp_dirty_vert = GL_FALSE;
 					break;
 				}
@@ -658,7 +631,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #endif
 					ffp_fragment_program = frag_shader_cache[i].prog;
 					ffp_fragment_program_id = frag_shader_cache[i].id;
-					reload_fragment_uniforms();
+					vgl_fast_memcpy(ffp_fragment_params, frag_shader_cache[i].frag_unifs, FRAGMENT_UNIFORMS_NUM * 4);
 					ffp_dirty_frag = GL_FALSE;
 					break;
 				}
@@ -746,8 +719,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		vert_shader_cache[vert_shader_cache_idx].prog = ffp_vertex_program;
 		vert_shader_cache[vert_shader_cache_idx].id = ffp_vertex_program_id;
 
-		// Checking for existing uniforms in the shader
+		// Reload existing uniform references
 		reload_vertex_uniforms();
+		vgl_fast_memcpy(vert_shader_cache[vert_shader_cache_idx].vert_unifs, ffp_vertex_params, VERTEX_UNIFORMS_NUM * 4);
 
 		// Clearing dirty flags
 		ffp_dirty_vert = GL_FALSE;
@@ -1048,8 +1022,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		frag_shader_cache[frag_shader_cache_idx].prog = ffp_fragment_program;
 		frag_shader_cache[frag_shader_cache_idx].id = ffp_fragment_program_id;
 
-		// Checking for existing uniforms in the shader
+		// Reload existing uniform references
 		reload_fragment_uniforms();
+		vgl_fast_memcpy(frag_shader_cache[frag_shader_cache_idx].frag_unifs, ffp_fragment_params, FRAGMENT_UNIFORMS_NUM * 4);
 
 		// Clearing dirty flags
 		ffp_dirty_frag = GL_FALSE;
