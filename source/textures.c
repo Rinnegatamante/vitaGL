@@ -1744,7 +1744,8 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 	for (int j = 0; j < n; j++) {
 		GLuint i = gl_textures[j];
 		if (i > 0 && i < TEXTURES_NUM) {
-			if (texture_slots[i].status == TEX_VALID) {
+			switch (texture_slots[i].status) {
+			case TEX_VALID:
 				if (texture_slots[i].ref_counter > 0)
 					if (texture_slots[i].ref_counter == 1) {
 						framebuffer *fb = NULL;
@@ -1771,12 +1772,15 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 					}
 				else
 					gpu_free_texture(&texture_slots[i]);
-			}
-#ifndef SKIP_ERROR_HANDLING
-			else if (texture_slots[i].status == TEX_UNUSED) {
+				break;
+			case TEX_UNINITIALIZED:
+				texture_slots[i].status = TEX_UNUSED;
+				break;
+			case TEX_UNUSED:
+			default:
 				vgl_log("%s:%d %s: Attempted to delete an unassigned texture slot (0x%X).\n", __FILE__, __LINE__, __func__, i);
+				break;
 			}
-#endif
 
 			for (int k = 0; k < TEXTURE_IMAGE_UNITS_NUM; k++) {
 				texture_unit *tex_unit = &texture_units[k];
