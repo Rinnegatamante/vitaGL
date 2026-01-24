@@ -26,11 +26,31 @@
 
 //#define PARANOID // Enable this flag to use original sceGxmTexture functions instead of faster re-implementations
 
-uint32_t vglReserveFragmentUniformBuffer(const SceGxmProgram *p, void **uniformBuffer);
-uint32_t vglReserveVertexUniformBuffer(const SceGxmProgram *p, void **uniformBuffer);
-void vglRestoreFragmentUniformBuffer(void);
-void vglRestoreVertexUniformBuffer(void);
+extern void *vgl_def_frag_buf;
+extern void *vgl_def_vert_buf;
+extern SceGxmContext *gxm_context;
+
 void vglSetupUniformCircularPool(void);
+void *vglReserveUniformCircularPoolBuffer(uint32_t size);
+
+static inline __attribute__((always_inline)) void vglRestoreFragmentUniformBuffer(void) {
+	if (vgl_def_frag_buf)
+		sceGxmSetFragmentDefaultUniformBuffer(gxm_context, vgl_def_frag_buf);	
+}
+static inline __attribute__((always_inline)) void vglRestoreVertexUniformBuffer(void) {
+	if (vgl_def_vert_buf)
+		sceGxmSetVertexDefaultUniformBuffer(gxm_context, vgl_def_vert_buf);
+}
+static inline __attribute__((always_inline)) void *vglReserveFragmentUniformBuffer(uint32_t size) {
+	vgl_def_frag_buf = vglReserveUniformCircularPoolBuffer(size);
+	sceGxmSetFragmentDefaultUniformBuffer(gxm_context, vgl_def_frag_buf);
+	return vgl_def_frag_buf;
+}
+static inline __attribute__((always_inline)) void *vglReserveVertexUniformBuffer(uint32_t size) {
+	vgl_def_vert_buf = vglReserveUniformCircularPoolBuffer(size);
+	sceGxmSetVertexDefaultUniformBuffer(gxm_context, vgl_def_vert_buf);
+	return vgl_def_vert_buf;
+}
 
 #ifndef PARANOID
 typedef struct {

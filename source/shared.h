@@ -710,6 +710,7 @@ typedef struct {
 	SceGxmShaderPatcherId id;
 	const SceGxmProgram *prog;
 	uint32_t size;
+	uint32_t unif_buf_size;
 	char *source;
 	matrix_uniform *mat;
 	block_uniform *unif_blk;

@@ -129,9 +129,8 @@ char vgl_file_cache_path[256];
 
 #ifndef HAVE_FFP_SHADER_SUPPORT
 #define uploadUniforms() \
-	void *buffer; \
 	if (p->vert_uniforms && dirty_vert_unifs) { \
-		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer); \
+		void *buffer = vglReserveVertexUniformBuffer(p->vshader->unif_buf_size); \
 		for (int z = 0; z < p->vert_uniforms_num; z++) { \
 			uniform *u = &p->vert_uniforms[z]; \
 			if (u->size > 0 && u->size < 0xFFFFFFFF) \
@@ -140,7 +139,7 @@ char vgl_file_cache_path[256];
 		dirty_vert_unifs = GL_FALSE; \
 	} \
 	if (p->frag_uniforms && dirty_frag_unifs) { \
-		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer); \
+		void *buffer = vglReserveFragmentUniformBuffer(p->fshader->unif_buf_size); \
 		for (int z = 0; z < p->frag_uniforms_num; z++) { \
 			uniform *u = &p->frag_uniforms[z]; \
 			if (u->size > 0 && u->size < 0xFFFFFFFF) \
@@ -167,9 +166,8 @@ char vgl_file_cache_path[256];
 	}
 #else
 #define uploadUniforms() \
-	void *buffer; \
 	if (p->vert_uniforms && dirty_vert_unifs) { \
-		vglReserveVertexUniformBuffer(p->vshader->prog, &buffer); \
+		void *buffer = vglReserveVertexUniformBuffer(p->vshader->unif_buf_size); \
 		for (int z = 0; z < p->vert_uniforms_num; z++) { \
 			uniform *u = &p->vert_uniforms[z]; \
 			if (u->ptr == p->ffp_binds[FFP_MVP_MATRIX]) { \
@@ -194,7 +192,7 @@ char vgl_file_cache_path[256];
 		dirty_vert_unifs = GL_FALSE; \
 	} \
 	if (p->frag_uniforms && dirty_frag_unifs) { \
-		vglReserveFragmentUniformBuffer(p->fshader->prog, &buffer); \
+		void *buffer = vglReserveFragmentUniformBuffer(p->fshader->unif_buf_size); \
 		for (int z = 0; z < p->frag_uniforms_num; z++) { \
 			uniform *u = &p->frag_uniforms[z]; \
 			if (u->ptr == p->ffp_binds[FFP_FOG]) { \
@@ -569,6 +567,7 @@ void unserialize_shader(void *in, size_t sz, shader *s, GLboolean load_bindings)
 	s->prog = (SceGxmProgram *)vglMalloc(s->size);
 	vgl_fast_memcpy((SceGxmProgram *)s->prog, buf, s->size);
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
+	s->unif_buf_size = sceGxmProgramGetDefaultUniformBufferSize(s->prog);
 	if (matrix_uniforms_num) {
 		uint32_t *_m = (uint32_t *)in + 1;
 		uint32_t *ptr = vglProgramGetParameterBase(s->prog);
@@ -600,6 +599,7 @@ static inline __attribute__((always_inline)) void compile_shader(shader *s, GLbo
 		if (r)
 			vgl_log("%s:%d %s: Program failed to register on sceGxm (%s).\n", __FILE__, __LINE__, __func__, get_gxm_error_literal(r));
 #endif
+		s->unif_buf_size = sceGxmProgramGetDefaultUniformBufferSize(res);
 		s->prog = res;
 		SceShaccCgCompileOutput *cout = (SceShaccCgCompileOutput *)shark_get_internal_compile_output();
 		SceShaccCgParameter param = sceShaccCgGetFirstParameter(cout);
@@ -3523,4 +3523,5 @@ void vglShaderGxpBinary(GLsizei count, const GLuint *handles, const void *binary
 	s->prog = (SceGxmProgram *)vglMalloc(s->size);
 	vgl_fast_memcpy((SceGxmProgram *)s->prog, binary, s->size);
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
+	s->unif_buf_size = sceGxmProgramGetDefaultUniformBufferSize(s->prog);
 }
