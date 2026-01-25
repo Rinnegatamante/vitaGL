@@ -861,7 +861,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #endif
 }
 
-GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count) {
+GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean instanced) {
 #ifdef HAVE_PROFILING
 	uint32_t draw_start = sceKernelGetProcessTimeLow();
 #endif
@@ -1047,8 +1047,15 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count) {
 #endif
 
 #ifndef INDICES_SPEEDHACK
-	for (int i = 0; i < p->attr_num; i++) {
-		streams[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+	if (instanced) { // Instanced draw
+		for (int i = 0; i < p->attr_num; i++) {
+			uint8_t attr_idx = p->attr_map[i];
+			streams[i].indexSource = (cur_vao->vertex_attrib_divisor & (1 << attr_idx)) ? SCE_GXM_INDEX_SOURCE_INSTANCE_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+		}		
+	} else {
+		for (int i = 0; i < p->attr_num; i++) {
+			streams[i].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+		}
 	}
 #endif
 
@@ -1304,8 +1311,15 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		index_type &= ~1;
 	}
 
-	for (int i = 0; i < p->attr_num; i++) {
-		streams[i].indexSource = index_type;
+	if (index_type & 2) { // Instanced draw
+		for (int i = 0; i < p->attr_num; i++) {
+			uint8_t attr_idx = p->attr_map[i];
+			streams[i].indexSource = (cur_vao->vertex_attrib_divisor & (1 << attr_idx)) ? index_type : (index_type - 2);
+		}		
+	} else {
+		for (int i = 0; i < p->attr_num; i++) {
+			streams[i].indexSource = index_type;
+		}
 	}
 #endif
 
@@ -2954,6 +2968,23 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 	}
 	attributes->componentCount = size;
 	streams->stride = stride ? stride : bpe * size;
+}
+
+void glVertexAttribDivisor(GLuint index, GLuint divisor) {
+#ifndef SKIP_ERROR_HANDLING
+	if (index >= VERTEX_ATTRIBS_NUM) {
+		SET_GL_ERROR(GL_INVALID_VALUE)		
+	}
+	if (divisor > 1) {
+		vgl_log("%s:%d %s: Divisor value higher than 1 is not supported. Downgrading to 1.\n", __FILE__, __LINE__, __func__);
+	}
+#endif
+
+	if (divisor) {
+		cur_vao->vertex_attrib_divisor |= (1 << index);
+	} else {
+		cur_vao->vertex_attrib_divisor &= ~(1 << index);
+	}
 }
 
 void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {

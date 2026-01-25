@@ -214,7 +214,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	GLboolean is_draw_legal = GL_TRUE;
 
 	if (cur_program != 0)
-		is_draw_legal = _glDrawArrays_CustomShadersIMPL(first, count);
+		is_draw_legal = _glDrawArrays_CustomShadersIMPL(first, count, GL_FALSE);
 	else {
 		if (!(ffp_vertex_attrib_state & (1 << 0)))
 			return;
@@ -320,20 +320,14 @@ void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei prim
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	} else if (count <= 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
+	} else if (cur_program == 0) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
 	sceneReset();
-	GLboolean is_draw_legal = GL_TRUE;
-
-	if (cur_program != 0)
-		is_draw_legal = _glDrawArrays_CustomShadersIMPL(first, count);
-	else {
-		if (!(ffp_vertex_attrib_state & (1 << 0)))
-			return;
-		_glDrawArrays_FixedFunctionIMPL(first, count);
-	}
+	GLboolean is_draw_legal = _glDrawArrays_CustomShadersIMPL(first, count, GL_TRUE);
 
 #ifndef SKIP_ERROR_HANDLING
 	if (is_draw_legal)
@@ -594,23 +588,18 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	} else if (count <= 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
+	} else if (cur_program == 0) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 #endif
 
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
 	sceneReset();
-	GLboolean is_draw_legal = GL_TRUE;
 
 	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
-	if (cur_program != 0)
-		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INSTANCE_16BIT : SCE_GXM_INDEX_SOURCE_INSTANCE_32BIT);
-	else {
-		if (!(ffp_vertex_attrib_state & (1 << 0)))
-			return;
-		_glDrawElements_FixedFunctionIMPL(src, count, 0, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INSTANCE_16BIT : SCE_GXM_INDEX_SOURCE_INSTANCE_32BIT);
-	}
+	GLboolean is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INSTANCE_16BIT : SCE_GXM_INDEX_SOURCE_INSTANCE_32BIT);
 
 #ifndef SKIP_ERROR_HANDLING
 	if (is_draw_legal)

@@ -370,6 +370,7 @@ static const struct {
 	{"glVertexAttrib3fv", (void *)glVertexAttrib3fv},
 	{"glVertexAttrib4f", (void *)glVertexAttrib4f},
 	{"glVertexAttrib4fv", (void *)glVertexAttrib4fv},
+	{"glVertexAttribDivisor", (void *)glVertexAttribDivisor},
 	{"glVertexAttribPointer", (void *)glVertexAttribPointer},
 	{"glVertexPointer", (void *)glVertexPointer},
 	{"glViewport", (void *)glViewport},

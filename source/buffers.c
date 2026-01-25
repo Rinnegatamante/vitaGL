@@ -52,6 +52,7 @@ void resetVao(vao *v) {
 		v->vertex_attrib_config[i].regIndex = i;
 	}
 	v->vertex_attrib_state = 0;
+	v->vertex_attrib_divisor = 0;
 	v->index_array_unit = 0;
 
 	uint32_t circular_pool_size = v == &default_vao ? main_vertex_attrib_pool_size : aux_vertex_attrib_pool_size;

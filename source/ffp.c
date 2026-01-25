@@ -1521,13 +1521,6 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 	}
 #endif
 
-#ifndef INDICES_SPEEDHACK
-	// Check if highest index is small enough for 16 bit usage and if so, downgrade to 16 bit vertex sources for faster emitted code
-	if (top_idx && top_idx < 0xFFFF) {
-		index_type &= ~1;
-	}
-#endif
-
 	// Uploading textures on relative texture units
 	for (int i = 0; i < ffp_mask.num_textures; i++) {
 		texture *tex = &texture_slots[texture_units[base_texture_id + i].tex_id[texture_units[base_texture_id + i].state > 1 ? 0 : 1]];

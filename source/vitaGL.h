@@ -935,6 +935,7 @@ void glVertexAttrib3f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2);
 void glVertexAttrib3fv(GLuint index, const GLfloat *v);
 void glVertexAttrib4f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
 void glVertexAttrib4fv(GLuint index, const GLfloat *v);
+void glVertexAttribDivisor(GLuint index, GLuint divisor);
 void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
