@@ -3429,6 +3429,12 @@ void vglGetShaderBinary(GLuint handle, GLsizei bufSize, GLsizei *length, void *b
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
 
+#ifndef SKIP_ERROR_HANDLING
+	if (s->prog == NULL) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
 	size_t sz;
 	serialize_shader(binary, length ? (size_t *)length : &sz, s, GL_FALSE);
 }
