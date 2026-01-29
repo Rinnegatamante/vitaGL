@@ -1001,6 +1001,13 @@ void glsl_translator_process(shader *s) {
 	if (str) {
 		str[0] = str[1] = '/';
 	}
+	
+	// Nukeing extension directives
+	str = strstr(input, "#extension");
+	while (str) {
+		str[0] = str[1] = '/';
+		str = strstr(str, "#extension");
+	}
 
 #if defined(DEBUG_GLSL_PREPROCESSOR) || defined(DEBUG_GLSL_TRANSLATOR)
 	vgl_log("%s:%d %s: GLSL translation input:\n\n%s\n\n", __FILE__, __LINE__, __func__, input);
