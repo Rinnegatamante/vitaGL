@@ -1059,7 +1059,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	// Recalculating MVP matrix if necessary
 	if (mvp_modified) {
 #ifndef HAVE_WVP_ON_GPU
-		matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix);
+		matrix4x4_multiply(vgl_mvp_matrix, projection_matrix, modelview_matrix);
 #endif
 		// Recalculating normal matrix if necessary (TODO: This should be recalculated only when MV changes)
 		if (mask.lights_num > 0) {
@@ -1136,7 +1136,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifdef HAVE_WVP_ON_GPU
 		sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)projection_matrix);
 #else
-		sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)mvp_matrix);
+		sceGxmSetUniformDataF(buffer, ffp_vertex_params[WVP_MATRIX_UNIF], 0, 16, (const float *)vgl_mvp_matrix);
 #endif
 		if (ffp_vertex_params[TEX_MATRIX_UNIF]) {
 			sceGxmSetUniformDataF(buffer, ffp_vertex_params[TEX_MATRIX_UNIF], 0, 16 * mask.num_textures, (const float *)&texture_matrix[base_texture_id]);

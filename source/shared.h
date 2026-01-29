@@ -1048,7 +1048,7 @@ extern void *color_object;
 extern void *texture_object;
 extern void *index_object;
 
-extern matrix4x4 mvp_matrix; // ModelViewProjection Matrix
+extern matrix4x4 vgl_mvp_matrix; // ModelViewProjection Matrix
 extern matrix4x4 projection_matrix; // Projection Matrix
 extern matrix4x4 modelview_matrix; // ModelView Matrix
 extern matrix4x4 texture_matrix[TEXTURE_COORDS_NUM]; // Texture Matrix

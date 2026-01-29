@@ -172,16 +172,16 @@ char vgl_file_cache_path[256];
 			uniform *u = &p->vert_uniforms[z]; \
 			if (u->ptr == p->ffp_binds[FFP_MVP_MATRIX]) { \
 				if (mvp_modified) { \
-					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix); \
+					matrix4x4_multiply(vgl_mvp_matrix, projection_matrix, modelview_matrix); \
 					recalculate_normal_matrix(); \
 					mvp_modified = GL_FALSE; \
 				} \
-				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_MVP_MATRIX], 0, 16, (const float *)mvp_matrix); \
+				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_MVP_MATRIX], 0, 16, (const float *)vgl_mvp_matrix); \
 			} else if (u->ptr == p->ffp_binds[FFP_MV_MATRIX]) { \
 				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_MV_MATRIX], 0, 16, (const float *)modelview_matrix); \
 			} else if (u->ptr == p->ffp_binds[FFP_NORMAL_MATRIX]) { \
 				if (mvp_modified) { \
-					matrix4x4_multiply(mvp_matrix, projection_matrix, modelview_matrix); \
+					matrix4x4_multiply(vgl_mvp_matrix, projection_matrix, modelview_matrix); \
 					recalculate_normal_matrix(); \
 					mvp_modified = GL_FALSE; \
 				} \
@@ -1314,7 +1314,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	if (index_type & 2) { // Instanced draw
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
-			streams[i].indexSource = (cur_vao->vertex_attrib_divisor & (1 << attr_idx)) ? index_type : (index_type - 2);
+			streams[i].indexSource = (cur_vao->vertex_attrib_divisor & (1 << attr_idx)) ? index_type : (index_type & 1);
 		}		
 	} else {
 		for (int i = 0; i < p->attr_num; i++) {

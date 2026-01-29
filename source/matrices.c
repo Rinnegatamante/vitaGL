@@ -29,7 +29,7 @@ matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH]; // Projection matrices s
 static uint8_t projection_stack_counter = 1; // Projection matrices stack counter
 GLboolean mvp_modified = GL_TRUE; // Check if ModelViewProjection matrix needs to be recreated
 
-matrix4x4 mvp_matrix; // ModelViewProjection Matrix
+matrix4x4 vgl_mvp_matrix; // ModelViewProjection Matrix
 matrix4x4 projection_matrix; // Projection Matrix
 matrix4x4 modelview_matrix; // ModelView Matrix
 matrix3x3 normal_matrix; // Normal Matrix
