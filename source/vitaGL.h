@@ -335,6 +335,7 @@ extern "C" {
 #define GL_MINOR_VERSION                                0x821C
 #define GL_NUM_EXTENSIONS                               0x821D
 #define GL_RG                                           0x8227
+#define GL_R8                                           0x8229
 #define GL_QUERY_TARGET                                 0x82EA
 #define GL_UNSIGNED_SHORT_5_6_5                         0x8363
 #define GL_UNSIGNED_SHORT_1_5_5_5_REV                   0x8366

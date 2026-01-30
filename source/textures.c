@@ -477,6 +477,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_CubeIMPL(texture
 
 	// Detecting proper read callaback and source bpp
 	switch (format) {
+	case GL_R8:
 	case GL_RED:
 	case GL_ALPHA:
 	case GL_LUMINANCE:
@@ -598,6 +599,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 
 	// Detecting proper read callaback and source bpp
 	switch (format) {
+	case GL_R8:
 	case GL_RED:
 	case GL_ALPHA:
 		switch (type) {
@@ -819,6 +821,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 		tex->write_cb = writeR;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8_R111;
 		break;
+	case GL_R8:
 	case GL_RED:
 		tex->write_cb = writeR;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8_R;
