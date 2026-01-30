@@ -1654,7 +1654,7 @@ void glPixelStorei(GLenum pname, GLint param) {
 	}
 }
 
-void glGenTextures(GLsizei n, GLuint *res) {
+inline __attribute__((always_inline)) void glGenTextures(GLsizei n, GLuint *res) {
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (n < 0) {
@@ -1698,6 +1698,10 @@ void glGenTextures(GLsizei n, GLuint *res) {
 	}
 
 	vgl_log("%s:%d %s: Texture slots limit reached (%d textures hadn't been generated).\n", __FILE__, __LINE__, __func__, n - j);
+}
+
+void glCreateTextures(GLenum target, GLsizei n, GLuint *textures) {
+	glGenTextures(n, textures);
 }
 
 void glBindTexture(GLenum target, GLuint texture) {

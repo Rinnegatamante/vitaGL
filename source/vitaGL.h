@@ -653,8 +653,10 @@ void glCopyTextureImage1D(GLuint texture, GLenum target, GLint level, GLenum int
 void glCopyTextureImage2D(GLuint texture, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
 void glCopyTextureSubImage1D(GLuint texture, GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width);
 void glCopyTextureSubImage2D(GLuint texture, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
+void glCreateFramebuffers(GLsizei n, GLuint *framebuffers);
 GLuint glCreateProgram(void);
 GLuint glCreateShader(GLenum shaderType);
+void glCreateTextures(GLenum target, GLsizei n, GLuint *textures);
 void glCullFace(GLenum mode);
 void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers);
 void glDeleteFramebuffers(GLsizei n, const GLuint *framebuffers);

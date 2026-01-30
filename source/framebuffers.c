@@ -81,7 +81,7 @@ uint32_t get_alpha_channel_size(SceGxmColorFormat type) {
  * ------------------------------
  */
 
-void glGenFramebuffers(GLsizei n, GLuint *ids) {
+inline __attribute__((always_inline)) void glGenFramebuffers(GLsizei n, GLuint *ids) {
 	int i, j = 0;
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
@@ -100,6 +100,10 @@ void glGenFramebuffers(GLsizei n, GLuint *ids) {
 		if (j >= n)
 			break;
 	}
+}
+
+void glCreateFramebuffers(GLsizei n, GLuint *ids) {
+	glGenFramebuffers(n, ids);
 }
 
 void glGenRenderbuffers(GLsizei n, GLuint *ids) {
