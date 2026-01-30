@@ -228,7 +228,7 @@ void glDeleteVertexArrays(GLsizei n, const GLuint *gl_arrays) {
 	}
 }
 
-void glGenBuffers(GLsizei n, GLuint *res) {
+inline __attribute__((always_inline)) void glGenBuffers(GLsizei n, GLuint *res) {
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -244,6 +244,10 @@ void glGenBuffers(GLsizei n, GLuint *res) {
 		gpu_buf->last_frame = OBJ_NOT_USED;
 		res[i] = (GLuint)gpu_buf;
 	}
+}
+
+void glCreateBuffers(GLsizei n, GLuint *buffers) {
+	glGenBuffers(n, buffers);
 }
 
 void glBindBuffer(GLenum target, GLuint buffer) {

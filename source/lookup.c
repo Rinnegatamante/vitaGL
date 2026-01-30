@@ -94,6 +94,7 @@ static const struct {
 	{"glCopyTextureImage2D", (void *)glCopyTextureImage2D},
 	{"glCopyTextureSubImage1D", (void *)glCopyTextureSubImage1D},
 	{"glCopyTextureSubImage2D", (void *)glCopyTextureSubImage2D},
+	{"glCreateBuffers", (void *)glCreateBuffers},
 	{"glCreateFramebuffers", (void *)glCreateFramebuffers},
 	{"glCreateProgram", (void *)glCreateProgram},
 	{"glCreateShader", (void *)glCreateShader},
