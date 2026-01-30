@@ -2008,10 +2008,11 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 	_glTexParameteri(tex, target, pname, param);
 }
 
-void glTextureParameteri(GLuint tex_id, GLenum target, GLenum pname, GLint param) {
+void glTextureParameteri(GLuint tex_id, GLenum pname, GLint param) {
 	texture *tex = &texture_slots[tex_id];
 	
-	_glTexParameteri(tex, target, pname, param);
+	// FIXME: Cubemaps support
+	_glTexParameteri(tex, GL_TEXTURE_2D, pname, param);
 }
 
 void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
@@ -2024,10 +2025,11 @@ void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
 	_glTexParameterx(tex, target, pname, param);
 }
 
-void glTextureParameterx(GLuint tex_id, GLenum target, GLenum pname, GLfixed param) {
+void glTextureParameterx(GLuint tex_id, GLenum pname, GLfixed param) {
 	texture *tex = &texture_slots[tex_id];
 	
-	_glTexParameterx(tex, target, pname, param);
+	// FIXME: Cubemaps support
+	_glTexParameterx(tex, GL_TEXTURE_2D, pname, param);
 }
 
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
@@ -2040,10 +2042,11 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 	_glTexParameteri(tex, target, pname, (GLint)param);
 }
 
-void glTextureParameterf(GLuint tex_id, GLenum target, GLenum pname, GLfloat param) {
+void glTextureParameterf(GLuint tex_id, GLenum pname, GLfloat param) {
 	texture *tex = &texture_slots[tex_id];
 	
-	_glTexParameteri(tex, target, pname, (GLint)param);
+	// FIXME: Cubemaps support
+	_glTexParameteri(tex, GL_TEXTURE_2D, pname, (GLint)param);
 }
 
 void glTexParameteriv(GLenum target, GLenum pname, GLint *param) {
@@ -2056,10 +2059,11 @@ void glTexParameteriv(GLenum target, GLenum pname, GLint *param) {
 	_glTexParameteri(tex, target, pname, param[0]);
 }
 
-void glTextureParameteriv(GLuint tex_id, GLenum target, GLenum pname, GLint *param) {
+void glTextureParameteriv(GLuint tex_id, GLenum pname, GLint *param) {
 	texture *tex = &texture_slots[tex_id];
 	
-	_glTexParameteri(tex, target, pname, param[0]);
+	// FIXME: Cubemaps support
+	_glTexParameteri(tex, GL_TEXTURE_2D, pname, param[0]);
 }
 
 void glActiveTexture(GLenum texture) {

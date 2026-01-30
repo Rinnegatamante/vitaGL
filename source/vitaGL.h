@@ -888,10 +888,10 @@ void glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, G
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
 void glTextureImage1D(GLuint texture, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *data);
 void glTextureImage2D(GLuint texture, GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
-void glTextureParameterf(GLuint texture, GLenum target, GLenum pname, GLfloat param);
-void glTextureParameteri(GLuint texture, GLenum target, GLenum pname, GLint param);
-void glTextureParameteriv(GLuint texture, GLenum target, GLenum pname, GLint *param);
-void glTextureParameterx(GLuint texture, GLenum target, GLenum pname, GLfixed param);
+void glTextureParameterf(GLuint texture, GLenum pname, GLfloat param);
+void glTextureParameteri(GLuint texture, GLenum pname, GLint param);
+void glTextureParameteriv(GLuint texture, GLenum pname, GLint *param);
+void glTextureParameterx(GLuint texture, GLenum pname, GLfixed param);
 void glTextureSubImage1D(GLuint texture, GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels);
 void glTextureSubImage2D(GLuint texture, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
 void glTranslated(GLdouble x, GLdouble y, GLdouble z);
