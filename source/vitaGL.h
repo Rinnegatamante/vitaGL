@@ -294,6 +294,7 @@ extern "C" {
 #define GL_POLYGON_OFFSET_FACTOR                        0x8038
 #define GL_INTENSITY                                    0x8049
 #define GL_RGB8                                         0x8051
+#define GL_RGBA4                                        0x8056
 #define GL_RGBA8                                        0x8058
 #define GL_TEXTURE_BINDING_2D                           0x8069
 #define GL_VERTEX_ARRAY                                 0x8074

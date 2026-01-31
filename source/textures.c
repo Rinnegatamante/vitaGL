@@ -553,6 +553,8 @@ static inline __attribute__((always_inline)) void _glTexImage2D_CubeIMPL(texture
 	case GL_SRGB8_ALPHA8:
 		gamma_correction = GL_TRUE;
 	case GL_RGBA:
+	case GL_RGBA8:
+	case GL_RGBA4:
 		if (data_bpp == 2) {
 			if (src_format == SCE_GXM_TRANSFER_FORMAT_U1U5U5U5_ABGR)
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
@@ -795,6 +797,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	case GL_SRGB8_ALPHA8:
 		gamma_correction = GL_TRUE;
 	case GL_RGBA8:
+	case GL_RGBA4:
 	case GL_RGBA:
 		tex->write_cb = writeRGBA;
 		if (fast_store && data_bpp == 2) {
