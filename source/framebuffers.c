@@ -571,6 +571,9 @@ void glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLe
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
 		switch (pname) {
+		case GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME:
+			*params = fb;
+			break;
 		case GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE:
 			if (!fb || !fb->tex)
 				*params = GL_NONE;
