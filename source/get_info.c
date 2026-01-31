@@ -425,6 +425,9 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 	texture_unit *server_tex_unit = &texture_units[server_texture_unit];
 
 	switch (pname) {
+	case GL_NUM_PROGRAM_BINARY_FORMATS:
+		*data = 1;
+		break;
 	case GL_ALPHA_TEST_REF:
 		*data = vgl_alpha_ref;
 		break;

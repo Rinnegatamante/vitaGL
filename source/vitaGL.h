@@ -415,6 +415,7 @@ extern "C" {
 #define GL_MIRROR_CLAMP_EXT                             0x8742
 #define GL_BUFFER_SIZE                                  0x8764
 #define GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD              0x87EE
+#define GL_NUM_PROGRAM_BINARY_FORMATS                   0x87FE
 #define GL_RGBA16F                                      0x881A
 #define GL_BLEND_EQUATION_ALPHA                         0x883D
 #define GL_POINT_SPRITE                                 0x8861
