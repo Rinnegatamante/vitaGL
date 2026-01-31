@@ -232,6 +232,12 @@ void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbu
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
 
+#ifndef SKIP_ERROR_HANDLING
+	if (!fb) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	}
+#endif
+
 	// Discarding any previously bound hidden depth buffers
 	if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
 #ifndef DEPTH_STENCIL_HACK
@@ -258,6 +264,8 @@ void glNamedFramebufferRenderbuffer(GLuint target, GLenum attachment, GLenum ren
 #ifndef SKIP_ERROR_HANDLING
 	if (renderbuffertarget != GL_RENDERBUFFER) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, renderbuffertarget)
+	} else if (target == 0) {
+		SET_GL_ERROR(GL_INVALID_OPERATION);
 	}
 #endif
 
