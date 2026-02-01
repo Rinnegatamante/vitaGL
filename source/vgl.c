@@ -235,7 +235,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	createDisplayRenderTarget();
 
 	// Creating color surfaces for the display
-	initDisplayColorSurfaces();
+	initDisplayColorSurfaces(GL_FALSE);
 
 	// Creating depth and stencil surfaces for the display
 	initDepthStencilSurfaces();
@@ -598,6 +598,22 @@ GLboolean vglInitExtended(int pool_size, int width, int height, int ram_threshol
 
 GLboolean vglInit(int pool_size) {
 	return vglInitExtended(pool_size, DISPLAY_WIDTH_DEF, DISPLAY_HEIGHT_DEF, 0x1000000, SCE_GXM_MULTISAMPLE_4X);
+}
+
+GLboolean vglSwapResolution(int width, int height) {
+#ifndef SKIP_ERROR_HANDLING
+	// Check if framebuffer size is valid
+	int max_w, max_h;
+	sceDisplayGetMaximumFrameBufResolution(&max_w, &max_h);
+	if (width > max_w || height > max_h) {
+		return GL_FALSE;
+	}
+#endif
+
+	NEW_DISPLAY_WIDTH = width;
+	NEW_DISPLAY_HEIGHT = height;
+	
+	return GL_TRUE;
 }
 
 void vglWaitVblankStart(GLboolean enable) {

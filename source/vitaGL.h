@@ -1156,6 +1156,9 @@ void vglShaderGxpBinary(GLsizei count, const GLuint *handles, const void *binary
 // Perform a display buffer swap. Equivalent of eglSwapBuffers but allows support with Common Dialog.
 void vglSwapBuffers(GLboolean has_commondialog);
 
+// Enqueue a request for display resolution change that will happen at next vglSwapBuffers call.
+GLboolean vglSwapResolution(int width, int height);
+
 // Loads the depth buffer of the currently bound renderbuffer into the currently bound GL texture.
 void vglTexImageDepthBuffer(GLenum target);
 

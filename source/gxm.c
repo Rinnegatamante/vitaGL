@@ -89,6 +89,8 @@ static uint32_t gpu_stall_cnt = 0;
 int DISPLAY_WIDTH; // Display width in pixels
 int DISPLAY_HEIGHT; // Display height in pixels
 int DISPLAY_STRIDE; // Display stride in pixels
+int NEW_DISPLAY_WIDTH; // Requested new display width in pixels
+int NEW_DISPLAY_HEIGHT; // Requested new display height in pixels
 float DISPLAY_WIDTH_FLOAT; // Display width in pixels (float)
 float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
 
@@ -446,7 +448,7 @@ void createDisplayRenderTarget(void) {
 	setupRenderTarget(&gxm_render_target, DISPLAY_WIDTH, DISPLAY_HEIGHT, 1);
 }
 
-void initDisplayColorSurfaces(void) {
+void initDisplayColorSurfaces(GLboolean is_swap) {
 	// Getting access to the shared framebuffer on system app mode
 	while (system_app_mode) {
 		shared_fb = sceSharedFbOpen(1);
@@ -462,8 +464,7 @@ void initDisplayColorSurfaces(void) {
 		}
 	}
 
-	int i;
-	for (i = 0; i < gxm_display_buffer_count; i++) {
+	for (int i = 0; i < gxm_display_buffer_count; i++) {
 		// Allocating color surface memblock
 		if (!system_app_mode) {
 			gxm_color_surfaces_addr[i] = gpu_alloc_mapped_aligned(4096, VGL_ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024), VGL_MEM_VRAM);
@@ -482,7 +483,8 @@ void initDisplayColorSurfaces(void) {
 			gxm_color_surfaces_addr[i]);
 
 		// Creating a display sync object for the allocated color surface
-		sceGxmSyncObjectCreate(&gxm_sync_objects[i]);
+		if (!is_swap)
+			sceGxmSyncObjectCreate(&gxm_sync_objects[i]);
 	}
 }
 
@@ -920,6 +922,26 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		}
 	}
 	needs_scene_reset = GL_TRUE;
+	
+	// Perform resolution change if there's one pending
+	if (NEW_DISPLAY_WIDTH) {
+		sceGxmFinish(gxm_context);
+		sceGxmDestroyRenderTarget(gxm_render_target);
+		if (!system_app_mode) {
+			for (int i = 0; i < gxm_display_buffer_count; i++) {
+				vgl_free(gxm_color_surfaces_addr[i]);
+			}
+		}
+		DISPLAY_WIDTH = NEW_DISPLAY_WIDTH;
+		DISPLAY_HEIGHT = NEW_DISPLAY_HEIGHT;
+		DISPLAY_WIDTH_FLOAT = DISPLAY_WIDTH * 1.0f;
+		DISPLAY_HEIGHT_FLOAT = DISPLAY_HEIGHT * 1.0f;
+		DISPLAY_STRIDE = VGL_ALIGN(DISPLAY_WIDTH, 64);
+		vector4f_convert_to_local_space(clear_vertices, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+		createDisplayRenderTarget();
+		initDisplayColorSurfaces(GL_TRUE);
+		NEW_DISPLAY_WIDTH = 0;
+	}
 
 	// Starting garbage collector job
 #ifdef HAVE_SINGLE_THREADED_GC

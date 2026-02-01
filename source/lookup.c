@@ -437,6 +437,7 @@ static const struct {
 	{"vglSetupRuntimeShaderCompiler", (void *)vglSetupRuntimeShaderCompiler},
 	{"vglShaderGxpBinary", (void *)vglShaderGxpBinary},
 	{"vglSwapBuffers", (void *)vglSwapBuffers},
+	{"vglSwapResolution", (void *)vglSwapResolution},
 	{"vglTexImageDepthBuffer", (void *)vglTexImageDepthBuffer},
 	{"vglUseCachedMem", (void *)vglUseCachedMem},
 	{"vglUseLowPrecision", (void *)vglUseLowPrecision},

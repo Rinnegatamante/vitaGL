@@ -175,6 +175,8 @@ extern int DISPLAY_HEIGHT; // Display height in pixels
 extern int DISPLAY_STRIDE; // Display stride in pixels
 extern float DISPLAY_WIDTH_FLOAT; // Display width in pixels (float)
 extern float DISPLAY_HEIGHT_FLOAT; // Display height in pixels (float)
+extern int NEW_DISPLAY_WIDTH; // Requested new display width in pixels
+extern int NEW_DISPLAY_HEIGHT; // Requested new display height in pixels
 
 #include <malloc.h>
 #include <stdio.h>
@@ -1094,7 +1096,7 @@ extern GLfloat point_size; // Size of points for fixed function pipeline
 void initGxm(void); // Inits sceGxm
 void initGxmContext(void); // Inits sceGxm context
 void createDisplayRenderTarget(void); // Creates render target for the display
-void initDisplayColorSurfaces(void); // Creates color surfaces for the display
+void initDisplayColorSurfaces(GLboolean is_swap); // Creates color surfaces for the display
 void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, GLboolean has_stencil); // Creates depth and stencil surfaces
 void initDepthStencilSurfaces(void); // Creates depth and stencil surfaces for the display
 void startShaderPatcher(void); // Creates a shader patcher instance
