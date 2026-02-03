@@ -2323,6 +2323,18 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 #endif
 
 #ifdef STRICT_UNIFORMS_COMPLIANCE
+	int index = 0;
+	char tmp[64];
+	char *start = strstr(name, "[");
+	if (start) {
+		strcpy(tmp, name);
+		start = tmp + (start - name);
+		name = tmp;
+		char *end = strstr(start + 1, "]");
+		start[0] = end[0] = 0;
+		index = atoi(start + 1);
+	}
+
 	uniform_location ret;
 #endif
 	// Checking if parameter is a vertex or fragment related one
@@ -2352,7 +2364,7 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	for (uint32_t i = 0; i < cnt; i++) {
 		if (j[i].ptr == u) {
 #ifdef STRICT_UNIFORMS_COMPLIANCE			
-			ret.offset = 0;
+			ret.offset = index;
 			ret.zero = 0;
 			ret.program_idx = prog - 1;
 			ret.uniform_idx = i;
