@@ -3200,7 +3200,7 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 	
 	// Set new binding to the requested attribute
 	p->attr[index].regIndex = attrIndex;
-	if ((p->attr_highest_idx == 0) || (p->attr_highest_idx - 1 < index))
+	if (p->attr_highest_idx <= index)
 		p->attr_highest_idx = index + 1;
 }
 
