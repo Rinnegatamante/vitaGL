@@ -209,7 +209,7 @@ const GLubyte *glGetString(GLenum name) {
 		return "2.00 NVIDIA via Cg compiler";
 #endif
 	default:
-		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
+		SET_GL_ERROR_WITH_RET_AND_VALUE(GL_INVALID_ENUM, NULL, name)
 	}
 }
 
