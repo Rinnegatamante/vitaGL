@@ -2416,10 +2416,9 @@ inline void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 		u->data = (float *)value[0];
 	else {
 		// Setting passed value to desired uniform
-#ifndef SKIP_ERROR_HANDLING
-		if (u->size != count) {
-			vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr));
-			SET_GL_ERROR(GL_INVALID_OPERATION)
+#ifndef UNIFORMS_SPEEDHACK
+		if (u->size < count) {
+			count = u->size;
 		}
 #endif
 		for (int i = 0; i < count; i++) {
@@ -2469,10 +2468,9 @@ inline void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef SKIP_ERROR_HANDLING
+#ifndef UNIFORMS_SPEEDHACK
 	if (u->size < count) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count, sceGxmProgramParameterGetName(u->ptr));
-		SET_GL_ERROR(GL_INVALID_OPERATION)
+		count = u->size;
 	}
 #endif
 	vgl_fast_memcpy(&u->data[offs], value, count * sizeof(float));
@@ -2520,10 +2518,9 @@ inline void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef SKIP_ERROR_HANDLING
+#ifndef UNIFORMS_SPEEDHACK
 	if (u->size < count * 2) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr));
-		SET_GL_ERROR(GL_INVALID_OPERATION)
+		count = u->size / 2;
 	}
 #endif
 	for (int i = 0; i < count * 2; i++) {
@@ -2573,10 +2570,9 @@ inline void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef SKIP_ERROR_HANDLING
+#ifndef UNIFORMS_SPEEDHACK
 	if (u->size < count * 2) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 2, sceGxmProgramParameterGetName(u->ptr));
-		SET_GL_ERROR(GL_INVALID_OPERATION)
+		count = u->size / 2;
 	}
 #endif
 	vgl_fast_memcpy(&u->data[offs * 2], value, count * 2 * sizeof(float));
@@ -2625,10 +2621,9 @@ inline void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
 	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef SKIP_ERROR_HANDLING
+#ifndef UNIFORMS_SPEEDHACK
 	if (u->size < count * 3) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr));
-		SET_GL_ERROR(GL_INVALID_OPERATION)
+		count = u->size / 3;
 	}
 #endif
 	for (int i = 0; i < count * 3; i++) {
@@ -2679,10 +2674,9 @@ inline void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef SKIP_ERROR_HANDLING
+#ifndef UNIFORMS_SPEEDHACK
 	if (u->size < count * 3) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 3, sceGxmProgramParameterGetName(u->ptr));
-		SET_GL_ERROR(GL_INVALID_OPERATION)
+		count = u->size / 3;
 	}
 #endif
 	vgl_fast_memcpy(&u->data[offs * 3], value, count * 3 * sizeof(float));
@@ -2732,10 +2726,9 @@ inline void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef SKIP_ERROR_HANDLING
+#ifndef UNIFORMS_SPEEDHACK
 	if (u->size < count * 4) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr));
-		SET_GL_ERROR(GL_INVALID_OPERATION)
+		count = u->size / 4;
 	}
 #endif
 	for (int i = 0; i < count * 4; i++) {
@@ -2787,10 +2780,9 @@ inline void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef SKIP_ERROR_HANDLING
+#ifndef UNIFORMS_SPEEDHACK
 	if (u->size < count * 4) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr));
-		SET_GL_ERROR(GL_INVALID_OPERATION)
+		count = u->size / 4;
 	}
 #endif
 	vgl_fast_memcpy(&u->data[offs * 4], value, count * 4 * sizeof(float));
@@ -2815,10 +2807,9 @@ inline void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpos
 	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef SKIP_ERROR_HANDLING
+#ifndef UNIFORMS_SPEEDHACK
 	if (u->size < count * 4) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 4, sceGxmProgramParameterGetName(u->ptr));
-		SET_GL_ERROR(GL_INVALID_OPERATION)
+		count = u->size / 4;
 	}
 #endif
 	if (transpose) {
@@ -2848,10 +2839,9 @@ inline void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpos
 	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef SKIP_ERROR_HANDLING
+#ifndef UNIFORMS_SPEEDHACK
 	if (u->size < count * 9) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 9, sceGxmProgramParameterGetName(u->ptr));
-		SET_GL_ERROR(GL_INVALID_OPERATION)
+		count = u->size / 9;
 	}
 #endif
 	if (transpose) {
@@ -2882,10 +2872,9 @@ inline void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpos
 	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef SKIP_ERROR_HANDLING
+#ifndef UNIFORMS_SPEEDHACK
 	if (u->size < count * 16) {
-		vgl_log("%s:%d: %s: expected %d elements but got %d for uniform %s.\n", __FILE__, __LINE__, __func__, u->size, count * 16, sceGxmProgramParameterGetName(u->ptr));
-		SET_GL_ERROR(GL_INVALID_OPERATION)
+		count = u->size / 16;
 	}
 #endif
 	if (transpose) {
