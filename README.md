@@ -40,6 +40,7 @@ In order to build vitaGL use the following command: `make install`.
 |`SAFE_UNIFORMS=1`| Makes some optimizations in the shaders pipeline less efficient but makes uniform location indexing for basic type arrays compliant.|
 |`UNPURE_TEXFORMATS=1`| Enables support for texture dimensions different than 2D (tex2D is still required in shader code).|
 |`HAVE_VITA3K_SUPPORT=1`| Disables several features in order to make vitaGL compatible with Vita3K. Requires vitaShaRK compiled with https://github.com/Rinnegatamante/vitaShaRK/blob/master/source/vitashark.c#L24 uncommented.|
+|`ENABLE_LEGACY_PIPELINE=1`| Enables support for the legacy vglDrawObjects pipeline.|
 ### Hack Flags
 | Flag | Description |
 | --- | --- |

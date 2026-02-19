@@ -619,6 +619,7 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void
 }
 
 void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
+#ifdef ENABLE_LEGACY_PIPELINE
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
@@ -654,4 +655,5 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	}
 
 	restore_polygon_mode(gxm_p);
+#endif
 }

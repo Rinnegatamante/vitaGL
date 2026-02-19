@@ -255,6 +255,12 @@ ifeq ($(DEBUG_GC),1)
 CFLAGS += -DDEBUG_GC
 endif
 
+ifeq ($(ENABLE_LEGACY_PIPELINE),1)
+CFLAGS += -DENABLE_LEGACY_PIPELINE
+endif
+
+
+
 CXXFLAGS  = $(CFLAGS) -fexceptions -std=gnu++11 -Wno-write-strings
 
 all: $(TARGET).a

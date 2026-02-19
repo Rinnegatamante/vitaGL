@@ -320,6 +320,14 @@ typedef struct {
 	void *chain;
 } ubo;
 
+#ifdef ENABLE_LEGACY_PIPELINE
+typedef enum {
+	VGL_ATTRIB_REGULAR,
+	VGL_ATTRIB_PACKED,
+	VGL_ATTRIB_UNPACKED
+} attrib_mode;
+#endif
+
 // Program struct holding vertex/fragment shader info
 typedef struct {
 	shader *vshader;
@@ -337,7 +345,9 @@ typedef struct {
 	blend_config blend_info;
 	GLuint attr_num;
 	GLuint attr_idx;
-	GLuint stream_num;
+#ifdef ENABLE_LEGACY_PIPELINE
+	attrib_mode attr_mode;
+#endif
 #ifdef HAVE_FFP_SHADER_SUPPORT
 	const SceGxmProgramParameter *ffp_binds[FFP_BINDS_NUM];
 #endif
@@ -1363,6 +1373,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	return GL_TRUE;
 }
 
+#ifdef ENABLE_LEGACY_PIPELINE
 void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 #ifdef HAVE_PROFILING
 	uint32_t draw_start = sceKernelGetProcessTimeLow();
@@ -1397,6 +1408,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	shaders_draw_cnt++;
 #endif
 }
+#endif
 
 #ifdef HAVE_SHARK_LOG
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
@@ -1780,7 +1792,9 @@ GLuint glCreateProgram(void) {
 			res = i--;
 			progs[i].status = PROG_UNLINKED;
 			progs[i].attr_num = 0;
-			progs[i].stream_num = 0;
+#ifdef ENABLE_LEGACY_PIPELINE
+			progs[i].attr_mode = VGL_ATTRIB_REGULAR;
+#endif
 			progs[i].attr_idx = 0;
 			progs[i].max_frag_texunit_idx = 0;
 			progs[i].max_vert_texunit_idx = 0;
@@ -2234,19 +2248,20 @@ void glLinkProgram(GLuint progr) {
 		ptr += 4;
 	}
 
+#ifdef ENABLE_LEGACY_PIPELINE
 	// Creating fragment and vertex program via sceGxmShaderPatcher if using vgl* draw pipeline
-	if (p->stream_num) {
-		if (p->stream_num > 1)
-			p->stream_num = p->attr_num;
+	if (p->attr_mode != VGL_ATTRIB_REGULAR) {
 		patchVertexProgram(gxm_shader_patcher,
 			p->vshader->id, p->attr, p->attr_num,
-			p->stream, p->stream_num, &p->vprog);
-		rebuild_frag_shader(p->fshader->id, &p->fprog, NULL, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
+			p->stream, p->attr_mode == VGL_ATTRIB_UNPACKED ? p->attr_num : 1, &p->vprog);
+		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
 		p->is_fbo_float = is_fbo_float;
 
 		// Populating current blend settings
 		p->blend_info.raw = blend_info.raw;
-	} else {
+	} else
+#endif
+	{
 		// Checking if bound attributes are aligned
 		p->has_unaligned_attrs = GL_FALSE;
 
@@ -3316,6 +3331,7 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 
 // Equivalent of glBindAttribLocation but for sceGxm architecture
 void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type) {
+#ifdef ENABLE_LEGACY_PIPELINE
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 	SceGxmVertexAttribute *attributes = &p->attr[index];
@@ -3354,11 +3370,13 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 	attributes->regIndex = sceGxmProgramParameterGetResourceIndex(param);
 	streams->stride = bpe * num;
 	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-	p->stream_num = 2;
+	p->attr_mode = VGL_ATTRIB_UNPACKED;
+#endif
 }
 
 // Equivalent of glBindAttribLocation but for sceGxm architecture when packed attributes are used
 GLint vglBindPackedAttribLocation(GLuint prog, const GLchar *name, const GLuint num, const GLenum type, GLuint offset, GLint stride) {
+#ifdef ENABLE_LEGACY_PIPELINE
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 	SceGxmVertexAttribute *attributes = &p->attr[p->attr_idx];
@@ -3397,14 +3415,15 @@ GLint vglBindPackedAttribLocation(GLuint prog, const GLchar *name, const GLuint 
 	attributes->regIndex = sceGxmProgramParameterGetResourceIndex(param);
 	streams->stride = stride ? stride : bpe * num;
 	streams->indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-	p->stream_num = 1;
+	p->attr_mode = VGL_ATTRIB_PACKED;
 	p->attr_idx++;
-
+#endif
 	return GL_TRUE;
 }
 
 // Equivalent of glVertexAttribPointer but for sceGxm architecture
 void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLuint count, const GLvoid *pointer) {
+#ifdef ENABLE_LEGACY_PIPELINE
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (stride < 0) {
@@ -3444,11 +3463,14 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 
 	// Setting vertex stream to passed index in sceGxm
 	sceGxmSetVertexStream(gxm_context, index, ptr);
+#endif
 }
 
 void vglVertexAttribPointerMapped(GLuint index, const GLvoid *pointer) {
+#ifdef ENABLE_LEGACY_PIPELINE
 	// Setting vertex stream to passed index in sceGxm
 	sceGxmSetVertexStream(gxm_context, index, pointer);
+#endif
 }
 
 void vglGetShaderBinary(GLuint handle, GLsizei bufSize, GLsizei *length, void *binary) {
