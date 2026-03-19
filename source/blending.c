@@ -438,13 +438,13 @@ void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
 #endif
 	blend_color_mask = SCE_GXM_COLOR_MASK_NONE;
 	if (red)
-		blend_color_mask += SCE_GXM_COLOR_MASK_R;
+		blend_color_mask |= SCE_GXM_COLOR_MASK_R;
 	if (green)
-		blend_color_mask += SCE_GXM_COLOR_MASK_G;
+		blend_color_mask |= SCE_GXM_COLOR_MASK_G;
 	if (blue)
-		blend_color_mask += SCE_GXM_COLOR_MASK_B;
+		blend_color_mask |= SCE_GXM_COLOR_MASK_B;
 	if (alpha)
-		blend_color_mask += SCE_GXM_COLOR_MASK_A;
+		blend_color_mask |= SCE_GXM_COLOR_MASK_A;
 	if (blend_state)
 		change_blend_factor();
 	else

@@ -1464,7 +1464,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 		case GL_ETC1_RGB8_OES:
 #ifndef DISABLE_HW_ETC1
 			if (target == GL_TEXTURE_2D)
-				tex_format = SCE_GXM_TEXTURE_FORMAT_ETC1_RGB;
+				tex_format = SCE_GXM_TEXTURE_FORMAT_ETC1_1BGR;
 			else {
 #endif
 				non_native_format = GL_TRUE;

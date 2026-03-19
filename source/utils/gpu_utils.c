@@ -473,7 +473,7 @@ static inline __attribute__((always_inline)) int gpu_get_compressed_mip_size(int
 		return ceil(width / 4.0) * ceil(height / 4.0) * 8.0;
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
-	case SCE_GXM_TEXTURE_FORMAT_ETC1_RGB:
+	case SCE_GXM_TEXTURE_FORMAT_ETC1_1BGR:
 		return ceil(width / 4.0) * ceil(height / 4.0) * 8;
 	case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
@@ -552,7 +552,7 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 				case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
 					SwizzleTexData64Bpp((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 8), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 8), MIN(ALIGNBLOCK(aligned_width, 8), ALIGNBLOCK(aligned_height, 4)));
 					break;
-				case SCE_GXM_TEXTURE_FORMAT_ETC1_RGB:
+				case SCE_GXM_TEXTURE_FORMAT_ETC1_1BGR:
 					SwizzleTexDataETC1((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 4), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 4), ALIGNBLOCK(MIN(aligned_width, aligned_height), 4));
 					break;
 				default:
@@ -660,7 +660,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 				case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
 					SwizzleTexData64Bpp((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 8), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 8), MIN(ALIGNBLOCK(aligned_width, 8), ALIGNBLOCK(aligned_height, 4)));
 					break;
-				case SCE_GXM_TEXTURE_FORMAT_ETC1_RGB:
+				case SCE_GXM_TEXTURE_FORMAT_ETC1_1BGR:
 					SwizzleTexDataETC1((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 4), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 4), ALIGNBLOCK(MIN(aligned_width, aligned_height), 4));
 					break;
 				default:

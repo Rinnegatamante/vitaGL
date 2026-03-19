@@ -27,9 +27,6 @@
 #include <vitasdk.h>
 #include "vitaGL.h"
 
-// Undocumented texture format for ETC1 textures (Thanks to Bythos)
-#define SCE_GXM_TEXTURE_FORMAT_ETC1_RGB 0x84000000
-
 // Internal constants
 #define TEXTURES_NUM 16384 // Available textures
 #define TEXTURE_IMAGE_UNITS_NUM 16 // Available texture image units
