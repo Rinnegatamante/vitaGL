@@ -207,9 +207,11 @@ void change_cull_mode() {
 #ifdef HAVE_UNFLIPPED_FBOS
 		switch (gl_front_face + gl_cull_mode) {
 		case GL_CW_BACK:
+			no_polygons_mode = GL_FALSE;
 			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CCW);
 			break;
 		case GL_CCW_BACK:
+			no_polygons_mode = GL_FALSE;
 			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CW);
 			break;
 		default:
@@ -220,9 +222,11 @@ void change_cull_mode() {
 		switch (gl_front_face + gl_cull_mode + is_rendering_display) {
 		case GL_CW_BACK:
 		case GL_CCW_BACK_DISPLAY:
+			no_polygons_mode = GL_FALSE;
 			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CW);
 			break;
 		case GL_CCW_BACK:
+			no_polygons_mode = GL_FALSE;
 			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CCW);
 			break;
 		default:
@@ -231,6 +235,7 @@ void change_cull_mode() {
 		}
 #endif	
 	} else {
+		no_polygons_mode = GL_FALSE;
 		sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_NONE);
 	}
 }
