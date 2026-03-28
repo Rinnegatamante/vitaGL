@@ -62,13 +62,13 @@ GLfloat vgl_alpha_ref = 0.0f; // Current in use alpha test reference value
 int alpha_op = ALWAYS; // Current in use alpha test operation
 GLboolean alpha_test_state = GL_FALSE; // Current state for GL_ALPHA_TEST
 
-void change_depth_write(SceGxmDepthWriteMode mode) {
+inline __attribute__((always_inline)) void change_depth_write(SceGxmDepthWriteMode mode) {
 	// Change depth write mode for both front and back primitives
 	sceGxmSetFrontDepthWriteEnable(gxm_context, mode);
 	sceGxmSetBackDepthWriteEnable(gxm_context, mode);
 }
 
-void change_depth_func() {
+inline __attribute__((always_inline)) void change_depth_func() {
 	// Setting depth function for both front and back primitives
 	sceGxmSetFrontDepthFunc(gxm_context, depth_test_state ? depth_func : SCE_GXM_DEPTH_FUNC_ALWAYS);
 	sceGxmSetBackDepthFunc(gxm_context, depth_test_state ? depth_func : SCE_GXM_DEPTH_FUNC_ALWAYS);
@@ -77,7 +77,7 @@ void change_depth_func() {
 	change_depth_write((depth_mask_state && depth_test_state) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 }
 
-void invalidate_depth_test() {
+inline __attribute__((always_inline)) void invalidate_depth_test() {
 	// Invalidating current depth test state
 	orig_depth_test = depth_test_state;
 	depth_test_state = GL_FALSE;
@@ -86,7 +86,7 @@ void invalidate_depth_test() {
 	change_depth_func();
 }
 
-void validate_depth_test() {
+inline __attribute__((always_inline)) void validate_depth_test() {
 	// Restoring original depth test state
 	depth_test_state = orig_depth_test;
 
@@ -94,7 +94,7 @@ void validate_depth_test() {
 	change_depth_func();
 }
 
-void invalidate_viewport() {
+inline __attribute__((always_inline)) void invalidate_viewport() {
 	// Invalidating current viewport
 	if (is_rendering_display)
 		setViewport(gxm_context, fullscreen_x_port, fullscreen_x_scale, fullscreen_y_port, fullscreen_y_scale, fullscreen_z_port, fullscreen_z_scale);
@@ -104,7 +104,7 @@ void invalidate_viewport() {
 	}
 }
 
-void validate_viewport() {
+inline __attribute__((always_inline)) void validate_viewport() {
 	// Restoring original viewport
 	if (is_rendering_display)
 		setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
@@ -114,7 +114,7 @@ void validate_viewport() {
 	}
 }
 
-void change_stencil_settings() {
+inline __attribute__((always_inline)) void refresh_stencil_settings() {
 	if (stencil_test_state) {
 		// Setting stencil function for both front and back primitives
 		sceGxmSetFrontStencilFunc(gxm_context,
@@ -150,7 +150,7 @@ void change_stencil_settings() {
 	}
 }
 
-GLboolean change_stencil_config(SceGxmStencilOp *cfg, GLenum new) {
+inline __attribute__((always_inline)) GLboolean change_stencil_config(SceGxmStencilOp *cfg, GLenum new) {
 	// Translating openGL stencil operation value to sceGxm one
 	switch (new) {
 	case GL_KEEP:
@@ -183,7 +183,7 @@ GLboolean change_stencil_config(SceGxmStencilOp *cfg, GLenum new) {
 	return GL_TRUE;
 }
 
-GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new) {
+inline __attribute__((always_inline)) GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new) {
 	// Translating openGL stencil function to sceGxm one
 	switch (new) {
 	case GL_NEVER:
@@ -216,7 +216,7 @@ GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new) {
 	return GL_TRUE;
 }
 
-void update_alpha_test_settings() {
+inline __attribute__((always_inline)) void update_alpha_test_settings() {
 	ffp_dirty_frag = GL_TRUE;
 	dirty_frag_unifs = GL_TRUE;
 
@@ -339,7 +339,7 @@ void update_scissor_test() {
 #endif
 
 	// Restoring original stencil test settings
-	change_stencil_settings();
+	refresh_stencil_settings();
 
 	vglRestoreVertexUniformBuffer();
 }
@@ -526,7 +526,7 @@ void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, face)
 	}
-	change_stencil_settings();
+	refresh_stencil_settings();
 }
 
 void glStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass) {
@@ -563,7 +563,7 @@ void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask) {
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, face)
 	}
-	change_stencil_settings();
+	refresh_stencil_settings();
 }
 
 void glStencilFunc(GLenum func, GLint ref, GLuint mask) {
@@ -585,7 +585,7 @@ void glStencilMaskSeparate(GLenum face, GLuint mask) {
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, face)
 	}
-	change_stencil_settings();
+	refresh_stencil_settings();
 }
 
 void glStencilMask(GLuint mask) {

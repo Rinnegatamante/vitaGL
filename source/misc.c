@@ -386,7 +386,7 @@ void glEnable(GLenum cap) {
 		break;
 	case GL_STENCIL_TEST:
 		stencil_test_state = GL_TRUE;
-		change_stencil_settings();
+		refresh_stencil_settings();
 		break;
 	case GL_BLEND:
 		if (!blend_state)
@@ -522,7 +522,7 @@ void glDisable(GLenum cap) {
 		break;
 	case GL_STENCIL_TEST:
 		stencil_test_state = GL_FALSE;
-		change_stencil_settings();
+		refresh_stencil_settings();
 		break;
 	case GL_BLEND:
 		if (blend_state)
@@ -703,7 +703,7 @@ void glClear(GLbitfield mask) {
 	validate_depth_test();
 	change_depth_write((depth_mask_state && depth_test_state) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 
-	change_stencil_settings();
+	refresh_stencil_settings();
 
 	sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
 	sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back);
@@ -972,7 +972,7 @@ void glPopAttrib(void) {
 		change_depth_func();
 		lighting_state = setup->lighting_state;
 		stencil_test_state = setup->stencil_test_state;
-		change_stencil_settings();
+		refresh_stencil_settings();
 		scissor_test_state = setup->scissor_test_state;
 		sceneReset();
 		update_scissor_test();
@@ -1044,7 +1044,7 @@ void glPopAttrib(void) {
 		stencil_func_front = setup->stencil_func_front;
 		stencil_func_back = setup->stencil_func_back;
 		stencil_value = setup->stencil_value;
-		change_stencil_settings();
+		refresh_stencil_settings();
 	}
 	if (setup->enabled_bits & (1 << TRANSFORM_BIT)) {
 		clip_planes_mask = setup->clip_planes_mask;

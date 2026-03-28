@@ -1109,7 +1109,7 @@ void change_depth_write(SceGxmDepthWriteMode mode); // Changes current in use de
 void change_depth_func(void); // Changes current in use depth test function
 void invalidate_depth_test(void); // Invalidates depth test state
 void validate_depth_test(void); // Resets original depth test state after invalidation
-void change_stencil_settings(void); // Changes current in use stencil test parameters
+void refresh_stencil_settings(void); // Rrefreshes current in use stencil test setup
 GLboolean change_stencil_config(SceGxmStencilOp *cfg, GLenum new_cfg); // Changes current in use stencil test operation value
 GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new_cfg); // Changes current in use stencil test function value
 void update_alpha_test_settings(void); // Changes current in use alpha test operation value

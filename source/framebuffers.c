@@ -822,7 +822,7 @@ void glBlitNamedFramebuffer(GLuint readFramebuffer, GLuint drawFramebuffer, GLin
 	}
 	validate_depth_test();
 	change_depth_write((depth_mask_state && depth_test_state) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
-	change_stencil_settings();
+	refresh_stencil_settings();
 	sceGxmSetFrontPolygonMode(gxm_context, polygon_mode_front);
 	sceGxmSetBackPolygonMode(gxm_context, polygon_mode_back);
 	update_polygon_offset();
