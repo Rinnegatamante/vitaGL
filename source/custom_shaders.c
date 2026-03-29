@@ -300,6 +300,9 @@ typedef struct {
 	const SceGxmProgramParameter *ptr;
 	float *data;
 	uint32_t size;
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+	glsl_samplers_info *sampler;
+#endif
 	GLboolean is_fragment;
 	GLboolean is_vertex;
 } uniform;
@@ -713,6 +716,14 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 				tex->overridden = GL_FALSE;
 			}
 			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+			glsl_samplers_info *info = p->frag_texunits[i]->sampler;
+			if (info) {
+				info->sizes[0] = sceGxmTextureGetWidth(&tex->gxm_tex);
+				info->sizes[1] = sceGxmTextureGetHeight(&tex->gxm_tex);
+				dirty_frag_unifs = GL_TRUE;
+			}
+#endif
 #ifndef SAMPLERS_SPEEDHACK
 		}
 #endif
@@ -922,6 +933,14 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 				tex->overridden = GL_FALSE;
 			}
 			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+			glsl_samplers_info *info = p->frag_texunits[i]->sampler;
+			if (info) {
+				info->sizes[0] = sceGxmTextureGetWidth(&tex->gxm_tex);
+				info->sizes[1] = sceGxmTextureGetHeight(&tex->gxm_tex);
+				dirty_frag_unifs = GL_TRUE;
+			}
+#endif
 #ifndef SAMPLERS_SPEEDHACK
 		}
 #endif
@@ -1147,6 +1166,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 				vglSetTexUMode(&tex->gxm_tex, smp->u_mode);
 				vglSetTexVMode(&tex->gxm_tex, smp->v_mode);
 				vglSetTexMipmapCount(&tex->gxm_tex, smp->use_mips ? tex->mip_count : 0);
+				vglSetTexLodBias(&tex->gxm_tex, smp->lod_bias);
 				tex->overridden = GL_TRUE;
 			} else if (tex->overridden) {
 				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
@@ -1155,9 +1175,18 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
 				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
 				vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
+				vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
 				tex->overridden = GL_FALSE;
 			}
 			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+			glsl_samplers_info *info = p->frag_texunits[i]->sampler;
+			if (info) {
+				info->sizes[0] = sceGxmTextureGetWidth(&tex->gxm_tex);
+				info->sizes[1] = sceGxmTextureGetHeight(&tex->gxm_tex);
+				dirty_frag_unifs = GL_TRUE;
+			}
+#endif
 #ifndef SAMPLERS_SPEEDHACK
 		}
 #endif
@@ -1920,7 +1949,11 @@ void glDeleteProgram(GLuint prog) {
 		vgl_free(p->vert_uniforms);
 		for (int i = 0; i < p->frag_uniforms_num; i++) {
 			uniform *u = &p->frag_uniforms[i];
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+			if (u->size != 0xFFFFFFFF && u->size != 0 && !u->sampler)
+#else
 			if (u->size != 0xFFFFFFFF && u->size != 0)
+#endif
 				vgl_free(u->data);
 		}
 		vgl_free(p->frag_uniforms);
@@ -2175,6 +2208,20 @@ void glLinkProgram(GLuint progr) {
 			u->size = sceGxmProgramParameterIsSamplerCube(param) ? 0xFFFFFFFF : 0;
 			u->data = NULL;
 			p->frag_texunits[texunit_idx - 1] = u;
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+			u->sampler = NULL;
+			const char *pname = sceGxmProgramParameterGetName(param);
+			for (uint8_t i = 0; i < p->fshader->sized_samplers_num; i++) {
+				if (!strcmp(pname, p->fshader->sized_samplers[i].name)) {
+					char smp[16];
+					sprintf(smp, "vgl_smp%u", i);
+					// If the linked uniform is missing, textureSize usage has been stripped out
+					if (sceGxmProgramFindParameterByName(p->fshader->prog, smp))
+						u->sampler = &p->fshader->sized_samplers[i];
+					break;
+				}
+			}
+#endif
 		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM && sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM) {
 			uniform *u = &p->frag_uniforms[j++];
 			u->ptr = param;
@@ -2182,6 +2229,20 @@ void glLinkProgram(GLuint progr) {
 			u->is_fragment = GL_TRUE;
 			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
 			u->data = (float *)vglMalloc(u->size * sizeof(float));
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+			u->sampler = NULL;
+			const char *pname = sceGxmProgramParameterGetName(param);
+			for (uint8_t i = 0; i < p->fshader->sized_samplers_num; i++) {
+				char smp[16];
+				sprintf(smp, "vgl_smp%u", i);
+				if (!strcmp(pname, smp)) {
+					u->sampler = &p->fshader->sized_samplers[i];
+					vgl_free(u->data);
+					u->data = p->fshader->sized_samplers[i].sizes;
+					break;
+				}
+			}
+#endif
 			vgl_memset(u->data, 0, u->size * sizeof(float));
 		}
 		ptr += 4;

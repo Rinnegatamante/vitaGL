@@ -780,6 +780,51 @@ HANDLE_VAR:
 		strcpy(out, src);
 }
 
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+/* 
+ * Experimental function to replace all textureSize calls in a GLSL shader code:
+ * The idea behind this is to replace all calls to textureSize with uniforms
+ * that are uploaded at runtime during the draw phase.
+ * FIXME: For now it's hardcoded to pass mip 0 values.
+ */
+void glsl_handle_tex_size(char *txt, GLsizei preamble_size, glsl_samplers_info *info, uint8_t *num) {
+	*num = 0;	
+	char *s = strstr(txt + preamble_size, "textureSize");
+	while (s && *num < SCE_GXM_MAX_TEXTURE_UNITS) {
+		char *str_start = s;
+		s += 11;
+		while (*s != '(')
+			s++;
+		char *start = s + 1;
+		while (*s != ',')
+			s++;
+		char *end = s;
+		s = end + 1;
+		while (*(end - 1) == ' ' || *(end - 1) == '\t')
+			end--;
+		vgl_fast_memcpy(info[*num].name, start, end - start);
+		info[*num].name[end - start] = 0;
+		GLboolean is_old = GL_FALSE;
+		for (uint8_t i = 0; i < *num; i++) {
+			if (!strcmp(info[i].name, info[*num].name)) {
+				is_old = GL_TRUE;
+				break;
+			}
+		}
+		int sz = sprintf(str_start, "vgl_smp%u", *num);
+		str_start[sz] = '/';
+		str_start[sz + 1] = '*';
+		if (!is_old)
+			*num = *num + 1;
+		while (*end != ')')
+			end++;
+		*(end - 1) = '*';
+		*end = '/';
+		s = strstr(s, "textureSize");
+	}
+}
+#endif
+
 /* 
  * Experimental function to replace all multiplication operators in a GLSL shader code:
  * The idea behind this is to replace all operators with a function call (vglMul)
@@ -1244,9 +1289,28 @@ void glsl_translator_process(shader *s) {
 	char *dst2 = vglMalloc(strlen(dst) + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
 	glsl_handle_globals(dst, dst2, preamble_size);
 	vgl_free(dst);
-	// Keeping on mem only the strict minimum necessary for the translated shader
-	char *final = vglMalloc(strlen(dst2) + 1);
-	vgl_fast_memcpy(final, dst2, strlen(dst2) + 1);
+	char *final;
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+	// Manually handle textureSize calls
+	glsl_handle_tex_size(dst2, preamble_size, s->sized_samplers, &s->sized_samplers_num);
+	if (s->sized_samplers_num > 0) {
+		char samplers_blk[2048]; // FIXME: Is this big enough?
+		size_t sz = 0;
+		for (uint8_t i = 0; i < s->sized_samplers_num; i++) {
+			sz += sprintf(&samplers_blk[sz], "uniform float2 vgl_smp%u;\n", i);
+		}
+		// Keeping on mem only the strict minimum necessary for the translated shader
+		final = vglMalloc(strlen(dst2) + sz + 1);
+		vgl_fast_memcpy(final, samplers_blk, sz);
+		vgl_fast_memcpy(final + sz, dst2, strlen(dst2) + 1);
+	}
+	else
+#endif
+	{
+		// Keeping on mem only the strict minimum necessary for the translated shader
+		final = vglMalloc(strlen(dst2) + 1);
+		vgl_fast_memcpy(final, dst2, strlen(dst2) + 1);
+	}
 	vgl_free(dst2);
 	s->source = final;
 #ifdef DEBUG_GLSL_TRANSLATOR

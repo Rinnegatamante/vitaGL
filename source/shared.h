@@ -697,6 +697,13 @@ typedef struct {
 } binds_map;
 #endif
 
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+typedef struct {
+	char name[64];
+	float sizes[2];
+} glsl_samplers_info;
+#endif
+
 // Generic shader struct
 typedef struct {
 	GLenum type;
@@ -705,6 +712,10 @@ typedef struct {
 #ifdef HAVE_GLSL_TRANSLATOR
 	GLboolean is_glsl;
 	binds_map semantics;
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+	glsl_samplers_info sized_samplers[SCE_GXM_MAX_TEXTURE_UNITS];
+	uint8_t sized_samplers_num;
+#endif
 #endif
 	int16_t ref_counter;
 	SceGxmShaderPatcherId id;
