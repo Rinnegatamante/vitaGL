@@ -1294,7 +1294,7 @@ void glsl_translator_process(shader *s) {
 	// Manually handle textureSize calls
 	glsl_handle_tex_size(dst2, preamble_size, s->sized_samplers, &s->sized_samplers_num);
 	if (s->sized_samplers_num > 0) {
-		char samplers_blk[2048]; // FIXME: Is this big enough?
+		char *samplers_blk = (char *)vglMalloc(2048); // FIXME: Is this big enough?
 		size_t sz = 0;
 		for (uint8_t i = 0; i < s->sized_samplers_num; i++) {
 			sz += sprintf(&samplers_blk[sz], "uniform float2 vgl_smp%u;\n", i);
@@ -1303,6 +1303,7 @@ void glsl_translator_process(shader *s) {
 		final = vglMalloc(strlen(dst2) + sz + 1);
 		vgl_fast_memcpy(final, samplers_blk, sz);
 		vgl_fast_memcpy(final + sz, dst2, strlen(dst2) + 1);
+		vgl_free(samplers_blk);
 	}
 	else
 #endif

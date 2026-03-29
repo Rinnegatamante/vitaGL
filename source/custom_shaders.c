@@ -528,27 +528,36 @@ static inline __attribute__((always_inline)) void gxm_unif_to_mat(GLenum *type, 
 	}
 }
 
-void *serialize_shader(void *out, size_t *sz, shader *s, GLboolean save_bindings) {
-	uint32_t matrix_uniforms_num = 0;
+static inline __attribute__((always_inline)) size_t serialized_shader_size(shader *s, GLboolean have_bindings, uint32_t *matrix_uniforms_num) {
+	*matrix_uniforms_num = 0;
 	matrix_uniform *m = s->mat;
 	while (m) {
-		matrix_uniforms_num++;
+		*matrix_uniforms_num = *matrix_uniforms_num + 1;
 		m = (matrix_uniform *)m->chain;
 	}
-	void *_out = out;
+	size_t sz = (1 + *matrix_uniforms_num) * sizeof(uint32_t) + s->size;
 #ifdef HAVE_GLSL_TRANSLATOR
-	if (save_bindings)
-		*sz = (1 + matrix_uniforms_num) * sizeof(uint32_t) + s->size + sizeof(binds_map);
-	else
+	if (have_bindings)
+		sz += sizeof(binds_map);
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+	sz += sizeof(glsl_samplers_info) * s->sized_samplers_num + sizeof(uint8_t);
 #endif
-		*sz = (1 + matrix_uniforms_num) * sizeof(uint32_t) + s->size;
+#endif
+	return sz;
+}
+
+
+void *serialize_shader(void *out, size_t *sz, shader *s, GLboolean save_bindings) {
+	uint32_t matrix_uniforms_num;
+	*sz = serialized_shader_size(s, save_bindings, &matrix_uniforms_num);
+	void *_out = out;
 	if (!_out) {
 		_out = vglMalloc(*sz);
 	}
 	uint8_t *buf = (uint8_t *)_out;
 	vgl_fast_memcpy(buf, &matrix_uniforms_num, sizeof(uint32_t));
 	buf += sizeof(uint32_t);
-	m = s->mat;
+	matrix_uniform *m = s->mat;
 	while (m) {
 		uint32_t idx = sceGxmProgramParameterGetIndex(s->prog, m->ptr);
 		vgl_fast_memcpy(buf, &idx, sizeof(uint32_t));
@@ -560,6 +569,14 @@ void *serialize_shader(void *out, size_t *sz, shader *s, GLboolean save_bindings
 		vgl_fast_memcpy(buf, &s->semantics, sizeof(binds_map));
 		buf += sizeof(binds_map);
 	}
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+	*buf = s->sized_samplers_num;
+	buf++;
+	if (s->sized_samplers_num) {
+		vgl_fast_memcpy(buf, s->sized_samplers, sizeof(glsl_samplers_info) * s->sized_samplers_num);
+		buf += sizeof(glsl_samplers_info) * s->sized_samplers_num;
+	}
+#endif
 #endif
 	vgl_fast_memcpy(buf, s->prog, s->size);
 	return _out;
@@ -575,6 +592,14 @@ void unserialize_shader(void *in, size_t sz, shader *s, GLboolean load_bindings)
 		vgl_fast_memcpy(&s->semantics, buf, sizeof(binds_map));
 		buf += sizeof(binds_map);
 	}
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+	s->sized_samplers_num = *buf;
+	buf++;
+	if (s->sized_samplers_num) {
+		vgl_fast_memcpy(s->sized_samplers, buf, sizeof(glsl_samplers_info) * s->sized_samplers_num);
+		buf += sizeof(glsl_samplers_info) * s->sized_samplers_num;
+	}
+#endif
 #endif
 	s->size = sz - ((uintptr_t)buf - (uintptr_t)in);
 	s->prog = (SceGxmProgram *)vglMalloc(s->size);
@@ -1898,7 +1923,7 @@ void glGetProgramBinary(GLuint prog, GLsizei bufSize, GLsizei *length, GLenum *b
 void glProgramBinary(GLuint prog, GLenum binaryFormat, const void *binary, GLsizei length) {
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
-
+	
 	// Restoring bound attributes info
 	GLuint *b = (GLuint *)binary;
 	p->attr_highest_idx = b[0];
@@ -1999,7 +2024,7 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 	int i, cnt;
 	matrix_uniform *m;
 	uint32_t *ptr;
-	int matrix_uniform_num = 0;
+	uint32_t dummy;
 
 	switch (pname) {
 	case GL_LINK_STATUS:
@@ -2010,17 +2035,7 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 		*params = 0;
 		break;
 	case GL_PROGRAM_BINARY_LENGTH:
-		m = p->vshader->mat;
-		while (m) {
-			matrix_uniform_num++;
-			m = (matrix_uniform *)m->chain;
-		}
-		m = p->fshader->mat;
-		while (m) {
-			matrix_uniform_num++;
-			m = (matrix_uniform *)m->chain;
-		}
-		*params = p->vshader->size + p->fshader->size + sizeof(uint32_t) * 2 + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM + sizeof(GLuint) + (matrix_uniform_num + 2) * sizeof(GLuint);
+		*params = serialized_shader_size(p->vshader, GL_FALSE, &dummy) + serialized_shader_size(p->fshader, GL_FALSE, &dummy) + sizeof(GLuint) * 3 + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM;
 		break;
 	case GL_ATTACHED_SHADERS:
 		i = 0;
