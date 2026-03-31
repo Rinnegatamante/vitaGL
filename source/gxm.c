@@ -102,11 +102,12 @@ void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list f
 void *frame_rt_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_RENDERTARGETS_LIST_SIZE]; // Purge list for rendertargets
 int frame_purge_idx = 0; // Index for currently populatable purge list
 int frame_elem_purge_idx = 0; // Index for currently populatable purge list element
-int frame_rt_purge_idx = 0; // Index for currently populatable purge list rendetarget
+int frame_rt_purge_idx = 0; // Index for currently populatable purge list rendertarget
 static int frame_purge_clean_idx = 1;
 SceUID gc_mutex[2];
 static int gc_thread_priority = 0x10000100;
 static int gc_thread_affinity = 0;
+static uint8_t gxm_display_rt_size = 1; // Number of scenes per frame to use for the display rendertarget
 #ifdef HAVE_PTHREAD
 pthread_t gc_thread;
 #else
@@ -441,7 +442,7 @@ void initGxmContext(void) {
 
 void createDisplayRenderTarget(void) {
 	// Creating render target for the display
-	setupRenderTarget(&gxm_render_target, DISPLAY_WIDTH, DISPLAY_HEIGHT, 1);
+	setupRenderTarget(&gxm_render_target, DISPLAY_WIDTH, DISPLAY_HEIGHT, gxm_display_rt_size);
 }
 
 void initDisplayColorSurfaces(GLboolean is_swap) {
@@ -971,4 +972,13 @@ void vglSetupShaderPatcher(uint32_t buffer_mem_size, uint32_t vertex_usse_mem_si
 	shader_patcher_buffer_size = buffer_mem_size;
 	shader_patcher_vertex_usse_size = vertex_usse_mem_size;
 	shader_patcher_fragment_usse_size = fragment_usse_mem_size;
+}
+
+void vglSetupDisplayRenderTarget(uint8_t size) {
+#ifndef SKIP_ERROR_HANDLING
+	if (size > MAX_SCENES_PER_FRAME) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, size)
+	}
+#endif
+	gxm_display_rt_size = size;
 }

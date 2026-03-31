@@ -1138,6 +1138,9 @@ void vglSetVertexBufferSize(uint32_t size);
 // Change the total memory to use for internal circular vertex pools to use in vitaGL. Requires CIRCULAR_VERTEX_POOL. Default value: 32 * 1024 * 1024.
 void vglSetVertexPoolSize(uint32_t size);
 
+// Change the scenes per frame value to use for the display rendertarget. Default value: 1
+void vglSetupDisplayRenderTarget(uint8_t size);
+
 // Change the priority and affinity to use for the garbage collector thread. Must be called before vglInit*.
 void vglSetupGarbageCollector(int priority, int affinity);
 

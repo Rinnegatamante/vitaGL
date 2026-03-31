@@ -546,7 +546,6 @@ static inline __attribute__((always_inline)) size_t serialized_shader_size(shade
 	return sz;
 }
 
-
 void *serialize_shader(void *out, size_t *sz, shader *s, GLboolean save_bindings) {
 	uint32_t matrix_uniforms_num;
 	*sz = serialized_shader_size(s, save_bindings, &matrix_uniforms_num);
