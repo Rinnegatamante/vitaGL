@@ -745,6 +745,7 @@ extern const char *ffp_bind_names[FFP_BINDS_NUM];
 #include "shaders.h"
 
 // Internal stuffs
+extern uint32_t gxm_param_buf_size; // Param buffer size for sceGxm
 extern GLboolean skip_viewport_override;
 extern uint8_t texcoord_idxs[TEXTURE_COORDS_NUM];
 extern uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM];
@@ -1180,9 +1181,7 @@ static inline __attribute__((always_inline)) void vector4f_convert_to_local_spac
 }
 
 /* debug.cpp */
-void vgl_debugger_init(); // Inits ImGui debugger context
-void vgl_debugger_draw(); // Draws ImGui debugger window
-void vgl_debugger_light_draw(uint32_t *fb); // Draws CPU rendered debugger window
+void vgl_debugger_draw(uint32_t *fb); // Draws CPU rendered debugger window
 
 /* vitaGL.c */
 uint8_t *vgl_reserve_data_pool(uint32_t size);

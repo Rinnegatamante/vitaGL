@@ -17,9 +17,7 @@ In order to build vitaGL use the following command: `make install`.
 |`HAVE_DEBUGGER=1`| Enables lightweighted on screen debugger interface.|
 |`HAVE_DEBUGGER=2`| Enables lightweighted on screen debugger interface with extra information (devkit only).|
 |`HAVE_RAZOR=1`| Enables debugging features through Razor debugger (retail and devkit compatible).|
-|`HAVE_RAZOR=2`| Enables debugging features through Razor debugger (retail and devkit compatible) with ImGui interface.|
 |`HAVE_DEVKIT=1`| Enables extra debugging features through Razor debugger available only for devkit users.|
-|`HAVE_DEVKIT=2`| Enables extra debugging features through Razor debugger available only for devkit users with ImGui interface.|
 |`HAVE_CPU_TRACER=1`| Makes the library insert a Razor CPU sync at every buffer swap for better frame timelines in the profiler.|
 |`DEBUG_GLSL_TRANSLATOR=1`| Enables logging of GLSL translator input and output prior shader compilation process.|
 |`DEBUG_GLSL_PREPROCESSOR=1`| Enables logging of GLSL preprocessor input and output prior shader compilation process.|

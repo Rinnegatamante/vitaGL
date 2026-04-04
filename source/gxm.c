@@ -24,7 +24,7 @@
 #include "shared.h"
 
 // FIXME: Since we use our own default uniform buffers circular pool, fragment and vertex buffer rings can likely be reduced in size
-static uint32_t gxm_param_buf_size = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE; // Param buffer size for sceGxm
+uint32_t gxm_param_buf_size = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE; // Param buffer size for sceGxm
 static uint32_t gxm_vdm_buf_size = SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE; // VDM ring buffer size for sceGxm
 static uint32_t gxm_vertex_buf_size = SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE; // Vertex ring buffer size for sceGxm
 static uint32_t gxm_fragment_buf_size = SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE; // Fragment ring buffer size for sceGxm
@@ -119,9 +119,8 @@ int sceRazorCpuSync();
 #endif
 
 #ifdef HAVE_RAZOR
-#define RAZOR_BUF_SIZE (256 * 1024) // Size in bytes for a live metrics data buffer
+#define RAZOR_BUF_SIZE (1024 * 1024) // Size in bytes for a live metrics data buffer
 #define UPDATE_RATIO 30 // Number of frames between two live metrics updates
-
 #ifndef HAVE_DEVKIT
 #define RAZOR_CAPTURE_MOD_PATH "ur0:data/librazorcapture_es4.suprx"
 SceUID razor_modid;
@@ -135,7 +134,6 @@ typedef union {
 } SceRazorGpuResult;
 
 uint8_t *razor_buf[DISPLAY_MAX_BUFFER_COUNT]; // Buffers used to store live metrics data
-uint32_t frame_idx = 0; // Current frame number
 razor_results razor_metrics;
 
 GLboolean has_razor_live = GL_FALSE; // Flag for live metrics support with sceRazor
@@ -246,9 +244,9 @@ static void display_queue_callback(const void *callbackData) {
 	display_fb.width = DISPLAY_WIDTH;
 	display_fb.height = DISPLAY_HEIGHT;
 
-#if (defined(HAVE_DEBUG_INTERFACE) && !defined(HAVE_RAZOR_INTERFACE)) || defined(HAVE_LIGHT_RAZOR)
+#ifdef HAVE_DEBUG_INTERFACE
 	// Drawing lightweighted debugger info
-	vgl_debugger_light_draw(cb_data->addr);
+	vgl_debugger_draw(cb_data->addr);
 #endif
 
 	if (vgl_display_cb)
@@ -331,7 +329,7 @@ void initGxm(void) {
 #endif
 #ifdef HAVE_DEVKIT
 	for (int i = 0; i < DISPLAY_MAX_BUFFER_COUNT; i++) {
-		razor_buf[i] = memalign(8, RAZOR_BUF_SIZE);
+		razor_buf[i] = vglMemalign(8, RAZOR_BUF_SIZE);
 	}
 #endif
 
@@ -775,13 +773,6 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 	// Marking uniform values as dirty at each frame end just to be safe
 	dirty_frag_unifs = GL_TRUE;
 	dirty_vert_unifs = GL_TRUE;
-
-#if defined(HAVE_RAZOR_INTERFACE) && !defined(HAVE_LIGHT_RAZOR)
-	if (!in_use_framebuffer) {
-		vgl_debugger_draw();
-	}
-#endif
-
 	needs_end_scene = GL_FALSE;
 
 	if (!needs_scene_reset)
@@ -816,88 +807,87 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 				sceRazorGpuLiveSetBuffer(razor_buf[gxm_back_buffer_index], RAZOR_BUF_SIZE, &razor_res);
 
 				if (razor_res.result_data) {
-					if ((frame_idx % UPDATE_RATIO) == 1) {
-						if (!razor_res.overflow_count) {
-							vgl_memset(&razor_metrics, 0, sizeof(razor_results));
-							SceUID pid = sceKernelGetProcessId();
-							SceRazorGpuResult r;
-							r.ptr = (uintptr_t)razor_res.result_data;
+					if (!razor_res.overflow_count) {
+						vgl_memset(&razor_metrics, 0, sizeof(razor_results));
+						SceUID pid = sceKernelGetProcessId();
+						SceRazorGpuResult r;
+						r.ptr = (uintptr_t)razor_res.result_data;
 
-							// Analyzing the collected jobs
-							for (uint32_t i = 0; i < razor_res.entry_count; i++) {
-								switch (r.job->header.entry_type) {
-								case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_JOB:
-									if ((pid == r.job->process_id) && (r.job->type != SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FIRMWARE)) {
-										if (razor_metrics.scene_count < r.job->scene_index + 1)
-											razor_metrics.scene_count = r.job->scene_index + 1;
-										switch (r.job->type) {
-										case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX0:
-										case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX1:
-										case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX2:
-										case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX3:
-											razor_metrics.vertex_job_count++;
-											razor_metrics.vertex_job_time += r.job->end_time - r.job->start_time;
-											if (r.job->scene_index < RAZOR_MAX_SCENES_NUM) {
-												razor_metrics.scenes[r.job->scene_index].vertex_duration += r.job->end_time - r.job->start_time;
-											}
-											break;
-										case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT0:
-										case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT1:
-										case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT2:
-										case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT3:
-											razor_metrics.fragment_job_count++;
-											razor_metrics.fragment_job_time += r.job->end_time - r.job->start_time;
-											if (r.job->scene_index < RAZOR_MAX_SCENES_NUM) {
-												razor_metrics.scenes[r.job->scene_index].fragment_duration += r.job->end_time - r.job->start_time;
-											}
-											break;
+						// Analyzing the collected jobs
+						for (uint32_t i = 0; i < razor_res.entry_count; i++) {
+							switch (r.job->header.entry_type) {
+							case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_JOB:
+								if ((pid == r.job->process_id) && (r.job->type != SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FIRMWARE)) {
+									if (razor_metrics.scene_count < r.job->scene_index + 1)
+										razor_metrics.scene_count = r.job->scene_index + 1;
+									switch (r.job->type) {
+									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX0:
+									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX1:
+									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX2:
+									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX3:
+										razor_metrics.vertex_job_count++;
+										razor_metrics.vertex_job_time += r.job->end_time - r.job->start_time;
+										if (r.job->scene_index < RAZOR_MAX_SCENES_NUM) {
+											razor_metrics.scenes[r.job->scene_index].vertex_duration += r.job->end_time - r.job->start_time;
 										}
-										switch (r.job->type) {
-										case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX1:
-											razor_metrics.usse_vertex_processing_percent += r.job->job_values.vertex_values_type1.usse_vertex_processing_percent;
-											break;
-										case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX2:
-											razor_metrics.vdm_primitives_input_num += r.job->job_values.vertex_values_type2.vdm_primitives_input_num;
-											razor_metrics.mte_primitives_output_num += r.job->job_values.vertex_values_type2.mte_primitives_output_num;
-											razor_metrics.vdm_vertices_input_num += r.job->job_values.vertex_values_type2.vdm_vertices_input_num;
-											razor_metrics.mte_vertices_output_num += r.job->job_values.vertex_values_type2.mte_vertices_output_num;
-											break;
-										case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX3:
-											razor_metrics.tiling_accelerated_mem_writes += r.job->job_values.vertex_values_type3.tiling_accelerated_mem_writes;
-											break;
-										case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT1:
-											razor_metrics.usse_fragment_processing_percent += r.job->job_values.fragment_values_type1.usse_fragment_processing_percent;
-											razor_metrics.usse_dependent_texture_reads_percent += r.job->job_values.fragment_values_type1.usse_dependent_texture_reads_percent;
-											razor_metrics.usse_non_dependent_texture_reads_percent += r.job->job_values.fragment_values_type1.usse_non_dependent_texture_reads_percent;
-											break;
-										case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT2:
-											razor_metrics.rasterized_pixels_before_hsr_num += r.job->job_values.fragment_values_type2.rasterized_pixels_before_hsr_num;
-											razor_metrics.rasterized_output_pixels_num += r.job->job_values.fragment_values_type2.rasterized_output_pixels_num;
-											razor_metrics.rasterized_output_samples_num += r.job->job_values.fragment_values_type2.rasterized_output_samples_num;
-											break;
-										case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT3:
-											razor_metrics.isp_parameter_fetches_mem_reads += r.job->job_values.fragment_values_type3.isp_parameter_fetches_mem_reads;
-											break;
+										break;
+									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT0:
+									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT1:
+									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT2:
+									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT3:
+										razor_metrics.fragment_job_count++;
+										razor_metrics.fragment_job_time += r.job->end_time - r.job->start_time;
+										if (r.job->scene_index < RAZOR_MAX_SCENES_NUM) {
+											razor_metrics.scenes[r.job->scene_index].fragment_duration += r.job->end_time - r.job->start_time;
 										}
-									} else if (r.job->type == SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FIRMWARE) {
-										razor_metrics.firmware_job_count++;
-										razor_metrics.firmware_job_time += r.job->end_time - r.job->start_time;
+										break;
 									}
-									break;
-								case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_PARAMETER_BUFFER:
-									vgl_fast_memcpy(&razor_metrics.peak_usage_value, &r.pbuf->peak_usage_value, 6);
-									break;
-								case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_FRAME:
-									vgl_fast_memcpy(&razor_metrics.frame_start_time, &r.frame->start_time, 20);
-									break;
-								default:
-									break;
+									switch (r.job->type) {
+									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX1:
+										razor_metrics.usse_vertex_processing_percent += r.job->job_values.vertex_values_type1.usse_vertex_processing_percent;
+										break;
+									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX2:
+										razor_metrics.vdm_primitives_input_num += r.job->job_values.vertex_values_type2.vdm_primitives_input_num;
+										razor_metrics.mte_primitives_output_num += r.job->job_values.vertex_values_type2.mte_primitives_output_num;
+										razor_metrics.vdm_vertices_input_num += r.job->job_values.vertex_values_type2.vdm_vertices_input_num;
+										razor_metrics.mte_vertices_output_num += r.job->job_values.vertex_values_type2.mte_vertices_output_num;
+										break;
+									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX3:
+										razor_metrics.tiling_accelerated_mem_writes += r.job->job_values.vertex_values_type3.tiling_accelerated_mem_writes;
+										break;
+									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT1:
+										razor_metrics.usse_fragment_processing_percent += r.job->job_values.fragment_values_type1.usse_fragment_processing_percent;
+										razor_metrics.usse_dependent_texture_reads_percent += r.job->job_values.fragment_values_type1.usse_dependent_texture_reads_percent;
+										razor_metrics.usse_non_dependent_texture_reads_percent += r.job->job_values.fragment_values_type1.usse_non_dependent_texture_reads_percent;
+										break;
+									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT2:
+										razor_metrics.rasterized_pixels_before_hsr_num += r.job->job_values.fragment_values_type2.rasterized_pixels_before_hsr_num;
+										razor_metrics.rasterized_output_pixels_num += r.job->job_values.fragment_values_type2.rasterized_output_pixels_num;
+										razor_metrics.rasterized_output_samples_num += r.job->job_values.fragment_values_type2.rasterized_output_samples_num;
+										break;
+									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT3:
+										razor_metrics.isp_parameter_fetches_mem_reads += r.job->job_values.fragment_values_type3.isp_parameter_fetches_mem_reads;
+										break;
+									}
+								} else if (r.job->type == SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FIRMWARE) {
+									razor_metrics.firmware_job_count++;
+									razor_metrics.firmware_job_time += r.job->end_time - r.job->start_time;
 								}
-								r.ptr += r.job->header.entry_size;
+								break;
+							case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_PARAMETER_BUFFER:
+								vgl_fast_memcpy(&razor_metrics.peak_usage_value, &r.pbuf->peak_usage_value, 6);
+								break;
+							case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_FRAME:
+								vgl_fast_memcpy(&razor_metrics.frame_start_time, &r.frame->start_time, 20);
+								break;
+							default:
+								break;
 							}
+							r.ptr += r.job->header.entry_size;
 						}
+					} else {
+						vgl_log("%s:%d Razor Live Metrics overflow detected (%d entries). Consider increasing RAZOR_BUF_SIZE.\n", __FILE__, __LINE__, razor_res.overflow_count);
 					}
-					frame_idx++;
 				}
 			}
 #endif

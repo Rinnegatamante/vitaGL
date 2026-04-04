@@ -562,10 +562,6 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		texture_units[i].texture_stack_counter = 1;
 	}
 
-#ifdef HAVE_RAZOR_INTERFACE
-	vgl_debugger_init();
-#endif
-
 	vgl_inited = GL_TRUE;
 	return res_fallback;
 }
