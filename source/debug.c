@@ -16,7 +16,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern "C" {
 #include "vitaGL.h"
 #include "shared.h"
 #ifdef HAVE_RAZOR
@@ -30,7 +29,6 @@ void glPushGroupMarker(GLsizei length, const GLchar *marker) {
 void glPopGroupMarker(void) {
 	sceGxmPopUserMarker(gxm_context);
 }
-};
 
 #ifdef HAVE_DEBUG_INTERFACE
 #include "utils/font_utils.h"
