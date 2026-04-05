@@ -624,7 +624,6 @@ void glClear(GLbitfield mask) {
 		SET_GL_ERROR(GL_INVALID_VALUE);
 	}
 #endif
-
 	sceneReset();
 
 	// Invalidating viewport and culling
@@ -638,7 +637,7 @@ void glClear(GLbitfield mask) {
 	const GLfloat clear_depth_value = depth_value * 2 - 1;
 
 	invalidate_depth_test();
-	// Enable disable depth write if both depth mask is true and the depth buffer bit is active.
+	// Enable depth write if both depth mask is true and the depth buffer bit is active.
 	change_depth_write(depth_mask_state && (mask & GL_DEPTH_BUFFER_BIT) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);
 
 	sceGxmSetFrontDepthBias(gxm_context, 0, 0);
@@ -660,22 +659,6 @@ void glClear(GLbitfield mask) {
 	sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
 	sceGxmSetUniformDataF(fbuffer, clear_color, 0, 4, &clear_rgba_val.r);
 
-	sceGxmSetFrontStencilFunc(gxm_context,
-		SCE_GXM_STENCIL_FUNC_ALWAYS,
-		SCE_GXM_STENCIL_OP_REPLACE,
-		SCE_GXM_STENCIL_OP_REPLACE,
-		SCE_GXM_STENCIL_OP_REPLACE,
-		0xFF, stencil_mask_front_write & 0xFF);
-	sceGxmSetFrontStencilRef(gxm_context, stencil_value & 0xFF);
-
-	sceGxmSetBackStencilFunc(gxm_context,
-		SCE_GXM_STENCIL_FUNC_ALWAYS,
-		SCE_GXM_STENCIL_OP_REPLACE,
-		SCE_GXM_STENCIL_OP_REPLACE,
-		SCE_GXM_STENCIL_OP_REPLACE,
-		0xFF, stencil_mask_back_write & 0xFF);
-	sceGxmSetBackStencilRef(gxm_context, stencil_value & 0xFF);
-
 	if (!(mask & GL_COLOR_BUFFER_BIT)) {
 		// Disable fragment program if not clearing color buffer. Depth and stencil clears are unaffected.
 		sceGxmSetFrontFragmentProgramEnable(gxm_context, SCE_GXM_FRAGMENT_PROGRAM_DISABLED);
@@ -696,6 +679,21 @@ void glClear(GLbitfield mask) {
 			SCE_GXM_STENCIL_OP_KEEP,
 			SCE_GXM_STENCIL_OP_KEEP,
 			0xFF, 0xFF);
+	} else {
+		sceGxmSetFrontStencilFunc(gxm_context,
+			SCE_GXM_STENCIL_FUNC_ALWAYS,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			0xFF, stencil_mask_front_write & 0xFF);
+		sceGxmSetFrontStencilRef(gxm_context, stencil_value & 0xFF);
+		sceGxmSetBackStencilFunc(gxm_context,
+			SCE_GXM_STENCIL_FUNC_ALWAYS,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			SCE_GXM_STENCIL_OP_REPLACE,
+			0xFF, stencil_mask_back_write & 0xFF);
+		sceGxmSetBackStencilRef(gxm_context, stencil_value & 0xFF);
 	}
 
 	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
