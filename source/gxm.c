@@ -23,6 +23,8 @@
 
 #include "shared.h"
 
+#define MAX_SCENES_PER_FRAME 8 // Maximum amount of scenes per frame allowed by sceGxm per render target
+
 // FIXME: Since we use our own default uniform buffers circular pool, fragment and vertex buffer rings can likely be reduced in size
 uint32_t gxm_param_buf_size = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE; // Param buffer size for sceGxm
 static uint32_t gxm_vdm_buf_size = SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE; // VDM ring buffer size for sceGxm
@@ -153,7 +155,6 @@ static inline __attribute__((always_inline)) int setupRenderTarget(SceGxmRenderT
 #ifdef HAVE_SHARED_RENDERTARGETS
 #define MAX_RENDER_TARGETS_NUM 47 // Maximum amount of dedicated render targets usable for fbos
 #define MAX_SHARED_RT_SIZE 256 // Maximum  width value in pixels for shared rendertargets usage
-#define MAX_SCENES_PER_FRAME 8 // Maximum amount of scenes per frame allowed by sceGxm per render target
 render_target rt_list[MAX_RENDER_TARGETS_NUM];
 
 render_target *getFreeRenderTarget(int w, int h) {

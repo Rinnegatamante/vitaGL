@@ -449,7 +449,6 @@ void glEnable(GLenum cap) {
 	case GL_CLIP_PLANE6:
 		ffp_dirty_vert = GL_TRUE;
 		clip_planes_mask |= (1 << (cap - GL_CLIP_PLANE0));
-
 		clip_plane_range[0] = clip_planes_mask ? __builtin_ctz(clip_planes_mask) : 0; // Get the lowest enabled clip plane
 		clip_plane_range[1] = clip_planes_mask ? 8 - (__builtin_clz(clip_planes_mask) - 24) : 0; // Get the highest enabled clip plane
 		clip_planes_aligned = GL_TRUE;
