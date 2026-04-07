@@ -42,7 +42,7 @@
 #define GENERIC_STACK_DEPTH 2 // Depth of generic matrix stack
 #define DISPLAY_WIDTH_DEF 960 // Default display width in pixels
 #define DISPLAY_HEIGHT_DEF 544 // Default display height in pixels
-#define DISPLAY_MAX_BUFFER_COUNT 3 // Maximum amount of display buffers to use
+#define DISPLAY_MAX_BUFFER_COUNT 5 // Maximum amount of display buffers to use
 #define GXM_TEX_MAX_SIZE 4096 // Maximum width/height in pixels per texture
 #define FRAME_PURGE_LIST_SIZE 16384 // Number of elements a single frame can hold
 #define FRAME_PURGE_RENDERTARGETS_LIST_SIZE 128 // Number of rendertargets a single frame can hold

@@ -740,6 +740,15 @@ void vglUseTripleBuffering(GLboolean usage) {
 	gxm_display_buffer_count = usage ? 3 : 2;
 }
 
+void vglSetDisplayBufferCount(int count) {
+#ifndef SKIP_ERROR_HANDLING
+	if (count < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, count)
+	}
+#endif
+	gxm_display_buffer_count = count;
+}
+
 void vglSwapBuffers(GLboolean has_commondialog) {
 #ifdef HAVE_PROFILING
 	// Show profiling results once every 30 frames to not clog CPU

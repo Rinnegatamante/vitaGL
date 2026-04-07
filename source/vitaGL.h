@@ -1108,6 +1108,9 @@ void vglOverrideTexFormat(GLenum target);
 // realloc implementation for vitaGL internal memory pools.
 void *vglRealloc(void *ptr, uint32_t size);
 
+// Sets the number of buffers to use for the display swapchain. Default value: 3.
+void vglSetDisplayBufferCount(int count);
+
 // Setup a callback executed everytime a new frame is sent to the display. Useful to setup a CPU rendered overlay on-screen.
 void vglSetDisplayCallback(void (*cb)(void *framebuf));
 
