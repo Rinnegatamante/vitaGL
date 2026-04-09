@@ -875,22 +875,26 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 			void *target_data = (void *)data;
 			if ((uintptr_t)read_cb != (uintptr_t)readRGBA) {
 				target_data = vglMalloc(pot_w * pot_h * 4);
-				uint8_t *src = (uint8_t *)data;
-				uint32_t *dst = target_data;
-				for (int y = 0; y < height; y++) {
-					for (int x = 0; x < width; x++) {
-						uint32_t clr = read_cb(src);
-						writeRGBA(dst++, clr);
-						src += data_bpp;
+				if (data) {
+					uint8_t *src = (uint8_t *)data;
+					uint32_t *dst = target_data;
+					for (int y = 0; y < height; y++) {
+						for (int x = 0; x < width; x++) {
+							uint32_t clr = read_cb(src);
+							writeRGBA(dst++, clr);
+							src += data_bpp;
+						}
+						dst = &dst[y * pot_w];
 					}
-					dst = &dst[y * pot_w];
 				}
 			} else if (pot_w != width || pot_h != height) {
 				target_data = vglMalloc(pot_w * pot_h * 4);
-				uint32_t *src = (uint32_t *)data;
-				uint32_t *dst = target_data;
-				for (int y = 0; y < height; y++) {
-					vgl_fast_memcpy(&dst[pot_w * y], &src[width * y], width * 4);
+				if (data) {
+					uint32_t *src = (uint32_t *)data;
+					uint32_t *dst = target_data;
+					for (int y = 0; y < height; y++) {
+						vgl_fast_memcpy(&dst[pot_w * y], &src[width * y], width * 4);
+					}
 				}
 			}
 			
