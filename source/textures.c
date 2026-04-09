@@ -1289,7 +1289,11 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 
 	// Ensure imageSize isn't zero.
 	if (imageSize == 0) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, imageSize)
+	}
+	
+	if (data == NULL) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, data)
 	}
 #endif
 
@@ -1576,7 +1580,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 									writeRGBA(dst++, clr);
 									src += data_bpp;
 								}
-								dst = &dst[y * pot_w];
+								dst = &dst[pot_w - width];
 							}
 						} else if (pot_w != width || pot_h != height) {
 							target_data = vglMalloc(pot_w * pot_h * 4);
