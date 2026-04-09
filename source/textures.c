@@ -884,7 +884,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 							writeRGBA(dst++, clr);
 							src += data_bpp;
 						}
-						dst = &dst[y * pot_w];
+						dst = &dst[pot_w - width];
 					}
 				}
 			} else if (pot_w != width || pot_h != height) {
