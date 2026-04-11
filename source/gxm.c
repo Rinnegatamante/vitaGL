@@ -302,11 +302,19 @@ int garbage_collector(unsigned int args, void *arg) {
 
 GLboolean startShaderCompiler(void) {
 	shark_set_allocators(vglMalloc, vglFree);
+#ifdef HAVE_VITA3K_SUPPORT
+	is_shark_online = shark_init_simple(NULL) >= 0;
+#else
 	is_shark_online = shark_init(NULL) >= 0;
+#endif
 
 	// If standard path failed to init we try to init it with ScePiglet path
 	if (!is_shark_online) {
+#ifdef HAVE_VITA3K_SUPPORT
+		is_shark_online = shark_init_simple("ur0:data/external/libshacccg.suprx") >= 0;
+#else
 		is_shark_online = shark_init("ur0:data/external/libshacccg.suprx") >= 0;
+#endif
 #ifdef LOG_ERRORS
 		if (!is_shark_online)
 			vgl_log("%s:%d Fatal error: SceShaccCg not found.\n", __FILE__, __LINE__);
