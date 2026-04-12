@@ -1,4 +1,3 @@
-#ifdef HAVE_GLSL_PREPROCESSOR
 // Credits: https://github.com/john-blackburn/preprocessor
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -2146,4 +2145,3 @@ void glsl_preprocess(char *mode, const char *infile, char *output) {
 	strcpy(output, out.c_str());
 }
 }
-#endif

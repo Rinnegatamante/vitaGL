@@ -39,10 +39,10 @@ int main() {
 	glClearColor(0.26f, 0.46f, 0.98f, 1.0f);
 	
 	// Compiling our shaders
-	GLuint vshad = glCreateShader(GL_VERTEX_SHADER);
+	GLuint vshad = glCreateShader(GL_CG_VERTEX_SHADER_EXT);
 	glShaderSource(vshad, 1, &vert_shader, NULL);
 	glCompileShader(vshad);
-	GLuint fshad = glCreateShader(GL_FRAGMENT_SHADER);
+	GLuint fshad = glCreateShader(GL_CG_FRAGMENT_SHADER_EXT);
 	glShaderSource(fshad, 1, &frag_shader, NULL);
 	glCompileShader(fshad);
 	

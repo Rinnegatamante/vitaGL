@@ -35,9 +35,7 @@ static GLubyte *extensions[] = {
 	"GL_ARB_get_program_binary",
 	"GL_ARB_multitexture",
 	"GL_ARB_sampler_objects",
-#ifdef HAVE_GLSL_TRANSLATOR
 	"GL_ARB_shading_language_100",
-#endif
 	"GL_ARB_texture_compression",
 	"GL_ARB_vertex_buffer_object",
 	"GL_EXT_abgr",
@@ -60,6 +58,7 @@ static GLubyte *extensions[] = {
 	"GL_EXT_texture_env_combine",
 #endif
 	"GL_EXT_texture_format_BGRA8888",
+	"GL_EXT_Cg_shader",
 	"GL_IMG_texture_compression_pvrtc",
 	"GL_IMG_user_clip_plane",
 	"GL_NVX_gpu_memory_info",
@@ -203,11 +202,7 @@ const GLubyte *glGetString(GLenum name) {
 		}
 		return extension;
 	case GL_SHADING_LANGUAGE_VERSION: // Supported shading language version
-#ifdef HAVE_GLSL_TRANSLATOR
 		return "1.00 ES";
-#else
-		return "2.00 NVIDIA via Cg compiler";
-#endif
 	default:
 		SET_GL_ERROR_WITH_RET_AND_VALUE(GL_INVALID_ENUM, NULL, name)
 	}

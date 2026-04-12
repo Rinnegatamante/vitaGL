@@ -1,4 +1,3 @@
-#ifdef HAVE_GLSL_PREPROCESSOR
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdlib.h>
@@ -641,4 +640,3 @@ namespace expression
         return eax;
     }
 }
-#endif

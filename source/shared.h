@@ -691,7 +691,6 @@ typedef struct {
 	void *chain;
 } block_uniform;
 
-#ifdef HAVE_GLSL_TRANSLATOR
 #define MAX_CG_TEXCOORD_ID 10 // Maximum number of bindable TEXCOORD semantic
 #define MAX_CG_COLOR_ID 2 // Maximum number of bindable COLOR semantic
 typedef struct {
@@ -700,7 +699,6 @@ typedef struct {
 	GLboolean texcoord_used[MAX_CG_TEXCOORD_ID];
 	GLboolean color_used[MAX_CG_COLOR_ID];
 } binds_map;
-#endif
 
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 typedef struct {
@@ -714,13 +712,11 @@ typedef struct {
 	GLenum type;
 	GLboolean valid;
 	GLboolean dirty;
-#ifdef HAVE_GLSL_TRANSLATOR
 	GLboolean is_glsl;
 	binds_map semantics;
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 	glsl_samplers_info sized_samplers[SCE_GXM_MAX_TEXTURE_UNITS];
 	uint8_t sized_samplers_num;
-#endif
 #endif
 	int16_t ref_counter;
 	SceGxmShaderPatcherId id;

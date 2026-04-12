@@ -142,8 +142,8 @@ void loadShader(const char *name, int type) {
 	fclose(f);
 	
 	// Create required shaders and program
-	vshaders[type] = glCreateShader(GL_VERTEX_SHADER);
-	fshaders[type] = glCreateShader(GL_FRAGMENT_SHADER);
+	vshaders[type] = glCreateShader(GL_CG_VERTEX_SHADER_EXT);
+	fshaders[type] = glCreateShader(GL_CG_FRAGMENT_SHADER_EXT);
 	programs[type] = glCreateProgram();
 	
 	// Compiling vertex shader

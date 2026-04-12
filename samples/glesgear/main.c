@@ -617,7 +617,7 @@ gears_idle(void)
    }
 }
 
-//#define USE_GLSL_TRANSLATOR // Compile vitaGL with HAVE_GLSL_SUPPORT for this
+//#define USE_GLSL_TRANSLATOR
 #ifdef USE_GLSL_TRANSLATOR
 static const char vertex_shader[] =
 "attribute vec3 position;\n"
@@ -680,13 +680,21 @@ gears_init(void)
 
    /* Compile the vertex shader */
    p = vertex_shader;
+#ifdef USE_GLSL_TRANSLATOR
    v = glCreateShader(GL_VERTEX_SHADER);
+#else
+   v = glCreateShader(GL_CG_VERTEX_SHADER_EXT);
+#endif
    glShaderSource(v, 1, &p, NULL);
    glCompileShader(v);
 
    /* Compile the fragment shader */
    p = fragment_shader;
+#ifdef USE_GLSL_TRANSLATOR
    f = glCreateShader(GL_FRAGMENT_SHADER);
+#else
+   f = glCreateShader(GL_CG_FRAGMENT_SHADER_EXT);
+#endif
    glShaderSource(f, 1, &p, NULL);
    glCompileShader(f);
 

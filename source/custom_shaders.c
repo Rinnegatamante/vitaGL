@@ -267,12 +267,10 @@ static gpubuffer *ubo_buf[UBOS_NUM];
 static uint32_t ubo_offset[UBOS_NUM];
 static uint8_t tex2d_override = 0;
 
-#ifdef HAVE_GLSL_TRANSLATOR
 typedef struct {
 	GLuint idx;
 	char name[64];
 } attr_mapping;
-#endif
 
 #ifdef STRICT_UNIFORMS_COMPLIANCE
 typedef union {
@@ -363,10 +361,8 @@ typedef struct {
 	GLuint attr_highest_idx;
 	GLboolean has_unaligned_attrs;
 	GLboolean is_fbo_float;
-#ifdef HAVE_GLSL_TRANSLATOR
 	uint8_t num_glsl_attr;
 	attr_mapping *glsl_attr_map;
-#endif
 } program;
 
 // Internal shaders and array
@@ -536,12 +532,10 @@ static inline __attribute__((always_inline)) size_t serialized_shader_size(shade
 		m = (matrix_uniform *)m->chain;
 	}
 	size_t sz = (1 + *matrix_uniforms_num) * sizeof(uint32_t) + s->size;
-#ifdef HAVE_GLSL_TRANSLATOR
 	if (have_bindings)
 		sz += sizeof(binds_map);
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 	sz += sizeof(glsl_samplers_info) * s->sized_samplers_num + sizeof(uint8_t);
-#endif
 #endif
 	return sz;
 }
@@ -563,7 +557,6 @@ void *serialize_shader(void *out, size_t *sz, shader *s, GLboolean save_bindings
 		buf += sizeof(uint32_t);
 		m = (matrix_uniform *)m->chain;
 	}
-#ifdef HAVE_GLSL_TRANSLATOR
 	if (save_bindings) {
 		vgl_fast_memcpy(buf, &s->semantics, sizeof(binds_map));
 		buf += sizeof(binds_map);
@@ -576,7 +569,6 @@ void *serialize_shader(void *out, size_t *sz, shader *s, GLboolean save_bindings
 		buf += sizeof(glsl_samplers_info) * s->sized_samplers_num;
 	}
 #endif
-#endif
 	vgl_fast_memcpy(buf, s->prog, s->size);
 	return _out;
 }
@@ -586,7 +578,6 @@ void unserialize_shader(void *in, size_t sz, shader *s, GLboolean load_bindings)
 	uint32_t matrix_uniforms_num;
 	vgl_fast_memcpy(&matrix_uniforms_num, buf, sizeof(uint32_t));
 	buf += sizeof(uint32_t) * (matrix_uniforms_num + 1);
-#ifdef HAVE_GLSL_TRANSLATOR
 	if (load_bindings) {
 		vgl_fast_memcpy(&s->semantics, buf, sizeof(binds_map));
 		buf += sizeof(binds_map);
@@ -598,7 +589,6 @@ void unserialize_shader(void *in, size_t sz, shader *s, GLboolean load_bindings)
 		vgl_fast_memcpy(s->sized_samplers, buf, sizeof(glsl_samplers_info) * s->sized_samplers_num);
 		buf += sizeof(glsl_samplers_info) * s->sized_samplers_num;
 	}
-#endif
 #endif
 	s->size = sz - ((uintptr_t)buf - (uintptr_t)in);
 	s->prog = (SceGxmProgram *)vglMalloc(s->size);
@@ -1555,8 +1545,8 @@ void vglSetupRuntimeShaderCompiler(shark_opt opt_level, int32_t use_fastmath, in
 
 GLuint glCreateShader(GLenum shaderType) {
 #ifndef SKIP_ERROR_HANDLING
-	if (shaderType != GL_FRAGMENT_SHADER && shaderType != GL_VERTEX_SHADER) {
-		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, 0)
+	if (shaderType != GL_FRAGMENT_SHADER && shaderType != GL_VERTEX_SHADER && shaderType != GL_CG_FRAGMENT_SHADER_EXT && shaderType != GL_CG_VERTEX_SHADER_EXT) {
+		SET_GL_ERROR_WITH_RET_AND_VALUE(GL_INVALID_ENUM, 0, shaderType)
 	}
 #endif
 
@@ -1578,7 +1568,20 @@ GLuint glCreateShader(GLenum shaderType) {
 #endif
 
 	// Reserving and initializing shader slot
-	shaders[res - 1].type = shaderType;
+	switch (shaderType) {
+	case GL_CG_VERTEX_SHADER_EXT:
+		shaders[res - 1].type = GL_VERTEX_SHADER;
+		shaders[res - 1].is_glsl = GL_FALSE;
+		break;
+	case GL_CG_FRAGMENT_SHADER_EXT:
+		shaders[res - 1].type = GL_FRAGMENT_SHADER;
+		shaders[res - 1].is_glsl = GL_FALSE;
+		break;
+	default:
+		shaders[res - 1].type = shaderType;
+		shaders[res - 1].is_glsl = GL_TRUE;
+		break;
+	}
 	shaders[res - 1].mat = NULL;
 	shaders[res - 1].unif_blk = NULL;
 	shaders[res - 1].prog = NULL;
@@ -1596,12 +1599,10 @@ void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
 		*params = s->type;
 		break;
 	case GL_COMPILE_STATUS:
-#ifdef HAVE_GLSL_TRANSLATOR
-		if (glsl_sema_mode == VGL_MODE_POSTPONED) {
+		if (glsl_sema_mode == VGL_MODE_POSTPONED && s->is_glsl) {
 			*params = GL_TRUE;
 			break;
 		}
-#endif
 		*params = s->prog ? GL_TRUE : GL_FALSE;
 		break;
 	case GL_DELETE_STATUS:
@@ -1679,11 +1680,11 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	for (int i = 0; i < count; i++) {
 		if (length && length[i] >= 0) {
 			lengths[i] = length[i];
-			size += length[i];
 		} else {
 			lengths[i] = strlen(string[i]);
-			size += strlen(string[i]);
+			
 		}
+		size += lengths[i];
 	}
 
 	s->source = (char *)vglMalloc(size);
@@ -1692,10 +1693,6 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	for (int i = 0; i < count; i++) {
 		strncat(s->source, string[i], lengths[i]);
 	}
-
-#ifdef HAVE_GLSL_TRANSLATOR
-	s->is_glsl = GL_TRUE;
-#endif
 
 	s->size = size - 1;
 }
@@ -1713,14 +1710,12 @@ void glCompileShader(GLuint handle) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 	
-#ifdef HAVE_GLSL_TRANSLATOR
-	// If we use VGL_MODE_POSTPONED, we compile shaders in glLinkProgram
-	if (glsl_sema_mode == VGL_MODE_POSTPONED)
-		return;
-#endif
-
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
+	
+	// If we use VGL_MODE_POSTPONED, we compile shaders in glLinkProgram
+	if (s->is_glsl && glsl_sema_mode == VGL_MODE_POSTPONED)
+		return;
 	
 #ifdef HAVE_SHADER_CACHE
 	char fname[256];
@@ -1739,11 +1734,10 @@ void glCompileShader(GLuint handle) {
 		return;
 	}
 #endif
-#ifdef HAVE_GLSL_TRANSLATOR
+
 	if (s->is_glsl) {
 		glsl_translator_process(s);
 	}
-#endif
 	vgl_compile_shader(s, GL_FALSE);
 }
 
@@ -1774,15 +1768,11 @@ void glAttachShader(GLuint prog, GLuint shad) {
 					release_shader(p->vshader);
 			}
 			p->vshader = s;
-#ifdef HAVE_GLSL_TRANSLATOR
 			// If we use VGL_MODE_POSTPONED, we perform attributes binding in glLinkProgram
-			if (glsl_sema_mode != VGL_MODE_POSTPONED) {
-#endif
+			if (glsl_sema_mode != VGL_MODE_POSTPONED || !s->is_glsl) {
 				// Setting progressive default attribute bindings
-				setDefaultAttribBindings();
-#ifdef HAVE_GLSL_TRANSLATOR			
+				setDefaultAttribBindings();	
 			}
-#endif
 			break;
 		case GL_FRAGMENT_SHADER:
 			s->ref_counter++;
@@ -1865,10 +1855,8 @@ GLuint glCreateProgram(void) {
 			progs[i].vert_ubos = NULL;
 			progs[i].frag_ubos = NULL;
 			progs[i].attr_highest_idx = 0;
-#ifdef HAVE_GLSL_TRANSLATOR
 			progs[i].num_glsl_attr = 0;
 			progs[i].glsl_attr_map = NULL;
-#endif
 			progs[i].is_fbo_float = 0xFF;
 			for (j = 0; j < VERTEX_ATTRIBS_NUM; j++) {
 				progs[i].attr[j].regIndex = 0xDEAD;
@@ -1930,8 +1918,8 @@ void glProgramBinary(GLuint prog, GLenum binaryFormat, const void *binary, GLsiz
 	GLsizei size = sizeof(GLuint) + sizeof(SceGxmVertexAttribute) * VERTEX_ATTRIBS_NUM;
 
 	// Restoring shaders
-	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+	GLuint vs = glCreateShader(GL_CG_VERTEX_SHADER_EXT);
+	GLuint fs = glCreateShader(GL_CG_FRAGMENT_SHADER_EXT);
 	uint32_t *sizeptr = (uint32_t *)((uint8_t *)binary + size);
 	glShaderBinary(1, &vs, 0, &sizeptr[1], sizeptr[0]);
 	sizeptr = (uint32_t *)((uint8_t *)binary + size + sizeptr[0] + sizeof(uint32_t));
@@ -1940,20 +1928,7 @@ void glProgramBinary(GLuint prog, GLenum binaryFormat, const void *binary, GLsiz
 	glAttachShader(prog, fs);
 
 	// Linking program and marking for deletion temporary shaders
-#ifdef HAVE_GLSL_TRANSLATOR
-	// VGL_MODE_POSTPONED would trigger a shader compilation, so we temporarily change mode to skip it
-	GLboolean was_postponed = GL_FALSE;
-	if (glsl_sema_mode == VGL_MODE_POSTPONED) {
-		glsl_sema_mode = VGL_MODE_SHADER_PAIR;
-		was_postponed = GL_TRUE;
-	}
-#endif
 	glLinkProgram(prog);
-#ifdef HAVE_GLSL_TRANSLATOR
-	if (was_postponed) {
-		glsl_sema_mode = VGL_MODE_POSTPONED;
-	}
-#endif
 	glDeleteShader(vs);
 	glDeleteShader(fs);
 }
@@ -1991,11 +1966,9 @@ void glDeleteProgram(GLuint prog) {
 			p->frag_ubos = (ubo *)p->frag_ubos->chain;
 			vgl_free(old);
 		}
-#ifdef HAVE_GLSL_TRANSLATOR
 		if (p->glsl_attr_map) {
 			vgl_free(p->glsl_attr_map);
 		}
-#endif
 
 		// Checking if attached shaders are marked for deletion and should be deleted
 		if (p->vshader) {
@@ -2088,26 +2061,21 @@ void glLinkProgram(GLuint progr) {
 	// Grabbing passed program
 	program *p = &progs[progr - 1];
 #ifndef SKIP_ERROR_HANDLING
-#ifdef HAVE_GLSL_TRANSLATOR
 	if (glsl_sema_mode == VGL_MODE_POSTPONED) {
-		if (!(p->fshader->prog || p->fshader->source) || !(p->vshader->prog || p->vshader->source)) {
-			vgl_log("%s:%d: %s: %s shader is missing.\n", __FILE__, __LINE__, __func__, (p->fshader->prog || p->fshader->source) ? "vertex" : "fragment");
+		if (!(p->fshader->prog || (p->fshader->is_glsl && p->fshader->source)) || !(p->vshader->prog || (p->vshader->is_glsl && p->vshader->source))) {
+			vgl_log("%s:%d: %s: %s shader is missing.\n", __FILE__, __LINE__, __func__, (p->fshader->prog || (p->fshader->is_glsl && p->fshader->source)) ? "vertex" : "fragment");
 			return;
 		}
 	} else {
-#endif
 		if (!p->fshader->prog || !p->vshader->prog) {
 			vgl_log("%s:%d: %s: %s shader is missing.\n", __FILE__, __LINE__, __func__, p->fshader->prog ? "vertex" : "fragment");
 			return;
 		}
-#ifdef HAVE_GLSL_TRANSLATOR
 	}
 #endif
-#endif
 
-#ifdef HAVE_GLSL_TRANSLATOR
 	// With VGL_MODE_POSTPONED we perform shaders translation+compilation and attributes binding prior actual program linking
-	if (glsl_sema_mode == VGL_MODE_POSTPONED) {
+	if (glsl_sema_mode == VGL_MODE_POSTPONED && (p->vshader->is_glsl || p->fshader->is_glsl)) {
 		glsl_sema_mode = VGL_MODE_SHADER_PAIR;
 #ifdef HAVE_SHADER_CACHE
 		char frag_fname[256], vert_fname[256];
@@ -2169,7 +2137,6 @@ void glLinkProgram(GLuint progr) {
 		}
 		glsl_sema_mode = VGL_MODE_POSTPONED;
 	}
-#endif
 
 	if (p->status == PROG_LINKED) {
 		vgl_log("%s:%d: %s: A program has been re-linked. vitaGL doesn't support re-linking, glitches may happen.\n", __FILE__, __LINE__, __func__);
@@ -2261,7 +2228,6 @@ void glLinkProgram(GLuint progr) {
 		}
 		ptr += 4;
 	}
-	
 
 	// Analyzing vertex shader
 #ifdef HAVE_FFP_SHADER_SUPPORT
@@ -2400,7 +2366,6 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 
-#ifdef HAVE_GLSL_TRANSLATOR
 	// texture, sampler and matrix are reserved keywords in CG but are not in GLSL
 	if (!strcmp(name, "texture"))
 		name = "vgl_tex";
@@ -2410,7 +2375,6 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 		name = "_matrix";
 	else if (!strcmp(name, "sampler"))
 		name = "_sampler";
-#endif
 
 #ifdef STRICT_UNIFORMS_COMPLIANCE
 	int index = 0;
@@ -3252,16 +3216,14 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 	
-#ifdef HAVE_GLSL_TRANSLATOR
 	// If we use VGL_MODE_POSTPONED, we perform attributes binding in glLinkProgram
-	if (glsl_sema_mode == VGL_MODE_POSTPONED) {
+	if (glsl_sema_mode == VGL_MODE_POSTPONED && p->vshader->is_glsl) {
 		if (!p->glsl_attr_map)
 			p->glsl_attr_map = vglMalloc(sizeof(attr_mapping) * VERTEX_ATTRIBS_NUM);
 		p->glsl_attr_map[p->num_glsl_attr].idx = index;
 		strcpy(p->glsl_attr_map[p->num_glsl_attr++].name, name);
 		return;
 	}
-#endif
 
 	// Looking for desired parameter in requested program
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
@@ -3380,7 +3342,6 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 	}
 	
 	// Copying uniform name
-#ifdef HAVE_GLSL_TRANSLATOR
 	// texture, sampler and matrix are reserved keywords in CG but are not in GLSL
 	if (!strcmp(pname, "vgl_tex"))
 		pname = "texture";
@@ -3390,7 +3351,7 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 		name = "matrix";
 	else if (!strcmp(name, "_sampler"))
 		name = "sampler";
-#endif
+
 	bufSize = min(strlen(pname), bufSize - 1);
 	if (length)
 		*length = bufSize;
@@ -3568,35 +3529,7 @@ void vglGetShaderBinary(GLuint handle, GLsizei bufSize, GLsizei *length, void *b
 	serialize_shader(binary, length ? (size_t *)length : &sz, s, GL_FALSE);
 }
 
-void vglCgShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length) {
-#ifndef SKIP_ERROR_HANDLING
-	if (count < 0) {
-		SET_GL_ERROR(GL_INVALID_VALUE)
-	}
-#endif
-	// Grabbing passed shader
-	shader *s = &shaders[handle - 1];
-	
-	uint32_t size = 1;	
-	for (int i = 0; i < count; i++) {
-		size += length ? length[i] : strlen(string[i]);
-	}
-
-	s->source = (char *)vglMalloc(size);
-	s->source[0] = 0;
-	for (int i = 0; i < count; i++) {
-		strncat(s->source, string[i], length ? length[i] : strlen(string[i]));
-	}
-
-#ifdef HAVE_GLSL_TRANSLATOR
-	s->is_glsl = GL_FALSE;
-#endif
-
-	s->size = size - 1;
-}
-
 void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum type) {
-#ifdef HAVE_GLSL_TRANSLATOR
 #ifndef SKIP_ERROR_HANDLING
 	if (glsl_custom_bindings_num >= MAX_CUSTOM_BINDINGS) {
 		vgl_log("%s:%d %s: Too many custom bindings supplied. Consider increasing MAX_CUSTOM_BINDINGS.\n", __FILE__, __LINE__, __func__);
@@ -3607,11 +3540,9 @@ void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum typ
 	glsl_custom_bindings[glsl_custom_bindings_num].idx = index;
 	glsl_custom_bindings[glsl_custom_bindings_num].type = type;
 	glsl_custom_bindings[glsl_custom_bindings_num++].ref_idx = glsl_current_ref_idx;
-#endif
 }
 
 void vglAddSemanticBindingHint(const GLchar *const *varying, GLenum type) {
-#ifdef HAVE_GLSL_TRANSLATOR
 #ifndef SKIP_ERROR_HANDLING
 	if (glsl_custom_bindings_num >= MAX_CUSTOM_BINDINGS) {
 		vgl_log("%s:%d %s: Too many custom bindings supplied. Consider increasing MAX_CUSTOM_BINDINGS.\n", __FILE__, __LINE__, __func__);
@@ -3622,19 +3553,14 @@ void vglAddSemanticBindingHint(const GLchar *const *varying, GLenum type) {
 	glsl_custom_bindings[glsl_custom_bindings_num].idx = -1;
 	glsl_custom_bindings[glsl_custom_bindings_num].type = type;
 	glsl_custom_bindings[glsl_custom_bindings_num++].ref_idx = glsl_current_ref_idx;
-#endif
 }
 
 void vglUseLowPrecision(GLboolean val) {
-#ifdef HAVE_GLSL_TRANSLATOR
 	glsl_precision_low = val;
-#endif
 }
 
 void vglSetSemanticBindingMode(GLenum mode) {
-#ifdef HAVE_GLSL_TRANSLATOR
 	glsl_sema_mode = mode;
-#endif
 }
 
 void vglOverrideTexFormat(GLenum target) {

@@ -27,7 +27,6 @@
 #include "glsl_utils.h"
 #include "preprocessor/preprocessor_c.h"
 
-#ifdef HAVE_GLSL_TRANSLATOR
 #define MEM_ENLARGER_SIZE (1024 * 1024) // FIXME: Check if this is too big/small
 
 #define glsl_get_existing_texcoord_bind(idx, s) \
@@ -990,35 +989,6 @@ LOOP_START:
 	}
 }
 
-void glsl_nuke_comments(char *txt) {
-	// Nuke C++ and C styled comments
-	char *cpp_s = strstr(txt, "/*");
-	char *c_s = strstr(txt, "//");
-	while (cpp_s || c_s) {
-		char *next;
-		if (cpp_s) {
-			next = (c_s && cpp_s > c_s) ? c_s : cpp_s;
-		} else {
-			next = c_s;
-		}
-		if (next == c_s) {
-			// Nuke C styled comment
-			char *end = strstr(next, "\n");
-			if (!end)
-				end = txt + strlen(txt);
-			vgl_memset(next, ' ', end - next);
-		} else {
-			// Nuke C++ styled comment
-			char *end = strstr(next, "*/") + 2;
-			vgl_memset(next, ' ', end - next);
-		}
-		if (c_s)
-			c_s = strstr(next, "//");
-		if (cpp_s)
-			cpp_s = strstr(next, "/*");
-	}
-}
-
 void glsl_translator_process(shader *s) {
 	uint32_t source_size = 1 + strlen(s->source);
 	uint32_t size = 1;
@@ -1059,7 +1029,6 @@ void glsl_translator_process(shader *s) {
 	vgl_log("%s:%d %s: GLSL translation input:\n\n%s\n\n", __FILE__, __LINE__, __func__, input);
 #endif
 
-#ifdef HAVE_GLSL_PREPROCESSOR
 	char *out = vglMalloc(strlen(input));
 	glsl_preprocess("full", input, out);
 	vgl_free(input);
@@ -1067,12 +1036,6 @@ void glsl_translator_process(shader *s) {
 	vgl_log("%s:%d %s: GLSL preprocessor output:\n\n%s\n\n", __FILE__, __LINE__, __func__, out);
 #endif
 	size += strlen(out);
-#else
-	char *out = input;
-	// Nukeing comments
-	glsl_nuke_comments(out);
-	size+= strlen(out);
-#endif
 	
 	// Nukeing precision directives
 	str = strstr(out, "precision ");
@@ -1352,4 +1315,3 @@ void glsl_translator_set_process(shader *vs, shader *fs) {
 		glsl_translator_process(fs);
 	}
 }
-#endif

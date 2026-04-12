@@ -445,6 +445,8 @@ extern "C" {
 #define GL_DYNAMIC_READ                                 0x88E9
 #define GL_DYNAMIC_COPY                                 0x88EA
 #define GL_DEPTH24_STENCIL8                             0x88F0
+#define GL_CG_VERTEX_SHADER_EXT                         0x890E
+#define GL_CG_FRAGMENT_SHADER_EXT                       0x890F
 #define GL_SAMPLES_PASSED                               0x8914
 #define GL_SAMPLER_BINDING                              0x8919
 #define GL_UNIFORM_BUFFER                               0x8A11
@@ -865,8 +867,8 @@ void glScalef(GLfloat x, GLfloat y, GLfloat z);
 void glScalex(GLfixed x, GLfixed y, GLfixed z);
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);
 void glShadeModel(GLenum mode);
-void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length); // NOTE: Uses GXP shaders
-void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length); // NOTE: Uses CG shader sources
+void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length);
+void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length);
 void glStencilFunc(GLenum func, GLint ref, GLuint mask);
 void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask);
 void glStencilMask(GLuint mask);
@@ -1050,9 +1052,6 @@ void vglBufferData(GLenum target, const GLvoid *data);
 
 // calloc implementation for vitaGL internal memory pools.
 void *vglCalloc(uint32_t nmember, uint32_t size);
-
-// Equivalent of glShaderSource but forcing Nvidia CG language compilation. Useful for mixing between GLSL and CG with GLSL translator enabled.
-void vglCgShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length);
 
 // Alloc memory from vitaGL internal memory pools. If the memory pools exhausted, vitaGL will attempt to free enough memory to not fail this allocation. Needs to be freed with vglFree.
 void *vglForceAlloc(uint32_t size);
