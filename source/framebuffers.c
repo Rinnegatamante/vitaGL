@@ -802,12 +802,24 @@ void glBlitNamedFramebuffer(GLuint readFramebuffer, GLuint drawFramebuffer, GLin
 	vertex_data[4] = vertex_data[6] = tmp.y; // X1
 	vertex_data[3] = vertex_data[5] = tmp.w; // Y1
 	// Texcoords
-	float read_w = readFramebuffer ? (float)read_fb->width : DISPLAY_WIDTH_FLOAT;
-	float read_h = readFramebuffer ? (float)read_fb->height : DISPLAY_HEIGHT_FLOAT;
-	vertex_data[8] = vertex_data[10] = (float)srcX0 / read_w; // X0
-	vertex_data[9] = vertex_data[15] = (float)srcY0 / read_h; // Y0
-	vertex_data[12] = vertex_data[14] = (float)srcX1 / read_w; // X1
-	vertex_data[11] = vertex_data[13] = (float)srcY1 / read_h; // Y1
+	if (readFramebuffer) {
+#ifdef HAVE_UNFLIPPED_FBOS
+		vertex_data[8] = vertex_data[10] = (float)srcX0 / (float)read_fb->width; // X0
+		vertex_data[9] = vertex_data[15] = ((float)read_fb->height - (float)srcY1) / (float)read_fb->height; // Y0
+		vertex_data[12] = vertex_data[14] = (float)srcX1 / (float)read_fb->width; // X1
+		vertex_data[11] = vertex_data[13] = ((float)read_fb->height - (float)srcY0) / (float)read_fb->height; // Y1
+#else
+		vertex_data[8] = vertex_data[10] = (float)srcX0 / (float)read_fb->width; // X0
+		vertex_data[9] = vertex_data[15] = (float)srcY0 / (float)read_fb->height; // Y0
+		vertex_data[12] = vertex_data[14] = (float)srcX1 / (float)read_fb->width; // X1
+		vertex_data[11] = vertex_data[13] = (float)srcY1 / (float)read_fb->height; // Y1
+#endif
+	} else {
+		vertex_data[8] = vertex_data[10] = (float)srcX0 / DISPLAY_WIDTH_FLOAT; // X0
+		vertex_data[9] = vertex_data[15] = (DISPLAY_HEIGHT_FLOAT - (float)srcY1) / DISPLAY_HEIGHT_FLOAT; // Y0
+		vertex_data[12] = vertex_data[14] = (float)srcX1 / DISPLAY_WIDTH_FLOAT; // X1
+		vertex_data[11] = vertex_data[13] = (DISPLAY_HEIGHT_FLOAT - (float)srcY0) / DISPLAY_HEIGHT_FLOAT; // Y1
+	}
 	sceGxmSetVertexStream(gxm_context, 0, vertex_data);
 	sceGxmSetVertexStream(gxm_context, 1, &vertex_data[8]);
 
