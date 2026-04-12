@@ -44,13 +44,14 @@ static inline __attribute__((always_inline)) void *gpu_alloc_mapped(size_t size,
 
 // Alloc a generic memblock into sceGxm mapped memory and marks it for garbage collection
 static inline __attribute__((always_inline)) void *gpu_alloc_mapped_temp(size_t size) {
-#ifndef HAVE_CIRCULAR_VERTEX_POOL
+#ifdef DISABLE_CIRCULAR_POOL
 	// Allocating memblock and marking it for garbage collection
 	void *res = gpu_alloc_mapped(size, VGL_MEM_MAIN);
 
 #ifdef LOG_ERRORS
-	if (!res)
+	if (!res) {
 		vgl_log("%s:%d gpu_alloc_mapped_temp failed with a requested size of 0x%08X\n", __FILE__, __LINE__, size);
+	}
 #endif
 
 	markAsDirty(res);

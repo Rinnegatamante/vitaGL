@@ -1108,6 +1108,9 @@ void vglOverrideTexFormat(GLenum target);
 // realloc implementation for vitaGL internal memory pools.
 void *vglRealloc(void *ptr, uint32_t size);
 
+// Change the total memory to use for internal circular pools to use in vitaGL. Disabled with NO_CIRCULAR_POOL. Default value: 32 * 1024 * 1024.
+void vglSetCircularPoolSize(uint32_t size);
+
 // Sets the number of buffers to use for the display swapchain. Default value: 3.
 void vglSetDisplayBufferCount(int count);
 
@@ -1137,9 +1140,6 @@ void vglSetVertexAttribPoolSize(uint32_t main_size, uint32_t aux_size);
 
 // Setup the vertex ring buffer size of sceGxm. Must be called before vglInit*. Default value: SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE.
 void vglSetVertexBufferSize(uint32_t size);
-
-// Change the total memory to use for internal circular vertex pools to use in vitaGL. Requires CIRCULAR_VERTEX_POOL. Default value: 32 * 1024 * 1024.
-void vglSetVertexPoolSize(uint32_t size);
 
 // Change the scenes per frame value to use for the display rendertarget. Default value: 1
 void vglSetupDisplayRenderTarget(uint8_t size);

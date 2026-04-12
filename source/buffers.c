@@ -280,7 +280,7 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 	for (int j = 0; j < n; j++) {
 		if (gl_buffers[j]) {
 			gpubuffer *gpu_buf = (gpubuffer *)gl_buffers[j];
-#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 			if (gpu_buf->ptr && !gpu_buf->scratch) {
 #else
 			if (gpu_buf->ptr) {
@@ -309,14 +309,14 @@ inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLe
 		return;
 	}
 #endif
-#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 	GLboolean was_scratch = gpu_buf->scratch;
 #endif
 	switch (usage) {
 	case GL_STREAM_DRAW:
 	case GL_STREAM_COPY:
 	case GL_STREAM_READ:
-#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 		gpu_buf->scratch = vgl_stream_wants_scratch;
 #endif
 		gpu_buf->type = VGL_MEM_RAM;
@@ -324,13 +324,13 @@ inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLe
 	case GL_DYNAMIC_DRAW:
 	case GL_DYNAMIC_READ:
 	case GL_DYNAMIC_COPY:
-#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 		gpu_buf->scratch = vgl_dynamic_wants_scratch;
 #endif
 		gpu_buf->type = VGL_MEM_RAM;
 		break;
 	default:
-#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 		gpu_buf->scratch = GL_FALSE;
 #endif
 		gpu_buf->type = VGL_MEM_VRAM;
@@ -338,7 +338,7 @@ inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLe
 	}
 
 	// Marking previous content for deletion or deleting it straight if unused
-#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 	if (gpu_buf->ptr && !was_scratch) {
 #else
 	if (gpu_buf->ptr) {
@@ -351,7 +351,7 @@ inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLe
 	}
 
 	// Allocating a new buffer
-#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 	if (gpu_buf->scratch)
 		gpu_buf->ptr = vgl_reserve_data_pool(size);
 	else
@@ -407,7 +407,7 @@ inline void glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizeiptr size
 #ifndef BUFFERS_SPEEDHACK
 	// Allocating a new buffer
 	if (gpu_buf->last_frame != OBJ_NOT_USED && (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ)) {
-#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 		uint8_t *ptr = gpu_buf->scratch ? vgl_reserve_data_pool(gpu_buf->size) : gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
 #else
 		uint8_t *ptr = gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
@@ -428,7 +428,7 @@ inline void glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizeiptr size
 			vgl_memcpy(ptr + offset + size, (uint8_t *)gpu_buf->ptr + offset + size, gpu_buf->size - size - offset);
 
 		// Marking previous content for deletion
-#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 		if (!gpu_buf->scratch) {
 			markAsDirty(gpu_buf->ptr);
 		}

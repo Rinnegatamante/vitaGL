@@ -100,42 +100,43 @@ uint16_t *default_quads_idx_ptr; // sceGxm mapped progressive indices buffer for
 uint16_t *default_line_strips_idx_ptr; // sceGxm mapped progressive indices buffer for line strips
 
 // Internal functions
-#ifdef HAVE_CIRCULAR_VERTEX_POOL
-#define CIRCULAR_VERTEX_POOL_SIZE_DEF (32 * 1024 * 1024) // Default size in bytes for the circular vertex pool
+#ifndef DISABLE_CIRCULAR_POOL
+#define CIRCULAR_POOL_SIZE_DEF (32 * 1024 * 1024) // Default size in bytes for the circular vertex pool
 #ifdef HAVE_SCRATCH_MEMORY
 GLboolean vgl_dynamic_wants_scratch = GL_TRUE;
 GLboolean vgl_stream_wants_scratch = GL_TRUE;
 #endif
-#ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
-uint8_t *vertex_data_pool[CIRCULAR_VERTEX_POOLS_NUM];
-uint8_t *vertex_data_pool_ptr[CIRCULAR_VERTEX_POOLS_NUM];
-static uint8_t *vertex_data_pool_limit[CIRCULAR_VERTEX_POOLS_NUM];
+#ifndef CIRCULAR_POOL_SPEEDHACK
+uint8_t *circular_data_pool[CIRCULAR_POOLS_NUM];
+uint8_t *circular_data_pool_ptr[CIRCULAR_POOLS_NUM];
+static uint8_t *circular_data_pool_limit[CIRCULAR_POOLS_NUM];
 int vgl_circular_idx = 0;
 #else
-static uint8_t *vertex_data_pool;
-static uint8_t *vertex_data_pool_ptr;
-static uint8_t *vertex_data_pool_limit;
+static uint8_t *circular_data_pool;
+static uint8_t *circular_data_pool_ptr;
+static uint8_t *circular_data_pool_limit;
 #endif
-static uint32_t vertex_data_pool_size = CIRCULAR_VERTEX_POOL_SIZE_DEF;
+static uint32_t circular_data_pool_size = CIRCULAR_POOL_SIZE_DEF;
 uint8_t *vgl_reserve_data_pool(uint32_t size) {
-#ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
-	uint8_t *res = vertex_data_pool_ptr[vgl_circular_idx];
-	vertex_data_pool_ptr[vgl_circular_idx] += size;
-	if (vertex_data_pool_ptr[vgl_circular_idx] > vertex_data_pool_limit[vgl_circular_idx]) {
-		vgl_log("%s:%d Circular vertex pool overrun (Total of %u bytes). Consider increasing its size with vglSetVertexPoolSize. Falling back to regular allocation.\n", __FILE__, __LINE__, vertex_data_pool_ptr[vgl_circular_idx] - vertex_data_pool_limit[vgl_circular_idx]);
+#ifndef CIRCULAR_POOL_SPEEDHACK
+	uint8_t *res = circular_data_pool_ptr[vgl_circular_idx];
+	circular_data_pool_ptr[vgl_circular_idx] += size;
+	if (circular_data_pool_ptr[vgl_circular_idx] > circular_data_pool_limit[vgl_circular_idx]) {
+		vgl_log("%s:%d Circular pool overrun (Total of %u bytes). Consider increasing its size with vglSetCircularPoolSize. Falling back to regular allocation.\n", __FILE__, __LINE__, vertex_data_pool_ptr[vgl_circular_idx] - vertex_data_pool_limit[vgl_circular_idx]);
 		res = (uint8_t *)gpu_alloc_mapped(size, VGL_MEM_MAIN);
 #ifdef LOG_ERRORS
-		if (!res)
+		if (!res) {
 			vgl_log("%s:%d gpu_alloc_mapped_temp failed with a requested size of 0x%08X\n", __FILE__, __LINE__, size);
+		}
 #endif
 		markAsDirty(res);
 	}
 #else
-	uint8_t *res = vertex_data_pool_ptr;
-	vertex_data_pool_ptr += size;
-	if (vertex_data_pool_ptr > vertex_data_pool_limit) {
-		vertex_data_pool_ptr = vertex_data_pool;
-		return vertex_data_pool_ptr;
+	uint8_t *res = circular_data_pool_ptr;
+	circular_data_pool_ptr += size;
+	if (circular_data_pool_ptr > circular_data_pool_limit) {
+		circular_data_pool_ptr = circular_data_pool;
+		return circular_data_pool_ptr;
 	}
 #endif
 	return res;
@@ -382,16 +383,18 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	resetDlists();
 #endif
 
-#ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
+#ifndef DISABLE_CIRCULAR_POOL
+#ifndef CIRCULAR_POOL_SPEEDHACK
 	for (int i = 0; i < gxm_display_buffer_count; i++) {
-		vertex_data_pool[i] = gpu_alloc_mapped(vertex_data_pool_size / gxm_display_buffer_count, VGL_MEM_RAM);
-		vertex_data_pool_ptr[i] = vertex_data_pool[i];
-		vertex_data_pool_limit[i] = (uint8_t *)vertex_data_pool[i] + vertex_data_pool_size / gxm_display_buffer_count;
+		circular_data_pool[i] = gpu_alloc_mapped(circular_data_pool_size / gxm_display_buffer_count, VGL_MEM_RAM);
+		circular_data_pool_ptr[i] = circular_data_pool[i];
+		circular_data_pool_limit[i] = (uint8_t *)circular_data_pool[i] + circular_data_pool_size / gxm_display_buffer_count;
 	}
-#elif defined(HAVE_CIRCULAR_VERTEX_POOL)
-	vertex_data_pool = gpu_alloc_mapped(vertex_data_pool_size, VGL_MEM_RAM);
-	vertex_data_pool_ptr = vertex_data_pool;
-	vertex_data_pool_limit = (uint8_t *)vertex_data_pool + vertex_data_pool_size;
+#else
+	circular_data_pool = gpu_alloc_mapped(circular_data_pool_size, VGL_MEM_RAM);
+	circular_data_pool_ptr = circular_data_pool;
+	circular_data_pool_limit = (uint8_t *)circular_data_pool + circular_data_pool_size;
+#endif
 #endif
 
 	// Init constant index buffers
@@ -773,9 +776,9 @@ void vglUseExtraMem(GLboolean use) {
 	use_extra_mem = use;
 }
 
-void vglSetVertexPoolSize(uint32_t size) {
-#ifdef HAVE_CIRCULAR_VERTEX_POOL
-	vertex_data_pool_size = size;
+void vglSetCircularPoolSize(uint32_t size) {
+#ifndef DISABLE_CIRCULAR_POOL
+	circular_data_pool_size = size;
 #endif
 }
 
@@ -790,7 +793,7 @@ void vglSetTextureCacheFrequency(GLuint freq) {
 }
 
 void vglSetupScratchMemory(GLboolean scratch_for_dynamic, GLboolean scratch_for_stream) {
-#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 	vgl_dynamic_wants_scratch = scratch_for_dynamic;
 	vgl_stream_wants_scratch = scratch_for_stream;
 #endif

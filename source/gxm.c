@@ -783,9 +783,9 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 #endif
 
 	vgl_framecount++;
-#ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
+#if !defined(DISABLE_CIRCULAR_POOL) && !defined(CIRCULAR_POOL_SPEEDHACK)
 	vgl_circular_idx = vgl_framecount % gxm_display_buffer_count;
-	vertex_data_pool_ptr[vgl_circular_idx] = vertex_data_pool[vgl_circular_idx];
+	circular_data_pool_ptr[vgl_circular_idx] = circular_data_pool[vgl_circular_idx];
 #endif
 
 	// Marking uniform values as dirty at each frame end just to be safe

@@ -56,6 +56,7 @@ In order to build vitaGL use the following command: `make install`.
 |`PRIMITIVES_SPEEDHACK=1`| Makes draw calls more efficient but GL_LINES and GL_POINTS primitives usage may cause glitches.|
 |`DEPTH_STENCIL_HACK=1`| Makes depth and stencil buffers have no memory costs but can cause crashes in some circumstances.|
 |`UNIFORMS_SPEEDHACK=1`| Makes uniforms uploading slightly faster but can cause crashes.|
+|`CIRCULAR_POOL_SPEEDHACK=1`| Makes the internal circular pool use a single buffer. Slightly improves CPU performance but might cause glitches.|
 ### Misc Flags
 | Flag | Description |
 | --- | --- |
@@ -65,9 +66,8 @@ In order to build vitaGL use the following command: `make install`.
 |`HAVE_WVP_ON_GPU=1`| Moves calculation of the wvp in fixed function pipeline codepath to the GPU. Reduces CPU workload and increases GPU one.|
 |`SHARED_RENDERTARGETS=1`| Makes small framebuffers objects use shared rendertargets instead of dedicated ones.|
 |`SHARED_RENDERTARGETS=2`| Makes small framebuffers objects use shared rendertargets instead of dedicated ones and adds a mechanism for recycling older rendertargets.|
-|`CIRCULAR_VERTEX_POOL=1`| Makes temporary data buffers being handled with a circular pool.|
-|`CIRCULAR_VERTEX_POOL=2`| Makes temporary data buffers being handled with a circular pool with fallback to regular allocation if the pool gets overrun.|
-|`USE_SCRATCH_MEMORY=1`| Makes GL_DYNAMIC and GL_STREAM vbos be configurable to use circular pool instead of regular allocations. Needs CIRCULAR_VERTEX_POOL.|
+|`NO_CIRCULAR_POOL=1`| Makes temporary data buffers being handled without a circular pool. Reduces memory usage but makes CPU performance worse.|
+|`USE_SCRATCH_MEMORY=1`| Makes GL_DYNAMIC and GL_STREAM vbos be configurable to use circular pool instead of regular allocations. Not compatible with NO_CIRCULAR_POOL.|
 |`HAVE_PTHREAD=1`| Use pthread instead of sceKernel for starting garbage collector thread.|
 |`SINGLE_THREADED_GC=1`| Makes the garbage collector run on main thread.|
 |`PHYCONT_ON_DEMAND=1`| Makes the physically contiguous RAM be handled with separate memblocks instead of an heap.|

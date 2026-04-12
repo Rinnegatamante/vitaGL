@@ -78,13 +78,13 @@
 #define SAFE_DRAW_SIZE_THRESHOLD (0x8000) // Minimum bytes of vertices data for a draw to be handled with speedhack
 #endif
 
-#ifdef HAVE_FAILSAFE_CIRCULAR_VERTEX_POOL
-#define CIRCULAR_VERTEX_POOLS_NUM 3
-extern uint8_t *vertex_data_pool[CIRCULAR_VERTEX_POOLS_NUM];
-extern uint8_t *vertex_data_pool_ptr[CIRCULAR_VERTEX_POOLS_NUM];
+#if !defined(DISABLE_CIRCULAR_POOL) && !defined(CIRCULAR_POOL_SPEEDHACK)
+#define CIRCULAR_POOLS_NUM 3
+extern uint8_t *circular_data_pool[CIRCULAR_POOLS_NUM];
+extern uint8_t *circular_data_pool_ptr[CIRCULAR_POOLS_NUM];
 extern int vgl_circular_idx;
 #endif
-#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 extern GLboolean vgl_dynamic_wants_scratch;
 extern GLboolean vgl_stream_wants_scratch;
 #endif
@@ -565,7 +565,7 @@ typedef struct {
 	int32_t size;
 	vglMemType type;
 	uint32_t last_frame;
-#if defined(HAVE_SCRATCH_MEMORY) && defined(HAVE_CIRCULAR_VERTEX_POOL)
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 	GLboolean scratch;
 #endif
 	GLboolean mapped;
