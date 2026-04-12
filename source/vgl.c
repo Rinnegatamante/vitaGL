@@ -122,7 +122,7 @@ uint8_t *vgl_reserve_data_pool(uint32_t size) {
 	uint8_t *res = circular_data_pool_ptr[vgl_circular_idx];
 	circular_data_pool_ptr[vgl_circular_idx] += size;
 	if (circular_data_pool_ptr[vgl_circular_idx] > circular_data_pool_limit[vgl_circular_idx]) {
-		vgl_log("%s:%d Circular pool overrun (Total of %u bytes). Consider increasing its size with vglSetCircularPoolSize. Falling back to regular allocation.\n", __FILE__, __LINE__, vertex_data_pool_ptr[vgl_circular_idx] - vertex_data_pool_limit[vgl_circular_idx]);
+		vgl_log("%s:%d Circular pool overrun (Total of %u bytes). Consider increasing its size with vglSetCircularPoolSize. Falling back to regular allocation.\n", __FILE__, __LINE__, circular_data_pool_ptr[vgl_circular_idx] - circular_data_pool_limit[vgl_circular_idx]);
 		res = (uint8_t *)gpu_alloc_mapped(size, VGL_MEM_MAIN);
 #ifdef LOG_ERRORS
 		if (!res) {
