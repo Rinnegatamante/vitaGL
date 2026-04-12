@@ -784,6 +784,12 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 
 	vgl_framecount++;
 #if !defined(DISABLE_CIRCULAR_POOL) && !defined(CIRCULAR_POOL_SPEEDHACK)
+#ifdef HAVE_DEBUG_INTERFACE
+	vgl_circular_pool_frame_peak = (uint32_t)circular_data_pool_ptr[vgl_circular_idx] - (uint32_t)circular_data_pool[vgl_circular_idx];
+	if (vgl_circular_pool_frame_peak > vgl_circular_pool_global_peak) {
+		vgl_circular_pool_global_peak = vgl_circular_pool_frame_peak;
+	}
+#endif
 	vgl_circular_idx = vgl_framecount % gxm_display_buffer_count;
 	circular_data_pool_ptr[vgl_circular_idx] = circular_data_pool[vgl_circular_idx];
 #endif

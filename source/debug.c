@@ -34,6 +34,10 @@ void glPopGroupMarker(void) {
 #include "utils/font_utils.h"
 static int dbg_y = -18;
 static uint32_t *frame_buf;
+#if !defined(DISABLE_CIRCULAR_POOL) && !defined(CIRCULAR_POOL_SPEEDHACK)
+uint32_t vgl_circular_pool_frame_peak = 0;
+uint32_t vgl_circular_pool_global_peak = 0;
+#endif
 
 #ifdef HAVE_DEVKIT
 int metrics_mode = SCE_RAZOR_GPU_LIVE_METRICS_GROUP_PBUFFER_USAGE; // Current live metrics to show
@@ -107,10 +111,10 @@ static inline __attribute__((always_inline)) void vgl_debugger_draw_mem_usage_me
 void vgl_debugger_draw(uint32_t *fb) {
 	frame_buf = fb;
 	dbg_y = -18;
+	float percentage;
 #ifdef HAVE_DEVKIT
 	if (has_razor_live) {
 		static uint32_t param_buf_peak = 0;
-		float percentage;
 		vgl_debugger_draw_string_format(5, dbg_y += 20, 0xFFFF00FF, "Page %d/%d", metrics_mode + 1, SCE_RAZOR_GPU_LIVE_METRICS_GROUP_NUM);
 		switch (metrics_mode) {
 		case SCE_RAZOR_GPU_LIVE_METRICS_GROUP_PBUFFER_USAGE:
@@ -118,6 +122,12 @@ void vgl_debugger_draw(uint32_t *fb) {
 				param_buf_peak = razor_metrics.peak_usage_value;
 			}
 			vgl_debugger_draw_mem_usage_metrics();
+#if !defined(DISABLE_CIRCULAR_POOL) && !defined(CIRCULAR_POOL_SPEEDHACK)
+			percentage = 100.f * ((float)vgl_circular_pool_frame_peak / (circular_data_pool_size / gxm_display_buffer_count));
+			vgl_debugger_draw_string_format(5, dbg_y += 20, vgl_debugger_get_color_by_percentage(percentage), "Circular Pool Usage: %lu Bytes (%.0f%%)", vgl_circular_pool_frame_peak, percentage);
+			percentage = 100.f * ((float)vgl_circular_pool_global_peak / (circular_data_pool_size / gxm_display_buffer_count));
+			vgl_debugger_draw_string_format(5, dbg_y += 20, vgl_debugger_get_color_by_percentage(percentage), "Circular Pool Peak Usage: %lu Bytes (%.0f%%)", vgl_circular_pool_global_peak, percentage);
+#endif
 			vgl_debugger_draw_string_format(5, dbg_y += 20, 0xFFFFFFFF, "SP Buffer Mem Usage: %luKBs", sceGxmShaderPatcherGetBufferMemAllocated(gxm_shader_patcher) / 1024);
 			vgl_debugger_draw_string_format(5, dbg_y += 20, 0xFFFFFFFF, "SP Fragment USSE Mem Usage: %luKBs", sceGxmShaderPatcherGetFragmentUsseMemAllocated(gxm_shader_patcher) / 1024);
 			vgl_debugger_draw_string_format(5, dbg_y += 20, 0xFFFFFFFF, "SP Vertex USSE Mem Usage: %luKBs", sceGxmShaderPatcherGetVertexUsseMemAllocated(gxm_shader_patcher) / 1024);
@@ -187,6 +197,12 @@ void vgl_debugger_draw(uint32_t *fb) {
 	}
 #endif
 	vgl_debugger_draw_mem_usage_metrics();
+#if !defined(DISABLE_CIRCULAR_POOL) && !defined(CIRCULAR_POOL_SPEEDHACK)
+	percentage = 100.f * ((float)vgl_circular_pool_frame_peak / (circular_data_pool_size / gxm_display_buffer_count));
+	vgl_debugger_draw_string_format(5, dbg_y += 20, vgl_debugger_get_color_by_percentage(percentage), "Circular Pool Usage: %lu Bytes (%.0f%%)", vgl_circular_pool_frame_peak, percentage);
+	percentage = 100.f * ((float)vgl_circular_pool_global_peak / (circular_data_pool_size / gxm_display_buffer_count));
+	vgl_debugger_draw_string_format(5, dbg_y += 20, vgl_debugger_get_color_by_percentage(percentage), "Circular Pool Peak Usage: %lu Bytes (%.0f%%)", vgl_circular_pool_global_peak, percentage);
+#endif	
 	vgl_debugger_draw_string_format(5, dbg_y += 20, 0xFFFFFFFF, "Frame Number: %lu", vgl_framecount);
 }
 #endif

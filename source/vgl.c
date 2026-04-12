@@ -116,7 +116,7 @@ static uint8_t *circular_data_pool;
 static uint8_t *circular_data_pool_ptr;
 static uint8_t *circular_data_pool_limit;
 #endif
-static uint32_t circular_data_pool_size = CIRCULAR_POOL_SIZE_DEF;
+uint32_t circular_data_pool_size = CIRCULAR_POOL_SIZE_DEF;
 uint8_t *vgl_reserve_data_pool(uint32_t size) {
 #ifndef CIRCULAR_POOL_SPEEDHACK
 	uint8_t *res = circular_data_pool_ptr[vgl_circular_idx];

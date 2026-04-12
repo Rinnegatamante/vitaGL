@@ -83,6 +83,11 @@
 extern uint8_t *circular_data_pool[CIRCULAR_POOLS_NUM];
 extern uint8_t *circular_data_pool_ptr[CIRCULAR_POOLS_NUM];
 extern int vgl_circular_idx;
+#ifdef HAVE_DEBUG_INTERFACE
+extern uint32_t vgl_circular_pool_frame_peak;
+extern uint32_t vgl_circular_pool_global_peak;
+extern uint32_t circular_data_pool_size;
+#endif
 #endif
 #if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 extern GLboolean vgl_dynamic_wants_scratch;
