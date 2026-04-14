@@ -79,9 +79,8 @@
 #endif
 
 #if !defined(DISABLE_CIRCULAR_POOL) && !defined(CIRCULAR_POOL_SPEEDHACK)
-#define CIRCULAR_POOLS_NUM 3
-extern uint8_t *circular_data_pool[CIRCULAR_POOLS_NUM];
-extern uint8_t *circular_data_pool_ptr[CIRCULAR_POOLS_NUM];
+extern uint8_t *circular_data_pool[DISPLAY_MAX_BUFFER_COUNT];
+extern uint8_t *circular_data_pool_ptr[DISPLAY_MAX_BUFFER_COUNT];
 extern int vgl_circular_idx;
 #ifdef HAVE_DEBUG_INTERFACE
 extern uint32_t vgl_circular_pool_frame_peak;

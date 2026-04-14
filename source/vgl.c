@@ -107,9 +107,9 @@ GLboolean vgl_dynamic_wants_scratch = GL_TRUE;
 GLboolean vgl_stream_wants_scratch = GL_TRUE;
 #endif
 #ifndef CIRCULAR_POOL_SPEEDHACK
-uint8_t *circular_data_pool[CIRCULAR_POOLS_NUM];
-uint8_t *circular_data_pool_ptr[CIRCULAR_POOLS_NUM];
-static uint8_t *circular_data_pool_limit[CIRCULAR_POOLS_NUM];
+uint8_t *circular_data_pool[DISPLAY_MAX_BUFFER_COUNT];
+uint8_t *circular_data_pool_ptr[DISPLAY_MAX_BUFFER_COUNT];
+static uint8_t *circular_data_pool_limit[DISPLAY_MAX_BUFFER_COUNT];
 int vgl_circular_idx = 0;
 #else
 static uint8_t *circular_data_pool;
