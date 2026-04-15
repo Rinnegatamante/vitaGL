@@ -30,6 +30,8 @@
 #define XXH_STATIC_LINKING_ONLY
 #define XXH_IMPLEMENTATION
 #define XXH_NAMESPACE VITAGL_
+#define XXH_memcpy vgl_fast_memcpy
+#define XXH_memset sceClibMemset
 #include "utils/xxhash_utils.h"
 #ifdef HAVE_SHADER_CACHE
 char vgl_shader_cache_path[256];
