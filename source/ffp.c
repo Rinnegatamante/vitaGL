@@ -1457,7 +1457,7 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #endif
 }
 
-void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, SceGxmIndexSource index_type) {
+void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, uint32_t base_idx, SceGxmIndexSource index_type) {
 	uint8_t mask_state = reload_ffp_shaders(NULL, NULL, index_type);
 #ifdef HAVE_PROFILING
 	uint32_t draw_start = sceKernelGetProcessTimeLow();
@@ -1517,7 +1517,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 					top_idx = _idx_buf[i];
 			}
 		}
-		top_idx++;
+		top_idx += base_idx + 1;
 	}
 #endif
 

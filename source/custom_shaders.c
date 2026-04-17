@@ -1144,7 +1144,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 	return GL_TRUE;
 }
 
-GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, SceGxmIndexSource index_type) {
+GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, uint32_t base_idx, SceGxmIndexSource index_type) {
 #ifdef HAVE_PROFILING
 	uint32_t draw_start = sceKernelGetProcessTimeLow();
 #endif
@@ -1294,19 +1294,21 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		if ((index_type & 1) == 0)
 		{
 			for (int i = 0; i < count; i++) {
-				if (idx_buf[i] > top_idx)
+				if (idx_buf[i] > top_idx) {
 					top_idx = idx_buf[i];
+				}
 			}
 		}
 		else
 		{
 			uint32_t *_idx_buf = (uint32_t *)idx_buf;
 			for (int i = 0; i < count; i++) {
-				if (_idx_buf[i] > top_idx)
+				if (_idx_buf[i] > top_idx) {
 					top_idx = _idx_buf[i];
+				}
 			}
 		}
-		top_idx++;
+		top_idx += base_idx + 1;
 	}
 
 #ifdef STRICT_DRAW_COMPLIANCE
