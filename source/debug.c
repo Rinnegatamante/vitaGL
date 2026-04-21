@@ -53,11 +53,10 @@ void vgl_debugger_set_metrics(int mode) {
 static void vgl_debugger_draw_character(int character, int x, int y, uint32_t color) {
 	for (int yy = 0; yy < 10; yy++) {
 		int xDisplacement = x;
-		int yDisplacement = (y + (yy<<(DISPLAY_WIDTH >= 720 ? 1 : 0))) * DISPLAY_STRIDE;
+		int yDisplacement = (y + (yy << (DISPLAY_WIDTH >= 720 ? 1 : 0))) * DISPLAY_STRIDE;
 		uint32_t* screenPos = frame_buf + xDisplacement + yDisplacement;
-		
+		uint8_t charPos = font[character * 10 + yy];
 		if (DISPLAY_WIDTH >= 720) {
-			uint8_t charPos = font[character * 10 + yy];
 			for (int xx = 7; xx >= 2; xx--) {
 				uint32_t clr = ((charPos >> xx) & 1) ? color : 0x00000000;
 				*(screenPos) = clr;
@@ -67,7 +66,6 @@ static void vgl_debugger_draw_character(int character, int x, int y, uint32_t co
 				screenPos += 2;
 			}
 		} else {
-			uint8_t charPos = font[character * 10 + yy];
 			for (int xx = 7; xx >= 2; xx--) {
 				uint32_t clr = ((charPos >> xx) & 1) ? color : 0x00000000;
 				*(screenPos) = clr;

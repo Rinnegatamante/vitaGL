@@ -772,6 +772,10 @@ void vglFree(void *addr) {
 	vgl_free(addr);
 }
 
+void vglLazyFree(void *addr) {
+	markAsDirty(addr);
+}
+
 void vglUseExtraMem(GLboolean use) {
 	use_extra_mem = use;
 }

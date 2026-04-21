@@ -412,6 +412,7 @@ static const struct {
 	{"vglInitExtended", (void *)vglInitExtended},
 	{"vglInitWithCustomSizes", (void *)vglInitWithCustomSizes},
 	{"vglInitWithCustomThreshold", (void *)vglInitWithCustomThreshold},
+	{"vglLazyFree", (void *)vglLazyFree},
 	{"vglMalloc", (void *)vglMalloc},
 	{"vglMallocUsableSize", (void *)vglMallocUsableSize},
 	{"vglMemalign", (void *)vglMemalign},

@@ -1083,6 +1083,9 @@ GLboolean vglInitWithCustomSizes(int legacy_pool_size, int width, int height, in
 // vitaGL init function with customizable resolution, memory pools thresholds and MSAA setup.
 GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, int cdlg_threshold, SceGxmMultisampleMode msaa);
 
+// Mark a memory block from a vitaGL internal memory pool to be deleted as soon as GPU finishes using it.
+void vglLazyFree(void *addr);
+
 // malloc implementation for vitaGL internal memory pools.
 void *vglMalloc(uint32_t size);
 
