@@ -789,7 +789,7 @@ HANDLE_VAR:
 void glsl_handle_tex_size(char *txt, GLsizei preamble_size, glsl_samplers_info *info, uint8_t *num) {
 	*num = 0;	
 	char *s = strstr(txt + preamble_size, "textureSize");
-	while (s && *num < SCE_GXM_MAX_TEXTURE_UNITS) {
+	while (s && *num <= SCE_GXM_MAX_TEXTURE_UNITS) {
 		char *str_start = s;
 		s += 11;
 		while (*s != '(')
@@ -813,8 +813,14 @@ void glsl_handle_tex_size(char *txt, GLsizei preamble_size, glsl_samplers_info *
 		int sz = sprintf(str_start, "vgl_smp%u", *num);
 		str_start[sz] = '/';
 		str_start[sz + 1] = '*';
-		if (!is_old)
+		if (!is_old) {
+#ifndef SKIP_ERROR_HANDLING
+			if (*num == SCE_GXM_MAX_TEXTURE_UNITS) {
+				vgl_log("%s:%d %s: Too many samplers used. PSVita supports at best %d unique samplers.\n", __FILE__, __LINE__, __func__, SCE_GXM_MAX_TEXTURE_UNITS);
+			}	
+#endif
 			*num = *num + 1;
+		}
 		while (*end != ')')
 			end++;
 		*(end - 1) = '*';
