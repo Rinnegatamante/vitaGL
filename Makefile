@@ -23,6 +23,10 @@ ifeq ($(NO_DEBUG),1)
 CFLAGS += -DSKIP_ERROR_HANDLING
 endif
 
+ifeq ($(NO_SPLASHSCREEN),1)
+CFLAGS += -DSKIP_SPLASHSCREEN
+endif
+
 ifeq ($(NO_DMAC),1)
 CFLAGS += -DDISABLE_DMAC
 endif

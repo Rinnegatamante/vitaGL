@@ -37,16 +37,17 @@ static unsigned int shader_patcher_buffer_size = 1024 * 1024;
 static unsigned int shader_patcher_vertex_usse_size = 1024 * 1024;
 static unsigned int shader_patcher_fragment_usse_size = 1024 * 1024;
 
-static void *vdm_ring_buffer_addr; // VDM ring buffer memblock starting address
-static void *vertex_ring_buffer_addr; // vertex ring buffer memblock starting address
-static void *fragment_ring_buffer_addr; // fragment ring buffer memblock starting address
-static void *fragment_usse_ring_buffer_addr; // fragment USSE ring buffer memblock starting address
+void *context_host_mem[GXM_CONTEXTS_NUM]; // Context host memory memblock starting address
+void *vdm_ring_buffer_addr[GXM_CONTEXTS_NUM]; // VDM ring buffer memblock starting address
+void *vertex_ring_buffer_addr[GXM_CONTEXTS_NUM]; // vertex ring buffer memblock starting address
+void *fragment_ring_buffer_addr[GXM_CONTEXTS_NUM]; // fragment ring buffer memblock starting address
+void *fragment_usse_ring_buffer_addr[GXM_CONTEXTS_NUM]; // fragment USSE ring buffer memblock starting address
 
-static SceGxmRenderTarget *gxm_render_target; // Display render target
+SceGxmRenderTarget *gxm_render_target; // Display render target
 SceGxmColorSurface gxm_color_surfaces[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces
 uint8_t gxm_display_buffer_count = 3; // Display buffers count
 void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
-static SceGxmSyncObject *gxm_sync_objects[DISPLAY_MAX_BUFFER_COUNT]; // Display sync objects
+SceGxmSyncObject *gxm_sync_objects[DISPLAY_MAX_BUFFER_COUNT]; // Display sync objects
 unsigned int gxm_front_buffer_index; // Display front buffer id
 unsigned int gxm_back_buffer_index; // Display back buffer id
 static void (*vgl_display_cb)(void *framebuf) = NULL; // Additional custom callback used inside display queue callback
@@ -114,6 +115,11 @@ static uint8_t gxm_display_rt_size = 1; // Number of scenes per frame to use for
 pthread_t gc_thread;
 #else
 SceUID gc_thread;
+#endif
+
+#ifndef SKIP_SPLASHSCREEN
+extern SceUID splash_mutex[2];
+extern GLboolean is_splashscreen_active;
 #endif
 
 #ifdef HAVE_CPU_TRACER
@@ -216,11 +222,6 @@ void __markRtAsDirty(render_target *rt) {
 	}
 }
 #endif
-
-// sceDisplay callback data
-struct display_queue_callback_data {
-	void *addr;
-};
 
 // sceGxmShaderPatcher custom allocator
 static void *shader_patcher_host_alloc_cb(void *user_data, unsigned int size) {
@@ -355,13 +356,13 @@ void initGxm(void) {
 
 #ifndef HAVE_SINGLE_THREADED_GC
 	// Initializing garbage collector
-	gc_mutex[0] = sceKernelCreateSema("GC Sema Push", 0, 0, FRAME_PURGE_FREQ, NULL);
-	gc_mutex[1] = sceKernelCreateSema("GC Sema Pull", 0, FRAME_PURGE_FREQ, FRAME_PURGE_FREQ, NULL);
+	gc_mutex[0] = sceKernelCreateSema("vitaGL GC Sema Push", 0, 0, FRAME_PURGE_FREQ, NULL);
+	gc_mutex[1] = sceKernelCreateSema("vitaGL GC Sema Pull", 0, FRAME_PURGE_FREQ, FRAME_PURGE_FREQ, NULL);
 #ifdef HAVE_PTRHEAD
 	pthread_create(&gc_thread, NULL, garbage_collector, NULL);
 	pthread_setaffinity_np(gc_thread, 4, &gc_thread_affinity);
 #else
-	gc_thread = sceKernelCreateThread("Garbage Collector", &garbage_collector, gc_thread_priority, 0x10000, 0, gc_thread_affinity, NULL);
+	gc_thread = sceKernelCreateThread("vitaGL Garbage Collector", &garbage_collector, gc_thread_priority, 0x10000, 0, gc_thread_affinity, NULL);
 	sceKernelStartThread(gc_thread, 0, NULL);
 #endif
 #endif
@@ -408,39 +409,39 @@ void initGxm(void) {
 #endif
 }
 
-void initGxmContext(void) {
+void initGxmContext(SceGxmContext **ctx, uint8_t ctx_slot) {
 	// Allocating VDM ring buffer
-	vdm_ring_buffer_addr = gpu_alloc_mapped_aligned(4096, gxm_vdm_buf_size, VGL_MEM_VRAM);
+	vdm_ring_buffer_addr[ctx_slot] = gpu_alloc_mapped_aligned(4096, gxm_vdm_buf_size, VGL_MEM_VRAM);
 
 	// Allocating vertex ring buffer
-	vertex_ring_buffer_addr = gpu_alloc_mapped_aligned(4096, gxm_vertex_buf_size, VGL_MEM_VRAM);
+	vertex_ring_buffer_addr[ctx_slot] = gpu_alloc_mapped_aligned(4096, gxm_vertex_buf_size, VGL_MEM_VRAM);
 
 	// Allocating fragment ring buffer
-	fragment_ring_buffer_addr = gpu_alloc_mapped_aligned(4096, gxm_fragment_buf_size, VGL_MEM_VRAM);
+	fragment_ring_buffer_addr[ctx_slot] = gpu_alloc_mapped_aligned(4096, gxm_fragment_buf_size, VGL_MEM_VRAM);
 
 	// Allocating fragment USSE ring buffer
 	unsigned int fragment_usse_offset;
-	fragment_usse_ring_buffer_addr = gpu_fragment_usse_alloc_mapped(gxm_usse_buf_size, &fragment_usse_offset);
+	fragment_usse_ring_buffer_addr[ctx_slot] = gpu_fragment_usse_alloc_mapped(gxm_usse_buf_size, &fragment_usse_offset);
 
 	// Setting sceGxm context parameters
 	SceGxmContextParams gxm_context_params;
 	vgl_memset(&gxm_context_params, 0, sizeof(SceGxmContextParams));
-	gxm_context_params.hostMem = vglMalloc(SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
+	gxm_context_params.hostMem = context_host_mem[ctx_slot] = vglMalloc(SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
 	gxm_context_params.hostMemSize = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
-	gxm_context_params.vdmRingBufferMem = vdm_ring_buffer_addr;
+	gxm_context_params.vdmRingBufferMem = vdm_ring_buffer_addr[ctx_slot];
 	gxm_context_params.vdmRingBufferMemSize = gxm_vdm_buf_size;
-	gxm_context_params.vertexRingBufferMem = vertex_ring_buffer_addr;
+	gxm_context_params.vertexRingBufferMem = vertex_ring_buffer_addr[ctx_slot];
 	gxm_context_params.vertexRingBufferMemSize = gxm_vertex_buf_size;
-	gxm_context_params.fragmentRingBufferMem = fragment_ring_buffer_addr;
+	gxm_context_params.fragmentRingBufferMem = fragment_ring_buffer_addr[ctx_slot];
 	gxm_context_params.fragmentRingBufferMemSize = gxm_fragment_buf_size;
-	gxm_context_params.fragmentUsseRingBufferMem = fragment_usse_ring_buffer_addr;
+	gxm_context_params.fragmentUsseRingBufferMem = fragment_usse_ring_buffer_addr[ctx_slot];
 	gxm_context_params.fragmentUsseRingBufferMemSize = gxm_usse_buf_size;
 	gxm_context_params.fragmentUsseRingBufferOffset = fragment_usse_offset;
 
 	// Initializing sceGxm context
-	sceGxmCreateContext(&gxm_context_params, &gxm_context);
+	sceGxmCreateContext(&gxm_context_params, ctx);
 #ifdef DISABLE_W_CLAMPING
-	sceGxmSetWClampEnable(gxm_context, SCE_GXM_WCLAMP_MODE_DISABLED);
+	sceGxmSetWClampEnable(**ctx, SCE_GXM_WCLAMP_MODE_DISABLED);
 #endif
 
 	// Initializing circular pool for uniform buffers
@@ -618,6 +619,18 @@ void sceneReset(void) {
 			needs_end_scene = GL_TRUE;
 		}
 
+#ifndef SKIP_SPLASHSCREEN	
+		// If we're running the boot splashscreen, we need to terminate it first
+		if (is_splashscreen_active) {
+			sceKernelSignalSema(splash_mutex[0], 1);
+			sceKernelWaitSema(splash_mutex[1], 1, NULL);
+			is_splashscreen_active = GL_FALSE;
+			clear_splashscreen();
+			sceKernelDeleteSema(splash_mutex[0]);
+			sceKernelDeleteSema(splash_mutex[1]);
+		}
+#endif
+
 		// Starting drawing scene
 		is_rendering_display = !active_write_fb;
 		if (is_rendering_display) { // Default framebuffer is used
@@ -626,20 +639,16 @@ void sceneReset(void) {
 				shared_fb_info.vsync = vsync_interval;
 				gxm_back_buffer_index = (shared_fb_info.index + 1) % 2;
 			}
-#ifdef LOG_ERRORS
+
 			int r = sceGxmBeginScene(gxm_context, 0, gxm_render_target,
 				NULL, NULL,
 				gxm_sync_objects[gxm_back_buffer_index],
 				&gxm_color_surfaces[gxm_back_buffer_index],
 				&gxm_depth_stencil_surface);
-			if (r)
+#ifdef LOG_ERRORS
+			if (r) {
 				vgl_log("%s:%d Scene reset failed due to sceGxmBeginScene erroring (%s) on display.\n", __FILE__, __LINE__, get_gxm_error_literal(r));
-#else
-			sceGxmBeginScene(gxm_context, 0, gxm_render_target,
-				NULL, NULL,
-				gxm_sync_objects[gxm_back_buffer_index],
-				&gxm_color_surfaces[gxm_back_buffer_index],
-				&gxm_depth_stencil_surface);
+			}
 #endif
 		} else {
 			// If a depthstencil surface is not bound to the in use framebuffer, we get one for it to ensure scissor testing compatibility
@@ -656,8 +665,9 @@ void sceneReset(void) {
 #else
 				int r = setupRenderTarget(&active_write_fb->target, active_write_fb->width, active_write_fb->height, 1);
 #ifdef LOG_ERRORS
-				if (r)
+				if (r) {
 					vgl_log("%s:%d Failed to create a rendertarget of size %dx%d for framebuffer 0x%08X (%s).\n", __FILE__, __LINE__, active_write_fb->width, active_write_fb->height, active_write_fb, get_gxm_error_literal(r));
+				}
 #endif
 #endif
 			}

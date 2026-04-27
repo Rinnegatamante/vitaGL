@@ -93,6 +93,25 @@ extern GLboolean vgl_dynamic_wants_scratch;
 extern GLboolean vgl_stream_wants_scratch;
 #endif
 
+enum {
+	VGL_CONTEXT_MAIN,
+	VGL_CONTEXT_SPLASHSCREEN
+};
+
+#ifdef SKIP_SPLASHSCREEN
+#define GXM_CONTEXTS_NUM (1)
+#else
+#define GXM_CONTEXTS_NUM (2)
+#endif
+extern void *context_host_mem[GXM_CONTEXTS_NUM]; // Context host memory memblock starting address
+extern void *vdm_ring_buffer_addr[GXM_CONTEXTS_NUM]; // VDM ring buffer memblock starting address
+extern void *vertex_ring_buffer_addr[GXM_CONTEXTS_NUM]; // vertex ring buffer memblock starting address
+extern void *fragment_ring_buffer_addr[GXM_CONTEXTS_NUM]; // fragment ring buffer memblock starting address
+extern void *fragment_usse_ring_buffer_addr[GXM_CONTEXTS_NUM]; // fragment USSE ring buffer memblock starting address
+
+// sceDisplay callback data struct
+struct display_queue_callback_data { void *addr; };
+
 // Texture object status enum
 enum {
 	TEX_UNUSED,
@@ -758,6 +777,7 @@ extern SceGxmMultisampleMode msaa_mode;
 extern void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
 extern SceGxmColorSurface gxm_color_surfaces[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces
 extern unsigned int gxm_back_buffer_index; // Display back buffer id
+extern unsigned int gxm_front_buffer_index; // Display front buffer id
 extern GLboolean use_extra_mem;
 extern blend_config blend_info;
 extern SceGxmVertexAttribute vertex_attrib_config[VERTEX_ATTRIBS_NUM];
@@ -1103,7 +1123,7 @@ extern GLfloat point_size; // Size of points for fixed function pipeline
 
 /* gxm.c */
 void initGxm(void); // Inits sceGxm
-void initGxmContext(void); // Inits sceGxm context
+void initGxmContext(SceGxmContext **ctx, uint8_t ctx_slot); // Inits sceGxm context
 void createDisplayRenderTarget(void); // Creates render target for the display
 void initDisplayColorSurfaces(GLboolean is_swap); // Creates color surfaces for the display
 void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, GLboolean has_stencil); // Creates depth and stencil surfaces
@@ -1163,6 +1183,10 @@ void resetDlists(); // Reset display lists state
 /* misc.c */
 void change_cull_mode(void); // Updates current cull mode
 void update_polygon_offset(); // Updates current polygon offset mode
+
+/* splashscreen.c */
+void invoke_splashscreen(void);
+void clear_splashscreen();
 
 /* misc functions */
 static inline __attribute__((always_inline)) void vector4f_convert_to_local_space(vector4f *out, int x, int y, int width, int height) { // Converts screen coords to local space

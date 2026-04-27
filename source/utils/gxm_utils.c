@@ -30,7 +30,8 @@ static uint8_t *unif_pool = NULL;
 static uint32_t unif_idx = 0;
 
 void vglSetupUniformCircularPool() {
-	unif_pool = gpu_alloc_mapped(UNIFORM_CIRCULAR_POOL_SIZE, VGL_MEM_RAM);
+	if (!unif_pool)
+		unif_pool = gpu_alloc_mapped(UNIFORM_CIRCULAR_POOL_SIZE, VGL_MEM_RAM);
 }
 
 void *vglReserveUniformCircularPoolBuffer(uint32_t size) {
@@ -39,7 +40,7 @@ void *vglReserveUniformCircularPoolBuffer(uint32_t size) {
 #ifndef SKIP_ERROR_HANDLING
 		static uint32_t last_frame_swap = 0;
 		if (last_frame_swap == vgl_framecount) {
-			vgl_log("%s:%d Circular Uniform Pool outage detected! Consider increasing its size...\n", __FILE__, __LINE__);
+			vgl_log("%s:%d Circular Uniform Pool outage detected! Consider increasing UNIFORM_CIRCULAR_POOL_SIZE...\n", __FILE__, __LINE__);
 		}
 		last_frame_swap = vgl_framecount;
 #endif
