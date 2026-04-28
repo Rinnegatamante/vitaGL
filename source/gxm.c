@@ -48,8 +48,9 @@ SceGxmColorSurface gxm_color_surfaces[DISPLAY_MAX_BUFFER_COUNT]; // Display colo
 uint8_t gxm_display_buffer_count = 3; // Display buffers count
 void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces memblock starting addresses
 SceGxmSyncObject *gxm_sync_objects[DISPLAY_MAX_BUFFER_COUNT]; // Display sync objects
-unsigned int gxm_front_buffer_index; // Display front buffer id
+unsigned int gxm_front_buffer_index = 0; // Display front buffer id
 unsigned int gxm_back_buffer_index; // Display back buffer id
+unsigned int gxm_read_back_buffer_index;
 static void (*vgl_display_cb)(void *framebuf) = NULL; // Additional custom callback used inside display queue callback
 
 static void *gxm_shader_patcher_buffer_addr; // Shader PAtcher buffer memblock starting address
@@ -637,13 +638,13 @@ void sceneReset(void) {
 			if (system_app_mode) {
 				sceSharedFbBegin(shared_fb, &shared_fb_info);
 				shared_fb_info.vsync = vsync_interval;
-				gxm_back_buffer_index = (shared_fb_info.index + 1) % 2;
+				gxm_front_buffer_index = (shared_fb_info.index + 1) % 2;
 			}
 
 			int r = sceGxmBeginScene(gxm_context, 0, gxm_render_target,
 				NULL, NULL,
-				gxm_sync_objects[gxm_back_buffer_index],
-				&gxm_color_surfaces[gxm_back_buffer_index],
+				gxm_sync_objects[gxm_front_buffer_index],
+				&gxm_color_surfaces[gxm_front_buffer_index],
 				&gxm_depth_stencil_surface);
 #ifdef LOG_ERRORS
 			if (r) {
@@ -821,9 +822,9 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		updateParam.renderTarget.width = DISPLAY_WIDTH;
 		updateParam.renderTarget.height = DISPLAY_HEIGHT;
 		updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE;
-		updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_back_buffer_index];
+		updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_front_buffer_index];
 		updateParam.renderTarget.depthSurfaceData = gxm_depth_stencil_surface.depthData;
-		updateParam.displaySyncObject = gxm_sync_objects[gxm_back_buffer_index];
+		updateParam.displaySyncObject = gxm_sync_objects[gxm_front_buffer_index];
 
 		// Updating sceCommonDialog
 		sceCommonDialogUpdate(&updateParam);
@@ -834,11 +835,11 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 			sceSharedFbEnd(shared_fb);
 		else {
 #ifdef HAVE_RAZOR
-			sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
+			sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_front_buffer_index], gxm_sync_objects[gxm_front_buffer_index]);
 #ifdef HAVE_DEVKIT
 			if (has_razor_live) {
 				SceRazorGpuLiveResultInfo razor_res;
-				sceRazorGpuLiveSetBuffer(razor_buf[gxm_back_buffer_index], RAZOR_BUF_SIZE, &razor_res);
+				sceRazorGpuLiveSetBuffer(razor_buf[gxm_front_buffer_index], RAZOR_BUF_SIZE, &razor_res);
 
 				if (razor_res.result_data) {
 					if (!razor_res.overflow_count) {
@@ -927,19 +928,19 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 #endif
 #endif
 			struct display_queue_callback_data queue_cb_data;
-			queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
+			queue_cb_data.addr = gxm_color_surfaces_addr[gxm_front_buffer_index];
 #ifdef HAVE_PROFILING
 			tick = sceKernelGetProcessTimeLow();
 #endif
-			sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index], gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
+			sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_back_buffer_index], gxm_sync_objects[gxm_front_buffer_index], &queue_cb_data);
 #ifdef HAVE_PROFILING
 			gpu_stall_cnt += sceKernelGetProcessTimeLow() - tick;
 #endif
 #ifdef HAVE_CPU_TRACER
 			sceRazorCpuSync();
 #endif
-			gxm_front_buffer_index = gxm_back_buffer_index;
-			gxm_back_buffer_index = (gxm_back_buffer_index + 1) % gxm_display_buffer_count;
+			gxm_back_buffer_index = gxm_front_buffer_index;
+			gxm_front_buffer_index = (gxm_front_buffer_index + 1) % gxm_display_buffer_count;
 		}
 	}
 	needs_scene_reset = GL_TRUE;

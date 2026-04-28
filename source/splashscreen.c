@@ -14287,6 +14287,7 @@ int splashscreen_thread(unsigned int args, void *arg) {
 	initGxmContext(&splash_gxm_context, VGL_CONTEXT_SPLASHSCREEN);
 	
 	// Setup any immutable state
+	sceGxmSetCullMode(splash_gxm_context, SCE_GXM_CULL_NONE);
 	sceGxmSetFrontDepthWriteEnable(splash_gxm_context, SCE_GXM_DEPTH_WRITE_ENABLED);
 	
 	// Mapping vertex and index data into sceGxm to avoid temp allocations
@@ -14318,7 +14319,7 @@ int splashscreen_thread(unsigned int args, void *arg) {
 			ambient[3] = t;
 		} else if (must_terminate) {
 			float ft = (t - t_end_start);
-			ambient[3] = 1.f - fminf(ft, 1.f);
+			ambient[3] = 1.f - ft;
 			if (ambient[3] <= 0.f) {
 				break;
 			}
@@ -14335,19 +14336,20 @@ int splashscreen_thread(unsigned int args, void *arg) {
 		matrix4x4_multiply(mvp, proj, mv);
 		angle_y -= 0.016f;
 
-		for (int i = 0; i < 3; i++)
-			for (int j = 0; j < 3; j++)
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
 				nm[i][j] = mv[i][j];
+			}
+		}
 			
 		sceGxmBeginScene(splash_gxm_context, 0, gxm_render_target,
 			NULL, NULL,
-			gxm_sync_objects[gxm_back_buffer_index],
-			&gxm_color_surfaces[gxm_back_buffer_index],
+			gxm_sync_objects[gxm_front_buffer_index],
+			&gxm_color_surfaces[gxm_front_buffer_index],
 			&gxm_depth_stencil_surface);
 
 		// Clear the screen
 		void *fbuffer, *vbuffer;
-		sceGxmSetCullMode(splash_gxm_context, SCE_GXM_CULL_NONE);
 		sceGxmSetFrontDepthFunc(splash_gxm_context, SCE_GXM_DEPTH_FUNC_ALWAYS);
 		sceGxmSetVertexProgram(splash_gxm_context, clear_vertex_program_patched);
 		sceGxmSetFragmentProgram(splash_gxm_context, clear_fragment_program_patched);
@@ -14373,10 +14375,10 @@ int splashscreen_thread(unsigned int args, void *arg) {
 		
 		sceGxmEndScene(splash_gxm_context, NULL, NULL);
 		struct display_queue_callback_data queue_cb_data;
-		queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
-		sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index], gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
-		gxm_front_buffer_index = gxm_back_buffer_index;
-		gxm_back_buffer_index = (gxm_back_buffer_index + 1) % gxm_display_buffer_count;
+		queue_cb_data.addr = gxm_color_surfaces_addr[gxm_front_buffer_index];
+		sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_back_buffer_index], gxm_sync_objects[gxm_front_buffer_index], &queue_cb_data);
+		gxm_back_buffer_index = gxm_front_buffer_index;
+		gxm_front_buffer_index = (gxm_front_buffer_index + 1) % gxm_display_buffer_count;
 	}
 
 	// Notify main renderer thread that splashscreen is over

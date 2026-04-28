@@ -766,7 +766,7 @@ void glBlitNamedFramebuffer(GLuint readFramebuffer, GLuint drawFramebuffer, GLin
 	
 	// Set fragment texture to read framebuffer bound color attachment
 	framebuffer *read_fb = (framebuffer *)readFramebuffer;
-	SceGxmTexture *tex = readFramebuffer ? &read_fb->tex->gxm_tex : &gxm_color_surfaces[gxm_back_buffer_index].backgroundTex;
+	SceGxmTexture *tex = readFramebuffer ? &read_fb->tex->gxm_tex : &gxm_color_surfaces[gxm_read_back_buffer_index].backgroundTex;
 	if (filter == GL_LINEAR) {
 		vglSetTexMagFilter(tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
 		vglSetTexMinFilter(tex, SCE_GXM_TEXTURE_FILTER_LINEAR);

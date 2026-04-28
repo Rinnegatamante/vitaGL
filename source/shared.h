@@ -778,6 +778,7 @@ extern void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color
 extern SceGxmColorSurface gxm_color_surfaces[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfaces
 extern unsigned int gxm_back_buffer_index; // Display back buffer id
 extern unsigned int gxm_front_buffer_index; // Display front buffer id
+extern unsigned int gxm_read_back_buffer_index;
 extern GLboolean use_extra_mem;
 extern blend_config blend_info;
 extern SceGxmVertexAttribute vertex_attrib_config[VERTEX_ATTRIBS_NUM];
