@@ -852,6 +852,7 @@ void glProgramUniformMatrix4fv(GLuint program, GLint location, GLsizei count, GL
 void glPushAttrib(GLbitfield mask);
 void glPushGroupMarker(GLsizei length, const GLchar *marker);
 void glPushMatrix(void);
+void glReadBuffer(GLenum mode);
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data);
 void glRectf(GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2);
 void glRecti(GLint x1, GLint y1, GLint x2, GLint y2);

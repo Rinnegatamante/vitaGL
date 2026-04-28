@@ -280,6 +280,7 @@ static const struct {
 	{"glPushAttrib", (void *)glPushAttrib},
 	{"glPushGroupMarker", (void *)glPushGroupMarker},
 	{"glPushMatrix", (void *)glPushMatrix},
+	{"glReadBuffer", (void *)glReadBuffer},
 	{"glReadPixels", (void *)glReadPixels},
 	{"glRectf", (void *)glRectf},
 	{"glRecti", (void *)glRecti},

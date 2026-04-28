@@ -26,6 +26,7 @@
 static framebuffer framebuffers[BUFFERS_NUM]; // Framebuffers array
 static renderbuffer renderbuffers[BUFFERS_NUM]; // Renderbuffers array
 
+static GLenum display_read_mode = GL_BACK;
 framebuffer *active_read_fb = NULL; // Current readback framebuffer in use
 framebuffer *active_write_fb = NULL; // Current write framebuffer in use
 renderbuffer *active_rb = NULL; // Current renderbuffer in use
@@ -637,7 +638,12 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		stride = active_read_fb->stride;
 		y = (active_read_fb->height - (height + y)) * stride;
 	} else {
-		src = (uint8_t *)gxm_color_surfaces_addr[gxm_back_buffer_index];
+		if (display_read_mode == GL_BACK) {
+			src = (uint8_t *)gxm_color_surfaces_addr[gxm_read_back_buffer_index];
+		} else {
+			sceGxmFinish(gxm_context);
+			src = (uint8_t *)gxm_color_surfaces_addr[gxm_front_buffer_index];
+		}
 		stride = DISPLAY_STRIDE * 4;
 		y = (DISPLAY_HEIGHT - (height + y)) * stride;
 		src_bpp = 4;
@@ -772,7 +778,7 @@ void glBlitNamedFramebuffer(GLuint readFramebuffer, GLuint drawFramebuffer, GLin
 	
 	// Set fragment texture to read framebuffer bound color attachment
 	framebuffer *read_fb = (framebuffer *)readFramebuffer;
-	SceGxmTexture *tex = readFramebuffer ? &read_fb->tex->gxm_tex : &gxm_color_surfaces[gxm_read_back_buffer_index].backgroundTex;
+	SceGxmTexture *tex = readFramebuffer ? &read_fb->tex->gxm_tex : &gxm_color_surfaces[display_read_mode == GL_BACK ? gxm_back_buffer_index : gxm_front_buffer_index].backgroundTex;
 	if (filter == GL_LINEAR) {
 		vglSetTexMagFilter(tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
 		vglSetTexMinFilter(tex, SCE_GXM_TEXTURE_FILTER_LINEAR);
@@ -887,4 +893,21 @@ GLboolean glIsFramebuffer(GLuint fb) {
 GLboolean glIsRenderbuffer(GLuint rb) {
 	renderbuffer *p = (renderbuffer *)rb;
 	return (p && p->active);
+}
+
+void glReadBuffer(GLenum mode) {
+	if (!active_read_fb) {
+#ifndef SKIP_ERROR_HANDLING
+		if (mode != GL_BACK && mode != GL_FRONT) {
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+		}
+#endif
+		display_read_mode = mode;
+	} else {
+#ifndef SKIP_ERROR_HANDLING
+		if (mode != GL_COLOR_ATTACHMENT0) {
+			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+		}
+#endif
+	}
 }
