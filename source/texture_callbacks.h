@@ -50,5 +50,6 @@ void writeBGR(void *data, uint32_t color);
 void writeRGBA(void *data, uint32_t color);
 void writeABGR(void *data, uint32_t color);
 void writeBGRA(void *data, uint32_t color);
+void writeRGBA5551(void *data, uint32_t color);
 
 #endif

@@ -611,12 +611,14 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	uint8_t *src;
 	int stride, src_bpp, dst_bpp;
 	if (active_read_fb) {
+		// FIXME: This is very ugly and hacky...
 		switch (active_read_fb->data_type) {
 		case GL_RGBA:
 			read_cb = readRGBA;
 			src_bpp = 4;
 			break;
 		case GL_RGB:
+		case GL_RGB8:
 			read_cb = readRGB;
 			src_bpp = 3;
 			break;
@@ -627,7 +629,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		default:
 			break;
 		}
-		if (format == active_read_fb->data_type) {
+		if (format == active_read_fb->data_type && type == GL_UNSIGNED_BYTE) {
 			fast_store = GL_TRUE;
 			dst_bpp = src_bpp;
 		}
@@ -639,7 +641,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		stride = DISPLAY_STRIDE * 4;
 		y = (DISPLAY_HEIGHT - (height + y)) * stride;
 		src_bpp = 4;
-		if (format == GL_RGBA) {
+		if (format == GL_RGBA && type == GL_UNSIGNED_BYTE) {
 			fast_store = GL_TRUE;
 			dst_bpp = src_bpp;
 		} else
@@ -653,6 +655,10 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			case GL_UNSIGNED_BYTE:
 				write_cb = writeRGBA;
 				dst_bpp = 4;
+				break;
+			case GL_UNSIGNED_SHORT_5_5_5_1:
+				write_cb = writeRGBA5551;
+				dst_bpp = 2;
 				break;
 			default:
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
