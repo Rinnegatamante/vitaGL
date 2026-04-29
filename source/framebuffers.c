@@ -76,6 +76,148 @@ uint32_t get_alpha_channel_size(SceGxmColorFormat type) {
 	}
 }
 
+// glReadPixels variant that uses sceGxmTransfer
+GLboolean _glReadPixels_gpu(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data, GLboolean is_mapped) {
+	SceGxmTransferFormat dst_fmt;
+	int dst_bpp;
+	switch (format) {
+	case GL_RGBA:
+	case GL_RGBA8:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			dst_fmt = SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR;
+			dst_bpp = 4;
+			break;
+		case GL_UNSIGNED_SHORT_4_4_4_4:
+			dst_fmt = SCE_GXM_TRANSFER_FORMAT_U4U4U4U4_ABGR;
+			dst_bpp = 2;
+			break;
+		case GL_UNSIGNED_SHORT_5_5_5_1:
+		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
+			dst_fmt = SCE_GXM_TRANSFER_FORMAT_U1U5U5U5_ABGR;
+			dst_bpp = 2;
+			break;
+		default:
+			return GL_FALSE;
+		}
+		break;
+	case GL_RGB:
+	case GL_RGB8:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			dst_fmt = SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR;
+			dst_bpp = 3;
+			break;
+		case GL_UNSIGNED_SHORT_5_6_5:
+			dst_fmt = SCE_GXM_TRANSFER_FORMAT_U5U6U5_BGR;
+			dst_bpp = 2;
+			break;
+		default:
+			return GL_FALSE;
+		}
+		break;
+	case GL_R8:
+	case GL_RED:
+		switch (type) {
+		case GL_UNSIGNED_BYTE:
+			dst_fmt = SCE_GXM_TRANSFER_FORMAT_U8_R;
+			dst_bpp = 1;
+			break;
+		default:
+			return GL_FALSE;
+		}
+		break;
+	default:
+		return GL_FALSE;
+	}
+	
+	void *dst;
+	if (active_read_fb) {
+		SceGxmTransferFormat src_fmt = tex_format_to_transfer(active_read_fb->format);
+		if (src_fmt == 0xFFFFFFFF) {
+			return GL_FALSE;
+		}
+		dst = is_mapped ? data : gpu_alloc_mapped_temp(width * height * dst_bpp);
+#ifndef HAVE_UNFLIPPED_FBOS
+		uint8_t *src = (uint8_t *)active_read_fb->data;
+		int stride = active_read_fb->stride;
+		sceGxmTransferCopy(width, height, 0, 0, SCE_GXM_TRANSFER_COLORKEY_NONE,
+			tex_format_to_transfer(active_read_fb->format), SCE_GXM_TRANSFER_LINEAR, src, x, y, stride, 
+			dst_fmt, SCE_GXM_TRANSFER_LINEAR, dst, x, y, width * dst_bpp, NULL, 0, NULL);
+#else
+		uint8_t *src = (uint8_t *)active_read_fb->data + active_read_fb->stride * (active_read_fb->height - y - 1);
+		int stride = -(int)active_read_fb->stride;
+		sceGxmTransferCopy(width, height, 0, 0, SCE_GXM_TRANSFER_COLORKEY_NONE,
+			tex_format_to_transfer(active_read_fb->format), SCE_GXM_TRANSFER_LINEAR, src, x, 0, stride, 
+			dst_fmt, SCE_GXM_TRANSFER_LINEAR, dst, x, y, width * dst_bpp, NULL, 0, NULL);
+#endif
+	} else {
+		dst = is_mapped ? data : gpu_alloc_mapped_temp(width * height * dst_bpp);
+		uint8_t *src;
+		if (display_read_mode == GL_BACK) {
+			src = (uint8_t *)gxm_color_surfaces_addr[gxm_back_buffer_index];
+		} else {
+			sceGxmFinish(gxm_context);
+			src = (uint8_t *)gxm_color_surfaces_addr[gxm_front_buffer_index];
+		}
+		src += DISPLAY_STRIDE * 4 * (DISPLAY_HEIGHT - y - 1);
+		sceGxmTransferCopy(width, height, 0, 0, SCE_GXM_TRANSFER_COLORKEY_NONE,
+			SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR, SCE_GXM_TRANSFER_LINEAR, src, x, 0, -DISPLAY_STRIDE * 4, 
+			dst_fmt, SCE_GXM_TRANSFER_LINEAR, dst, x, y, width * dst_bpp, NULL, 0, NULL);
+	}
+	sceGxmTransferFinish();
+	
+	// Reswizzle the final buffer where necessary
+	#define reswizzle_5551(x) ((x & 0x1F) << 11) | (((x >> 5) & 0x1F) << 6) | (((x >> 10) & 0x1F) << 1) | (x >> 15)
+	#define reswizzle_4444(x) ((x & 0x0F) << 12) | (((x >> 4) & 0x0F) << 8) | (((x >> 8) & 0x0F) << 4) | ((x >> 12) & 0xF)
+	#define reswizzle_565(x) ((x & 0x1F) << 11) | (x & 0x7E0) | ((x >> 11) & 0x1F)
+	switch (dst_fmt) {
+	case SCE_GXM_TRANSFER_FORMAT_U1U5U5U5_ABGR:
+		if (type == GL_UNSIGNED_SHORT_5_5_5_1) {
+			uint16_t *p = (uint16_t *)dst;
+			for (int i = 0; i < width * height; i++) {
+				uint16_t clr = p[i];
+				p[i] = reswizzle_5551(clr);
+			}
+		}
+		break;
+	case SCE_GXM_TRANSFER_FORMAT_U4U4U4U4_ABGR:
+		{
+			uint16_t *p = (uint16_t *)dst;
+			for (int i = 0; i < width * height; i++) {
+				uint16_t clr = p[i];
+				p[i] = reswizzle_4444(clr);
+			}
+		}
+		break;
+	case SCE_GXM_TRANSFER_FORMAT_U5U6U5_BGR:
+		{
+			uint16_t *p = (uint16_t *)dst;
+			for (int i = 0; i < width * height; i++) {
+				uint16_t clr = p[i];
+				p[i] = reswizzle_565(clr);
+			}
+		}
+		break;
+	case SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR:
+		{
+			uint8_t *p = (uint8_t *)dst;
+			for (int i = 0; i < width * height * 3; i += 3) {
+				uint8_t clr = p[i];
+				p[i] = p[i + 2];
+				p[i + 2] = clr;
+			}
+		}
+		break;
+	default:
+		break;
+	}
+	
+	if (!is_mapped) {
+		vgl_fast_memcpy(data, dst, width * height * dst_bpp);
+	}
+}
+
 /*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -
@@ -431,7 +573,7 @@ inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum text
 		tex->ref_counter++;
 
 		// Checking if the framebuffer requires extended register size
-		fb->is_float = fmt == SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
+		fb->is_float = tex->format == SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
 
 		// Allocating colorbuffer
 		sceGxmColorSurfaceInit(&fb->colorbuffer, get_color_from_texture(fmt), SCE_GXM_COLOR_SURFACE_LINEAR,
@@ -465,14 +607,13 @@ inline void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum
 
 	// Extracting texture data
 	int old_w = fb->width, old_h = fb->height;
-	SceGxmTextureFormat fmt = sceGxmTextureGetFormat(&tex->gxm_tex);
 
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
 		fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
 		fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
-		fb->stride = VGL_ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
+		fb->stride = VGL_ALIGN(fb->width, 8) * tex_format_to_bytespp(tex->format);
 		fb->data = sceGxmTextureGetData(&tex->gxm_tex);
 		fb->format = tex->format;
 
@@ -511,10 +652,10 @@ inline void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum
 		tex->ref_counter++;
 
 		// Checking if the framebuffer requires extended register size
-		fb->is_float = fmt == SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
+		fb->is_float = tex->format == SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
 
 		// Allocating colorbuffer
-		sceGxmColorSurfaceInit(&fb->colorbuffer, get_color_from_texture(fmt), SCE_GXM_COLOR_SURFACE_LINEAR,
+		sceGxmColorSurfaceInit(&fb->colorbuffer, get_color_from_texture(tex->format), SCE_GXM_COLOR_SURFACE_LINEAR,
 			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
 			fb->is_float ? SCE_GXM_OUTPUT_REGISTER_SIZE_64BIT : SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
 			fb->width, fb->height, VGL_ALIGN(fb->width, 8), fb->data);
@@ -614,10 +755,11 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	if (active_read_fb) {
 		switch (active_read_fb->format) {
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-			if ((format == GL_RGBA || format == GL_RGBA8) && type == GL_UNSIGNED_BYTE)
+			if ((format == GL_RGBA || format == GL_RGBA8) && type == GL_UNSIGNED_BYTE) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = readRGBA;
+			}
 			src_bpp = 4;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
@@ -688,6 +830,10 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	}
 
 	if (!fast_store) {
+		// Attempt first to use sceGxmTransfer variant since faster
+		if (_glReadPixels_gpu(x, y, width, height, format, type, data, GL_FALSE))
+			return;
+		
 		switch (format) {
 		case GL_RGBA:
 			switch (type) {
@@ -771,6 +917,15 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 #endif
 		}
 	}
+}
+
+void vglReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data) {
+	GLboolean res = _glReadPixels_gpu(x, y, width, height, format, type, data, GL_TRUE);
+#ifndef SKIP_ERROR_HANDLING
+	if (!res) {
+		vgl_log("%s:%d %s: Unsupported formats combination.\n", __FILE__, __LINE__, __func__);
+	}
+#endif
 }
 
 void glBlitNamedFramebuffer(GLuint readFramebuffer, GLuint drawFramebuffer, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter) {

@@ -106,6 +106,28 @@ static inline __attribute__((always_inline)) int tex_format_to_bytespp(SceGxmTex
 	}
 }
 
+static inline __attribute__((always_inline)) SceGxmTransferFormat tex_format_to_transfer(SceGxmTextureFormat format) {
+	// Calculating transfer format for the requested texture format
+	switch (format & 0x9F000000) {
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
+		return SCE_GXM_TRANSFER_FORMAT_U1U5U5U5_ABGR;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
+		return SCE_GXM_TRANSFER_FORMAT_U5U6U5_BGR;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
+		return SCE_GXM_TRANSFER_FORMAT_U4U4U4U4_ABGR;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
+		return SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
+		return SCE_GXM_TRANSFER_FORMAT_U8U8_GR;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+		return SCE_GXM_TRANSFER_FORMAT_U8_R;
+	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
+		return SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR;
+	default:
+		return 0xFFFFFFFF;
+	}
+}
+
 // Alloc a texture
 void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), void (*write_cb)(void *, uint32_t), GLboolean fast_store);
 

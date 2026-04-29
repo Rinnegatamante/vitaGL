@@ -421,6 +421,7 @@ static const struct {
 	{"vglMemTotal", (void *)vglMemTotal},
 	{"vglOverloadTexDataPointer", (void *)vglOverloadTexDataPointer},
 	{"vglOverrideTexFormat", (void *)vglOverrideTexFormat},
+	{"vglReadPixels", (void *)vglReadPixels},
 	{"vglRealloc", (void *)vglRealloc},
 	{"vglSetCircularPoolSize", (void *)vglSetCircularPoolSize},
 	{"vglSetDisplayBufferCount", (void *)vglSetDisplayBufferCount},

@@ -1108,6 +1108,9 @@ void vglOverloadTexDataPointer(GLenum target, void *data);
 // Allows to override texture format of a GL texture. Requires HAVE_UNPURE_TEXFORMATS.
 void vglOverrideTexFormat(GLenum target);
 
+// Variant of glReadPixels that uses GPU underneat to perform the readback. The passed data pointer must be GPU mapped (eg: heap memory).
+void vglReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data);
+
 // realloc implementation for vitaGL internal memory pools.
 void *vglRealloc(void *ptr, uint32_t size);
 
