@@ -216,6 +216,8 @@ GLboolean _glReadPixels_gpu(GLint x, GLint y, GLsizei width, GLsizei height, GLe
 	default:
 		break;
 	}
+	
+	return GL_TRUE;
 }
 
 /*
