@@ -140,8 +140,8 @@ typedef struct texture {
 	SceGxmTexture gxm_tex;
 	void *data;
 	void *palette_data;
-	uint32_t type;
 	void (*write_cb)(void *, uint32_t);
+	SceGxmTextureFormat format;
 	SceGxmTextureFilter min_filter;
 	SceGxmTextureFilter mag_filter;
 	SceGxmTextureAddrMode u_mode;
@@ -520,11 +520,11 @@ typedef struct {
 	SceGxmColorSurface colorbuffer;
 	SceGxmDepthStencilSurface depthbuffer;
 	SceGxmDepthStencilSurface *depthbuffer_ptr;
+	SceGxmTextureFormat format;
 	int width;
 	int height;
 	int stride;
 	void *data;
-	uint32_t data_type;
 	texture *tex;
 } framebuffer;
 

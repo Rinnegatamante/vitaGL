@@ -570,7 +570,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_CubeIMPL(texture
 	}
 
 	// Allocating texture/mipmaps depending on user call
-	tex->type = internalFormat;
+	tex->format = src_format;
 	if (level == 0) // FIXME: Add proper mipmaps support
 		gpu_alloc_cube_texture(width, height, tex_format, src_format, data, tex, data_bpp, index);
 
@@ -856,7 +856,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	}
 
 	// Allocating texture/mipmaps depending on user call
-	tex->type = internalFormat;
+	tex->format = tex_format;
 	if (level == 0)
 		if (tex->write_cb)
 			gpu_alloc_texture(width, height, tex_format, data, tex, data_bpp, read_cb, tex->write_cb, fast_store);
@@ -1537,7 +1537,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 		}
 
 		// Allocating texture/mipmaps depending on user call
-		tex->type = internalFormat;
+		tex->format = tex_format;
 		if (planar_format) {
 			// FIXME: Add mipmaps support for planar textures
 			gpu_alloc_planar_texture(width, height, tex_format, data, tex);

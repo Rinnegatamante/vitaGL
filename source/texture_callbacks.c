@@ -215,7 +215,7 @@ void writeR(void *data, uint32_t color) {
 
 // Write callback for 16bpp unsigned RGBA5551 format
 void writeRGBA5551(void *data, uint32_t color) {
-	uint16_t *dst = (uint8_t *)data;
+	uint16_t *dst = (uint16_t *)data;
 	const uint8_t *src = (uint8_t *)&color;
 	uint8_t r, g, b, a;
 	r = src[0] >> 3;

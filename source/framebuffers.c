@@ -395,7 +395,7 @@ inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum text
 		fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
 		fb->stride = VGL_ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
 		fb->data = sceGxmTextureGetData(&tex->gxm_tex);
-		fb->data_type = tex->type;
+		fb->format = tex->format;
 		// Discarding any previously bound hidden depth buffer
 		if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
 #ifndef DEPTH_STENCIL_HACK
@@ -474,7 +474,7 @@ inline void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum
 		fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
 		fb->stride = VGL_ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
 		fb->data = sceGxmTextureGetData(&tex->gxm_tex);
-		fb->data_type = tex->type;
+		fb->format = tex->format;
 
 		// Discarding any previously bound hidden depth buffer
 		if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
@@ -612,27 +612,60 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	uint8_t *src;
 	int stride, src_bpp, dst_bpp;
 	if (active_read_fb) {
-		// FIXME: This is very ugly and hacky...
-		switch (active_read_fb->data_type) {
-		case GL_RGBA:
-			read_cb = readRGBA;
+		switch (active_read_fb->format) {
+		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
+			if ((format == GL_RGBA || format == GL_RGBA8) && type == GL_UNSIGNED_BYTE)
+				fast_store = GL_TRUE;
+			else
+				read_cb = readRGBA;
 			src_bpp = 4;
 			break;
-		case GL_RGB:
-		case GL_RGB8:
-			read_cb = readRGB;
+		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
+			if (format == GL_BGRA && type == GL_UNSIGNED_BYTE)
+				fast_store = GL_TRUE;
+			else
+				read_cb = readBGRA;
+			src_bpp = 4;
+			break;
+		case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA:
+			if (format == GL_BGRA && type == GL_UNSIGNED_SHORT_4_4_4_4)
+				
+		case SCE_GXM_TEXTURE_FORMAT_U8_R:
+			if ((format == GL_R8 || format == GL_RED) && type == GL_UNSIGNED_BYTE)
+				fast_store = GL_TRUE;
+			else
+				read_cb = readR;
+			src_bpp = 1;
+			break;
+		case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
+			if ((format == GL_RGB || format == GL_RGB8) && type == GL_UNSIGNED_BYTE)
+				fast_store = GL_TRUE;
+			else
+				read_cb = readRGB;
 			src_bpp = 3;
 			break;
-		case GL_BGRA:
-			read_cb = readBGRA;
-			src_bpp = 4;
+		case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
+			if (format == GL_RGB && type == GL_UNSIGNED_SHORT_5_6_5)
+				fast_store = GL_TRUE;
+			else
+				read_cb = readRGB565;
+			src_bpp = 2;
+			break;
+		case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
+			if ((format == GL_RGBA && type == GL_UNSIGNED_SHORT_5_5_5_1) || format == GL_RGB5_A1)
+				fast_store = GL_TRUE;
+			else
+				read_cb = readRGBA5551;
+			src_bpp = 2;
+			break;
+		case SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA:
+			// FIXME: Add slow path support
+			if (format == GL_RGBA && type == GL_RGBA16F)
+				fast_store = GL_TRUE;
+			src_bpp = 16;
 			break;
 		default:
 			break;
-		}
-		if (format == active_read_fb->data_type && type == GL_UNSIGNED_BYTE) {
-			fast_store = GL_TRUE;
-			dst_bpp = src_bpp;
 		}
 		src = (uint8_t *)active_read_fb->data;
 		stride = active_read_fb->stride;
