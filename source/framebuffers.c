@@ -167,6 +167,10 @@ GLboolean _glReadPixels_gpu(GLint x, GLint y, GLsizei width, GLsizei height, GLe
 	}
 	sceGxmTransferFinish();
 	
+	if (!is_mapped) {
+		vgl_fast_memcpy(data, dst, width * height * dst_bpp);
+	}
+	
 	// Reswizzle the final buffer where necessary
 	#define reswizzle_5551(x) ((x & 0x1F) << 11) | (((x >> 5) & 0x1F) << 6) | (((x >> 10) & 0x1F) << 1) | (x >> 15)
 	#define reswizzle_4444(x) ((x & 0x0F) << 12) | (((x >> 4) & 0x0F) << 8) | (((x >> 8) & 0x0F) << 4) | ((x >> 12) & 0xF)
@@ -174,7 +178,7 @@ GLboolean _glReadPixels_gpu(GLint x, GLint y, GLsizei width, GLsizei height, GLe
 	switch (dst_fmt) {
 	case SCE_GXM_TRANSFER_FORMAT_U1U5U5U5_ABGR:
 		if (type == GL_UNSIGNED_SHORT_5_5_5_1) {
-			uint16_t *p = (uint16_t *)dst;
+			uint16_t *p = (uint16_t *)data;
 			for (int i = 0; i < width * height; i++) {
 				uint16_t clr = p[i];
 				p[i] = reswizzle_5551(clr);
@@ -183,7 +187,7 @@ GLboolean _glReadPixels_gpu(GLint x, GLint y, GLsizei width, GLsizei height, GLe
 		break;
 	case SCE_GXM_TRANSFER_FORMAT_U4U4U4U4_ABGR:
 		{
-			uint16_t *p = (uint16_t *)dst;
+			uint16_t *p = (uint16_t *)data;
 			for (int i = 0; i < width * height; i++) {
 				uint16_t clr = p[i];
 				p[i] = reswizzle_4444(clr);
@@ -192,7 +196,7 @@ GLboolean _glReadPixels_gpu(GLint x, GLint y, GLsizei width, GLsizei height, GLe
 		break;
 	case SCE_GXM_TRANSFER_FORMAT_U5U6U5_BGR:
 		{
-			uint16_t *p = (uint16_t *)dst;
+			uint16_t *p = (uint16_t *)data;
 			for (int i = 0; i < width * height; i++) {
 				uint16_t clr = p[i];
 				p[i] = reswizzle_565(clr);
@@ -201,7 +205,7 @@ GLboolean _glReadPixels_gpu(GLint x, GLint y, GLsizei width, GLsizei height, GLe
 		break;
 	case SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR:
 		{
-			uint8_t *p = (uint8_t *)dst;
+			uint8_t *p = (uint8_t *)data;
 			for (int i = 0; i < width * height * 3; i += 3) {
 				uint8_t clr = p[i];
 				p[i] = p[i + 2];
@@ -211,10 +215,6 @@ GLboolean _glReadPixels_gpu(GLint x, GLint y, GLsizei width, GLsizei height, GLe
 		break;
 	default:
 		break;
-	}
-	
-	if (!is_mapped) {
-		vgl_fast_memcpy(data, dst, width * height * dst_bpp);
 	}
 }
 
