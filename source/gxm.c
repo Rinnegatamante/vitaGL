@@ -516,9 +516,7 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 
 	// Allocating stencil surface
 #ifndef DEPTH_STENCIL_HACK
-	void *stencil_buffer = NULL;
-	if (has_stencil)
-		stencil_buffer = gpu_alloc_mapped_aligned(SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT, depth_stencil_samples, VGL_MEM_VRAM);
+	void *stencil_buffer = has_stencil ? gpu_alloc_mapped_aligned(SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT, depth_stencil_samples, VGL_MEM_VRAM) : NULL;
 #endif
 
 	// Initializing depth and stencil surfaces

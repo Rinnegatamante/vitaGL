@@ -389,7 +389,8 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 	region.gl_w = width;
 	region.gl_h = height;
 
-	dirty_scissor_state = GL_TRUE;
+	if (scissor_test_state)
+		dirty_scissor_state = GL_TRUE;
 }
 
 void glDepthFunc(GLenum func) {
