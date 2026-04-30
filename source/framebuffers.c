@@ -335,12 +335,14 @@ void glBindFramebuffer(GLenum target, GLuint fb) {
 	switch (target) {
 	case GL_DRAW_FRAMEBUFFER:
 		active_write_fb = (framebuffer *)fb;
+		dirty_scissor_state = GL_TRUE;
 		break;
 	case GL_READ_FRAMEBUFFER:
 		active_read_fb = (framebuffer *)fb;
 		break;
 	case GL_FRAMEBUFFER:
 		active_write_fb = active_read_fb = (framebuffer *)fb;
+		dirty_scissor_state = GL_TRUE;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)

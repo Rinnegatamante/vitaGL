@@ -29,14 +29,13 @@ SceGxmDepthFunc depth_func = SCE_GXM_DEPTH_FUNC_LESS; // Current in-use depth te
 GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
 GLdouble depth_value = 1.0f; // Current depth test clear value
 GLboolean depth_mask_state = GL_TRUE; // Current state for glDepthMask
+GLboolean dirty_scissor_state = GL_FALSE; // Flag for when scissor test update must be performed
 
 // Scissor Test
 scissor_region region; // Current scissor test region setup
 GLboolean scissor_test_state = GL_FALSE; // Current state for GL_SCISSOR_TEST
 SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program
 vector4f *scissor_test_vertices = NULL; // Scissor test region vertices
-SceUID scissor_test_vertices_uid; // Scissor test vertices memblock id
-GLboolean skip_scene_reset = GL_FALSE;
 
 // Stencil Test
 uint8_t stencil_mask_front = 0xFF; // Current in use mask for stencil test on front
@@ -262,14 +261,33 @@ void update_scissor_test() {
 	// Invalidating viewport and culling
 	invalidate_viewport();
 	sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_NONE);
+	
+	uint32_t active_w, active_h;
+	if (is_rendering_display) {
+		active_w = DISPLAY_WIDTH;
+		active_h = DISPLAY_HEIGHT;
+	} else {
+		active_w = in_use_framebuffer->width;
+		active_h = in_use_framebuffer->height;		
+	}
+	
+	// Converting openGL scissor test region to sceGxm one
+	region.x = region.gl_x < 0 ? 0 : region.gl_x;
+	region.w = region.gl_w;
+	region.h = region.gl_h;
+	region.y = active_h - region.gl_y - region.gl_h;
+	
+	// Optimizing region
+	if (region.y < 0)
+		region.y = 0;
+	if (region.x + region.w > active_w)
+		region.w = active_w - region.x;
+	if (region.y + region.h > active_h)
+		region.h = active_h - region.y;
 
 #ifndef DISABLE_TILE_CLIPPER
 	// Invalidating internal tile based region clip
-	if (is_rendering_display) {
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1);
-	} else {
-		sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, in_use_framebuffer->width - 1, in_use_framebuffer->height - 1);
-	}
+	sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, active_w - 1, active_h - 1);
 #endif
 	
 	if (scissor_test_state) {
@@ -342,6 +360,7 @@ void update_scissor_test() {
 	refresh_stencil_settings();
 
 	vglRestoreVertexUniformBuffer();
+	dirty_scissor_state = GL_FALSE;
 }
 
 void resetScissorTestRegion(void) {
@@ -365,40 +384,12 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 	}
 #endif
 
-	uint32_t active_w, active_h;
-	if (is_rendering_display) {
-		active_w = DISPLAY_WIDTH;
-		active_h = DISPLAY_HEIGHT;
-	} else {
-		active_w = in_use_framebuffer->width;
-		active_h = in_use_framebuffer->height;		
-	}
-	
-	// Converting openGL scissor test region to sceGxm one
-	region.x = x < 0 ? 0 : x;
-	region.w = width;
-	region.h = height;
-	region.y = active_h - y - height;
-
 	region.gl_x = x;
 	region.gl_y = y;
 	region.gl_w = width;
 	region.gl_h = height;
 
-	// Optimizing region
-	if (region.y < 0)
-		region.y = 0;
-	if (region.x + region.w > active_w)
-		region.w = active_w - region.x;
-	if (region.y + region.h > active_h)
-		region.h = active_h - region.y;
-
-	// Updating in use scissor test parameters if GL_SCISSOR_TEST is enabled
-	if (scissor_test_state) {
-		if (!skip_scene_reset)
-			sceneReset();
-		update_scissor_test();
-	}
+	dirty_scissor_state = GL_TRUE;
 }
 
 void glDepthFunc(GLenum func) {

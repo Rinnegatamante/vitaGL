@@ -766,6 +766,7 @@ extern const char *ffp_bind_names[FFP_BINDS_NUM];
 // Internal stuffs
 extern uint32_t gxm_param_buf_size; // Param buffer size for sceGxm
 extern GLboolean skip_viewport_override;
+extern GLboolean dirty_scissor_state;
 extern uint8_t texcoord_idxs[TEXTURE_COORDS_NUM];
 extern uint8_t texcoord_fixed_idxs[TEXTURE_COORDS_NUM];
 extern uint8_t ffp_vertex_attrib_fixed_mask;
@@ -1102,8 +1103,6 @@ extern uint8_t dirty_framebuffer; // Flag wether current in use framebuffer is i
 // Scissor test shaders
 extern SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program
 extern vector4f *scissor_test_vertices; // Scissor test region vertices
-extern SceUID scissor_test_vertices_uid; // Scissor test vertices memblock id
-extern GLboolean skip_scene_reset;
 
 extern uint16_t *depth_clear_indices; // Memblock starting address for clear screen indices
 

@@ -708,9 +708,6 @@ void sceneReset(void) {
 		if (old_framebuffer != in_use_framebuffer) {
 			old_framebuffer = in_use_framebuffer;
 			glViewport(gl_viewport.x, gl_viewport.y, gl_viewport.w, gl_viewport.h);
-			skip_scene_reset = GL_TRUE;
-			glScissor(region.gl_x, region.gl_y, region.gl_w, region.gl_h);
-			skip_scene_reset = GL_FALSE;
 #ifndef HAVE_UNFLIPPED_FBOS
 			change_cull_mode();
 #endif
@@ -721,6 +718,10 @@ void sceneReset(void) {
 		if (scissor_test_state)
 			sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
 #endif
+	}
+	
+	if (dirty_scissor_state) {
+		update_scissor_test();
 	}
 }
 
