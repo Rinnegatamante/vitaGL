@@ -969,8 +969,8 @@ void glPopAttrib(void) {
 		stencil_test_state = setup->stencil_test_state;
 		refresh_stencil_settings();
 		scissor_test_state = setup->scissor_test_state;
-		sceneReset();
-		update_scissor_test();
+		if (scissor_test_state)
+			dirty_scissor_state = GL_TRUE;
 		cull_face_state = setup->cull_face_state;
 		change_cull_mode();
 		pol_offset_fill = setup->pol_offset_fill;
@@ -1019,8 +1019,7 @@ void glPopAttrib(void) {
 	if (setup->enabled_bits & (1 << SCISSOR_BIT)) {
 		scissor_test_state = setup->scissor_test_state;
 		region = setup->region;
-		sceneReset();
-		update_scissor_test();
+		dirty_scissor_state = GL_TRUE;
 	}
 	if (setup->enabled_bits & (1 << STENCIL_BUFFER_BIT)) {
 		stencil_test_state = setup->stencil_test_state;

@@ -14377,6 +14377,7 @@ int splashscreen_thread(unsigned int args, void *arg) {
 		struct display_queue_callback_data queue_cb_data;
 		queue_cb_data.addr = gxm_color_surfaces_addr[gxm_front_buffer_index];
 		sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_back_buffer_index], gxm_sync_objects[gxm_front_buffer_index], &queue_cb_data);
+		gxm_read_back_buffer_index = gxm_back_buffer_index;
 		gxm_back_buffer_index = gxm_front_buffer_index;
 		gxm_front_buffer_index = (gxm_front_buffer_index + 1) % gxm_display_buffer_count;
 	}
