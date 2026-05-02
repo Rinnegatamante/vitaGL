@@ -285,17 +285,17 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	blit_texcoord = sceGxmProgramFindParameterByName(gxm_program_blit_v, "texcoord");
 		
 	SceGxmVertexAttribute blit_attrs[2];
-	SceGxmVertexStream blit_streams[2];
-	blit_attrs[0].offset = blit_attrs[1].offset = 0;
+	SceGxmVertexStream blit_streams[1];
+	blit_attrs[0].offset = 0;
+	blit_attrs[1].offset = 8 * sizeof(float);
 	blit_attrs[0].format = blit_attrs[1].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 	blit_attrs[0].componentCount = blit_attrs[1].componentCount = 2;
-	blit_streams[0].stride = blit_streams[1].stride = 2 * sizeof(float);
+	blit_streams[0].stride = 2 * sizeof(float);
 	blit_attrs[0].regIndex = sceGxmProgramParameterGetResourceIndex(blit_position);
 	blit_attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(blit_texcoord);
-	blit_attrs[0].streamIndex = 0;
-	blit_attrs[1].streamIndex = 1;
+	blit_attrs[0].streamIndex = blit_attrs[1].streamIndex = 0;
 	blit_streams[0].indexSource = blit_streams[1].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-	{ patchVertexProgram(gxm_shader_patcher, blit_vertex_id, blit_attrs, 2, blit_streams, 2, &blit_vertex_program_patched); }
+	{ patchVertexProgram(gxm_shader_patcher, blit_vertex_id, blit_attrs, 2, blit_streams, 1, &blit_vertex_program_patched); }
 	{ patchFragmentProgram(gxm_shader_patcher, blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, NULL, NULL, &blit_fragment_program_patched); }
 	{ patchFragmentProgram(gxm_shader_patcher, blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4, msaa_mode, NULL, NULL, &blit_fragment_program_float_patched); }
 

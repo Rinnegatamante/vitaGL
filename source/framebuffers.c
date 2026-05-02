@@ -1025,7 +1025,6 @@ void glBlitNamedFramebuffer(GLuint readFramebuffer, GLuint drawFramebuffer, GLin
 		vertex_data[11] = vertex_data[13] = (DISPLAY_HEIGHT_FLOAT - (float)srcY0) / DISPLAY_HEIGHT_FLOAT; // Y1
 	}
 	sceGxmSetVertexStream(gxm_context, 0, vertex_data);
-	sceGxmSetVertexStream(gxm_context, 1, &vertex_data[8]);
 
 	// Draw read framebuffer on top of write framebuffer
 	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
