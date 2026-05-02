@@ -816,7 +816,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		y = (active_read_fb->height - (height + y)) * stride;
 	} else {
 		if (display_read_mode == GL_BACK) {
-			src = (uint8_t *)gxm_color_surfaces_addr[gxm_read_back_buffer_index];
+			src = (uint8_t *)gxm_color_surfaces_addr[gxm_back_buffer_index];
 		} else {
 			sceGxmFinish(gxm_context);
 			src = (uint8_t *)gxm_color_surfaces_addr[gxm_front_buffer_index];

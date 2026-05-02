@@ -50,7 +50,6 @@ void *gxm_color_surfaces_addr[DISPLAY_MAX_BUFFER_COUNT]; // Display color surfac
 SceGxmSyncObject *gxm_sync_objects[DISPLAY_MAX_BUFFER_COUNT]; // Display sync objects
 unsigned int gxm_front_buffer_index = 0; // Display front buffer id
 unsigned int gxm_back_buffer_index; // Display back buffer id
-unsigned int gxm_read_back_buffer_index;
 static void (*vgl_display_cb)(void *framebuf) = NULL; // Additional custom callback used inside display queue callback
 
 static void *gxm_shader_patcher_buffer_addr; // Shader PAtcher buffer memblock starting address
