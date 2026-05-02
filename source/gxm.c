@@ -638,7 +638,6 @@ void sceneReset(void) {
 				shared_fb_info.vsync = vsync_interval;
 				gxm_front_buffer_index = (shared_fb_info.index + 1) % 2;
 			}
-
 			int r = sceGxmBeginScene(gxm_context, 0, gxm_render_target,
 				NULL, NULL,
 				gxm_sync_objects[gxm_front_buffer_index],
@@ -704,6 +703,7 @@ void sceneReset(void) {
 
 		// Setting back current viewport if enabled cause sceGxm will reset it at sceGxmEndScene call
 		if (old_framebuffer != in_use_framebuffer) {
+			dirty_scissor_state = GL_TRUE;
 			old_framebuffer = in_use_framebuffer;
 			glViewport(gl_viewport.x, gl_viewport.y, gl_viewport.w, gl_viewport.h);
 #ifndef HAVE_UNFLIPPED_FBOS
@@ -829,118 +829,116 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		sceCommonDialogUpdate(&updateParam);
 	}
 
-	if (!in_use_framebuffer) {
-		if (system_app_mode)
-			sceSharedFbEnd(shared_fb);
-		else {
+	if (system_app_mode)
+		sceSharedFbEnd(shared_fb);
+	else {
 #ifdef HAVE_RAZOR
-			sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_front_buffer_index], gxm_sync_objects[gxm_front_buffer_index]);
+		sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_front_buffer_index], gxm_sync_objects[gxm_front_buffer_index]);
 #ifdef HAVE_DEVKIT
-			if (has_razor_live) {
-				SceRazorGpuLiveResultInfo razor_res;
-				sceRazorGpuLiveSetBuffer(razor_buf[gxm_front_buffer_index], RAZOR_BUF_SIZE, &razor_res);
+		if (has_razor_live) {
+			SceRazorGpuLiveResultInfo razor_res;
+			sceRazorGpuLiveSetBuffer(razor_buf[gxm_front_buffer_index], RAZOR_BUF_SIZE, &razor_res);
 
-				if (razor_res.result_data) {
-					if (!razor_res.overflow_count) {
-						vgl_memset(&razor_metrics, 0, sizeof(razor_results));
-						SceUID pid = sceKernelGetProcessId();
-						SceRazorGpuResult r;
-						r.ptr = (uintptr_t)razor_res.result_data;
+			if (razor_res.result_data) {
+				if (!razor_res.overflow_count) {
+					vgl_memset(&razor_metrics, 0, sizeof(razor_results));
+					SceUID pid = sceKernelGetProcessId();
+					SceRazorGpuResult r;
+					r.ptr = (uintptr_t)razor_res.result_data;
 
-						// Analyzing the collected jobs
-						for (uint32_t i = 0; i < razor_res.entry_count; i++) {
-							switch (r.job->header.entry_type) {
-							case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_JOB:
-								if ((pid == r.job->process_id) && (r.job->type != SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FIRMWARE)) {
-									if (razor_metrics.scene_count < r.job->scene_index + 1)
-										razor_metrics.scene_count = r.job->scene_index + 1;
-									switch (r.job->type) {
-									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX0:
-									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX1:
-									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX2:
-									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX3:
-										razor_metrics.vertex_job_count++;
-										razor_metrics.vertex_job_time += r.job->end_time - r.job->start_time;
-										if (r.job->scene_index < RAZOR_MAX_SCENES_NUM) {
-											razor_metrics.scenes[r.job->scene_index].vertex_duration += r.job->end_time - r.job->start_time;
-										}
-										break;
-									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT0:
-									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT1:
-									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT2:
-									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT3:
-										razor_metrics.fragment_job_count++;
-										razor_metrics.fragment_job_time += r.job->end_time - r.job->start_time;
-										if (r.job->scene_index < RAZOR_MAX_SCENES_NUM) {
-											razor_metrics.scenes[r.job->scene_index].fragment_duration += r.job->end_time - r.job->start_time;
-										}
-										break;
+					// Analyzing the collected jobs
+					for (uint32_t i = 0; i < razor_res.entry_count; i++) {
+						switch (r.job->header.entry_type) {
+						case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_JOB:
+							if ((pid == r.job->process_id) && (r.job->type != SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FIRMWARE)) {
+								if (razor_metrics.scene_count < r.job->scene_index + 1)
+									razor_metrics.scene_count = r.job->scene_index + 1;
+								switch (r.job->type) {
+								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX0:
+								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX1:
+								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX2:
+								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX3:
+									razor_metrics.vertex_job_count++;
+									razor_metrics.vertex_job_time += r.job->end_time - r.job->start_time;
+									if (r.job->scene_index < RAZOR_MAX_SCENES_NUM) {
+										razor_metrics.scenes[r.job->scene_index].vertex_duration += r.job->end_time - r.job->start_time;
 									}
-									switch (r.job->type) {
-									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX1:
-										razor_metrics.usse_vertex_processing_percent += r.job->job_values.vertex_values_type1.usse_vertex_processing_percent;
-										break;
-									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX2:
-										razor_metrics.vdm_primitives_input_num += r.job->job_values.vertex_values_type2.vdm_primitives_input_num;
-										razor_metrics.mte_primitives_output_num += r.job->job_values.vertex_values_type2.mte_primitives_output_num;
-										razor_metrics.vdm_vertices_input_num += r.job->job_values.vertex_values_type2.vdm_vertices_input_num;
-										razor_metrics.mte_vertices_output_num += r.job->job_values.vertex_values_type2.mte_vertices_output_num;
-										break;
-									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX3:
-										razor_metrics.tiling_accelerated_mem_writes += r.job->job_values.vertex_values_type3.tiling_accelerated_mem_writes;
-										break;
-									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT1:
-										razor_metrics.usse_fragment_processing_percent += r.job->job_values.fragment_values_type1.usse_fragment_processing_percent;
-										razor_metrics.usse_dependent_texture_reads_percent += r.job->job_values.fragment_values_type1.usse_dependent_texture_reads_percent;
-										razor_metrics.usse_non_dependent_texture_reads_percent += r.job->job_values.fragment_values_type1.usse_non_dependent_texture_reads_percent;
-										break;
-									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT2:
-										razor_metrics.rasterized_pixels_before_hsr_num += r.job->job_values.fragment_values_type2.rasterized_pixels_before_hsr_num;
-										razor_metrics.rasterized_output_pixels_num += r.job->job_values.fragment_values_type2.rasterized_output_pixels_num;
-										razor_metrics.rasterized_output_samples_num += r.job->job_values.fragment_values_type2.rasterized_output_samples_num;
-										break;
-									case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT3:
-										razor_metrics.isp_parameter_fetches_mem_reads += r.job->job_values.fragment_values_type3.isp_parameter_fetches_mem_reads;
-										break;
+									break;
+								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT0:
+								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT1:
+								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT2:
+								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT3:
+									razor_metrics.fragment_job_count++;
+									razor_metrics.fragment_job_time += r.job->end_time - r.job->start_time;
+									if (r.job->scene_index < RAZOR_MAX_SCENES_NUM) {
+										razor_metrics.scenes[r.job->scene_index].fragment_duration += r.job->end_time - r.job->start_time;
 									}
-								} else if (r.job->type == SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FIRMWARE) {
-									razor_metrics.firmware_job_count++;
-									razor_metrics.firmware_job_time += r.job->end_time - r.job->start_time;
+									break;
 								}
-								break;
-							case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_PARAMETER_BUFFER:
-								vgl_fast_memcpy(&razor_metrics.peak_usage_value, &r.pbuf->peak_usage_value, 6);
-								break;
-							case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_FRAME:
-								vgl_fast_memcpy(&razor_metrics.frame_start_time, &r.frame->start_time, 20);
-								break;
-							default:
-								break;
+								switch (r.job->type) {
+								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX1:
+									razor_metrics.usse_vertex_processing_percent += r.job->job_values.vertex_values_type1.usse_vertex_processing_percent;
+									break;
+								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX2:
+									razor_metrics.vdm_primitives_input_num += r.job->job_values.vertex_values_type2.vdm_primitives_input_num;
+									razor_metrics.mte_primitives_output_num += r.job->job_values.vertex_values_type2.mte_primitives_output_num;
+									razor_metrics.vdm_vertices_input_num += r.job->job_values.vertex_values_type2.vdm_vertices_input_num;
+									razor_metrics.mte_vertices_output_num += r.job->job_values.vertex_values_type2.mte_vertices_output_num;
+									break;
+								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX3:
+									razor_metrics.tiling_accelerated_mem_writes += r.job->job_values.vertex_values_type3.tiling_accelerated_mem_writes;
+									break;
+								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT1:
+									razor_metrics.usse_fragment_processing_percent += r.job->job_values.fragment_values_type1.usse_fragment_processing_percent;
+									razor_metrics.usse_dependent_texture_reads_percent += r.job->job_values.fragment_values_type1.usse_dependent_texture_reads_percent;
+									razor_metrics.usse_non_dependent_texture_reads_percent += r.job->job_values.fragment_values_type1.usse_non_dependent_texture_reads_percent;
+									break;
+								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT2:
+									razor_metrics.rasterized_pixels_before_hsr_num += r.job->job_values.fragment_values_type2.rasterized_pixels_before_hsr_num;
+									razor_metrics.rasterized_output_pixels_num += r.job->job_values.fragment_values_type2.rasterized_output_pixels_num;
+									razor_metrics.rasterized_output_samples_num += r.job->job_values.fragment_values_type2.rasterized_output_samples_num;
+									break;
+								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FRAGMENT3:
+									razor_metrics.isp_parameter_fetches_mem_reads += r.job->job_values.fragment_values_type3.isp_parameter_fetches_mem_reads;
+									break;
+								}
+							} else if (r.job->type == SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FIRMWARE) {
+								razor_metrics.firmware_job_count++;
+								razor_metrics.firmware_job_time += r.job->end_time - r.job->start_time;
 							}
-							r.ptr += r.job->header.entry_size;
+							break;
+						case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_PARAMETER_BUFFER:
+							vgl_fast_memcpy(&razor_metrics.peak_usage_value, &r.pbuf->peak_usage_value, 6);
+							break;
+						case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_FRAME:
+							vgl_fast_memcpy(&razor_metrics.frame_start_time, &r.frame->start_time, 20);
+							break;
+						default:
+							break;
 						}
-					} else {
-						vgl_log("%s:%d Razor Live Metrics overflow detected (%d entries). Consider increasing RAZOR_BUF_SIZE.\n", __FILE__, __LINE__, razor_res.overflow_count);
+						r.ptr += r.job->header.entry_size;
 					}
+				} else {
+					vgl_log("%s:%d Razor Live Metrics overflow detected (%d entries). Consider increasing RAZOR_BUF_SIZE.\n", __FILE__, __LINE__, razor_res.overflow_count);
 				}
 			}
+		}
 #endif
 #endif
-			struct display_queue_callback_data queue_cb_data;
-			queue_cb_data.addr = gxm_color_surfaces_addr[gxm_front_buffer_index];
+		struct display_queue_callback_data queue_cb_data;
+		queue_cb_data.addr = gxm_color_surfaces_addr[gxm_front_buffer_index];
 #ifdef HAVE_PROFILING
-			tick = sceKernelGetProcessTimeLow();
+		tick = sceKernelGetProcessTimeLow();
 #endif
-			sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_back_buffer_index], gxm_sync_objects[gxm_front_buffer_index], &queue_cb_data);
+		sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_back_buffer_index], gxm_sync_objects[gxm_front_buffer_index], &queue_cb_data);
 #ifdef HAVE_PROFILING
-			gpu_stall_cnt += sceKernelGetProcessTimeLow() - tick;
+		gpu_stall_cnt += sceKernelGetProcessTimeLow() - tick;
 #endif
 #ifdef HAVE_CPU_TRACER
-			sceRazorCpuSync();
+		sceRazorCpuSync();
 #endif
-			gxm_back_buffer_index = gxm_front_buffer_index;
-			gxm_front_buffer_index = (gxm_front_buffer_index + 1) % gxm_display_buffer_count;
-		}
+		gxm_back_buffer_index = gxm_front_buffer_index;
+		gxm_front_buffer_index = (gxm_front_buffer_index + 1) % gxm_display_buffer_count;
 	}
 	needs_scene_reset = GL_TRUE;
 	
