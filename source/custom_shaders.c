@@ -1433,9 +1433,6 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	// Setting up required vertex shader
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
 
-	// Uploading both fragment and vertex uniforms data
-	uploadUniforms();
-
 	// Uploading textures on relative texture units
 	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
 #ifndef SAMPLERS_SPEEDHACK
@@ -1446,10 +1443,22 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 			tex->last_frame = vgl_framecount;
 #endif
 			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+			glsl_samplers_info *info = p->frag_texunits[i]->sampler;
+			if (info) {
+				info->sizes[0] = sceGxmTextureGetWidth(&tex->gxm_tex);
+				info->sizes[1] = sceGxmTextureGetHeight(&tex->gxm_tex);
+				dirty_frag_unifs = GL_TRUE;
+			}
+#endif
 #ifndef SAMPLERS_SPEEDHACK
 		}
 #endif
 	}
+
+	// Uploading both fragment and vertex uniforms data
+	uploadUniforms();
+
 #ifdef HAVE_PROFILING
 	shaders_draw_profiler_cnt += sceKernelGetProcessTimeLow() - draw_start;
 	shaders_draw_cnt++;
