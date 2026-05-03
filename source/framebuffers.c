@@ -157,7 +157,6 @@ GLboolean _glReadPixels_gpu(GLint x, GLint y, GLsizei width, GLsizei height, GLe
 		if (display_read_mode == GL_BACK) {
 			src = (uint8_t *)gxm_color_surfaces_addr[gxm_back_buffer_index];
 		} else {
-			sceGxmFinish(gxm_context);
 			src = (uint8_t *)gxm_color_surfaces_addr[gxm_front_buffer_index];
 		}
 		src += DISPLAY_STRIDE * 4 * (DISPLAY_HEIGHT - y - 1);
@@ -818,7 +817,6 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		if (display_read_mode == GL_BACK) {
 			src = (uint8_t *)gxm_color_surfaces_addr[gxm_back_buffer_index];
 		} else {
-			sceGxmFinish(gxm_context);
 			src = (uint8_t *)gxm_color_surfaces_addr[gxm_front_buffer_index];
 		}
 		stride = DISPLAY_STRIDE * 4;

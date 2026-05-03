@@ -639,8 +639,8 @@ void sceneReset(void) {
 			}
 			int r = sceGxmBeginScene(gxm_context, 0, gxm_render_target,
 				NULL, NULL,
-				gxm_sync_objects[gxm_front_buffer_index],
-				&gxm_color_surfaces[gxm_front_buffer_index],
+				gxm_sync_objects[gxm_back_buffer_index],
+				&gxm_color_surfaces[gxm_back_buffer_index],
 				&gxm_depth_stencil_surface);
 #ifdef LOG_ERRORS
 			if (r) {
@@ -767,6 +767,12 @@ void vglSetDisplayBufferCount(int count) {
 }
 
 void vglSwapBuffers(GLboolean has_commondialog) {
+#ifndef SKIP_SPLASHSCREEN
+	// Ignore display swaps during splashscreen since we handle them in the splashscreen thread
+	if (is_splashscreen_active)
+		return;
+#endif
+
 #ifdef HAVE_PROFILING
 	// Show profiling results once every 30 frames to not clog CPU
 	uint32_t tick = sceKernelGetProcessTimeLow();
@@ -925,7 +931,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 #endif
 #endif
 		struct display_queue_callback_data queue_cb_data;
-		queue_cb_data.addr = gxm_color_surfaces_addr[gxm_front_buffer_index];
+		queue_cb_data.addr = gxm_color_surfaces_addr[gxm_back_buffer_index];
 #ifdef HAVE_PROFILING
 		tick = sceKernelGetProcessTimeLow();
 #endif
@@ -936,8 +942,8 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 #ifdef HAVE_CPU_TRACER
 		sceRazorCpuSync();
 #endif
-		gxm_back_buffer_index = gxm_front_buffer_index;
-		gxm_front_buffer_index = (gxm_front_buffer_index + 1) % gxm_display_buffer_count;
+		gxm_front_buffer_index = gxm_back_buffer_index;
+		gxm_back_buffer_index = (gxm_back_buffer_index + 1) % gxm_display_buffer_count;
 	}
 	needs_scene_reset = GL_TRUE;
 	
