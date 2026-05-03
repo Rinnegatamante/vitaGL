@@ -657,3 +657,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 	restore_polygon_mode(gxm_p);
 #endif
 }
+
+void vglIndexPointerDefault() {
+	index_object = default_idx_ptr;
+}

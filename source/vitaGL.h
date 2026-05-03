@@ -981,6 +981,10 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp);
 // Sets up the index list to use for the subsequent legacy vgl* draw pipeline draw action.
 void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
 
+// Overloads the index list with an internal progressive index buffer normally used for glDrawArrays call.
+void vglIndexPointerDefault();
+
+
 // Overloads the index list with a pre-GPU mapped memory block with a copy-less action for legacy vgl* draw pipeline.
 void vglIndexPointerMapped(const GLvoid *pointer);
 

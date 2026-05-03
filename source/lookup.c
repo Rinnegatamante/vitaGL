@@ -390,6 +390,7 @@ static const struct {
 	{"vglColorPointerMapped", (void *)vglColorPointerMapped},
 	{"vglDrawObjects", (void *)vglDrawObjects},
 	{"vglIndexPointer", (void *)vglIndexPointer},
+	{"vglIndexPointerDefault", (void *)vglIndexPointerDefault},
 	{"vglIndexPointerMapped", (void *)vglIndexPointerMapped},
 	{"vglTexCoordPointer", (void *)vglTexCoordPointer},
 	{"vglTexCoordPointerMapped", (void *)vglTexCoordPointerMapped},
