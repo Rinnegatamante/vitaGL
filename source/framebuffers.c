@@ -750,6 +750,12 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	 */
 	void (*write_cb)(void *, uint32_t) = NULL;
 	uint32_t (*read_cb)(void *) = NULL;
+	
+	// If the current active framebuffer is the same of the source one for the read, we force a scene reset so that in-flight draws are executed
+	if (in_use_framebuffer == active_read_fb) {
+		force_scene_reset();
+		sceGxmFinish(gxm_context);
+	}
 
 	GLboolean fast_store = GL_FALSE;
 	uint8_t *src;
