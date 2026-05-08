@@ -39,12 +39,9 @@ matrix4x4 *matrix = &modelview_matrix; // Current in-use matrix mode
 GLint get_gl_matrix_mode() {
 	if (matrix == &texture_matrix[server_texture_unit]) {
 		return GL_TEXTURE;
-	}
-
-	if (matrix == &projection_matrix) {
+	} else if (matrix == &projection_matrix) {
 		return GL_PROJECTION;
 	}
-
 	return GL_MODELVIEW;
 }
 
@@ -645,12 +642,10 @@ void glMatrixPush(GLenum mode) {
 			// Error handling
 			if (modelview_stack_counter >= MODELVIEW_STACK_DEPTH) {
 				SET_GL_ERROR(GL_STACK_OVERFLOW)
-			} else
-#endif
-			{
-				// Copying current matrix into the matrix stack and increasing stack counter
-				matrix4x4_copy(modelview_matrix_stack[modelview_stack_counter++], modelview_matrix);
 			}
+#endif
+			// Copying current matrix into the matrix stack and increasing stack counter
+			matrix4x4_copy(modelview_matrix_stack[modelview_stack_counter++], modelview_matrix);
 		}
 		break;
 	case GL_PROJECTION: // Projection matrix
@@ -659,12 +654,10 @@ void glMatrixPush(GLenum mode) {
 			// Error handling
 			if (projection_stack_counter >= GENERIC_STACK_DEPTH) {
 				SET_GL_ERROR(GL_STACK_OVERFLOW)
-			} else
-#endif
-			{
-				// Copying current matrix into the matrix stack and increasing stack counter
-				matrix4x4_copy(projection_matrix_stack[projection_stack_counter++], projection_matrix);
 			}
+#endif
+			// Copying current matrix into the matrix stack and increasing stack counter
+			matrix4x4_copy(projection_matrix_stack[projection_stack_counter++], projection_matrix);
 		}
 		break;
 	case GL_TEXTURE: // Texture matrix
@@ -674,12 +667,10 @@ void glMatrixPush(GLenum mode) {
 			// Error handling
 			if (tex_unit->texture_stack_counter >= GENERIC_STACK_DEPTH) {
 				SET_GL_ERROR(GL_STACK_OVERFLOW)
-			} else
-#endif
-			{
-				// Copying current matrix into the matrix stack and increasing stack counter
-				matrix4x4_copy(tex_unit->texture_matrix_stack[tex_unit->texture_stack_counter++], texture_matrix[server_texture_unit]);
 			}
+#endif
+			// Copying current matrix into the matrix stack and increasing stack counter
+			matrix4x4_copy(tex_unit->texture_matrix_stack[tex_unit->texture_stack_counter++], texture_matrix[server_texture_unit]);
 		}
 		break;
 	default:
@@ -862,24 +853,19 @@ void glPushMatrix(void) {
 		// Error handling
 		if (modelview_stack_counter >= MODELVIEW_STACK_DEPTH) {
 			SET_GL_ERROR(GL_STACK_OVERFLOW)
-		} else
-#endif
-		{
-			// Copying current matrix into the matrix stack and increasing stack counter
-			matrix4x4_copy(modelview_matrix_stack[modelview_stack_counter++], *matrix);
 		}
-
+#endif
+		// Copying current matrix into the matrix stack and increasing stack counter
+		matrix4x4_copy(modelview_matrix_stack[modelview_stack_counter++], *matrix);
 	} else if (matrix == &projection_matrix) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
 		if (projection_stack_counter >= GENERIC_STACK_DEPTH) {
 			SET_GL_ERROR(GL_STACK_OVERFLOW)
-		} else
-#endif
-		{
-			// Copying current matrix into the matrix stack and increasing stack counter
-			matrix4x4_copy(projection_matrix_stack[projection_stack_counter++], *matrix);
 		}
+#endif
+		// Copying current matrix into the matrix stack and increasing stack counter
+		matrix4x4_copy(projection_matrix_stack[projection_stack_counter++], *matrix);
 	} else if (matrix == &texture_matrix[server_texture_unit]) {
 		texture_unit *tex_unit = &texture_units[server_texture_unit];
 
@@ -887,12 +873,10 @@ void glPushMatrix(void) {
 		// Error handling
 		if (tex_unit->texture_stack_counter >= GENERIC_STACK_DEPTH) {
 			SET_GL_ERROR(GL_STACK_OVERFLOW)
-		} else
-#endif
-		{
-			// Copying current matrix into the matrix stack and increasing stack counter
-			matrix4x4_copy(tex_unit->texture_matrix_stack[tex_unit->texture_stack_counter++], *matrix);
 		}
+#endif
+		// Copying current matrix into the matrix stack and increasing stack counter
+		matrix4x4_copy(tex_unit->texture_matrix_stack[tex_unit->texture_stack_counter++], *matrix);
 	}
 }
 

@@ -95,9 +95,9 @@ inline __attribute__((always_inline)) void validate_depth_test() {
 
 inline __attribute__((always_inline)) void invalidate_viewport() {
 	// Invalidating current viewport
-	if (is_rendering_display)
-		setViewport(gxm_context, fullscreen_x_port, fullscreen_x_scale, fullscreen_y_port, fullscreen_y_scale, fullscreen_z_port, fullscreen_z_scale);
-	else {
+	if (is_rendering_display) {
+		vglSetViewport(gxm_context, fullscreen_x_port, fullscreen_x_scale, fullscreen_y_port, fullscreen_y_scale, fullscreen_z_port, fullscreen_z_scale);
+	} else {
 		skip_viewport_override = GL_TRUE;
 		glViewport(0, 0, in_use_framebuffer->width, in_use_framebuffer->height);
 	}
@@ -105,9 +105,9 @@ inline __attribute__((always_inline)) void invalidate_viewport() {
 
 inline __attribute__((always_inline)) void validate_viewport() {
 	// Restoring original viewport
-	if (is_rendering_display)
-		setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
-	else {
+	if (is_rendering_display) {
+		vglSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	} else {
 		skip_viewport_override = GL_TRUE;
 		glViewport(gl_viewport.x, gl_viewport.y, gl_viewport.w, gl_viewport.h);
 	}
@@ -132,7 +132,6 @@ inline __attribute__((always_inline)) void refresh_stencil_settings() {
 		// Setting stencil ref for both front and back primitives
 		sceGxmSetFrontStencilRef(gxm_context, stencil_ref_front);
 		sceGxmSetBackStencilRef(gxm_context, stencil_ref_back);
-
 	} else {
 		sceGxmSetFrontStencilFunc(gxm_context,
 			SCE_GXM_STENCIL_FUNC_ALWAYS,
@@ -247,8 +246,9 @@ inline __attribute__((always_inline)) void update_alpha_test_settings() {
 			alpha_op = ALWAYS;
 			break;
 		}
-	} else
+	} else {
 		alpha_op = ALWAYS;
+	}
 }
 
 void update_scissor_test() {
@@ -331,10 +331,7 @@ void update_scissor_test() {
 
 	void *vertex_buffer;
 	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
-	if (scissor_test_state)
-		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &scissor_test_vertices->x);
-	else
-		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
+	sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, scissor_test_state ? &scissor_test_vertices->x : &clear_vertices->x);
 	sceGxmSetUniformDataF(vertex_buffer, clear_depth, 0, 1, &scissor_depth);
 
 	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
@@ -363,7 +360,7 @@ void update_scissor_test() {
 	dirty_scissor_state = GL_FALSE;
 }
 
-void resetScissorTestRegion(void) {
+void reset_scissor_test_region(void) {
 	// Setting scissor test region to default values
 	region.x = region.y = region.gl_x = region.gl_y = 0;
 	region.w = region.gl_w = DISPLAY_WIDTH;

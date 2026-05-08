@@ -326,7 +326,7 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 	}
 #endif
 
-	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	vglSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 	if (!skip_viewport_override) {
 		gl_viewport.x = x;
 		gl_viewport.y = y;
@@ -339,13 +339,13 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 void glDepthRange(GLdouble nearVal, GLdouble farVal) {
 	z_port = (farVal + nearVal) / 2.0f;
 	z_scale = (farVal - nearVal) / 2.0f;
-	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	vglSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 }
 
 void glDepthRangef(GLfloat nearVal, GLfloat farVal) {
 	z_port = (farVal + nearVal) / 2.0f;
 	z_scale = (farVal - nearVal) / 2.0f;
-	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	vglSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 }
 
 void glDepthRangex(GLfixed _nearVal, GLfixed _farVal) {
@@ -353,7 +353,7 @@ void glDepthRangex(GLfixed _nearVal, GLfixed _farVal) {
 	GLfloat farVal = (float)_farVal / 65536.0f;
 	z_port = (farVal + nearVal) / 2.0f;
 	z_scale = (farVal - nearVal) / 2.0f;
-	setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+	vglSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 }
 
 void glEnable(GLenum cap) {
@@ -621,7 +621,7 @@ void glClear(GLbitfield mask) {
 		SET_GL_ERROR(GL_INVALID_VALUE);
 	}
 #endif
-	sceneReset();
+	scene_reset();
 
 	// Invalidating viewport and culling
 	invalidate_viewport();
@@ -644,10 +644,7 @@ void glClear(GLbitfield mask) {
 	sceGxmSetBackPolygonMode(gxm_context, SCE_GXM_POLYGON_MODE_TRIANGLE_FILL);
 
 	sceGxmSetVertexProgram(gxm_context, clear_vertex_program_patched);
-	if (is_fbo_float)
-		sceGxmSetFragmentProgram(gxm_context, clear_fragment_program_float_patched);
-	else
-		sceGxmSetFragmentProgram(gxm_context, clear_fragment_program_patched);
+	sceGxmSetFragmentProgram(gxm_context, is_fbo_float ? clear_fragment_program_float_patched : clear_fragment_program_patched);
 
 	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vbuffer);
 	sceGxmSetUniformDataF(vbuffer, clear_position, 0, 4, &clear_vertices->x);
@@ -656,14 +653,14 @@ void glClear(GLbitfield mask) {
 	sceGxmReserveFragmentDefaultUniformBuffer(gxm_context, &fbuffer);
 	sceGxmSetUniformDataF(fbuffer, clear_color, 0, 4, &clear_rgba_val.r);
 
+	// Disable fragment program if not clearing color buffer. Depth and stencil clears are unaffected.
 	if (!(mask & GL_COLOR_BUFFER_BIT)) {
-		// Disable fragment program if not clearing color buffer. Depth and stencil clears are unaffected.
 		sceGxmSetFrontFragmentProgramEnable(gxm_context, SCE_GXM_FRAGMENT_PROGRAM_DISABLED);
 		sceGxmSetBackFragmentProgramEnable(gxm_context, SCE_GXM_FRAGMENT_PROGRAM_DISABLED);
 	}
 
+	// Set stencil functions to KEEP if not clearing stencil buffer.
 	if (!(mask & GL_STENCIL_BUFFER_BIT)) {
-		// Set stencil functions to KEEP if not clearing stencil buffer.
 		sceGxmSetFrontStencilFunc(gxm_context,
 			SCE_GXM_STENCIL_FUNC_ALWAYS,
 			SCE_GXM_STENCIL_OP_KEEP,

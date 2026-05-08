@@ -44,7 +44,7 @@ char vgl_file_cache_path[256];
 #define MAX_CUSTOM_SHADERS 2048 // Maximum number of linkable custom shaders
 #define MAX_CUSTOM_PROGRAMS 1024 // Maximum number of linkable custom programs
 
-#define setDefaultAttribBindings() \
+#define set_default_attrib_binding() \
 	uint32_t cnt = sceGxmProgramGetParameterCount(p->vshader->prog); \
 	uint32_t *ptr = vglProgramGetParameterBase(p->vshader->prog); \
 	for (int i = 0; i < cnt; i++) { \
@@ -56,7 +56,7 @@ char vgl_file_cache_path[256];
 		ptr += 4; \
 	}
 
-#define disableDrawAttrib(i) \
+#define disable_draw_attrib(i) \
 	orig_stride[i] = streams[i].stride; \
 	orig_fmt[i] = attributes[i].format; \
 	orig_size[i] = attributes[i].componentCount; \
@@ -66,10 +66,10 @@ char vgl_file_cache_path[256];
 	attributes[i].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 
 #ifdef SAFER_DRAW_SPEEDHACK
-#define handleUnpackedAttrib(first, count) \
+#define handle_unpacked_attrib(first, count) \
 	if (cur_vao->vertex_attrib_state & (1 << attr_idx)) { \
 		if (cur_vao->vertex_attrib_vbo[attr_idx]) { \
-			gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[attr_idx]; \
+			vbo *gpu_buf = (vbo *)cur_vao->vertex_attrib_vbo[attr_idx]; \
 			ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[attr_idx] + first * streams[i].stride; \
 			gpu_buf->last_frame = vgl_framecount; \
 			attributes[i].offset = 0; \
@@ -83,13 +83,13 @@ char vgl_file_cache_path[256];
 			} \
 		} \
 	} else { \
-		disableDrawAttrib(i) \
+		disable_draw_attrib(i) \
 	}
 #else
-#define handleUnpackedAttrib(first, count) \
+#define handle_unpacked_attrib(first, count) \
 	if (cur_vao->vertex_attrib_state & (1 << attr_idx)) { \
 		if (cur_vao->vertex_attrib_vbo[attr_idx]) { \
-			gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[attr_idx]; \
+			vbo *gpu_buf = (vbo *)cur_vao->vertex_attrib_vbo[attr_idx]; \
 			ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[attr_idx] + first * streams[i].stride; \
 			gpu_buf->last_frame = vgl_framecount; \
 			attributes[i].offset = 0; \
@@ -99,17 +99,17 @@ char vgl_file_cache_path[256];
 			attributes[i].offset = 0; \
 		} \
 	} else { \
-		disableDrawAttrib(i) \
+		disable_draw_attrib(i) \
 	}
 #endif
 
-#define handleSpeedhackAttrib() \
+#define handle_speedhack_attrib() \
 	for (int i = 0; i < p->attr_num; i++) { \
 		uint8_t attr_idx = p->attr_map[i]; \
 		attributes[i].regIndex = p->attr[attr_idx].regIndex; \
 		if (cur_vao->vertex_attrib_state & (1 << attr_idx)) { \
 			if (cur_vao->vertex_attrib_vbo[attr_idx]) { \
-				gpubuffer *gpu_buf = (gpubuffer *)cur_vao->vertex_attrib_vbo[attr_idx]; \
+				vbo *gpu_buf = (vbo *)cur_vao->vertex_attrib_vbo[attr_idx]; \
 				ptrs[i] = (uint8_t *)gpu_buf->ptr + cur_vao->vertex_attrib_offsets[attr_idx]; \
 				gpu_buf->last_frame = vgl_framecount; \
 				attributes[i].offset = 0; \
@@ -118,19 +118,19 @@ char vgl_file_cache_path[256];
 				attributes[i].offset = 0; \
 			} \
 		} else { \
-			disableDrawAttrib(i) \
+			disable_draw_attrib(i) \
 		} \
 	}
 
-#define handlePackedAttrib() \
+#define handle_packed_attrib() \
 	if (cur_vao->vertex_attrib_state & (1 << attr_idx)) { \
 		attributes[i].offset = cur_vao->vertex_attrib_offsets[attr_idx] - cur_vao->vertex_attrib_offsets[p->attr_map[0]]; \
 	} else { \
-		disableDrawAttrib(i) \
+		disable_draw_attrib(i) \
 	}
 
 #ifndef HAVE_FFP_SHADER_SUPPORT
-#define uploadUniforms() \
+#define upload_uniforms() \
 	if (p->vert_uniforms && dirty_vert_unifs) { \
 		void *buffer = vglReserveVertexUniformBuffer(p->vshader->unif_buf_size); \
 		for (int z = 0; z < p->vert_uniforms_num; z++) { \
@@ -167,7 +167,7 @@ char vgl_file_cache_path[256];
 		} \
 	}
 #else
-#define uploadUniforms() \
+#define upload_uniforms() \
 	if (p->vert_uniforms && dirty_vert_unifs) { \
 		void *buffer = vglReserveVertexUniformBuffer(p->vshader->unif_buf_size); \
 		for (int z = 0; z < p->vert_uniforms_num; z++) { \
@@ -226,7 +226,7 @@ char vgl_file_cache_path[256];
 	}
 #endif
 	
-#define setupFragProgram() \
+#define setup_frag_program() \
 	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float)) { \
 		p->is_fbo_float = is_fbo_float; \
 		p->blend_info.raw = blend_info.raw; \
@@ -234,7 +234,7 @@ char vgl_file_cache_path[256];
 	} \
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
 	
-#define alignAttributes(attributes, streams) \
+#define align_attributes(attributes, streams) \
 	if (p->has_unaligned_attrs) { \
 		attributes = temp_attributes; \
 		streams = temp_streams; \
@@ -265,7 +265,7 @@ static SceGxmVertexStream temp_streams[VERTEX_ATTRIBS_NUM];
 static unsigned short orig_stride[VERTEX_ATTRIBS_NUM];
 static SceGxmAttributeFormat orig_fmt[VERTEX_ATTRIBS_NUM];
 static unsigned char orig_size[VERTEX_ATTRIBS_NUM];
-static gpubuffer *ubo_buf[UBOS_NUM];
+static vbo *ubo_buf[UBOS_NUM];
 static uint32_t ubo_offset[UBOS_NUM];
 static uint8_t tex2d_override = 0;
 
@@ -376,7 +376,7 @@ static char *shark_log = NULL;
 #endif
 
 #ifdef STRICT_UNIFORMS_COMPLIANCE
-static inline __attribute__((always_inline)) uniform *getUniformFromPtr(GLint ptr, uint32_t *offset) {
+static inline __attribute__((always_inline)) uniform *get_uniform_from_ptr(GLint ptr, uint32_t *offset) {
 	uniform_location u;
 	u.raw = ptr;
 	uniform *ret = u.is_vertex ? &progs[u.program_idx].vert_uniforms[u.uniform_idx] : &progs[u.program_idx].frag_uniforms[u.uniform_idx];
@@ -384,7 +384,7 @@ static inline __attribute__((always_inline)) uniform *getUniformFromPtr(GLint pt
 	return ret;
 }
 #else
-#define getUniformFromPtr(ptr, offs) (-ptr)
+#define get_uniform_from_ptr(ptr, offs) (-ptr)
 #endif
 
 void release_shader(shader *s) {
@@ -665,7 +665,7 @@ static inline __attribute__((always_inline)) void compile_shader(shader *s, GLbo
 #endif
 }
 
-void resetCustomShaders(void) {
+void reset_custom_shaders(void) {
 	// Init custom shaders
 	for (int i = 0; i < MAX_CUSTOM_SHADERS; i++) {
 		shaders[i].valid = GL_FALSE;
@@ -688,7 +688,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required and upload fragment program
-	setupFragProgram();
+	setup_frag_program();
 
 	// Uploading fragment textures on relative texture units
 	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
@@ -699,7 +699,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifdef HAVE_TEX_CACHE
-			restoreTexCache(tex);
+			restore_tex_cache(tex);
 #endif
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&tex->gxm_tex);
@@ -790,7 +790,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 	// Aligning attributes
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
-	alignAttributes(attributes, streams);
+	align_attributes(attributes, streams);
 
 	void *ptrs[VERTEX_ATTRIBS_NUM];
 
@@ -833,9 +833,9 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 		uint8_t attr_idx = p->attr_map[i];
 		attributes[i].regIndex = p->attr[attr_idx].regIndex;
 		if (is_packed[i]) {
-			handlePackedAttrib();
+			handle_packed_attrib();
 		} else {
-			handleUnpackedAttrib(lowest, highest);
+			handle_unpacked_attrib(lowest, highest);
 		}
 	}
 #else
@@ -846,13 +846,13 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			attributes[i].regIndex = p->attr[attr_idx].regIndex;
-			handlePackedAttrib();
+			handle_packed_attrib();
 		}
 	} else {
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			attributes[i].regIndex = p->attr[attr_idx].regIndex;
-			handleUnpackedAttrib(lowest, highest);
+			handle_unpacked_attrib(lowest, highest);
 		}
 	}
 #endif
@@ -864,11 +864,11 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #endif
 
 	// Uploading new vertex program
-	patchVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
+	patch_vertex_program(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
 
 	// Uploading both fragment and vertex uniforms data
-	uploadUniforms();
+	upload_uniforms();
 	
 	for (int j = 0; j < drawcount; j++) {
 		// Uploading vertex streams
@@ -905,7 +905,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required and upload fragment program
-	setupFragProgram();
+	setup_frag_program();
 
 	// Uploading fragment textures on relative texture units
 	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
@@ -916,7 +916,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifdef HAVE_TEX_CACHE
-			restoreTexCache(tex);
+			restore_tex_cache(tex);
 #endif
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&tex->gxm_tex);
@@ -1007,7 +1007,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 	// Aligning attributes
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
-	alignAttributes(attributes, streams);
+	align_attributes(attributes, streams);
 
 	void *ptrs[VERTEX_ATTRIBS_NUM];
 #ifndef DRAW_SPEEDHACK
@@ -1057,9 +1057,9 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 		uint8_t attr_idx = p->attr_map[i];
 		attributes[i].regIndex = p->attr[attr_idx].regIndex;
 		if (is_packed[i]) {
-			handlePackedAttrib();
+			handle_packed_attrib();
 		} else {
-			handleUnpackedAttrib(first, count);
+			handle_unpacked_attrib(first, count);
 		}
 	}
 #else
@@ -1077,18 +1077,18 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			attributes[i].regIndex = p->attr[attr_idx].regIndex;
-			handlePackedAttrib();
+			handle_packed_attrib();
 		}
 	} else {
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			attributes[i].regIndex = p->attr[attr_idx].regIndex;
-			handleUnpackedAttrib(first, count);
+			handle_unpacked_attrib(first, count);
 		}
 	}
 #endif
 #else // DRAW_SPEEDHACK
-	handleSpeedhackAttrib();
+	handle_speedhack_attrib();
 #endif
 
 #ifndef INDICES_SPEEDHACK
@@ -1105,11 +1105,11 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 #endif
 
 	// Uploading new vertex program
-	patchVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
+	patch_vertex_program(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
 
 	// Uploading both fragment and vertex uniforms data
-	uploadUniforms();
+	upload_uniforms();
 
 	// Uploading vertex streams
 	for (int i = 0; i < p->attr_num; i++) {
@@ -1151,7 +1151,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required and upload fragment program
-	setupFragProgram();
+	setup_frag_program();
 
 	// Uploading fragment textures on relative texture units
 	for (int i = 0; i < p->max_frag_texunit_idx; i++) {
@@ -1162,7 +1162,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifdef HAVE_TEX_CACHE
-			restoreTexCache(tex);
+			restore_tex_cache(tex);
 #endif
 #ifndef SKIP_ERROR_HANDLING
 			int r = sceGxmTextureValidate(&tex->gxm_tex);
@@ -1253,7 +1253,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	// Aligning attributes
 	SceGxmVertexAttribute *attributes;
 	SceGxmVertexStream *streams;
-	alignAttributes(attributes, streams);
+	align_attributes(attributes, streams);
 
 	void *ptrs[VERTEX_ATTRIBS_NUM];
 #ifndef DRAW_SPEEDHACK
@@ -1328,9 +1328,9 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		uint8_t attr_idx = p->attr_map[i];
 		attributes[i].regIndex = p->attr[attr_idx].regIndex;
 		if (is_packed[i]) {
-			handlePackedAttrib();
+			handle_packed_attrib();
 		} else {
-			handleUnpackedAttrib(0, top_idx);
+			handle_unpacked_attrib(0, top_idx);
 		}
 	}
 #else
@@ -1348,18 +1348,18 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			attributes[i].regIndex = p->attr[attr_idx].regIndex;
-			handlePackedAttrib();
+			handle_packed_attrib();
 		}
 	} else {
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			attributes[i].regIndex = p->attr[attr_idx].regIndex;
-			handleUnpackedAttrib(0, top_idx);
+			handle_unpacked_attrib(0, top_idx);
 		}
 	}
 #endif
 #else // DRAW_SPEEDHACK
-	handleSpeedhackAttrib();
+	handle_speedhack_attrib();
 #endif
 
 #ifndef INDICES_SPEEDHACK
@@ -1381,11 +1381,11 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #endif
 
 	// Uploading new vertex program
-	patchVertexProgram(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
+	patch_vertex_program(gxm_shader_patcher, p->vshader->id, attributes, p->attr_num, streams, p->attr_num, &p->vprog);
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
 
 	// Uploading both fragment and vertex uniforms data
-	uploadUniforms();
+	upload_uniforms();
 
 	// Uploading vertex streams
 	for (int i = 0; i < p->attr_num; i++) {
@@ -1428,7 +1428,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	program *p = &progs[cur_program - 1];
 
 	// Check if a blend info rebuild is required
-	setupFragProgram();
+	setup_frag_program();
 
 	// Setting up required vertex shader
 	sceGxmSetVertexProgram(gxm_context, p->vprog);
@@ -1457,7 +1457,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 	}
 
 	// Uploading both fragment and vertex uniforms data
-	uploadUniforms();
+	upload_uniforms();
 
 #ifdef HAVE_PROFILING
 	shaders_draw_profiler_cnt += sceKernelGetProcessTimeLow() - draw_start;
@@ -1513,7 +1513,7 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 }
 #endif
 
-static inline __attribute__((always_inline)) float *getUniformAliasDataPtr(uniform *src, uint32_t cnt, const char *name, uint32_t size) {
+static inline __attribute__((always_inline)) float *get_uniform_alias_data_ptr(uniform *src, uint32_t cnt, const char *name, uint32_t size) {
 	for (int i = 0; i < cnt; i++) {
 		uniform *u = &src[i];
 		if (size == u->size) {
@@ -1525,7 +1525,7 @@ static inline __attribute__((always_inline)) float *getUniformAliasDataPtr(unifo
 	return NULL;
 }
 
-static inline __attribute__((always_inline)) ubo *hasBlockAlias(ubo *u, const char *name) {
+static inline __attribute__((always_inline)) ubo *has_block_alias(ubo *u, const char *name) {
 	while (u) {
 		if (!strcmp(name, ((block_uniform*)u->ptr)->name)) {
 			return u;
@@ -1535,7 +1535,7 @@ static inline __attribute__((always_inline)) ubo *hasBlockAlias(ubo *u, const ch
 	return NULL;
 }
 
-static inline __attribute__((always_inline)) block_uniform *getBlockDetails(block_uniform *b, uint8_t idx) {
+static inline __attribute__((always_inline)) block_uniform *get_block_details(block_uniform *b, uint8_t idx) {
 	while (b) {
 		if (b->idx == idx)
 			return b;
@@ -1719,7 +1719,7 @@ void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, c
 
 void glCompileShader(GLuint handle) {
 	// If vitaShaRK is not enabled, we try to initialize it
-	if (!is_shark_online && !startShaderCompiler()) {
+	if (!is_shark_online && !start_shader_compiler()) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
 	
@@ -1784,7 +1784,7 @@ void glAttachShader(GLuint prog, GLuint shad) {
 			// If we use VGL_MODE_POSTPONED, we perform attributes binding in glLinkProgram
 			if (glsl_sema_mode != VGL_MODE_POSTPONED || !s->is_glsl) {
 				// Setting progressive default attribute bindings
-				setDefaultAttribBindings();	
+				set_default_attrib_binding();	
 			}
 			break;
 		case GL_FRAGMENT_SHADER:
@@ -2139,7 +2139,7 @@ void glLinkProgram(GLuint progr) {
 		}
 
 		// Setting progressive default attribute bindings
-		setDefaultAttribBindings();
+		set_default_attrib_binding();
 
 		if (p->glsl_attr_map) {
 			for (int i = 0; i < p->num_glsl_attr; i++) {
@@ -2180,7 +2180,7 @@ void glLinkProgram(GLuint progr) {
 			ubo *u = (ubo *)vglMalloc(sizeof(ubo));
 			u->chain = p->frag_ubos;
 			u->idx = sceGxmProgramParameterGetResourceIndex(param);
-			u->ptr = (const SceGxmProgramParameter *)getBlockDetails(p->fshader->unif_blk, u->idx);
+			u->ptr = (const SceGxmProgramParameter *)get_block_details(p->fshader->unif_blk, u->idx);
 			u->bind = 0;
 			u->alias = NULL;
 			p->frag_ubos = u;
@@ -2263,9 +2263,9 @@ void glLinkProgram(GLuint progr) {
 			ubo *u = (ubo *)vglMalloc(sizeof(ubo));
 			u->chain = p->vert_ubos;
 			u->idx = sceGxmProgramParameterGetResourceIndex(param);
-			u->ptr = (const SceGxmProgramParameter *)getBlockDetails(p->vshader->unif_blk, u->idx);
+			u->ptr = (const SceGxmProgramParameter *)get_block_details(p->vshader->unif_blk, u->idx);
 			u->bind = 0;
-			u->alias = hasBlockAlias(p->frag_ubos, ((block_uniform *)u->ptr)->name);
+			u->alias = has_block_alias(p->frag_ubos, ((block_uniform *)u->ptr)->name);
 			p->frag_ubos = u;
 		}
 		ptr += 4;
@@ -2290,7 +2290,7 @@ void glLinkProgram(GLuint progr) {
 			u->ptr = param;
 			u->is_vertex = GL_TRUE;
 			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
-			u->data = getUniformAliasDataPtr(p->frag_uniforms, p->frag_uniforms_num, sceGxmProgramParameterGetName(param), u->size);
+			u->data = get_uniform_alias_data_ptr(p->frag_uniforms, p->frag_uniforms_num, sceGxmProgramParameterGetName(param), u->size);
 			if (u->data) {
 				u->is_fragment = GL_TRUE;
 			} else {
@@ -2452,7 +2452,7 @@ inline void glUniform1i(GLint location, GLint v0) {
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 	if (u->size == 0 || u->size == 0xFFFFFFFF) // Sampler
@@ -2477,7 +2477,7 @@ inline void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	if (u->size == 0 || u->size == 0xFFFFFFFF) // Sampler
 		u->data = (float *)value[0];
@@ -2510,7 +2510,7 @@ inline void glUniform1f(GLint location, GLfloat v0) {
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 	u->data[offs] = v0;
@@ -2532,7 +2532,7 @@ inline void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef UNIFORMS_SPEEDHACK
@@ -2559,7 +2559,7 @@ inline void glUniform2i(GLint location, GLint v0, GLint v1) {
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 	u->data[offs * 2] = (float)v0;
@@ -2582,7 +2582,7 @@ inline void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef UNIFORMS_SPEEDHACK
@@ -2611,7 +2611,7 @@ inline void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 	u->data[offs * 2] = v0;
@@ -2634,7 +2634,7 @@ inline void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef UNIFORMS_SPEEDHACK
@@ -2661,7 +2661,7 @@ inline void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) {
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 	u->data[offs * 3] = (float)v0;
@@ -2685,7 +2685,7 @@ inline void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef UNIFORMS_SPEEDHACK
@@ -2714,7 +2714,7 @@ inline void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 	u->data[offs * 3] = v0;
@@ -2738,7 +2738,7 @@ inline void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef UNIFORMS_SPEEDHACK
@@ -2765,7 +2765,7 @@ inline void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) 
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 	u->data[offs * 4] = (float)v0;
@@ -2790,7 +2790,7 @@ inline void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef UNIFORMS_SPEEDHACK
@@ -2819,7 +2819,7 @@ inline void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfl
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 	u->data[offs * 4] = v0;
@@ -2844,7 +2844,7 @@ inline void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef UNIFORMS_SPEEDHACK
@@ -2871,7 +2871,7 @@ inline void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpos
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef UNIFORMS_SPEEDHACK
@@ -2903,7 +2903,7 @@ inline void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpos
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef UNIFORMS_SPEEDHACK
@@ -2936,7 +2936,7 @@ inline void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpos
 
 	// Grabbing passed uniform
 	int offs = 0;
-	uniform *u = (uniform *)getUniformFromPtr(location, &offs);
+	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
 #ifndef UNIFORMS_SPEEDHACK
@@ -3208,7 +3208,7 @@ void glBindBufferRange(GLenum target, GLuint index, GLuint buffer, GLintptr offs
 	}
 #endif
 
-	ubo_buf[index] = (gpubuffer *)buffer;
+	ubo_buf[index] = (vbo *)buffer;
 	ubo_offset[index] = offset;
 }
 
@@ -3221,7 +3221,7 @@ void glBindBufferBase(GLenum target, GLuint index, GLuint buffer) {
 	}
 #endif
 
-	ubo_buf[index] = (gpubuffer *)buffer;
+	ubo_buf[index] = (vbo *)buffer;
 	ubo_offset[index] = 0;
 }
 
@@ -3242,18 +3242,18 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
 	if (param == NULL || sceGxmProgramParameterGetCategory(param) != SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE)
 		return;
-	uint32_t attrIndex = sceGxmProgramParameterGetResourceIndex(param);
+	uint32_t attr_index = sceGxmProgramParameterGetResourceIndex(param);
 	
 	// Swapping any previously made bind to the requested attribute
 	for (int i = 0; i < p->attr_highest_idx; i++) {
-		if (p->attr[i].regIndex == attrIndex) {
+		if (p->attr[i].regIndex == attr_index) {
 			p->attr[i].regIndex = p->attr[index].regIndex;
 			break;
 		}
 	}
 	
 	// Set new binding to the requested attribute
-	p->attr[index].regIndex = attrIndex;
+	p->attr[index].regIndex = attr_index;
 	if (p->attr_highest_idx <= index)
 		p->attr_highest_idx = index + 1;
 }

@@ -160,7 +160,7 @@ extern texture *vgl_uncached_tex_head;
 extern texture *vgl_uncached_tex_tail;
 extern uint32_t vgl_tex_cache_freq; // Number of frames prior a texture becomes cacheable if not used
 
-#define markAsCacheable(tex) \
+#define mark_as_cacheable(tex) \
 	tex->upload_frame = vgl_framecount; \
 	tex->prev = vgl_uncached_tex_tail; \
 	if (tex->prev) \
@@ -170,7 +170,7 @@ extern uint32_t vgl_tex_cache_freq; // Number of frames prior a texture becomes 
 	tex->next = NULL; \
 	vgl_uncached_tex_tail = tex;
 
-#define restoreTexCache(tex) \
+#define restore_tex_cache(tex) \
 	if (tex->last_frame == OBJ_CACHED) { \
 		char fname[256], hash[24]; \
 		sprintf(hash, "%llX", tex->hash); \
@@ -185,7 +185,7 @@ extern uint32_t vgl_tex_cache_freq; // Number of frames prior a texture becomes 
 		sceGxmTextureSetData(&tex->gxm_tex, texture_data); \
 		tex->data = texture_data; \
 		tex->last_frame = OBJ_NOT_USED; \
-		markAsCacheable(tex) \
+		mark_as_cacheable(tex) \
 	}
 #endif
 
@@ -388,17 +388,17 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 	return y;
 
 #ifdef LOG_ERRORS
-#define patchVertexProgram(patcher, id, attr, attr_num, stream, stream_num, prog) \
+#define patch_vertex_program(patcher, id, attr, attr_num, stream, stream_num, prog) \
 	int __v = sceGxmShaderPatcherCreateVertexProgram(patcher, id, attr, attr_num, stream, stream_num, prog); \
 	if (__v) \
 		vgl_log("Vertex shader patching failed (%s) on shader 0x%X with %d attributes and %d streams.\n", get_gxm_error_literal(__v), id, attr_num, stream_num);
-#define patchFragmentProgram(patcher, id, fmt, msaa_mode, blend_cfg, vertex_link, prog) \
+#define patch_fragment_program(patcher, id, fmt, msaa_mode, blend_cfg, vertex_link, prog) \
 	int __f = sceGxmShaderPatcherCreateFragmentProgram(patcher, id, fmt, msaa_mode, blend_cfg, vertex_link, prog); \
 	if (__f) \
 		vgl_log("Fragment shader patching failed (%s) on shader 0x%X.\n", get_gxm_error_literal(__f), id);
 #else
-#define patchVertexProgram sceGxmShaderPatcherCreateVertexProgram
-#define patchFragmentProgram sceGxmShaderPatcherCreateFragmentProgram
+#define patch_vertex_program sceGxmShaderPatcherCreateVertexProgram
+#define patch_fragment_program sceGxmShaderPatcherCreateFragmentProgram
 #endif
 
 #define recalculate_normal_matrix() \
@@ -410,13 +410,13 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 	matrix3x3_invert(inverted, top_modelview_matrix); \
 	matrix3x3_transpose(normal_matrix, inverted);
 
-#define rebuild_frag_shader(x, y, z, w) patchFragmentProgram(gxm_shader_patcher, x, w, msaa_mode, &blend_info.info, z, y) // Creates a new patched fragment program with proper blend settings
+#define rebuild_frag_shader(x, y, z, w) patch_fragment_program(gxm_shader_patcher, x, w, msaa_mode, &blend_info.info, z, y) // Creates a new patched fragment program with proper blend settings
 
 #ifdef HAVE_SOFTFP_ABI
 extern __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale);
-#define setViewport sceGxmSetViewport_sfp
+#define vglSetViewport sceGxmSetViewport_sfp
 #else
-#define setViewport sceGxmSetViewport
+#define vglSetViewport sceGxmSetViewport
 #endif
 
 // Struct used for immediate mode vertices
@@ -435,7 +435,7 @@ typedef struct {
 typedef enum {
 	NONE,
 	MODEL_CREATION
-} glPhase;
+} gl_phase;
 
 // Scissor test region struct
 typedef struct {
@@ -467,7 +467,7 @@ typedef enum {
 	LESS,
 	NEVER,
 	ALWAYS
-} alphaOp;
+} alpha_op_mode;
 
 // Fog modes
 typedef enum {
@@ -475,9 +475,9 @@ typedef enum {
 	EXP,
 	EXP2,
 	DISABLED
-} fogType;
+} fog_type;
 
-typedef union combinerState {
+typedef union {
 	struct {
 		uint32_t rgb_func : 3;
 		uint32_t a_func : 3;
@@ -496,7 +496,7 @@ typedef union combinerState {
 		uint32_t UNUSED : 2;
 	};
 	uint32_t raw;
-} combinerState;
+} combiner_state;
 
 // Texture unit struct
 typedef struct {
@@ -504,7 +504,7 @@ typedef struct {
 	uint8_t texture_stack_counter;
 	uint8_t env_mode;
 	matrix4x4 texture_matrix_stack[GENERIC_STACK_DEPTH];
-	combinerState combiner;
+	combiner_state combiner;
 	vector4f env_color;
 	float rgb_scale;
 	float a_scale;
@@ -564,7 +564,7 @@ typedef enum {
 	COMBINE,
 	ADD_SIGNED = 1,
 	INTERPOLATE = 2,
-} texEnvMode;
+} texenv_mode;
 
 #ifndef DISABLE_TEXTURE_COMBINER
 typedef enum {
@@ -572,14 +572,14 @@ typedef enum {
 	CONSTANT,
 	PRIMARY_COLOR,
 	PREVIOUS
-} texEnvOp;
+} texenv_op;
 
 typedef enum {
 	SRC_COLOR,
 	ONE_MINUS_SRC_COLOR,
 	SRC_ALPHA,
 	ONE_MINUS_SRC_ALPHA
-} texEnvOpMode;
+} texenv_op_mode;
 #endif
 
 // VBO struct
@@ -592,7 +592,7 @@ typedef struct {
 	GLboolean scratch;
 #endif
 	GLboolean mapped;
-} gpubuffer;
+} vbo;
 
 // VAO struct
 typedef struct {
@@ -641,7 +641,7 @@ typedef enum {
 	DLIST_ARG_F32 = 0x04,
 	DLIST_ARG_I16 = 0x08,
 	DLIST_ARG_U8 = 0x10
-} dlistArgType;
+} dlist_arg_type;
 
 typedef enum {
 	// No arguments
@@ -672,14 +672,14 @@ typedef enum {
 	DLIST_FUNC_U32_I32_U32_U32 = DLIST_ARG_U32 | (DLIST_ARG_I32 << 8) | (DLIST_ARG_U32 << 16) | (DLIST_ARG_U32 << 24),
 	DLIST_FUNC_F32_F32_F32_F32 = DLIST_ARG_F32 | (DLIST_ARG_F32 << 8) | (DLIST_ARG_F32 << 16) | (DLIST_ARG_F32 << 24),
 	DLIST_FUNC_U8_U8_U8_U8     = DLIST_ARG_U8  | (DLIST_ARG_U8 << 8)  | (DLIST_ARG_U8 << 16)  | (DLIST_ARG_U8 << 24),
-} dlistFuncType;
+} dlist_func_type;
 
 // Available ffp shading models
 typedef enum {
 	//FLAT, // FIXME: Not easy to implement with ShaccCg constraints
 	SMOOTH,
 	PHONG
-} shadingMode;
+} shad_mode;
 
 // Display list function call internal struct
 typedef struct {
@@ -1008,13 +1008,13 @@ extern matrix4x4 *matrix; // Current in-use matrix mode
 GLint get_gl_matrix_mode(); // Get current in-use matrix mode (for glGetIntegerv)
 
 // Miscellaneous
-extern glPhase phase; // Current drawing phase for legacy openGL
+extern gl_phase phase; // Current drawing phase for legacy openGL
 extern vector4f current_color; // Current in use color
 extern vector4f clear_rgba_val; // Current clear color for glClear
 extern viewport gl_viewport; // Current viewport state
 extern GLboolean is_fbo_float; // Current framebuffer mode
 extern vao *cur_vao; // Current in-use vertex array object
-extern shadingMode shading_mode;
+extern shad_mode shading_mode;
 
 // Culling
 extern GLboolean no_polygons_mode; // GL_TRUE when cull mode is set to GL_FRONT_AND_BACK
@@ -1050,7 +1050,7 @@ extern GLboolean color_material_state;
 // Fogging
 extern GLboolean fogging; // Current fogging processor state
 extern GLint fog_mode; // Current fogging mode (openGL)
-extern fogType internal_fog_mode; // Current fogging mode (sceGxm)
+extern fog_type internal_fog_mode; // Current fogging mode (sceGxm)
 extern GLfloat fog_density; // Current fogging density
 extern GLfloat fog_near; // Current fogging near distance
 extern GLfloat fog_far; // Current fogging far distance
@@ -1072,7 +1072,7 @@ extern GLboolean srgb_mode; // SRGB mode for color output
 // Display Lists
 extern display_list *curr_display_list; // Current display list being generated
 extern GLboolean display_list_execute; // Flag to check if compiled function should be executed as well
-extern GLboolean _vgl_enqueue_list_func(void (*func)(), dlistFuncType type, ...);
+extern GLboolean _vgl_enqueue_list_func(void (*func)(), dlist_func_type type, ...);
 
 // vgl* Draw Pipeline
 extern void *vertex_object;
@@ -1121,16 +1121,15 @@ extern GLboolean fast_perspective_correction_hint;
 extern GLfloat point_size; // Size of points for fixed function pipeline
 
 /* gxm.c */
-void initGxm(void); // Inits sceGxm
-void initGxmContext(SceGxmContext **ctx, uint8_t ctx_slot); // Inits sceGxm context
-void createDisplayRenderTarget(void); // Creates render target for the display
-void initDisplayColorSurfaces(GLboolean is_swap); // Creates color surfaces for the display
-void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, GLboolean has_stencil); // Creates depth and stencil surfaces
-void initDepthStencilSurfaces(void); // Creates depth and stencil surfaces for the display
-void startShaderPatcher(void); // Creates a shader patcher instance
-void stopShaderPatcher(void); // Destroys a shader patcher instance
-void sceneReset(void); // Resets drawing scene if required
-GLboolean startShaderCompiler(void); // Starts a shader compiler instance
+void init_gxm(void); // Inits sceGxm
+void init_gxm_context(SceGxmContext **ctx, uint8_t ctx_slot); // Inits sceGxm context
+void create_display_render_target(void); // Creates render target for the display
+void init_display_color_surfaces(GLboolean is_swap); // Creates color surfaces for the display
+void init_depth_stencil_buffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, GLboolean has_stencil); // Creates depth and stencil surfaces
+void init_display_depth_stencil_surfaces(void); // Creates depth and stencil surfaces for the display
+void start_shader_patcher(void); // Creates a shader patcher instance
+void scene_reset(void); // Resets drawing scene if required
+GLboolean start_shader_compiler(void); // Starts a shader compiler instance
 
 /* framebuffers.c */
 uint32_t get_alpha_channel_size(SceGxmColorFormat type); // Get alpha channel size in bits
@@ -1145,7 +1144,7 @@ GLboolean change_stencil_config(SceGxmStencilOp *cfg, GLenum new_cfg); // Change
 GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new_cfg); // Changes current in use stencil test function value
 void update_alpha_test_settings(void); // Changes current in use alpha test operation value
 void update_scissor_test(void); // Changes current in use scissor test region
-void resetScissorTestRegion(void); // Resets scissor test region to default values
+void reset_scissor_test_region(void); // Resets scissor test region to default values
 void invalidate_viewport(void); // Invalidates currently set viewport
 void validate_viewport(void); // Restores previously invalidated viewport
 
@@ -1156,7 +1155,7 @@ GLenum gxm_blend_to_gl(SceGxmBlendFactor factor); // Converts SceGxmBlendFactor 
 GLenum gxm_blend_eq_to_gl(SceGxmBlendFunc factor); // Converts SceGxmBlendFunc to GL blend func equivalent
 
 /* custom_shaders.c */
-void resetCustomShaders(void); // Resets custom shaders
+void reset_custom_shaders(void); // Resets custom shaders
 float *reserve_attrib_pool(uint8_t count);
 void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp); // vglDrawObjects implementation for rendering with custom shaders
 GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, uint32_t top_idx, uint32_t base_idx, GLboolean is_short); // glDrawElements implementation for rendering with custom shaders
@@ -1173,11 +1172,11 @@ void update_fogging_state(); // Updates current setup for fogging
 void adjust_color_material_state(); // Updates internal settings for GL_COLOR_MATERIAL
 
 /* buffers.c */
-void resetVao(vao *v); // Reset vao state
-void resetQueries(); // Reset occlusion queries state
+void reset_vao(vao *v); // Reset vao state
+void reset_queries(); // Reset occlusion queries state
 
 /* display_lists.c */
-void resetDlists(); // Reset display lists state
+void reset_dlists(); // Reset display lists state
 
 /* misc.c */
 void change_cull_mode(void); // Updates current cull mode

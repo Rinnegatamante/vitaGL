@@ -44,7 +44,7 @@ static query queries[MAX_QUERIES_NUM]; // Available query objects pool
 uint32_t *queries_buffer = NULL; // Buffer used for visibility testing
 SceGxmNotification query_fence; // Fence used for occlusion queries sync
 
-void resetVao(vao *v) {
+void reset_vao(vao *v) {
 	vgl_memset(v->vertex_attrib_offsets, 0, sizeof(uint32_t) * VERTEX_ATTRIBS_NUM);
 	vgl_memset(v->vertex_attrib_vbo, 0, sizeof(uint32_t) * VERTEX_ATTRIBS_NUM);
 	for (int i = 0; i < VERTEX_ATTRIBS_NUM; i++) {
@@ -76,7 +76,7 @@ void resetVao(vao *v) {
 	cur_vao = vao_bkp;
 }
 
-void resetQueries() {
+void reset_queries() {
 	queries_buffer = gpu_alloc_mapped(MAX_QUERIES_NUM * 4 * sizeof(uint32_t), VGL_MEM_RAM);
 	sceGxmSetVisibilityBuffer(gxm_context, queries_buffer, MAX_QUERIES_NUM * sizeof(uint32_t));
 	query_fence.value = 0;
@@ -164,7 +164,7 @@ void glGetQueryObjectiv(GLuint id, GLenum pname, GLint *params) {
 	case GL_QUERY_RESULT:
 		if (q->sync > *query_fence.address) {
 			dirty_query = GL_TRUE;
-			sceneReset();
+			scene_reset();
 			sceGxmNotificationWait(&query_fence);
 		}
 		*params = queries_buffer[q->id] + queries_buffer[q->id + MAX_QUERIES_NUM] + queries_buffer[q->id + MAX_QUERIES_NUM * 2] + queries_buffer[q->id + MAX_QUERIES_NUM * 3];
@@ -200,10 +200,11 @@ void glGenVertexArrays(GLsizei n, GLuint *res) {
 	for (int i = 0; i < n; i++) {
 		res[i] = (GLuint)(vglMalloc(sizeof(vao)));
 #ifdef LOG_ERRORS
-		if (!res[i])
+		if (!res[i]) {
 			vgl_log("%s:%d glGenVertexArrays failed to alloc a buffer (%d/%lu).\n", __FILE__, __LINE__, i, n);
+		}
 #endif
-		resetVao((vao *)res[i]);
+		reset_vao((vao *)res[i]);
 	}
 }
 
@@ -222,7 +223,7 @@ void glDeleteVertexArrays(GLsizei n, const GLuint *gl_arrays) {
 	for (int j = 0; j < n; j++) {
 		if (gl_arrays[j]) {
 			vao *gpu_buf = (vao *)gl_arrays[j];
-			markAsDirty(gpu_buf->vertex_attrib_pool);
+			mark_as_dirty(gpu_buf->vertex_attrib_pool);
 			vgl_free(gpu_buf);
 		}
 	}
@@ -235,7 +236,7 @@ inline __attribute__((always_inline)) void glGenBuffers(GLsizei n, GLuint *res) 
 	}
 #endif
 	for (int i = 0; i < n; i++) {
-		gpubuffer *gpu_buf = (gpubuffer *)vglMalloc(sizeof(gpubuffer));
+		vbo *gpu_buf = (vbo *)vglMalloc(sizeof(vbo));
 #ifdef LOG_ERRORS
 		if (!gpu_buf)
 			vgl_log("%s:%d glGenBuffers failed to alloc a buffer (%d/%lu).\n", __FILE__, __LINE__, i, n);
@@ -279,14 +280,14 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 #endif
 	for (int j = 0; j < n; j++) {
 		if (gl_buffers[j]) {
-			gpubuffer *gpu_buf = (gpubuffer *)gl_buffers[j];
+			vbo *gpu_buf = (vbo *)gl_buffers[j];
 #if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 			if (gpu_buf->ptr && !gpu_buf->scratch) {
 #else
 			if (gpu_buf->ptr) {
 #endif
 				if (gpu_buf->last_frame != OBJ_NOT_USED && (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ)) {
-					markAsDirty(gpu_buf->ptr);
+					mark_as_dirty(gpu_buf->ptr);
 				} else {
 					vgl_free(gpu_buf->ptr);
 				}
@@ -297,7 +298,7 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 }
 
 inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLenum usage) {
-	gpubuffer *gpu_buf = (gpubuffer *)buffer;
+	vbo *gpu_buf = (vbo *)buffer;
 	
 #ifndef SKIP_ERROR_HANDLING
 	if (size < 0) {
@@ -344,7 +345,7 @@ inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLe
 	if (gpu_buf->ptr) {
 #endif
 		if (gpu_buf->last_frame != OBJ_NOT_USED && (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ)) {
-			markAsDirty(gpu_buf->ptr);
+			mark_as_dirty(gpu_buf->ptr);
 		} else {
 			vgl_free(gpu_buf->ptr);
 		}
@@ -372,16 +373,16 @@ inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLe
 }
 
 void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage) {
-	gpubuffer *gpu_buf;
+	vbo *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)vertex_array_unit;
+		gpu_buf = (vbo *)vertex_array_unit;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+		gpu_buf = (vbo *)cur_vao->index_array_unit;
 		break;
 	case GL_UNIFORM_BUFFER:
-		gpu_buf = (gpubuffer *)uniform_array_unit;
+		gpu_buf = (vbo *)uniform_array_unit;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
@@ -391,7 +392,7 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 }
 
 inline void glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizeiptr size, const void *data) {
-	gpubuffer *gpu_buf = (gpubuffer *)buffer;
+	vbo *gpu_buf = (vbo *)buffer;
 
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf) {
@@ -429,12 +430,9 @@ inline void glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizeiptr size
 
 		// Marking previous content for deletion
 #if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
-		if (!gpu_buf->scratch) {
-			markAsDirty(gpu_buf->ptr);
-		}
-#else
-		markAsDirty(gpu_buf->ptr);
+		if (!gpu_buf->scratch)
 #endif
+			mark_as_dirty(gpu_buf->ptr);
 
 		gpu_buf->ptr = ptr;
 		gpu_buf->last_frame = OBJ_NOT_USED;
@@ -446,16 +444,16 @@ inline void glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizeiptr size
 }
 
 void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void *data) {
-	gpubuffer *gpu_buf;
+	vbo *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)vertex_array_unit;
+		gpu_buf = (vbo *)vertex_array_unit;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+		gpu_buf = (vbo *)cur_vao->index_array_unit;
 		break;
 	case GL_UNIFORM_BUFFER:
-		gpu_buf = (gpubuffer *)uniform_array_unit;
+		gpu_buf = (vbo *)uniform_array_unit;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
@@ -465,7 +463,7 @@ void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void
 }
 
 inline void *glMapNamedBuffer(GLuint buffer, GLenum access) {
-	gpubuffer *gpu_buf = (gpubuffer *)buffer;
+	vbo *gpu_buf = (vbo *)buffer;
 	
 #ifndef SKIP_ERROR_HANDLING
 	switch (access) {
@@ -488,16 +486,16 @@ inline void *glMapNamedBuffer(GLuint buffer, GLenum access) {
 }
 
 void *glMapBuffer(GLenum target, GLenum access) {
-	gpubuffer *gpu_buf;
+	vbo *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)vertex_array_unit;
+		gpu_buf = (vbo *)vertex_array_unit;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+		gpu_buf = (vbo *)cur_vao->index_array_unit;
 		break;
 	case GL_UNIFORM_BUFFER:
-		gpu_buf = (gpubuffer *)uniform_array_unit;
+		gpu_buf = (vbo *)uniform_array_unit;
 		break;
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
@@ -507,7 +505,7 @@ void *glMapBuffer(GLenum target, GLenum access) {
 }
 
 inline void *glMapNamedBufferRange(GLuint buffer, GLintptr offset, GLsizeiptr length, GLbitfield access) {
-	gpubuffer *gpu_buf = (gpubuffer *)buffer;
+	vbo *gpu_buf = (vbo *)buffer;
 
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf) {
@@ -523,16 +521,16 @@ inline void *glMapNamedBufferRange(GLuint buffer, GLintptr offset, GLsizeiptr le
 }
 
 void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access) {
-	gpubuffer *gpu_buf;
+	vbo *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)vertex_array_unit;
+		gpu_buf = (vbo *)vertex_array_unit;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+		gpu_buf = (vbo *)cur_vao->index_array_unit;
 		break;
 	case GL_UNIFORM_BUFFER:
-		gpu_buf = (gpubuffer *)uniform_array_unit;
+		gpu_buf = (vbo *)uniform_array_unit;
 		break;
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
@@ -542,7 +540,7 @@ void *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitf
 }
 
 inline GLboolean glUnmapNamedBuffer(GLuint buffer) {
-	gpubuffer *gpu_buf = (gpubuffer *)buffer;
+	vbo *gpu_buf = (vbo *)buffer;
 
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf || !gpu_buf->mapped) {
@@ -556,16 +554,16 @@ inline GLboolean glUnmapNamedBuffer(GLuint buffer) {
 }
 
 GLboolean glUnmapBuffer(GLenum target) {
-	gpubuffer *gpu_buf;
+	vbo *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)vertex_array_unit;
+		gpu_buf = (vbo *)vertex_array_unit;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+		gpu_buf = (vbo *)cur_vao->index_array_unit;
 		break;
 	case GL_UNIFORM_BUFFER:
-		gpu_buf = (gpubuffer *)uniform_array_unit;
+		gpu_buf = (vbo *)uniform_array_unit;
 		break;
 	default:
 		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, GL_FALSE)
@@ -576,7 +574,7 @@ GLboolean glUnmapBuffer(GLenum target) {
 
 void glFlushMappedNamedBufferRange(GLuint buffer, GLintptr offset, GLsizeiptr length) {
 #ifndef SKIP_ERROR_HANDLING
-	gpubuffer *gpu_buf = (gpubuffer *)buffer;
+	vbo *gpu_buf = (vbo *)buffer;
 
 	if (!gpu_buf || !gpu_buf->mapped) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
@@ -588,16 +586,16 @@ void glFlushMappedNamedBufferRange(GLuint buffer, GLintptr offset, GLsizeiptr le
 
 void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length) {
 #ifndef SKIP_ERROR_HANDLING
-	gpubuffer *gpu_buf;
+	vbo *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)vertex_array_unit;
+		gpu_buf = (vbo *)vertex_array_unit;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+		gpu_buf = (vbo *)cur_vao->index_array_unit;
 		break;
 	case GL_UNIFORM_BUFFER:
-		gpu_buf = (gpubuffer *)uniform_array_unit;
+		gpu_buf = (vbo *)uniform_array_unit;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
@@ -612,7 +610,7 @@ void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length)
 }
 
 inline void glGetNamedBufferParameteriv(GLuint buffer, GLenum pname, GLint *params) {
-	gpubuffer *gpu_buf = (gpubuffer *)buffer;
+	vbo *gpu_buf = (vbo *)buffer;
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
@@ -629,16 +627,16 @@ inline void glGetNamedBufferParameteriv(GLuint buffer, GLenum pname, GLint *para
 }
 
 void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params) {
-	gpubuffer *gpu_buf;
+	vbo *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)vertex_array_unit;
+		gpu_buf = (vbo *)vertex_array_unit;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+		gpu_buf = (vbo *)cur_vao->index_array_unit;
 		break;
 	case GL_UNIFORM_BUFFER:
-		gpu_buf = (gpubuffer *)uniform_array_unit;
+		gpu_buf = (vbo *)uniform_array_unit;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
@@ -843,16 +841,16 @@ void vglIndexPointerMapped(const GLvoid *pointer) {
 }
 
 void vglBufferData(GLenum target, const GLvoid *data) {
-	gpubuffer *gpu_buf;
+	vbo *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)vertex_array_unit;
+		gpu_buf = (vbo *)vertex_array_unit;
 		break;
 	case GL_ELEMENT_ARRAY_BUFFER:
-		gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+		gpu_buf = (vbo *)cur_vao->index_array_unit;
 		break;
 	case GL_UNIFORM_BUFFER:
-		gpu_buf = (gpubuffer *)uniform_array_unit;
+		gpu_buf = (vbo *)uniform_array_unit;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)

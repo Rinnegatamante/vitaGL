@@ -52,13 +52,13 @@ extern int frame_rt_purge_idx; // Index for currently populatable purge list ren
 
 // Macro to mark a pointer or a rendertarget as dirty for garbage collection
 #ifdef DEBUG_GC
-#define markAsDirty(x) \
+#define mark_as_dirty(x) \
 	if (frame_elem_purge_idx >= FRAME_PURGE_LIST_SIZE) { \
 		vgl_log("%s:%d Garbage collector overflow. Consider increasing FRAME_PURGE_LIST_SIZE.\n", __FILE__, __LINE__); \
 	} \
 	frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x
 #else
-#define markAsDirty(x) frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x
+#define mark_as_dirty(x) frame_purge_list[frame_purge_idx][frame_elem_purge_idx++] = x
 #endif
 #ifdef HAVE_SHARED_RENDERTARGETS
 typedef struct {
@@ -73,24 +73,24 @@ typedef struct {
 } render_target;
 void __markRtAsDirty(render_target *rt);
 #ifdef DEBUG_GC
-#define _markRtAsDirty(x) \
+#define _mark_rt_as_dirty(x) \
 	if (frame_rt_purge_idx >= FRAME_PURGE_RENDERTARGETS_LIST_SIZE) { \
 		vgl_log("%s:%d Garbage collector overflow. Consider increasing FRAME_PURGE_RENDERTARGETS_LIST_SIZE.\n", __FILE__, __LINE__); \
 	} \
 	frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
 #else
-#define _markRtAsDirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
+#define _mark_rt_as_dirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
 #endif
-#define markRtAsDirty(x) __markRtAsDirty((render_target *)x)
+#define mark_rt_as_dirty(x) __mark_rt_as_dirty((render_target *)x)
 #else
 #ifdef DEBUG_GC
-#define markRtAsDirty(x) \
+#define mark_rt_as_dirty(x) \
 	if (frame_rt_purge_idx >= FRAME_PURGE_RENDERTARGETS_LIST_SIZE) { \
 		vgl_log("%s:%d Garbage collector overflow. Consider increasing FRAME_PURGE_RENDERTARGETS_LIST_SIZE.\n", __FILE__, __LINE__); \
 	} \
 	frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
 #else
-#define markRtAsDirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
+#define mark_rt_as_dirty(x) frame_rt_purge_list[frame_purge_idx][frame_rt_purge_idx++] = x
 #endif
 #endif
 

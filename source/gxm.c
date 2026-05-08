@@ -147,7 +147,7 @@ razor_results razor_metrics;
 GLboolean has_razor_live = GL_FALSE; // Flag for live metrics support with sceRazor
 #endif
 
-static inline __attribute__((always_inline)) int setupRenderTarget(SceGxmRenderTarget **rt, int w, int h, int refs) {
+static inline __attribute__((always_inline)) int setup_render_target(SceGxmRenderTarget **rt, int w, int h, int refs) {
 	SceGxmRenderTargetParams renderTargetParams;
 	vgl_memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
 	renderTargetParams.width = w ? w : 1;
@@ -163,7 +163,7 @@ static inline __attribute__((always_inline)) int setupRenderTarget(SceGxmRenderT
 #define MAX_SHARED_RT_SIZE 256 // Maximum  width value in pixels for shared rendertargets usage
 render_target rt_list[MAX_RENDER_TARGETS_NUM];
 
-render_target *getFreeRenderTarget(int w, int h) {
+render_target *get_free_render_target(int w, int h) {
 	int i;
 	for (i = 0; i < MAX_RENDER_TARGETS_NUM; i++) {
 		if (rt_list[i].rt != NULL) {
@@ -173,7 +173,7 @@ render_target *getFreeRenderTarget(int w, int h) {
 			}
 		} else {
 			rt_list[i].max_refs = w > MAX_SHARED_RT_SIZE ? 1 : MAX_SCENES_PER_FRAME;
-			int r = setupRenderTarget(&rt_list[i].rt, w, h, rt_list[i].max_refs);
+			int r = setup_render_target(&rt_list[i].rt, w, h, rt_list[i].max_refs);
 #ifdef LOG_ERRORS
 			if (r)
 				vgl_log("%s:%d Failed to create a shared rendertarget of size %dx%d (%s).\n", __FILE__, __LINE__, w, h, get_gxm_error_literal(r));
@@ -197,7 +197,7 @@ render_target *getFreeRenderTarget(int w, int h) {
 	sceGxmFinish(gxm_context);
 	sceGxmDestroyRenderTarget(r->rt);
 	r->max_refs = w > MAX_SHARED_RT_SIZE ? 1 : MAX_SCENES_PER_FRAME;
-	int res = setupRenderTarget(&r->rt, w, h, r->max_refs);
+	int res = setup_render_target(&r->rt, w, h, r->max_refs);
 #ifdef LOG_ERRORS
 	if (res)
 		vgl_log("%s:%d Failed to create a shared rendertarget of size %dx%d (%s).\n", __FILE__, __LINE__, w, h, get_gxm_error_literal(res));
@@ -301,7 +301,7 @@ int garbage_collector(unsigned int args, void *arg) {
 #endif
 }
 
-GLboolean startShaderCompiler(void) {
+GLboolean start_shader_compiler(void) {
 	shark_set_allocators(vglMalloc, vglFree);
 #ifdef HAVE_VITA3K_SUPPORT
 	is_shark_online = shark_init_simple(NULL) >= 0;
@@ -325,7 +325,7 @@ GLboolean startShaderCompiler(void) {
 	return is_shark_online;
 }
 
-void initGxm(void) {
+void init_gxm(void) {
 	if (gxm_initialized)
 		return;
 
@@ -347,7 +347,7 @@ void initGxm(void) {
 #endif
 
 	// Initializing runtime shader compiler
-	if (startShaderCompiler()) {
+	if (start_shader_compiler()) {
 #if defined(HAVE_SHARK_LOG) || defined(LOG_ERRORS)
 		shark_install_log_cb(shark_log_cb);
 		shark_set_warnings_level(SHARK_WARN_HIGH);
@@ -409,7 +409,7 @@ void initGxm(void) {
 #endif
 }
 
-void initGxmContext(SceGxmContext **ctx, uint8_t ctx_slot) {
+void init_gxm_context(SceGxmContext **ctx, uint8_t ctx_slot) {
 	// Allocating VDM ring buffer
 	vdm_ring_buffer_addr[ctx_slot] = gpu_alloc_mapped_aligned(4096, gxm_vdm_buf_size, VGL_MEM_VRAM);
 
@@ -448,12 +448,12 @@ void initGxmContext(SceGxmContext **ctx, uint8_t ctx_slot) {
 	vglSetupUniformCircularPool();
 }
 
-void createDisplayRenderTarget(void) {
+void create_display_render_target(void) {
 	// Creating render target for the display
-	setupRenderTarget(&gxm_render_target, DISPLAY_WIDTH, DISPLAY_HEIGHT, gxm_display_rt_size);
+	setup_render_target(&gxm_render_target, DISPLAY_WIDTH, DISPLAY_HEIGHT, gxm_display_rt_size);
 }
 
-void initDisplayColorSurfaces(GLboolean is_swap) {
+void init_display_color_surfaces(GLboolean is_swap) {
 	// Getting access to the shared framebuffer on system app mode
 	while (system_app_mode) {
 		shared_fb = sceSharedFbOpen(1);
@@ -493,7 +493,7 @@ void initDisplayColorSurfaces(GLboolean is_swap) {
 	}
 }
 
-void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, GLboolean has_stencil) {
+void init_depth_stencil_buffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, GLboolean has_stencil) {
 	// Calculating sizes for depth and stencil surfaces
 	unsigned int depth_stencil_width = VGL_ALIGN(w, SCE_GXM_TILE_SIZEX);
 #ifndef DEPTH_STENCIL_HACK
@@ -536,11 +536,11 @@ void initDepthStencilBuffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *s
 #endif
 }
 
-void initDepthStencilSurfaces(void) {
-	initDepthStencilBuffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, &gxm_depth_stencil_surface, GL_TRUE);
+void init_display_depth_stencil_surfaces(void) {
+	init_depth_stencil_buffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, &gxm_depth_stencil_surface, GL_TRUE);
 }
 
-void startShaderPatcher(void) {
+void start_shader_patcher(void) {
 	// Allocating Shader Patcher buffer
 	gxm_shader_patcher_buffer_addr = gpu_alloc_mapped_aligned(4, shader_patcher_buffer_size, VGL_MEM_VRAM);
 
@@ -577,17 +577,7 @@ void startShaderPatcher(void) {
 	sceGxmShaderPatcherCreate(&shader_patcher_params, &gxm_shader_patcher);
 }
 
-void stopShaderPatcher(void) {
-	// Destroying shader patcher instance
-	sceGxmShaderPatcherDestroy(gxm_shader_patcher);
-
-	// Freeing shader patcher buffers
-	vgl_free(gxm_shader_patcher_buffer_addr);
-	gpu_vertex_usse_free_mapped(gxm_shader_patcher_vertex_usse_addr);
-	gpu_fragment_usse_free_mapped(gxm_shader_patcher_fragment_usse_addr);
-}
-
-static inline __attribute__((always_inline)) void sceneEnd(void) {
+static inline __attribute__((always_inline)) void scene_end(void) {
 	// Ends current gxm scene
 	query_fence.value++;
 	sceGxmEndScene(gxm_context, NULL, &query_fence);
@@ -595,7 +585,7 @@ static inline __attribute__((always_inline)) void sceneEnd(void) {
 		sceDisplayWaitVblankStartMulti(vsync_interval);
 }
 
-void sceneReset(void) {
+void scene_reset(void) {
 	if (in_use_framebuffer != active_write_fb || needs_scene_reset || dirty_framebuffer || dirty_query) {
 		dirty_framebuffer = GL_FALSE;
 		dirty_query = GL_FALSE;
@@ -605,7 +595,7 @@ void sceneReset(void) {
 
 		// Ending drawing scene
 		if (needs_end_scene) {
-			sceneEnd();
+			scene_end();
 		} else {
 			if (legacy_pool_size) {
 				legacy_pool = (float *)gpu_alloc_mapped_temp(legacy_pool_size);
@@ -650,7 +640,7 @@ void sceneReset(void) {
 		} else {
 			// If a depthstencil surface is not bound to the in use framebuffer, we get one for it to ensure scissor testing compatibility
 			if (!active_write_fb->depthbuffer_ptr) {
-				initDepthStencilBuffer(active_write_fb->width, active_write_fb->height, &active_write_fb->depthbuffer, GL_FALSE);
+				init_depth_stencil_buffer(active_write_fb->width, active_write_fb->height, &active_write_fb->depthbuffer, GL_FALSE);
 				active_write_fb->depthbuffer_ptr = &active_write_fb->depthbuffer;
 				active_write_fb->is_depth_hidden = GL_TRUE;
 			}
@@ -658,9 +648,9 @@ void sceneReset(void) {
 			// If a rendertarget is not bound to the in use framebuffer, we get one for it
 			if (!active_write_fb->target) {
 #ifdef HAVE_SHARED_RENDERTARGETS
-				active_write_fb->target = (SceGxmRenderTarget *)getFreeRenderTarget(active_write_fb->width, active_write_fb->height);
+				active_write_fb->target = (SceGxmRenderTarget *)get_free_render_target(active_write_fb->width, active_write_fb->height);
 #else
-				int r = setupRenderTarget(&active_write_fb->target, active_write_fb->width, active_write_fb->height, 1);
+				int r = setup_render_target(&active_write_fb->target, active_write_fb->width, active_write_fb->height, 1);
 #ifdef LOG_ERRORS
 				if (r) {
 					vgl_log("%s:%d Failed to create a rendertarget of size %dx%d for framebuffer 0x%08X (%s).\n", __FILE__, __LINE__, active_write_fb->width, active_write_fb->height, active_write_fb, get_gxm_error_literal(r));
@@ -673,7 +663,7 @@ void sceneReset(void) {
 				render_target *fbo_rt = (render_target *)active_write_fb->target;
 				if (active_write_fb->width != fbo_rt->w || active_write_fb->height != fbo_rt->h) {
 					vgl_log("%s:%d Attempting to use a recycled rendertarget. Re-allocating it.\n", __FILE__, __LINE__);
-					active_write_fb->target = (SceGxmRenderTarget *)getFreeRenderTarget(active_write_fb->width, active_write_fb->height);
+					active_write_fb->target = (SceGxmRenderTarget *)get_free_render_target(active_write_fb->width, active_write_fb->height);
 				}
 			}
 #endif
@@ -708,8 +698,9 @@ void sceneReset(void) {
 #ifndef HAVE_UNFLIPPED_FBOS
 			change_cull_mode();
 #endif
-		} else
-			setViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+		} else {
+			vglSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
+		}
 
 #ifndef DISABLE_TILE_CLIPPER
 		if (scissor_test_state)
@@ -815,7 +806,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 	needs_end_scene = GL_FALSE;
 
 	if (!needs_scene_reset)
-		sceneEnd();
+		scene_end();
 
 	if (has_commondialog) {
 		// Populating SceCommonDialog parameters
@@ -962,8 +953,8 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		DISPLAY_HEIGHT_FLOAT = DISPLAY_HEIGHT * 1.0f;
 		DISPLAY_STRIDE = VGL_ALIGN(DISPLAY_WIDTH, 64);
 		vector4f_convert_to_local_space(clear_vertices, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
-		createDisplayRenderTarget();
-		initDisplayColorSurfaces(GL_TRUE);
+		create_display_render_target();
+		init_display_color_surfaces(GL_TRUE);
 		NEW_DISPLAY_WIDTH = 0;
 	}
 

@@ -129,7 +129,7 @@ uint8_t *vgl_reserve_data_pool(uint32_t size) {
 			vgl_log("%s:%d gpu_alloc_mapped_temp failed with a requested size of 0x%08X\n", __FILE__, __LINE__, size);
 		}
 #endif
-		markAsDirty(res);
+		mark_as_dirty(res);
 	}
 #else
 	uint8_t *res = circular_data_pool_ptr;
@@ -224,25 +224,25 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	gl_viewport.h = DISPLAY_HEIGHT;
 
 	// Initializing sceGxm
-	initGxm();
+	init_gxm();
 
 	// Initializing memory heaps for CDRAM and RAM memory (both standard and physically contiguous)
 	vgl_mem_init(ram_pool_size, cdram_pool_size, phycont_pool_size, cdlg_pool_size);
 
 	// Initializing sceGxm context
-	initGxmContext(&gxm_context, VGL_CONTEXT_MAIN);
+	init_gxm_context(&gxm_context, VGL_CONTEXT_MAIN);
 
 	// Creating render target for the display
-	createDisplayRenderTarget();
+	create_display_render_target();
 
 	// Creating color surfaces for the display
-	initDisplayColorSurfaces(GL_FALSE);
+	init_display_color_surfaces(GL_FALSE);
 
 	// Creating depth and stencil surfaces for the display
-	initDepthStencilSurfaces();
+	init_display_depth_stencil_surfaces();
 
 	// Starting a sceGxmShaderPatcher instance
-	startShaderPatcher();
+	start_shader_patcher();
 
 	// Setting up default blending state
 	change_blend_mask();
@@ -266,9 +266,9 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	clear_position = sceGxmProgramFindParameterByName(gxm_program_clear_v, "position");
 	clear_depth = sceGxmProgramFindParameterByName(gxm_program_clear_v, "u_clear_depth");
 	clear_color = sceGxmProgramFindParameterByName(gxm_program_clear_f, "u_clear_color");
-	{ patchVertexProgram(gxm_shader_patcher, clear_vertex_id, NULL, 0, NULL, 0, &clear_vertex_program_patched); }
-	{ patchFragmentProgram(gxm_shader_patcher, clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, NULL, NULL, &clear_fragment_program_patched); }
-	{ patchFragmentProgram(gxm_shader_patcher, clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4, msaa_mode, NULL, NULL, &clear_fragment_program_float_patched); }
+	{ patch_vertex_program(gxm_shader_patcher, clear_vertex_id, NULL, 0, NULL, 0, &clear_vertex_program_patched); }
+	{ patch_fragment_program(gxm_shader_patcher, clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, NULL, NULL, &clear_fragment_program_patched); }
+	{ patch_fragment_program(gxm_shader_patcher, clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4, msaa_mode, NULL, NULL, &clear_fragment_program_float_patched); }
 
 #ifndef SKIP_SPLASHSCREEN
 	if (!system_app_mode)
@@ -295,9 +295,9 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	blit_attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(blit_texcoord);
 	blit_attrs[0].streamIndex = blit_attrs[1].streamIndex = 0;
 	blit_streams[0].indexSource = blit_streams[1].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-	{ patchVertexProgram(gxm_shader_patcher, blit_vertex_id, blit_attrs, 2, blit_streams, 1, &blit_vertex_program_patched); }
-	{ patchFragmentProgram(gxm_shader_patcher, blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, NULL, NULL, &blit_fragment_program_patched); }
-	{ patchFragmentProgram(gxm_shader_patcher, blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4, msaa_mode, NULL, NULL, &blit_fragment_program_float_patched); }
+	{ patch_vertex_program(gxm_shader_patcher, blit_vertex_id, blit_attrs, 2, blit_streams, 1, &blit_vertex_program_patched); }
+	{ patch_fragment_program(gxm_shader_patcher, blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, NULL, NULL, &blit_fragment_program_patched); }
+	{ patch_fragment_program(gxm_shader_patcher, blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4, msaa_mode, NULL, NULL, &blit_fragment_program_float_patched); }
 
 	sceGxmSetTwoSidedEnable(gxm_context, SCE_GXM_TWO_SIDED_ENABLED);
 
@@ -336,17 +336,17 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	}
 
 	// Init custom shaders
-	resetCustomShaders();
+	reset_custom_shaders();
 
 	// Init default vao
-	resetVao(cur_vao);
+	reset_vao(cur_vao);
 	
 	// Init occlusion queries
-	resetQueries();
+	reset_queries();
 	
 #ifdef HAVE_DLISTS
 	// Init display lists
-	resetDlists();
+	reset_dlists();
 #endif
 
 #ifndef DISABLE_CIRCULAR_POOL
@@ -498,7 +498,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	}
 
 	// Init scissor test state
-	resetScissorTestRegion();
+	reset_scissor_test_region();
 
 	// Allocating default texture object
 	texture_slots[0].mip_count = 1;
@@ -537,7 +537,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 
 GLboolean vglInitWithCustomThreshold(int pool_size, int width, int height, int ram_threshold, int cdram_threshold, int phycont_threshold, int cdlg_threshold, SceGxmMultisampleMode msaa) {
 	// Initializing sceGxm
-	initGxm();
+	init_gxm();
 
 	// Getting max allocatable CDRAM and RAM memory
 	if (system_app_mode) {
@@ -739,7 +739,7 @@ void vglFree(void *addr) {
 }
 
 void vglLazyFree(void *addr) {
-	markAsDirty(addr);
+	mark_as_dirty(addr);
 }
 
 void vglUseExtraMem(GLboolean use) {

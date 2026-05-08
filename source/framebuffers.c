@@ -291,10 +291,11 @@ void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
 				fb->tex = NULL;
 			}
 			if (fb->target)
-				markRtAsDirty(fb->target);
+				mark_rt_as_dirty(fb->target);
 #ifndef DEPTH_STENCIL_HACK
-			if (fb->depthbuffer_ptr && fb->is_depth_hidden)
-				markAsDirty(fb->depthbuffer_ptr->depthData);
+			if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
+				mark_as_dirty(fb->depthbuffer_ptr->depthData);
+			}
 #endif
 		}
 	}
@@ -320,9 +321,9 @@ void glDeleteRenderbuffers(GLsizei n, const GLuint *ids) {
 			rb->active = GL_FALSE;
 #ifndef DEPTH_STENCIL_HACK
 			if (rb->depthbuffer_ptr) {
-				markAsDirty(rb->depthbuffer_ptr->depthData);
+				mark_as_dirty(rb->depthbuffer_ptr->depthData);
 				if (rb->depthbuffer_ptr->stencilData) {
-					markAsDirty(rb->depthbuffer_ptr->stencilData);
+					mark_as_dirty(rb->depthbuffer_ptr->stencilData);
 				}
 			}
 #endif
@@ -385,7 +386,7 @@ void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbu
 	// Discarding any previously bound hidden depth buffers
 	if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
 #ifndef DEPTH_STENCIL_HACK
-		markAsDirty(fb->depthbuffer_ptr->depthData);
+		mark_as_dirty(fb->depthbuffer_ptr->depthData);
 #endif
 		fb->is_depth_hidden = GL_FALSE;
 	}
@@ -418,7 +419,7 @@ void glNamedFramebufferRenderbuffer(GLuint target, GLenum attachment, GLenum ren
 	// Discarding any previously bound hidden depth buffers
 	if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
 #ifndef DEPTH_STENCIL_HACK
-		markAsDirty(fb->depthbuffer_ptr->depthData);
+		mark_as_dirty(fb->depthbuffer_ptr->depthData);
 #endif
 		fb->is_depth_hidden = GL_FALSE;
 	}
@@ -448,23 +449,23 @@ void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, 
 #endif
 #ifndef DEPTH_STENCIL_HACK
 	if (active_rb->depthbuffer_ptr) {
-		markAsDirty(active_rb->depthbuffer_ptr->depthData);
+		mark_as_dirty(active_rb->depthbuffer_ptr->depthData);
 		if (active_rb->depthbuffer_ptr->stencilData) {
-			markAsDirty(active_rb->depthbuffer_ptr->stencilData);
+			mark_as_dirty(active_rb->depthbuffer_ptr->stencilData);
 		}
 	}
 #endif
 	switch (internalformat) {
 	case GL_DEPTH24_STENCIL8:
 	case GL_DEPTH32F_STENCIL8:
-		initDepthStencilBuffer(width, height, &active_rb->depthbuffer, GL_TRUE);
+		init_depth_stencil_buffer(width, height, &active_rb->depthbuffer, GL_TRUE);
 		break;
 	case GL_DEPTH_COMPONENT:
 	case GL_DEPTH_COMPONENT16:
 	case GL_DEPTH_COMPONENT24:
 	case GL_DEPTH_COMPONENT32:
 	case GL_DEPTH_COMPONENT32F:
-		initDepthStencilBuffer(width, height, &active_rb->depthbuffer, GL_FALSE);
+		init_depth_stencil_buffer(width, height, &active_rb->depthbuffer, GL_FALSE);
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalformat)
@@ -477,22 +478,22 @@ void glNamedRenderbufferStorage(GLuint target, GLenum internalformat, GLsizei wi
 	renderbuffer *rb = (renderbuffer *)target;
 #ifndef DEPTH_STENCIL_HACK
 	if (rb->depthbuffer_ptr) {
-		markAsDirty(rb->depthbuffer_ptr->depthData);
+		mark_as_dirty(rb->depthbuffer_ptr->depthData);
 		if (rb->depthbuffer_ptr->stencilData)
-			markAsDirty(rb->depthbuffer_ptr->stencilData);
+			mark_as_dirty(rb->depthbuffer_ptr->stencilData);
 	}
 #endif
 	switch (internalformat) {
 	case GL_DEPTH24_STENCIL8:
 	case GL_DEPTH32F_STENCIL8:
-		initDepthStencilBuffer(width, height, &rb->depthbuffer, GL_TRUE);
+		init_depth_stencil_buffer(width, height, &rb->depthbuffer, GL_TRUE);
 		break;
 	case GL_DEPTH_COMPONENT:
 	case GL_DEPTH_COMPONENT16:
 	case GL_DEPTH_COMPONENT24:
 	case GL_DEPTH_COMPONENT32:
 	case GL_DEPTH_COMPONENT32F:
-		initDepthStencilBuffer(width, height, &rb->depthbuffer, GL_FALSE);
+		init_depth_stencil_buffer(width, height, &rb->depthbuffer, GL_FALSE);
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalformat)
@@ -542,7 +543,7 @@ inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum text
 		// Discarding any previously bound hidden depth buffer
 		if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
 #ifndef DEPTH_STENCIL_HACK
-			markAsDirty(fb->depthbuffer_ptr->depthData);
+			mark_as_dirty(fb->depthbuffer_ptr->depthData);
 #endif
 			fb->depthbuffer_ptr = NULL;
 			fb->is_depth_hidden = GL_FALSE;
@@ -559,13 +560,13 @@ inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum text
 		// Detaching attached texture if passed texture ID is 0
 		if (tex_id == 0) {
 			if (fb->target) {
-				markRtAsDirty(fb->target);
+				mark_rt_as_dirty(fb->target);
 				fb->target = NULL;
 			}
 			fb->tex = NULL;
 			return;
 		} else if (fb->target && (old_w != fb->width || old_h != fb->height)) {
-			markRtAsDirty(fb->target);
+			mark_rt_as_dirty(fb->target);
 			fb->target = NULL;
 		}
 
@@ -621,7 +622,7 @@ inline void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum
 		// Discarding any previously bound hidden depth buffer
 		if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
 #ifndef DEPTH_STENCIL_HACK
-			markAsDirty(fb->depthbuffer_ptr->depthData);
+			mark_as_dirty(fb->depthbuffer_ptr->depthData);
 #endif
 			fb->depthbuffer_ptr = NULL;
 			fb->is_depth_hidden = GL_FALSE;
@@ -638,13 +639,13 @@ inline void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum
 		// Detaching attached texture if passed texture ID is 0
 		if (tex_id == 0) {
 			if (fb->target) {
-				markRtAsDirty(fb->target);
+				mark_rt_as_dirty(fb->target);
 				fb->target = NULL;
 			}
 			fb->tex = NULL;
 			return;
 		} else if (fb->target && (old_w != fb->width || old_h != fb->height)) {
-			markRtAsDirty(fb->target);
+			mark_rt_as_dirty(fb->target);
 			fb->target = NULL;
 		}
 
@@ -940,7 +941,7 @@ void glBlitNamedFramebuffer(GLuint readFramebuffer, GLuint drawFramebuffer, GLin
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_OPERATION, mask)
 	}
 
-	sceneReset();
+	scene_reset();
 
 	// Invalidating viewport and culling
 	invalidate_viewport();

@@ -46,7 +46,7 @@ void resetDlists() {
 	vgl_memset(&display_lists[0], 0, sizeof(display_list) * NUM_DISPLAY_LISTS);
 }
 
-GLboolean _vgl_enqueue_list_func(void (*func)(), dlistFuncType type, ...) {
+GLboolean _vgl_enqueue_list_func(void (*func)(), dlist_func_type type, ...) {
 	// Check if we are creating a display list
 	if (!curr_display_list)
 		return GL_FALSE;

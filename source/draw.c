@@ -210,7 +210,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 #endif
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
-	sceneReset();
+	scene_reset();
 	GLboolean is_draw_legal = GL_TRUE;
 
 	if (cur_program != 0)
@@ -264,7 +264,7 @@ void glMultiDrawArrays(GLenum mode, const GLint *first, const GLsizei *count, GL
 	}
 #endif
 
-	sceneReset();
+	scene_reset();
 	
 	GLint lowest = 0x7FFFFFFF;
 	GLsizei highest = 0, highest_count = 0;
@@ -326,7 +326,7 @@ void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei prim
 #endif
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
-	sceneReset();
+	scene_reset();
 	GLboolean is_draw_legal = _glDrawArrays_CustomShadersIMPL(first, count, GL_TRUE);
 
 #ifndef SKIP_ERROR_HANDLING
@@ -383,10 +383,10 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
-	sceneReset();
+	scene_reset();
 	GLboolean is_draw_legal = GL_TRUE;
 
-	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+	vbo *gpu_buf = (vbo *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	
 	// sceGxm doesn't support 8bit indices natively, so we internally convert to 16bit
@@ -438,10 +438,10 @@ void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLv
 
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
-	sceneReset();
+	scene_reset();
 	GLboolean is_draw_legal = GL_TRUE;
 
-	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+	vbo *gpu_buf = (vbo *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
 		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, baseVertex, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
@@ -495,10 +495,10 @@ void glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, G
 
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
-	sceneReset();
+	scene_reset();
 	GLboolean is_draw_legal = GL_TRUE;
 
-	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+	vbo *gpu_buf = (vbo *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
 		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end + 1, 0, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
@@ -538,10 +538,10 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
-	sceneReset();
+	scene_reset();
 	GLboolean is_draw_legal = GL_TRUE;
 
-	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+	vbo *gpu_buf = (vbo *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	if (cur_program != 0)
 		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end + baseVertex + 1, baseVertex, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
@@ -595,9 +595,9 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void
 
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
-	sceneReset();
+	scene_reset();
 
-	gpubuffer *gpu_buf = (gpubuffer *)cur_vao->index_array_unit;
+	vbo *gpu_buf = (vbo *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
 	GLboolean is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, 0, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INSTANCE_16BIT : SCE_GXM_INDEX_SOURCE_INSTANCE_32BIT);
 
@@ -630,7 +630,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 
 	SceGxmPrimitiveType gxm_p;
 	gl_primitive_to_gxm(mode, gxm_p, count);
-	sceneReset();
+	scene_reset();
 
 	texture_unit *tex_unit = &texture_units[0];
 	if (cur_program != 0) {

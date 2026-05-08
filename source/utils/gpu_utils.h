@@ -54,7 +54,7 @@ static inline __attribute__((always_inline)) void *gpu_alloc_mapped_temp(size_t 
 	}
 #endif
 
-	markAsDirty(res);
+	mark_as_dirty(res);
 	return res;
 #else
 	return vgl_reserve_data_pool(size);
@@ -181,7 +181,7 @@ static inline __attribute__((always_inline)) void gpu_free_texture_data(texture 
 		} else
 #endif
 		{
-			markAsDirty(tex->data);
+			mark_as_dirty(tex->data);
 		}
 		tex->data = NULL;
 	}
@@ -192,7 +192,7 @@ static inline __attribute__((always_inline)) void gpu_free_texture_data(texture 
 		} else
 #endif
 		{
-			markAsDirty(tex->palette_data);
+			mark_as_dirty(tex->palette_data);
 		}
 		tex->palette_data = NULL;
 	}
