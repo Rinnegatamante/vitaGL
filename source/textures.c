@@ -1599,7 +1599,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 						if (target == GL_TEXTURE_2D) {
 							gpu_alloc_compressed_texture(level, pot_w, pot_h, tex_format, 0, target_data, tex, data_bpp, GL_TRUE);
 						} else {
-							gpu_alloc_compressed_cube_texture(pot_w, pot_h, tex_format, 0, target_data, tex, data_bpp, read_cb, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+							gpu_alloc_compressed_cube_texture(pot_w, pot_h, tex_format, 0, target_data, tex, data_bpp, GL_TRUE, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
 						}
 
 						// If we needed a temp memory for input data, we likely needed to turn our texture into pot, so we patch back original texture size into sceGxm descriptor
@@ -1636,7 +1636,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 				if (target == GL_TEXTURE_2D) {
 					gpu_alloc_compressed_texture(level, width, height, tex_format, imageSize, data, tex, 0, GL_FALSE);
 				} else {
-					gpu_alloc_compressed_cube_texture(width, height, tex_format, imageSize, data, tex, 0, NULL, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+					gpu_alloc_compressed_cube_texture(width, height, tex_format, imageSize, data, tex, 0, GL_FALSE, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
 				}
 			}
 		}

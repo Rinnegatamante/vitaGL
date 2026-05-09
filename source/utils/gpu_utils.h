@@ -138,7 +138,7 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 void gpu_alloc_compressed_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, GLboolean uncompressed);
 
 // Alloc a compressed cube texture
-void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *), int index);
+void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, GLboolean uncompressed, int index);
 
 // Alloc a paletted texture
 void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex, uint8_t src_bpp, uint32_t (*read_cb)(void *));
