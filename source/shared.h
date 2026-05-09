@@ -1129,7 +1129,6 @@ void init_depth_stencil_buffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface
 void init_display_depth_stencil_surfaces(void); // Creates depth and stencil surfaces for the display
 void start_shader_patcher(void); // Creates a shader patcher instance
 void scene_reset(void); // Resets drawing scene if required
-void force_scene_reset(void); // Force a drawing scene reset
 GLboolean start_shader_compiler(void); // Starts a shader compiler instance
 
 /* framebuffers.c */

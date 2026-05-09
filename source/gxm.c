@@ -713,11 +713,6 @@ void scene_reset(void) {
 	}
 }
 
-void force_scene_reset(void) {
-	needs_scene_reset = GL_TRUE;
-	scene_reset();
-}
-
 /*
  * ------------------------------
  * - IMPLEMENTATION STARTS HERE -
@@ -974,7 +969,8 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 
 void glFinish(void) {
 	// Waiting for GPU to finish drawing jobs
-	force_scene_reset();
+	dirty_framebuffer = GL_TRUE;
+	scene_reset();
 	sceGxmFinish(gxm_context);
 }
 
@@ -986,7 +982,8 @@ void glReleaseShaderCompiler(void) {
 }
 
 void glFlush(void) {
-	force_scene_reset();
+	dirty_framebuffer = GL_TRUE;
+	scene_reset();
 }
 
 void vglSetDisplayCallback(void (*cb)(void *framebuf)) {
