@@ -4,7 +4,7 @@ SOURCES		:= .
 			
 INCLUDES	:= include
 
-LIBS = -lvitaGL -lc -lSceCommonDialog_stub -lm -lSceGxm_stub -lSceDisplay_stub -lmathneon -lSceAppMgr_stub \
+LIBS = -lvitaGL -lstdc++ -lc -lSceCommonDialog_stub -lm -lSceGxm_stub -lSceDisplay_stub -lmathneon -lSceAppMgr_stub \
 	-lvitashark -lSceShaccCgExt -ltaihen_stub -lSceShaccCg_stub -lSceKernelDmacMgr_stub
 
 CFILES   := $(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c))

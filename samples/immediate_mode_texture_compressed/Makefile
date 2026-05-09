@@ -4,7 +4,7 @@ SOURCES		:= .
 			
 INCLUDES	:= include
 
-LIBS = -lvitaGL -lSceLibKernel_stub -lSceAppMgr_stub -lSceAppUtil_stub -lmathneon \
+LIBS = -lvitaGL -lstdc++ -lSceLibKernel_stub -lSceAppMgr_stub -lSceAppUtil_stub -lmathneon \
 	-lc -lSceCommonDialog_stub -lm -lSceGxm_stub -lSceDisplay_stub -lSceSysmodule_stub \
 	-lzip -lz -lvitashark -lSceShaccCgExt -ltaihen_stub -lSceShaccCg_stub \
 	-lSceKernelDmacMgr_stub -lSceCtrl_stub
