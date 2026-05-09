@@ -898,7 +898,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 				}
 			}
 			
-			gpu_alloc_compressed_texture(level, pot_w, pot_h, tex_format, 0, target_data, tex, data_bpp, read_cb);
+			gpu_alloc_compressed_texture(level, pot_w, pot_h, tex_format, 0, target_data, tex, data_bpp, GL_TRUE);
 			
 			// If we needed a temp memory for input data, we likely needed to turn our texture into pot, so we patch back original texture size into sceGxm descriptor
 			if (target_data != data) {
@@ -910,7 +910,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	} else if (tex->write_cb) {
 		gpu_alloc_mipmaps(level, tex);
 	} else {
-		gpu_alloc_compressed_texture(level, width, height, tex_format, 0, data, tex, data_bpp, read_cb);
+		gpu_alloc_compressed_texture(level, width, height, tex_format, 0, data, tex, data_bpp, GL_TRUE);
 	}
 
 	// Setting texture parameters
@@ -1597,7 +1597,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 						}
 						
 						if (target == GL_TEXTURE_2D) {
-							gpu_alloc_compressed_texture(level, pot_w, pot_h, tex_format, 0, target_data, tex, data_bpp, read_cb);
+							gpu_alloc_compressed_texture(level, pot_w, pot_h, tex_format, 0, target_data, tex, data_bpp, GL_TRUE);
 						} else {
 							gpu_alloc_compressed_cube_texture(pot_w, pot_h, tex_format, 0, target_data, tex, data_bpp, read_cb, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
 						}
@@ -1627,14 +1627,14 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 						}
 					}
 				} else if (read_cb) {
-					gpu_alloc_compressed_texture(level, width, height, tex_format, 0, decompressed_data, tex, data_bpp, read_cb);
+					gpu_alloc_compressed_texture(level, width, height, tex_format, 0, decompressed_data, tex, data_bpp, GL_TRUE);
 				} else {
 					gpu_alloc_mipmaps(level, tex);
 				}
 				vgl_free(decompressed_data);
 			} else {
 				if (target == GL_TEXTURE_2D) {
-					gpu_alloc_compressed_texture(level, width, height, tex_format, imageSize, data, tex, 0, NULL);
+					gpu_alloc_compressed_texture(level, width, height, tex_format, imageSize, data, tex, 0, GL_FALSE);
 				} else {
 					gpu_alloc_compressed_cube_texture(width, height, tex_format, imageSize, data, tex, 0, NULL, target - GL_TEXTURE_CUBE_MAP_POSITIVE_X);
 				}
