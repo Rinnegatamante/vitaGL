@@ -634,22 +634,40 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 				case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-					SwizzleTexData128Bpp((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 4), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 4), ALIGNBLOCK(MIN(aligned_width, aligned_height), 4));
-					break;
-				case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
-					SwizzleTexData64Bpp((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 8), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 8), MIN(ALIGNBLOCK(aligned_width, 8), ALIGNBLOCK(aligned_height, 4)));
+					if (aligned_width == w && aligned_height == h && h <= 2048 && w <= 2048) {
+						sceGxmTransferCopy(w / 4, h / 4, 0, 0, SCE_GXM_TRANSFER_COLORKEY_NONE,
+							SCE_GXM_TRANSFER_FORMAT_RAW128, SCE_GXM_TRANSFER_LINEAR, data, 0, 0, w * 4,
+							SCE_GXM_TRANSFER_FORMAT_RAW128, SCE_GXM_TRANSFER_SWIZZLED, mip_data, 0, 0, w * 4, NULL, 0, NULL);
+					} else {
+						SwizzleTexData128Bpp((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 4), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 4), ALIGNBLOCK(MIN(aligned_width, aligned_height), 4));
+					}
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_ETC1_1BGR:
 					SwizzleTexDataETC1((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 4), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 4), ALIGNBLOCK(MIN(aligned_width, aligned_height), 4));
 					break;
+				case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
+					if (aligned_width == w && aligned_height == h && h <= 2048) {
+						sceGxmTransferCopy(w / 8, h / 4, 0, 0, SCE_GXM_TRANSFER_COLORKEY_NONE,
+							SCE_GXM_TRANSFER_FORMAT_RAW64, SCE_GXM_TRANSFER_LINEAR, data, 0, 0, w,
+							SCE_GXM_TRANSFER_FORMAT_RAW64, SCE_GXM_TRANSFER_SWIZZLED, mip_data, 0, 0, w, NULL, 0, NULL);
+					} else {
+						SwizzleTexData64Bpp((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 8), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 8), MIN(ALIGNBLOCK(aligned_width, 8), ALIGNBLOCK(aligned_height, 4)));
+					}
+					break;
 				default:
-					SwizzleTexData64Bpp((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 4), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 4), ALIGNBLOCK(MIN(aligned_width, aligned_height), 4));
+					if (aligned_width == w && aligned_height == h && h <= 2048) {
+						sceGxmTransferCopy(w / 4, h / 4, 0, 0, SCE_GXM_TRANSFER_COLORKEY_NONE,
+							SCE_GXM_TRANSFER_FORMAT_RAW64, SCE_GXM_TRANSFER_LINEAR, data, 0, 0, w * 2,
+							SCE_GXM_TRANSFER_FORMAT_RAW64, SCE_GXM_TRANSFER_SWIZZLED, mip_data, 0, 0, w * 2, NULL, 0, NULL);
+					} else {
+						SwizzleTexData64Bpp((uint8_t *)mip_data, (uint8_t *)data, 0, 0, ALIGNBLOCK(w, 4), ALIGNBLOCK(h, 4), ALIGNBLOCK(w, 4), MIN(ALIGNBLOCK(aligned_width, 4), ALIGNBLOCK(aligned_height, 4)));
+					}
 					break;
 				}
 			}
-
-		} else
+		} else {
 			vgl_memset(mip_data, 0, mip_size);
+		}
 
 		// Initializing texture and validating it
 		tex->mip_count = mip_count + 1;
