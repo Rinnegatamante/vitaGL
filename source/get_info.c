@@ -25,7 +25,7 @@
 
 #include "shared.h"
 
-#define COMPRESSED_TEXTURE_FORMATS_NUM 25 // The number of supported texture formats
+#define COMPRESSED_TEXTURE_FORMATS_NUM 27 // The number of supported texture formats
 
 #define NUM_EXTENSIONS (sizeof(extensions) / sizeof(GLubyte *))
 static GLubyte *extensions[] = {
@@ -37,6 +37,7 @@ static GLubyte *extensions[] = {
 	"GL_ARB_sampler_objects",
 	"GL_ARB_shading_language_100",
 	"GL_ARB_texture_compression",
+	"GL_ARB_texture_compression_rgtc",
 	"GL_ARB_vertex_buffer_object",
 	"GL_EXT_abgr",
 	"GL_EXT_bgra",
@@ -653,6 +654,8 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[22] = GL_PALETTE8_RGB5_A1_OES;
 		data[23] = GL_ETC1_RGB8_OES;
 		data[24] = GL_COMPRESSED_RGBA8_ETC2_EAC;
+		data[25] = GL_COMPRESSED_RED_RGTC1;
+		data[26] = GL_COMPRESSED_RG_RGTC2;
 		break;
 	case GL_NUM_SHADER_BINARY_FORMATS:
 		*data = 0;

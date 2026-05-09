@@ -447,16 +447,18 @@ static inline __attribute__((always_inline)) int gpu_get_compressed_mip_size(int
 	case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
 		return (MAX(width, 8) * MAX(height, 8) * 4 + 7) / 8;
 	case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
-		return ceil(width / 8.0) * ceil(height / 4.0) * 8.0;
+		return ceil(width / 8.0) * ceil(height / 4.0) * 8;
 	case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR:
-		return ceil(width / 4.0) * ceil(height / 4.0) * 8.0;
+		return ((width + 3) / 4) * ((height + 3) / 4) * 8;
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_1BGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
 	case SCE_GXM_TEXTURE_FORMAT_ETC1_1BGR:
-		return ceil(width / 4.0) * ceil(height / 4.0) * 8;
+	case SCE_GXM_TEXTURE_FORMAT_UBC4_R:
+		return ((width + 3) / 4) * ((height + 3) / 4) * 8;
 	case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 	case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-		return ceil(width / 4.0) * ceil(height / 4.0) * 16;
+	case SCE_GXM_TEXTURE_FORMAT_UBC5_GR:
+		return ((width + 3) / 4) * ((height + 3) / 4) * 16;
 	default:
 		return 0;
 	}
@@ -526,6 +528,7 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 				case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
+				case SCE_GXM_TEXTURE_FORMAT_UBC5_GR:
 					if (aligned_width == w && aligned_height == h && h <= 2048 && w <= 2048) {
 #ifdef TEXTURE_UPLOADS_SPEEDHACK
 						void *mapped_src = data;
@@ -670,6 +673,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 					break;
 				case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
 				case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
+				case SCE_GXM_TEXTURE_FORMAT_UBC5_GR:
 					if (aligned_width == w && aligned_height == h && h <= 2048 && w <= 2048) {
 #ifdef TEXTURE_UPLOADS_SPEEDHACK
 						void *mapped_src = data;

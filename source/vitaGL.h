@@ -526,6 +526,8 @@ extern "C" {
 #define GL_DEPTH_COMPONENT32F                           0x8DAB
 #define GL_DEPTH32F_STENCIL8                            0x8DAC
 #define GL_FRAMEBUFFER_SRGB                             0x8DB9
+#define GL_COMPRESSED_RED_RGTC1                         0x8DBB
+#define GL_COMPRESSED_RG_RGTC2                          0x8DBD
 #define GL_FRAMEBUFFER_COMPLETE                         0x8CD5
 #define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT    0x8CD7
 #define GL_FRAMEBUFFER                                  0x8D40

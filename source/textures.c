@@ -1438,6 +1438,12 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 		case GL_COMPRESSED_RGBA_PVRTC_4BPPV2_IMG:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR;
 			break;
+		case GL_COMPRESSED_RED_RGTC1:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC4_R;
+			break;
+		case GL_COMPRESSED_RG_RGTC2:
+			tex_format = SCE_GXM_TEXTURE_FORMAT_UBC5_GR;
+			break;
 		case VGL_YUV420P_NV12_BT601:
 			tex_format = SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC0;
 			planar_format = GL_TRUE;
