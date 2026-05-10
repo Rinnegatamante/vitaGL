@@ -2305,8 +2305,7 @@ void glLinkProgram(GLuint progr) {
 #ifdef ENABLE_LEGACY_PIPELINE
 	// Creating fragment and vertex program via sceGxmShaderPatcher if using vgl* draw pipeline
 	if (p->attr_mode != VGL_ATTRIB_REGULAR) {
-		patchVertexProgram(gxm_shader_patcher,
-			p->vshader->id, p->attr, p->attr_num,
+		patch_vertex_program(gxm_shader_patcher, p->vshader->id, p->attr, p->attr_num,
 			p->stream, p->attr_mode == VGL_ATTRIB_UNPACKED ? p->attr_num : 1, &p->vprog);
 		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
 		p->is_fbo_float = is_fbo_float;
