@@ -71,7 +71,7 @@ typedef struct {
 	uint32_t last_frame;
 #endif
 } render_target;
-void __markRtAsDirty(render_target *rt);
+void __mark_rt_as_dirty(render_target *rt);
 #ifdef DEBUG_GC
 #define _mark_rt_as_dirty(x) \
 	if (frame_rt_purge_idx >= FRAME_PURGE_RENDERTARGETS_LIST_SIZE) { \

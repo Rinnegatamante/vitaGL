@@ -214,10 +214,10 @@ render_target *get_free_render_target(int w, int h) {
 #endif
 }
 
-void __markRtAsDirty(render_target *rt) {
+void __mark_rt_as_dirty(render_target *rt) {
 	rt->ref_count--;
 	if (!rt->ref_count) {
-		_markRtAsDirty(rt->rt);
+		_mark_rt_as_dirty(rt->rt);
 		rt->rt = NULL;
 	}
 }
