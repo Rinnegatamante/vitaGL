@@ -78,6 +78,23 @@
 		txt = out; \
 		type = strstr(txt + preamble_size, m); \
 	}
+	
+#define glsl_replace_marker_progressive(m, r1, r2) \
+	type = strstr(txt + preamble_size, m); \
+	uint8_t idx = 1; \
+	while (type) { \
+		char line[32]; \
+		sprintf(line, "%s%u%s", r1, idx++, r2); \
+		char *res = (char *)vglMalloc(MEM_ENLARGER_SIZE); \
+		type[0] = 0; \
+		strcpy(res, txt); \
+		strcat(res, line); \
+		strcat(res, type + 1); \
+		strcpy(out, res); \
+		vgl_free(res); \
+		txt = out; \
+		type = strstr(txt + preamble_size, m); \
+	}	
 
 #ifdef HAVE_FFP_SHADER_SUPPORT
 const char *ffp_bind_defines[FFP_BINDS_NUM] = {
@@ -702,6 +719,38 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 	}
 }
 
+#ifdef HAVE_GLSL_UBOS
+/* 
+ * Experimental function to handle uniform blocks:
+ * The idea behind this is to check if a uniform is auniform block, and if so, bind to a
+ * specific index.
+ */
+void glsl_handle_ubos(char *txt, char *out, GLsizei preamble_size) {
+	GLboolean has_ubos = GL_FALSE;
+	char *src = txt;
+	out[0] = 0;
+	char *type = strstr(txt + preamble_size, "uniform");
+	// First pass: marking all ubos
+	while (type) {
+		char *s1 = strstr(type, "{");
+		char *s2 = strstr(type, ";");
+		if (s1 < s2) { // Uniform block
+			s1 = strstr(s1, "}");
+			s1 = strstr(s1, ";");
+			s1[0] = '\v';
+			has_ubos = GL_TRUE;
+		}
+		type = strstr(s2, "uniform");
+	}
+	// Second pass: replacing all marked variables
+	if (has_ubos) {
+		glsl_replace_marker_progressive("\v", ": BUFFER[", "];");
+	} else {
+		strcpy(out, src);
+	}
+}
+#endif
+
 /* 
  * Experimental function to add static keyword to all global variables:
  * The idea behind this is to check if a variable falls outside of a function and, if so,
@@ -709,6 +758,7 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
  * global variables by default as uniforms.
  */
 void glsl_handle_globals(char *txt, char *out, GLsizei preamble_size) {
+	GLboolean has_globals = GL_FALSE;
 	char *src = txt;
 	out[0] = 0;
 	char *type = txt + preamble_size;
@@ -755,6 +805,7 @@ HANDLE_VAR:
 			} else if (var_end < last_func_start || !last_func_start) { // Var is prior a function, handling it
 				type[0] = '\v';
 				type = var_end + 1;
+				has_globals = GL_TRUE;
 			} else { // Var is a function, skipping
 				type = last_func_end + 1;
 			}
@@ -765,18 +816,19 @@ HANDLE_VAR:
 		}
 	}
 	// Second pass: replacing all marked variables
-	glsl_replace_marker("\vloat", "static f");
-	glsl_replace_marker("\vnt", "static i");
-	glsl_replace_marker("\vec", "static v");
-	glsl_replace_marker("\vvec", "static i");
-	glsl_replace_marker("\vat", "static m");
-	glsl_replace_marker("\vonst", "static c");
-	glsl_replace_marker("\vowp", "static l");
-	glsl_replace_marker("\vediump", "static m");
-	glsl_replace_marker("\vighp", "static h");
-	
-	if (strlen(out) == 0)
+	if (has_globals) {
+		glsl_replace_marker("\vloat", "static f");
+		glsl_replace_marker("\vnt", "static i");
+		glsl_replace_marker("\vec", "static v");
+		glsl_replace_marker("\vvec", "static i");
+		glsl_replace_marker("\vat", "static m");
+		glsl_replace_marker("\vonst", "static c");
+		glsl_replace_marker("\vowp", "static l");
+		glsl_replace_marker("\vediump", "static m");
+		glsl_replace_marker("\vighp", "static h");
+	} else {
 		strcpy(out, src);
+	}
 }
 
 #ifdef HAVE_GLSL_TEXTURE_SIZE
@@ -1258,6 +1310,14 @@ void glsl_translator_process(shader *s) {
 	char *dst2 = vglMalloc(strlen(dst) + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
 	glsl_handle_globals(dst, dst2, preamble_size);
 	vgl_free(dst);
+#ifdef HAVE_GLSL_UBOS
+	// Manually handle ubos
+	dst = vglMalloc(strlen(dst) + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
+	glsl_handle_ubos(dst2, dst, preamble_size);
+	vgl_free(dst2);	
+	dst2 = dst;
+#endif
+
 	char *final;
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 	// Manually handle textureSize calls
