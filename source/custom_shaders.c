@@ -2266,7 +2266,7 @@ void glLinkProgram(GLuint progr) {
 			u->ptr = (const SceGxmProgramParameter *)get_block_details(p->vshader->unif_blk, u->idx);
 			u->bind = 0;
 			u->alias = has_block_alias(p->frag_ubos, ((block_uniform *)u->ptr)->name);
-			p->frag_ubos = u;
+			p->vert_ubos = u;
 		}
 		ptr += 4;
 	}
