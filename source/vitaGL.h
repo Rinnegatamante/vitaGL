@@ -1042,16 +1042,16 @@ typedef enum {
 } vglSemanticMode;
 
 // vgl*
-// Add a new global custom semantic binding for the GLSL translator. Requires HAVE_GLSL_SUPPORT.
+// Add a new global custom semantic binding for the GLSL translator.
 void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum type);
 
-// Add a new global custom semantic binding hint for the GLSL translator. Requires HAVE_GLSL_SUPPORT.
+// Add a new global custom semantic binding hint for the GLSL translator.
 void vglAddSemanticBindingHint(const GLchar *const *varying, GLenum type);
 
 // Alloc memory from vitaGL internal memory pools. Needs to be freed with vglFree.
 void *vglAlloc(uint32_t size, vglMemType type);
 
-// Alloc temporary memory from vitaGL internal scratch pool. Allocation is extremely fast if CIRCULAR_VERTEX_POOL is used. Memory lifetime is guaranteed for 3 frames.
+// Alloc temporary memory from vitaGL internal scratch pool. Allocation is extremely fast if NO_CIRCULAR_POOL is not used. Memory lifetime is guaranteed for 3 frames.
 void *vglAllocFromScratch(size_t size);
 
 // Overloads a buffer object with a pre-GPU mapped memory block with a copy-less action.
@@ -1135,7 +1135,7 @@ void vglSetFragmentBufferSize(uint32_t size);
 // Setup the parameter buffer size of sceGxm. Must be called before vglInit*. Default value: SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE.
 void vglSetParamBufferSize(uint32_t size);
 
-// Change the currently used semantics binding resolution mode for the GLSL translator. Default value: VGL_MODE_POSTPONED. Requires HAVE_GLSL_SUPPORT.
+// Change the currently used semantics binding resolution mode for the GLSL translator. Default value: VGL_MODE_POSTPONED.
 void vglSetSemanticBindingMode(GLenum mode);
 
 // Change the lifetime for a texture to be considered cacheable. Requires HAVE_TEXTURE_CACHE.
@@ -1159,7 +1159,7 @@ void vglSetupDisplayRenderTarget(uint8_t size);
 // Change the priority and affinity to use for the garbage collector thread. Must be called before vglInit*.
 void vglSetupGarbageCollector(int priority, int affinity);
 
-// Change what kind of vertex buffer objects are considered eligible for scratch memory usage in order to reduce allocation costs. Requires CIRCULAR_VERTEX_POOL and USE_SCRATCH_MEMORY.
+// Change what kind of vertex buffer objects are considered eligible for scratch memory usage in order to reduce allocation costs. Requires USE_SCRATCH_MEMORY.
 void vglSetupScratchMemory(GLboolean scratch_for_dynamic, GLboolean scratch_for_stream);
 
 // Setup the buffer sizes of the sceGxm shader patcher. Must be called before vglInit*. Default values: 1024 * 1024 each.
@@ -1183,7 +1183,7 @@ void vglTexImageDepthBuffer(GLenum target);
 // Makes vitaGL use cached memory instead of uncached memory for its internal memory pools. Must be called before vglInit*.
 void vglUseCachedMem(GLboolean use);
 
-// Makes the GLSL translator use low precision variables (eg: float -> half). Requires HAVE_GLSL_SUPPORT.
+// Makes the GLSL translator use low precision variables (eg: float -> half).
 void vglUseLowPrecision(GLboolean val);
 
 // Allows to swap between triple and double buffering. vitaGL by default uses triple buffering.
