@@ -588,10 +588,10 @@ void glGetIntegerv(GLenum pname, GLint *data) {
 		data[1] = gl_polygon_mode_back;
 		break;
 	case GL_SCISSOR_BOX:
-		data[0] = region.x;
-		data[1] = region.y;
-		data[2] = region.w;
-		data[3] = region.h;
+		data[0] = region.gl_x;
+		data[1] = region.gl_y;
+		data[2] = region.gl_w;
+		data[3] = region.gl_h;
 		break;
 	case GL_TEXTURE_BINDING_2D:
 		*data = (GLint)server_tex_unit->tex_id[0];
