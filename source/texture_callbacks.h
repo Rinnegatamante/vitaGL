@@ -25,31 +25,42 @@
 #define _TEXTURE_CALLBACKS_H_
 
 // Read callbacks
-uint32_t readR(const void *data);
-uint32_t readRG(const void *data);
-uint32_t readRGB(const void *data);
-uint32_t readBGR(const void *data);
-uint32_t readRGB565(const void *data);
-uint32_t readRGBA(const void *data);
-uint32_t readABGR(const void *data);
-uint32_t readBGRA(const void *data);
-uint32_t readARGB(const void *data);
-uint32_t readRGBA5551(const void *data);
-uint32_t readARGB1555(const void *data);
-uint32_t readABGR1555(const void *data);
-uint32_t readRGBA4444(const void *data);
-uint32_t readL(const void *data);
-uint32_t readLA(const void *data);
+uint32_t read_r8(const void *data);
+uint32_t read_rg88(const void *data);
+uint32_t read_rgb888(const void *data);
+uint32_t read_bgr888(const void *data);
+uint32_t read_rgb565(const void *data);
+uint32_t read_rgba8888(const void *data);
+uint32_t read_abgr8888(const void *data);
+uint32_t read_bgra8888(const void *data);
+uint32_t read_argb8888(const void *data);
+uint32_t read_rgba5551(const void *data);
+uint32_t read_argb1555(const void *data);
+uint32_t read_abgr1555(const void *data);
+uint32_t read_rgba4444(const void *data);
+uint32_t read_l8(const void *data);
+uint32_t read_la88(const void *data);
 
 // Write callbacks
-void writeR(void *data, uint32_t color);
-void writeRG(void *data, uint32_t color);
-void writeRA(void *data, uint32_t color);
-void writeRGB(void *data, uint32_t color);
-void writeBGR(void *data, uint32_t color);
-void writeRGBA(void *data, uint32_t color);
-void writeABGR(void *data, uint32_t color);
-void writeBGRA(void *data, uint32_t color);
-void writeRGBA5551(void *data, uint32_t color);
+void write_r8(void *data, uint32_t color);
+void write_rg88(void *data, uint32_t color);
+void write_ra88(void *data, uint32_t color);
+void write_rgb888(void *data, uint32_t color);
+void write_bgr888(void *data, uint32_t color);
+void write_rgba8888(void *data, uint32_t color);
+void write_abgr8888(void *data, uint32_t color);
+void write_bgra8888(void *data, uint32_t color);
+void write_rgba5551(void *data, uint32_t color);
+
+// Inlined variants
+static inline __attribute__((always_inline)) void write_rgba8888_inlined(void *data, uint32_t color) {
+	uint8_t *dst = (uint8_t *)data;
+	const uint8_t *src = (uint8_t *)&color;
+	dst[0] = src[0];
+	dst[1] = src[1];
+	dst[2] = src[2];
+	dst[3] = src[3];
+}
+
 
 #endif

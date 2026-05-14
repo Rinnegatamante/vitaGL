@@ -607,7 +607,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	case GL_ALPHA:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
-			read_cb = readR;
+			read_cb = read_r8;
 			data_bpp = 1;
 			break;
 		default:
@@ -621,7 +621,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 			if (internalFormat == GL_LUMINANCE || internalFormat == GL_SLUMINANCE || internalFormat == GL_SLUMINANCE8)
 				fast_store = GL_TRUE;
 			else
-				read_cb = readL;
+				read_cb = read_l8;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -630,7 +630,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	case GL_RG:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
-			read_cb = readRG;
+			read_cb = read_rg88;
 			data_bpp = 2;
 			break;
 		default:
@@ -644,7 +644,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 			if (internalFormat == GL_LUMINANCE_ALPHA || internalFormat == GL_SLUMINANCE_ALPHA || internalFormat == GL_SLUMINANCE8_ALPHA8)
 				fast_store = GL_TRUE;
 			else
-				read_cb = readLA;
+				read_cb = read_la88;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -657,7 +657,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 			if (internalFormat == GL_BGR)
 				fast_store = GL_TRUE;
 			else
-				read_cb = readBGR;
+				read_cb = read_bgr888;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -670,14 +670,14 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 			if (internalFormat == GL_RGB || internalFormat == GL_RGB8)
 				fast_store = GL_TRUE;
 			else
-				read_cb = readRGB;
+				read_cb = read_rgb888;
 			break;
 		case GL_UNSIGNED_SHORT_5_6_5:
 			data_bpp = 2;
 			if (internalFormat == GL_RGB)
 				fast_store = GL_TRUE;
 			else
-				read_cb = readRGB565;
+				read_cb = read_rgb565;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -691,15 +691,15 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 			if (internalFormat == GL_BGRA)
 				fast_store = GL_TRUE;
 			else
-				read_cb = readBGRA;
+				read_cb = read_bgra8888;
 			break;
 		case GL_UNSIGNED_INT_8_8_8_8:
 			data_bpp = 4;
-			read_cb = readARGB;
+			read_cb = read_argb8888;
 			break;
 		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
 			data_bpp = 2;
-			read_cb = readARGB1555;
+			read_cb = read_argb1555;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -712,7 +712,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 			if (internalFormat == GL_ABGR_EXT)
 				fast_store = GL_TRUE;
 			else
-				read_cb = readABGR;
+				read_cb = read_abgr8888;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -730,23 +730,23 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 			if (internalFormat == GL_RGBA || internalFormat == GL_RGBA8)
 				fast_store = GL_TRUE;
 			else
-				read_cb = readRGBA;
+				read_cb = read_rgba8888;
 			break;
 		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
 			data_bpp = 2;
-			read_cb = readABGR1555;
+			read_cb = read_abgr1555;
 			break;
 		case GL_UNSIGNED_SHORT_5_5_5_1:
 			data_bpp = 2;
 			if (internalFormat == GL_RGBA)
 				fast_store = GL_TRUE;
-			read_cb = readRGBA5551;
+			read_cb = read_rgba5551;
 			break;
 		case GL_UNSIGNED_SHORT_4_4_4_4:
 			data_bpp = 2;
 			if (internalFormat == GL_RGBA)
 				fast_store = GL_TRUE;
-			read_cb = readRGBA4444;
+			read_cb = read_rgba4444;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -784,14 +784,14 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 		gamma_correction = GL_TRUE;
 	case GL_RGB8:
 	case GL_RGB:
-		tex->write_cb = writeRGB;
+		tex->write_cb = write_rgb888;
 		if (fast_store && data_bpp == 2)
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB;
 		else
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
 		break;
 	case GL_BGR:
-		tex->write_cb = writeBGR;
+		tex->write_cb = write_bgr888;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_RGB;
 		break;
 	case GL_SRGB_ALPHA:
@@ -801,9 +801,9 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	case GL_RGBA4:
 	case GL_RGB5_A1:
 	case GL_RGBA:
-		tex->write_cb = writeRGBA;
+		tex->write_cb = write_rgba8888;
 		if (fast_store && data_bpp == 2) {
-			if ((uintptr_t)read_cb == (uintptr_t)readRGBA5551)
+			if ((uintptr_t)read_cb == (uintptr_t)read_rgba5551)
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
 			else
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA;
@@ -811,46 +811,46 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
 		break;
 	case GL_BGRA:
-		tex->write_cb = writeBGRA;
+		tex->write_cb = write_bgra8888;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
 		break;
 	case GL_ABGR_EXT:
-		tex->write_cb = writeABGR;
+		tex->write_cb = write_abgr8888;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_RGBA;
 		break;
 	case GL_INTENSITY:
-		tex->write_cb = writeR;
+		tex->write_cb = write_r8;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8_RRRR;
 		break;
 	case GL_ALPHA:
-		tex->write_cb = writeR;
+		tex->write_cb = write_r8;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8_R111;
 		break;
 	case GL_R8:
 	case GL_RED:
-		tex->write_cb = writeR;
+		tex->write_cb = write_r8;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8_R;
 		break;
 	case GL_COLOR_INDEX8_EXT:
-		tex->write_cb = writeR; // TODO: This is a hack
+		tex->write_cb = write_r8; // TODO: This is a hack
 		tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 		break;
 	case GL_SLUMINANCE:
 	case GL_SLUMINANCE8:
 		gamma_correction = GL_TRUE;
 	case GL_LUMINANCE:
-		tex->write_cb = writeR;
+		tex->write_cb = write_r8;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
 		break;
 	case GL_SLUMINANCE_ALPHA:
 	case GL_SLUMINANCE8_ALPHA8:
 		gamma_correction = GL_TRUE;
 	case GL_LUMINANCE_ALPHA:
-		tex->write_cb = writeRA;
+		tex->write_cb = write_ra88;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_A8L8;
 		break;
 	default:
-		tex->write_cb = writeRGBA;
+		tex->write_cb = write_rgba8888;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
 		break;
 	}
@@ -873,7 +873,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 						
 			// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
 			void *target_data = (void *)data;
-			if ((uintptr_t)read_cb != (uintptr_t)readRGBA) {
+			if ((uintptr_t)read_cb != (uintptr_t)read_rgba8888) {
 				target_data = vglMalloc(pot_w * pot_h * 4);
 				if (data) {
 					uint8_t *src = (uint8_t *)data;
@@ -881,7 +881,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 					for (int y = 0; y < height; y++) {
 						for (int x = 0; x < width; x++) {
 							uint32_t clr = read_cb(src);
-							writeRGBA(dst++, clr);
+							write_rgba8888_inlined(dst++, clr);
 							src += data_bpp;
 						}
 						dst = &dst[pot_w - width];
@@ -1033,7 +1033,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 	case GL_ALPHA:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
-			read_cb = readR;
+			read_cb = read_r8;
 			data_bpp = 1;
 			break;
 		default:
@@ -1043,7 +1043,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 	case GL_LUMINANCE:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
-			read_cb = readL;
+			read_cb = read_l8;
 			data_bpp = 1;
 			break;
 		default:
@@ -1054,7 +1054,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 2;
-			read_cb = readLA;
+			read_cb = read_la88;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -1063,7 +1063,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 	case GL_RG:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
-			read_cb = readRG;
+			read_cb = read_rg88;
 			data_bpp = 2;
 			break;
 		default:
@@ -1074,11 +1074,11 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 3;
-			read_cb = readRGB;
+			read_cb = read_rgb888;
 			break;
 		case GL_UNSIGNED_SHORT_5_6_5:
 			data_bpp = 2;
-			read_cb = readRGB565;
+			read_cb = read_rgb565;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -1088,7 +1088,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 3;
-			read_cb = readBGR;
+			read_cb = read_bgr888;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -1098,19 +1098,19 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 4;
-			read_cb = readRGBA;
+			read_cb = read_rgba8888;
 			break;
 		case GL_UNSIGNED_SHORT_5_5_5_1:
 			data_bpp = 2;
-			read_cb = readRGBA5551;
+			read_cb = read_rgba5551;
 			break;
 		case GL_UNSIGNED_SHORT_4_4_4_4:
 			data_bpp = 2;
-			read_cb = readRGBA4444;
+			read_cb = read_rgba4444;
 			break;
 		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
 			data_bpp = 2;
-			read_cb = readABGR1555;
+			read_cb = read_abgr1555;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -1121,15 +1121,15 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		case GL_UNSIGNED_BYTE:
 		case GL_UNSIGNED_INT_8_8_8_8_REV:
 			data_bpp = 4;
-			read_cb = readBGRA;
+			read_cb = read_bgra8888;
 			break;
 		case GL_UNSIGNED_INT_8_8_8_8:
 			data_bpp = 4;
-			read_cb = readARGB;
+			read_cb = read_argb8888;
 			break;
 		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
 			data_bpp = 2;
-			read_cb = readARGB1555;
+			read_cb = read_argb1555;
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -1148,43 +1148,43 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		// Detecting proper write callback
 		switch (tex_format) {
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
-			if ((uintptr_t)read_cb == (uintptr_t)readRGB)
+			if ((uintptr_t)read_cb == (uintptr_t)read_rgb888)
 				fast_store = GL_TRUE;
 			else
-				write_cb = writeRGB;
+				write_cb = write_rgb888;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8_RGB:
-			if ((uintptr_t)read_cb == (uintptr_t)readBGR)
+			if ((uintptr_t)read_cb == (uintptr_t)read_bgr888)
 				fast_store = GL_TRUE;
 			else
-				write_cb = writeBGR;
+				write_cb = write_bgr888;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-			if ((uintptr_t)read_cb == (uintptr_t)readRGBA)
+			if ((uintptr_t)read_cb == (uintptr_t)read_rgba8888)
 				fast_store = GL_TRUE;
 			else
-				write_cb = writeRGBA;
+				write_cb = write_rgba8888;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
-			if ((uintptr_t)read_cb == (uintptr_t)readBGRA)
+			if ((uintptr_t)read_cb == (uintptr_t)read_bgra8888)
 				fast_store = GL_TRUE;
 			else
-				write_cb = writeBGRA;
+				write_cb = write_bgra8888;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_L8:
 		case SCE_GXM_TEXTURE_FORMAT_U8_RRRR:
 		case SCE_GXM_TEXTURE_FORMAT_U8_R111:
 		case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
-			if ((uintptr_t)read_cb == (uintptr_t)readR || (uintptr_t)read_cb == (uintptr_t)readL)
+			if ((uintptr_t)read_cb == (uintptr_t)read_r8 || (uintptr_t)read_cb == (uintptr_t)read_l8)
 				fast_store = GL_TRUE;
 			else
-				write_cb = writeR;
+				write_cb = write_r8;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_A8L8:
-			if ((uintptr_t)read_cb == (uintptr_t)readLA)
+			if ((uintptr_t)read_cb == (uintptr_t)read_la88)
 				fast_store = GL_TRUE;
 			else
-				write_cb = writeRA;
+				write_cb = write_ra88;
 			break;
 		// From here, we assume we're always in fast_store trunk (Not 100% accurate)
 		case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
@@ -1317,7 +1317,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			if (target != GL_TEXTURE_2D) {
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
 			}
-			read_cb = readRGB;
+			read_cb = read_rgb888;
 			data_bpp = 3;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
 			paletted_format = GL_TRUE;
@@ -1326,7 +1326,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			if (target != GL_TEXTURE_2D) {
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
 			}
-			read_cb = readRGBA;
+			read_cb = read_rgba8888;
 			data_bpp = 4;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
 			paletted_format = GL_TRUE;
@@ -1335,7 +1335,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			if (target != GL_TEXTURE_2D) {
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
 			}
-			read_cb = readRGBA4444;
+			read_cb = read_rgba4444;
 			data_bpp = 2;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
 			paletted_format = GL_TRUE;
@@ -1344,7 +1344,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			if (target != GL_TEXTURE_2D) {
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
 			}
-			read_cb = readRGB565;
+			read_cb = read_rgb565;
 			data_bpp = 2;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
 			paletted_format = GL_TRUE;
@@ -1353,7 +1353,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			if (target != GL_TEXTURE_2D) {
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
 			}
-			read_cb = readRGBA5551;
+			read_cb = read_rgba5551;
 			data_bpp = 2;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P4_ABGR;
 			paletted_format = GL_TRUE;
@@ -1362,7 +1362,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			if (target != GL_TEXTURE_2D) {
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
 			}
-			read_cb = readRGB;
+			read_cb = read_rgb888;
 			data_bpp = 3;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 			paletted_format = GL_TRUE;
@@ -1371,7 +1371,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			if (target != GL_TEXTURE_2D) {
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
 			}
-			read_cb = readRGBA;
+			read_cb = read_rgba8888;
 			data_bpp = 4;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 			paletted_format = GL_TRUE;
@@ -1380,7 +1380,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			if (target != GL_TEXTURE_2D) {
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
 			}
-			read_cb = readRGBA4444;
+			read_cb = read_rgba4444;
 			data_bpp = 2;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 			paletted_format = GL_TRUE;
@@ -1389,7 +1389,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			if (target != GL_TEXTURE_2D) {
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
 			}
-			read_cb = readRGB565;
+			read_cb = read_rgb565;
 			data_bpp = 2;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 			paletted_format = GL_TRUE;
@@ -1398,7 +1398,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			if (target != GL_TEXTURE_2D) {
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalFormat)
 			}
-			read_cb = readRGBA5551;
+			read_cb = read_rgba5551;
 			data_bpp = 2;
 			tex_format = SCE_GXM_TEXTURE_FORMAT_P8_ABGR;
 			paletted_format = GL_TRUE;
@@ -1486,7 +1486,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 				decompressed_data = vglMalloc(width * height * 3);
 				etc1_decode_image((etc1_byte *)data, (etc1_byte *)decompressed_data, width, height, 3, width * 3);
 				if (recompress_non_native && target == GL_TEXTURE_2D) {
-					read_cb = readRGB;
+					read_cb = read_rgb888;
 					tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
 				} else
 					tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
@@ -1500,7 +1500,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			decompressed_data = vglMalloc(width * height * 4);
 			eac_decode((uint8_t *)data, decompressed_data, width, height, EAC_ETC2);
 			if (recompress_non_native && target == GL_TEXTURE_2D) {
-				read_cb = readRGBA;
+				read_cb = read_rgba8888;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
 			} else {
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
@@ -1512,7 +1512,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			decompressed_data = vglMalloc(width * height * 4);
 			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_RGB);
 			if (recompress_non_native && target == GL_TEXTURE_2D) {
-				read_cb = readBGRA;
+				read_cb = read_bgra8888;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
 			} else {
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
@@ -1524,7 +1524,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			decompressed_data = vglMalloc(width * height * 4);
 			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_EXPLICIT_ALPHA);
 			if (recompress_non_native && target == GL_TEXTURE_2D) {
-				read_cb = readBGRA;
+				read_cb = read_bgra8888;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
 			} else {
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
@@ -1536,7 +1536,7 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 			decompressed_data = vglMalloc(width * height * 4);
 			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_INTERPOLATED_ALPHA);
 			if (recompress_non_native && target == GL_TEXTURE_2D) {
-				read_cb = readBGRA;
+				read_cb = read_bgra8888;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
 			} else {
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB;
@@ -1581,14 +1581,14 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 						
 						// stb_dxt expects input as RGBA8888, so we convert input texture if necessary
 						void *target_data = decompressed_data;
-						if ((uintptr_t)read_cb != (uintptr_t)readRGBA) {
+						if ((uintptr_t)read_cb != (uintptr_t)read_rgba8888) {
 							target_data = vglMalloc(pot_w * pot_h * 4);
 							uint8_t *src = (uint8_t *)decompressed_data;
 							uint32_t *dst = target_data;
 							for (int y = 0; y < height; y++) {
 								for (int x = 0; x < width; x++) {
 									uint32_t clr = read_cb(src);
-									writeRGBA(dst++, clr);
+									write_rgba8888_inlined(dst++, clr);
 									src += data_bpp;
 								}
 								dst = &dst[pot_w - width];

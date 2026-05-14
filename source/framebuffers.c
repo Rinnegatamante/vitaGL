@@ -760,7 +760,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			if ((format == GL_RGBA || format == GL_RGBA8) && type == GL_UNSIGNED_BYTE) {
 				fast_store = GL_TRUE;
 			} else {
-				read_cb = readRGBA;
+				read_cb = read_rgba8888;
 			}
 			src_bpp = 4;
 			break;
@@ -768,7 +768,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			if (format == GL_BGRA && type == GL_UNSIGNED_BYTE)
 				fast_store = GL_TRUE;
 			else
-				read_cb = readBGRA;
+				read_cb = read_bgra8888;
 			src_bpp = 4;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA:
@@ -778,28 +778,28 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			if ((format == GL_R8 || format == GL_RED) && type == GL_UNSIGNED_BYTE)
 				fast_store = GL_TRUE;
 			else
-				read_cb = readR;
+				read_cb = read_r8;
 			src_bpp = 1;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
 			if ((format == GL_RGB || format == GL_RGB8) && type == GL_UNSIGNED_BYTE)
 				fast_store = GL_TRUE;
 			else
-				read_cb = readRGB;
+				read_cb = read_rgb888;
 			src_bpp = 3;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
 			if (format == GL_RGB && type == GL_UNSIGNED_SHORT_5_6_5)
 				fast_store = GL_TRUE;
 			else
-				read_cb = readRGB565;
+				read_cb = read_rgb565;
 			src_bpp = 2;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
 			if ((format == GL_RGBA && type == GL_UNSIGNED_SHORT_5_5_5_1) || format == GL_RGB5_A1)
 				fast_store = GL_TRUE;
 			else
-				read_cb = readRGBA5551;
+				read_cb = read_rgba5551;
 			src_bpp = 2;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA:
@@ -827,7 +827,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			fast_store = GL_TRUE;
 			dst_bpp = src_bpp;
 		} else
-			read_cb = readRGBA;
+			read_cb = read_rgba8888;
 	}
 	
 	// If the current active framebuffer is the same of the source one for the read, we force a scene reset so that in-flight draws are executed
@@ -846,11 +846,11 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		case GL_RGBA:
 			switch (type) {
 			case GL_UNSIGNED_BYTE:
-				write_cb = writeRGBA;
+				write_cb = write_rgba8888;
 				dst_bpp = 4;
 				break;
 			case GL_UNSIGNED_SHORT_5_5_5_1:
-				write_cb = writeRGBA5551;
+				write_cb = write_rgba5551;
 				dst_bpp = 2;
 				break;
 			default:
@@ -861,7 +861,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			switch (type) {
 			case GL_UNSIGNED_BYTE:
 			case GL_UNSIGNED_INT_8_8_8_8_REV:
-				write_cb = writeBGRA;
+				write_cb = write_bgra8888;
 				dst_bpp = 4;
 				break;
 			default:
@@ -871,7 +871,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		case GL_RGB:
 			switch (type) {
 			case GL_UNSIGNED_BYTE:
-				write_cb = writeRGB;
+				write_cb = write_rgb888;
 				dst_bpp = 3;
 				break;
 			default:
@@ -881,7 +881,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		case GL_BGR:
 			switch (type) {
 			case GL_UNSIGNED_BYTE:
-				write_cb = writeBGR;
+				write_cb = write_bgr888;
 				dst_bpp = 3;
 				break;
 			default:
