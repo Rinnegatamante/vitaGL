@@ -809,7 +809,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		scene_end();
 
 	if (has_commondialog) {
-		// Populating SceCommonDialog parameters
+		// Performing commondialog update
 		SceCommonDialogUpdateParam updateParam;
 		vgl_memset(&updateParam, 0, sizeof(updateParam));
 		updateParam.renderTarget.colorFormat = SCE_GXM_COLOR_FORMAT_A8B8G8R8;
@@ -817,11 +817,9 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		updateParam.renderTarget.width = DISPLAY_WIDTH;
 		updateParam.renderTarget.height = DISPLAY_HEIGHT;
 		updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE;
-		updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_front_buffer_index];
+		updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_back_buffer_index];
 		updateParam.renderTarget.depthSurfaceData = gxm_depth_stencil_surface.depthData;
-		updateParam.displaySyncObject = gxm_sync_objects[gxm_front_buffer_index];
-
-		// Updating sceCommonDialog
+		updateParam.displaySyncObject = gxm_sync_objects[gxm_back_buffer_index];
 		sceCommonDialogUpdate(&updateParam);
 	}
 
