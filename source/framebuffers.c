@@ -226,6 +226,8 @@ GLboolean _glReadPixels_gpu(GLint x, GLint y, GLsizei width, GLsizei height, GLe
  */
 
 inline __attribute__((always_inline)) void glGenFramebuffers(GLsizei n, GLuint *ids) {
+	THREAD_SAFE()
+
 	int i, j = 0;
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
@@ -251,6 +253,8 @@ void glCreateFramebuffers(GLsizei n, GLuint *ids) {
 }
 
 void glGenRenderbuffers(GLsizei n, GLuint *ids) {
+	THREAD_SAFE()
+
 	int i, j = 0;
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
@@ -268,6 +272,8 @@ void glGenRenderbuffers(GLsizei n, GLuint *ids) {
 }
 
 void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -302,6 +308,8 @@ void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
 }
 
 void glDeleteRenderbuffers(GLsizei n, const GLuint *ids) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -332,6 +340,8 @@ void glDeleteRenderbuffers(GLsizei n, const GLuint *ids) {
 }
 
 void glBindFramebuffer(GLenum target, GLuint fb) {
+	THREAD_SAFE()
+
 	switch (target) {
 	case GL_DRAW_FRAMEBUFFER:
 		active_write_fb = (framebuffer *)fb;
@@ -348,6 +358,8 @@ void glBindFramebuffer(GLenum target, GLuint fb) {
 }
 
 void glBindRenderbuffer(GLenum target, GLuint rb) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (target != GL_RENDERBUFFER) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
@@ -358,6 +370,8 @@ void glBindRenderbuffer(GLenum target, GLuint rb) {
 }
 
 void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint rb) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (renderbuffertarget != GL_RENDERBUFFER) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, renderbuffertarget)
@@ -406,6 +420,8 @@ void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbu
 }
 
 void glNamedFramebufferRenderbuffer(GLuint target, GLenum attachment, GLenum renderbuffertarget, GLuint rb) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (renderbuffertarget != GL_RENDERBUFFER) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, renderbuffertarget)
@@ -439,6 +455,8 @@ void glNamedFramebufferRenderbuffer(GLuint target, GLenum attachment, GLenum ren
 }
 
 void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, GLsizei height) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (target != GL_RENDERBUFFER) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
@@ -475,6 +493,8 @@ void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, 
 }
 
 void glNamedRenderbufferStorage(GLuint target, GLenum internalformat, GLsizei width, GLsizei height) {
+	THREAD_SAFE()
+
 	renderbuffer *rb = (renderbuffer *)target;
 #ifndef DEPTH_STENCIL_HACK
 	if (rb->depthbuffer_ptr) {
@@ -503,6 +523,8 @@ void glNamedRenderbufferStorage(GLuint target, GLenum internalformat, GLsizei wi
 }
 
 inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint tex_id, GLint level) {
+	THREAD_SAFE()
+
 	// Detecting requested framebuffer
 	framebuffer *fb = NULL;
 	switch (target) {
@@ -594,6 +616,8 @@ inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum text
 }
 
 inline void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum textarget, GLuint tex_id, GLint level) {
+	THREAD_SAFE()
+
 	framebuffer *fb = (framebuffer *)target;
 
 #ifndef SKIP_ERROR_HANDLING
@@ -742,6 +766,8 @@ void glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLe
 }
 
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data) {
+	THREAD_SAFE()
+
 	/*
 	 * Callbacks are actually used to just perform down/up-sampling
 	 * between U8 texture formats. Reads are expected to give as result
@@ -928,6 +954,8 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 }
 
 void vglReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data) {
+	THREAD_SAFE()
+
 	GLboolean res = _glReadPixels_gpu(x, y, width, height, format, type, data, GL_TRUE);
 #ifndef SKIP_ERROR_HANDLING
 	if (!res) {
@@ -937,6 +965,8 @@ void vglReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum forma
 }
 
 void glBlitNamedFramebuffer(GLuint readFramebuffer, GLuint drawFramebuffer, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter) {
+	THREAD_SAFE()
+
 	// Invalidate current write framebuffer binding
 	framebuffer *real_write_fb = active_write_fb;
 	active_write_fb = (framebuffer *)drawFramebuffer;
@@ -1059,6 +1089,8 @@ void glBlitFramebuffer(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint
 /* vgl* */
 
 void vglTexImageDepthBuffer(GLenum target) {
+	THREAD_SAFE()
+
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id[0];
@@ -1091,6 +1123,8 @@ GLboolean glIsRenderbuffer(GLuint rb) {
 }
 
 void glReadBuffer(GLenum mode) {
+	THREAD_SAFE()
+
 	if (!active_read_fb) {
 #ifndef SKIP_ERROR_HANDLING
 		if (mode != GL_BACK && mode != GL_FRONT) {

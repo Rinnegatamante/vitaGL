@@ -112,6 +112,8 @@ void change_blend_mask() {
  */
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glBlendFunc, DLIST_FUNC_U32_U32, sfactor, dfactor))
@@ -196,6 +198,8 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 }
 
 void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glBlendFunc, DLIST_FUNC_U32_U32_U32_U32, srcRGB, dstRGB, srcAlpha, dstAlpha))
@@ -354,6 +358,8 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 }
 
 void glBlendEquation(GLenum mode) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glBlendEquation, DLIST_FUNC_U32, mode))
@@ -383,6 +389,8 @@ void glBlendEquation(GLenum mode) {
 }
 
 void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glBlendEquationSeparate, DLIST_FUNC_U32_U32, modeRGB, modeAlpha))
@@ -431,6 +439,8 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
 }
 
 void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glColorMask, DLIST_FUNC_U8_U8_U8_U8, red, green, blue, alpha))

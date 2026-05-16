@@ -78,6 +78,17 @@
 #define SAFE_DRAW_SIZE_THRESHOLD (0x8000) // Minimum bytes of vertices data for a draw to be handled with speedhack
 #endif
 
+#ifdef DEBUG_THREAD_SAFENESS
+#define vgl_is_main_thread *(int*)sceKernelGetTLSAddr(0x10)
+#define THREAD_SAFE() \
+	if (!vgl_is_main_thread) { \
+		vgl_log("%s:%d %s: A thread unsafe function has been called from an invalid thread.\n", __FILE__, __LINE__, __func__); \
+		return; \
+	}
+#else
+#define THREAD_SAFE()
+#endif
+
 #if !defined(DISABLE_CIRCULAR_POOL) && !defined(CIRCULAR_POOL_SPEEDHACK)
 extern uint8_t *circular_data_pool[DISPLAY_MAX_BUFFER_COUNT];
 extern uint8_t *circular_data_pool_ptr[DISPLAY_MAX_BUFFER_COUNT];

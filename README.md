@@ -22,6 +22,7 @@ In order to build vitaGL use the following command: `make install`.
 |`DEBUG_GLSL_TRANSLATOR=1`| Enables logging of GLSL translator input and output prior shader compilation process.|
 |`DEBUG_GLSL_PREPROCESSOR=1`| Enables logging of GLSL preprocessor input and output prior shader compilation process.|
 |`DEBUG_GC=1`| Enables sanity checks for the internal garbage collector.|
+|`DEBUG_THREAD_SAFENESS=1`| Enables sanity checks for thread safety usage of the library.|
 ### Compatibility Flags
 | Flag | Description |
 | --- | --- |

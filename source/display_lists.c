@@ -117,6 +117,8 @@ void glListBase(GLuint base) {
 }
 
 void glCallList(GLuint list) {
+	THREAD_SAFE()
+
 	list_chain *l = display_lists[list + dlist_offs - 1].head;
 #ifdef DEBUG_DLISTS
 	vgl_log("%s:%d %s: Executing display list %d (Offset: %d)\n", __FILE__, __LINE__, __func__, list + dlist_offs, dlist_offs);
@@ -322,6 +324,8 @@ void glCallList(GLuint list) {
 }
 
 void glCallLists(GLsizei n, GLenum type, const void *lists) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, n)
@@ -356,6 +360,8 @@ void glCallLists(GLsizei n, GLenum type, const void *lists) {
 }
 
 void glNewList(GLuint list, GLenum mode) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (list == 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, list)
@@ -368,6 +374,8 @@ void glNewList(GLuint list, GLenum mode) {
 }
 
 void glEndList(void) {
+	THREAD_SAFE()
+
 	curr_display_list = NULL;
 }
 
@@ -407,6 +415,8 @@ GLuint glGenLists(GLsizei range) {
 }
 
 void glDeleteLists(GLuint list, GLsizei range) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (range < 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, range)

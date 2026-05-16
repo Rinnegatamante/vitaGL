@@ -52,6 +52,8 @@ GLint get_gl_matrix_mode() {
  */
 
 void glMatrixMode(GLenum mode) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glMatrixMode, DLIST_FUNC_U32, mode))
@@ -74,6 +76,8 @@ void glMatrixMode(GLenum mode) {
 }
 
 void glMatrixLoadf(GLenum mode, const GLfloat *m) {
+	THREAD_SAFE()
+
 	// Setting requested matrix
 	matrix4x4 *mat;
 	switch (mode) {
@@ -104,6 +108,8 @@ void glMatrixLoadf(GLenum mode, const GLfloat *m) {
 }
 
 void glMatrixLoadd(GLenum mode, const GLdouble *m) {
+	THREAD_SAFE()
+
 	// Setting requested matrix
 	matrix4x4 *mat;
 	switch (mode) {
@@ -134,6 +140,8 @@ void glMatrixLoadd(GLenum mode, const GLdouble *m) {
 }
 
 inline void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
@@ -167,6 +175,8 @@ void glOrthox(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed 
 }
 
 inline void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
@@ -192,6 +202,8 @@ inline void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top,
 }
 
 void glFrustumx(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed nearVal, GLfixed farVal) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
@@ -221,6 +233,8 @@ void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLd
 }
 
 void glMatrixLoadIdentity(GLenum mode) {
+	THREAD_SAFE()
+
 	// Setting requested matrix
 	switch (mode) {
 	case GL_MODELVIEW: // Modelview matrix
@@ -242,6 +256,8 @@ void glMatrixLoadIdentity(GLenum mode) {
 }
 
 void glLoadIdentity(void) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glLoadIdentity, DLIST_FUNC_VOID))
@@ -276,6 +292,8 @@ void glMultMatrixf(const GLfloat *m) {
 }
 
 void glMatrixMultd(GLenum mode, const GLdouble *m) {
+	THREAD_SAFE()
+
 	// Setting requested matrix
 	matrix4x4 *mat;
 	switch (mode) {
@@ -313,6 +331,8 @@ void glMatrixMultd(GLenum mode, const GLdouble *m) {
 }
 
 void glMatrixMultf(GLenum mode, const GLfloat *m) {
+	THREAD_SAFE()
+
 	// Setting requested matrix
 	matrix4x4 *mat;
 	switch (mode) {
@@ -350,6 +370,8 @@ void glMatrixMultf(GLenum mode, const GLfloat *m) {
 }
 
 void glMultTransposeMatrixf(const GLfloat *m) {
+	THREAD_SAFE()
+
 	// Properly ordering matrix
 	matrix4x4 res, src;
 	int i, j;
@@ -372,6 +394,8 @@ void glMultTransposeMatrixf(const GLfloat *m) {
 }
 
 void glMultMatrixx(const GLfixed *m) {
+	THREAD_SAFE()
+
 	// Properly ordering matrix
 	matrix4x4 res, src;
 	int i, j;
@@ -393,6 +417,8 @@ void glMultMatrixx(const GLfixed *m) {
 }
 
 void glMultTransposeMatrixx(const GLfixed *m) {
+	THREAD_SAFE()
+
 	// Properly ordering matrix
 	matrix4x4 res, src;
 	int i, j;
@@ -414,6 +440,8 @@ void glMultTransposeMatrixx(const GLfixed *m) {
 }
 
 void glLoadMatrixf(const GLfloat *m) {
+	THREAD_SAFE()
+
 	// Properly ordering matrix
 	int i, j;
 	for (i = 0; i < 4; i++) {
@@ -428,6 +456,8 @@ void glLoadMatrixf(const GLfloat *m) {
 }
 
 void glLoadMatrixd(const GLdouble *m) {
+	THREAD_SAFE()
+
 	// Properly ordering matrix
 	int i, j;
 	for (i = 0; i < 4; i++) {
@@ -442,6 +472,8 @@ void glLoadMatrixd(const GLdouble *m) {
 }
 
 void glLoadTransposeMatrixf(const GLfloat *m) {
+	THREAD_SAFE()
+
 	// Properly ordering matrix
 	int i, j;
 	for (i = 0; i < 4; i++) {
@@ -456,6 +488,8 @@ void glLoadTransposeMatrixf(const GLfloat *m) {
 }
 
 void glLoadMatrixx(const GLfixed *m) {
+	THREAD_SAFE()
+
 	// Properly ordering matrix
 	int i, j;
 	for (i = 0; i < 4; i++) {
@@ -470,6 +504,8 @@ void glLoadMatrixx(const GLfixed *m) {
 }
 
 void glLoadTransposeMatrixx(const GLfixed *m) {
+	THREAD_SAFE()
+
 	// Properly ordering matrix
 	int i, j;
 	for (i = 0; i < 4; i++) {
@@ -484,6 +520,8 @@ void glLoadTransposeMatrixx(const GLfixed *m) {
 }
 
 void glMatrixRotatef(GLenum mode, GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
+	THREAD_SAFE()
+
 	// Setting requested matrix
 	matrix4x4 *mat;
 	switch (mode) {
@@ -513,6 +551,8 @@ void glMatrixRotated(GLenum matrixMode, GLdouble angle, GLdouble x, GLdouble y, 
 }
 
 void glMatrixScalef(GLenum mode, GLfloat x, GLfloat y, GLfloat z) {
+	THREAD_SAFE()
+
 	// Setting requested matrix
 	matrix4x4 *mat;
 	switch (mode) {
@@ -541,6 +581,8 @@ void glMatrixScaled(GLenum matrixMode, GLdouble x, GLdouble y, GLdouble z) {
 }
 
 void glMatrixTranslatef(GLenum mode, GLfloat x, GLfloat y, GLfloat z) {
+	THREAD_SAFE()
+
 	// Setting requested matrix
 	matrix4x4 *mat;
 	switch (mode) {
@@ -569,6 +611,8 @@ void glMatrixTranslated(GLenum matrixMode, GLdouble x, GLdouble y, GLdouble z) {
 }
 
 void glMatrixOrtho(GLenum mode, GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal) {
+	THREAD_SAFE()
+
 	// Setting requested matrix
 	matrix4x4 *mat;
 	switch (mode) {
@@ -601,6 +645,8 @@ void glMatrixOrtho(GLenum mode, GLdouble left, GLdouble right, GLdouble bottom, 
 }
 
 void glMatrixFrustum(GLenum mode, GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal) {
+	THREAD_SAFE()
+
 	// Setting requested matrix
 	matrix4x4 *mat;
 	switch (mode) {
@@ -633,6 +679,8 @@ void glMatrixFrustum(GLenum mode, GLdouble left, GLdouble right, GLdouble bottom
 }
 
 void glMatrixPush(GLenum mode) {
+	THREAD_SAFE()
+
 	// Setting requested matrix
 	matrix4x4 *mat;
 	switch (mode) {
@@ -679,6 +727,8 @@ void glMatrixPush(GLenum mode) {
 }
 
 void glMatrixPop(GLenum mode) {
+	THREAD_SAFE()
+
 	// Setting requested matrix
 	matrix4x4 *mat;
 	switch (mode) {
@@ -730,6 +780,8 @@ void glMatrixPop(GLenum mode) {
 }
 
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glTranslatef, DLIST_FUNC_F32_F32_F32, x, y, z))
@@ -754,6 +806,8 @@ void glTranslated(GLdouble x, GLdouble y, GLdouble z) {
 }
 
 void glTranslatex(GLfixed x, GLfixed y, GLfixed z) {
+	THREAD_SAFE()
+
 	// Translating in use matrix
 	matrix4x4_translate(*matrix, (float)x / 65536.0f, (float)y / 65536.0f, (float)z / 65536.0f);
 	if (matrix != &texture_matrix[server_texture_unit])
@@ -762,6 +816,8 @@ void glTranslatex(GLfixed x, GLfixed y, GLfixed z) {
 }
 
 void glScalef(GLfloat x, GLfloat y, GLfloat z) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glScalef, DLIST_FUNC_F32_F32_F32, x, y, z))
@@ -786,6 +842,8 @@ void glScaled(GLdouble x, GLdouble y, GLdouble z) {
 }
 
 void glScalex(GLfixed x, GLfixed y, GLfixed z) {
+	THREAD_SAFE()
+
 	// Scaling in use matrix
 	matrix4x4_scale(*matrix, (float)x / 65536.0f, (float)y / 65536.0f, (float)z / 65536.0f);
 	if (matrix != &texture_matrix[server_texture_unit])
@@ -794,6 +852,8 @@ void glScalex(GLfixed x, GLfixed y, GLfixed z) {
 }
 
 inline void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glRotatef, DLIST_FUNC_F32_F32_F32, x, y, z))
@@ -819,6 +879,8 @@ void glRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z) {
 }
 
 void glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
@@ -881,6 +943,8 @@ void glPushMatrix(void) {
 }
 
 void glPopMatrix(void) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glPopMatrix, DLIST_FUNC_VOID))
@@ -933,6 +997,8 @@ void glPopMatrix(void) {
 }
 
 void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
@@ -949,6 +1015,8 @@ void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFa
 }
 
 void gluLookAt(GLdouble eyeX, GLdouble eyeY, GLdouble eyeZ, GLdouble centerX, GLdouble centerY, GLdouble centerZ, GLdouble upX, GLdouble upY, GLdouble upZ) {
+	THREAD_SAFE()
+
 	float f[4], up[4];
 	f[0] = centerX - eyeX;
 	f[1] = centerY - eyeY;

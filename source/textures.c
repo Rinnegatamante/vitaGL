@@ -1267,6 +1267,8 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 }
 
 void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data) {
+	THREAD_SAFE()
+
 #ifdef HAVE_UNPURE_TEXTURES
 	if (tex->mip_start < 0)
 		tex->mip_start = level;
@@ -1674,6 +1676,8 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
  */
 
 void glPixelStorei(GLenum pname, GLint param) {
+	THREAD_SAFE()
+	
 	switch (pname) {
 	case GL_UNPACK_ROW_LENGTH:
 		unpack_row_len = param;
@@ -1684,6 +1688,8 @@ void glPixelStorei(GLenum pname, GLint param) {
 }
 
 inline __attribute__((always_inline)) void glGenTextures(GLsizei n, GLuint *res) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (n < 0) {
@@ -1734,6 +1740,8 @@ void glCreateTextures(GLenum target, GLsizei n, GLuint *textures) {
 }
 
 void glBindTexture(GLenum target, GLuint texture) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glBindTexture, DLIST_FUNC_U32_U32, target, texture))
@@ -1766,6 +1774,8 @@ void glBindTexture(GLenum target, GLuint texture) {
 }
 
 void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (n < 0) {
@@ -1829,6 +1839,8 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 }
 
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *data) {
+	THREAD_SAFE()
+
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
@@ -1885,6 +1897,8 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 }
 
 void glTextureImage2D(GLuint tex_id, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *data) {
+	THREAD_SAFE()
+
 	texture *tex = &texture_slots[tex_id];
 	
 #ifndef SKIP_ERROR_HANDLING
@@ -1921,6 +1935,8 @@ void glTextureImage2D(GLuint tex_id, GLint level, GLint internalFormat, GLsizei 
 }
 
 void glTexImage1D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *data) {
+	THREAD_SAFE()
+
 #ifdef HAVE_UNPURE_TEXFORMATS
 	glTexImage2D(GL_TEXTURE_1D, level, internalFormat, width, 1, border, format, type, data);
 #else
@@ -1929,6 +1945,8 @@ void glTexImage1D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 }
 
 void glTextureImage1D(GLuint tex_id, GLint level, GLint internalFormat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *data) {
+	THREAD_SAFE()
+
 #ifdef HAVE_UNPURE_TEXFORMATS
 	glTextureImage2D(tex_id, level, internalFormat, width, 1, border, format, type, data);
 #else
@@ -1937,6 +1955,8 @@ void glTextureImage1D(GLuint tex_id, GLint level, GLint internalFormat, GLsizei 
 }
 
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {	
+	THREAD_SAFE()
+
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
@@ -1947,6 +1967,8 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 }
 
 void glTextureSubImage2D(GLuint tex_id, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) {
+	THREAD_SAFE()
+
 	texture *tex = &texture_slots[tex_id];
 	
 	// FIXME: Cubemaps support
@@ -1954,6 +1976,8 @@ void glTextureSubImage2D(GLuint tex_id, GLint level, GLint xoffset, GLint yoffse
 }
 
 void glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels) {
+	THREAD_SAFE()
+
 #ifdef HAVE_UNPURE_TEXFORMATS
 	glTexSubImage2D(GL_TEXTURE_1D, level, xoffset, 0, width, 1, format, type, pixels);
 #else
@@ -1962,6 +1986,8 @@ void glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, G
 }
 
 void glTextureSubImage1D(GLuint tex_id, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels) {
+	THREAD_SAFE()
+
 #ifdef HAVE_UNPURE_TEXFORMATS
 	glTextureSubImage2D(tex_id, level, xoffset, 0, width, 1, format, type, pixels);
 #else
@@ -1970,6 +1996,8 @@ void glTextureSubImage1D(GLuint tex_id, GLint level, GLint xoffset, GLsizei widt
 }
 
 void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data) {
+	THREAD_SAFE()
+
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
@@ -1980,6 +2008,8 @@ void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalFormat, G
 }
 
 void glCompressedTextureImage2D(GLuint tex_id, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data) {
+	THREAD_SAFE()
+
 	texture *tex = &texture_slots[tex_id];
 	
 	// FIXME: Cubemaps support
@@ -1987,6 +2017,8 @@ void glCompressedTextureImage2D(GLuint tex_id, GLint level, GLenum internalForma
 }
 
 void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid *data) {
+	THREAD_SAFE()
+
 	// Checking if a color table is already enabled, if so, deallocating it
 	if (color_table != NULL) {
 		gpu_free_palette(color_table);
@@ -2014,6 +2046,8 @@ void glColorTable(GLenum target, GLenum internalformat, GLsizei width, GLenum fo
 }
 
 void glTexParameteri(GLenum target, GLenum pname, GLint param) {
+	THREAD_SAFE()
+
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
@@ -2024,6 +2058,8 @@ void glTexParameteri(GLenum target, GLenum pname, GLint param) {
 }
 
 void glTextureParameteri(GLuint tex_id, GLenum pname, GLint param) {
+	THREAD_SAFE()
+
 	texture *tex = &texture_slots[tex_id];
 	
 	// FIXME: Cubemaps support
@@ -2031,6 +2067,8 @@ void glTextureParameteri(GLuint tex_id, GLenum pname, GLint param) {
 }
 
 void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
+	THREAD_SAFE()
+
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
@@ -2041,6 +2079,8 @@ void glTexParameterx(GLenum target, GLenum pname, GLfixed param) {
 }
 
 void glTextureParameterx(GLuint tex_id, GLenum pname, GLfixed param) {
+	THREAD_SAFE()
+
 	texture *tex = &texture_slots[tex_id];
 	
 	// FIXME: Cubemaps support
@@ -2048,6 +2088,8 @@ void glTextureParameterx(GLuint tex_id, GLenum pname, GLfixed param) {
 }
 
 void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
+	THREAD_SAFE()
+
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
@@ -2058,6 +2100,8 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param) {
 }
 
 void glTextureParameterf(GLuint tex_id, GLenum pname, GLfloat param) {
+	THREAD_SAFE()
+
 	texture *tex = &texture_slots[tex_id];
 	
 	// FIXME: Cubemaps support
@@ -2065,6 +2109,8 @@ void glTextureParameterf(GLuint tex_id, GLenum pname, GLfloat param) {
 }
 
 void glTexParameteriv(GLenum target, GLenum pname, GLint *param) {
+	THREAD_SAFE()
+
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;
@@ -2075,6 +2121,8 @@ void glTexParameteriv(GLenum target, GLenum pname, GLint *param) {
 }
 
 void glTextureParameteriv(GLuint tex_id, GLenum pname, GLint *param) {
+	THREAD_SAFE()
+
 	texture *tex = &texture_slots[tex_id];
 	
 	// FIXME: Cubemaps support
@@ -2082,6 +2130,8 @@ void glTextureParameteriv(GLuint tex_id, GLenum pname, GLint *param) {
 }
 
 void glActiveTexture(GLenum texture) {
+	THREAD_SAFE()
+
 	// Changing current in use server texture unit
 #ifndef SKIP_ERROR_HANDLING
 	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE15)) {
@@ -2097,6 +2147,8 @@ void glActiveTexture(GLenum texture) {
 }
 
 void glGenerateMipmap(GLenum target) {
+	THREAD_SAFE()
+
 	// Setting some aliases to make code more readable
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx = tex_unit->tex_id[0];
@@ -2137,6 +2189,8 @@ void glGenerateMipmap(GLenum target) {
 }
 
 void glGenerateTextureMipmap(GLuint target) {
+	THREAD_SAFE()
+
 	// Setting some aliases to make code more readable
 	texture *tex = &texture_slots[target];
 
@@ -2168,6 +2222,8 @@ void glGenerateTextureMipmap(GLuint target) {
 }
 
 void glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if texture is too big for sceGxm
 	if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE || width < 0) {
@@ -2185,6 +2241,8 @@ void glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x
 }
 
 void glCopyTextureImage2D(GLuint tex_id, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if texture is too big for sceGxm
 	if (width > GXM_TEX_MAX_SIZE || height > GXM_TEX_MAX_SIZE || width < 0) {
@@ -2202,6 +2260,8 @@ void glCopyTextureImage2D(GLuint tex_id, GLint level, GLenum internalformat, GLi
 }
 
 void glCopyTexImage1D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border) {
+	THREAD_SAFE()
+
 #ifdef HAVE_UNPURE_TEXFORMATS
 	glCopyTexImage2D(GL_TEXTURE_1D, level, internalformat, x, y, width, 1, border);
 #else
@@ -2210,6 +2270,8 @@ void glCopyTexImage1D(GLenum target, GLint level, GLenum internalformat, GLint x
 }
 
 void glCopyTextureImage1D(GLuint tex_id, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border) {
+	THREAD_SAFE()
+
 #ifdef HAVE_UNPURE_TEXFORMATS
 	glCopyTextureImage2D(tex_id, level, internalformat, x, y, width, 1, border);
 #else
@@ -2218,6 +2280,8 @@ void glCopyTextureImage1D(GLuint tex_id, GLint level, GLenum internalformat, GLi
 }
 
 void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if texture is too big for sceGxm
 	if (level < 0) {
@@ -2231,6 +2295,8 @@ void glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffse
 }
 
 void glCopyTextureSubImage2D(GLuint tex_id, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if texture is too big for sceGxm
 	if (level < 0) {
@@ -2244,6 +2310,8 @@ void glCopyTextureSubImage2D(GLuint tex_id, GLint level, GLint xoffset, GLint yo
 }
 
 void glCopyTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width) {
+	THREAD_SAFE()
+
 #ifdef HAVE_UNPURE_TEXFORMATS
 	glCopyTexSubImage2D(GL_TEXTURE_1D, level, xoffset, 0, x, y, width, 1);
 #else
@@ -2252,6 +2320,8 @@ void glCopyTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLint x, GLi
 }
 
 void glCopyTextureSubImage1D(GLuint tex_id, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width) {
+	THREAD_SAFE()
+
 #ifdef HAVE_UNPURE_TEXFORMATS
 	glCopyTextureSubImage2D(tex_id, GL_TEXTURE_1D, level, xoffset, 0, x, y, width, 1);
 #else
@@ -2260,6 +2330,8 @@ void glCopyTextureSubImage1D(GLuint tex_id, GLint level, GLint xoffset, GLint x,
 }
 
 void gluBuild2DMipmaps(GLenum target, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *data) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (target != GL_TEXTURE_2D) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
@@ -2270,6 +2342,8 @@ void gluBuild2DMipmaps(GLenum target, GLint internalFormat, GLsizei width, GLsiz
 }
 
 void glGenSamplers(GLsizei n, GLuint *smps) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (n < 0) {
@@ -2290,6 +2364,8 @@ void glGenSamplers(GLsizei n, GLuint *smps) {
 }
 
 void glDeleteSamplers(GLsizei n, const GLuint *smp) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (n < 0) {
@@ -2307,6 +2383,8 @@ void glDeleteSamplers(GLsizei n, const GLuint *smp) {
 }
 
 void glBindSampler(GLuint unit, GLuint smp) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (unit >= COMBINED_TEXTURE_IMAGE_UNITS_NUM) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, unit)
@@ -2316,6 +2394,8 @@ void glBindSampler(GLuint unit, GLuint smp) {
 }
 
 void glSamplerParameteri(GLuint target, GLenum pname, GLint param) {
+	THREAD_SAFE()
+
 	// Setting some aliases to make code more readable
 	sampler *smp = (sampler *)target;
 
@@ -2445,6 +2525,8 @@ void *vglGetTexDataPointer(GLenum target) {
 }
 
 void vglOverloadTexDataPointer(GLenum target, void *data) {
+	THREAD_SAFE()
+
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
 	int texture2d_idx;

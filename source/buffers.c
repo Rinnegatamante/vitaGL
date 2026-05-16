@@ -96,6 +96,8 @@ void reset_queries() {
  */
  
 void glGenQueries(GLsizei n, GLuint *ids) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -114,6 +116,8 @@ void glGenQueries(GLsizei n, GLuint *ids) {
 }
 
 void glDeleteQueries(GLsizei n, const GLuint *ids) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -125,6 +129,8 @@ void glDeleteQueries(GLsizei n, const GLuint *ids) {
 }
 
 void glBeginQuery(GLenum target, GLuint id) {
+	THREAD_SAFE()
+
 	switch (target) {
 	case GL_SAMPLES_PASSED:
 		sceGxmSetFrontVisibilityTestOp(gxm_context, SCE_GXM_VISIBILITY_TEST_OP_INCREMENT);
@@ -151,6 +157,8 @@ void glBeginQuery(GLenum target, GLuint id) {
 }
 
 void glEndQuery(GLenum target) {
+	THREAD_SAFE()
+
 	sceGxmSetFrontVisibilityTestEnable(gxm_context, SCE_GXM_VISIBILITY_TEST_DISABLED);
 	sceGxmSetBackVisibilityTestEnable(gxm_context, SCE_GXM_VISIBILITY_TEST_DISABLED);
 	active_query->sync = query_fence.value + 1;
@@ -158,6 +166,8 @@ void glEndQuery(GLenum target) {
 }
 
 void glGetQueryObjectiv(GLuint id, GLenum pname, GLint *params) {
+	THREAD_SAFE()
+
 	query *q = (query *)id;
 
 	switch (pname) {
@@ -192,6 +202,8 @@ void glGetQueryObjectiv(GLuint id, GLenum pname, GLint *params) {
 }
 
 void glGenVertexArrays(GLsizei n, GLuint *res) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -209,12 +221,16 @@ void glGenVertexArrays(GLsizei n, GLuint *res) {
 }
 
 void glBindVertexArray(GLuint array) {
+	THREAD_SAFE()
+
 	cur_vao = (vao *)array;
 	if (!cur_vao)
 		cur_vao = &default_vao;
 }
 
 void glDeleteVertexArrays(GLsizei n, const GLuint *gl_arrays) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -230,6 +246,8 @@ void glDeleteVertexArrays(GLsizei n, const GLuint *gl_arrays) {
 }
 
 inline __attribute__((always_inline)) void glGenBuffers(GLsizei n, GLuint *res) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -252,6 +270,8 @@ void glCreateBuffers(GLsizei n, GLuint *buffers) {
 }
 
 void glBindBuffer(GLenum target, GLuint buffer) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glBindBuffer, DLIST_FUNC_U32_U32, target, buffer))
@@ -273,6 +293,8 @@ void glBindBuffer(GLenum target, GLuint buffer) {
 }
 
 void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -298,6 +320,8 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 }
 
 inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLenum usage) {
+	THREAD_SAFE()
+
 	vbo *gpu_buf = (vbo *)buffer;
 	
 #ifndef SKIP_ERROR_HANDLING
@@ -373,6 +397,8 @@ inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLe
 }
 
 void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage) {
+	THREAD_SAFE()
+
 	vbo *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
@@ -392,6 +418,8 @@ void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage)
 }
 
 inline void glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizeiptr size, const void *data) {
+	THREAD_SAFE()
+
 	vbo *gpu_buf = (vbo *)buffer;
 
 #ifndef SKIP_ERROR_HANDLING
@@ -444,6 +472,8 @@ inline void glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizeiptr size
 }
 
 void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void *data) {
+	THREAD_SAFE()
+
 	vbo *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
@@ -573,6 +603,8 @@ GLboolean glUnmapBuffer(GLenum target) {
 }
 
 void glFlushMappedNamedBufferRange(GLuint buffer, GLintptr offset, GLsizeiptr length) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	vbo *gpu_buf = (vbo *)buffer;
 
@@ -585,6 +617,8 @@ void glFlushMappedNamedBufferRange(GLuint buffer, GLintptr offset, GLsizeiptr le
 }
 
 void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	vbo *gpu_buf;
 	switch (target) {
@@ -610,6 +644,8 @@ void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length)
 }
 
 inline void glGetNamedBufferParameteriv(GLuint buffer, GLenum pname, GLint *params) {
+	THREAD_SAFE()
+
 	vbo *gpu_buf = (vbo *)buffer;
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf) {
@@ -627,6 +663,8 @@ inline void glGetNamedBufferParameteriv(GLuint buffer, GLenum pname, GLint *para
 }
 
 void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params) {
+	THREAD_SAFE()
+
 	vbo *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:
@@ -648,6 +686,8 @@ void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params) {
 // VGL_EXT_gpu_objects_array extension implementation
 
 void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if ((stride < 0) || (size < 2) || (size > 4)) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -678,6 +718,8 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 }
 
 void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if ((stride < 0) || (size < 3) || (size > 4)) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -720,6 +762,8 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 }
 
 void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if ((stride < 0) || (size < 2) || (size > 4)) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -750,6 +794,8 @@ void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, c
 }
 
 void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (stride < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -779,6 +825,8 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *po
 }
 
 void vglVertexPointerMapped(GLint size, const GLvoid *pointer) {
+	THREAD_SAFE()
+
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[0];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[0];
 
@@ -790,6 +838,8 @@ void vglVertexPointerMapped(GLint size, const GLvoid *pointer) {
 }
 
 void vglColorPointerMapped(GLenum type, const GLvoid *pointer) {
+	THREAD_SAFE()
+
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[2];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[2];
 
@@ -826,6 +876,8 @@ void vglColorPointerMapped(GLenum type, const GLvoid *pointer) {
 }
 
 void vglTexCoordPointerMapped(const GLvoid *pointer) {
+	THREAD_SAFE()
+
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[1];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[1];
 
@@ -837,10 +889,14 @@ void vglTexCoordPointerMapped(const GLvoid *pointer) {
 }
 
 void vglIndexPointerMapped(const GLvoid *pointer) {
+	THREAD_SAFE()
+
 	index_object = (GLvoid *)pointer;
 }
 
 void vglBufferData(GLenum target, const GLvoid *data) {
+	THREAD_SAFE()
+
 	vbo *gpu_buf;
 	switch (target) {
 	case GL_ARRAY_BUFFER:

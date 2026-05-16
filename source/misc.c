@@ -247,6 +247,8 @@ void change_cull_mode() {
  */
 
 void glPolygonMode(GLenum face, GLenum mode) {
+	THREAD_SAFE()
+
 	SceGxmPolygonMode new_mode;
 	switch (mode) {
 	case GL_POINT:
@@ -285,30 +287,40 @@ void glPolygonMode(GLenum face, GLenum mode) {
 }
 
 void glPolygonOffset(GLfloat factor, GLfloat units) {
+	THREAD_SAFE()
+
 	pol_factor = factor;
 	pol_units = units;
 	update_polygon_offset();
 }
 
 void glPolygonOffsetx(GLfixed factor, GLfixed units) {
+	THREAD_SAFE()
+
 	pol_factor = (float)factor / 65536.0f;
 	pol_units = (float)units / 65536.0f;
 	update_polygon_offset();
 }
 
 void glCullFace(GLenum mode) {
+	THREAD_SAFE()
+
 	gl_cull_mode = mode;
 	if (cull_face_state)
 		change_cull_mode();
 }
 
 void glFrontFace(GLenum mode) {
+	THREAD_SAFE()
+
 	gl_front_face = mode;
 	if (cull_face_state)
 		change_cull_mode();
 }
 
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if ((width < 0) || (height < 0)) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -337,18 +349,24 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 }
 
 void glDepthRange(GLdouble nearVal, GLdouble farVal) {
+	THREAD_SAFE()
+
 	z_port = (farVal + nearVal) / 2.0f;
 	z_scale = (farVal - nearVal) / 2.0f;
 	vglSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 }
 
 void glDepthRangef(GLfloat nearVal, GLfloat farVal) {
+	THREAD_SAFE()
+
 	z_port = (farVal + nearVal) / 2.0f;
 	z_scale = (farVal - nearVal) / 2.0f;
 	vglSetViewport(gxm_context, x_port, x_scale, y_port, y_scale, z_port, z_scale);
 }
 
 void glDepthRangex(GLfixed _nearVal, GLfixed _farVal) {
+	THREAD_SAFE()
+
 	GLfloat nearVal = (float)_nearVal / 65536.0f;
 	GLfloat farVal = (float)_farVal / 65536.0f;
 	z_port = (farVal + nearVal) / 2.0f;
@@ -357,6 +375,8 @@ void glDepthRangex(GLfixed _nearVal, GLfixed _farVal) {
 }
 
 void glEnable(GLenum cap) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glEnable, DLIST_FUNC_U32, cap))
@@ -485,6 +505,8 @@ void glEnable(GLenum cap) {
 }
 
 void glDisable(GLenum cap) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glDisable, DLIST_FUNC_U32, cap))
@@ -616,6 +638,8 @@ void glDisable(GLenum cap) {
 }
 
 void glClear(GLbitfield mask) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (mask & ~(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)) {
 		SET_GL_ERROR(GL_INVALID_VALUE);
@@ -714,6 +738,8 @@ void glClear(GLbitfield mask) {
 }
 
 void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
+	THREAD_SAFE()
+
 	clear_rgba_val.r = red;
 	clear_rgba_val.g = green;
 	clear_rgba_val.b = blue;
@@ -721,6 +747,8 @@ void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
 }
 
 void glClearColorx(GLclampx red, GLclampx green, GLclampx blue, GLclampx alpha) {
+	THREAD_SAFE()
+
 	clear_rgba_val.r = (float)red / 65536.0f;
 	clear_rgba_val.g = (float)green / 65536.0f;
 	clear_rgba_val.b = (float)blue / 65536.0f;
@@ -728,6 +756,8 @@ void glClearColorx(GLclampx red, GLclampx green, GLclampx blue, GLclampx alpha) 
 }
 
 void glLineWidth(GLfloat width) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (width <= 0.0f) {
@@ -752,6 +782,8 @@ void glLineWidthx(GLfixed width) {
 }
 
 void glPointSize(GLfloat size) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (size <= 0) {
@@ -795,6 +827,8 @@ void glHint(GLenum target, GLenum mode) {
 }
 
 void glPushAttrib(GLbitfield mask) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
@@ -917,6 +951,8 @@ void glPushAttrib(GLbitfield mask) {
 }
 
 void glPopAttrib(void) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {

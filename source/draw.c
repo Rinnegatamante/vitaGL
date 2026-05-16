@@ -196,6 +196,8 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 #endif	
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glDrawArrays, DLIST_FUNC_U32_I32_I32, mode, first, count))
@@ -258,6 +260,8 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 }
 
 void glMultiDrawArrays(GLenum mode, const GLint *first, const GLsizei *count, GLsizei drawcount) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (drawcount < 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, drawcount)
@@ -315,6 +319,8 @@ void glMultiDrawArrays(GLenum mode, const GLint *first, const GLsizei *count, GL
 }
 
 void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei primcount) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
@@ -366,6 +372,8 @@ void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei prim
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices) {
+	THREAD_SAFE()
+
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
 	if (_vgl_enqueue_list_func(glDrawElements, DLIST_FUNC_U32_I32_U32_U32, mode, count, type, gl_indices))
@@ -426,6 +434,8 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 }
 
 void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices, GLint baseVertex) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (type != GL_UNSIGNED_SHORT && type != GL_UNSIGNED_INT) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -481,6 +491,8 @@ void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLv
 }
 
 void glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const void *gl_indices) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (type != GL_UNSIGNED_SHORT && type != GL_UNSIGNED_INT) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -526,6 +538,8 @@ void glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, G
 }
 
 void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, void *gl_indices, GLint baseVertex) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (type != GL_UNSIGNED_SHORT && type != GL_UNSIGNED_INT) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -581,6 +595,8 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 }
 
 void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void *gl_indices, GLsizei primcount) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (type != GL_UNSIGNED_SHORT && type != GL_UNSIGNED_INT) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -619,6 +635,8 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void
 }
 
 void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
+	THREAD_SAFE()
+
 #ifdef ENABLE_LEGACY_PIPELINE
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
@@ -659,5 +677,7 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 }
 
 void vglIndexPointerDefault() {
+	THREAD_SAFE()
+
 	index_object = default_idx_ptr;
 }

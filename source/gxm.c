@@ -758,6 +758,8 @@ void vglSetDisplayBufferCount(int count) {
 }
 
 void vglSwapBuffers(GLboolean has_commondialog) {
+	THREAD_SAFE()
+
 #ifndef SKIP_SPLASHSCREEN
 	// Ignore display swaps during splashscreen since we handle them in the splashscreen thread
 	if (is_splashscreen_active)
@@ -966,6 +968,8 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 }
 
 void glFinish(void) {
+	THREAD_SAFE()
+
 	// Waiting for GPU to finish drawing jobs
 	dirty_framebuffer = GL_TRUE;
 	scene_reset();
@@ -973,6 +977,8 @@ void glFinish(void) {
 }
 
 void glReleaseShaderCompiler(void) {
+	THREAD_SAFE()
+
 	if (is_shark_online) {
 		shark_end();
 		is_shark_online = GL_FALSE;
@@ -980,6 +986,8 @@ void glReleaseShaderCompiler(void) {
 }
 
 void glFlush(void) {
+	THREAD_SAFE()
+
 	dirty_framebuffer = GL_TRUE;
 	scene_reset();
 }

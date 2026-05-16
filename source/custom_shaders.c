@@ -1605,6 +1605,8 @@ GLuint glCreateShader(GLenum shaderType) {
 }
 
 void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
+	THREAD_SAFE()
+
 	// Grabbing passed shader
 	shader *s = &shaders[handle - 1];
 	switch (pname) {
@@ -1637,6 +1639,8 @@ void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
 }
 
 void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLchar *infoLog) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (maxLength < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -1657,6 +1661,8 @@ void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLcha
 }
 
 void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *source) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (bufSize < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -1679,6 +1685,8 @@ void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *
 }
 
 void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (count < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -1711,6 +1719,8 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 }
 
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length) {
+	THREAD_SAFE()
+
 	// Grabbing passed shader
 	shader *s = &shaders[handles[0] - 1];
 
@@ -1718,6 +1728,8 @@ void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, c
 }
 
 void glCompileShader(GLuint handle) {
+	THREAD_SAFE()
+
 	// If vitaShaRK is not enabled, we try to initialize it
 	if (!is_shark_online && !start_shader_compiler()) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
@@ -1755,6 +1767,8 @@ void glCompileShader(GLuint handle) {
 }
 
 void glDeleteShader(GLuint shad) {
+	THREAD_SAFE()
+
 	// Grabbing passed shader
 	shader *s = &shaders[shad - 1];
 
@@ -1766,6 +1780,8 @@ void glDeleteShader(GLuint shad) {
 }
 
 void glAttachShader(GLuint prog, GLuint shad) {
+	THREAD_SAFE()
+
 	// Grabbing passed shader and program
 	shader *s = &shaders[shad - 1];
 	program *p = &progs[prog - 1];
@@ -1805,6 +1821,8 @@ void glAttachShader(GLuint prog, GLuint shad) {
 }
 
 void glGetAttachedShaders(GLuint prog, GLsizei maxCount, GLsizei *count, GLuint *shads) {
+	THREAD_SAFE()
+
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 
@@ -1893,6 +1911,8 @@ GLboolean glIsProgram(GLuint i) {
 }
 
 void glGetProgramBinary(GLuint prog, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (bufSize < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -1921,6 +1941,8 @@ void glGetProgramBinary(GLuint prog, GLsizei bufSize, GLsizei *length, GLenum *b
 }
 
 void glProgramBinary(GLuint prog, GLenum binaryFormat, const void *binary, GLsizei length) {
+	THREAD_SAFE()
+
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 	
@@ -1947,6 +1969,8 @@ void glProgramBinary(GLuint prog, GLenum binaryFormat, const void *binary, GLsiz
 }
 
 void glDeleteProgram(GLuint prog) {
+	THREAD_SAFE()
+
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 
@@ -1999,11 +2023,15 @@ void glDeleteProgram(GLuint prog) {
 }
 
 void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog) {
+	THREAD_SAFE()
+
 	if (length)
 		*length = 0;
 }
 
 void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
+	THREAD_SAFE()
+
 	// Grabbing passed program
 	program *p = &progs[progr - 1];
 	int i, cnt;
@@ -2071,6 +2099,8 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 }
 
 void glLinkProgram(GLuint progr) {
+	THREAD_SAFE()
+
 	// Grabbing passed program
 	program *p = &progs[progr - 1];
 #ifndef SKIP_ERROR_HANDLING
@@ -2340,6 +2370,8 @@ void glLinkProgram(GLuint progr) {
 }
 
 void glUseProgram(GLuint prog) {
+	THREAD_SAFE()
+
 	// Setting current custom program to passed program
 	cur_program = prog;
 	dirty_frag_unifs = GL_TRUE;
@@ -2370,6 +2402,8 @@ GLuint glGetUniformBlockIndex(GLuint prog, const GLchar *uniformBlockName) {
 }
 
 void glUniformBlockBinding(GLuint prog, GLuint uniformBlockIndex, GLuint uniformBlockBinding) {
+	THREAD_SAFE()
+
 	ubo *u = (ubo *)uniformBlockIndex;
 	u->bind = uniformBlockBinding;
 }
@@ -2445,6 +2479,8 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 }
 
 inline void glUniform1i(GLint location, GLint v0) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2470,6 +2506,8 @@ void glProgramUniform1i(GLuint prog, GLint location, GLint v0) {
 }
 
 inline void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2503,6 +2541,8 @@ void glProgramUniform1iv(GLuint prog, GLint location, GLsizei count, const GLint
 }
 
 inline void glUniform1f(GLint location, GLfloat v0) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2525,6 +2565,8 @@ void glProgramUniform1f(GLuint prog, GLint location, GLfloat v0) {
 }
 
 inline void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2552,6 +2594,8 @@ void glProgramUniform1fv(GLuint prog, GLint location, GLsizei count, const GLflo
 }
 
 inline void glUniform2i(GLint location, GLint v0, GLint v1) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2575,6 +2619,8 @@ void glProgramUniform2i(GLuint prog, GLint location, GLint v0, GLint v1) {
 }
 
 inline void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2604,6 +2650,8 @@ void glProgramUniform2iv(GLuint prog, GLint location, GLsizei count, const GLint
 }
 
 inline void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2627,6 +2675,8 @@ void glProgramUniform2f(GLuint prog, GLint location, GLfloat v0, GLfloat v1) {
 }
 
 inline void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2654,6 +2704,8 @@ void glProgramUniform2fv(GLuint prog, GLint location, GLsizei count, const GLflo
 }
 
 inline void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2678,6 +2730,8 @@ void glProgramUniform3i(GLuint prog, GLint location, GLint v0, GLint v1, GLint v
 }
 
 inline void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2707,6 +2761,8 @@ void glProgramUniform3iv(GLuint prog, GLint location, GLsizei count, const GLint
 }
 
 inline void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2731,6 +2787,8 @@ void glProgramUniform3f(GLuint prog, GLint location, GLfloat v0, GLfloat v1, GLf
 }
 
 inline void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2758,6 +2816,8 @@ void glProgramUniform3fv(GLuint prog, GLint location, GLsizei count, const GLflo
 }
 
 inline void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2783,6 +2843,8 @@ void glProgramUniform4i(GLuint prog, GLint location, GLint v0, GLint v1, GLint v
 }
 
 inline void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2812,6 +2874,8 @@ void glProgramUniform4iv(GLuint prog, GLint location, GLsizei count, const GLint
 }
 
 inline void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2837,6 +2901,8 @@ void glProgramUniform4f(GLuint prog, GLint location, GLfloat v0, GLfloat v1, GLf
 }
 
 inline void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2864,6 +2930,8 @@ void glProgramUniform4fv(GLuint prog, GLint location, GLsizei count, const GLflo
 }
 
 inline void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2896,6 +2964,8 @@ void glProgramUniformMatrix2fv(GLuint prog, GLint location, GLsizei count, GLboo
 }
 
 inline void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0)
 		return;
@@ -2928,6 +2998,8 @@ void glProgramUniformMatrix3fv(GLuint prog, GLint location, GLsizei count, GLboo
 }
 
 inline void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
+	THREAD_SAFE()
+
 	// Checking if the uniform does exist
 	if (location == -1 || location == 0) {
 		return;
@@ -2961,6 +3033,8 @@ void glProgramUniformMatrix4fv(GLuint prog, GLint location, GLsizei count, GLboo
 }
 
 void glEnableVertexAttribArray(GLuint index) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (index >= VERTEX_ATTRIBS_NUM) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -2970,6 +3044,8 @@ void glEnableVertexAttribArray(GLuint index) {
 }
 
 void glDisableVertexAttribArray(GLuint index) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (index >= VERTEX_ATTRIBS_NUM) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -2979,6 +3055,8 @@ void glDisableVertexAttribArray(GLuint index) {
 }
 
 void glGetVertexAttribPointerv(GLuint index, GLenum pname, void **pointer) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (pname != GL_VERTEX_ATTRIB_ARRAY_POINTER) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -2990,6 +3068,8 @@ void glGetVertexAttribPointerv(GLuint index, GLenum pname, void **pointer) {
 }
 
 void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (size < 1 || size > 4 || stride < 0 || index >= VERTEX_ATTRIBS_NUM) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -3038,6 +3118,8 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 }
 
 void glVertexAttribDivisor(GLuint index, GLuint divisor) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (index >= VERTEX_ATTRIBS_NUM) {
 		SET_GL_ERROR(GL_INVALID_VALUE)		
@@ -3055,6 +3137,8 @@ void glVertexAttribDivisor(GLuint index, GLuint divisor) {
 }
 
 void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (index >= VERTEX_ATTRIBS_NUM) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -3096,6 +3180,8 @@ void glGetVertexAttribiv(GLuint index, GLenum pname, GLint *params) {
 }
 
 void glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (index >= VERTEX_ATTRIBS_NUM) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -3137,12 +3223,16 @@ void glGetVertexAttribfv(GLuint index, GLenum pname, GLfloat *params) {
 }
 
 void glVertexAttrib1f(GLuint index, GLfloat v0) {
+	THREAD_SAFE()
+
 	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(1);
 	cur_vao->vertex_attrib_size[index] = 1;
 	cur_vao->vertex_attrib_value[index][0] = v0;
 }
 
 void glVertexAttrib2f(GLuint index, GLfloat v0, GLfloat v1) {
+	THREAD_SAFE()
+
 	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(2);
 	cur_vao->vertex_attrib_size[index] = 2;
 	cur_vao->vertex_attrib_value[index][0] = v0;
@@ -3150,6 +3240,8 @@ void glVertexAttrib2f(GLuint index, GLfloat v0, GLfloat v1) {
 }
 
 void glVertexAttrib3f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2) {
+	THREAD_SAFE()
+
 	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(3);
 	cur_vao->vertex_attrib_size[index] = 3;
 	cur_vao->vertex_attrib_value[index][0] = v0;
@@ -3158,6 +3250,8 @@ void glVertexAttrib3f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2) {
 }
 
 void glVertexAttrib4f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
+	THREAD_SAFE()
+
 	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(4);
 	cur_vao->vertex_attrib_size[index] = 4;
 	cur_vao->vertex_attrib_value[index][0] = v0;
@@ -3167,12 +3261,16 @@ void glVertexAttrib4f(GLuint index, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat 
 }
 
 void glVertexAttrib1fv(GLuint index, const GLfloat *v) {
+	THREAD_SAFE()
+
 	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(1);
 	cur_vao->vertex_attrib_size[index] = 1;
 	cur_vao->vertex_attrib_value[index][0] = v[0];
 }
 
 void glVertexAttrib2fv(GLuint index, const GLfloat *v) {
+	THREAD_SAFE()
+
 	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(2);
 	cur_vao->vertex_attrib_size[index] = 2;
 	cur_vao->vertex_attrib_value[index][0] = v[0];
@@ -3180,6 +3278,8 @@ void glVertexAttrib2fv(GLuint index, const GLfloat *v) {
 }
 
 void glVertexAttrib3fv(GLuint index, const GLfloat *v) {
+	THREAD_SAFE()
+
 	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(3);
 	cur_vao->vertex_attrib_size[index] = 3;
 	cur_vao->vertex_attrib_value[index][0] = v[0];
@@ -3188,6 +3288,8 @@ void glVertexAttrib3fv(GLuint index, const GLfloat *v) {
 }
 
 void glVertexAttrib4fv(GLuint index, const GLfloat *v) {
+	THREAD_SAFE()
+
 	cur_vao->vertex_attrib_value[index] = reserve_attrib_pool(4);
 	cur_vao->vertex_attrib_size[index] = 4;
 	cur_vao->vertex_attrib_value[index][0] = v[0];
@@ -3197,6 +3299,8 @@ void glVertexAttrib4fv(GLuint index, const GLfloat *v) {
 }
 
 void glBindBufferRange(GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (target != GL_UNIFORM_BUFFER) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
@@ -3212,6 +3316,8 @@ void glBindBufferRange(GLenum target, GLuint index, GLuint buffer, GLintptr offs
 }
 
 void glBindBufferBase(GLenum target, GLuint index, GLuint buffer) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (target != GL_UNIFORM_BUFFER) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
@@ -3225,6 +3331,8 @@ void glBindBufferBase(GLenum target, GLuint index, GLuint buffer) {
 }
 
 void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
+	THREAD_SAFE()
+
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 	
@@ -3274,6 +3382,8 @@ GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 }
 
 void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (bufSize < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -3306,6 +3416,8 @@ void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *leng
 }
 
 void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name) {
+	THREAD_SAFE()
+
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 
@@ -3379,6 +3491,8 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 
 // Equivalent of glBindAttribLocation but for sceGxm architecture
 void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const GLuint num, const GLenum type) {
+	THREAD_SAFE()
+
 #ifdef ENABLE_LEGACY_PIPELINE
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
@@ -3471,6 +3585,8 @@ GLint vglBindPackedAttribLocation(GLuint prog, const GLchar *name, const GLuint 
 
 // Equivalent of glVertexAttribPointer but for sceGxm architecture
 void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLuint count, const GLvoid *pointer) {
+	THREAD_SAFE()
+
 #ifdef ENABLE_LEGACY_PIPELINE
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -3515,6 +3631,8 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 }
 
 void vglVertexAttribPointerMapped(GLuint index, const GLvoid *pointer) {
+	THREAD_SAFE()
+
 #ifdef ENABLE_LEGACY_PIPELINE
 	// Setting vertex stream to passed index in sceGxm
 	sceGxmSetVertexStream(gxm_context, index, pointer);
@@ -3522,6 +3640,8 @@ void vglVertexAttribPointerMapped(GLuint index, const GLvoid *pointer) {
 }
 
 void vglGetShaderBinary(GLuint handle, GLsizei bufSize, GLsizei *length, void *binary) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (bufSize < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -3542,6 +3662,8 @@ void vglGetShaderBinary(GLuint handle, GLsizei bufSize, GLsizei *length, void *b
 }
 
 void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum type) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (glsl_custom_bindings_num >= MAX_CUSTOM_BINDINGS) {
 		vgl_log("%s:%d %s: Too many custom bindings supplied. Consider increasing MAX_CUSTOM_BINDINGS.\n", __FILE__, __LINE__, __func__);
@@ -3555,6 +3677,8 @@ void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum typ
 }
 
 void vglAddSemanticBindingHint(const GLchar *const *varying, GLenum type) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	if (glsl_custom_bindings_num >= MAX_CUSTOM_BINDINGS) {
 		vgl_log("%s:%d %s: Too many custom bindings supplied. Consider increasing MAX_CUSTOM_BINDINGS.\n", __FILE__, __LINE__, __func__);
@@ -3576,6 +3700,8 @@ void vglSetSemanticBindingMode(GLenum mode) {
 }
 
 void vglOverrideTexFormat(GLenum target) {
+	THREAD_SAFE()
+
 #ifdef HAVE_UNPURE_TEXFORMATS
 	switch (target) {
 	case GL_TEXTURE_1D:
@@ -3589,6 +3715,8 @@ void vglOverrideTexFormat(GLenum target) {
 }
 
 void vglShaderGxpBinary(GLsizei count, const GLuint *handles, const void *binary, GLsizei length) {
+	THREAD_SAFE()
+
 	// Grabbing passed shader
 	shader *s = &shaders[handles[0] - 1];
 	

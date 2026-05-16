@@ -374,6 +374,8 @@ void reset_scissor_test_region(void) {
  */
 
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if ((width < 0) || (height < 0)) {
@@ -391,6 +393,8 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 }
 
 void glDepthFunc(GLenum func) {
+	THREAD_SAFE()
+
 	// Properly translating openGL function to sceGxm one
 	switch (func) {
 	case GL_NEVER:
@@ -426,21 +430,29 @@ void glDepthFunc(GLenum func) {
 }
 
 void glClearDepth(GLdouble depth) {
+	THREAD_SAFE()
+
 	// Set current in use depth test depth value
 	depth_value = depth;
 }
 
 void glClearDepthf(GLclampf depth) {
+	THREAD_SAFE()
+
 	// Set current in use depth test depth value
 	depth_value = depth;
 }
 
 void glClearDepthx(GLclampx depth) {
+	THREAD_SAFE()
+
 	// Set current in use depth test depth value
 	depth_value = (float)depth / 65536.0f;
 }
 
 void glDepthMask(GLboolean flag) {
+	THREAD_SAFE()
+
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
 	if (phase == MODEL_CREATION) {
@@ -454,6 +466,8 @@ void glDepthMask(GLboolean flag) {
 }
 
 void glAlphaFunc(GLenum func, GLfloat ref) {
+	THREAD_SAFE()
+
 	// Updating in use alpha test parameters
 	alpha_func = func;
 	vgl_alpha_ref = ref;
@@ -461,6 +475,8 @@ void glAlphaFunc(GLenum func, GLfloat ref) {
 }
 
 void glAlphaFuncx(GLenum func, GLfixed ref) {
+	THREAD_SAFE()
+
 	// Updating in use alpha test parameters
 	alpha_func = func;
 	vgl_alpha_ref = (float)ref / 65536.0f;
@@ -468,6 +484,8 @@ void glAlphaFuncx(GLenum func, GLfixed ref) {
 }
 
 void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass) {
+	THREAD_SAFE()
+
 	// Properly updating stencil operation settings
 	switch (face) {
 	case GL_FRONT:
@@ -519,10 +537,14 @@ void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass
 }
 
 void glStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass) {
+	THREAD_SAFE()
+
 	glStencilOpSeparate(GL_FRONT_AND_BACK, sfail, dpfail, dppass);
 }
 
 void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask) {
+	THREAD_SAFE()
+
 	// Properly updating stencil test function settings
 	switch (face) {
 	case GL_FRONT:
@@ -556,10 +578,14 @@ void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask) {
 }
 
 void glStencilFunc(GLenum func, GLint ref, GLuint mask) {
+	THREAD_SAFE()
+
 	glStencilFuncSeparate(GL_FRONT_AND_BACK, func, ref, mask);
 }
 
 void glStencilMaskSeparate(GLenum face, GLuint mask) {
+	THREAD_SAFE()
+
 	// Properly updating stencil test mask settings
 	switch (face) {
 	case GL_FRONT:
@@ -578,9 +604,13 @@ void glStencilMaskSeparate(GLenum face, GLuint mask) {
 }
 
 void glStencilMask(GLuint mask) {
+	THREAD_SAFE()
+
 	glStencilMaskSeparate(GL_FRONT_AND_BACK, mask);
 }
 
 void glClearStencil(GLint s) {
+	THREAD_SAFE()
+
 	stencil_value = s;
 }

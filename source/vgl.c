@@ -164,6 +164,10 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		return GL_FALSE;
 	}
 
+#ifdef DEBUG_THREAD_SAFENESS
+	vgl_is_main_thread = GL_TRUE;
+#endif
+
 #if defined(HAVE_SHADER_CACHE) || defined(HAVE_TEX_CACHE)
 	char titleid[12];
 	sceAppMgrAppParamGetString(0, 12, titleid , 256);
@@ -739,6 +743,8 @@ void vglFree(void *addr) {
 }
 
 void vglLazyFree(void *addr) {
+	THREAD_SAFE()
+
 	mark_as_dirty(addr);
 }
 
