@@ -79,7 +79,12 @@
 #endif
 
 #ifdef DEBUG_THREAD_SAFENESS
-#define vgl_is_main_thread *(int*)sceKernelGetTLSAddr(0x10)
+static inline uint32_t __get_arm_cp15_tls(void) {
+	uint32_t val;
+	__asm__ __volatile__("mrc p15, 0, %0, c13, c0, 3" : "=r" (val));
+	return val;
+}
+#define vgl_is_main_thread *(int*)(__get_arm_cp15_tls() - 1984)
 #define THREAD_SAFE() \
 	if (!vgl_is_main_thread) { \
 		vgl_log("%s:%d %s: A thread unsafe function has been called from an invalid thread.\n", __FILE__, __LINE__, __func__); \
