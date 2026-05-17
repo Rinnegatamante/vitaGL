@@ -511,7 +511,7 @@ void vgl_free(void *ptr) {
 #endif
 #ifdef HAVE_CUSTOM_HEAP
 	else
-		heap_blk_free(ptr);
+		heap_blk_free((uintptr_t)ptr);
 #else
 	else if (mempool_mspace[type])
 		sceClibMspaceFree(mempool_mspace[type], ptr);
