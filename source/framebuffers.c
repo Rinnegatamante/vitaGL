@@ -925,16 +925,22 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	uint8_t *data_u8 = active_read_fb ? (uint8_t *)data : ((uint8_t *)data + (width * dst_bpp * (height - 1)));
 #endif
 	if (fast_store) {
+#ifdef HAVE_UNFLIPPED_FBOS
+		int delta = width * src_bpp;
+#else
+		int delta = (active_read_fb ? -width : width) * src_bpp;
+#endif
 		for (int i = 0; i < height; i++) {
 			vgl_fast_memcpy(data_u8, &src[y + x * src_bpp], width * src_bpp);
 			y += stride;
-#ifdef HAVE_UNFLIPPED_FBOS
-			data_u8 -= width * src_bpp;
-#else
-			data_u8 -= (active_read_fb ? -width : width) * src_bpp;
-#endif
+			data_u8 -= delta;
 		}
 	} else {
+#ifdef HAVE_UNFLIPPED_FBOS
+		int delta = width * dst_bpp;
+#else
+		int delta = (active_read_fb ? -width : width) * dst_bpp;
+#endif
 		for (int i = 0; i < height; i++) {
 			uint8_t *line_src = &src[y + i * stride + x * src_bpp];
 			uint8_t *line_dst = data_u8;
@@ -944,11 +950,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 				line_src += src_bpp;
 				line_dst += dst_bpp;
 			}
-#ifdef HAVE_UNFLIPPED_FBOS
-			data_u8 -= width * dst_bpp;
-#else
-			data_u8 -= (active_read_fb ? -width : width) * dst_bpp;
-#endif
+			data_u8 -= delta;
 		}
 	}
 }
