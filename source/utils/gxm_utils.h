@@ -24,8 +24,6 @@
 #ifndef _GXM_UTILS_H_
 #define _GXM_UTILS_H_
 
-//#define PARANOID // Enable this flag to use original sceGxmTexture functions instead of faster re-implementations
-
 extern void *vgl_def_frag_buf;
 extern void *vgl_def_vert_buf;
 extern SceGxmContext *gxm_context;
@@ -52,12 +50,30 @@ static inline __attribute__((always_inline)) void *vglReserveVertexUniformBuffer
 	return vgl_def_vert_buf;
 }
 
-#ifndef PARANOID
 typedef struct {
 	uint32_t control_words[4];
 } SceGxmTextureInternal;
 
 // Faster variants with stripped error handling
+static inline __attribute__((always_inline)) void *vglGetTexData(SceGxmTexture *texture) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	return (void *)(tex->control_words[2] & 0xFFFFFFFC);
+}
+static inline __attribute__((always_inline)) SceGxmTextureFormat vglGetTexFormat(SceGxmTexture *texture) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	return (SceGxmTextureFormat)(tex->control_words[1] & 0x1F000000 | tex->control_words[0] & 0x80000000 | (((tex->control_words[3] >> 16) & 0xFFFF) & 0x7000));
+}
+static inline __attribute__((always_inline)) void vglGetTexSizes(SceGxmTexture *texture, int *w, int *h) {
+	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
+	int word1 = tex->control_words[1];
+	if (word1 & 0xA0000000) {
+		*w = ((word1 >> 12) & 0xFFF) + 1;
+		*h = (word1 & 0xFFF) + 1;
+	} else {
+		*w = 1 << ((word1 >> 16) & 0xF);
+		*h = 1 << (word1 & 0xF);
+	}
+}
 static inline __attribute__((always_inline)) void vglSetTexUMode(SceGxmTexture *texture, SceGxmTextureAddrMode addrMode) {
 	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
 	tex->control_words[0] = ((addrMode << 6) & 0x1C0) | tex->control_words[0] & 0xFFFFFE3F;
@@ -130,21 +146,4 @@ static inline __attribute__((always_inline)) int vglDepthStencilSurfaceInit(SceG
 	s[4] = 0x300;
 	return 0;
 }
-#else
-// Default sceGxm functions
-#define vglSetTexUMode sceGxmTextureSetUAddrMode
-#define vglSetTexVMode sceGxmTextureSetVAddrMode
-#define vglSetTexMinFilter sceGxmTextureSetMinFilter
-#define vglSetTexMagFilter sceGxmTextureSetMagFilter
-#define vglSetTexMipFilter sceGxmTextureSetMipFilter
-#define vglSetTexLodBias sceGxmTextureSetLodBias
-#define vglSetTexMipmapCount sceGxmTextureSetMipmapCount
-#define vglSetTexGammaMode sceGxmTextureSetGammaMode
-#define vglSetTexPalette sceGxmTextureSetPalette
-#define vglInitLinearTexture sceGxmTextureInitLinear
-#define vglInitCubeTexture sceGxmTextureInitCube
-#define vglInitSwizzledTexture sceGxmTextureInitSwizzledArbitrary
-#define vglProgramGetParameterBase(x) ((uint32_t *)sceGxmProgramGetParameter(x, 0))
-#define vglDepthStencilSurfaceInit sceGxmDepthStencilSurfaceInit
-#endif
 #endif

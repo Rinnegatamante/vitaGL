@@ -552,15 +552,14 @@ inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum text
 
 	// Extracting texture data
 	int old_w = fb->width, old_h = fb->height;
-	SceGxmTextureFormat fmt = sceGxmTextureGetFormat(&tex->gxm_tex);
+	SceGxmTextureFormat fmt = vglGetTexFormat(&tex->gxm_tex);
 
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
-		fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
-		fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
+		vglGetTexSizes(&tex->gxm_tex, &fb->width, &fb->height);
 		fb->stride = VGL_ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
-		fb->data = sceGxmTextureGetData(&tex->gxm_tex);
+		fb->data = vglGetTexData(&tex->gxm_tex);
 		fb->format = tex->format;
 		// Discarding any previously bound hidden depth buffer
 		if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
@@ -637,10 +636,9 @@ inline void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum
 	// Detecting requested attachment
 	switch (attachment) {
 	case GL_COLOR_ATTACHMENT0:
-		fb->width = sceGxmTextureGetWidth(&tex->gxm_tex);
-		fb->height = sceGxmTextureGetHeight(&tex->gxm_tex);
+		vglGetTexSizes(&tex->gxm_tex, &fb->width, &fb->height);
 		fb->stride = VGL_ALIGN(fb->width, 8) * tex_format_to_bytespp(tex->format);
-		fb->data = sceGxmTextureGetData(&tex->gxm_tex);
+		fb->data = vglGetTexData(&tex->gxm_tex);
 		fb->format = tex->format;
 
 		// Discarding any previously bound hidden depth buffer

@@ -935,10 +935,10 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 #ifdef HAVE_UNPURE_TEXTURES
 	level -= tex->mip_start;
 #endif
-	SceGxmTextureFormat tex_format = sceGxmTextureGetFormat(&tex->gxm_tex);
+	SceGxmTextureFormat tex_format = vglGetTexFormat(&tex->gxm_tex);
 	uint8_t bpp = tex_format_to_bytespp(tex_format);
-	uint32_t orig_w = sceGxmTextureGetWidth(&tex->gxm_tex);
-	uint32_t orig_h = sceGxmTextureGetHeight(&tex->gxm_tex);
+	uint32_t orig_w, orig_h;
+	vglGetTexSizes(&tex->gxm_tex, &orig_w, &orig_h);
 	uint32_t jumps[16];
 	uint32_t po2_w = 0;
 	uint32_t po2_h;
@@ -2160,7 +2160,7 @@ void glGenerateMipmap(GLenum target) {
 		return;
 	// Checking if current texture is compressed/planar
 	else {
-		SceGxmTextureFormat fmt = sceGxmTextureGetFormat(&tex->gxm_tex);
+		SceGxmTextureFormat fmt = vglGetTexFormat(&tex->gxm_tex);
 		if ((fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP && fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_UBC3)
 			|| fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2 && fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3) {
 			SET_GL_ERROR(GL_INVALID_OPERATION)
@@ -2200,7 +2200,7 @@ void glGenerateTextureMipmap(GLuint target) {
 		return;
 	// Checking if current texture is compressed
 	else {
-		SceGxmTextureFormat fmt = sceGxmTextureGetFormat(&tex->gxm_tex);
+		SceGxmTextureFormat fmt = vglGetTexFormat(&tex->gxm_tex);
 		if ((fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP && fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_UBC3)
 			|| fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2 && fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3) {
 			SET_GL_ERROR(GL_INVALID_OPERATION)
