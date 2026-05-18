@@ -854,12 +854,14 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			read_cb = read_rgba8888;
 	}
 	
+#ifndef READBACKS_SPEEDHACK
 	// If the current active framebuffer is the same of the source one for the read, we force a scene reset so that in-flight draws are executed
 	if (in_use_framebuffer == active_read_fb) {
 		dirty_framebuffer = GL_TRUE;
 		scene_reset();
 		sceGxmFinish(gxm_context);
 	}
+#endif
 
 	if (!fast_store) {
 		// Attempt first to use sceGxmTransfer variant since faster
