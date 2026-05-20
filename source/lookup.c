@@ -454,14 +454,28 @@ static const struct {
 #endif
 	// *egl
 	{"eglBindAPI", (void *)eglBindAPI},
+	{"eglChooseConfig", (void *)eglChooseConfig},
+	{"eglCreateContext", (void *)eglCreateContext},
+	{"eglCreateWindowSurface", (void *)eglCreateWindowSurface},
+	{"eglDestroyContext", (void *)eglDestroyContext},
+	{"eglDestroySurface", (void *)eglDestroySurface},
+	{"eglGetConfigAttrib", (void *)eglGetConfigAttrib},
+	{"eglGetConfigs", (void *)eglGetConfigs},
+	{"eglGetCurrentContext", (void *)eglGetCurrentContext},
 	{"eglGetDisplay", (void *)eglGetDisplay},
 	{"eglGetError", (void *)eglGetError},
 	{"eglGetProcAddress", (void *)eglGetProcAddress},
 	{"eglGetSystemTimeFrequencyNV", (void *)eglGetSystemTimeFrequencyNV},
 	{"eglGetSystemTimeNV", (void *)eglGetSystemTimeNV},
+	{"eglInitialize", (void *)eglInitialize},
+	{"eglMakeCurrent", (void *)eglMakeCurrent},
 	{"eglQueryAPI", (void *)eglQueryAPI},
+	{"eglQueryContext", (void *)eglQueryContext},
+	{"eglQueryString", (void *)eglQueryString},
+	{"eglQuerySurface", (void *)eglQuerySurface},
 	{"eglSwapInterval", (void *)eglSwapInterval},
 	{"eglSwapBuffers", (void *)eglSwapBuffers},
+	{"eglTerminate", (void *)eglTerminate},
 };
 
 static const size_t vgl_numproc = sizeof(vgl_proctable) / sizeof(*vgl_proctable);

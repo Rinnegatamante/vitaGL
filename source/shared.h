@@ -79,7 +79,7 @@
 #endif
 
 #ifdef DEBUG_THREAD_SAFENESS
-static inline uint32_t __get_arm_cp15_tls(void) {
+static inline __attribute__((always_inline)) uint32_t __get_arm_cp15_tls(void) {
 	uint32_t val;
 	__asm__ __volatile__("mrc p15, 0, %0, c13, c0, 3" : "=r" (val));
 	return val;
