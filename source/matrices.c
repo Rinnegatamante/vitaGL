@@ -291,6 +291,27 @@ void glMultMatrixf(const GLfloat *m) {
 	dirty_vert_unifs = GL_TRUE;
 }
 
+void glMultMatrixd(const GLdouble *m) {
+	// Properly ordering matrix
+	matrix4x4 res, src;
+	int i, j;
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			src[i][j] = m[j * 4 + i];
+		}
+	}
+
+	// Multiplicating passed matrix with in use one
+	matrix4x4_multiply(res, *matrix, src);
+
+	// Copying result to in use matrix
+	matrix4x4_copy(*matrix, res);
+
+	if (matrix != &texture_matrix[server_texture_unit])
+		mvp_modified = GL_TRUE;
+	dirty_vert_unifs = GL_TRUE;	
+}
+
 void glMatrixMultd(GLenum mode, const GLdouble *m) {
 	THREAD_SAFE()
 
@@ -367,6 +388,30 @@ void glMatrixMultf(GLenum mode, const GLfloat *m) {
 	matrix4x4_copy(*mat, res);
 
 	dirty_vert_unifs = GL_TRUE;
+}
+
+void glMultTransposeMatrixd(const GLdouble *m) {
+	THREAD_SAFE()
+
+	// Properly ordering matrix
+	matrix4x4 res, src;
+	int i, j;
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			src[i][j] = m[i * 4 + j];
+		}
+	}
+
+	// Multiplicating passed matrix with in use one
+	matrix4x4_multiply(res, *matrix, src);
+
+	// Copying result to in use matrix
+	matrix4x4_copy(*matrix, res);
+
+	if (matrix != &texture_matrix[server_texture_unit])
+		mvp_modified = GL_TRUE;
+	else
+		dirty_vert_unifs = GL_TRUE;
 }
 
 void glMultTransposeMatrixf(const GLfloat *m) {

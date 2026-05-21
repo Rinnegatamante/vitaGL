@@ -880,8 +880,10 @@ void glMultiDrawArrays(GLenum mode, const GLint *first, const GLsizei *count, GL
 void glMultiTexCoord2f(GLenum target, GLfloat s, GLfloat t);
 void glMultiTexCoord2fv(GLenum target, GLfloat *f);
 void glMultiTexCoord2i(GLenum target, GLint s, GLint t);
+void glMultMatrixd(const GLdouble *m);
 void glMultMatrixf(const GLfloat *m);
 void glMultMatrixx(const GLfixed *m);
+void glMultTransposeMatrixd(const GLdouble *m);
 void glMultTransposeMatrixf(const GLfloat *m);
 void glMultTransposeMatrixx(const GLfixed *m);
 void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLenum usage);
