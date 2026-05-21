@@ -2341,6 +2341,146 @@ void gluBuild2DMipmaps(GLenum target, GLint internalFormat, GLsizei width, GLsiz
 	glGenerateMipmap(target);
 }
 
+GLint gluScaleImage(GLenum format, GLsizei wIn, GLsizei hIn, GLenum typeIn, const void * dataIn, GLsizei wOut, GLsizei hOut, GLenum typeOut, void* dataOut) {
+	uint32_t src_bpp, dst_bpp;
+	GLboolean fast_store = typeIn == typeOut;
+	void (*write_cb)(void *, uint32_t) = NULL;
+	uint32_t (*read_cb)(void *) = NULL;
+
+	switch (format) {
+	case GL_RGBA:
+	case GL_BGRA:
+		switch (typeIn) {
+		case GL_UNSIGNED_BYTE:
+			src_bpp = 4;
+			read_cb = read_rgba8888;
+			break;
+		default:
+			SET_GL_ERROR_WITH_RET_AND_VALUE(GL_INVALID_ENUM, GL_INVALID_ENUM, typeIn)
+		}
+		if (!fast_store) {
+			switch (typeOut) {
+			case GL_UNSIGNED_BYTE:
+				dst_bpp = 4;
+				write_cb = write_rgba8888;
+				break;
+			default:
+				SET_GL_ERROR_WITH_RET_AND_VALUE(GL_INVALID_ENUM, GL_INVALID_ENUM, typeOut)
+			}
+		}
+		break;
+	case GL_RGB:
+		switch (typeIn) {
+		case GL_UNSIGNED_BYTE:
+			src_bpp = 3;
+			read_cb = read_rgb888;
+			break;
+		default:
+			SET_GL_ERROR_WITH_RET_AND_VALUE(GL_INVALID_ENUM, GL_INVALID_ENUM, typeIn)
+		}
+		if (!fast_store) {
+			switch (typeOut) {
+			case GL_UNSIGNED_BYTE:
+				dst_bpp = 3;
+				write_cb = write_rgb888;
+				break;
+			default:
+				SET_GL_ERROR_WITH_RET_AND_VALUE(GL_INVALID_ENUM, GL_INVALID_ENUM, typeOut)
+			}
+		}
+		break;
+	default:
+		SET_GL_ERROR_WITH_RET_AND_VALUE(GL_INVALID_ENUM, GL_INVALID_ENUM, format)
+	}
+	
+	if (fast_store) {
+		if (wIn == wOut && hIn == hOut) {
+			vgl_fast_memcpy(dataOut, dataIn, wIn * hIn * src_bpp);
+		} else {
+			const uint8_t *src = (const uint8_t *)dataIn;
+			uint8_t *dst = (uint8_t *)dataOut;
+			for (GLsizei y = 0; y < hOut; y++) {
+				float fy  = ((float)y + 0.5f) * ((float)hIn / (float)hOut) - 0.5f;
+				GLsizei y0 = (GLsizei)fy;
+				GLsizei y1 = y0 + 1;
+				float ty = fy - (float)y0;
+				if (y0 < 0) {
+					y0 = 0;
+				}
+				if (y1 >= hIn) {
+					y1 = hIn - 1;
+				}
+				for (GLsizei x = 0; x < wOut; x++) {
+					float fx = ((float)x + 0.5f) * ((float)wIn / (float)wOut) - 0.5f;
+					GLsizei x0 = (GLsizei)fx;
+					GLsizei x1 = x0 + 1;
+					float tx = fx - (float)x0;
+					if (x0 < 0) {
+						x0 = 0;
+					}
+					if (x1 >= wIn) {
+						x1 = wIn - 1;
+					}
+					const uint8_t *p00 = src + (y0 * wIn + x0) * src_bpp;
+					const uint8_t *p10 = src + (y0 * wIn + x1) * src_bpp;
+					const uint8_t *p01 = src + (y1 * wIn + x0) * src_bpp;
+					const uint8_t *p11 = src + (y1 * wIn + x1) * src_bpp;
+					uint8_t *d = dst + (y * wOut + x) * src_bpp;
+					for (uint32_t c = 0; c < src_bpp; c++) {
+						float v = (1.0f - tx) * (1.0f - ty) * p00[c];
+						v += tx * (1.0f - ty) * p10[c];
+						v += (1.0f - tx) * ty * p01[c];
+						v += tx * ty * p11[c];
+						d[c] = (uint8_t)(v + 0.5f);
+					}
+				}
+			}
+		}
+	} else {
+		const uint8_t *src = (const uint8_t *)dataIn;
+		uint8_t *dst = (uint8_t *)dataOut;
+		for (GLsizei y = 0; y < hOut; y++) {
+			float fy = ((float)y + 0.5f) * ((float)hIn / (float)hOut) - 0.5f;
+			GLsizei y0 = (GLsizei)fy;
+			GLsizei y1 = y0 + 1;
+			float ty = fy - (float)y0;
+			if (y0 < 0) {
+				y0 = 0;
+			}
+			if (y1 >= hIn) {
+				y1 = hIn - 1;
+			}
+			for (GLsizei x = 0; x < wOut; x++) {
+				float fx = ((float)x + 0.5f) * ((float)wIn / (float)wOut) - 0.5f;
+				GLsizei x0 = (GLsizei)fx;
+				GLsizei x1 = x0 + 1;
+				float tx = fx - (float)x0;
+				if (x0 < 0) {
+					x0 = 0;
+				}
+				if (x1 >= wIn) {
+					x1 = wIn - 1;
+				}
+				uint32_t c00 = read_cb((void *)(src + (y0 * wIn + x0) * src_bpp));
+				uint32_t c10 = read_cb((void *)(src + (y0 * wIn + x1) * src_bpp));
+				uint32_t c01 = read_cb((void *)(src + (y1 * wIn + x0) * src_bpp));
+				uint32_t c11 = read_cb((void *)(src + (y1 * wIn + x1) * src_bpp));
+				uint32_t result = 0;
+				for (int shift = 0; shift < 32; shift += 8) {
+					float v = (1.0f - tx) * (1.0f - ty) * ((c00 >> shift) & 0xFF);
+					v += tx * (1.0f - ty) * ((c10 >> shift) & 0xFF);
+					v += (1.0f - tx) * ty * ((c01 >> shift) & 0xFF);
+					v += tx * ty * ((c11 >> shift) & 0xFF);
+					result |= ((uint32_t)((uint8_t)(v + 0.5f))) << shift;
+				}
+				write_cb((void *)(dst + (y * wOut + x) * dst_bpp), result);
+			}
+		}
+	}
+	
+	return 0;
+}
+
 void glGenSamplers(GLsizei n, GLuint *smps) {
 	THREAD_SAFE()
 

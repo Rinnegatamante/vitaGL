@@ -382,6 +382,7 @@ static const struct {
 	{"gluBuild2DMipmaps", (void *)gluBuild2DMipmaps},
 	{"gluLookAt", (void *)gluLookAt},
 	{"gluPerspective", (void *)gluPerspective},
+	{"gluScaleImage", (void *)gluScaleImage},
 #ifdef EXPOSE_VGL_FUNCS
 	// *vgl
 	{"vglAddSemanticBinding", (void *)vglAddSemanticBinding},
