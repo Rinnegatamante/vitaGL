@@ -2204,6 +2204,24 @@ void glColor3fv(const GLfloat *v) {
 	dirty_frag_unifs = GL_TRUE;
 }
 
+void glColor3us(GLushort red, GLushort green, GLushort blue) {
+	THREAD_SAFE()
+
+	current_vtx.clr.r = (float)red / 65535.0f;
+	current_vtx.clr.g = (float)green / 65535.0f;
+	current_vtx.clr.b = (float)blue / 65535.0f;
+	current_vtx.clr.a = 1.0f;
+};
+
+void glColor3usv(const GLushort *c) {
+	THREAD_SAFE()
+
+	current_vtx.clr.r = (float)c[0] / 65535.0f;
+	current_vtx.clr.g = (float)c[1] / 65535.0f;
+	current_vtx.clr.b = (float)c[2] / 65535.0f;
+	current_vtx.clr.a = 1.0f;
+};
+
 void glColor3ub(GLubyte red, GLubyte green, GLubyte blue) {
 	THREAD_SAFE()
 
@@ -2284,6 +2302,24 @@ void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha) {
 
 	dirty_frag_unifs = GL_TRUE;
 }
+
+void glColor4us(GLushort red, GLushort green, GLushort blue, GLushort alpha) {
+	THREAD_SAFE()
+
+	current_vtx.clr.r = (float)red / 65535.0f;
+	current_vtx.clr.g = (float)green / 65535.0f;
+	current_vtx.clr.b = (float)blue / 65535.0f;
+	current_vtx.clr.a = (float)alpha / 65535.0f;
+};
+
+void glColor4usv(const GLushort *c) {
+	THREAD_SAFE()
+
+	current_vtx.clr.r = (float)c[0] / 65535.0f;
+	current_vtx.clr.g = (float)c[1] / 65535.0f;
+	current_vtx.clr.b = (float)c[2] / 65535.0f;
+	current_vtx.clr.a = (float)c[3] / 65535.0f;
+};
 
 void glColor4ubv(const GLubyte *c) {
 	THREAD_SAFE()
