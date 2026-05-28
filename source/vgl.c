@@ -357,11 +357,21 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 #ifndef CIRCULAR_POOL_SPEEDHACK
 	for (int i = 0; i < gxm_display_buffer_count; i++) {
 		circular_data_pool[i] = gpu_alloc_mapped(circular_data_pool_size / gxm_display_buffer_count, VGL_MEM_RAM);
+#ifdef LOG_ERRORS
+		if (vgl_mem_get_type_by_addr(circular_data_pool[i]) == VGL_MEM_VRAM) {
+			vgl_log("%s:%d %s: Circular pool #%d spilled into VRAM. This might negatively impact performance.\n", __FILE__, __LINE__, __func__, i);
+		}
+#endif
 		circular_data_pool_ptr[i] = circular_data_pool[i];
 		circular_data_pool_limit[i] = (uint8_t *)circular_data_pool[i] + circular_data_pool_size / gxm_display_buffer_count;
 	}
 #else
 	circular_data_pool = gpu_alloc_mapped(circular_data_pool_size, VGL_MEM_RAM);
+#ifdef LOG_ERRORS
+	if (vgl_mem_get_type_by_addr(circular_data_pool) == VGL_MEM_VRAM) {
+		vgl_log("%s:%d %s: Circular pool spilled into VRAM. This might negatively impact performance.\n", __FILE__, __LINE__, __func__);
+	}
+#endif
 	circular_data_pool_ptr = circular_data_pool;
 	circular_data_pool_limit = (uint8_t *)circular_data_pool + circular_data_pool_size;
 #endif
