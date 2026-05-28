@@ -632,8 +632,9 @@ static inline __attribute__((always_inline)) void compile_shader(shader *s, GLbo
 		vgl_fast_memcpy((void *)res, (void *)s->prog, s->size);
 		int r = sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, res, &s->id);
 #ifdef LOG_ERRORS
-		if (r)
+		if (r) {
 			vgl_log("%s:%d %s: Program failed to register on sceGxm (%s).\n", __FILE__, __LINE__, __func__, get_gxm_error_literal(r));
+		}
 #endif
 		s->unif_buf_size = sceGxmProgramGetDefaultUniformBufferSize(res);
 		s->prog = res;
@@ -853,6 +854,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 	if (is_packed) {
 		if (target_vbo) {
 			ptrs[0] = (void *)target_vbo->ptr;
+			target_vbo->last_frame = vgl_framecount;
 			for (int i = 0; i < p->attr_num; i++) {
 				uint8_t attr_idx = p->attr_map[i];
 				attributes[i].regIndex = p->attr[attr_idx].regIndex;
@@ -1090,6 +1092,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 	if (is_packed) {
 		if (target_vbo) {
 			ptrs[0] = (void *)target_vbo->ptr;
+			target_vbo->last_frame = vgl_framecount;
 			for (int i = 0; i < p->attr_num; i++) {
 				uint8_t attr_idx = p->attr_map[i];
 				attributes[i].regIndex = p->attr[attr_idx].regIndex;
@@ -1375,6 +1378,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	if (is_packed) {
 		if (target_vbo) {
 			ptrs[0] = (void *)target_vbo->ptr;
+			target_vbo->last_frame = vgl_framecount;
 			for (int i = 0; i < p->attr_num; i++) {
 				uint8_t attr_idx = p->attr_map[i];
 				attributes[i].regIndex = p->attr[attr_idx].regIndex;
