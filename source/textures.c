@@ -986,7 +986,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		} else {
 			size = orig_h * VGL_ALIGN(orig_w, 8) * bpp;
 		}
-		void *texture_data = gpu_alloc_mapped(size, VGL_MEM_MAIN);
+		void *texture_data = gpu_alloc_mapped_for_gpu(size);
 		vgl_fast_memcpy(texture_data, tex->data, size);
 		gpu_free_texture_data(tex);
 		sceGxmTextureSetData(&tex->gxm_tex, texture_data);

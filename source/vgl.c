@@ -123,7 +123,7 @@ uint8_t *vgl_reserve_data_pool(uint32_t size) {
 	circular_data_pool_ptr[vgl_circular_idx] += size;
 	if (circular_data_pool_ptr[vgl_circular_idx] > circular_data_pool_limit[vgl_circular_idx]) {
 		vgl_log("%s:%d Circular pool overrun (Total of %u bytes). Consider increasing its size with vglSetCircularPoolSize. Falling back to regular allocation.\n", __FILE__, __LINE__, circular_data_pool_ptr[vgl_circular_idx] - circular_data_pool_limit[vgl_circular_idx]);
-		res = (uint8_t *)gpu_alloc_mapped(size, VGL_MEM_MAIN);
+		res = (uint8_t *)gpu_alloc_mapped_for_cpu(size);
 #ifdef LOG_ERRORS
 		if (!res) {
 			vgl_log("%s:%d gpu_alloc_mapped_temp failed with a requested size of 0x%08X\n", __FILE__, __LINE__, size);
@@ -148,10 +148,6 @@ uint8_t *vgl_reserve_data_pool(uint32_t size) {
  * - IMPLEMENTATION STARTS HERE -
  * ------------------------------
  */
-
-void vglUseVram(GLboolean usage) {
-	VGL_MEM_MAIN = usage ? VGL_MEM_VRAM : VGL_MEM_RAM;
-}
 
 void vglUseVramForUSSE(GLboolean usage) {
 	use_vram_for_usse = usage;
@@ -251,8 +247,8 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	// Setting up default blending state
 	change_blend_mask();
 
-	clear_vertices = gpu_alloc_mapped(1 * sizeof(vector4f), VGL_MEM_RAM);
-	depth_clear_indices = gpu_alloc_mapped(4 * sizeof(unsigned short), VGL_MEM_RAM);
+	clear_vertices = gpu_alloc_mapped_for_cpu(sizeof(vector4f));
+	depth_clear_indices = gpu_alloc_mapped_for_cpu(4 * sizeof(unsigned short));
 
 	vector4f_convert_to_local_space(clear_vertices, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
@@ -308,7 +304,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	// Scissor Test shader register
 	sceGxmShaderPatcherCreateMaskUpdateFragmentProgram(gxm_shader_patcher, &scissor_test_fragment_program);
 
-	scissor_test_vertices = gpu_alloc_mapped(1 * sizeof(vector4f), VGL_MEM_RAM);
+	scissor_test_vertices = gpu_alloc_mapped_for_cpu(1 * sizeof(vector4f));
 
 	// Init texture units
 	for (int i = 0; i < COMBINED_TEXTURE_IMAGE_UNITS_NUM; i++) {
@@ -356,7 +352,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 #ifndef DISABLE_CIRCULAR_POOL
 #ifndef CIRCULAR_POOL_SPEEDHACK
 	for (int i = 0; i < gxm_display_buffer_count; i++) {
-		circular_data_pool[i] = gpu_alloc_mapped(circular_data_pool_size / gxm_display_buffer_count, VGL_MEM_RAM);
+		circular_data_pool[i] = gpu_alloc_mapped_for_cpu(circular_data_pool_size / gxm_display_buffer_count);
 #ifdef LOG_ERRORS
 		if (vgl_mem_get_type_by_addr(circular_data_pool[i]) == VGL_MEM_VRAM) {
 			vgl_log("%s:%d %s: Circular pool #%d spilled into VRAM. This might negatively impact performance.\n", __FILE__, __LINE__, __func__, i);
@@ -366,7 +362,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 		circular_data_pool_limit[i] = (uint8_t *)circular_data_pool[i] + circular_data_pool_size / gxm_display_buffer_count;
 	}
 #else
-	circular_data_pool = gpu_alloc_mapped(circular_data_pool_size, VGL_MEM_RAM);
+	circular_data_pool = gpu_alloc_mapped_for_cpu(circular_data_pool_size);
 #ifdef LOG_ERRORS
 	if (vgl_mem_get_type_by_addr(circular_data_pool) == VGL_MEM_VRAM) {
 		vgl_log("%s:%d %s: Circular pool spilled into VRAM. This might negatively impact performance.\n", __FILE__, __LINE__, __func__);
@@ -378,9 +374,9 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 #endif
 
 	// Init constant index buffers
-	default_idx_ptr = (uint16_t *)vglMalloc(MAX_IDX_NUMBER * sizeof(uint16_t));
-	default_quads_idx_ptr = (uint16_t *)vglMalloc(MAX_IDX_NUMBER * sizeof(uint16_t));
-	default_line_strips_idx_ptr = (uint16_t *)vglMalloc(MAX_IDX_NUMBER * sizeof(uint16_t));
+	default_idx_ptr = (uint16_t *)gpu_alloc_mapped_for_cpu(MAX_IDX_NUMBER * sizeof(uint16_t));
+	default_quads_idx_ptr = (uint16_t *)gpu_alloc_mapped_for_cpu(MAX_IDX_NUMBER * sizeof(uint16_t));
+	default_line_strips_idx_ptr = (uint16_t *)gpu_alloc_mapped_for_cpu(MAX_IDX_NUMBER * sizeof(uint16_t));
 	for (int i = 0; i < MAX_IDX_NUMBER / 6; i++) {
 		default_idx_ptr[i * 6] = i * 6;
 		default_idx_ptr[i * 6 + 1] = i * 6 + 1;
@@ -624,7 +620,7 @@ void *vglAlloc(uint32_t size, vglMemType type) {
 }
 
 void *vglForceAlloc(uint32_t size) {
-	return gpu_alloc_mapped(size, VGL_MEM_MAIN);
+	return gpu_alloc_mapped_for_cpu(size);
 }
 
 void *vglMalloc(uint32_t size) {

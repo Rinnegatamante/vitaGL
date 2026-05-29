@@ -6238,8 +6238,8 @@ int splashscreen_thread(unsigned int args, void *arg) {
 	
 	// Decompress the splashscreen data
 	uint8_t *tmp = (uint8_t*)vglMalloc(SPLASH_VTX_PACKED + SPLASH_IDX_COUNT * 2);
-	void *gpu_splash_vtxs = gpu_alloc_mapped(sizeof(float) * SPLASH_VTX_COUNT * 6, VGL_MEM_RAM);
-	void *gpu_splash_idxs = gpu_alloc_mapped(sizeof(uint16_t) * SPLASH_IDX_COUNT, VGL_MEM_RAM);
+	void *gpu_splash_vtxs = gpu_alloc_mapped_for_cpu(sizeof(float) * SPLASH_VTX_COUNT * 6);
+	void *gpu_splash_idxs = gpu_alloc_mapped_for_cpu(sizeof(uint16_t) * SPLASH_IDX_COUNT);
 	lz77_decompress(vgl_splash_compressed, tmp, SPLASH_VTX_PACKED + SPLASH_IDX_COUNT * 2);
 	uint8_t *p = tmp;
 	float *v_out = (float*)gpu_splash_vtxs;

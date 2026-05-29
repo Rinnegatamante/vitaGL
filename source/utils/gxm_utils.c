@@ -30,8 +30,9 @@ static uint8_t *unif_pool = NULL;
 static uint32_t unif_idx = 0;
 
 void vglSetupUniformCircularPool() {
-	if (!unif_pool)
-		unif_pool = gpu_alloc_mapped(UNIFORM_CIRCULAR_POOL_SIZE, VGL_MEM_RAM);
+	if (!unif_pool) {
+		unif_pool = gpu_alloc_mapped_for_cpu(UNIFORM_CIRCULAR_POOL_SIZE);
+	}
 }
 
 void *vglReserveUniformCircularPoolBuffer(uint32_t size) {

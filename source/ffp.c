@@ -2560,7 +2560,7 @@ void glEnd(void) {
 		reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
 		texture *tex = &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]];
 #ifdef HAVE_TEX_CACHE
-		restoreTexCache(tex);
+		restore_tex_cache(tex);
 #endif
 #ifndef TEXTURES_SPEEDHACK
 		tex->last_frame = vgl_framecount;

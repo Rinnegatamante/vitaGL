@@ -35,18 +35,22 @@ extern uint32_t vgl_framecount; // Current frame number since application starte
 #define ALIGNBLOCK(x, a) (((x) + ((a)-1)) / a)
 
 // Alloc a generic memblock into sceGxm mapped memory with alignment
-void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type);
+void *gpu_alloc_mapped_aligned_for_cpu(size_t alignment, size_t size);
+void *gpu_alloc_mapped_aligned_for_gpu(size_t alignment, size_t size);
 
 // Alloc a generic memblock into sceGxm mapped memory
-static inline __attribute__((always_inline)) void *gpu_alloc_mapped(size_t size, vglMemType type) {
-	return gpu_alloc_mapped_aligned(MEM_ALIGNMENT, size, type);
+static inline __attribute__((always_inline)) void *gpu_alloc_mapped_for_gpu(size_t size) {
+	return gpu_alloc_mapped_aligned_for_gpu(MEM_ALIGNMENT, size);
+}
+static inline __attribute__((always_inline)) void *gpu_alloc_mapped_for_cpu(size_t size) {
+	return gpu_alloc_mapped_aligned_for_cpu(MEM_ALIGNMENT, size);
 }
 
 // Alloc a generic memblock into sceGxm mapped memory and marks it for garbage collection
 static inline __attribute__((always_inline)) void *gpu_alloc_mapped_temp(size_t size) {
 #ifdef DISABLE_CIRCULAR_POOL
 	// Allocating memblock and marking it for garbage collection
-	void *res = gpu_alloc_mapped(size, VGL_MEM_MAIN);
+	void *res = gpu_alloc_mapped_for_cpu(size);
 
 #ifdef LOG_ERRORS
 	if (!res) {

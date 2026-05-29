@@ -194,7 +194,7 @@ extern uint32_t vgl_tex_cache_freq; // Number of frames prior a texture becomes 
 		SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777); \
 		size_t sz = sceIoLseek(f, 0, SCE_SEEK_END); \
 		sceIoLseek(f, 0, SCE_SEEK_SET); \
-		void *texture_data = gpu_alloc_mapped(sz, VGL_MEM_MAIN); \
+		void *texture_data = gpu_alloc_mapped_for_gpu(sz); \
 		sceIoRead(f, texture_data, sz); \
 		sceIoClose(f); \
 		sceIoRemove(fname); \
@@ -602,7 +602,7 @@ typedef enum {
 typedef struct {
 	void *ptr;
 	int32_t size;
-	vglMemType type;
+	void *(*alloc_func)(size_t);
 	uint32_t last_frame;
 #if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 	GLboolean scratch;

@@ -454,7 +454,6 @@ static const struct {
 	{"vglUseCachedMem", (void *)vglUseCachedMem},
 	{"vglUseLowPrecision", (void *)vglUseLowPrecision},
 	{"vglUseTripleBuffering", (void *)vglUseTripleBuffering},
-	{"vglUseVram", (void *)vglUseVram},
 	{"vglUseVramForUSSE", (void *)vglUseVramForUSSE},
 	{"vglUseExtraMem", (void *)vglUseExtraMem},
 	{"vglWaitVblankStart", (void *)vglWaitVblankStart},

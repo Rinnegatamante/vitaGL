@@ -38,8 +38,12 @@
 uint32_t vgl_tex_cache_freq = 3600; // Number of frames prior a texture becomes cacheable if not used
 #endif
 
+#define vgl_alloc_attempt(alignment, size, type) \
+	res = vgl_memalign(alignment, size, type); \
+	if (res) \
+		return res;
+
 // VRAM usage setting
-vglMemType VGL_MEM_MAIN = VGL_MEM_VRAM;
 uint8_t use_vram_for_usse = GL_FALSE;
 
 // Newlib mempool usage setting
@@ -84,76 +88,32 @@ void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
 	}
 }
 
-static int unsafe_allocator_counter = 0;
-void *gpu_alloc_mapped_aligned_unsafe(size_t alignment, size_t size, vglMemType type) {
-	// Performing a garbage collection cycle prior to attempting to allocate the memory again
-	unsafe_allocator_counter++;
-	sceGxmFinish(gxm_context);
-#if defined(HAVE_SINGLE_THREADED_GC) && !defined(HAVE_PTHREAD)
-	garbage_collector(0, NULL);
-#else
-	sceKernelWaitSema(gc_mutex[1], 1, NULL);
-	sceKernelSignalSema(gc_mutex[0], 1);
-	sceKernelDelayThread(1000000);
-#endif
-
-	// Allocating requested memblock
-	void *res = vgl_memalign(alignment, size, type);
-	if (res)
-		return res;
-
-	// Requested memory type finished, using other one
-	res = vgl_memalign(alignment, size, type == VGL_MEM_VRAM ? VGL_MEM_RAM : VGL_MEM_VRAM);
-	if (res)
-		return res;
-
-	// Even the other one failed, trying with physically contiguous RAM
-	res = vgl_memalign(alignment, size, VGL_MEM_SLOW);
-	if (res)
-		return res;
-
-	// Even this failed, attempting with game common dialog RAM
-	res = vgl_memalign(alignment, size, VGL_MEM_BUDGET);
-	if (res)
-		return res;
-
-	// Internal mempools finished, using newlib mem
-	if (use_extra_mem)
+static inline __attribute__((always_inline)) void *gpu_alloc_mapped_aligned_for_cpu_inner(size_t alignment, size_t size) {
+	void *res;
+	vgl_alloc_attempt(alignment, size, VGL_MEM_RAM)
+	vgl_alloc_attempt(alignment, size, VGL_MEM_SLOW)
+	vgl_alloc_attempt(alignment, size, VGL_MEM_BUDGET)
+	vgl_alloc_attempt(alignment, size, VGL_MEM_VRAM)
+	if (use_extra_mem) {
 		res = vgl_memalign(alignment, size, VGL_MEM_EXTERNAL);
-
-	// Iterating for as many as possible max pending garbage collector cycles
-	if (!res && unsafe_allocator_counter < FRAME_PURGE_FREQ)
-		res = gpu_alloc_mapped_aligned_unsafe(alignment, size, type);
-
+	}
 	return res;
 }
 
-void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type) {
-	// Allocating requested memblock
-	void *res = vgl_memalign(alignment, size, type);
-	if (res)
-		return res;
-
-	// Requested memory type finished, using other one
-	res = vgl_memalign(alignment, size, type == VGL_MEM_VRAM ? VGL_MEM_RAM : VGL_MEM_VRAM);
-	if (res)
-		return res;
-
-	// Even the other one failed, trying with physically contiguous RAM
-	res = vgl_memalign(alignment, size, VGL_MEM_SLOW);
-	if (res)
-		return res;
-
-	// Even this failed, attempting with game common dialog RAM
-	res = vgl_memalign(alignment, size, VGL_MEM_BUDGET);
-	if (res)
-		return res;
-
-	// Internal mempools finished, using newlib mem
-	if (use_extra_mem)
+static inline __attribute__((always_inline)) void *gpu_alloc_mapped_aligned_for_gpu_inner(size_t alignment, size_t size) {
+	void *res;
+	vgl_alloc_attempt(alignment, size, VGL_MEM_VRAM)
+	vgl_alloc_attempt(alignment, size, VGL_MEM_RAM)
+	vgl_alloc_attempt(alignment, size, VGL_MEM_SLOW)
+	vgl_alloc_attempt(alignment, size, VGL_MEM_BUDGET)
+	if (use_extra_mem) {
 		res = vgl_memalign(alignment, size, VGL_MEM_EXTERNAL);
-	
+	}
+	return res;
+}
+
 #ifdef HAVE_TEX_CACHE
+static inline __attribute__((always_inline)) uint32_t vgl_cache_old_textures(size_t size) {
 	// Cache any unused texture to free enough space
 	uint32_t cached_elements = 0;
 	uint32_t cached_bytes = 0;
@@ -187,35 +147,132 @@ void *gpu_alloc_mapped_aligned(size_t alignment, size_t size, vglMemType type) {
 			break;
 		}
 	}
-	if (cached_elements) {
-		vgl_log("%s:%d gpu_alloc_mapped_aligned failed with a requested size of %u bytes, cached %d textures to recover %d bytes.\n", __FILE__, __LINE__, size, cached_elements, cached_bytes);
-		if (cached_bytes >= size)
-			return gpu_alloc_mapped_aligned(alignment, size, type);
+	vgl_log("%s:%d gpu_alloc_mapped_aligned failed with a requested size of %u bytes, cached %d textures to recover %d bytes.\n", __FILE__, __LINE__, size, cached_elements, cached_bytes);
+	return cached_bytes;
+}
+#endif
+
+static int unsafe_allocator_counter = 0;
+void *gpu_alloc_mapped_aligned_unsafe_for_cpu(size_t alignment, size_t size) {
+	// Performing a garbage collection cycle prior to attempting to allocate the memory again
+	unsafe_allocator_counter++;
+	if (unsafe_allocator_counter == 1) {
+		glFinish();
+	}
+#if defined(HAVE_SINGLE_THREADED_GC) && !defined(HAVE_PTHREAD)
+	garbage_collector(0, NULL);
+#else
+	sceKernelWaitSema(gc_mutex[1], 1, NULL);
+	sceKernelSignalSema(gc_mutex[0], 1);
+	sceKernelDelayThread(1000000);
+#endif
+
+	// Allocating requested memblock
+	void *res = gpu_alloc_mapped_aligned_for_cpu_inner(alignment, size);
+	if (res)
+		return res;
+
+	// Iterating for as many as possible max pending garbage collector cycles
+	if (!res && unsafe_allocator_counter < FRAME_PURGE_FREQ) {
+		res = gpu_alloc_mapped_aligned_unsafe_for_cpu(alignment, size);
+	}
+
+	return res;
+}
+
+void *gpu_alloc_mapped_aligned_unsafe_for_gpu(size_t alignment, size_t size) {
+	// Performing a garbage collection cycle prior to attempting to allocate the memory again
+	unsafe_allocator_counter++;
+	if (unsafe_allocator_counter == 1) {
+		glFinish();
+	}
+#if defined(HAVE_SINGLE_THREADED_GC) && !defined(HAVE_PTHREAD)
+	garbage_collector(0, NULL);
+#else
+	sceKernelWaitSema(gc_mutex[1], 1, NULL);
+	sceKernelSignalSema(gc_mutex[0], 1);
+	sceKernelDelayThread(1000000);
+#endif
+
+	// Allocating requested memblock
+	void *res = gpu_alloc_mapped_aligned_for_gpu_inner(alignment, size);
+	if (res)
+		return res;
+
+	// Iterating for as many as possible max pending garbage collector cycles
+	if (!res && unsafe_allocator_counter < FRAME_PURGE_FREQ) {
+		res = gpu_alloc_mapped_aligned_unsafe_for_gpu(alignment, size);
+	}
+
+	return res;
+}
+
+void *gpu_alloc_mapped_aligned_for_cpu(size_t alignment, size_t size) {
+	void *res = gpu_alloc_mapped_aligned_for_cpu_inner(alignment, size);
+	if (res)
+		return res;
+	
+#ifdef HAVE_TEX_CACHE
+	if (vgl_cache_old_textures(size) >= size) {
+		return gpu_alloc_mapped_aligned_for_cpu(alignment, size);
 	}
 #endif
 
+	// Attempt to force garbage collector in order to try to free some mem in an unsafe way
+#ifdef LOG_ERRORS
+	vgl_log("%s:%d gpu_alloc_mapped_aligned_for_cpu failed with a requested size of %u bytes, attempting to forcefully free required memory.\n", __FILE__, __LINE__, size);
+#endif
+	unsafe_allocator_counter = 0;
+	res = gpu_alloc_mapped_aligned_unsafe_for_cpu(alignment, size);
+
+#ifdef LOG_ERRORS
 	if (!res) {
-		// Attempt to force garbage collector in order to try to free some mem in an unsafe way
-#ifdef LOG_ERRORS
-		vgl_log("%s:%d gpu_alloc_mapped_aligned failed with a requested size of %u bytes, attempting to forcefully free required memory.\n", __FILE__, __LINE__, size);
+		vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe_for_cpu failed with a requested size of %u bytes.\n", __FILE__, __LINE__, size);
+	} else {
+		vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe_for_cpu successfully allocated the requested memory after forcing %d garbage collection cycles.\n", __FILE__, __LINE__, unsafe_allocator_counter);
+	}
 #endif
-		unsafe_allocator_counter = 0;
-		res = gpu_alloc_mapped_aligned_unsafe(alignment, size, type);
+
+	return res;
+}
+
+void *gpu_alloc_mapped_aligned_for_gpu(size_t alignment, size_t size) {
+	void *res = gpu_alloc_mapped_aligned_for_gpu_inner(alignment, size);
+	if (res)
+		return res;
+	
+#ifdef HAVE_TEX_CACHE
+	if (vgl_cache_old_textures(size) >= size) {
+		return gpu_alloc_mapped_aligned_for_gpu(alignment, size);
+	}
+#endif
+
+	// Attempt to force garbage collector in order to try to free some mem in an unsafe way
+#ifdef LOG_ERRORS
+	vgl_log("%s:%d gpu_alloc_mapped_aligned_for_gpu failed with a requested size of %u bytes, attempting to forcefully free required memory.\n", __FILE__, __LINE__, size);
+#endif
+	unsafe_allocator_counter = 0;
+	res = gpu_alloc_mapped_aligned_unsafe_for_gpu(alignment, size);
 
 #ifdef LOG_ERRORS
-		if (!res)
-			vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe failed with a requested size of %u bytes.\n", __FILE__, __LINE__, size);
-		else
-			vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe successfully allocated the requested memory after forcing %d garbage collection cycles.\n", __FILE__, __LINE__, unsafe_allocator_counter);
-#endif
+	if (!res) {
+		vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe_for_gpu failed with a requested size of %u bytes.\n", __FILE__, __LINE__, size);
+	} else {
+		vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe_for_gpu successfully allocated the requested memory after forcing %d garbage collection cycles.\n", __FILE__, __LINE__, unsafe_allocator_counter);
 	}
+#endif
 
 	return res;
 }
 
 void *gpu_vertex_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
-	void *addr = gpu_alloc_mapped_aligned(4096, size, use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	void *addr;
+	if (use_vram_for_usse) {
+		addr = gpu_alloc_mapped_aligned_for_gpu(4096, size);
+	} else {
+		addr = gpu_alloc_mapped_aligned_for_cpu(4096, size);
+	}
 
 	// Mapping memblock into sceGxm as vertex USSE memory
 	sceGxmMapVertexUsseMemory(addr, size, usse_offset);
@@ -234,7 +291,12 @@ void gpu_vertex_usse_free_mapped(void *addr) {
 
 void *gpu_fragment_usse_alloc_mapped(size_t size, unsigned int *usse_offset) {
 	// Allocating memblock
-	void *addr = gpu_alloc_mapped_aligned(4096, size, use_vram_for_usse ? VGL_MEM_VRAM : VGL_MEM_RAM);
+	void *addr;
+	if (use_vram_for_usse) {
+		addr = gpu_alloc_mapped_aligned_for_gpu(4096, size);
+	} else {
+		addr = gpu_alloc_mapped_aligned_for_cpu(4096, size);
+	}
 
 	// Mapping memblock into sceGxm as fragment USSE memory
 	sceGxmMapFragmentUsseMemory(addr, size, usse_offset);
@@ -263,7 +325,7 @@ static inline __attribute__((always_inline)) int tex_format_to_alignment(SceGxmT
 
 void *gpu_alloc_palette(const void *data, uint32_t w, uint32_t bpe) {
 	// Allocating palette data buffer
-	void *texture_palette = gpu_alloc_mapped_aligned(SCE_GXM_PALETTE_ALIGNMENT, 256 * sizeof(uint32_t), VGL_MEM_MAIN);
+	void *texture_palette = gpu_alloc_mapped_aligned_for_gpu(SCE_GXM_PALETTE_ALIGNMENT, 256 * sizeof(uint32_t));
 
 	// Initializing palette
 	if (data == NULL)
@@ -288,7 +350,7 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 
 	// Allocating texture data buffer
 	const int face_size = VGL_ALIGN(w, 8) * h * bpp;
-	void *base_texture_data = tex->faces_counter == 1 ? gpu_alloc_mapped(face_size * 6, VGL_MEM_MAIN) : tex->data;
+	void *base_texture_data = tex->faces_counter == 1 ? gpu_alloc_mapped_for_gpu(face_size * 6) : tex->data;
 
 	if (base_texture_data != NULL) {
 		// Calculating face texture data pointer
@@ -335,7 +397,7 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	// Allocating texture data buffer
 	const int aligned_w = VGL_ALIGN(w, 8);
 	const int tex_size = aligned_w * h * bpp;
-	void *texture_data = gpu_alloc_mapped(tex_size, VGL_MEM_MAIN);
+	void *texture_data = gpu_alloc_mapped_for_gpu(tex_size);
 
 	if (texture_data != NULL) {
 		// Initializing texture data buffer
@@ -405,8 +467,8 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 
 	// Allocating texture and palette data buffers
 	int num_entries = is_p8 ? 256 : 16;
-	tex->palette_data = gpu_alloc_mapped_aligned(SCE_GXM_PALETTE_ALIGNMENT, num_entries * sizeof(uint32_t), VGL_MEM_MAIN);
-	tex->data = gpu_alloc_mapped(tex_size, VGL_MEM_MAIN);
+	tex->palette_data = gpu_alloc_mapped_aligned_for_gpu(SCE_GXM_PALETTE_ALIGNMENT, num_entries * sizeof(uint32_t));
+	tex->data = gpu_alloc_mapped_for_gpu(tex_size);
 
 	// Populating palette data
 	uint32_t *palette_data = (uint32_t *)tex->palette_data;
@@ -506,7 +568,7 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 	const int mip_offset = gpu_get_compressed_mip_offset(0, aligned_max_width, aligned_max_height, format);
 	const int face_size = gpu_get_compressed_mipchain_size(0, aligned_max_width, aligned_max_height, format);
 	const int mip_size = face_size - mip_offset;
-	void *base_texture_data = tex->faces_counter == 1 ? gpu_alloc_mapped(face_size * 6, VGL_MEM_MAIN) : tex->data;
+	void *base_texture_data = tex->faces_counter == 1 ? gpu_alloc_mapped_for_gpu(face_size * 6) : tex->data;
 	void *texture_data = (uint8_t *)base_texture_data + face_size * index;
 
 	// Initializing texture data buffer
@@ -637,7 +699,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 			texture_data = vgl_realloc(tex->data, tex_size);
 			if (!texture_data) {
 				// Reallocation in the same mspace failed, try manually.
-				texture_data = gpu_alloc_mapped(tex_size, VGL_MEM_MAIN);
+				texture_data = gpu_alloc_mapped_for_gpu(tex_size);
 				const int old_data_size = gpu_get_compressed_mipchain_size(mip_count, aligned_max_width, aligned_max_height, format);
 				vgl_memcpy(texture_data, tex->data, old_data_size);
 				gpu_free_texture_data(tex);
@@ -650,7 +712,7 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		mip_count = mip_level;
 		tex_width = w;
 		tex_height = h;
-		texture_data = gpu_alloc_mapped(tex_size, VGL_MEM_MAIN);
+		texture_data = gpu_alloc_mapped_for_gpu(tex_size);
 	}
 
 	// Initializing texture data buffer
@@ -790,7 +852,7 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		void *texture_data = count <= 0 ? vgl_realloc(tex->data, size) : tex->data;
 		if (count <= 0 && !texture_data) {
 			// Reallocation in the same mspace failed, try manually.
-			texture_data = gpu_alloc_mapped(size, VGL_MEM_MAIN);
+			texture_data = gpu_alloc_mapped_for_gpu(size);
 			vgl_memcpy(texture_data, tex->data, VGL_ALIGN(orig_w, 8) * orig_h * bpp);
 			gpu_free_texture_data(tex);
 		}
@@ -867,7 +929,7 @@ void gpu_alloc_planar_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format
 	const int aligned_w = VGL_ALIGN(w, 8);
 	const int aligned_half_w = VGL_ALIGN(w / 2, 8);
 	const int tex_size = plane_w * plane_h + half_plane_w * half_plane_h * 2;
-	void *texture_data = gpu_alloc_mapped(tex_size, VGL_MEM_MAIN);
+	void *texture_data = gpu_alloc_mapped_for_gpu(tex_size);
 
 	if (texture_data != NULL) {
 		// Initializing texture data buffer

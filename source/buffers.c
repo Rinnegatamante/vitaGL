@@ -56,7 +56,7 @@ void reset_vao(vao *v) {
 	v->index_array_unit = 0;
 
 	uint32_t circular_pool_size = v == &default_vao ? main_vertex_attrib_pool_size : aux_vertex_attrib_pool_size;
-	v->vertex_attrib_pool = (float *)gpu_alloc_mapped(circular_pool_size, VGL_MEM_RAM);
+	v->vertex_attrib_pool = (float *)gpu_alloc_mapped_for_cpu(circular_pool_size);
 	v->vertex_attrib_pool_ptr = v->vertex_attrib_pool;
 	v->vertex_attrib_pool_limit = (float *)((uint8_t *)v->vertex_attrib_pool + circular_pool_size);
 
@@ -77,7 +77,7 @@ void reset_vao(vao *v) {
 }
 
 void reset_queries() {
-	queries_buffer = gpu_alloc_mapped(MAX_QUERIES_NUM * 4 * sizeof(uint32_t), VGL_MEM_RAM);
+	queries_buffer = gpu_alloc_mapped_for_cpu(MAX_QUERIES_NUM * 4 * sizeof(uint32_t));
 	sceGxmSetVisibilityBuffer(gxm_context, queries_buffer, MAX_QUERIES_NUM * sizeof(uint32_t));
 	query_fence.value = 0;
 	query_fence.address = sceGxmGetNotificationRegion();
@@ -344,7 +344,7 @@ inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLe
 #if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 		gpu_buf->scratch = vgl_stream_wants_scratch;
 #endif
-		gpu_buf->type = VGL_MEM_RAM;
+		gpu_buf->alloc_func = gpu_alloc_mapped_for_cpu;
 		break;
 	case GL_DYNAMIC_DRAW:
 	case GL_DYNAMIC_READ:
@@ -352,13 +352,13 @@ inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLe
 #if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 		gpu_buf->scratch = vgl_dynamic_wants_scratch;
 #endif
-		gpu_buf->type = VGL_MEM_RAM;
+		gpu_buf->alloc_func = gpu_alloc_mapped_for_cpu;
 		break;
 	default:
 #if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 		gpu_buf->scratch = GL_FALSE;
 #endif
-		gpu_buf->type = VGL_MEM_VRAM;
+		gpu_buf->alloc_func = gpu_alloc_mapped_for_gpu;
 		break;
 	}
 
@@ -381,7 +381,7 @@ inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLe
 		gpu_buf->ptr = vgl_reserve_data_pool(size);
 	else
 #endif
-		gpu_buf->ptr = gpu_alloc_mapped(size, gpu_buf->type);	
+		gpu_buf->ptr = gpu_buf->alloc_func(size);	
 
 #ifndef SKIP_ERROR_HANDLING
 	if (!gpu_buf->ptr) {
@@ -437,9 +437,9 @@ inline void glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizeiptr size
 	// Allocating a new buffer
 	if (gpu_buf->last_frame != OBJ_NOT_USED && (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ)) {
 #if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
-		uint8_t *ptr = gpu_buf->scratch ? vgl_reserve_data_pool(gpu_buf->size) : gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
+		uint8_t *ptr = gpu_buf->scratch ? vgl_reserve_data_pool(gpu_buf->size) : gpu_buf->alloc_func(gpu_buf->size);
 #else
-		uint8_t *ptr = gpu_alloc_mapped(gpu_buf->size, gpu_buf->type);
+		uint8_t *ptr = gpu_buf->alloc_func(gpu_buf->size);
 #endif
 
 #ifdef LOG_ERRORS

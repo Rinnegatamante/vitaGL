@@ -1283,9 +1283,6 @@ void vglUseLowPrecision(GLboolean val);
 // Allows to swap between triple and double buffering. vitaGL by default uses triple buffering.
 void vglUseTripleBuffering(GLboolean usage);
 
-// Allows to set a preference on what kind of memory should be used first for certain kind of internal allocations like textures and vertex data. By default vitaGL will try to exhaust VRAM first (GL_TRUE behaviour).
-void vglUseVram(GLboolean usage);
-
 // Allows to set a preference on the kind of memory to use for the internal USSE buffers in sceGxm. By default vitaGL will not use VRAM memory.
 void vglUseVramForUSSE(GLboolean usage);
 
