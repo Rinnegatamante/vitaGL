@@ -472,7 +472,7 @@ void init_display_color_surfaces(GLboolean is_swap) {
 	for (int i = 0; i < gxm_display_buffer_count; i++) {
 		// Allocating color surface memblock
 		if (!system_app_mode) {
-			gxm_color_surfaces_addr[i] = gpu_alloc_mapped_aligned_for_gpu(SCE_GXM_COLOR_SURFACE_ALIGNMENT, VGL_ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024));
+			gxm_color_surfaces_addr[i] = gpu_alloc_mapped_aligned_for_gpu(4096, VGL_ALIGN(4 * DISPLAY_STRIDE * DISPLAY_HEIGHT, 1 * 1024 * 1024));
 			vgl_memset(gxm_color_surfaces_addr[i], 0, 4 * DISPLAY_STRIDE * DISPLAY_HEIGHT);
 		}
 
