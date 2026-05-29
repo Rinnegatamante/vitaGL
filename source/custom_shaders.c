@@ -743,7 +743,10 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 			glsl_samplers_info *info = p->frag_texunits[i]->sampler;
 			if (info) {
-				vglGetTexSizes(&tex->gxm_tex, &info->sizes[0], &info->sizes[1]);
+				uint32_t sizes[2];
+				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
+				info->sizes[0] = sizes[0];
+				info->sizes[1] = sizes[1];
 				dirty_frag_unifs = GL_TRUE;
 			}
 #endif
@@ -973,7 +976,10 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 			glsl_samplers_info *info = p->frag_texunits[i]->sampler;
 			if (info) {
-				vglGetTexSizes(&tex->gxm_tex, &info->sizes[0], &info->sizes[1]);
+				uint32_t sizes[2];
+				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
+				info->sizes[0] = sizes[0];
+				info->sizes[1] = sizes[1];
 				dirty_frag_unifs = GL_TRUE;
 			}
 #endif
@@ -1233,7 +1239,10 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 			glsl_samplers_info *info = p->frag_texunits[i]->sampler;
 			if (info) {
-				vglGetTexSizes(&tex->gxm_tex, &info->sizes[0], &info->sizes[1]);
+				uint32_t sizes[2];
+				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
+				info->sizes[0] = sizes[0];
+				info->sizes[1] = sizes[1];
 				dirty_frag_unifs = GL_TRUE;
 			}
 #endif
@@ -1496,7 +1505,10 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 			glsl_samplers_info *info = p->frag_texunits[i]->sampler;
 			if (info) {
-				vglGetTexSizes(&tex->gxm_tex, &info->sizes[0], &info->sizes[1]);
+				uint32_t sizes[2];
+				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
+				info->sizes[0] = sizes[0];
+				info->sizes[1] = sizes[1];
 				dirty_frag_unifs = GL_TRUE;
 			}
 #endif

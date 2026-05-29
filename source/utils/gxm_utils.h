@@ -63,9 +63,9 @@ static inline __attribute__((always_inline)) SceGxmTextureFormat vglGetTexFormat
 	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
 	return (SceGxmTextureFormat)(tex->control_words[1] & 0x1F000000 | tex->control_words[0] & 0x80000000 | ((tex->control_words[3] >> 16) & 0x7000));
 }
-static inline __attribute__((always_inline)) void vglGetTexSizes(SceGxmTexture *texture, int *w, int *h) {
+static inline __attribute__((always_inline)) void vglGetTexSizes(SceGxmTexture *texture, uint32_t *w, uint32_t *h) {
 	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
-	int word1 = tex->control_words[1];
+	uint32_t word1 = tex->control_words[1];
 	if (word1 & 0xA0000000) {
 		*w = ((word1 >> 12) & 0xFFF) + 1;
 		*h = (word1 & 0xFFF) + 1;
