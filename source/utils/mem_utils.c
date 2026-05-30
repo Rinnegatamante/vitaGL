@@ -34,6 +34,8 @@ static void *mempool_addr[VGL_MEM_ALL] = {NULL, NULL, NULL, NULL, NULL}; // addr
 static SceUID mempool_id[VGL_MEM_ALL] = {0, 0, 0, 0, 0}; // UIDs of heap memblocks (VRAM, RAM, PHYCONT RAM, EXTERNAL)
 static size_t mempool_size[VGL_MEM_ALL] = {0, 0, 0, 0, 0}; // sizes of heap memlbocks (VRAM, RAM, PHYCONT RAM, EXTERNAL)
 
+GLboolean vgl_has_cdlg_support = GL_TRUE;
+
 static int mempool_initialized = GL_FALSE;
 
 #ifdef HAVE_WRAPPED_ALLOCATORS
@@ -319,6 +321,8 @@ void vgl_mem_term(void) {
 }
 
 void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_t size_cdlg) {
+	vgl_has_cdlg_support = GL_TRUE;
+	
 	if (mempool_initialized)
 		vgl_mem_term();
 
@@ -353,8 +357,10 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_
 			mempool_id[VGL_MEM_RAM] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, mempool_size[VGL_MEM_RAM], NULL);
 		if (mempool_size[VGL_MEM_SLOW])
 			mempool_id[VGL_MEM_SLOW] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW, mempool_size[VGL_MEM_SLOW], NULL);
-		if (mempool_size[VGL_MEM_BUDGET])
+		if (mempool_size[VGL_MEM_BUDGET]) {
 			mempool_id[VGL_MEM_BUDGET] = sceKernelAllocMemBlock("cdlg_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_NC_RW, mempool_size[VGL_MEM_BUDGET], NULL);
+			vgl_has_cdlg_support = GL_FALSE;
+		}
 	}
 	for (int i = 0; i < VGL_MEM_EXTERNAL; i++) {
 		if (mempool_size[i]) {

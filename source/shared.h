@@ -780,6 +780,7 @@ extern const char *ffp_bind_names[FFP_BINDS_NUM];
 #include "shaders.h"
 
 // Internal stuffs
+extern GLboolean vgl_has_cdlg_support;
 extern uint32_t gxm_param_buf_size; // Param buffer size for sceGxm
 extern GLboolean skip_viewport_override;
 extern GLboolean dirty_scissor_state;

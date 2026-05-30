@@ -6331,7 +6331,7 @@ int splashscreen_thread(unsigned int args, void *arg) {
 		matrix4x4_rotate(mv, angle_y, 0.f, 1.f, 0.f);
 		matrix4x4_scale(mv, scale, scale, scale);
 		matrix4x4_multiply(mvp, proj, mv);
-		angle_y -= 0.016f * (vsync_interval ? (float)vsync_interval : 1.);
+		angle_y -= 0.016f * (vsync_interval ? (float)vsync_interval : 1.f);
 
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
@@ -6373,17 +6373,19 @@ int splashscreen_thread(unsigned int args, void *arg) {
 		sceGxmEndScene(splash_gxm_context, NULL, NULL);
 		
 		// Performing commondialog update just in case
-		SceCommonDialogUpdateParam updateParam;
-		vgl_memset(&updateParam, 0, sizeof(updateParam));
-		updateParam.renderTarget.colorFormat = SCE_GXM_COLOR_FORMAT_A8B8G8R8;
-		updateParam.renderTarget.surfaceType = SCE_GXM_COLOR_SURFACE_LINEAR;
-		updateParam.renderTarget.width = DISPLAY_WIDTH;
-		updateParam.renderTarget.height = DISPLAY_HEIGHT;
-		updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE;
-		updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_back_buffer_index];
-		updateParam.renderTarget.depthSurfaceData = gxm_depth_stencil_surface.depthData;
-		updateParam.displaySyncObject = gxm_sync_objects[gxm_back_buffer_index];
-		sceCommonDialogUpdate(&updateParam);
+		if (vgl_has_cdlg_support) {
+			SceCommonDialogUpdateParam updateParam;
+			vgl_memset(&updateParam, 0, sizeof(updateParam));
+			updateParam.renderTarget.colorFormat = SCE_GXM_COLOR_FORMAT_A8B8G8R8;
+			updateParam.renderTarget.surfaceType = SCE_GXM_COLOR_SURFACE_LINEAR;
+			updateParam.renderTarget.width = DISPLAY_WIDTH;
+			updateParam.renderTarget.height = DISPLAY_HEIGHT;
+			updateParam.renderTarget.strideInPixels = DISPLAY_STRIDE;
+			updateParam.renderTarget.colorSurfaceData = gxm_color_surfaces_addr[gxm_back_buffer_index];
+			updateParam.renderTarget.depthSurfaceData = gxm_depth_stencil_surface.depthData;
+			updateParam.displaySyncObject = gxm_sync_objects[gxm_back_buffer_index];
+			sceCommonDialogUpdate(&updateParam);
+		}
 		
 		// Sending new frame to display queue
 		struct display_queue_callback_data queue_cb_data;

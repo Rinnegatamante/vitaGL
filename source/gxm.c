@@ -810,7 +810,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 	if (!needs_scene_reset)
 		scene_end();
 
-	if (has_commondialog) {
+	if (vgl_has_cdlg_support && has_commondialog) {
 		// Performing commondialog update
 		SceCommonDialogUpdateParam updateParam;
 		vgl_memset(&updateParam, 0, sizeof(updateParam));
