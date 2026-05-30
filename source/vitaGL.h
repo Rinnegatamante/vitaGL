@@ -1160,6 +1160,9 @@ void *vglForceAlloc(uint32_t size);
 // Frees a previously allocated memory block in the vitaGL internal memory pools.
 void vglFree(void *addr);
 
+// Get the current frame number.
+uint32_t vglGetFrameNumber();
+
 // Get a GL function name given a function address.
 char *vglGetFuncName(uint32_t func);
 

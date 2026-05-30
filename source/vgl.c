@@ -784,3 +784,7 @@ void vglSetupScratchMemory(GLboolean scratch_for_dynamic, GLboolean scratch_for_
 void *vglAllocFromScratch(size_t size) {
 	return gpu_alloc_mapped_temp(size);
 }
+
+uint32_t vglGetFrameNumber() {
+	return vgl_framecount;
+}
