@@ -6331,7 +6331,7 @@ int splashscreen_thread(unsigned int args, void *arg) {
 		matrix4x4_rotate(mv, angle_y, 0.f, 1.f, 0.f);
 		matrix4x4_scale(mv, scale, scale, scale);
 		matrix4x4_multiply(mvp, proj, mv);
-		angle_y -= 0.016f;
+		angle_y -= 0.016f * (vsync_interval ? (float)vsync_interval : 1.);
 
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
