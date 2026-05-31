@@ -709,13 +709,6 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #ifdef HAVE_TEX_CACHE
 			restore_tex_cache(tex);
 #endif
-#ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&tex->gxm_tex);
-			if (r) {
-				vgl_log("%s:%d glDrawArrays: Fragment %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
-				return;
-			}
-#endif
 #ifndef TEXTURES_SPEEDHACK
 			tex->last_frame = vgl_framecount;
 #endif
@@ -763,13 +756,6 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
 			uint8_t tex_type = p->vert_texunits[i]->size ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
-#ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&tex->gxm_tex);
-			if (r) {
-				vgl_log("%s:%d glMultiDrawArrays: Vertex %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
-				return;
-			}
-#endif
 #ifndef TEXTURES_SPEEDHACK
 			tex->last_frame = vgl_framecount;
 #endif
@@ -942,13 +928,6 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 #ifdef HAVE_TEX_CACHE
 			restore_tex_cache(tex);
 #endif
-#ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&tex->gxm_tex);
-			if (r) {
-				vgl_log("%s:%d glDrawArrays: Fragment %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
-				return GL_FALSE;
-			}
-#endif
 #ifndef TEXTURES_SPEEDHACK
 			tex->last_frame = vgl_framecount;
 #endif
@@ -996,13 +975,6 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
 			uint8_t tex_type = p->vert_texunits[i]->size ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
-#ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&tex->gxm_tex);
-			if (r) {
-				vgl_log("%s:%d glDrawArrays: Vertex %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
-				return GL_FALSE;
-			}
-#endif
 #ifndef TEXTURES_SPEEDHACK
 			tex->last_frame = vgl_framecount;
 #endif
@@ -1205,13 +1177,6 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #ifdef HAVE_TEX_CACHE
 			restore_tex_cache(tex);
 #endif
-#ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&tex->gxm_tex);
-			if (r) {
-				vgl_log("%s:%d glDrawElements: Fragment %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
-				return GL_FALSE;
-			}
-#endif
 #ifndef TEXTURES_SPEEDHACK
 			tex->last_frame = vgl_framecount;
 #endif
@@ -1259,13 +1224,6 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
 			uint8_t tex_type = p->vert_texunits[i]->size ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
-#ifndef SKIP_ERROR_HANDLING
-			int r = sceGxmTextureValidate(&tex->gxm_tex);
-			if (r) {
-				vgl_log("%s:%d glDrawElements: Vertex %s texture on TEXUNIT%d is invalid (%s), draw will be skipped.\n", __FILE__, __LINE__, tex_type ? "cube" : "2D", i, get_gxm_error_literal(r));
-				return GL_FALSE;
-			}
-#endif
 #ifndef TEXTURES_SPEEDHACK
 			tex->last_frame = vgl_framecount;
 #endif
