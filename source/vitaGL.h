@@ -1160,6 +1160,9 @@ void *vglForceAlloc(uint32_t size);
 // Frees a previously allocated memory block in the vitaGL internal memory pools.
 void vglFree(void *addr);
 
+// Get the memory region that stores compressed splashscreen data during boot. This memory region can be safely used as a general purpose buffer after the splashscreen stops rendering.
+void *vglGetCaveBuffer(size_t *sz);
+
 // Get the current frame number.
 uint32_t vglGetFrameNumber();
 

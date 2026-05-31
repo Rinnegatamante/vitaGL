@@ -412,6 +412,7 @@ static const struct {
 	{"vglCalloc", (void *)vglCalloc},
 	{"vglForceAlloc", (void *)vglForceAlloc},
 	{"vglFree", (void *)vglFree},
+	{"vglGetCaveBuffer", (void *)vglGetCaveBuffer},
 	{"vglGetFrameNumber", (void *)vglGetFrameNumber},
 	{"vglGetFuncName", (void *)vglGetFuncName},
 	{"vglGetGxmTexture", (void *)vglGetGxmTexture},
