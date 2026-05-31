@@ -553,12 +553,22 @@ void *vgl_calloc(size_t num, size_t size, vglMemType type) {
 		return calloc(num, size);
 #endif
 #ifdef PHYCONT_ON_DEMAND
-	else if (type == VGL_MEM_SLOW)
-		return vgl_alloc_phycont_block(num * size);
+	else if (type == VGL_MEM_SLOW) {
+		void *ret = vgl_alloc_phycont_block(num * size);
+		if (ret) {
+			sceClibMemset(ret, 0, num * size);
+		}
+		return ret;
+	}
 #endif
 #ifdef HAVE_CUSTOM_HEAP
-	else if (num * size <= tm_free[type])
-		return heap_alloc(type, num * size, MEM_ALIGNMENT);
+	else if (num * size <= tm_free[type]) {
+		void *ret = heap_alloc(type, num * size, MEM_ALIGNMENT);
+		if (ret) {
+			sceClibMemset(ret, 0, num * size);
+		}
+		return ret;
+	}
 #else
 	else if (mempool_mspace[type])
 		return sceClibMspaceCalloc(mempool_mspace[type], num, size);
