@@ -20,10 +20,11 @@
  * splashscreen.c:
  * Implementation for the optional aniamted splashscreen
  */
-#ifndef SKIP_SPLASHSCREEN
+ 
 #include "shared.h"
 #include "vitaGL.h"
 
+#ifndef SKIP_SPLASHSCREEN
 #define SPLASH_FADE_SEC 1.0f
 #define SPLASH_VTX_COUNT 12084
 #define SPLASH_IDX_COUNT 24180
