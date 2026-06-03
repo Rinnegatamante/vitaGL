@@ -805,6 +805,8 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 	// Marking uniform values as dirty at each frame end just to be safe
 	dirty_frag_unifs = GL_TRUE;
 	dirty_vert_unifs = GL_TRUE;
+	dirty_shader_frag_unifs = GL_TRUE;
+	dirty_shader_vert_unifs = GL_TRUE;
 	needs_end_scene = GL_FALSE;
 
 	if (!needs_scene_reset)

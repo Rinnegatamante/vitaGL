@@ -138,15 +138,15 @@ char vgl_file_cache_path[256];
 
 #ifndef HAVE_FFP_SHADER_SUPPORT
 #define upload_uniforms() \
-	if (p->vert_uniforms && dirty_vert_unifs) { \
+	if (p->vert_uniforms && dirty_shader_vert_unifs) { \
 		void *buffer = vglReserveVertexUniformBuffer(p->vshader->unif_buf_size); \
 		vgl_fast_memcpy(buffer, p->unif_vbuffer, p->vshader->unif_buf_size); \
-		dirty_vert_unifs = GL_FALSE; \
+		dirty_shader_vert_unifs = GL_FALSE; \
 	} \
-	if (p->frag_uniforms && dirty_frag_unifs) { \
+	if (p->frag_uniforms && dirty_shader_frag_unifs) { \
 		void *buffer = vglReserveFragmentUniformBuffer(p->fshader->unif_buf_size); \
 		vgl_fast_memcpy(buffer, p->unif_fbuffer, p->fshader->unif_buf_size); \
-		dirty_frag_unifs = GL_FALSE; \
+		dirty_shader_frag_unifs = GL_FALSE; \
 	} \
 	if (p->vert_ubos) { \
 		ubo *u = p->vert_ubos; \
@@ -167,34 +167,37 @@ char vgl_file_cache_path[256];
 	}
 #else
 #define upload_uniforms() \
-	if (p->vert_uniforms && dirty_vert_unifs) { \
+	if (p->vert_uniforms && (dirty_vert_unifs || dirty_shader_vert_unifs)) { \
 		void *buffer = vglReserveVertexUniformBuffer(p->vshader->unif_buf_size); \
-		if (p->ffp_binds[FFP_MVP_MATRIX]) { \
-			if (mvp_modified) { \
-				matrix4x4_multiply(vgl_mvp_matrix, projection_matrix, modelview_matrix); \
-				recalculate_normal_matrix(); \
-				mvp_modified = GL_FALSE; \
+		if (dirty_vert_unifs) { \
+			dirty_vert_unifs = GL_FALSE; \
+			if (p->ffp_binds[FFP_MVP_MATRIX]) { \
+				if (mvp_modified) { \
+					matrix4x4_multiply(vgl_mvp_matrix, projection_matrix, modelview_matrix); \
+					recalculate_normal_matrix(); \
+					mvp_modified = GL_FALSE; \
+				} \
+				vglSetUniformData(p->ffp_binds[FFP_MVP_MATRIX]->vptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 4, 4, (const float *)vgl_mvp_matrix, SCE_GXM_PARAMETER_TYPE_F32); \
 			} \
-			vglSetUniformData(p->ffp_binds[FFP_MVP_MATRIX]->vptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 4, 4, (const float *)vgl_mvp_matrix, SCE_GXM_PARAMETER_TYPE_F32); \
-		} \
-		if (p->ffp_binds[FFP_MV_MATRIX]) { \
-			vglSetUniformData(p->ffp_binds[FFP_MV_MATRIX]->vptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 4, 4, (const float *)modelview_matrix, SCE_GXM_PARAMETER_TYPE_F32); \
-		} \
-		if (p->ffp_binds[FFP_NORMAL_MATRIX]) { \
-			if (mvp_modified) { \
-				matrix4x4_multiply(vgl_mvp_matrix, projection_matrix, modelview_matrix); \
-				recalculate_normal_matrix(); \
-				mvp_modified = GL_FALSE; \
+			if (p->ffp_binds[FFP_MV_MATRIX]) { \
+				vglSetUniformData(p->ffp_binds[FFP_MV_MATRIX]->vptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 4, 4, (const float *)modelview_matrix, SCE_GXM_PARAMETER_TYPE_F32); \
 			} \
-			vglSetUniformData(p->ffp_binds[FFP_NORMAL_MATRIX]->vptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 3, 3, (const float *)normal_matrix, SCE_GXM_PARAMETER_TYPE_F32); \
+			if (p->ffp_binds[FFP_NORMAL_MATRIX]) { \
+				if (mvp_modified) { \
+					matrix4x4_multiply(vgl_mvp_matrix, projection_matrix, modelview_matrix); \
+					recalculate_normal_matrix(); \
+					mvp_modified = GL_FALSE; \
+				} \
+				vglSetUniformData(p->ffp_binds[FFP_NORMAL_MATRIX]->vptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 3, 3, (const float *)normal_matrix, SCE_GXM_PARAMETER_TYPE_F32); \
+			} \
 		} \
 		vgl_fast_memcpy(buffer, p->unif_vbuffer, p->vshader->unif_buf_size); \
-		dirty_vert_unifs = GL_FALSE; \
+		dirty_shader_vert_unifs = GL_FALSE; \
 	} \
-	if (p->frag_uniforms && dirty_frag_unifs) { \
+	if (p->frag_uniforms && dirty_shader_frag_unifs) { \
 		void *buffer = vglReserveFragmentUniformBuffer(p->fshader->unif_buf_size); \
 		vgl_fast_memcpy(buffer, p->unif_fbuffer, p->fshader->unif_buf_size); \
-		dirty_frag_unifs = GL_FALSE; \
+		dirty_shader_frag_unifs = GL_FALSE; \
 	} \
 	if (p->vert_ubos) { \
 		ubo *u = p->vert_ubos; \
@@ -256,6 +259,8 @@ static unsigned char orig_size[VERTEX_ATTRIBS_NUM];
 static vbo *ubo_buf[UBOS_NUM];
 static uint32_t ubo_offset[UBOS_NUM];
 static uint8_t tex2d_override = 0;
+GLboolean dirty_shader_frag_unifs = GL_TRUE;
+GLboolean dirty_shader_vert_unifs = GL_TRUE;
 
 typedef struct {
 	GLuint idx;
@@ -732,7 +737,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
 				float fsizes[2] = {sizes[0], sizes[1]};
 				vglSetUniformData(p->frag_texunits[i]->fptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, fsizes, SCE_GXM_PARAMETER_TYPE_F32);
-				dirty_frag_unifs = GL_TRUE;
+				dirty_shader_frag_unifs = GL_TRUE;
 			}
 #endif
 #ifndef SAMPLERS_SPEEDHACK
@@ -951,7 +956,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
 				float fsizes[2] = {sizes[0], sizes[1]};
 				vglSetUniformData(p->frag_texunits[i]->fptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, fsizes, SCE_GXM_PARAMETER_TYPE_F32);
-				dirty_frag_unifs = GL_TRUE;
+				dirty_shader_frag_unifs = GL_TRUE;
 			}
 #endif
 #ifndef SAMPLERS_SPEEDHACK
@@ -1200,7 +1205,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
 				float fsizes[2] = {sizes[0], sizes[1]};
 				vglSetUniformData(p->frag_texunits[i]->fptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, fsizes, SCE_GXM_PARAMETER_TYPE_F32);
-				dirty_frag_unifs = GL_TRUE;
+				dirty_shader_frag_unifs = GL_TRUE;
 			}
 #endif
 #ifndef SAMPLERS_SPEEDHACK
@@ -1459,7 +1464,7 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
 				float fsizes[2] = {sizes[0], sizes[1]};
 				vglSetUniformData(p->frag_texunits[i]->fptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, fsizes, SCE_GXM_PARAMETER_TYPE_F32);
-				dirty_frag_unifs = GL_TRUE;
+				dirty_shader_frag_unifs = GL_TRUE;
 			}
 #endif
 #ifndef SAMPLERS_SPEEDHACK
@@ -2410,8 +2415,10 @@ void glUseProgram(GLuint prog) {
 
 	// Setting current custom program to passed program
 	cur_program = prog;
-	dirty_frag_unifs = GL_TRUE;
+	dirty_shader_frag_unifs = GL_TRUE;
+	dirty_shader_vert_unifs = GL_TRUE;
 	dirty_vert_unifs = GL_TRUE;
+	dirty_frag_unifs = GL_TRUE;
 }
 
 GLuint glGetUniformBlockIndex(GLuint prog, const GLchar *uniformBlockName) {
@@ -2517,11 +2524,11 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 #define vgl_fill_uniform_data(p, type, size, count) \
 	if (u->vptr) { \
 		vglSetUniformData(u->vptr, sceGxmProgramParameterGetType(u->ptr), offs, count, size, p, type); \
-		dirty_vert_unifs = GL_TRUE; \
+		dirty_shader_vert_unifs = GL_TRUE; \
 	} \
 	if (u->fptr) { \
 		vglSetUniformData(u->fptr, sceGxmProgramParameterGetType(u->ptr), offs, count, size, p, type); \
-		dirty_frag_unifs = GL_TRUE; \
+		dirty_shader_frag_unifs = GL_TRUE; \
 	}
 
 inline void glUniform1i(GLint location, GLint v0) {

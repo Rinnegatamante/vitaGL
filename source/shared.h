@@ -924,6 +924,8 @@ extern GLboolean has_razor_live; // Flag for live metrics support with sceRazor
 extern GLboolean is_shark_online; // Current vitaShaRK status
 extern GLboolean dirty_frag_unifs;
 extern GLboolean dirty_vert_unifs;
+extern GLboolean dirty_shader_frag_unifs;
+extern GLboolean dirty_shader_vert_unifs;
 
 // Internal fixed function pipeline dirty flags and variables
 extern GLboolean ffp_dirty_frag;
