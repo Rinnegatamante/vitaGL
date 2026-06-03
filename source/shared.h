@@ -737,7 +737,6 @@ typedef struct {
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 typedef struct {
 	char name[64];
-	float sizes[2];
 } glsl_samplers_info;
 #endif
 
@@ -770,7 +769,6 @@ enum {
 	FFP_MVP_MATRIX,
 	FFP_MV_MATRIX,
 	FFP_NORMAL_MATRIX,
-	FFP_FOG,
 	FFP_BINDS_NUM
 };
 

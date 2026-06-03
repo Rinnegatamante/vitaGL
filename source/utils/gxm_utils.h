@@ -31,6 +31,8 @@ extern SceGxmContext *gxm_context;
 void vglSetupUniformCircularPool(void);
 void *vglReserveUniformCircularPoolBuffer(uint32_t size);
 
+void vglSetUniformData(uint8_t *uniformBuffer, const SceGxmParameterType t, const int offset, const uint32_t count, const uint32_t componentCount, const void *sourceData, const SceGxmParameterType input_type);
+
 static inline __attribute__((always_inline)) void vglRestoreFragmentUniformBuffer(void) {
 	if (vgl_def_frag_buf)
 		sceGxmSetFragmentDefaultUniformBuffer(gxm_context, vgl_def_frag_buf);	

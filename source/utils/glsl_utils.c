@@ -101,7 +101,6 @@ const char *ffp_bind_defines[FFP_BINDS_NUM] = {
 	"#define VGL_HAS_MVP\n",
 	"#define VGL_HAS_MV\n",
 	"#define VGL_HAS_NM\n",
-	"#define VGL_HAS_FOG\n",
 };
 #endif
 

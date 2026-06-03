@@ -56,7 +56,6 @@ In order to build vitaGL use the following command: `make install`.
 |`SAMPLERS_SPEEDHACK=1`| Enables faster code for samplers resolution during shaders usage. May cause glitches.|
 |`PRIMITIVES_SPEEDHACK=1`| Makes draw calls more efficient but GL_LINES and GL_POINTS primitives usage may cause glitches.|
 |`DEPTH_STENCIL_HACK=1`| Makes depth and stencil buffers have no memory costs but can cause crashes in some circumstances.|
-|`UNIFORMS_SPEEDHACK=1`| Makes uniforms uploading slightly faster but can cause crashes.|
 |`READBACKS_SPEEDHACK=1`| Makes glReadPixels faster but may cause glitched readbacks.|
 |`CIRCULAR_POOL_SPEEDHACK=1`| Makes the internal circular pool use a single buffer. Slightly improves CPU performance but might cause glitches.|
 ### Misc Flags

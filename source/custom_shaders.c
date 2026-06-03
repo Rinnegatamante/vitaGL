@@ -140,20 +140,12 @@ char vgl_file_cache_path[256];
 #define upload_uniforms() \
 	if (p->vert_uniforms && dirty_vert_unifs) { \
 		void *buffer = vglReserveVertexUniformBuffer(p->vshader->unif_buf_size); \
-		for (int z = 0; z < p->vert_uniforms_num; z++) { \
-			uniform *u = &p->vert_uniforms[z]; \
-			if (u->size > 0 && u->size < 0xFFFFFFFF) \
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
-		} \
+		vgl_fast_memcpy(buffer, p->unif_vbuffer, p->vshader->unif_buf_size); \
 		dirty_vert_unifs = GL_FALSE; \
 	} \
 	if (p->frag_uniforms && dirty_frag_unifs) { \
 		void *buffer = vglReserveFragmentUniformBuffer(p->fshader->unif_buf_size); \
-		for (int z = 0; z < p->frag_uniforms_num; z++) { \
-			uniform *u = &p->frag_uniforms[z]; \
-			if (u->size > 0 && u->size < 0xFFFFFFFF) \
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
-		} \
+		vgl_fast_memcpy(buffer, p->unif_fbuffer, p->fshader->unif_buf_size); \
 		dirty_frag_unifs = GL_FALSE; \
 	} \
 	if (p->vert_ubos) { \
@@ -177,41 +169,31 @@ char vgl_file_cache_path[256];
 #define upload_uniforms() \
 	if (p->vert_uniforms && dirty_vert_unifs) { \
 		void *buffer = vglReserveVertexUniformBuffer(p->vshader->unif_buf_size); \
-		for (int z = 0; z < p->vert_uniforms_num; z++) { \
-			uniform *u = &p->vert_uniforms[z]; \
-			if (u->ptr == p->ffp_binds[FFP_MVP_MATRIX]) { \
-				if (mvp_modified) { \
-					matrix4x4_multiply(vgl_mvp_matrix, projection_matrix, modelview_matrix); \
-					recalculate_normal_matrix(); \
-					mvp_modified = GL_FALSE; \
-				} \
-				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_MVP_MATRIX], 0, 16, (const float *)vgl_mvp_matrix); \
-			} else if (u->ptr == p->ffp_binds[FFP_MV_MATRIX]) { \
-				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_MV_MATRIX], 0, 16, (const float *)modelview_matrix); \
-			} else if (u->ptr == p->ffp_binds[FFP_NORMAL_MATRIX]) { \
-				if (mvp_modified) { \
-					matrix4x4_multiply(vgl_mvp_matrix, projection_matrix, modelview_matrix); \
-					recalculate_normal_matrix(); \
-					mvp_modified = GL_FALSE; \
-				} \
-				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_NORMAL_MATRIX], 0, 9, (const float *)normal_matrix); \
-			} else if (u->size > 0 && u->size < 0xFFFFFFFF) \
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
+		if (p->ffp_binds[FFP_MVP_MATRIX]) { \
+			if (mvp_modified) { \
+				matrix4x4_multiply(vgl_mvp_matrix, projection_matrix, modelview_matrix); \
+				recalculate_normal_matrix(); \
+				mvp_modified = GL_FALSE; \
+			} \
+			vglSetUniformData(p->ffp_binds[FFP_MVP_MATRIX]->vptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 4, 4, (const float *)vgl_mvp_matrix, SCE_GXM_PARAMETER_TYPE_F32); \
 		} \
+		if (p->ffp_binds[FFP_MV_MATRIX]) { \
+			vglSetUniformData(p->ffp_binds[FFP_MV_MATRIX]->vptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 4, 4, (const float *)modelview_matrix, SCE_GXM_PARAMETER_TYPE_F32); \
+		} \
+		if (p->ffp_binds[FFP_NORMAL_MATRIX]) { \
+			if (mvp_modified) { \
+				matrix4x4_multiply(vgl_mvp_matrix, projection_matrix, modelview_matrix); \
+				recalculate_normal_matrix(); \
+				mvp_modified = GL_FALSE; \
+			} \
+			vglSetUniformData(p->ffp_binds[FFP_MV_MATRIX]->vptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 3, 3, (const float *)normal_matrix, SCE_GXM_PARAMETER_TYPE_F32); \
+		} \
+		vgl_fast_memcpy(buffer, p->unif_vbuffer, p->vshader->unif_buf_size); \
 		dirty_vert_unifs = GL_FALSE; \
 	} \
 	if (p->frag_uniforms && dirty_frag_unifs) { \
 		void *buffer = vglReserveFragmentUniformBuffer(p->fshader->unif_buf_size); \
-		for (int z = 0; z < p->frag_uniforms_num; z++) { \
-			uniform *u = &p->frag_uniforms[z]; \
-			if (u->ptr == p->ffp_binds[FFP_FOG]) { \
-				float fog_params[5]; \
-				fog_params[0] = fog_density; \
-				vgl_fast_memcpy(&fog_params[1], &fog_color.r, sizeof(vector4f)); \
-				sceGxmSetUniformDataF(buffer, p->ffp_binds[FFP_FOG], 0, 5, (const float *)fog_params); \
-			} else if (u->size > 0 && u->size < 0xFFFFFFFF) \
-				sceGxmSetUniformDataF(buffer, u->ptr, 0, u->size, u->data); \
-		} \
+		vgl_fast_memcpy(buffer, p->unif_fbuffer, p->fshader->unif_buf_size); \
 		dirty_frag_unifs = GL_FALSE; \
 	} \
 	if (p->vert_ubos) { \
@@ -261,7 +243,6 @@ const char *ffp_bind_names[FFP_BINDS_NUM] = {
 	"gl_ModelViewProjectionMatrix",
 	"gl_ModelViewMatrix",
 	"gl_NormalMatrix",
-	"gl_Fog"
 };
 #endif
 
@@ -302,16 +283,22 @@ shark_opt compiler_opts = SHARK_OPT_FAST;
 
 GLuint cur_program = 0; // Current in use custom program (0 = No custom program)
 
+typedef enum {
+	UNIFORM_DATA,
+	UNIFORM_SAMPLER,
+	UNIFORM_CUBE_SAMPLER
+} uniform_type;
+
 // Uniform struct
 typedef struct {
 	const SceGxmProgramParameter *ptr;
-	float *data;
-	uint32_t size;
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 	glsl_samplers_info *sampler;
 #endif
-	GLboolean is_fragment;
-	GLboolean is_vertex;
+	void *fptr;
+	void *vptr;
+	uniform_type type;
+	uint8_t sampler_index;
 } uniform;
 
 // Program status enum
@@ -359,7 +346,10 @@ typedef struct {
 	attrib_mode attr_mode;
 #endif
 #ifdef HAVE_FFP_SHADER_SUPPORT
-	const SceGxmProgramParameter *ffp_binds[FFP_BINDS_NUM];
+	uniform *ffp_binds[FFP_BINDS_NUM];
+#endif
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+	float **samplers_ptr;
 #endif
 	uniform *vert_uniforms;
 	uniform *frag_uniforms;
@@ -372,6 +362,8 @@ typedef struct {
 	GLboolean is_fbo_float;
 	uint8_t num_glsl_attr;
 	attr_mapping *glsl_attr_map;
+	void *unif_fbuffer;
+	void *unif_vbuffer;
 } program;
 
 // Internal shaders and array
@@ -703,8 +695,8 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #ifndef SAMPLERS_SPEEDHACK
 		if (p->frag_texunits[i]) {
 #endif
-			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
-			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : tex2d_override;
+			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->sampler_index];
+			uint8_t tex_type = p->frag_texunits[i]->type == UNIFORM_CUBE_SAMPLER ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifdef HAVE_TEX_CACHE
 			restore_tex_cache(tex);
@@ -712,7 +704,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #ifndef TEXTURES_SPEEDHACK
 			tex->last_frame = vgl_framecount;
 #endif
-			sampler *smp = samplers[(int)p->frag_texunits[i]->data];
+			sampler *smp = samplers[(int)p->frag_texunits[i]->sampler_index];
 			if (smp) {
 				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
@@ -738,8 +730,8 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 			if (info) {
 				uint32_t sizes[2];
 				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
-				info->sizes[0] = sizes[0];
-				info->sizes[1] = sizes[1];
+				float fsizes[2] = {sizes[0], sizes[1]};
+				vglSetUniformData(p->frag_texunits[i]->fptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, fsizes, SCE_GXM_PARAMETER_TYPE_F32);
 				dirty_frag_unifs = GL_TRUE;
 			}
 #endif
@@ -753,13 +745,13 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #ifndef SAMPLERS_SPEEDHACK
 		if (p->vert_texunits[i]) {
 #endif
-			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
-			uint8_t tex_type = p->vert_texunits[i]->size ? 2 : tex2d_override;
+			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->sampler_index];
+			uint8_t tex_type = p->vert_texunits[i]->type == UNIFORM_CUBE_SAMPLER ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifndef TEXTURES_SPEEDHACK
 			tex->last_frame = vgl_framecount;
 #endif
-			sampler *smp = samplers[(int)p->vert_texunits[i]->data];
+			sampler *smp = samplers[(int)p->vert_texunits[i]->sampler_index];
 			if (smp) {
 				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
@@ -922,8 +914,8 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 #ifndef SAMPLERS_SPEEDHACK
 		if (p->frag_texunits[i]) {
 #endif
-			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
-			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : tex2d_override;
+			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->sampler_index];
+			uint8_t tex_type = p->frag_texunits[i]->type == UNIFORM_CUBE_SAMPLER ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifdef HAVE_TEX_CACHE
 			restore_tex_cache(tex);
@@ -931,7 +923,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 #ifndef TEXTURES_SPEEDHACK
 			tex->last_frame = vgl_framecount;
 #endif
-			sampler *smp = samplers[(int)p->frag_texunits[i]->data];
+			sampler *smp = samplers[(int)p->frag_texunits[i]->sampler_index];
 			if (smp) {
 				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
@@ -957,8 +949,8 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 			if (info) {
 				uint32_t sizes[2];
 				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
-				info->sizes[0] = sizes[0];
-				info->sizes[1] = sizes[1];
+				float fsizes[2] = {sizes[0], sizes[1]};
+				vglSetUniformData(p->frag_texunits[i]->fptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, fsizes, SCE_GXM_PARAMETER_TYPE_F32);
 				dirty_frag_unifs = GL_TRUE;
 			}
 #endif
@@ -972,13 +964,13 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 #ifndef SAMPLERS_SPEEDHACK
 		if (p->vert_texunits[i]) {
 #endif
-			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
-			uint8_t tex_type = p->vert_texunits[i]->size ? 2 : tex2d_override;
+			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->sampler_index];
+			uint8_t tex_type = p->vert_texunits[i]->type == UNIFORM_CUBE_SAMPLER ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifndef TEXTURES_SPEEDHACK
 			tex->last_frame = vgl_framecount;
 #endif
-			sampler *smp = samplers[(int)p->vert_texunits[i]->data];
+			sampler *smp = samplers[(int)p->vert_texunits[i]->sampler_index];
 			if (smp) {
 				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
@@ -1171,8 +1163,8 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #ifndef SAMPLERS_SPEEDHACK
 		if (p->frag_texunits[i]) {
 #endif
-			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->data];
-			uint8_t tex_type = p->frag_texunits[i]->size ? 2 : tex2d_override;
+			texture_unit *tex_unit = &texture_units[(int)p->frag_texunits[i]->sampler_index];
+			uint8_t tex_type = p->frag_texunits[i]->type == UNIFORM_CUBE_SAMPLER ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifdef HAVE_TEX_CACHE
 			restore_tex_cache(tex);
@@ -1180,7 +1172,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #ifndef TEXTURES_SPEEDHACK
 			tex->last_frame = vgl_framecount;
 #endif
-			sampler *smp = samplers[(int)p->frag_texunits[i]->data];
+			sampler *smp = samplers[(int)p->frag_texunits[i]->sampler_index];
 			if (smp) {
 				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
@@ -1206,8 +1198,8 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			if (info) {
 				uint32_t sizes[2];
 				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
-				info->sizes[0] = sizes[0];
-				info->sizes[1] = sizes[1];
+				float fsizes[2] = {sizes[0], sizes[1]};
+				vglSetUniformData(p->frag_texunits[i]->fptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, fsizes, SCE_GXM_PARAMETER_TYPE_F32);
 				dirty_frag_unifs = GL_TRUE;
 			}
 #endif
@@ -1221,13 +1213,13 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #ifndef SAMPLERS_SPEEDHACK
 		if (p->vert_texunits[i]) {
 #endif
-			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->data];
-			uint8_t tex_type = p->vert_texunits[i]->size ? 2 : tex2d_override;
+			texture_unit *tex_unit = &texture_units[(int)p->vert_texunits[i]->sampler_index];
+			uint8_t tex_type = p->vert_texunits[i]->type == UNIFORM_CUBE_SAMPLER ? 2 : tex2d_override;
 			texture *tex = &texture_slots[tex_unit->tex_id[tex_type]];
 #ifndef TEXTURES_SPEEDHACK
 			tex->last_frame = vgl_framecount;
 #endif
-			sampler *smp = samplers[(int)p->vert_texunits[i]->data];
+			sampler *smp = samplers[(int)p->vert_texunits[i]->sampler_index];
 			if (smp) {
 				vglSetTexMinFilter(&tex->gxm_tex, smp->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, smp->mip_filter);
@@ -1465,8 +1457,8 @@ void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
 			if (info) {
 				uint32_t sizes[2];
 				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
-				info->sizes[0] = sizes[0];
-				info->sizes[1] = sizes[1];
+				float fsizes[2] = {sizes[0], sizes[1]};
+				vglSetUniformData(p->frag_texunits[i]->fptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, fsizes, SCE_GXM_PARAMETER_TYPE_F32);
 				dirty_frag_unifs = GL_TRUE;
 			}
 #endif
@@ -1532,13 +1524,11 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 }
 #endif
 
-static inline __attribute__((always_inline)) float *get_uniform_alias_data_ptr(uniform *src, uint32_t cnt, const char *name, uint32_t size) {
+static inline __attribute__((always_inline)) float *get_uniform_alias_data_ptr(uniform *src, uint32_t cnt, const char *name) {
 	for (int i = 0; i < cnt; i++) {
 		uniform *u = &src[i];
-		if (size == u->size) {
-			if (!strcmp(name, sceGxmProgramParameterGetName(u->ptr))) {
-				return u->data;
-			}
+		if (!strcmp(name, sceGxmProgramParameterGetName(u->ptr))) {
+			return u->fptr;
 		}
 	}
 	return NULL;
@@ -1900,6 +1890,8 @@ GLuint glCreateProgram(void) {
 			progs[i].fshader = NULL;
 			progs[i].vert_uniforms = NULL;
 			progs[i].frag_uniforms = NULL;
+			progs[i].unif_vbuffer = NULL;
+			progs[i].unif_fbuffer = NULL;
 			progs[i].vert_uniforms_num = 0;
 			progs[i].frag_uniforms_num = 0;
 			progs[i].vert_ubos = NULL;
@@ -1996,22 +1988,18 @@ void glDeleteProgram(GLuint prog) {
 	// Releasing both vertex and fragment programs from sceGxmShaderPatcher
 	if (p->status) {
 		sceGxmFinish(gxm_context);
-		for (int i = 0; i < p->vert_uniforms_num; i++) {
-			uniform *u = &p->vert_uniforms[i];
-			if (u->size != 0xFFFFFFFF && u->size != 0 && !(u->is_fragment && u->is_vertex))
-				vgl_free(u->data);
+		if (p->vert_uniforms) {
+			vgl_free(p->vert_uniforms);
+			if (p->unif_vbuffer) {
+				vgl_free(p->unif_vbuffer);
+			}
 		}
-		vgl_free(p->vert_uniforms);
-		for (int i = 0; i < p->frag_uniforms_num; i++) {
-			uniform *u = &p->frag_uniforms[i];
-#ifdef HAVE_GLSL_TEXTURE_SIZE
-			if (u->size != 0xFFFFFFFF && u->size != 0 && !u->sampler)
-#else
-			if (u->size != 0xFFFFFFFF && u->size != 0)
-#endif
-				vgl_free(u->data);
+		if (p->frag_uniforms) {
+			vgl_free(p->frag_uniforms);
+			if (p->unif_fbuffer) {
+				vgl_free(p->unif_fbuffer);
+			}
 		}
-		vgl_free(p->frag_uniforms);
 		while (p->vert_ubos) {
 			ubo *old = p->vert_ubos;
 			p->vert_ubos = (ubo *)p->vert_ubos->chain;
@@ -2205,13 +2193,16 @@ void glLinkProgram(GLuint progr) {
 		return;
 	}
 	p->status = PROG_LINKED;
+	
+	// Set up uniform buffers
+	if (p->vshader->unif_buf_size) {
+		p->unif_vbuffer = vglCalloc(1, p->vshader->unif_buf_size);
+	}
+	if (p->fshader->unif_buf_size) {
+		p->unif_fbuffer = vglCalloc(1, p->fshader->unif_buf_size);
+	}
 
 	// Analyzing fragment shader
-#ifdef HAVE_FFP_SHADER_SUPPORT
-	for (int i = 0; i < FFP_BINDS_NUM; i++) {
-		p->ffp_binds[i] = sceGxmProgramFindParameterByName(p->fshader->prog, ffp_bind_names[i]);
-	}
-#endif
 	uint32_t i, cnt, j;
 	for (i = 0; i < TEXTURE_IMAGE_UNITS_NUM; i++) {
 		p->frag_texunits[i] = GL_FALSE;
@@ -2236,68 +2227,87 @@ void glLinkProgram(GLuint progr) {
 		}
 		ptr += 4;
 	}
-	p->frag_uniforms = (uniform *)vglMalloc(sizeof(uniform) * p->frag_uniforms_num);
-	ptr = _ptr;
-	j = 0;
-	for (i = 0; i < cnt; i++) {
-		SceGxmProgramParameter *param = (SceGxmProgramParameter *)ptr;
-		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
-		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-			uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
-			if (p->max_frag_texunit_idx < texunit_idx)
-				p->max_frag_texunit_idx = texunit_idx;
-			uniform *u = &p->frag_uniforms[j++];
-			u->ptr = param;
-			u->size = sceGxmProgramParameterIsSamplerCube(param) ? 0xFFFFFFFF : 0;
-			u->data = NULL;
-			p->frag_texunits[texunit_idx - 1] = u;
+	if (p->frag_uniforms_num) {
+		p->frag_uniforms = (uniform *)vglMalloc(sizeof(uniform) * p->frag_uniforms_num);
+		ptr = _ptr;
+		j = 0;
+		for (i = 0; i < cnt; i++) {
+			SceGxmProgramParameter *param = (SceGxmProgramParameter *)ptr;
+			SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
+			if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+				uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
+				if (p->max_frag_texunit_idx < texunit_idx)
+					p->max_frag_texunit_idx = texunit_idx;
+				uniform *u = &p->frag_uniforms[j++];
+				u->ptr = param;
+				u->type = sceGxmProgramParameterIsSamplerCube(param) ? UNIFORM_CUBE_SAMPLER : UNIFORM_SAMPLER;
+				p->frag_texunits[texunit_idx - 1] = u;
 #ifdef HAVE_GLSL_TEXTURE_SIZE
-			u->sampler = NULL;
-			const char *pname = sceGxmProgramParameterGetName(param);
-			for (uint8_t i = 0; i < p->fshader->sized_samplers_num; i++) {
-				if (!strcmp(pname, p->fshader->sized_samplers[i].name)) {
+				u->sampler = NULL;
+				const char *pname = sceGxmProgramParameterGetName(param);
+				for (uint8_t i = 0; i < p->fshader->sized_samplers_num; i++) {
+					if (!strcmp(pname, p->fshader->sized_samplers[i].name)) {
+						char smp[16];
+						sprintf(smp, "vgl_smp%u", i);
+						// If the linked uniform is missing, textureSize usage has been stripped out
+						if (sceGxmProgramFindParameterByName(p->fshader->prog, smp))
+							u->sampler = &p->fshader->sized_samplers[i];
+						break;
+					}
+				}
+#endif
+			} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM && sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM) {
+				uniform *u = &p->frag_uniforms[j++];
+				u->ptr = param;
+				u->vptr = NULL;
+				u->fptr = (uint8_t *)p->unif_fbuffer + sceGxmProgramParameterGetResourceIndex(param) * 4;
+				u->type = UNIFORM_DATA;
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+				u->sampler = NULL;
+				const char *pname = sceGxmProgramParameterGetName(param);
+				for (uint8_t i = 0; i < p->fshader->sized_samplers_num; i++) {
 					char smp[16];
 					sprintf(smp, "vgl_smp%u", i);
-					// If the linked uniform is missing, textureSize usage has been stripped out
-					if (sceGxmProgramFindParameterByName(p->fshader->prog, smp))
+					if (!strcmp(pname, smp)) {
 						u->sampler = &p->fshader->sized_samplers[i];
-					break;
+						break;
+					}
 				}
-			}
 #endif
-		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM && sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM) {
-			uniform *u = &p->frag_uniforms[j++];
-			u->ptr = param;
-			u->is_vertex = GL_FALSE;
-			u->is_fragment = GL_TRUE;
-			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
-			u->data = (float *)vglMalloc(u->size * sizeof(float));
-#ifdef HAVE_GLSL_TEXTURE_SIZE
-			u->sampler = NULL;
-			const char *pname = sceGxmProgramParameterGetName(param);
-			for (uint8_t i = 0; i < p->fshader->sized_samplers_num; i++) {
-				char smp[16];
-				sprintf(smp, "vgl_smp%u", i);
-				if (!strcmp(pname, smp)) {
-					u->sampler = &p->fshader->sized_samplers[i];
-					vgl_free(u->data);
-					u->data = p->fshader->sized_samplers[i].sizes;
-					break;
-				}
 			}
-#endif
-			vgl_memset(u->data, 0, u->size * sizeof(float));
+			ptr += 4;
 		}
-		ptr += 4;
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+		// Assign to every sampler uniform the uniform buffer ptr of the equivalent data uniform
+		for (int i = 0; i < p->frag_uniforms_num; i++) {
+			uniform *u1 = &p->frag_uniforms[i];
+			if (u1->sampler && u1->type != UNIFORM_DATA) {
+				for (int j = 0; j < p->frag_uniforms_num; j++) {
+					uniform *u2 = &p->frag_uniforms[j];
+					if (u2->sampler == u1->sampler && u2->type == UNIFORM_DATA) {
+						u1->fptr = u2->fptr;
+						break;
+					}
+				}
+			}
+		}
+#endif
+#ifdef HAVE_FFP_SHADER_SUPPORT
+		for (int i = 0; i < FFP_BINDS_NUM; i++) {
+			SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->fshader->prog, ffp_bind_names[i]);
+			if (param) {
+				for (int j = 0; j < p->frag_uniforms_num; j++) {
+					if (p->frag_uniforms[j].ptr == param) {
+						p->ffp_binds[i] = &p->frag_uniforms[j];
+						break;
+					}
+				}
+			}
+		}
+#endif
 	}
 
 	// Analyzing vertex shader
-#ifdef HAVE_FFP_SHADER_SUPPORT
-	for (int i = 0; i < FFP_BINDS_NUM; i++) {
-		if (!p->ffp_binds[i])
-			p->ffp_binds[i] = sceGxmProgramFindParameterByName(p->vshader->prog, ffp_bind_names[i]);
-	}
-#endif
 	cnt = sceGxmProgramGetParameterCount(p->vshader->prog);
 	_ptr = vglProgramGetParameterBase(p->vshader->prog);
 	ptr = _ptr;
@@ -2319,36 +2329,43 @@ void glLinkProgram(GLuint progr) {
 		}
 		ptr += 4;
 	}
-	p->vert_uniforms = (uniform *)vglMalloc(sizeof(uniform) * p->vert_uniforms_num);
-	j = 0;
-	ptr = _ptr;
-	for (i = 0; i < cnt; i++) {
-		SceGxmProgramParameter *param = (SceGxmProgramParameter *)ptr;
-		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
-		if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-			uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
-			if (p->max_vert_texunit_idx < texunit_idx)
-				p->max_vert_texunit_idx = texunit_idx;
-			uniform *u = &p->vert_uniforms[j++];
-			u->ptr = param;
-			u->size = sceGxmProgramParameterIsSamplerCube(param) ? 0xFFFFFFFF : 0;
-			u->data = NULL;
-			p->vert_texunits[texunit_idx - 1] = u;
-		} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM && sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM) {
-			uniform *u = &p->vert_uniforms[j++];
-			u->ptr = param;
-			u->is_vertex = GL_TRUE;
-			u->size = sceGxmProgramParameterGetComponentCount(param) * sceGxmProgramParameterGetArraySize(param);
-			u->data = get_uniform_alias_data_ptr(p->frag_uniforms, p->frag_uniforms_num, sceGxmProgramParameterGetName(param), u->size);
-			if (u->data) {
-				u->is_fragment = GL_TRUE;
-			} else {
-				u->is_fragment = GL_FALSE;
-				u->data = (float *)vglMalloc(u->size * sizeof(float));
-				vgl_memset(u->data, 0, u->size * sizeof(float));
+	if (p->vert_uniforms_num) {
+		p->vert_uniforms = (uniform *)vglMalloc(sizeof(uniform) * p->vert_uniforms_num);
+		j = 0;
+		ptr = _ptr;
+		for (i = 0; i < cnt; i++) {
+			SceGxmProgramParameter *param = (SceGxmProgramParameter *)ptr;
+			SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
+			if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+				uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
+				if (p->max_vert_texunit_idx < texunit_idx)
+					p->max_vert_texunit_idx = texunit_idx;
+				uniform *u = &p->vert_uniforms[j++];
+				u->ptr = param;
+				u->type = sceGxmProgramParameterIsSamplerCube(param) ? UNIFORM_CUBE_SAMPLER : UNIFORM_SAMPLER;
+				p->vert_texunits[texunit_idx - 1] = u;
+			} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM && sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM) {
+				uniform *u = &p->vert_uniforms[j++];
+				u->ptr = param;
+				u->type = UNIFORM_DATA;
+				u->vptr = (uint8_t *)p->unif_vbuffer + sceGxmProgramParameterGetResourceIndex(param) * 4;
+				u->fptr = get_uniform_alias_data_ptr(p->frag_uniforms, p->frag_uniforms_num, sceGxmProgramParameterGetName(param));
+			}
+			ptr += 4;
+		}
+#ifdef HAVE_FFP_SHADER_SUPPORT
+		for (int i = 0; i < FFP_BINDS_NUM; i++) {
+			SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, ffp_bind_names[i]);
+			if (param) {
+				for (int j = 0; j < p->vert_uniforms_num; j++) {
+					if (p->vert_uniforms[j].ptr == param) {
+						p->ffp_binds[i] = &p->vert_uniforms[j];
+						break;
+					}
+				}
 			}
 		}
-		ptr += 4;
+#endif
 	}
 
 #ifdef ENABLE_LEGACY_PIPELINE
@@ -2497,6 +2514,16 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	return -1;
 }
 
+#define vgl_fill_uniform_data(p, type, size, count) \
+	if (u->vptr) { \
+		vglSetUniformData(u->vptr, sceGxmProgramParameterGetType(u->ptr), offs, count, size, p, type); \
+		dirty_vert_unifs = GL_TRUE; \
+	} \
+	if (u->fptr) { \
+		vglSetUniformData(u->fptr, sceGxmProgramParameterGetType(u->ptr), offs, count, size, p, type); \
+		dirty_frag_unifs = GL_TRUE; \
+	}
+
 inline void glUniform1i(GLint location, GLint v0) {
 	THREAD_SAFE()
 
@@ -2509,15 +2536,11 @@ inline void glUniform1i(GLint location, GLint v0) {
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-	if (u->size == 0 || u->size == 0xFFFFFFFF) // Sampler
-		u->data = (float *)v0;
-	else // Regular Uniform
-		u->data[offs] = (float)v0;
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	if (u->type != UNIFORM_DATA) { // Sampler
+		u->sampler_index = v0;
+	} else { // Regular Uniform
+		vgl_fill_uniform_data(&v0, SCE_GXM_PARAMETER_TYPE_S32, 1, 1)
+	}
 }
 
 void glProgramUniform1i(GLuint prog, GLint location, GLint v0) {
@@ -2534,25 +2557,13 @@ inline void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 	// Grabbing passed uniform
 	int offs = 0;
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
-
-	if (u->size == 0 || u->size == 0xFFFFFFFF) // Sampler
-		u->data = (float *)value[0];
-	else {
-		// Setting passed value to desired uniform
-#ifndef UNIFORMS_SPEEDHACK
-		if (u->size < count) {
-			count = u->size;
-		}
-#endif
-		for (int i = 0; i < count; i++) {
-			u->data[offs + i] = (float)value[i];
-		}
+	
+	// Setting passed value to desired uniform
+	if (u->type != UNIFORM_DATA) { // Sampler
+		u->sampler_index = value[0];
+	} else { // Regular Uniform
+		vgl_fill_uniform_data(value, SCE_GXM_PARAMETER_TYPE_S32, 1, count)
 	}
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
 }
 
 void glProgramUniform1iv(GLuint prog, GLint location, GLsizei count, const GLint *value) {
@@ -2569,14 +2580,9 @@ inline void glUniform1f(GLint location, GLfloat v0) {
 	// Grabbing passed uniform
 	int offs = 0;
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
-
+	
 	// Setting passed value to desired uniform
-	u->data[offs] = v0;
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	vgl_fill_uniform_data(&v0, SCE_GXM_PARAMETER_TYPE_F32, 1, 1)
 }
 
 void glProgramUniform1f(GLuint prog, GLint location, GLfloat v0) {
@@ -2595,17 +2601,7 @@ inline void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef UNIFORMS_SPEEDHACK
-	if (u->size < count) {
-		count = u->size;
-	}
-#endif
-	vgl_fast_memcpy(&u->data[offs], value, count * sizeof(float));
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	vgl_fill_uniform_data(value, SCE_GXM_PARAMETER_TYPE_F32, 1, count)
 }
 
 void glProgramUniform1fv(GLuint prog, GLint location, GLsizei count, const GLfloat *value) {
@@ -2624,13 +2620,8 @@ inline void glUniform2i(GLint location, GLint v0, GLint v1) {
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-	u->data[offs * 2] = (float)v0;
-	u->data[offs * 2 + 1] = (float)v1;
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	GLint src[2] = {v0, v1};
+	vgl_fill_uniform_data(src, SCE_GXM_PARAMETER_TYPE_S32, 2, 1)
 }
 
 void glProgramUniform2i(GLuint prog, GLint location, GLint v0, GLint v1) {
@@ -2649,19 +2640,7 @@ inline void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef UNIFORMS_SPEEDHACK
-	if (u->size < count * 2) {
-		count = u->size / 2;
-	}
-#endif
-	for (int i = 0; i < count * 2; i++) {
-		u->data[offs * 2 + i] = (float)value[i];
-	}
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	vgl_fill_uniform_data(value, SCE_GXM_PARAMETER_TYPE_S32, 2, count)
 }
 
 void glProgramUniform2iv(GLuint prog, GLint location, GLsizei count, const GLint *value) {
@@ -2680,13 +2659,8 @@ inline void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-	u->data[offs * 2] = v0;
-	u->data[offs * 2 + 1] = v1;
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	GLfloat src[2] = {v0, v1};
+	vgl_fill_uniform_data(src, SCE_GXM_PARAMETER_TYPE_F32, 2, 1)
 }
 
 void glProgramUniform2f(GLuint prog, GLint location, GLfloat v0, GLfloat v1) {
@@ -2705,17 +2679,7 @@ inline void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef UNIFORMS_SPEEDHACK
-	if (u->size < count * 2) {
-		count = u->size / 2;
-	}
-#endif
-	vgl_fast_memcpy(&u->data[offs * 2], value, count * 2 * sizeof(float));
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	vgl_fill_uniform_data(value, SCE_GXM_PARAMETER_TYPE_F32, 2, count)
 }
 
 void glProgramUniform2fv(GLuint prog, GLint location, GLsizei count, const GLfloat *value) {
@@ -2734,14 +2698,8 @@ inline void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) {
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-	u->data[offs * 3] = (float)v0;
-	u->data[offs * 3 + 1] = (float)v1;
-	u->data[offs * 3 + 2] = (float)v2;
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	GLint src[3] = {v0, v1, v2};
+	vgl_fill_uniform_data(src, SCE_GXM_PARAMETER_TYPE_S32, 3, 1)
 }
 
 void glProgramUniform3i(GLuint prog, GLint location, GLint v0, GLint v1, GLint v2) {
@@ -2760,19 +2718,7 @@ inline void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef UNIFORMS_SPEEDHACK
-	if (u->size < count * 3) {
-		count = u->size / 3;
-	}
-#endif
-	for (int i = 0; i < count * 3; i++) {
-		u->data[offs * 3 + i] = (float)value[i];
-	}
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	vgl_fill_uniform_data(value, SCE_GXM_PARAMETER_TYPE_S32, 3, count)
 }
 
 void glProgramUniform3iv(GLuint prog, GLint location, GLsizei count, const GLint *value) {
@@ -2791,14 +2737,8 @@ inline void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-	u->data[offs * 3] = v0;
-	u->data[offs * 3 + 1] = v1;
-	u->data[offs * 3 + 2] = v2;
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	GLfloat src[3] = {v0, v1, v2};
+	vgl_fill_uniform_data(src, SCE_GXM_PARAMETER_TYPE_F32, 3, 1)
 }
 
 void glProgramUniform3f(GLuint prog, GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
@@ -2817,17 +2757,7 @@ inline void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef UNIFORMS_SPEEDHACK
-	if (u->size < count * 3) {
-		count = u->size / 3;
-	}
-#endif
-	vgl_fast_memcpy(&u->data[offs * 3], value, count * 3 * sizeof(float));
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	vgl_fill_uniform_data(value, SCE_GXM_PARAMETER_TYPE_F32, 3, count)
 }
 
 void glProgramUniform3fv(GLuint prog, GLint location, GLsizei count, const GLfloat *value) {
@@ -2846,15 +2776,8 @@ inline void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) 
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-	u->data[offs * 4] = (float)v0;
-	u->data[offs * 4 + 1] = (float)v1;
-	u->data[offs * 4 + 2] = (float)v2;
-	u->data[offs * 4 + 3] = (float)v3;
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	GLint src[4] = {v0, v1, v2, v3};
+	vgl_fill_uniform_data(src, SCE_GXM_PARAMETER_TYPE_S32, 4, 1)
 }
 
 void glProgramUniform4i(GLuint prog, GLint location, GLint v0, GLint v1, GLint v2, GLint v3) {
@@ -2873,19 +2796,7 @@ inline void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef UNIFORMS_SPEEDHACK
-	if (u->size < count * 4) {
-		count = u->size / 4;
-	}
-#endif
-	for (int i = 0; i < count * 4; i++) {
-		u->data[offs * 4 + i] = (float)value[i];
-	}
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	vgl_fill_uniform_data(value, SCE_GXM_PARAMETER_TYPE_S32, 4, 1)
 }
 
 void glProgramUniform4iv(GLuint prog, GLint location, GLsizei count, const GLint *value) {
@@ -2904,15 +2815,8 @@ inline void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfl
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-	u->data[offs * 4] = v0;
-	u->data[offs * 4 + 1] = v1;
-	u->data[offs * 4 + 2] = v2;
-	u->data[offs * 4 + 3] = v3;
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	GLfloat src[4] = {v0, v1, v2, v3};
+	vgl_fill_uniform_data(src, SCE_GXM_PARAMETER_TYPE_F32, 4, 1)
 }
 
 void glProgramUniform4f(GLuint prog, GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
@@ -2931,17 +2835,7 @@ inline void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef UNIFORMS_SPEEDHACK
-	if (u->size < count * 4) {
-		count = u->size / 4;
-	}
-#endif
-	vgl_fast_memcpy(&u->data[offs * 4], value, count * 4 * sizeof(float));
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+	vgl_fill_uniform_data(value, SCE_GXM_PARAMETER_TYPE_F32, 4, count)
 }
 
 void glProgramUniform4fv(GLuint prog, GLint location, GLsizei count, const GLfloat *value) {
@@ -2960,22 +2854,14 @@ inline void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpos
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef UNIFORMS_SPEEDHACK
-	if (u->size < count * 4) {
-		count = u->size / 4;
-	}
-#endif
 	if (transpose) {
+		float *tmp = gpu_alloc_mapped_temp(count * 4 * sizeof(float));
 		for (int i = 0; i < count; i++) {
-			matrix2x2_transpose(&u->data[(offs + i) * 4], &value[i * 4]);
+			matrix2x2_transpose(&tmp[i * 4], &value[i * 4]);
 		}
-	} else
-		vgl_fast_memcpy(&u->data[offs * 4], value, count * 4 * sizeof(float));
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+		value = tmp;
+	}
+	vgl_fill_uniform_data(value, SCE_GXM_PARAMETER_TYPE_F32, 2, 2 * count)
 }
 
 void glProgramUniformMatrix2fv(GLuint prog, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
@@ -2994,22 +2880,14 @@ inline void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpos
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef UNIFORMS_SPEEDHACK
-	if (u->size < count * 9) {
-		count = u->size / 9;
-	}
-#endif
 	if (transpose) {
+		float *tmp = gpu_alloc_mapped_temp(count * 9 * sizeof(float));
 		for (int i = 0; i < count; i++) {
-			matrix3x3_transpose(&u->data[(offs + i) * 9], &value[i * 9]);
+			matrix3x3_transpose(&tmp[i * 9], &value[i * 9]);
 		}
-	} else
-		vgl_fast_memcpy(&u->data[offs * 9], value, count * 9 * sizeof(float));
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+		value = tmp;
+	}
+	vgl_fill_uniform_data(value, SCE_GXM_PARAMETER_TYPE_F32, 3, 3 * count)
 }
 
 void glProgramUniformMatrix3fv(GLuint prog, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {
@@ -3029,22 +2907,14 @@ inline void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpos
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-#ifndef UNIFORMS_SPEEDHACK
-	if (u->size < count * 16) {
-		count = u->size / 16;
-	}
-#endif
 	if (transpose) {
+		float *tmp = gpu_alloc_mapped_temp(count * 16 * sizeof(float));
 		for (int i = 0; i < count; i++) {
-			matrix4x4_transpose(&u->data[(offs + i) * 16], &value[i * 16]);
+			matrix3x3_transpose(&tmp[i * 16], &value[i * 16]);
 		}
-	} else
-		vgl_fast_memcpy(&u->data[offs * 16], value, count * 16 * sizeof(float));
-
-	if (u->is_vertex)
-		dirty_vert_unifs = GL_TRUE;
-	if (u->is_fragment)
-		dirty_frag_unifs = GL_TRUE;
+		value = tmp;
+	}
+	vgl_fill_uniform_data(value, SCE_GXM_PARAMETER_TYPE_F32, 4, 4 * count)
 }
 
 void glProgramUniformMatrix4fv(GLuint prog, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) {

@@ -12,7 +12,7 @@ PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
 CXX     = $(PREFIX)-g++
 AR      = $(PREFIX)-gcc-ar
-CFLAGS  = -g -Wl,-q -O3 -ffast-math -mtune=cortex-a9 -mfpu=neon -Wno-incompatible-pointer-types -Wno-stringop-overflow
+CFLAGS  = -g -Wl,-q -O3 -ffast-math -mtune=cortex-a9 -mfpu=neon -Wno-incompatible-pointer-types -Wno-stringop-overflow -mfp16-format=ieee
 ASFLAGS = $(CFLAGS)
 
 ifeq ($(SOFTFP_ABI),1)
@@ -121,10 +121,6 @@ endif
 
 ifeq ($(UNPURE_TEXFORMATS),1)
 CFLAGS += -DHAVE_UNPURE_TEXFORMATS
-endif
-
-ifeq ($(UNIFORMS_SPEEDHACK),1)
-CFLAGS += -DUNIFORMS_SPEEDHACK
 endif
 
 ifeq ($(PHYCONT_ON_DEMAND),1)
