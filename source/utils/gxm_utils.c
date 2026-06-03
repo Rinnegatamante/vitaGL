@@ -21,6 +21,7 @@
  * Utilities for GXM api usage
  */
 #include "../shared.h"
+#include <stdio.h>
 
 #define UNIFORM_CIRCULAR_POOL_SIZE (2 * 1024 * 1024)
 
@@ -66,8 +67,6 @@ void *vglReserveUniformCircularPoolBuffer(uint32_t size) {
 		dst += align_size; \
 	}
 
-#include <stdio.h>
-
 void vglSetUniformData(uint8_t *uniformBuffer, const SceGxmParameterType t, const int offset, const uint32_t count, const uint32_t componentCount, const void *sourceData, const SceGxmParameterType input_type) {
 	if (offset != 0) {
 		switch (t) {
@@ -93,7 +92,7 @@ void vglSetUniformData(uint8_t *uniformBuffer, const SceGxmParameterType t, cons
 				break;
 		}
 	}
-	if (t == input_type) {// Input type is ideal, we can go for faster path
+	if (t == input_type) { // Input type is ideal, we can go for faster path
 		if (count == 1) {
 			switch (t) {
 			case SCE_GXM_PARAMETER_TYPE_F32:
