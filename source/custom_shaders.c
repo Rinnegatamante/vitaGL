@@ -839,7 +839,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 	// Gathering real attribute data pointers
 	if (is_packed) {
 		if (target_vbo) {
-			ptrs[0] = (void *)target_vbo->ptr;
+			ptrs[0] = (void *)target_vbo->ptr + lowest * streams[0].stride;
 			target_vbo->last_frame = vgl_framecount;
 			for (int i = 0; i < p->attr_num; i++) {
 				uint8_t attr_idx = p->attr_map[i];
@@ -847,8 +847,8 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 				handle_packed_vbo_attrib();
 			}
 		} else {
-			ptrs[0] = gpu_alloc_mapped_temp(highest * streams[0].stride);
-			vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]] + lowest * streams[0].stride, highest * streams[0].stride);		
+			ptrs[0] = gpu_alloc_mapped_temp((highest - lowest) * streams[0].stride);
+			vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]] + lowest * streams[0].stride, (highest - lowest) * streams[0].stride);		
 			for (int i = 0; i < p->attr_num; i++) {
 				uint8_t attr_idx = p->attr_map[i];
 				attributes[i].regIndex = p->attr[attr_idx].regIndex;
@@ -1066,7 +1066,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 	// Gathering real attribute data pointers
 	if (is_packed) {
 		if (target_vbo) {
-			ptrs[0] = (void *)target_vbo->ptr;
+			ptrs[0] = (void *)target_vbo->ptr + first * streams[0].stride;
 			target_vbo->last_frame = vgl_framecount;
 			for (int i = 0; i < p->attr_num; i++) {
 				uint8_t attr_idx = p->attr_map[i];
