@@ -2246,6 +2246,7 @@ void glLinkProgram(GLuint progr) {
 				uniform *u = &p->frag_uniforms[j++];
 				u->ptr = param;
 				u->type = sceGxmProgramParameterIsSamplerCube(param) ? UNIFORM_CUBE_SAMPLER : UNIFORM_SAMPLER;
+				u->sampler_index = 0;
 				p->frag_texunits[texunit_idx - 1] = u;
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 				u->sampler = NULL;
@@ -2348,6 +2349,7 @@ void glLinkProgram(GLuint progr) {
 				uniform *u = &p->vert_uniforms[j++];
 				u->ptr = param;
 				u->type = sceGxmProgramParameterIsSamplerCube(param) ? UNIFORM_CUBE_SAMPLER : UNIFORM_SAMPLER;
+				u->sampler_index = 0;
 				p->vert_texunits[texunit_idx - 1] = u;
 			} else if (cat == SCE_GXM_PARAMETER_CATEGORY_UNIFORM && sceGxmProgramParameterGetContainerIndex(param) == UBOS_NUM) {
 				uniform *u = &p->vert_uniforms[j++];
