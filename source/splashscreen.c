@@ -40,6 +40,7 @@ SceGxmShaderPatcherId splash_vertex_id;
 SceGxmShaderPatcherId splash_fragment_id;
 SceGxmVertexProgram *splash_vertex_program_patched;
 SceGxmFragmentProgram *splash_fragment_program_patched;
+SceGxmFragmentProgram *font_fragment_program_patched;
 const SceGxmProgramParameter *splash_position;
 const SceGxmProgramParameter *splash_normal;
 const SceGxmProgramParameter *splash_wv;
@@ -6240,6 +6241,61 @@ static void lz77_decompress(const uint8_t *src, uint8_t *dst, size_t dst_len) {
 int splashscreen_thread(unsigned int args, void *arg) {
 	GLboolean must_terminate = GL_FALSE;
 	
+	// Font bitmap for commit hash rendering
+	static const uint8_t splash_font[][7] = {
+		{0x70,0x88,0x98,0xa8,0xc8,0x88,0x70}, // 0
+		{0x20,0x60,0x20,0x20,0x20,0x20,0x70}, // 1
+		{0x70,0x88,0x08,0x30,0x40,0x80,0xf8}, // 2
+		{0x70,0x88,0x08,0x30,0x08,0x88,0x70}, // 3
+		{0x10,0x30,0x50,0x90,0xf8,0x10,0x10}, // 4
+		{0xf8,0x80,0xf0,0x08,0x08,0x88,0x70}, // 5
+		{0x38,0x40,0x80,0xf0,0x88,0x88,0x70}, // 6
+		{0xf8,0x08,0x10,0x20,0x20,0x20,0x20}, // 7
+		{0x70,0x88,0x88,0x70,0x88,0x88,0x70}, // 8
+		{0x70,0x88,0x88,0x78,0x08,0x10,0x60}, // 9
+		{0x00,0x00,0x70,0x10,0x78,0x88,0x78}, // a
+		{0x80,0x80,0xb0,0xc8,0x88,0xc8,0xb0}, // b
+		{0x00,0x00,0x70,0x88,0x80,0x88,0x70}, // c
+		{0x08,0x08,0x68,0x98,0x88,0x98,0x68}, // d
+		{0x00,0x00,0x70,0x88,0xf8,0x80,0x70}, // e
+		{0x18,0x20,0x70,0x20,0x20,0x20,0x20}, // f
+		{0x50,0x50,0xf8,0x50,0xf8,0x50,0x50}, // #
+	};
+	
+	// Prepare coordinates buffer for commit hash rendering
+	const char *commit_hash = "#" VGL_GIT_HASH;
+	vector4f hash_quads[9 * 35];
+	int hash_quad_count = 0;
+	for (int i = 0; i < 8; i++) {
+		int glyph;
+		switch (commit_hash[i]) {
+		case '#':
+			glyph = sizeof(splash_font) / sizeof(*splash_font) - 1;
+			break;
+		case 'a':
+		case 'b':
+		case 'c':
+		case 'd':
+		case 'e':
+		case 'f':
+			glyph = 10 + (commit_hash[i] - 'a');
+			break;
+		default:
+			glyph = commit_hash[i] - '0';
+			break;
+		}
+		int char_x = 6 + i * (6 * 2);
+		for (int row = 0; row < 7; row++) {
+			uint8_t bits = splash_font[glyph][row];
+			for (int col = 0; col < 5; col++) {
+				if (!(bits & (0x80 >> col))) {
+					continue;
+				}
+				vector4f_convert_to_local_space(&hash_quads[hash_quad_count++], char_x + col * 2, DISPLAY_HEIGHT - 6 - (7 * 2) + row * 2, 2, 2);
+			}
+		}
+	}
+	
 	// Decompress the splashscreen data
 	uint8_t *tmp = (uint8_t*)vglMalloc(SPLASH_VTX_PACKED + SPLASH_IDX_COUNT * 2);
 	void *gpu_splash_vtxs = gpu_alloc_mapped_for_cpu(sizeof(float) * SPLASH_VTX_COUNT * 6);
@@ -6374,6 +6430,20 @@ int splashscreen_thread(unsigned int args, void *arg) {
 		sceGxmSetUniformDataF(fbuffer, splash_ambient, 0, 4, ambient);
 		sceGxmDraw(splash_gxm_context, SCE_GXM_PRIMITIVE_TRIANGLES, SCE_GXM_INDEX_FORMAT_U16, gpu_splash_idxs, SPLASH_IDX_COUNT);
 		
+		// Draw the commit hash (using clear shader to avoid reserving permanently memory for specialized shaders to do this more cleanly)
+		float hash_color[4] = {1.0f, 1.0f, 1.0f, ambient[3]};
+		sceGxmSetFrontDepthFunc(splash_gxm_context, SCE_GXM_DEPTH_FUNC_ALWAYS);
+		sceGxmSetVertexProgram(splash_gxm_context, clear_vertex_program_patched);
+		sceGxmSetFragmentProgram(splash_gxm_context, font_fragment_program_patched);
+		for (int i = 0; i < hash_quad_count; i++) {
+			sceGxmReserveVertexDefaultUniformBuffer(splash_gxm_context, &vbuffer);
+			sceGxmSetUniformDataF(vbuffer, clear_position, 0, 4, &hash_quads[i].x);
+			sceGxmSetUniformDataF(vbuffer, clear_depth, 0, 1, &clear_depth_value);
+			sceGxmReserveFragmentDefaultUniformBuffer(splash_gxm_context, &fbuffer);
+			sceGxmSetUniformDataF(fbuffer, clear_color, 0, 4, hash_color);
+			sceGxmDraw(splash_gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+		}
+		
 		sceGxmEndScene(splash_gxm_context, NULL, NULL);
 		
 		// Performing commondialog update just in case
@@ -6450,7 +6520,8 @@ void invoke_splashscreen() {
 	blend_config.alphaSrc = SCE_GXM_BLEND_FACTOR_ONE;
 	blend_config.alphaDst = SCE_GXM_BLEND_FACTOR_ZERO;
 	{ patch_fragment_program(gxm_shader_patcher, splash_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, &blend_config, gxm_program_splash_v, &splash_fragment_program_patched); }
-
+	{ patch_fragment_program(gxm_shader_patcher, clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, &blend_config, NULL, &font_fragment_program_patched); }
+	
 	// Starting dedicated thread for splashscreen rendering
 	splash_mutex[0] = sceKernelCreateSema("vitaGL Splashscreen Sema Push", 0, 0, 1, NULL);
 	splash_mutex[1] = sceKernelCreateSema("vitaGL Splashscreen Sema Pull", 0, 0, 1, NULL);
@@ -6462,6 +6533,7 @@ void invoke_splashscreen() {
 void clear_splashscreen() {
 	sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, splash_vertex_id);
 	sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, splash_fragment_id);
+	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, font_fragment_program_patched);
 }
 #endif
 

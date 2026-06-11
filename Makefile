@@ -12,7 +12,8 @@ PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
 CXX     = $(PREFIX)-g++
 AR      = $(PREFIX)-gcc-ar
-CFLAGS  = -g -Wl,-q -O3 -ffast-math -mtune=cortex-a9 -mfpu=neon -Wno-incompatible-pointer-types -Wno-stringop-overflow -mfp16-format=ieee
+CFLAGS  = -g -Wl,-q -O3 -ffast-math -mtune=cortex-a9 -mfpu=neon -Wno-incompatible-pointer-types -Wno-stringop-overflow -mfp16-format=ieee \
+	-DVGL_GIT_HASH='"$(shell git rev-parse --short HEAD)"'
 ASFLAGS = $(CFLAGS)
 
 ifeq ($(SOFTFP_ABI),1)
