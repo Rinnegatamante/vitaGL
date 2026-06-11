@@ -69,6 +69,7 @@ EGLBoolean eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor) {
 		*major = 2;
 	if (minor)
 		*minor = 2;
+	vglInitExtended(0, 960, 544, 6 * 1024 * 1024, SCE_GXM_MULTISAMPLE_4X);
 	EGL_RET(EGL_TRUE)
 }
 
