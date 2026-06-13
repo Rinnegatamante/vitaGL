@@ -123,6 +123,7 @@ inline float4 vgl_atan(float4 x) { return atan(x); }
 #define mat3 float3x3
 #define mat4 float4x4
 #define matrix _matrix
+#define Matrix _Matrix
 #define sampler _sampler
 #define vgl varying
 #define POUT(x, y) \

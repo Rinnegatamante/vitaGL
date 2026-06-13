@@ -2464,6 +2464,8 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 		name = "Vgl_tex";
 	else if (!strcmp(name, "matrix"))
 		name = "_matrix";
+	else if (!strcmp(name, "Matrix"))
+		name = "_Matrix";
 	else if (!strcmp(name, "sampler"))
 		name = "_sampler";
 
