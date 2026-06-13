@@ -303,19 +303,11 @@ int garbage_collector(unsigned int args, void *arg) {
 
 GLboolean start_shader_compiler(void) {
 	shark_set_allocators(vglMalloc, vglFree);
-#ifdef HAVE_VITA3K_SUPPORT
-	is_shark_online = shark_init_simple(NULL) >= 0;
-#else
 	is_shark_online = shark_init(NULL) >= 0;
-#endif
 
 	// If standard path failed to init we try to init it with ScePiglet path
 	if (!is_shark_online) {
-#ifdef HAVE_VITA3K_SUPPORT
-		is_shark_online = shark_init_simple("ur0:data/external/libshacccg.suprx") >= 0;
-#else
 		is_shark_online = shark_init("ur0:data/external/libshacccg.suprx") >= 0;
-#endif
 #ifdef LOG_ERRORS
 		if (!is_shark_online)
 			vgl_log("%s:%d Fatal error: SceShaccCg not found.\n", __FILE__, __LINE__);
@@ -367,7 +359,6 @@ void init_gxm(void) {
 #endif
 #endif
 
-#ifndef HAVE_VITA3K_SUPPORT // Vita3K lacks sceGxmVshInitialize support, so we can't use it for sysapps
 	// Checking if the running application is a system one
 	SceAppMgrBudgetInfo info;
 	info.size = sizeof(SceAppMgrBudgetInfo);
@@ -377,30 +368,21 @@ void init_gxm(void) {
 		if (msaa_mode == SCE_GXM_MULTISAMPLE_NONE) // FIXME: For some reasons, disabling MSAA makes the shader patcher not able to compile fragment programs in sysapp mode...
 			msaa_mode = SCE_GXM_MULTISAMPLE_2X;
 	}
-#endif
 
 	// Initializing sceGxm init parameters
 	SceGxmInitializeParams gxm_init_params;
 	vgl_memset(&gxm_init_params, 0, sizeof(SceGxmInitializeParams));
-#ifdef HAVE_VITA3K_SUPPORT // Vita3K lacks sceGxmVshInitialize support, so we use sceGxmInitialize instead and disable a couple of features (HW ETC1 support and sysapp mode support)
-	gxm_init_params.flags = SCE_GXM_INITIALIZE_FLAG_DEFAULT;
-#else
 	gxm_init_params.flags = SCE_GXM_INITIALIZE_FLAG_EXTENDED_FORMAT;
 	if (system_app_mode) {
 		gxm_init_params.flags |= (SCE_GXM_INITIALIZE_FLAG_PB_LPDDR | SCE_GXM_INITIALIZE_FLAG_SHARED_SYNC | SCE_GXM_INITIALIZE_FLAG_SHAREDPB_CREATE | SCE_GXM_INITIALIZE_FLAG_SHAREDPB_OPEN);
 	}
-#endif
 	gxm_init_params.displayQueueMaxPendingCount = gxm_display_buffer_count - 1;
 	gxm_init_params.displayQueueCallback = display_queue_callback;
 	gxm_init_params.displayQueueCallbackDataSize = sizeof(struct display_queue_callback_data);
 	gxm_init_params.parameterBufferSize = gxm_param_buf_size;
 
 	// Initializing sceGxm
-#ifdef HAVE_VITA3K_SUPPORT // Vita3K lacks sceGxmVshInitialize support, so we use sceGxmInitialize instead and disable a couple of features (HW ETC1 support and sysapp mode support)
-	sceGxmInitialize(&gxm_init_params);
-#else
 	sceGxmVshInitialize(&gxm_init_params);
-#endif
 	gxm_initialized = GL_TRUE;
 
 #ifdef HAVE_DEVKIT

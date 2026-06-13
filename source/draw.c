@@ -152,49 +152,6 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 		break; \
 	}
 
-#ifdef HAVE_VITA3K_SUPPORT
-#define setup_elements_indices_with_base(type_t) \
-	type_t *ptr; \
-	switch (mode) { \
-	case GL_QUADS: \
-		ptr = gpu_alloc_mapped_temp(count * 3 * sizeof(type_t)); \
-		for (GLsizei i = 0; i < count / 4; i++) { \
-			ptr[i * 6] = src[i * 4] + baseVertex; \
-			ptr[i * 6 + 1] = src[i * 4 + 1] + baseVertex; \
-			ptr[i * 6 + 2] = src[i * 4 + 3] + baseVertex; \
-			ptr[i * 6 + 3] = src[i * 4 + 1] + baseVertex; \
-			ptr[i * 6 + 4] = src[i * 4 + 2] + baseVertex; \
-			ptr[i * 6 + 5] = src[i * 4 + 3] + baseVertex; \
-		} \
-		count = (count / 2) * 3; \
-		break; \
-	case GL_LINE_STRIP: \
-		ptr = gpu_alloc_mapped_temp((count - 1) * 2 * sizeof(type_t)); \
-		for (GLsizei i = 0; i < count - 1; i++) { \
-			ptr[i * 2] = src[i] + baseVertex; \
-			ptr[i * 2 + 1] = src[i + 1] + baseVertex; \
-		} \
-		count = (count - 1) * 2; \
-		break; \
-	case GL_LINE_LOOP: \
-		ptr = gpu_alloc_mapped_temp(count * 2 * sizeof(type_t)); \
-		for (GLsizei i = 0; i < count - 1; i++) { \
-			ptr[i * 2] = src[i] + baseVertex; \
-			ptr[i * 2 + 1] = src[i + 1] + baseVertex; \
-		} \
-		ptr[(count - 1) * 2] = src[count - 1] + baseVertex; \
-		ptr[(count - 1) * 2 + 1] = src[0] + baseVertex; \
-		count = count * 2; \
-		break; \
-	default: \
-		ptr = gpu_alloc_mapped_temp(count * sizeof(type_t)); \
-		for (GLsizei i = 0; i < count; i++) { \
-			ptr[i] = src[i] + baseVertex; \
-		} \
-		break; \
-	}
-#endif	
-
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	THREAD_SAFE()
 
@@ -465,17 +422,6 @@ void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLv
 	if (is_draw_legal)
 #endif
 	{
-#ifdef HAVE_VITA3K_SUPPORT
-		if (type == GL_UNSIGNED_INT) {
-			setup_elements_indices_with_base(uint32_t);
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
-		}
-		else
-		{
-			setup_elements_indices_with_base(uint16_t);
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
-		}
-#else
 		if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices(uint32_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32 + baseVertex, ptr, count);
@@ -485,7 +431,6 @@ void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLv
 			setup_elements_indices(uint16_t);
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16 + baseVertex, ptr, count);
 		}
-#endif
 	}
 	restore_polygon_mode(gxm_p);
 }
@@ -569,17 +514,6 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 	if (is_draw_legal)
 #endif
 	{
-#ifdef HAVE_VITA3K_SUPPORT
-		if (type == GL_UNSIGNED_INT) {
-			setup_elements_indices_with_base(uint32_t)
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32, ptr, count);
-		}
-		else
-		{
-			setup_elements_indices_with_base(uint16_t)
-			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, ptr, count);
-		}
-#else
 		if (type == GL_UNSIGNED_INT) {
 			setup_elements_indices(uint32_t)
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U32 + baseVertex, ptr, count);
@@ -589,7 +523,6 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 			setup_elements_indices(uint16_t)
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16 + baseVertex, ptr, count);
 		}
-#endif
 	}
 	restore_polygon_mode(gxm_p);
 }
