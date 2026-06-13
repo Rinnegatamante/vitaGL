@@ -1294,10 +1294,6 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 	if (imageSize == 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, imageSize)
 	}
-	
-	if (data == NULL) {
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, data)
-	}
 #endif
 
 	switch (target) {
@@ -1486,7 +1482,9 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 #endif
 				non_native_format = GL_TRUE;
 				decompressed_data = vglMalloc(width * height * 3);
-				etc1_decode_image((etc1_byte *)data, (etc1_byte *)decompressed_data, width, height, 3, width * 3);
+				if (data) {
+					etc1_decode_image((etc1_byte *)data, (etc1_byte *)decompressed_data, width, height, 3, width * 3);
+				}
 				if (recompress_non_native && target == GL_TEXTURE_2D) {
 					read_cb = read_rgb888;
 					tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
@@ -1500,7 +1498,9 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 		case GL_COMPRESSED_RGBA8_ETC2_EAC:
 			non_native_format = GL_TRUE;
 			decompressed_data = vglMalloc(width * height * 4);
-			eac_decode((uint8_t *)data, decompressed_data, width, height, EAC_ETC2);
+			if (data) {
+				eac_decode((uint8_t *)data, decompressed_data, width, height, EAC_ETC2);
+			}
 			if (recompress_non_native && target == GL_TEXTURE_2D) {
 				read_cb = read_rgba8888;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
@@ -1512,7 +1512,9 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 		case GL_ATC_RGB_AMD:
 			non_native_format = GL_TRUE;
 			decompressed_data = vglMalloc(width * height * 4);
-			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_RGB);
+			if (data) {
+				atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_RGB);
+			}
 			if (recompress_non_native && target == GL_TEXTURE_2D) {
 				read_cb = read_bgra8888;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
@@ -1524,7 +1526,9 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 		case GL_ATC_RGBA_EXPLICIT_ALPHA_AMD:
 			non_native_format = GL_TRUE;
 			decompressed_data = vglMalloc(width * height * 4);
-			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_EXPLICIT_ALPHA);
+			if (data) {
+				atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_EXPLICIT_ALPHA);
+			}
 			if (recompress_non_native && target == GL_TEXTURE_2D) {
 				read_cb = read_bgra8888;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;
@@ -1536,7 +1540,9 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 		case GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD:
 			non_native_format = GL_TRUE;
 			decompressed_data = vglMalloc(width * height * 4);
-			atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_INTERPOLATED_ALPHA);
+			if (data) {
+				atitc_decode((uint8_t *)data, decompressed_data, width, height, ATC_INTERPOLATED_ALPHA);
+			}
 			if (recompress_non_native && target == GL_TEXTURE_2D) {
 				read_cb = read_bgra8888;
 				tex_format = SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR;

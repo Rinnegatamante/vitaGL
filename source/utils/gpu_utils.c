@@ -352,11 +352,11 @@ void gpu_alloc_cube_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, 
 	const int face_size = VGL_ALIGN(w, 8) * h * bpp;
 	void *base_texture_data = tex->faces_counter == 1 ? gpu_alloc_mapped_for_gpu(face_size * 6) : tex->data;
 
-	if (base_texture_data != NULL) {
+	if (base_texture_data) {
 		// Calculating face texture data pointer
 		uint8_t *texture_data = (uint8_t *)base_texture_data + face_size * index;
 
-		if (data != NULL) {
+		if (data) {
 			const int tex_size = w * h * bpp;
 			void *mapped_data = gpu_alloc_mapped_temp(tex_size);
 			vgl_fast_memcpy(mapped_data, data, tex_size);
@@ -399,9 +399,9 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 	const int tex_size = aligned_w * h * bpp;
 	void *texture_data = gpu_alloc_mapped_for_gpu(tex_size);
 
-	if (texture_data != NULL) {
+	if (texture_data) {
 		// Initializing texture data buffer
-		if (data != NULL) {
+		if (data) {
 			uint8_t *src = (uint8_t *)data;
 			uint8_t *dst;
 			if (fast_store) { // Internal Format and Data Format are the same, we can just use vgl_fast_memcpy for better performance
@@ -472,20 +472,25 @@ void gpu_alloc_paletted_texture(int32_t level, uint32_t w, uint32_t h, SceGxmTex
 
 	// Populating palette data
 	uint32_t *palette_data = (uint32_t *)tex->palette_data;
-	uint8_t *src = (uint8_t *)data;
-	for (int i = 0; i < num_entries; i++) {
-		palette_data[i] = read_cb(src);
-		src += src_bpp;
-	}
-
-	// Populating texture data
-	if (is_p8)
-		vgl_fast_memcpy(tex->data, src, tex_size);
-	else {
-		uint8_t *dst = (uint8_t *)tex->data;
-		for (int i = 0; i < tex_size; i++) {
-			dst[i] = ((src[i] & 0x0F) << 4) | (src[i] >> 4);
+	if (data) {
+		uint8_t *src = (uint8_t *)data;
+		for (int i = 0; i < num_entries; i++) {
+			palette_data[i] = read_cb(src);
+			src += src_bpp;
 		}
+
+		// Populating texture data
+		if (is_p8)
+			vgl_fast_memcpy(tex->data, src, tex_size);
+		else {
+			uint8_t *dst = (uint8_t *)tex->data;
+			for (int i = 0; i < tex_size; i++) {
+				dst[i] = ((src[i] & 0x0F) << 4) | (src[i] >> 4);
+			}
+		}
+	} else {
+		vgl_memset(palette_data, 0, num_entries * sizeof(uint32_t));
+		vgl_memset(tex->data, 0, tex_size);
 	}
 
 	// Initializing texture and validating it
@@ -572,9 +577,9 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 	void *texture_data = (uint8_t *)base_texture_data + face_size * index;
 
 	// Initializing texture data buffer
-	if (texture_data != NULL) {
+	if (texture_data) {
 		void *mip_data = (void *)((uint8_t *)texture_data + mip_offset);
-		if (data != NULL) {
+		if (data) {
 			if (uncompressed) {
 				// Performing swizzling and DXT compression
 				uint8_t alignment = tex_format_to_alignment(format);
@@ -716,9 +721,9 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 	}
 
 	// Initializing texture data buffer
-	if (texture_data != NULL) {
+	if (texture_data) {
 		void *mip_data = (void *)((uint8_t *)texture_data + mip_offset);
-		if (data != NULL) {
+		if (data) {
 			if (uncompressed) {
 				// Performing swizzling and DXT compression
 				uint8_t alignment = tex_format_to_alignment(format);
