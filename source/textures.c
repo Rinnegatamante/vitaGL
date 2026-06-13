@@ -2329,7 +2329,7 @@ void glCopyTextureSubImage1D(GLuint tex_id, GLint level, GLint xoffset, GLint x,
 	THREAD_SAFE()
 
 #ifdef HAVE_UNPURE_TEXFORMATS
-	glCopyTextureSubImage2D(tex_id, GL_TEXTURE_1D, level, xoffset, 0, x, y, width, 1);
+	glCopyTextureSubImage2D(tex_id, level, xoffset, 0, x, y, width, 1);
 #else
 	vgl_log("%s:%d: GL_TEXTURE_1D support is disabled. Compile vitaGL with UNPURE_TEXFORMATS=1 to enable it.\n", __FILE__, __LINE__);
 #endif
