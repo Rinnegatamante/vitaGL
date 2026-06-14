@@ -134,8 +134,8 @@ uint8_t *vgl_reserve_data_pool(uint32_t size) {
 	uint8_t *res = circular_data_pool_ptr;
 	circular_data_pool_ptr += size;
 	if (circular_data_pool_ptr > circular_data_pool_limit) {
-		circular_data_pool_ptr = circular_data_pool;
-		return circular_data_pool_ptr;
+		circular_data_pool_ptr = circular_data_pool + size;
+		return circular_data_pool;
 	}
 #endif
 	return res;

@@ -1080,7 +1080,6 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *po
 // Overloads the index list with an internal progressive index buffer normally used for glDrawArrays call.
 void vglIndexPointerDefault();
 
-
 // Overloads the index list with a pre-GPU mapped memory block with a copy-less action for legacy vgl* draw pipeline.
 void vglIndexPointerMapped(const GLvoid *pointer);
 
@@ -1286,7 +1285,7 @@ void vglUseCachedMem(GLboolean use);
 // Makes the GLSL translator use low precision variables (eg: float -> half).
 void vglUseLowPrecision(GLboolean val);
 
-// Allows to swap between triple and double buffering. vitaGL by default uses triple buffering.
+// Allows to swap between triple and double buffering. Default value: GL_TRUE.
 void vglUseTripleBuffering(GLboolean usage);
 
 // Allows to set a preference on the kind of memory to use for the internal USSE buffers in sceGxm. By default vitaGL will not use VRAM memory.
