@@ -780,6 +780,11 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		vgl_circular_pool_global_peak = vgl_circular_pool_frame_peak;
 	}
 #endif
+#ifdef LOG_ERRORS
+	if (circular_data_pool_ptr[vgl_circular_idx] > circular_data_pool_limit[vgl_circular_idx]) {
+		vgl_log("%s:%d Circular pool overrun on frame %u (Total of %u bytes). This can cause performance issues. Consider increasing its size with vglSetCircularPoolSize.\n", __FILE__, __LINE__, vgl_framecount - 1, circular_data_pool_ptr[vgl_circular_idx] - circular_data_pool_limit[vgl_circular_idx]);
+	}
+#endif
 	vgl_circular_idx = vgl_framecount % gxm_display_buffer_count;
 	circular_data_pool_ptr[vgl_circular_idx] = circular_data_pool[vgl_circular_idx];
 #endif

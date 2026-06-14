@@ -54,7 +54,7 @@ static inline __attribute__((always_inline)) void *gpu_alloc_mapped_temp(size_t 
 
 #ifdef LOG_ERRORS
 	if (!res) {
-		vgl_log("%s:%d gpu_alloc_mapped_temp failed with a requested size of 0x%08X\n", __FILE__, __LINE__, size);
+		vgl_log("%s:%d gpu_alloc_mapped_temp failed with a requested size of %u bytes.\n", __FILE__, __LINE__, size);
 	}
 #endif
 

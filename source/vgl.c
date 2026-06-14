@@ -109,7 +109,7 @@ GLboolean vgl_stream_wants_scratch = GL_TRUE;
 #ifndef CIRCULAR_POOL_SPEEDHACK
 uint8_t *circular_data_pool[DISPLAY_MAX_BUFFER_COUNT];
 uint8_t *circular_data_pool_ptr[DISPLAY_MAX_BUFFER_COUNT];
-static uint8_t *circular_data_pool_limit[DISPLAY_MAX_BUFFER_COUNT];
+uint8_t *circular_data_pool_limit[DISPLAY_MAX_BUFFER_COUNT];
 int vgl_circular_idx = 0;
 #else
 static uint8_t *circular_data_pool;
@@ -122,11 +122,10 @@ uint8_t *vgl_reserve_data_pool(uint32_t size) {
 	uint8_t *res = circular_data_pool_ptr[vgl_circular_idx];
 	circular_data_pool_ptr[vgl_circular_idx] += size;
 	if (circular_data_pool_ptr[vgl_circular_idx] > circular_data_pool_limit[vgl_circular_idx]) {
-		vgl_log("%s:%d Circular pool overrun (Total of %u bytes). Consider increasing its size with vglSetCircularPoolSize. Falling back to regular allocation.\n", __FILE__, __LINE__, circular_data_pool_ptr[vgl_circular_idx] - circular_data_pool_limit[vgl_circular_idx]);
 		res = (uint8_t *)gpu_alloc_mapped_for_cpu(size);
 #ifdef LOG_ERRORS
 		if (!res) {
-			vgl_log("%s:%d gpu_alloc_mapped_temp failed with a requested size of 0x%08X\n", __FILE__, __LINE__, size);
+			vgl_log("%s:%d gpu_alloc_mapped_for_cpu failed with a requested size of %u bytes.\n", __FILE__, __LINE__, size);
 		}
 #endif
 		mark_as_dirty(res);
