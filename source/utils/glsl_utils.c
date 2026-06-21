@@ -111,6 +111,192 @@ GLboolean glsl_is_first_shader = GL_TRUE;
 GLboolean glsl_precision_low = GL_FALSE;
 GLenum glsl_sema_mode = VGL_MODE_POSTPONED;
 binds_map glsl_bindings_map;
+int glsl_version = 100;
+
+static int glsl_parse_version(const char *src) {
+	const char *str = strstr(src, "#version");
+	if (!str)
+		return 100;
+	str += 8;
+	while (*str == ' ' || *str == '\t')
+		str++;
+	return atoi(str);
+}
+
+static GLboolean glsl_is_identifier_char(char c) {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+	       (c >= '0' && c <= '9') || c == '_';
+}
+
+static void glsl_strip_layout_qualifiers(char *src) {
+	char *p = src;
+	while ((p = strstr(p, "layout"))) {
+		char *start = p;
+		char *paren = strchr(p, '(');
+		if (!paren) {
+			p += 6;
+			continue;
+		}
+		int depth = 1;
+		char *q = paren + 1;
+		while (*q && depth > 0) {
+			if (*q == '(')
+				depth++;
+			else if (*q == ')')
+				depth--;
+			q++;
+		}
+		while (*q == ' ' || *q == '\t')
+			q++;
+		memmove(start, q, strlen(q) + 1);
+	}
+}
+
+static void glsl_strip_line_qualifiers(char *line) {
+	const char *qualifiers[] = {"flat ", "smooth ", "noperspective ", "centroid ", NULL};
+	for (int i = 0; qualifiers[i]; i++) {
+		char *q = line;
+		while ((q = strstr(q, qualifiers[i]))) {
+			memmove(q, q + strlen(qualifiers[i]), strlen(q + strlen(qualifiers[i])) + 1);
+		}
+	}
+}
+
+static char *glsl_replace_word(char *src, const char *word, const char *replacement) {
+	size_t word_len = strlen(word);
+	size_t repl_len = strlen(replacement);
+	size_t src_len = strlen(src);
+	char *out = (char *)vglMalloc(src_len * 2 + repl_len + 1);
+	char *w = out;
+	char *r = src;
+	while (*r) {
+		if (!strncmp(r, word, word_len) &&
+		    (r == src || !glsl_is_identifier_char(r[-1])) &&
+		    !glsl_is_identifier_char(r[word_len])) {
+			memcpy(w, replacement, repl_len);
+			w += repl_len;
+			r += word_len;
+		} else {
+			*w++ = *r++;
+		}
+	}
+	*w = 0;
+	vgl_free(src);
+	return out;
+}
+
+static char *glsl_convert_330_source(const char *src, GLenum type) {
+	size_t src_len = strlen(src);
+	char *out = (char *)vglMalloc(src_len * 2 + 512);
+	char *frag_out_name = NULL;
+	out[0] = 0;
+
+	char *line_buf = (char *)vglMalloc(src_len + 1);
+	const char *r = src;
+	char *w = out;
+
+	while (*r) {
+		const char *eol = r;
+		while (*eol && *eol != '\n' && *eol != '\r')
+			eol++;
+		size_t line_len = eol - r;
+		memcpy(line_buf, r, line_len);
+		line_buf[line_len] = 0;
+		glsl_strip_line_qualifiers(line_buf);
+
+		char *p = line_buf;
+		while (*p == ' ' || *p == '\t')
+			p++;
+
+		if (type == GL_FRAGMENT_SHADER &&
+		    !strncmp(p, "out ", 4)) {
+			char *name_start = p + 4;
+			while (*name_start == ' ' || *name_start == '\t')
+				name_start++;
+			while (*name_start && *name_start != ' ' && *name_start != '\t')
+				name_start++;
+			while (*name_start == ' ' || *name_start == '\t')
+				name_start++;
+			char *name_end = name_start;
+			while (*name_end && *name_end != ';' && *name_end != ' ' && *name_end != '\t')
+				name_end++;
+			if (name_end > name_start) {
+				if (frag_out_name)
+					vgl_free(frag_out_name);
+				frag_out_name = (char *)vglMalloc(name_end - name_start + 1);
+				memcpy(frag_out_name, name_start, name_end - name_start);
+				frag_out_name[name_end - name_start] = 0;
+			}
+			r = (*eol) ? eol + 1 : eol;
+			if (*r == '\r' && r[1] == '\n')
+				r++;
+			continue;
+		}
+
+		if (type == GL_VERTEX_SHADER &&
+		    (!strncmp(p, "in ", 3) || !strncmp(p, "in\t", 3))) {
+			memcpy(w, line_buf, p - line_buf);
+			w += p - line_buf;
+			memcpy(w, "vgl in", 6);
+			w += 6;
+			p += 2;
+			strcpy(w, p);
+			w += strlen(p);
+		} else if (type == GL_VERTEX_SHADER &&
+			   (!strncmp(p, "out ", 4) || !strncmp(p, "out\t", 4))) {
+			memcpy(w, line_buf, p - line_buf);
+			w += p - line_buf;
+			memcpy(w, "varying out", 11);
+			w += 11;
+			p += 3;
+			strcpy(w, p);
+			w += strlen(p);
+		} else if (type == GL_FRAGMENT_SHADER &&
+			   (!strncmp(p, "in ", 3) || !strncmp(p, "in\t", 3))) {
+			memcpy(w, line_buf, p - line_buf);
+			w += p - line_buf;
+			memcpy(w, "varying in", 10);
+			w += 10;
+			p += 2;
+			strcpy(w, p);
+			w += strlen(p);
+		} else {
+			memcpy(w, line_buf, line_len);
+			w += line_len;
+		}
+
+		if (*eol == '\r') {
+			*w++ = '\r';
+			eol++;
+		}
+		if (*eol == '\n') {
+			*w++ = '\n';
+			eol++;
+		}
+		r = eol;
+	}
+	*w = 0;
+	vgl_free(line_buf);
+
+	char *converted = out;
+	if (frag_out_name) {
+		converted = glsl_replace_word(converted, frag_out_name, "gl_FragColor");
+		vgl_free(frag_out_name);
+	}
+	return converted;
+}
+
+static char *glsl_prepare_modern_source(const char *src, GLenum type) {
+	char *tmp = (char *)vglMalloc(strlen(src) + 1);
+	strcpy(tmp, src);
+	glsl_strip_layout_qualifiers(tmp);
+	if (glsl_version >= 330) {
+		char *converted = glsl_convert_330_source(tmp, type);
+		vgl_free(tmp);
+		return converted;
+	}
+	return tmp;
+}
 
 void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFrontFacing) {
 	char newline[128];
@@ -1065,16 +1251,22 @@ void glsl_translator_process(shader *s) {
 	if (s->type == GL_VERTEX_SHADER)
 		size += strlen("#define VGL_IS_VERTEX_SHADER\n");
 	
+	glsl_version = glsl_parse_version(s->source);
+
 	char *input = vglMalloc(source_size);
 	vgl_fast_memcpy(input, s->source, source_size - 1);
 	input[source_size - 1] = 0;
-	
+
+	char *prepared = glsl_prepare_modern_source(input, s->type);
+	vgl_free(input);
+	input = prepared;
+
 	// Nukeing version directive
 	char *str = strstr(input, "#version");
 	if (str) {
 		str[0] = str[1] = '/';
 	}
-	
+
 	// Nukeing extension directives
 	str = strstr(input, "#extension");
 	while (str) {
@@ -1086,7 +1278,7 @@ void glsl_translator_process(shader *s) {
 	vgl_log("%s:%d %s: GLSL translation input:\n\n%s\n\n", __FILE__, __LINE__, __func__, input);
 #endif
 
-	char *out = vglMalloc(strlen(input));
+	char *out = vglMalloc(strlen(input) + 1);
 	glsl_preprocess("full", input, out);
 	vgl_free(input);
 #ifdef DEBUG_GLSL_PREPROCESSOR
