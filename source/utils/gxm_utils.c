@@ -60,7 +60,7 @@ void *vglReserveUniformCircularPoolBuffer(uint32_t size) {
 	const src_type *src = (const src_type *)sourceData; \
 	dst_type *dst = (dst_type *)uniformBuffer; \
 	for (int i = 0; i < count; i++) { \
-		for (int j = 0; j < componentCount; i++) { \
+		for (int j = 0; j < componentCount; j++) { \
 			dst[j] = src[j]; \
 		} \
 		src += componentCount; \
