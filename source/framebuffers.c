@@ -35,6 +35,8 @@ uint32_t get_color_from_texture(SceGxmTextureFormat type) {
 	switch (type) {
 	case SCE_GXM_TEXTURE_FORMAT_U8_R:
 		return SCE_GXM_COLOR_FORMAT_U8_R;
+	case SCE_GXM_TEXTURE_FORMAT_U8U8_00GR:
+		return SCE_GXM_COLOR_FORMAT_U8U8_GR;
 	case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
 		return SCE_GXM_COLOR_FORMAT_U8U8U8_BGR;
 	case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
