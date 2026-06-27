@@ -1811,7 +1811,7 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 		if (i > 0 && i < TEXTURES_NUM) {
 			switch (texture_slots[i].status) {
 			case TEX_VALID:
-				if (texture_slots[i].ref_counter > 0)
+				if (texture_slots[i].ref_counter > 0) {
 					if (texture_slots[i].ref_counter == 1) {
 						framebuffer *fb = NULL;
 						if (active_read_fb && active_read_fb->tex == &texture_slots[i])
@@ -1820,23 +1820,25 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 							fb = active_write_fb;
 						if (fb) {
 							gpu_free_texture(&texture_slots[i]);
-							if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
+							if (fb->depthbuffer_ptr) {
 								mark_as_dirty(fb->depthbuffer_ptr->depthData);
 								fb->depthbuffer_ptr = NULL;
-								fb->is_depth_hidden = GL_FALSE;
+								fb->depthbuffer_state = DEPTHBUFFER_MISSING;
 							}
 							if (fb->target) {
 								mark_rt_as_dirty(fb->target);
 								fb->target = NULL;
 							}
 							fb->tex = NULL;
-						} else
+						} else {
 							texture_slots[i].dirty = GL_TRUE;
+						}
 					} else {
 						texture_slots[i].dirty = GL_TRUE;
 					}
-				else
+				} else {
 					gpu_free_texture(&texture_slots[i]);
+				}
 				break;
 			case TEX_UNINITIALIZED:
 				texture_slots[i].status = TEX_UNUSED;

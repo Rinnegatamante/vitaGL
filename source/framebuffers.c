@@ -31,35 +31,6 @@ framebuffer *active_read_fb = NULL; // Current readback framebuffer in use
 framebuffer *active_write_fb = NULL; // Current write framebuffer in use
 renderbuffer *active_rb = NULL; // Current renderbuffer in use
 
-uint32_t get_color_from_texture(SceGxmTextureFormat type) {
-	switch (type) {
-	case SCE_GXM_TEXTURE_FORMAT_U8_R:
-		return SCE_GXM_COLOR_FORMAT_U8_R;
-	case SCE_GXM_TEXTURE_FORMAT_U8U8_00GR:
-		return SCE_GXM_COLOR_FORMAT_U8U8_GR;
-	case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
-		return SCE_GXM_COLOR_FORMAT_U8U8U8_BGR;
-	case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
-		return SCE_GXM_COLOR_FORMAT_U5U6U5_RGB;
-	case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-		return SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR;
-	case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
-		return SCE_GXM_COLOR_FORMAT_U8U8U8U8_ARGB;
-	case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
-		return SCE_GXM_COLOR_FORMAT_U4U4U4U4_ABGR;
-	case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA:
-		return SCE_GXM_COLOR_FORMAT_U4U4U4U4_RGBA;
-	case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
-		return SCE_GXM_COLOR_FORMAT_U1U5U5U5_ABGR;
-	case SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA:
-		return SCE_GXM_COLOR_FORMAT_U5U5U5U1_RGBA;
-	case SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA:
-		return SCE_GXM_COLOR_FORMAT_F16F16F16F16_RGBA;
-	default:
-		SET_GL_ERROR_WITH_RET_AND_VALUE(GL_INVALID_ENUM, 0, type)
-	}
-}
-
 uint32_t get_alpha_channel_size(SceGxmColorFormat type) {
 	switch (type) {
 	case SCE_GXM_COLOR_FORMAT_U8_R:
@@ -240,7 +211,7 @@ inline __attribute__((always_inline)) void glGenFramebuffers(GLsizei n, GLuint *
 		if (!framebuffers[i].active) {
 			ids[j++] = (GLuint)&framebuffers[i];
 			framebuffers[i].active = GL_TRUE;
-			framebuffers[i].is_depth_hidden = GL_FALSE;
+			framebuffers[i].depthbuffer_state = DEPTHBUFFER_MISSING;
 			framebuffers[i].depthbuffer_ptr = NULL;
 			framebuffers[i].target = NULL;
 			framebuffers[i].tex = NULL;
@@ -267,6 +238,7 @@ void glGenRenderbuffers(GLsizei n, GLuint *ids) {
 		if (!renderbuffers[i].active) {
 			ids[j++] = (GLuint)&renderbuffers[i];
 			renderbuffers[i].active = GL_TRUE;
+			renderbuffers[i].wants_stencil = GL_FALSE;
 		}
 		if (j >= n)
 			break;
@@ -285,10 +257,12 @@ void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
 		framebuffer *fb = (framebuffer *)ids[--n];
 		if (fb) {
 			// Check if the framebuffer is currently bound
-			if (fb == active_read_fb)
+			if (fb == active_read_fb) {
 				active_read_fb = NULL;
-			if (fb == active_write_fb)
+			}
+			if (fb == active_write_fb) {
 				active_write_fb = NULL;
+			}
 
 			fb->active = GL_FALSE;
 			if (fb->tex) {
@@ -298,10 +272,11 @@ void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
 				}
 				fb->tex = NULL;
 			}
-			if (fb->target)
+			if (fb->target) {
 				mark_rt_as_dirty(fb->target);
+			}
 #ifndef DEPTH_STENCIL_HACK
-			if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
+			if (fb->depthbuffer_ptr) {
 				mark_as_dirty(fb->depthbuffer_ptr->depthData);
 			}
 #endif
@@ -320,23 +295,7 @@ void glDeleteRenderbuffers(GLsizei n, const GLuint *ids) {
 	while (n > 0) {
 		renderbuffer *rb = (renderbuffer *)ids[--n];
 		if (rb) {
-			// Check if the framebuffer is currently bound
-			if (active_read_fb && active_read_fb->depthbuffer_ptr == &rb->depthbuffer)
-				active_read_fb->depthbuffer_ptr = NULL;
-			if (active_write_fb && active_write_fb->depthbuffer_ptr == &rb->depthbuffer)
-				active_write_fb->depthbuffer_ptr = NULL;
-			if (active_rb == rb)
-				active_rb = NULL;
-
 			rb->active = GL_FALSE;
-#ifndef DEPTH_STENCIL_HACK
-			if (rb->depthbuffer_ptr) {
-				mark_as_dirty(rb->depthbuffer_ptr->depthData);
-				if (rb->depthbuffer_ptr->stencilData) {
-					mark_as_dirty(rb->depthbuffer_ptr->stencilData);
-				}
-			}
-#endif
 		}
 	}
 }
@@ -400,21 +359,18 @@ void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbu
 #endif
 
 	// Discarding any previously bound hidden depth buffers
-	if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
+	if (fb->depthbuffer_ptr) {
 #ifndef DEPTH_STENCIL_HACK
 		mark_as_dirty(fb->depthbuffer_ptr->depthData);
 #endif
-		fb->is_depth_hidden = GL_FALSE;
 	}
+	fb->depthbuffer_ptr = NULL;
 
 	switch (attachment) {
 	case GL_DEPTH_STENCIL_ATTACHMENT:
 	case GL_DEPTH_ATTACHMENT:
 	case GL_STENCIL_ATTACHMENT:
-		if (rb)
-			fb->depthbuffer_ptr = ((renderbuffer *)rb)->depthbuffer_ptr;
-		else
-			fb->depthbuffer_ptr = NULL;
+		fb->depthbuffer_state = (rb && ((renderbuffer *)rb)->wants_stencil) ? DEPTHBUFFER_WANTS_STENCIL : DEPTHBUFFER_MISSING;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, attachment)
@@ -435,21 +391,18 @@ void glNamedFramebufferRenderbuffer(GLuint target, GLenum attachment, GLenum ren
 	framebuffer *fb = (framebuffer *)target;
 
 	// Discarding any previously bound hidden depth buffers
-	if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
+	if (fb->depthbuffer_ptr) {
 #ifndef DEPTH_STENCIL_HACK
 		mark_as_dirty(fb->depthbuffer_ptr->depthData);
 #endif
-		fb->is_depth_hidden = GL_FALSE;
+		fb->depthbuffer_ptr = NULL;
 	}
 
 	switch (attachment) {
 	case GL_DEPTH_STENCIL_ATTACHMENT:
 	case GL_DEPTH_ATTACHMENT:
 	case GL_STENCIL_ATTACHMENT:
-		if (rb)
-			fb->depthbuffer_ptr = ((renderbuffer *)rb)->depthbuffer_ptr;
-		else
-			fb->depthbuffer_ptr = NULL;
+		fb->depthbuffer_state = (rb && ((renderbuffer *)rb)->wants_stencil) ? DEPTHBUFFER_WANTS_STENCIL : DEPTHBUFFER_MISSING;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, attachment)
@@ -467,61 +420,41 @@ void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, 
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-#ifndef DEPTH_STENCIL_HACK
-	if (active_rb->depthbuffer_ptr) {
-		mark_as_dirty(active_rb->depthbuffer_ptr->depthData);
-		if (active_rb->depthbuffer_ptr->stencilData) {
-			mark_as_dirty(active_rb->depthbuffer_ptr->stencilData);
-		}
-	}
-#endif
+
 	switch (internalformat) {
 	case GL_DEPTH24_STENCIL8:
 	case GL_DEPTH32F_STENCIL8:
-		init_depth_stencil_buffer(width, height, &active_rb->depthbuffer, GL_TRUE);
+		active_rb->wants_stencil = GL_TRUE;
 		break;
 	case GL_DEPTH_COMPONENT:
 	case GL_DEPTH_COMPONENT16:
 	case GL_DEPTH_COMPONENT24:
 	case GL_DEPTH_COMPONENT32:
 	case GL_DEPTH_COMPONENT32F:
-		init_depth_stencil_buffer(width, height, &active_rb->depthbuffer, GL_FALSE);
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalformat)
 	}
-
-	active_rb->depthbuffer_ptr = &active_rb->depthbuffer;
 }
 
 void glNamedRenderbufferStorage(GLuint target, GLenum internalformat, GLsizei width, GLsizei height) {
 	THREAD_SAFE()
 
 	renderbuffer *rb = (renderbuffer *)target;
-#ifndef DEPTH_STENCIL_HACK
-	if (rb->depthbuffer_ptr) {
-		mark_as_dirty(rb->depthbuffer_ptr->depthData);
-		if (rb->depthbuffer_ptr->stencilData)
-			mark_as_dirty(rb->depthbuffer_ptr->stencilData);
-	}
-#endif
 	switch (internalformat) {
 	case GL_DEPTH24_STENCIL8:
 	case GL_DEPTH32F_STENCIL8:
-		init_depth_stencil_buffer(width, height, &rb->depthbuffer, GL_TRUE);
+		rb->wants_stencil = GL_TRUE;
 		break;
 	case GL_DEPTH_COMPONENT:
 	case GL_DEPTH_COMPONENT16:
 	case GL_DEPTH_COMPONENT24:
 	case GL_DEPTH_COMPONENT32:
 	case GL_DEPTH_COMPONENT32F:
-		init_depth_stencil_buffer(width, height, &rb->depthbuffer, GL_FALSE);
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, internalformat)
 	}
-
-	rb->depthbuffer_ptr = &rb->depthbuffer;
 }
 
 inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint tex_id, GLint level) {
@@ -548,72 +481,8 @@ inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum text
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, textarget)
 	}
 #endif
-
-	// Aliasing to make code more readable
-	texture *tex = &texture_slots[tex_id];
-
-	// Extracting texture data
-	int old_w = fb->width, old_h = fb->height;
-	SceGxmTextureFormat fmt = vglGetTexFormat(&tex->gxm_tex);
-
-	// Detecting requested attachment
-	switch (attachment) {
-	case GL_COLOR_ATTACHMENT0:
-		vglGetTexSizes(&tex->gxm_tex, &fb->width, &fb->height);
-		fb->stride = VGL_ALIGN(fb->width, 8) * tex_format_to_bytespp(fmt);
-		fb->data = vglGetTexData(&tex->gxm_tex);
-		fb->format = tex->format;
-		// Discarding any previously bound hidden depth buffer
-		if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
-#ifndef DEPTH_STENCIL_HACK
-			mark_as_dirty(fb->depthbuffer_ptr->depthData);
-#endif
-			fb->depthbuffer_ptr = NULL;
-			fb->is_depth_hidden = GL_FALSE;
-		}
-
-		// Clearing previously attached texture
-		if (fb->tex) {
-			fb->tex->ref_counter--;
-			if (fb->tex->dirty && fb->tex->ref_counter == 0) {
-				gpu_free_texture(fb->tex);
-			}
-		}
-
-		// Detaching attached texture if passed texture ID is 0
-		if (tex_id == 0) {
-			if (fb->target) {
-				mark_rt_as_dirty(fb->target);
-				fb->target = NULL;
-			}
-			fb->tex = NULL;
-			return;
-		} else if (fb->target && (old_w != fb->width || old_h != fb->height)) {
-			mark_rt_as_dirty(fb->target);
-			fb->target = NULL;
-		}
-
-		// Increasing texture reference counter
-		fb->tex = tex;
-		tex->ref_counter++;
-
-		// Checking if the framebuffer requires extended register size
-		fb->is_float = tex->format == SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
-
-		// Allocating colorbuffer
-		sceGxmColorSurfaceInit(&fb->colorbuffer, get_color_from_texture(fmt), SCE_GXM_COLOR_SURFACE_LINEAR,
-			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
-			fb->is_float ? SCE_GXM_OUTPUT_REGISTER_SIZE_64BIT : SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-			fb->width, fb->height, VGL_ALIGN(fb->width, 8), fb->data);
-		
-		// Invalidating current framebuffer if we update its bound texture to force a scene reset
-		if (in_use_framebuffer == active_write_fb) {
-			dirty_framebuffer = GL_TRUE;
-		}
-		break;
-	default:
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, attachment)
-	}
+	
+	_glFramebufferTexture2D(fb, attachment, &texture_slots[tex_id], tex_id);
 }
 
 inline void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum textarget, GLuint tex_id, GLint level) {
@@ -628,72 +497,8 @@ inline void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, textarget)
 	}
 #endif
-
-	// Aliasing to make code more readable
-	texture *tex = &texture_slots[tex_id];
-
-	// Extracting texture data
-	int old_w = fb->width, old_h = fb->height;
-
-	// Detecting requested attachment
-	switch (attachment) {
-	case GL_COLOR_ATTACHMENT0:
-		vglGetTexSizes(&tex->gxm_tex, &fb->width, &fb->height);
-		fb->stride = VGL_ALIGN(fb->width, 8) * tex_format_to_bytespp(tex->format);
-		fb->data = vglGetTexData(&tex->gxm_tex);
-		fb->format = tex->format;
-
-		// Discarding any previously bound hidden depth buffer
-		if (fb->depthbuffer_ptr && fb->is_depth_hidden) {
-#ifndef DEPTH_STENCIL_HACK
-			mark_as_dirty(fb->depthbuffer_ptr->depthData);
-#endif
-			fb->depthbuffer_ptr = NULL;
-			fb->is_depth_hidden = GL_FALSE;
-		}
 	
-		// Clearing previously attached texture
-		if (fb->tex) {
-			fb->tex->ref_counter--;
-			if (fb->tex->dirty && fb->tex->ref_counter == 0) {
-				gpu_free_texture(fb->tex);
-			}
-		}
-
-		// Detaching attached texture if passed texture ID is 0
-		if (tex_id == 0) {
-			if (fb->target) {
-				mark_rt_as_dirty(fb->target);
-				fb->target = NULL;
-			}
-			fb->tex = NULL;
-			return;
-		} else if (fb->target && (old_w != fb->width || old_h != fb->height)) {
-			mark_rt_as_dirty(fb->target);
-			fb->target = NULL;
-		}
-
-		// Increasing texture reference counter
-		fb->tex = tex;
-		tex->ref_counter++;
-
-		// Checking if the framebuffer requires extended register size
-		fb->is_float = tex->format == SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
-
-		// Allocating colorbuffer
-		sceGxmColorSurfaceInit(&fb->colorbuffer, get_color_from_texture(tex->format), SCE_GXM_COLOR_SURFACE_LINEAR,
-			msaa_mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
-			fb->is_float ? SCE_GXM_OUTPUT_REGISTER_SIZE_64BIT : SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-			fb->width, fb->height, VGL_ALIGN(fb->width, 8), fb->data);
-		
-		// Invalidating current framebuffer if we update its bound texture to force a scene reset
-		if (in_use_framebuffer == active_write_fb) {
-			dirty_framebuffer = GL_TRUE;
-		}
-		break;
-	default:
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, attachment)
-	}
+	_glFramebufferTexture2D(fb, attachment, &texture_slots[tex_id], tex_id);
 }
 
 void glFramebufferTexture(GLenum target, GLenum attachment, GLuint tex_id, GLint level) {

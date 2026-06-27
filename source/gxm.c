@@ -82,6 +82,8 @@ uint32_t shaders_draw_cnt = 0;
 static uint32_t gpu_stall_cnt = 0;
 #endif
 
+extern void _glFramebufferTexture2D(framebuffer *fb, GLenum attachment, texture *tex, GLuint tex_id);
+
 int DISPLAY_WIDTH; // Display width in pixels
 int DISPLAY_HEIGHT; // Display height in pixels
 int DISPLAY_STRIDE; // Display stride in pixels
@@ -620,11 +622,16 @@ void scene_reset(void) {
 			}
 #endif
 		} else {
-			// If a depthstencil surface is not bound to the in use framebuffer, we get one for it to ensure scissor testing compatibility
-			if (!active_write_fb->depthbuffer_ptr) {
-				init_depth_stencil_buffer(active_write_fb->width, active_write_fb->height, &active_write_fb->depthbuffer, GL_FALSE);
+			// Double check that colorsurface and target texture are synced
+			if (sceGxmColorSurfaceGetData(&active_write_fb->colorbuffer) != active_write_fb->tex->data) {
+				_glFramebufferTexture2D(active_write_fb, GL_COLOR_ATTACHMENT0, active_write_fb->tex, 1);
+			}
+			
+			// If the depthbuffer is dirty, we re-gen it
+			if (active_write_fb->depthbuffer_state < DEPTHBUFFER_READY) {
+				init_depth_stencil_buffer(active_write_fb->width, active_write_fb->height, &active_write_fb->depthbuffer, active_write_fb->depthbuffer_state == DEPTHBUFFER_WANTS_STENCIL);
 				active_write_fb->depthbuffer_ptr = &active_write_fb->depthbuffer;
-				active_write_fb->is_depth_hidden = GL_TRUE;
+				active_write_fb->depthbuffer_state = active_write_fb->depthbuffer_state == DEPTHBUFFER_WANTS_STENCIL ? DEPTHBUFFER_READY_WITH_STENCIL : DEPTHBUFFER_READY;
 			}
 
 			// If a rendertarget is not bound to the in use framebuffer, we get one for it
@@ -648,11 +655,6 @@ void scene_reset(void) {
 					active_write_fb->target = (SceGxmRenderTarget *)get_free_render_target(active_write_fb->width, active_write_fb->height);
 				}
 			}
-#endif
-#ifdef HAVE_TEX_CACHE
-			// FIXME: This may be useful even without texture cache enabled maybe?
-			if (sceGxmColorSurfaceGetData(&active_write_fb->colorbuffer) != active_write_fb->tex->data)
-				sceGxmColorSurfaceSetData(&active_write_fb->colorbuffer, active_write_fb->tex->data);
 #endif
 #ifdef HAVE_SHARED_RENDERTARGETS
 			render_target *fbo_rt = (render_target *)active_write_fb->target;
