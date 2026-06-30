@@ -531,8 +531,7 @@ typedef struct {
 enum {
 	DEPTHBUFFER_MISSING,
 	DEPTHBUFFER_WANTS_STENCIL,
-	DEPTHBUFFER_READY,
-	DEPTHBUFFER_READY_WITH_STENCIL
+	DEPTHBUFFER_READY
 };
 
 // Framebuffer struct
@@ -1313,7 +1312,7 @@ static inline __attribute__((always_inline)) void _glFramebufferTexture2D(frameb
 				mark_as_dirty(fb->depthbuffer_ptr->depthData);
 #endif
 				fb->depthbuffer_ptr = NULL;
-				fb->depthbuffer_state = DEPTHBUFFER_READY ? DEPTHBUFFER_MISSING : DEPTHBUFFER_WANTS_STENCIL;
+				fb->depthbuffer_state &= ~DEPTHBUFFER_READY;
 			}
 		}
 

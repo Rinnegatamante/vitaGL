@@ -628,10 +628,10 @@ void scene_reset(void) {
 			}
 			
 			// If the depthbuffer is dirty, we re-gen it
-			if (active_write_fb->depthbuffer_state < DEPTHBUFFER_READY) {
+			if (!(active_write_fb->depthbuffer_state & DEPTHBUFFER_READY)) {
 				init_depth_stencil_buffer(active_write_fb->width, active_write_fb->height, &active_write_fb->depthbuffer, active_write_fb->depthbuffer_state == DEPTHBUFFER_WANTS_STENCIL);
 				active_write_fb->depthbuffer_ptr = &active_write_fb->depthbuffer;
-				active_write_fb->depthbuffer_state = active_write_fb->depthbuffer_state == DEPTHBUFFER_WANTS_STENCIL ? DEPTHBUFFER_READY_WITH_STENCIL : DEPTHBUFFER_READY;
+				active_write_fb->depthbuffer_state &= DEPTHBUFFER_READY;
 			}
 
 			// If a rendertarget is not bound to the in use framebuffer, we get one for it
