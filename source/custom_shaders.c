@@ -2419,8 +2419,8 @@ void glUseProgram(GLuint prog) {
 	cur_program = prog;
 	dirty_shader_frag_unifs = GL_TRUE;
 	dirty_shader_vert_unifs = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
-	dirty_frag_unifs = GL_TRUE;
+	dirty_vert_unifs = 0xFFFF;
+	dirty_frag_unifs = 0xFFFFFFFF;
 }
 
 GLuint glGetUniformBlockIndex(GLuint prog, const GLchar *uniformBlockName) {

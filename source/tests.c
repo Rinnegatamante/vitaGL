@@ -216,7 +216,6 @@ inline __attribute__((always_inline)) GLboolean change_stencil_func_config(SceGx
 
 inline __attribute__((always_inline)) void update_alpha_test_settings() {
 	ffp_dirty_frag = GL_TRUE;
-	dirty_frag_unifs = GL_TRUE;
 
 	// Translating openGL alpha test operation to internal one
 	if (alpha_test_state) {

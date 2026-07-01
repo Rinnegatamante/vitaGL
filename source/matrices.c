@@ -23,6 +23,18 @@
 
 #include "shared.h"
 
+#define flag_dirty_matrix_unif() \
+	if (matrix == &modelview_matrix) { \
+		flag_dirty_vert_unif(MODELVIEW_MATRIX_UNIF) \
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF) \
+		mvp_modified = GL_TRUE; \
+	} else if (matrix == &projection_matrix) { \
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF) \
+		mvp_modified = GL_TRUE; \
+	} else { \
+		flag_dirty_vert_unif(TEX_MATRIX_UNIF) \
+	}
+
 matrix4x4 modelview_matrix_stack[MODELVIEW_STACK_DEPTH]; // Modelview matrices stack
 static uint8_t modelview_stack_counter = 1; // Modelview matrices stack counter
 matrix4x4 projection_matrix_stack[GENERIC_STACK_DEPTH]; // Projection matrices stack
@@ -84,13 +96,17 @@ void glMatrixLoadf(GLenum mode, const GLfloat *m) {
 	case GL_MODELVIEW: // Modelview matrix
 		mat = &modelview_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(MODELVIEW_MATRIX_UNIF)
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_PROJECTION: // Projection matrix
 		mat = &projection_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_TEXTURE: // Texture matrix
 		mat = &texture_matrix[server_texture_unit];
+		flag_dirty_vert_unif(TEX_MATRIX_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
@@ -103,8 +119,6 @@ void glMatrixLoadf(GLenum mode, const GLfloat *m) {
 			(*mat)[i][j] = m[j * 4 + i];
 		}
 	}
-
-	dirty_vert_unifs = GL_TRUE;
 }
 
 void glMatrixLoadd(GLenum mode, const GLdouble *m) {
@@ -116,13 +130,17 @@ void glMatrixLoadd(GLenum mode, const GLdouble *m) {
 	case GL_MODELVIEW: // Modelview matrix
 		mat = &modelview_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(MODELVIEW_MATRIX_UNIF)
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_PROJECTION: // Projection matrix
 		mat = &projection_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_TEXTURE: // Texture matrix
 		mat = &texture_matrix[server_texture_unit];
+		flag_dirty_vert_unif(TEX_MATRIX_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
@@ -135,8 +153,6 @@ void glMatrixLoadd(GLenum mode, const GLdouble *m) {
 			(*mat)[i][j] = m[j * 4 + i];
 		}
 	}
-
-	dirty_vert_unifs = GL_TRUE;
 }
 
 inline void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal) {
@@ -161,9 +177,7 @@ inline void glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, G
 	matrix4x4_copy(*matrix, res);
 #endif
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal) {
@@ -196,9 +210,7 @@ inline void glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top,
 	matrix4x4_copy(*matrix, res);
 #endif
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glFrustumx(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed nearVal, GLfixed farVal) {
@@ -223,9 +235,7 @@ void glFrustumx(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixe
 	matrix4x4_copy(*matrix, res);
 #endif
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal) {
@@ -239,20 +249,22 @@ void glMatrixLoadIdentity(GLenum mode) {
 	switch (mode) {
 	case GL_MODELVIEW: // Modelview matrix
 		matrix4x4_identity(modelview_matrix);
+		flag_dirty_vert_unif(MODELVIEW_MATRIX_UNIF)
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		mvp_modified = GL_TRUE;
 		break;
 	case GL_PROJECTION: // Projection matrix
 		matrix4x4_identity(projection_matrix);
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		mvp_modified = GL_TRUE;
 		break;
 	case GL_TEXTURE: // Texture matrix
 		matrix4x4_identity(texture_matrix[server_texture_unit]);
+		flag_dirty_vert_unif(TEX_MATRIX_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
 	}
-
-	dirty_vert_unifs = GL_TRUE;
 }
 
 void glLoadIdentity(void) {
@@ -265,9 +277,7 @@ void glLoadIdentity(void) {
 #endif
 	// Set current in use matrix to identity one
 	matrix4x4_identity(*matrix);
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glMultMatrixf(const GLfloat *m) {
@@ -286,9 +296,7 @@ void glMultMatrixf(const GLfloat *m) {
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glMultMatrixd(const GLdouble *m) {
@@ -307,9 +315,7 @@ void glMultMatrixd(const GLdouble *m) {
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;	
+	flag_dirty_matrix_unif()
 }
 
 void glMatrixMultd(GLenum mode, const GLdouble *m) {
@@ -321,13 +327,17 @@ void glMatrixMultd(GLenum mode, const GLdouble *m) {
 	case GL_MODELVIEW: // Modelview matrix
 		mat = &modelview_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(MODELVIEW_MATRIX_UNIF)
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_PROJECTION: // Projection matrix
 		mat = &projection_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_TEXTURE: // Texture matrix
 		mat = &texture_matrix[server_texture_unit];
+		flag_dirty_vert_unif(TEX_MATRIX_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
@@ -347,8 +357,6 @@ void glMatrixMultd(GLenum mode, const GLdouble *m) {
 
 	// Copying result to in use matrix
 	matrix4x4_copy(*mat, res);
-
-	dirty_vert_unifs = GL_TRUE;
 }
 
 void glMatrixMultf(GLenum mode, const GLfloat *m) {
@@ -360,13 +368,17 @@ void glMatrixMultf(GLenum mode, const GLfloat *m) {
 	case GL_MODELVIEW: // Modelview matrix
 		mat = &modelview_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(MODELVIEW_MATRIX_UNIF)
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_PROJECTION: // Projection matrix
 		mat = &projection_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_TEXTURE: // Texture matrix
 		mat = &texture_matrix[server_texture_unit];
+		flag_dirty_vert_unif(TEX_MATRIX_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
@@ -386,8 +398,6 @@ void glMatrixMultf(GLenum mode, const GLfloat *m) {
 
 	// Copying result to in use matrix
 	matrix4x4_copy(*mat, res);
-
-	dirty_vert_unifs = GL_TRUE;
 }
 
 void glMultTransposeMatrixd(const GLdouble *m) {
@@ -408,10 +418,7 @@ void glMultTransposeMatrixd(const GLdouble *m) {
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glMultTransposeMatrixf(const GLfloat *m) {
@@ -432,10 +439,7 @@ void glMultTransposeMatrixf(const GLfloat *m) {
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	else
-		dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glMultMatrixx(const GLfixed *m) {
@@ -456,9 +460,7 @@ void glMultMatrixx(const GLfixed *m) {
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glMultTransposeMatrixx(const GLfixed *m) {
@@ -479,9 +481,7 @@ void glMultTransposeMatrixx(const GLfixed *m) {
 	// Copying result to in use matrix
 	matrix4x4_copy(*matrix, res);
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glLoadMatrixf(const GLfloat *m) {
@@ -495,9 +495,7 @@ void glLoadMatrixf(const GLfloat *m) {
 		}
 	}
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glLoadMatrixd(const GLdouble *m) {
@@ -511,9 +509,7 @@ void glLoadMatrixd(const GLdouble *m) {
 		}
 	}
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glLoadTransposeMatrixf(const GLfloat *m) {
@@ -527,9 +523,7 @@ void glLoadTransposeMatrixf(const GLfloat *m) {
 		}
 	}
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glLoadMatrixx(const GLfixed *m) {
@@ -543,9 +537,7 @@ void glLoadMatrixx(const GLfixed *m) {
 		}
 	}
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glLoadTransposeMatrixx(const GLfixed *m) {
@@ -559,9 +551,7 @@ void glLoadTransposeMatrixx(const GLfixed *m) {
 		}
 	}
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glMatrixRotatef(GLenum mode, GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
@@ -573,13 +563,17 @@ void glMatrixRotatef(GLenum mode, GLfloat angle, GLfloat x, GLfloat y, GLfloat z
 	case GL_MODELVIEW: // Modelview matrix
 		mat = &modelview_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(MODELVIEW_MATRIX_UNIF)
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_PROJECTION: // Projection matrix
 		mat = &projection_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_TEXTURE: // Texture matrix
 		mat = &texture_matrix[server_texture_unit];
+		flag_dirty_vert_unif(TEX_MATRIX_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
@@ -588,7 +582,6 @@ void glMatrixRotatef(GLenum mode, GLfloat angle, GLfloat x, GLfloat y, GLfloat z
 	// Performing rotation on in use matrix depending on user call
 	float rad = DEG_TO_RAD(angle);
 	matrix4x4_rotate(*mat, rad, x, y, z);
-	dirty_vert_unifs = GL_TRUE;
 }
 
 void glMatrixRotated(GLenum matrixMode, GLdouble angle, GLdouble x, GLdouble y, GLdouble z) {
@@ -604,13 +597,17 @@ void glMatrixScalef(GLenum mode, GLfloat x, GLfloat y, GLfloat z) {
 	case GL_MODELVIEW: // Modelview matrix
 		mat = &modelview_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(MODELVIEW_MATRIX_UNIF)
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_PROJECTION: // Projection matrix
 		mat = &projection_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_TEXTURE: // Texture matrix
 		mat = &texture_matrix[server_texture_unit];
+		flag_dirty_vert_unif(TEX_MATRIX_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
@@ -618,7 +615,6 @@ void glMatrixScalef(GLenum mode, GLfloat x, GLfloat y, GLfloat z) {
 	
 	// Scaling in use matrix
 	matrix4x4_scale(*mat, x, y, z);
-	dirty_vert_unifs = GL_TRUE;
 }
 
 void glMatrixScaled(GLenum matrixMode, GLdouble x, GLdouble y, GLdouble z) {
@@ -634,13 +630,17 @@ void glMatrixTranslatef(GLenum mode, GLfloat x, GLfloat y, GLfloat z) {
 	case GL_MODELVIEW: // Modelview matrix
 		mat = &modelview_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(MODELVIEW_MATRIX_UNIF)
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_PROJECTION: // Projection matrix
 		mat = &projection_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_TEXTURE: // Texture matrix
 		mat = &texture_matrix[server_texture_unit];
+		flag_dirty_vert_unif(TEX_MATRIX_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
@@ -648,7 +648,6 @@ void glMatrixTranslatef(GLenum mode, GLfloat x, GLfloat y, GLfloat z) {
 	
 	// Translating in use matrix
 	matrix4x4_translate(*mat, x, y, z);
-	dirty_vert_unifs = GL_TRUE;
 }
 
 void glMatrixTranslated(GLenum matrixMode, GLdouble x, GLdouble y, GLdouble z) {
@@ -664,13 +663,17 @@ void glMatrixOrtho(GLenum mode, GLdouble left, GLdouble right, GLdouble bottom, 
 	case GL_MODELVIEW: // Modelview matrix
 		mat = &modelview_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(MODELVIEW_MATRIX_UNIF)
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_PROJECTION: // Projection matrix
 		mat = &projection_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_TEXTURE: // Texture matrix
 		mat = &texture_matrix[server_texture_unit];
+		flag_dirty_vert_unif(TEX_MATRIX_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
@@ -685,8 +688,6 @@ void glMatrixOrtho(GLenum mode, GLdouble left, GLdouble right, GLdouble bottom, 
 	matrix4x4_multiply(res, *mat, ortho_matrix);
 	matrix4x4_copy(*mat, res);
 #endif
-
-	dirty_vert_unifs = GL_TRUE;
 }
 
 void glMatrixFrustum(GLenum mode, GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble nearVal, GLdouble farVal) {
@@ -698,13 +699,17 @@ void glMatrixFrustum(GLenum mode, GLdouble left, GLdouble right, GLdouble bottom
 	case GL_MODELVIEW: // Modelview matrix
 		mat = &modelview_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(MODELVIEW_MATRIX_UNIF)
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_PROJECTION: // Projection matrix
 		mat = &projection_matrix;
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		break;
 	case GL_TEXTURE: // Texture matrix
 		mat = &texture_matrix[server_texture_unit];
+		flag_dirty_vert_unif(TEX_MATRIX_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
@@ -719,8 +724,6 @@ void glMatrixFrustum(GLenum mode, GLdouble left, GLdouble right, GLdouble bottom
 	matrix4x4_multiply(res, *mat, frustum_matrix);
 	matrix4x4_copy(*mat, res);
 #endif
-
-	dirty_vert_unifs = GL_TRUE;
 }
 
 void glMatrixPush(GLenum mode) {
@@ -788,6 +791,8 @@ void glMatrixPop(GLenum mode) {
 			// Copying last matrix on stack into current matrix and decreasing stack counter
 			matrix4x4_copy(modelview_matrix, modelview_matrix_stack[--modelview_stack_counter]);
 			mvp_modified = GL_TRUE;
+			flag_dirty_vert_unif(MODELVIEW_MATRIX_UNIF)
+			flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		}
 		break;
 	case GL_PROJECTION: // Projection matrix
@@ -801,6 +806,7 @@ void glMatrixPop(GLenum mode) {
 			// Copying last matrix on stack into current matrix and decreasing stack counter
 			matrix4x4_copy(projection_matrix, projection_matrix_stack[--projection_stack_counter]);
 			mvp_modified = GL_TRUE;
+			flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 		}
 		break;
 	case GL_TEXTURE: // Texture matrix
@@ -815,13 +821,12 @@ void glMatrixPop(GLenum mode) {
 #endif
 			// Copying last matrix on stack into current matrix and decreasing stack counter
 			matrix4x4_copy(texture_matrix[server_texture_unit], tex_unit->texture_matrix_stack[--tex_unit->texture_stack_counter]);
+			flag_dirty_vert_unif(TEX_MATRIX_UNIF)
 		}
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
 	}
-
-	dirty_vert_unifs = GL_TRUE;
 }
 
 void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
@@ -841,9 +846,7 @@ void glTranslatef(GLfloat x, GLfloat y, GLfloat z) {
 
 	// Translating in use matrix
 	matrix4x4_translate(*matrix, x, y, z);
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glTranslated(GLdouble x, GLdouble y, GLdouble z) {
@@ -855,9 +858,7 @@ void glTranslatex(GLfixed x, GLfixed y, GLfixed z) {
 
 	// Translating in use matrix
 	matrix4x4_translate(*matrix, (float)x / 65536.0f, (float)y / 65536.0f, (float)z / 65536.0f);
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glScalef(GLfloat x, GLfloat y, GLfloat z) {
@@ -877,9 +878,7 @@ void glScalef(GLfloat x, GLfloat y, GLfloat z) {
 
 	// Scaling in use matrix
 	matrix4x4_scale(*matrix, x, y, z);
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glScaled(GLdouble x, GLdouble y, GLdouble z) {
@@ -891,9 +890,7 @@ void glScalex(GLfixed x, GLfixed y, GLfixed z) {
 
 	// Scaling in use matrix
 	matrix4x4_scale(*matrix, (float)x / 65536.0f, (float)y / 65536.0f, (float)z / 65536.0f);
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 inline void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
@@ -914,9 +911,7 @@ inline void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 	// Performing rotation on in use matrix depending on user call
 	float rad = DEG_TO_RAD(angle);
 	matrix4x4_rotate(*matrix, rad, x, y, z);
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glRotated(GLdouble angle, GLdouble x, GLdouble y, GLdouble z) {
@@ -937,9 +932,7 @@ void glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z) {
 	float rad = DEG_TO_RAD((float)angle / 65536.0f);
 	matrix4x4_rotate(*matrix, rad, (float)x / 65536.0f, (float)y / 65536.0f, (float)z / 65536.0f);
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void glPushMatrix(void) {
@@ -1014,6 +1007,8 @@ void glPopMatrix(void) {
 
 		// MVP matrix will have to be updated
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(MODELVIEW_MATRIX_UNIF)
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 	} else if (matrix == &projection_matrix) {
 #ifndef SKIP_ERROR_HANDLING
 		// Error handling
@@ -1026,6 +1021,7 @@ void glPopMatrix(void) {
 
 		// MVP matrix will have to be updated
 		mvp_modified = GL_TRUE;
+		flag_dirty_vert_unif(WVP_MATRIX_UNIF)
 	} else if (matrix == &texture_matrix[server_texture_unit]) {
 		texture_unit *tex_unit = &texture_units[server_texture_unit];
 
@@ -1037,8 +1033,8 @@ void glPopMatrix(void) {
 #endif
 		// Copying last matrix on stack into current matrix and decreasing stack counter
 		matrix4x4_copy(*matrix, tex_unit->texture_matrix_stack[--tex_unit->texture_stack_counter]);
+		flag_dirty_vert_unif(TEX_MATRIX_UNIF)
 	}
-	dirty_vert_unifs = GL_TRUE;
 }
 
 void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar) {
@@ -1054,9 +1050,7 @@ void gluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFa
 	// Initializing perspective matrix with requested parameters
 	matrix4x4_init_perspective(*matrix, fovy, aspect, zNear, zFar);
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }
 
 void gluLookAt(GLdouble eyeX, GLdouble eyeY, GLdouble eyeZ, GLdouble centerX, GLdouble centerY, GLdouble centerZ, GLdouble upX, GLdouble upY, GLdouble upZ) {
@@ -1102,7 +1096,5 @@ void gluLookAt(GLdouble eyeX, GLdouble eyeY, GLdouble eyeZ, GLdouble centerX, GL
 	matrix4x4_copy(*matrix, res);
 	matrix4x4_translate(*matrix, -eyeX, -eyeY, -eyeZ);
 
-	if (matrix != &texture_matrix[server_texture_unit])
-		mvp_modified = GL_TRUE;
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_matrix_unif()
 }

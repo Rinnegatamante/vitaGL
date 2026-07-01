@@ -136,6 +136,57 @@ enum {
 	TEX_VALID
 };
 
+typedef enum {
+	LIGHTS_AMBIENTS_V_UNIF, // A
+	LIGHTS_DIFFUSES_V_UNIF, // B
+	LIGHTS_SPECULARS_V_UNIF, // C
+	LIGHTS_POSITIONS_V_UNIF, // D
+	LIGHTS_ATTENUATIONS_V_UNIF, // E
+	LIGHT_GLOBAL_AMBIENT_V_UNIF, // F
+	SHININESS_V_UNIF, // G
+	CLIP_PLANES_EQUATION_UNIF, // H
+	MODELVIEW_MATRIX_UNIF, // I
+	WVP_MATRIX_UNIF, // J
+	TEX_MATRIX_UNIF, // K
+	NORMAL_MATRIX_UNIF, // L
+	POINT_SIZE_UNIF, // M
+	VERTEX_UNIFORMS_NUM
+} vert_uniform_type;
+#define flag_dirty_vert_unif(x) dirty_vert_unifs |= (1 << (x));
+
+typedef enum {
+	LIGHTS_AMBIENTS_F_UNIF, // A
+	LIGHTS_DIFFUSES_F_UNIF, // B
+	LIGHTS_SPECULARS_F_UNIF, // C
+	LIGHTS_POSITIONS_F_UNIF, // D
+	LIGHTS_ATTENUATIONS_F_UNIF, // E
+	LIGHT_GLOBAL_AMBIENT_F_UNIF, // F
+	SHININESS_F_UNIF, // G
+	FOG_DENSITY_UNIF, // H
+	TEX_ENV_COLOR_UNIF, // I
+	ALPHA_CUT_UNIF, // J
+	FOG_COLOR_UNIF, // K
+	TINT_COLOR_UNIF, // L
+	FOG_RANGE_UNIF, // M
+	FOG_FAR_UNIF, // N
+#ifndef DISABLE_TEXTURE_COMBINER
+	SCALE_PASS_0_UNIF, // O
+	SCALE_PASS_1_UNIF, // P
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+	SCALE_PASS_2_UNIF, // Q
+#endif
+#endif
+	FRAGMENT_UNIFORMS_NUM
+} frag_uniform_type;
+#define flag_dirty_frag_unif(x) dirty_frag_unifs |= (1 << (x));
+
+#define flag_dirty_ffp_unif(cnd, x, y) \
+	if (cnd) { \
+		flag_dirty_vert_unif(x) \
+	} else { \
+		flag_dirty_frag_unif(y) \
+	}
+
 // Texture object struct
 typedef struct texture {
 #ifndef TEXTURES_SPEEDHACK
@@ -928,8 +979,8 @@ extern GLboolean has_razor_live; // Flag for live metrics support with sceRazor
 #endif
 
 extern GLboolean is_shark_online; // Current vitaShaRK status
-extern GLboolean dirty_frag_unifs;
-extern GLboolean dirty_vert_unifs;
+extern uint32_t dirty_frag_unifs;
+extern uint16_t dirty_vert_unifs;
 extern GLboolean dirty_shader_frag_unifs;
 extern GLboolean dirty_shader_vert_unifs;
 
