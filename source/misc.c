@@ -790,7 +790,7 @@ void glPointSize(GLfloat size) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_vert_unif(POINT_SIZE_UNIF)
 
 	// Changing point size as requested
 	point_size = size;

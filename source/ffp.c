@@ -229,51 +229,10 @@ typedef union {
 } combiner_mask;
 #endif
 
-typedef enum {
-	LIGHTS_AMBIENTS_V_UNIF, // A
-	LIGHTS_DIFFUSES_V_UNIF, // B
-	LIGHTS_SPECULARS_V_UNIF, // C
-	LIGHTS_POSITIONS_V_UNIF, // D
-	LIGHTS_ATTENUATIONS_V_UNIF, // E
-	LIGHT_GLOBAL_AMBIENT_V_UNIF, // F
-	SHININESS_V_UNIF, // G
-	CLIP_PLANES_EQUATION_UNIF, // H
-	MODELVIEW_MATRIX_UNIF, // I
-	WVP_MATRIX_UNIF, // J
-	TEX_MATRIX_UNIF, // K
-	NORMAL_MATRIX_UNIF, // L
-	POINT_SIZE_UNIF, // M
-	VERTEX_UNIFORMS_NUM
-} vert_uniform_type;
-
-typedef enum {
-	LIGHTS_AMBIENTS_F_UNIF, // A
-	LIGHTS_DIFFUSES_F_UNIF, // B
-	LIGHTS_SPECULARS_F_UNIF, // C
-	LIGHTS_POSITIONS_F_UNIF, // D
-	LIGHTS_ATTENUATIONS_F_UNIF, // E
-	LIGHT_GLOBAL_AMBIENT_F_UNIF, // F
-	SHININESS_F_UNIF, // G
-	FOG_DENSITY_UNIF, // H
-	TEX_ENV_COLOR_UNIF, // I
-	ALPHA_CUT_UNIF, // J
-	FOG_COLOR_UNIF, // K
-	TINT_COLOR_UNIF, // L
-	FOG_RANGE_UNIF, // M
-	FOG_FAR_UNIF, // N
-#ifndef DISABLE_TEXTURE_COMBINER
-	SCALE_PASS_0_UNIF, // O
-	SCALE_PASS_1_UNIF, // P
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-	SCALE_PASS_2_UNIF, // Q
-#endif
-#endif
-	FRAGMENT_UNIFORMS_NUM
-} frag_uniform_type;
-
 typedef struct {
 	SceGxmProgram *prog;
 	uint32_t unif_buf_size;
+	uint8_t *unif_buf;
 	int frag_unifs[FRAGMENT_UNIFORMS_NUM];
 	SceGxmShaderPatcherId id;
 	shader_mask mask;
@@ -284,6 +243,7 @@ typedef struct {
 typedef struct {
 	SceGxmProgram *prog;
 	uint32_t unif_buf_size;
+	uint8_t *unif_buf;
 	int vert_unifs[VERTEX_UNIFORMS_NUM];
 	SceGxmShaderPatcherId id;
 	shader_mask mask;
@@ -296,7 +256,9 @@ int frag_shader_cache_idx = -1;
 int vert_shader_cache_idx = -1;
 uint8_t ffp_vertex_num_params = 1;
 uint32_t ffp_vertex_unif_buf_size;
+uint8_t *ffp_vertex_unif_buf;
 uint32_t ffp_fragment_unif_buf_size;
+uint8_t *ffp_fragment_unif_buf;
 int *ffp_vertex_params;
 int *ffp_fragment_params;
 SceGxmShaderPatcherId ffp_vertex_program_id;
@@ -307,8 +269,8 @@ SceGxmVertexProgram *ffp_vertex_program_patched; // Patched vertex program for t
 SceGxmFragmentProgram *ffp_fragment_program_patched; // Patched fragment program for the fixed function pipeline implementation
 GLboolean ffp_dirty_frag = GL_TRUE;
 GLboolean ffp_dirty_vert = GL_TRUE;
-GLboolean dirty_frag_unifs = GL_TRUE;
-GLboolean dirty_vert_unifs = GL_TRUE;
+uint16_t dirty_vert_unifs = 0xFFFF;
+uint32_t dirty_frag_unifs = 0xFFFFFFFF;
 blend_config ffp_blend_info;
 shader_mask ffp_mask = {.raw = 0xFFFFFFFF};
 GLenum color_material_mode = GL_AMBIENT_AND_DIFFUSE;
@@ -605,23 +567,24 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		ffp_dirty_frag_blend = GL_TRUE; // We need to relink fragment with vertex shader if mask changed
 
 		if ((ffp_mask.raw & VERTEX_SHADER_MASK) == vert_shader_mask) {
-			ffp_dirty_vert = false;
+			ffp_dirty_vert = GL_FALSE;
 		} else {
 			for (int i = 0; i < vert_shader_cache_size; i++) {
 				if (vert_shader_cache[i].mask.raw == vert_shader_mask) {
 					ffp_vertex_program = vert_shader_cache[i].prog;
 					ffp_vertex_program_id = vert_shader_cache[i].id;
 					ffp_vertex_unif_buf_size = vert_shader_cache[i].unif_buf_size;
+					ffp_vertex_unif_buf = vert_shader_cache[i].unif_buf;
 					ffp_vertex_params = vert_shader_cache[i].vert_unifs;
 					ffp_dirty_vert = GL_FALSE;
 					break;
 				}
 			}
-			dirty_vert_unifs = GL_TRUE;
+			dirty_vert_unifs = 0xFFFF;
 		}
 
 		if ((ffp_mask.raw & FRAGMENT_SHADER_MASK) == frag_shader_mask) {
-			ffp_dirty_frag = false;
+			ffp_dirty_frag = GL_FALSE;
 		} else {
 			for (int i = 0; i < frag_shader_cache_size; i++) {
 #ifdef DISABLE_TEXTURE_COMBINER
@@ -636,12 +599,13 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 					ffp_fragment_program = frag_shader_cache[i].prog;
 					ffp_fragment_program_id = frag_shader_cache[i].id;
 					ffp_fragment_unif_buf_size = frag_shader_cache[i].unif_buf_size;
+					ffp_fragment_unif_buf = frag_shader_cache[i].unif_buf;
 					ffp_fragment_params = frag_shader_cache[i].frag_unifs;
 					ffp_dirty_frag = GL_FALSE;
 					break;
 				}
 			}
-			dirty_frag_unifs = GL_TRUE;
+			dirty_frag_unifs = 0xFFFFFFFF;
 		}
 
 		ffp_mask.raw = mask.raw;
@@ -707,6 +671,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		}
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_vertex_program, &ffp_vertex_program_id);
 		ffp_vertex_unif_buf_size = sceGxmProgramGetDefaultUniformBufferSize(ffp_vertex_program);
+		ffp_vertex_unif_buf = vglMalloc(ffp_vertex_unif_buf_size);
 
 		// Adding new shader to RAM cache
 		vert_shader_cache_idx = (vert_shader_cache_idx + 1) % SHADER_CACHE_SIZE;
@@ -715,11 +680,13 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		} else {
 			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, vert_shader_cache[vert_shader_cache_idx].id);
 			vgl_free(vert_shader_cache[vert_shader_cache_idx].prog);
+			vgl_free(vert_shader_cache[vert_shader_cache_idx].unif_buf);
 		}
 		vert_shader_cache[vert_shader_cache_idx].mask.raw = vert_shader_mask;
 		vert_shader_cache[vert_shader_cache_idx].prog = ffp_vertex_program;
 		vert_shader_cache[vert_shader_cache_idx].id = ffp_vertex_program_id;
 		vert_shader_cache[vert_shader_cache_idx].unif_buf_size = ffp_vertex_unif_buf_size;
+		vert_shader_cache[vert_shader_cache_idx].unif_buf = ffp_vertex_unif_buf;
 
 		// Reload existing uniform references
 		reload_vertex_uniforms(vert_shader_cache[vert_shader_cache_idx].vert_unifs);
@@ -999,6 +966,11 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		}
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_fragment_program, &ffp_fragment_program_id);
 		ffp_fragment_unif_buf_size = sceGxmProgramGetDefaultUniformBufferSize(ffp_fragment_program);
+		if (ffp_fragment_unif_buf_size) {
+			ffp_fragment_unif_buf = vglMalloc(ffp_fragment_unif_buf_size);
+		} else {
+			ffp_fragment_unif_buf = NULL;
+		}
 		
 		// Adding new shader to RAM cache
 		frag_shader_cache_idx = (frag_shader_cache_idx + 1) % SHADER_CACHE_SIZE;
@@ -1007,6 +979,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		} else {
 			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, frag_shader_cache[frag_shader_cache_idx].id);
 			vgl_free(frag_shader_cache[frag_shader_cache_idx].prog);
+			if (frag_shader_cache[frag_shader_cache_idx].unif_buf) {
+				vgl_free(frag_shader_cache[frag_shader_cache_idx].unif_buf);
+			}
 		}
 		frag_shader_cache[frag_shader_cache_idx].mask.raw = frag_shader_mask;
 #ifndef DISABLE_TEXTURE_COMBINER
@@ -1020,6 +995,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		frag_shader_cache[frag_shader_cache_idx].prog = ffp_fragment_program;
 		frag_shader_cache[frag_shader_cache_idx].id = ffp_fragment_program_id;
 		frag_shader_cache[frag_shader_cache_idx].unif_buf_size = ffp_fragment_unif_buf_size;
+		frag_shader_cache[frag_shader_cache_idx].unif_buf = ffp_fragment_unif_buf;
 
 		// Reload existing uniform references
 		reload_fragment_uniforms(frag_shader_cache[frag_shader_cache_idx].frag_unifs);
@@ -1053,109 +1029,119 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	}
 
 	// Uploading fragment shader uniforms
+	#define upload_ffp_fragment_unif(x, offs, cnt, size, ptr) \
+		if (dirty_frag_unifs & (1 << x)) { \
+			vglSetUniformData(ffp_fragment_unif_buf + ffp_fragment_params[x], SCE_GXM_PARAMETER_TYPE_F32, offs, cnt, size, ptr, SCE_GXM_PARAMETER_TYPE_F32); \
+		}
 	if (dirty_frag_unifs) {
 		if (ffp_fragment_unif_buf_size) {
 			uint8_t *buffer = vglReserveFragmentUniformBuffer(ffp_fragment_unif_buf_size);
 			if (ffp_fragment_params[ALPHA_CUT_UNIF] >= 0) {
-				vglSetUniformData(buffer + ffp_fragment_params[ALPHA_CUT_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 1, &vgl_alpha_ref, SCE_GXM_PARAMETER_TYPE_F32);
+				upload_ffp_fragment_unif(ALPHA_CUT_UNIF, 0, 1, 1, &vgl_alpha_ref)
 			}
 			if (ffp_fragment_params[FOG_COLOR_UNIF] >= 0) {
-				vglSetUniformData(buffer + ffp_fragment_params[FOG_COLOR_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 4, &fog_color.r, SCE_GXM_PARAMETER_TYPE_F32);
+				upload_ffp_fragment_unif(ALPHA_CUT_UNIF, 0, 1, 4, &fog_color.r)
 			}
 			if (ffp_fragment_params[TEX_ENV_COLOR_UNIF] >= 0) {
 				for (int i = 0; i < mask.num_textures; i++) {
-					vglSetUniformData(buffer + ffp_fragment_params[TEX_ENV_COLOR_UNIF], SCE_GXM_PARAMETER_TYPE_F32, i, 1, 4, (const float *)&texture_units[base_texture_id + i].env_color.r, SCE_GXM_PARAMETER_TYPE_F32);
+					upload_ffp_fragment_unif(TEX_ENV_COLOR_UNIF, i, 1, 4, (const float *)&texture_units[base_texture_id + i].env_color.r)
 				}
 			}
 #ifndef DISABLE_TEXTURE_COMBINER
 			if (ffp_fragment_params[SCALE_PASS_0_UNIF] >= 0) {
-				vglSetUniformData(buffer + ffp_fragment_params[SCALE_PASS_0_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, &texture_units[base_texture_id].rgb_scale, SCE_GXM_PARAMETER_TYPE_F32);
+				upload_ffp_fragment_unif(SCALE_PASS_0_UNIF, 0, 1, 2, &texture_units[base_texture_id].rgb_scale)
 			}
 			if (ffp_fragment_params[SCALE_PASS_1_UNIF] >= 0) {
-				vglSetUniformData(buffer + ffp_fragment_params[SCALE_PASS_1_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, &texture_units[base_texture_id + 1].rgb_scale, SCE_GXM_PARAMETER_TYPE_F32);
+				upload_ffp_fragment_unif(SCALE_PASS_1_UNIF, 0, 1, 2, &texture_units[base_texture_id + 1].rgb_scale)
 			}
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 			if (ffp_fragment_params[SCALE_PASS_2_UNIF] >= 0) {
-				vglSetUniformData(buffer + ffp_fragment_params[SCALE_PASS_2_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, &texture_units[base_texture_id + 2].rgb_scale, SCE_GXM_PARAMETER_TYPE_F32);
+				upload_ffp_fragment_unif(SCALE_PASS_2_UNIF, 0, 1, 2, &texture_units[base_texture_id + 2].rgb_scale)
 			}
 #endif
 #endif
 			if (ffp_fragment_params[TINT_COLOR_UNIF] >= 0) {
-				vglSetUniformData(buffer + ffp_fragment_params[TINT_COLOR_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 4, &current_vtx.clr.r, SCE_GXM_PARAMETER_TYPE_F32);
+				upload_ffp_fragment_unif(TINT_COLOR_UNIF, 0, 1, 4, &current_vtx.clr.r)
 			}
 			if (ffp_fragment_params[FOG_RANGE_UNIF] >= 0) {
-				vglSetUniformData(buffer + ffp_fragment_params[FOG_RANGE_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 1, (const float *)&fog_range, SCE_GXM_PARAMETER_TYPE_F32);
+				upload_ffp_fragment_unif(FOG_RANGE_UNIF, 0, 1, 1, (const float *)&fog_range)
 			}
 			if (ffp_fragment_params[FOG_FAR_UNIF] >= 0) {
-				vglSetUniformData(buffer + ffp_fragment_params[FOG_FAR_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 1, (const float *)&fog_far, SCE_GXM_PARAMETER_TYPE_F32);
+				upload_ffp_fragment_unif(FOG_FAR_UNIF, 0, 1, 1, (const float *)&fog_far)
 			}
 			if (ffp_fragment_params[FOG_DENSITY_UNIF] >= 0) {
-				vglSetUniformData(buffer + ffp_fragment_params[FOG_DENSITY_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 1, (const float *)&fog_density, SCE_GXM_PARAMETER_TYPE_F32);
+				upload_ffp_fragment_unif(FOG_DENSITY_UNIF, 0, 1, 1, (const float *)&fog_density)
 			}
 			if (ffp_fragment_params[LIGHTS_AMBIENTS_F_UNIF] >= 0) {
-				vglSetUniformData(buffer + ffp_fragment_params[LIGHT_GLOBAL_AMBIENT_F_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 4, (const float *)&light_global_ambient.r, SCE_GXM_PARAMETER_TYPE_F32);
-				vglSetUniformData(buffer + ffp_fragment_params[SHININESS_F_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 1, (const float *)&current_shininess, SCE_GXM_PARAMETER_TYPE_F32);
+				upload_ffp_fragment_unif(LIGHT_GLOBAL_AMBIENT_F_UNIF, 0, 1, 4, (const float *)&light_global_ambient.r)
+				upload_ffp_fragment_unif(SHININESS_F_UNIF, 0, 1, 1, (const float *)&current_shininess)
 				if (lights_aligned) {
-					vglSetUniformData(buffer + ffp_fragment_params[LIGHTS_AMBIENTS_F_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, mask.lights_num, 4, (const float *)light_vars[0][0], SCE_GXM_PARAMETER_TYPE_F32);
-					vglSetUniformData(buffer + ffp_fragment_params[LIGHTS_DIFFUSES_F_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, mask.lights_num, 4, (const float *)light_vars[0][1], SCE_GXM_PARAMETER_TYPE_F32);
-					vglSetUniformData(buffer + ffp_fragment_params[LIGHTS_SPECULARS_F_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, mask.lights_num, 4, (const float *)light_vars[0][2], SCE_GXM_PARAMETER_TYPE_F32);
-					vglSetUniformData(buffer + ffp_fragment_params[LIGHTS_POSITIONS_F_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, mask.lights_num, 4, (const float *)light_vars[0][3], SCE_GXM_PARAMETER_TYPE_F32);
-					vglSetUniformData(buffer + ffp_fragment_params[LIGHTS_ATTENUATIONS_F_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, mask.lights_num, 3, (const float *)light_vars[0][4], SCE_GXM_PARAMETER_TYPE_F32);
+					upload_ffp_fragment_unif(LIGHTS_AMBIENTS_F_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][0])
+					upload_ffp_fragment_unif(LIGHTS_DIFFUSES_F_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][1])
+					upload_ffp_fragment_unif(LIGHTS_SPECULARS_F_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][2])
+					upload_ffp_fragment_unif(LIGHTS_POSITIONS_F_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][3])
+					upload_ffp_fragment_unif(LIGHTS_ATTENUATIONS_F_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][4])
 				} else {
 					for (int i = 0; i < mask.lights_num; i++) {
-						vglSetUniformData(buffer + ffp_fragment_params[LIGHTS_AMBIENTS_F_UNIF], SCE_GXM_PARAMETER_TYPE_F32, i, 1, 4, (const float *)light_vars[i][0], SCE_GXM_PARAMETER_TYPE_F32);
-						vglSetUniformData(buffer + ffp_fragment_params[LIGHTS_DIFFUSES_F_UNIF], SCE_GXM_PARAMETER_TYPE_F32, i, 1, 4, (const float *)light_vars[i][1], SCE_GXM_PARAMETER_TYPE_F32);
-						vglSetUniformData(buffer + ffp_fragment_params[LIGHTS_SPECULARS_F_UNIF], SCE_GXM_PARAMETER_TYPE_F32, i, 1, 4, (const float *)light_vars[i][2], SCE_GXM_PARAMETER_TYPE_F32);
-						vglSetUniformData(buffer + ffp_fragment_params[LIGHTS_POSITIONS_F_UNIF], SCE_GXM_PARAMETER_TYPE_F32, i, 1, 4, (const float *)light_vars[i][3], SCE_GXM_PARAMETER_TYPE_F32);
-						vglSetUniformData(buffer + ffp_fragment_params[LIGHTS_ATTENUATIONS_F_UNIF], SCE_GXM_PARAMETER_TYPE_F32, i, 1, 3, (const float *)light_vars[i][4], SCE_GXM_PARAMETER_TYPE_F32);
+						upload_ffp_fragment_unif(LIGHTS_AMBIENTS_F_UNIF, i, 1, 4, (const float *)light_vars[i][0])
+						upload_ffp_fragment_unif(LIGHTS_DIFFUSES_F_UNIF, i, 1, 4, (const float *)light_vars[i][1])
+						upload_ffp_fragment_unif(LIGHTS_SPECULARS_F_UNIF, i, 1, 4, (const float *)light_vars[i][2])
+						upload_ffp_fragment_unif(LIGHTS_POSITIONS_F_UNIF, i, 1, 4, (const float *)light_vars[i][3])
+						upload_ffp_fragment_unif(LIGHTS_ATTENUATIONS_F_UNIF, i, 1, 3, (const float *)light_vars[i][4])
 					}
 				}
 			}
+			sceClibMemcpy(buffer, ffp_fragment_unif_buf, ffp_fragment_unif_buf_size);
 		}
-		dirty_frag_unifs = GL_FALSE;
+		dirty_frag_unifs = 0;
 	}
 
 	// Uploading vertex shader uniforms
+	#define upload_ffp_vertex_unif(x, offs, cnt, size, ptr) \
+		if (dirty_vert_unifs & (1 << x)) { \
+			vglSetUniformData(ffp_vertex_unif_buf + ffp_vertex_params[x], SCE_GXM_PARAMETER_TYPE_F32, offs, cnt, size, ptr, SCE_GXM_PARAMETER_TYPE_F32); \
+		}
 	if (dirty_vert_unifs) {
 		uint8_t *buffer = vglReserveVertexUniformBuffer(ffp_vertex_unif_buf_size);
 		if (ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF] >= 0) {
-			vglSetUniformData(buffer + ffp_vertex_params[CLIP_PLANES_EQUATION_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, mask.clip_planes_num, 4, &clip_planes[0].x, SCE_GXM_PARAMETER_TYPE_F32);
+			upload_ffp_vertex_unif(CLIP_PLANES_EQUATION_UNIF, 0, mask.clip_planes_num, 4, &clip_planes[0].x)
 		}
 		if (ffp_vertex_params[MODELVIEW_MATRIX_UNIF] >= 0) {
-			vglSetUniformData(buffer + ffp_vertex_params[MODELVIEW_MATRIX_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 4, 4, (const float *)modelview_matrix, SCE_GXM_PARAMETER_TYPE_F32);
+			upload_ffp_vertex_unif(MODELVIEW_MATRIX_UNIF, 0, 4, 4, (const float *)modelview_matrix)
 		}
 #ifdef HAVE_WVP_ON_GPU
-		vglSetUniformData(buffer + ffp_vertex_params[WVP_MATRIX_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 4, 4, (const float *)projection_matrix, SCE_GXM_PARAMETER_TYPE_F32);
+		upload_ffp_vertex_unif(WVP_MATRIX_UNIF, 0, 4, 4, (const float *)projection_matrix)
 #else
-		vglSetUniformData(buffer + ffp_vertex_params[WVP_MATRIX_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 4, 4, (const float *)vgl_mvp_matrix, SCE_GXM_PARAMETER_TYPE_F32);
+		upload_ffp_vertex_unif(WVP_MATRIX_UNIF, 0, 4, 4, (const float *)vgl_mvp_matrix)
 #endif
 		if (ffp_vertex_params[TEX_MATRIX_UNIF] >= 0) {
-			vglSetUniformData(buffer + ffp_vertex_params[TEX_MATRIX_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 4 * mask.num_textures, 4, (const float *)&texture_matrix[base_texture_id], SCE_GXM_PARAMETER_TYPE_F32);
+			upload_ffp_vertex_unif(TEX_MATRIX_UNIF, 0, 4 * mask.num_textures, 4, (const float *)&texture_matrix[base_texture_id])
 		}
-		vglSetUniformData(buffer + ffp_vertex_params[POINT_SIZE_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 1, &point_size, SCE_GXM_PARAMETER_TYPE_F32);
+		upload_ffp_vertex_unif(POINT_SIZE_UNIF, 0, 1, 1, &point_size)
 		if (ffp_vertex_params[NORMAL_MATRIX_UNIF] >= 0) {
-			vglSetUniformData(buffer + ffp_vertex_params[NORMAL_MATRIX_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 3, 3, (const float *)normal_matrix, SCE_GXM_PARAMETER_TYPE_F32);
+			upload_ffp_vertex_unif(NORMAL_MATRIX_UNIF, 0, 3, 3, (const float *)normal_matrix)
 			if (ffp_vertex_params[LIGHTS_AMBIENTS_V_UNIF] >= 0) {
-				vglSetUniformData(buffer + ffp_vertex_params[LIGHT_GLOBAL_AMBIENT_V_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 4, (const float *)&light_global_ambient.r, SCE_GXM_PARAMETER_TYPE_F32);
-				vglSetUniformData(buffer + ffp_vertex_params[SHININESS_V_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 1, (const float *)&current_shininess, SCE_GXM_PARAMETER_TYPE_F32);
+				upload_ffp_vertex_unif(LIGHT_GLOBAL_AMBIENT_V_UNIF, 0, 1, 4, (const float *)&light_global_ambient.r)
+				upload_ffp_vertex_unif(SHININESS_V_UNIF, 0, 1, 1, (const float *)&current_shininess)
 				if (lights_aligned) {
-					vglSetUniformData(buffer + ffp_vertex_params[LIGHTS_AMBIENTS_V_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, mask.lights_num, 4, (const float *)light_vars[0][0], SCE_GXM_PARAMETER_TYPE_F32);
-					vglSetUniformData(buffer + ffp_vertex_params[LIGHTS_DIFFUSES_V_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, mask.lights_num, 4, (const float *)light_vars[0][1], SCE_GXM_PARAMETER_TYPE_F32);
-					vglSetUniformData(buffer + ffp_vertex_params[LIGHTS_SPECULARS_V_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, mask.lights_num, 4, (const float *)light_vars[0][2], SCE_GXM_PARAMETER_TYPE_F32);
-					vglSetUniformData(buffer + ffp_vertex_params[LIGHTS_POSITIONS_V_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, mask.lights_num, 4, (const float *)light_vars[0][3], SCE_GXM_PARAMETER_TYPE_F32);
-					vglSetUniformData(buffer + ffp_vertex_params[LIGHTS_ATTENUATIONS_V_UNIF], SCE_GXM_PARAMETER_TYPE_F32, 0, mask.lights_num, 3, (const float *)light_vars[0][4], SCE_GXM_PARAMETER_TYPE_F32);
+					upload_ffp_vertex_unif(LIGHTS_AMBIENTS_V_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][0])
+					upload_ffp_vertex_unif(LIGHTS_DIFFUSES_V_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][1])
+					upload_ffp_vertex_unif(LIGHTS_SPECULARS_V_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][2])
+					upload_ffp_vertex_unif(LIGHTS_POSITIONS_V_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][3])
+					upload_ffp_vertex_unif(LIGHTS_ATTENUATIONS_V_UNIF, 0, mask.lights_num, 3, (const float *)light_vars[0][4])
 				} else {
 					for (int i = 0; i < mask.lights_num; i++) {
-						vglSetUniformData(buffer + ffp_vertex_params[LIGHTS_AMBIENTS_V_UNIF], SCE_GXM_PARAMETER_TYPE_F32, i, 1, 4, (const float *)light_vars[i][0], SCE_GXM_PARAMETER_TYPE_F32);
-						vglSetUniformData(buffer + ffp_vertex_params[LIGHTS_DIFFUSES_V_UNIF], SCE_GXM_PARAMETER_TYPE_F32, i, 1, 4, (const float *)light_vars[i][1], SCE_GXM_PARAMETER_TYPE_F32);
-						vglSetUniformData(buffer + ffp_vertex_params[LIGHTS_SPECULARS_V_UNIF], SCE_GXM_PARAMETER_TYPE_F32, i, 1, 4, (const float *)light_vars[i][2], SCE_GXM_PARAMETER_TYPE_F32);
-						vglSetUniformData(buffer + ffp_vertex_params[LIGHTS_POSITIONS_V_UNIF], SCE_GXM_PARAMETER_TYPE_F32, i, 1, 4, (const float *)light_vars[i][3], SCE_GXM_PARAMETER_TYPE_F32);
-						vglSetUniformData(buffer + ffp_vertex_params[LIGHTS_ATTENUATIONS_V_UNIF], SCE_GXM_PARAMETER_TYPE_F32, i, 1, 3, (const float *)light_vars[i][4], SCE_GXM_PARAMETER_TYPE_F32);
+						upload_ffp_vertex_unif(LIGHTS_AMBIENTS_V_UNIF, i, 1, 4, (const float *)light_vars[i][0])
+						upload_ffp_vertex_unif(LIGHTS_DIFFUSES_V_UNIF, i, 1, 4, (const float *)light_vars[i][1])
+						upload_ffp_vertex_unif(LIGHTS_SPECULARS_V_UNIF, i, 1, 4, (const float *)light_vars[i][2])
+						upload_ffp_vertex_unif(LIGHTS_POSITIONS_V_UNIF, i, 1, 4, (const float *)light_vars[i][3])
+						upload_ffp_vertex_unif(LIGHTS_ATTENUATIONS_V_UNIF, i, 1, 3, (const float *)light_vars[i][4])
 					}
 				}
 			}
 		}
-		dirty_vert_unifs = GL_FALSE;
+		sceClibMemcpy(buffer, ffp_vertex_unif_buf, ffp_vertex_unif_buf_size);
+		dirty_vert_unifs = 0;
 	}
 #ifdef HAVE_PROFILING
 	ffp_reload_profiler_cnt += sceKernelGetProcessTimeLow() - reload_ffp_shaders_start;
@@ -2074,10 +2060,7 @@ void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
 		break;
 	case GL_SHININESS:
 		current_shininess = params[0];
-		if (shading_mode == SMOOTH)
-			dirty_vert_unifs = GL_TRUE;
-		else
-			dirty_frag_unifs = GL_TRUE;
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, SHININESS_V_UNIF, SHININESS_F_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -2095,10 +2078,7 @@ void glMaterialf(GLenum face, GLenum pname, GLfloat param) {
 	switch (pname) {
 	case GL_SHININESS:
 		current_shininess = param;
-		if (shading_mode == SMOOTH)
-			dirty_vert_unifs = GL_TRUE;
-		else
-			dirty_frag_unifs = GL_TRUE;
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, SHININESS_V_UNIF, SHININESS_F_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -2151,10 +2131,7 @@ void glMaterialxv(GLenum face, GLenum pname, const GLfixed *params) {
 		break;
 	case GL_SHININESS:
 		current_shininess = (float)params[0] / 65536.0f;
-		if (shading_mode == SMOOTH)
-			dirty_vert_unifs = GL_TRUE;
-		else
-			dirty_frag_unifs = GL_TRUE;
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, SHININESS_V_UNIF, SHININESS_F_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -2179,7 +2156,7 @@ void glColor3f(GLfloat red, GLfloat green, GLfloat blue) {
 	current_vtx.clr.b = blue;
 	current_vtx.clr.a = 1.0f;
 
-	dirty_frag_unifs = GL_TRUE;
+	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
 void glColor3fv(const GLfloat *v) {
@@ -2192,7 +2169,7 @@ void glColor3fv(const GLfloat *v) {
 	vgl_fast_memcpy(&current_vtx.clr.r, v, sizeof(vector3f));
 	current_vtx.clr.a = 1.0f;
 
-	dirty_frag_unifs = GL_TRUE;
+	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
 void glColor3us(GLushort red, GLushort green, GLushort blue) {
@@ -2202,6 +2179,8 @@ void glColor3us(GLushort red, GLushort green, GLushort blue) {
 	current_vtx.clr.g = (float)green / 65535.0f;
 	current_vtx.clr.b = (float)blue / 65535.0f;
 	current_vtx.clr.a = 1.0f;
+	
+	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 };
 
 void glColor3usv(const GLushort *c) {
@@ -2211,6 +2190,8 @@ void glColor3usv(const GLushort *c) {
 	current_vtx.clr.g = (float)c[1] / 65535.0f;
 	current_vtx.clr.b = (float)c[2] / 65535.0f;
 	current_vtx.clr.a = 1.0f;
+	
+	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 };
 
 void glColor3ub(GLubyte red, GLubyte green, GLubyte blue) {
@@ -2227,7 +2208,7 @@ void glColor3ub(GLubyte red, GLubyte green, GLubyte blue) {
 	current_vtx.clr.b = (float)blue / 255.0f;
 	current_vtx.clr.a = 1.0f;
 
-	dirty_frag_unifs = GL_TRUE;
+	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
 void glColor3ubv(const GLubyte *c) {
@@ -2244,7 +2225,7 @@ void glColor3ubv(const GLubyte *c) {
 	current_vtx.clr.b = (float)c[2] / 255.0f;
 	current_vtx.clr.a = 1.0f;
 
-	dirty_frag_unifs = GL_TRUE;
+	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
 void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
@@ -2261,7 +2242,7 @@ void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
 	current_vtx.clr.b = blue;
 	current_vtx.clr.a = alpha;
 
-	dirty_frag_unifs = GL_TRUE;
+	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
 void glColor4fv(const GLfloat *v) {
@@ -2275,7 +2256,7 @@ void glColor4fv(const GLfloat *v) {
 	// Setting current color value
 	vgl_fast_memcpy(&current_vtx.clr.r, v, sizeof(vector4f));
 
-	dirty_frag_unifs = GL_TRUE;
+	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
 void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha) {
@@ -2291,7 +2272,7 @@ void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha) {
 	current_vtx.clr.b = (float)blue / 255.0f;
 	current_vtx.clr.a = (float)alpha / 255.0f;
 
-	dirty_frag_unifs = GL_TRUE;
+	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
 void glColor4us(GLushort red, GLushort green, GLushort blue, GLushort alpha) {
@@ -2301,6 +2282,8 @@ void glColor4us(GLushort red, GLushort green, GLushort blue, GLushort alpha) {
 	current_vtx.clr.g = (float)green / 65535.0f;
 	current_vtx.clr.b = (float)blue / 65535.0f;
 	current_vtx.clr.a = (float)alpha / 65535.0f;
+	
+	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 };
 
 void glColor4usv(const GLushort *c) {
@@ -2310,6 +2293,8 @@ void glColor4usv(const GLushort *c) {
 	current_vtx.clr.g = (float)c[1] / 65535.0f;
 	current_vtx.clr.b = (float)c[2] / 65535.0f;
 	current_vtx.clr.a = (float)c[3] / 65535.0f;
+	
+	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 };
 
 void glColor4ubv(const GLubyte *c) {
@@ -2326,7 +2311,7 @@ void glColor4ubv(const GLubyte *c) {
 	current_vtx.clr.b = (float)c[2] / 255.0f;
 	current_vtx.clr.a = (float)c[3] / 255.0f;
 
-	dirty_frag_unifs = GL_TRUE;
+	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
 void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha) {
@@ -2344,7 +2329,7 @@ void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha) {
 	current_vtx.clr.b = (float)blue / 65536.0f;
 	current_vtx.clr.a = (float)alpha / 65536.0f;
 
-	dirty_frag_unifs = GL_TRUE;
+	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
 void glNormal3f(GLfloat x, GLfloat y, GLfloat z) {
@@ -2649,6 +2634,7 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 		switch (pname) {
 		case GL_TEXTURE_ENV_COLOR:
 			vgl_fast_memcpy(&tex_unit->env_color.r, param, sizeof(GLfloat) * 4);
+			flag_dirty_frag_unif(TEX_ENV_COLOR_UNIF)
 			break;
 #ifndef DISABLE_TEXTURE_COMBINER
 		case GL_RGB_SCALE:
@@ -2658,6 +2644,7 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 			}
 #endif
 			tex_unit->rgb_scale = *param;
+			flag_dirty_frag_unif(SCALE_PASS_0_UNIF + server_texture_unit)
 			break;
 		case GL_ALPHA_SCALE:
 #ifndef SKIP_ERROR_HANDLING
@@ -2666,6 +2653,7 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 			}
 #endif
 			tex_unit->a_scale = *param;
+			flag_dirty_frag_unif(SCALE_PASS_0_UNIF + server_texture_unit)
 			break;
 #endif
 		default:
@@ -2675,7 +2663,6 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
-	dirty_frag_unifs = GL_TRUE;
 }
 
 void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param) {
@@ -2696,6 +2683,7 @@ void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param) {
 			tex_unit->env_color.g = (float)param[1] / 65536.0f;
 			tex_unit->env_color.b = (float)param[2] / 65536.0f;
 			tex_unit->env_color.a = (float)param[3] / 65536.0f;
+			flag_dirty_frag_unif(TEX_ENV_COLOR_UNIF)
 			break;
 #ifndef DISABLE_TEXTURE_COMBINER
 		case GL_RGB_SCALE:
@@ -2705,6 +2693,7 @@ void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param) {
 			}
 #endif
 			tex_unit->rgb_scale = (float)param[0] / 65536.0f;
+			flag_dirty_frag_unif(SCALE_PASS_0_UNIF + server_texture_unit)
 			break;
 		case GL_ALPHA_SCALE:
 #ifndef SKIP_ERROR_HANDLING
@@ -2713,6 +2702,7 @@ void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param) {
 			}
 #endif
 			tex_unit->a_scale = (float)param[0] / 65536.0f;
+			flag_dirty_frag_unif(SCALE_PASS_0_UNIF + server_texture_unit)
 			break;
 #endif
 		default:
@@ -2722,7 +2712,6 @@ void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param) {
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
 	}
-	dirty_frag_unifs = GL_TRUE;
 }
 
 inline void glTexEnvi(GLenum target, GLenum pname, GLint param) {
@@ -3324,33 +3313,35 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 	switch (pname) {
 	case GL_AMBIENT:
 		vgl_fast_memcpy(&lights_ambients[light - GL_LIGHT0].r, params, sizeof(float) * 4);
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_AMBIENTS_V_UNIF, LIGHTS_AMBIENTS_F_UNIF)
 		break;
 	case GL_DIFFUSE:
 		vgl_fast_memcpy(&lights_diffuses[light - GL_LIGHT0].r, params, sizeof(float) * 4);
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_DIFFUSES_V_UNIF, LIGHTS_DIFFUSES_F_UNIF)
 		break;
 	case GL_SPECULAR:
 		vgl_fast_memcpy(&lights_speculars[light - GL_LIGHT0].r, params, sizeof(float) * 4);
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_SPECULARS_V_UNIF, LIGHTS_SPECULARS_F_UNIF)
 		break;
 	case GL_POSITION:
 		vector4f_matrix4x4_mult(&lights_positions[light - GL_LIGHT0].r, modelview_matrix, params);
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_POSITIONS_V_UNIF, LIGHTS_POSITIONS_F_UNIF)
 		break;
 	case GL_CONSTANT_ATTENUATION:
 		lights_attenuations[light - GL_LIGHT0].r = params[0];
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_ATTENUATIONS_V_UNIF, LIGHTS_ATTENUATIONS_F_UNIF)
 		break;
 	case GL_LINEAR_ATTENUATION:
 		lights_attenuations[light - GL_LIGHT0].g = params[0];
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_ATTENUATIONS_V_UNIF, LIGHTS_ATTENUATIONS_F_UNIF)
 		break;
 	case GL_QUADRATIC_ATTENUATION:
 		lights_attenuations[light - GL_LIGHT0].b = params[0];
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_ATTENUATIONS_V_UNIF, LIGHTS_ATTENUATIONS_F_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
-
-	if (shading_mode == SMOOTH)
-		dirty_vert_unifs = GL_TRUE;
-	else
-		dirty_frag_unifs = GL_TRUE;
 }
 
 void glLightxv(GLenum light, GLenum pname, const GLfixed *params) {
@@ -3374,18 +3365,21 @@ void glLightxv(GLenum light, GLenum pname, const GLfixed *params) {
 		lights_ambients[light - GL_LIGHT0].g = (float)params[1] / 65536.0f;
 		lights_ambients[light - GL_LIGHT0].b = (float)params[2] / 65536.0f;
 		lights_ambients[light - GL_LIGHT0].a = (float)params[3] / 65536.0f;
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_AMBIENTS_V_UNIF, LIGHTS_AMBIENTS_F_UNIF)
 		break;
 	case GL_DIFFUSE:
 		lights_diffuses[light - GL_LIGHT0].r = (float)params[0] / 65536.0f;
 		lights_diffuses[light - GL_LIGHT0].g = (float)params[1] / 65536.0f;
 		lights_diffuses[light - GL_LIGHT0].b = (float)params[2] / 65536.0f;
 		lights_diffuses[light - GL_LIGHT0].a = (float)params[3] / 65536.0f;
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_DIFFUSES_V_UNIF, LIGHTS_DIFFUSES_F_UNIF)
 		break;
 	case GL_SPECULAR:
 		lights_speculars[light - GL_LIGHT0].r = (float)params[0] / 65536.0f;
 		lights_speculars[light - GL_LIGHT0].g = (float)params[1] / 65536.0f;
 		lights_speculars[light - GL_LIGHT0].b = (float)params[2] / 65536.0f;
 		lights_speculars[light - GL_LIGHT0].a = (float)params[3] / 65536.0f;
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_SPECULARS_V_UNIF, LIGHTS_SPECULARS_F_UNIF)
 		break;
 	case GL_POSITION:
 		v.r = (float)params[0] / 65536.0f;
@@ -3393,24 +3387,23 @@ void glLightxv(GLenum light, GLenum pname, const GLfixed *params) {
 		v.b = (float)params[2] / 65536.0f;
 		v.a = (float)params[3] / 65536.0f;
 		vector4f_matrix4x4_mult(&lights_positions[light - GL_LIGHT0].r, modelview_matrix, &v);
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_POSITIONS_V_UNIF, LIGHTS_POSITIONS_F_UNIF)
 		break;
 	case GL_CONSTANT_ATTENUATION:
 		lights_attenuations[light - GL_LIGHT0].r = (float)params[0] / 65536.0f;
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_ATTENUATIONS_V_UNIF, LIGHTS_ATTENUATIONS_F_UNIF)
 		break;
 	case GL_LINEAR_ATTENUATION:
 		lights_attenuations[light - GL_LIGHT0].g = (float)params[0] / 65536.0f;
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_ATTENUATIONS_V_UNIF, LIGHTS_ATTENUATIONS_F_UNIF)
 		break;
 	case GL_QUADRATIC_ATTENUATION:
 		lights_attenuations[light - GL_LIGHT0].b = (float)params[0] / 65536.0f;
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_ATTENUATIONS_V_UNIF, LIGHTS_ATTENUATIONS_F_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
-
-	if (shading_mode == SMOOTH)
-		dirty_vert_unifs = GL_TRUE;
-	else
-		dirty_frag_unifs = GL_TRUE;
 }
 
 void glLightModelfv(GLenum pname, const GLfloat *params) {
@@ -3431,10 +3424,7 @@ void glLightModelfv(GLenum pname, const GLfloat *params) {
 	switch (pname) {
 	case GL_LIGHT_MODEL_AMBIENT:
 		vgl_fast_memcpy(&light_global_ambient.r, params, sizeof(float) * 4);
-		if (shading_mode == SMOOTH)
-			dirty_vert_unifs = GL_TRUE;
-		else
-			dirty_frag_unifs = GL_TRUE;
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHT_GLOBAL_AMBIENT_V_UNIF, LIGHT_GLOBAL_AMBIENT_F_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -3462,10 +3452,7 @@ void glLightModelxv(GLenum pname, const GLfixed *params) {
 		light_global_ambient.g = (float)params[1] / 65536.0f;
 		light_global_ambient.b = (float)params[2] / 65536.0f;
 		light_global_ambient.a = (float)params[3] / 65536.0f;
-		if (shading_mode == SMOOTH)
-			dirty_vert_unifs = GL_TRUE;
-		else
-			dirty_frag_unifs = GL_TRUE;
+		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHT_GLOBAL_AMBIENT_V_UNIF, LIGHT_GLOBAL_AMBIENT_F_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -3487,19 +3474,22 @@ void glFogf(GLenum pname, GLfloat param) {
 		break;
 	case GL_FOG_DENSITY:
 		fog_density = param;
+		flag_dirty_frag_unif(FOG_DENSITY_UNIF)
 		break;
 	case GL_FOG_START:
 		fog_near = param;
 		fog_range = fog_far - fog_near;
+		flag_dirty_frag_unif(FOG_RANGE_UNIF)
 		break;
 	case GL_FOG_END:
 		fog_far = param;
 		fog_range = fog_far - fog_near;
+		flag_dirty_frag_unif(FOG_RANGE_UNIF)
+		flag_dirty_frag_unif(FOG_FAR_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
-	dirty_frag_unifs = GL_TRUE;
 }
 
 void glFogx(GLenum pname, GLfixed param) {
@@ -3517,19 +3507,22 @@ void glFogx(GLenum pname, GLfixed param) {
 		break;
 	case GL_FOG_DENSITY:
 		fog_density = (float)param / 65536.0f;
+		flag_dirty_frag_unif(FOG_DENSITY_UNIF)
 		break;
 	case GL_FOG_START:
 		fog_near = (float)param / 65536.0f;
 		fog_range = fog_far - fog_near;
+		flag_dirty_frag_unif(FOG_RANGE_UNIF)
 		break;
 	case GL_FOG_END:
 		fog_far = (float)param / 65536.0f;
 		fog_range = fog_far - fog_near;
+		flag_dirty_frag_unif(FOG_RANGE_UNIF)
+		flag_dirty_frag_unif(FOG_FAR_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
-	dirty_frag_unifs = GL_TRUE;
 }
 
 void glFogfv(GLenum pname, const GLfloat *params) {
@@ -3547,22 +3540,26 @@ void glFogfv(GLenum pname, const GLfloat *params) {
 		break;
 	case GL_FOG_DENSITY:
 		fog_density = params[0];
+		flag_dirty_frag_unif(FOG_DENSITY_UNIF)
 		break;
 	case GL_FOG_START:
 		fog_near = params[0];
 		fog_range = fog_far - fog_near;
+		flag_dirty_frag_unif(FOG_RANGE_UNIF)
 		break;
 	case GL_FOG_END:
 		fog_far = params[0];
 		fog_range = fog_far - fog_near;
+		flag_dirty_frag_unif(FOG_RANGE_UNIF)
+		flag_dirty_frag_unif(FOG_FAR_UNIF)
 		break;
 	case GL_FOG_COLOR:
 		vgl_fast_memcpy(&fog_color.r, params, sizeof(vector4f));
+		flag_dirty_frag_unif(FOG_COLOR_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
-	dirty_frag_unifs = GL_TRUE;
 }
 
 void glFogxv(GLenum pname, const GLfixed *params) {
@@ -3580,25 +3577,29 @@ void glFogxv(GLenum pname, const GLfixed *params) {
 		break;
 	case GL_FOG_DENSITY:
 		fog_density = (float)params[0] / 65536.0f;
+		flag_dirty_frag_unif(FOG_DENSITY_UNIF)
 		break;
 	case GL_FOG_START:
 		fog_near = (float)params[0] / 65536.0f;
 		fog_range = fog_far - fog_near;
+		flag_dirty_frag_unif(FOG_RANGE_UNIF)
 		break;
 	case GL_FOG_END:
 		fog_far = (float)params[0] / 65536.0f;
 		fog_range = fog_far - fog_near;
+		flag_dirty_frag_unif(FOG_RANGE_UNIF)
+		flag_dirty_frag_unif(FOG_FAR_UNIF)
 		break;
 	case GL_FOG_COLOR:
 		fog_color.r = (float)params[0] / 65536.0f;
 		fog_color.g = (float)params[1] / 65536.0f;
 		fog_color.b = (float)params[2] / 65536.0f;
 		fog_color.a = (float)params[3] / 65536.0f;
+		flag_dirty_frag_unif(FOG_COLOR_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
-	dirty_frag_unifs = GL_TRUE;
 }
 
 void glFogi(GLenum pname, const GLint param) {
@@ -3616,19 +3617,22 @@ void glFogi(GLenum pname, const GLint param) {
 		break;
 	case GL_FOG_DENSITY:
 		fog_density = param;
+		flag_dirty_frag_unif(FOG_DENSITY_UNIF)
 		break;
 	case GL_FOG_START:
 		fog_near = param;
 		fog_range = fog_far - fog_near;
+		flag_dirty_frag_unif(FOG_RANGE_UNIF)
 		break;
 	case GL_FOG_END:
 		fog_far = param;
 		fog_range = fog_far - fog_near;
+		flag_dirty_frag_unif(FOG_RANGE_UNIF)
+		flag_dirty_frag_unif(FOG_FAR_UNIF)
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
 	}
-	dirty_frag_unifs = GL_TRUE;
 }
 
 void glClipPlane(GLenum plane, const GLdouble *equation) {
@@ -3655,7 +3659,7 @@ void glClipPlane(GLenum plane, const GLdouble *equation) {
 	vector4f temp;
 	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
 	vgl_fast_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_frag_unif(CLIP_PLANES_EQUATION_UNIF)
 }
 
 void glClipPlanef(GLenum plane, const GLfloat *equation) {
@@ -3680,7 +3684,7 @@ void glClipPlanef(GLenum plane, const GLfloat *equation) {
 	vector4f temp;
 	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
 	vgl_fast_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_frag_unif(CLIP_PLANES_EQUATION_UNIF)
 }
 
 void glClipPlanex(GLenum plane, const GLfixed *equation) {
@@ -3707,7 +3711,7 @@ void glClipPlanex(GLenum plane, const GLfixed *equation) {
 	vector4f temp;
 	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
 	vgl_fast_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
-	dirty_vert_unifs = GL_TRUE;
+	flag_dirty_frag_unif(CLIP_PLANES_EQUATION_UNIF)
 }
 
 void glShadeModel(GLenum mode) {
