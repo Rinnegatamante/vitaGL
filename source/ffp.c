@@ -686,6 +686,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		vert_shader_cache[vert_shader_cache_idx].prog = ffp_vertex_program;
 		vert_shader_cache[vert_shader_cache_idx].id = ffp_vertex_program_id;
 		vert_shader_cache[vert_shader_cache_idx].unif_buf_size = ffp_vertex_unif_buf_size;
+		vert_shader_cache[vert_shader_cache_idx].unif_buf = ffp_vertex_unif_buf;
 
 		// Reload existing uniform references
 		reload_vertex_uniforms(vert_shader_cache[vert_shader_cache_idx].vert_unifs);
