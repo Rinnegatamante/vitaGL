@@ -1040,7 +1040,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				upload_ffp_fragment_unif(ALPHA_CUT_UNIF, 0, 1, 1, &vgl_alpha_ref)
 			}
 			if (ffp_fragment_params[FOG_COLOR_UNIF] >= 0) {
-				upload_ffp_fragment_unif(ALPHA_CUT_UNIF, 0, 1, 4, &fog_color.r)
+				upload_ffp_fragment_unif(FOG_COLOR_UNIF, 0, 1, 4, &fog_color.r)
 			}
 			if (ffp_fragment_params[TEX_ENV_COLOR_UNIF] >= 0) {
 				for (int i = 0; i < mask.num_textures; i++) {
