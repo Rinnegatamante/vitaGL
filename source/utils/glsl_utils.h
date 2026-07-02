@@ -41,6 +41,7 @@ extern GLboolean glsl_is_first_shader;
 extern GLboolean glsl_precision_low;
 extern GLenum glsl_sema_mode;
 extern GLenum prev_shader_type;
+extern int glsl_version;
 
 void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFrontFacing);
 void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacing);
