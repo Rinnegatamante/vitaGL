@@ -169,8 +169,6 @@ void *gpu_alloc_mapped_aligned_unsafe_for_cpu(size_t alignment, size_t size) {
 
 	// Allocating requested memblock
 	void *res = gpu_alloc_mapped_aligned_for_cpu_inner(alignment, size);
-	if (res)
-		return res;
 
 	// Iterating for as many as possible max pending garbage collector cycles
 	if (!res && unsafe_allocator_counter < FRAME_PURGE_FREQ) {
@@ -184,7 +182,8 @@ void *gpu_alloc_mapped_aligned_unsafe_for_gpu(size_t alignment, size_t size) {
 	// Performing a garbage collection cycle prior to attempting to allocate the memory again
 	unsafe_allocator_counter++;
 	if (unsafe_allocator_counter == 1) {
-		glFinish();
+		// Ideally we'd want glFinish here, but this would cause a circular dependency if the allocation failing is related to a depthstencil surface allocation
+		sceGxmFinish(gxm_context);
 	}
 #if defined(HAVE_SINGLE_THREADED_GC) && !defined(HAVE_PTHREAD)
 	garbage_collector(0, NULL);
@@ -196,8 +195,6 @@ void *gpu_alloc_mapped_aligned_unsafe_for_gpu(size_t alignment, size_t size) {
 
 	// Allocating requested memblock
 	void *res = gpu_alloc_mapped_aligned_for_gpu_inner(alignment, size);
-	if (res)
-		return res;
 
 	// Iterating for as many as possible max pending garbage collector cycles
 	if (!res && unsafe_allocator_counter < FRAME_PURGE_FREQ) {
