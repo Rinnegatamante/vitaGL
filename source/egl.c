@@ -27,6 +27,7 @@
 
 // Default bogus values used for default objects
 enum {
+	EGL_NULL_CTX,
 	EGL_DEFAULT_CTX,
 	EGL_DEFAULT_SURF,
 	EGL_DEFAULT_DISP,
