@@ -59,7 +59,7 @@ typedef struct tm_block_s {
 } tm_block_t;
 
 static tm_block_t *tm_alloclist; // list of allocated blocks
-static tm_block_t *tm_freelist; // list of free blocks
+static tm_block_t *tm_freelist[VGL_MEM_ALL]; // list of free blocks
 
 static uint32_t tm_free[VGL_MEM_ALL]; // see enum vglMemType
 
@@ -86,7 +86,7 @@ static inline int heap_blk_mergeable(tm_block_t *a, tm_block_t *b) {
 // inserts a block into the free list and merges with neighboring
 // free blocks if possible
 static void heap_blk_insert_free(tm_block_t *block) {
-	tm_block_t *curblk = tm_freelist;
+	tm_block_t *curblk = tm_freelist[block->type];
 	tm_block_t *prevblk = NULL;
 	while (curblk && curblk->base < block->base) {
 		prevblk = curblk;
@@ -96,7 +96,7 @@ static void heap_blk_insert_free(tm_block_t *block) {
 	if (prevblk)
 		prevblk->next = block;
 	else
-		tm_freelist = block;
+		tm_freelist[block->type] = block;
 
 	block->next = curblk;
 	tm_free[block->type] += block->size;
@@ -117,13 +117,13 @@ static void heap_blk_insert_free(tm_block_t *block) {
 // allocates a block from the heap
 // (removes it from free list and adds to alloc list)
 static tm_block_t *heap_blk_alloc(int32_t type, uint32_t size, uint32_t alignment) {
-	tm_block_t *curblk = tm_freelist;
+	tm_block_t *curblk = tm_freelist[type];
 	tm_block_t *prevblk = NULL;
 
 	while (curblk) {
 		const uint32_t skip = VGL_ALIGN(curblk->base, alignment) - curblk->base;
 
-		if (curblk->type == type && skip + size <= curblk->size) {
+		if (skip + size <= curblk->size) {
 			tm_block_t *skipblk = NULL;
 			tm_block_t *unusedblk = NULL;
 
@@ -146,7 +146,7 @@ static tm_block_t *heap_blk_alloc(int32_t type, uint32_t size, uint32_t alignmen
 				if (prevblk)
 					prevblk->next = skipblk;
 				else
-					tm_freelist = skipblk;
+					tm_freelist[type] = skipblk;
 
 				skipblk->next = curblk;
 				skipblk->type = curblk->type;
@@ -174,7 +174,7 @@ static tm_block_t *heap_blk_alloc(int32_t type, uint32_t size, uint32_t alignmen
 			if (prevblk)
 				prevblk->next = curblk->next;
 			else
-				tm_freelist = curblk->next;
+				tm_freelist[type] = curblk->next;
 
 			curblk->next = tm_alloclist;
 #ifndef SKIP_ERROR_HANDLING
@@ -229,10 +229,11 @@ static void heap_blk_free(uintptr_t base) {
 // initializes heap variables and blockpool
 static void heap_init(void) {
 	tm_alloclist = NULL;
-	tm_freelist = NULL;
 
-	for (int i = 0; i < VGL_MEM_ALL; i++)
+	for (int i = 0; i < VGL_MEM_ALL; i++) {
+		tm_freelist[i] = NULL;
 		tm_free[i] = 0;
+	}
 }
 
 // resets heap state and frees allocated block headers
@@ -246,11 +247,13 @@ static void heap_destroy(void) {
 		p = n;
 	}
 
-	p = tm_freelist;
-	while (p) {
-		n = p->next;
-		heap_blk_release(p);
-		p = n;
+	for (int i = 0; i < VGL_MEM_ALL; i++) {
+		p = tm_freelist[i];
+		while (p) {
+			n = p->next;
+			heap_blk_release(p);
+			p = n;
+		}
 	}
 }
 
