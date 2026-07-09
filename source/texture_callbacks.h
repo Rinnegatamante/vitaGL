@@ -54,12 +54,8 @@ void write_rgba5551(void *data, uint32_t color);
 
 // Inlined variants
 static inline __attribute__((always_inline)) void write_rgba8888_inlined(void *data, uint32_t color) {
-	uint8_t *dst = (uint8_t *)data;
-	const uint8_t *src = (uint8_t *)&color;
-	dst[0] = src[0];
-	dst[1] = src[1];
-	dst[2] = src[2];
-	dst[3] = src[3];
+	uint32_t *dst = (uint32_t *)data;
+	*dst = color;
 }
 
 

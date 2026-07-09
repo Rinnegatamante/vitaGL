@@ -144,12 +144,8 @@ uint32_t read_la88(const void *data) {
 
 // Write callback for 32bpp unsigned RGBA format
 void write_rgba8888(void *data, uint32_t color) {
-	uint8_t *dst = (uint8_t *)data;
-	const uint8_t *src = (uint8_t *)&color;
-	dst[0] = src[0];
-	dst[1] = src[1];
-	dst[2] = src[2];
-	dst[3] = src[3];
+	uint32_t *dst = (uint32_t *)data;
+	*dst = color;
 }
 
 // Write callback for 32bpp unsigned ABGR format
