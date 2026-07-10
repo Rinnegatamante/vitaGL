@@ -23,8 +23,6 @@
 
 #include "../shared.h"
 
-#define HEAP_COOKIE 0x13371337
-
 GLboolean has_cached_mem = GL_FALSE; // Flag for whether to use cached memory for mempools or not
 
 #ifndef HAVE_CUSTOM_HEAP
@@ -32,7 +30,6 @@ static void *mempool_mspace[VGL_MEM_ALL - 1] = {}; // mspace creations
 #endif
 static void *mempool_addr[VGL_MEM_ALL] = {}; // addresses of heap memblocks
 static void *mempool_end[VGL_MEM_ALL] = {}; // addresses of heap memblocks end
-static SceUID mempool_id[VGL_MEM_ALL - 1] = {}; // UIDs of heap memblocks
 static size_t mempool_size[VGL_MEM_ALL] = {}; // sizes of heap memblocks
 
 GLboolean vgl_has_cdlg_support = GL_TRUE;
@@ -50,13 +47,11 @@ SceKernelLwMutexWork tm_mutexes[VGL_MEM_ALL - 1] = {};
 
 typedef struct tm_block_s {
 	struct tm_block_s *next; // next block in list (either free or allocated)
+	struct tm_block_s *prev; // prev block in list (used only during free)
 	int32_t type; // one of vglMemType
 	uintptr_t base; // block start address
 	uint32_t offset; // offset for USSE stuff (unused)
 	uint32_t size; // block size
-#ifndef SKIP_ERROR_HANDLING
-	uint32_t real_size; // real alloc size for putting a heap cookie
-#endif
 } tm_block_t;
 
 static tm_block_t *tm_alloclist[VGL_MEM_ALL - 1]; // list of allocated blocks
@@ -115,13 +110,12 @@ static void heap_blk_insert_free(tm_block_t *block) {
 }
 
 // allocates a block from the heap
-// (removes it from free list and adds to alloc list)
 static tm_block_t *heap_blk_alloc(int32_t type, uint32_t size, uint32_t alignment) {
 	tm_block_t *curblk = tm_freelist[type];
 	tm_block_t *prevblk = NULL;
 
 	while (curblk) {
-		const uint32_t skip = VGL_ALIGN(curblk->base, alignment) - curblk->base;
+		const uint32_t skip = VGL_ALIGN(curblk->base + 4, alignment) - 4 - curblk->base;
 
 		if (skip + size <= curblk->size) {
 			tm_block_t *skipblk = NULL;
@@ -177,9 +171,8 @@ static tm_block_t *heap_blk_alloc(int32_t type, uint32_t size, uint32_t alignmen
 				tm_freelist[type] = curblk->next;
 
 			curblk->next = tm_alloclist[type];
-#ifndef SKIP_ERROR_HANDLING
-			curblk->real_size = size;
-#endif
+			if (tm_alloclist[type])
+				tm_alloclist[type]->prev = curblk;
 			tm_alloclist[type] = curblk;
 			tm_free[type] -= size;
 			return curblk;
@@ -193,40 +186,32 @@ static tm_block_t *heap_blk_alloc(int32_t type, uint32_t size, uint32_t alignmen
 }
 
 // frees a previously allocated heap block
-// (removes from alloc list and inserts into free list)
 static void heap_blk_free(uintptr_t base, vglMemType type) {
-	sceKernelLockLwMutex(&tm_mutexes[type], 1, NULL);
+	tm_block_t **slot = (tm_block_t **)(base - 4);
+	tm_block_t *block = *slot;
 	
-	tm_block_t *curblk = tm_alloclist[type];
-	tm_block_t *prevblk = NULL;
+	sceKernelLockLwMutex(&tm_mutexes[type], 1, NULL);
 
-	while (curblk && curblk->base != base) {
-		prevblk = curblk;
-		curblk = curblk->next;
-	}
-
-	if (!curblk) {
-		sceKernelUnlockLwMutex(&tm_mutexes[type], 1);
 #ifndef SKIP_ERROR_HANDLING
-		vgl_log("%s:%d An internal free failed (possible double free call) on pointer: 0x%08X!\n", __FILE__, __LINE__, base);
-#endif
+	if (!block || block->base + 4 != base) {
+		sceKernelUnlockLwMutex(&tm_mutexes[type], 1);
+		vgl_log("%s:%d A heap overflow or double free was detected on pointer: 0x%08X!\n", __FILE__, __LINE__, base);
 		return;
 	}
-
-#ifndef SKIP_ERROR_HANDLING
-	if (*(uint32_t *)(curblk->base + curblk->real_size - 4) != HEAP_COOKIE) {
-		vgl_log("%s:%d A heap overflow was detected on pointer: 0x%08X!\n", __FILE__, __LINE__, base);
-	}
 #endif
-
-	if (prevblk)
-		prevblk->next = curblk->next;
+	*slot = NULL;
+	
+	if (block->prev)
+		block->prev->next = block->next;
 	else
-		tm_alloclist[type] = curblk->next;
+		tm_alloclist[type] = block->next;
+	if (block->next)
+		block->next->prev = block->prev;
 
-	curblk->next = NULL;
+	block->next = NULL;
+	block->prev = NULL;
 
-	heap_blk_insert_free(curblk);
+	heap_blk_insert_free(block);
 	sceKernelUnlockLwMutex(&tm_mutexes[type], 1);
 }
 
@@ -252,20 +237,15 @@ static void heap_extend(int32_t type, void *base, uint32_t size) {
 
 // allocates memory from the heap (basically malloc())
 static void *heap_alloc(int32_t type, uint32_t size, uint32_t alignment) {
-#ifndef SKIP_ERROR_HANDLING
-	size += 4;
-#endif
 	sceKernelLockLwMutex(&tm_mutexes[type], 1, NULL);
-	tm_block_t *block = heap_blk_alloc(type, size, alignment);
+	tm_block_t *block = heap_blk_alloc(type, size + 4, alignment);
 	sceKernelUnlockLwMutex(&tm_mutexes[type], 1);
 
 	if (!block)
 		return NULL;
 
-#ifndef SKIP_ERROR_HANDLING
-	*(uint32_t *)(block->base + block->real_size - 4) = HEAP_COOKIE;
-#endif
-	return (void *)block->base;
+	*(tm_block_t **)block->base = block;
+	return (void *)(block->base + 4);
 }
 #endif
 
@@ -305,50 +285,51 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_
 	heap_init();
 #endif
 
+	SceUID mempool_id[VGL_MEM_ALL - 1] = {}; // UIDs of heap memblocks
 	if (mempool_size[VGL_MEM_VRAM]) {
 		mempool_id[VGL_MEM_VRAM] = sceKernelAllocMemBlock("cdram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW, mempool_size[VGL_MEM_VRAM], NULL);
 #ifdef HAVE_CUSTOM_HEAP
-		sceClibPrintf("lwmutex1: %x\n", sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_VRAM], "cdram mutex alloc", 0, 0, NULL));
+		sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_VRAM], "cdram mutex alloc", 0, 0, NULL);
 #endif
 	}
 	if (has_cached_mem) {
 		if (mempool_size[VGL_MEM_RAM]) {
 			mempool_id[VGL_MEM_RAM] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, mempool_size[VGL_MEM_RAM], NULL);
 #ifdef HAVE_CUSTOM_HEAP
-			sceClibPrintf("lwmutex2: %x\n", sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_RAM], "ram mutex alloc", 0, 0, NULL));
+			sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_RAM], "ram mutex alloc", 0, 0, NULL);
 #endif
 		}
 		if (mempool_size[VGL_MEM_SLOW]) {
 			mempool_id[VGL_MEM_SLOW] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW, mempool_size[VGL_MEM_SLOW], NULL);
 #ifdef HAVE_CUSTOM_HEAP
-			sceClibPrintf("lwmutex3: %x\n", sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_SLOW], "phycont mutex alloc", 0, 0, NULL));
+			sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_SLOW], "phycont mutex alloc", 0, 0, NULL);
 #endif
 		}
 		if (mempool_size[VGL_MEM_BUDGET]) {
 			mempool_id[VGL_MEM_BUDGET] = sceKernelAllocMemBlock("cdlg_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_RW, mempool_size[VGL_MEM_BUDGET], NULL);
 			vgl_has_cdlg_support = GL_FALSE;
 #ifdef HAVE_CUSTOM_HEAP
-			sceClibPrintf("lwmutex4: %x\n", sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_BUDGET], "cdlg mutex alloc", 0, 0, NULL));
+			sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_BUDGET], "cdlg mutex alloc", 0, 0, NULL);
 #endif
 		}
 	} else {
 		if (mempool_size[VGL_MEM_RAM]) {
 			mempool_id[VGL_MEM_RAM] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, mempool_size[VGL_MEM_RAM], NULL);
 #ifdef HAVE_CUSTOM_HEAP
-			sceClibPrintf("lwmutex2: %x\n", sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_RAM], "ram mutex alloc", 0, 0, NULL));
+			sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_RAM], "ram mutex alloc", 0, 0, NULL);
 #endif
 		}
 		if (mempool_size[VGL_MEM_SLOW]) {
 			mempool_id[VGL_MEM_SLOW] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW, mempool_size[VGL_MEM_SLOW], NULL);
 #ifdef HAVE_CUSTOM_HEAP
-			sceClibPrintf("lwmutex3: %x\n", sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_SLOW], "phycont mutex alloc", 0, 0, NULL));
+			sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_SLOW], "phycont mutex alloc", 0, 0, NULL);
 #endif
 		}
 		if (mempool_size[VGL_MEM_BUDGET]) {
 			mempool_id[VGL_MEM_BUDGET] = sceKernelAllocMemBlock("cdlg_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_NC_RW, mempool_size[VGL_MEM_BUDGET], NULL);
 			vgl_has_cdlg_support = GL_FALSE;
 #ifdef HAVE_CUSTOM_HEAP
-			sceClibPrintf("lwmutex4: %x\n", sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_BUDGET], "cdlg mutex alloc", 0, 0, NULL));
+			sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_BUDGET], "cdlg mutex alloc", 0, 0, NULL);
 #endif
 		}
 	}
@@ -423,7 +404,7 @@ vglMemType vgl_mem_get_type_by_addr(void *addr) {
 size_t vgl_mem_get_free_space(vglMemType type) {
 	if (type == VGL_MEM_EXTERNAL) {
 		return 0;
-#if defined(PHYCONT_ON_DEMAND)
+#ifdef PHYCONT_ON_DEMAND
 	} else if (type == VGL_MEM_SLOW) {
 		if (system_app_mode) {
 			SceAppMgrBudgetInfo info;
