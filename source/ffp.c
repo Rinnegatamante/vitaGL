@@ -37,15 +37,15 @@
 #endif
 #include "shared.h"
 
-#define setup_lighting_attributes(type, type2) \
+#define setup_lighting_attributes(type, type2, attr) \
 	if (mask.has_colors && color_material_state && (color_material_mode == type || color_material_mode == type2)) { \
 		vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_COLOR], sizeof(SceGxmVertexAttribute)); \
 		ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params; \
-		ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param); \
+		ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[attr]; \
 		ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride; \
 	} else { \
 		ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params; \
-		ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param); \
+		ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[attr]; \
 		ffp_vertex_attribute[ffp_vertex_num_params].format = SCE_GXM_ATTRIBUTE_FORMAT_F32; \
 		ffp_vertex_attribute[ffp_vertex_num_params].offset = 0; \
 		ffp_vertex_attribute[ffp_vertex_num_params].componentCount = 4; \
@@ -245,6 +245,7 @@ typedef struct {
 	uint32_t unif_buf_size;
 	uint8_t *unif_buf;
 	int vert_unifs[VERTEX_UNIFORMS_NUM];
+	int attributes[FFP_ATTRIBS_NUM];
 	SceGxmShaderPatcherId id;
 	shader_mask mask;
 } cached_vertex_shader;
@@ -259,6 +260,7 @@ uint32_t ffp_vertex_unif_buf_size;
 uint8_t *ffp_vertex_unif_buf;
 uint32_t ffp_fragment_unif_buf_size;
 uint8_t *ffp_fragment_unif_buf;
+int *ffp_vertex_attribs;
 int *ffp_vertex_params;
 int *ffp_fragment_params;
 SceGxmShaderPatcherId ffp_vertex_program_id;
@@ -313,18 +315,27 @@ void adjust_color_material_state() {
 	}
 }
 
-void reload_vertex_uniforms(int *vertex_params) {
+void reload_vertex_uniforms_and_attributes(int *vertex_params, int *vertex_attributes) {
 	sceClibMemset(vertex_params, -1, VERTEX_UNIFORMS_NUM * sizeof(int));
 	int cnt = sceGxmProgramGetParameterCount(ffp_vertex_program);
 	uint32_t *ptr = vglProgramGetParameterBase(ffp_vertex_program);
 	for (int i = 0; i < cnt; i++) {
 		SceGxmProgramParameter *p = (SceGxmProgramParameter *)ptr;
-		if (sceGxmProgramParameterGetCategory(p) == SCE_GXM_PARAMETER_CATEGORY_UNIFORM) {
+		SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(p);
+		switch (cat) {
+		case SCE_GXM_PARAMETER_CATEGORY_UNIFORM:
 			vertex_params[sceGxmProgramParameterGetName(p)[0] - 'A'] = sceGxmProgramParameterGetResourceIndex(p) * 4;
+			break;
+		case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE:
+			vertex_attributes[sceGxmProgramParameterGetName(p)[0] - 'N'] = sceGxmProgramParameterGetResourceIndex(p);
+			break;
+		default:
+			break;
 		}
 		ptr += 4;
 	}
 	ffp_vertex_params = vertex_params;
+	ffp_vertex_attribs = vertex_attributes;
 }
 
 void reload_fragment_uniforms(int *fragment_params) {
@@ -576,6 +587,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 					ffp_vertex_unif_buf_size = vert_shader_cache[i].unif_buf_size;
 					ffp_vertex_unif_buf = vert_shader_cache[i].unif_buf;
 					ffp_vertex_params = vert_shader_cache[i].vert_unifs;
+					ffp_vertex_attribs = vert_shader_cache[i].attributes;
 					ffp_dirty_vert = GL_FALSE;
 					break;
 				}
@@ -689,7 +701,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		vert_shader_cache[vert_shader_cache_idx].unif_buf = ffp_vertex_unif_buf;
 
 		// Reload existing uniform references
-		reload_vertex_uniforms(vert_shader_cache[vert_shader_cache_idx].vert_unifs);
+		reload_vertex_uniforms_and_attributes(vert_shader_cache[vert_shader_cache_idx].vert_unifs, vert_shader_cache[vert_shader_cache_idx].attributes);
 
 		// Clearing dirty flags
 		ffp_dirty_vert = GL_FALSE;
@@ -704,58 +716,48 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	ffp_vertex_num_params = 1;
 	if (attrs && base_texture_id == 0) { // Immediate mode and non-immediate only when #textures == 1 and no lights
 		// Vertex positions
-		const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(ffp_vertex_program, "position");
-		attrs[0].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+		attrs[0].regIndex = ffp_vertex_attribs[FFP_ATTRIB_POSITION];
 
 		if (mask.num_textures > 0) {
 			// Vertex texture coordinates (First Pass)
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord0");
-			attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			attrs[1].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX0];
 			ffp_vertex_num_params++;
 			
 			// Vertex texture coordinates (Second Pass)
 			if (mask.num_textures > 1) {
-				param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord1");
-				attrs[2].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+				attrs[2].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX1];
 				ffp_vertex_num_params++;
 			}
 		}
 
 		// Vertex colors
 		if (mask.has_colors) {
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
-			attrs[ffp_vertex_num_params++].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_COLOR];
 		}
 
 		// Lighting data
 		if (mask.lights_num > 0) {
 			ffp_lighting_streams = &attrs[ffp_vertex_num_params];
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "diff");
-			attrs[ffp_vertex_num_params++].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "spec");
-			attrs[ffp_vertex_num_params++].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "emission");
-			attrs[ffp_vertex_num_params++].regIndex = sceGxmProgramParameterGetResourceIndex(param);
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "normals");
-			attrs[ffp_vertex_num_params++].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_DIFFUSE];
+			attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_SPECULAR];
+			attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_EMISSION];
+			attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
 		} else {
 			ffp_lighting_streams = NULL;
 		}
 	} else { // Non immediate mode
 		// Vertex positions
-		const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(ffp_vertex_program, "position");
 		vgl_fast_memcpy(&ffp_vertex_attribute[0], &ffp_vertex_attrib_config[FFP_ATTRIB_POSITION], sizeof(SceGxmVertexAttribute));
 		ffp_vertex_attribute[0].streamIndex = 0;
-		ffp_vertex_attribute[0].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+		ffp_vertex_attribute[0].regIndex = ffp_vertex_attribs[FFP_ATTRIB_POSITION];
 		ffp_vertex_stream[0].stride = ffp_vertex_stream_config[FFP_ATTRIB_POSITION].stride;
 		ffp_vertex_stream[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 
 		// Vertex texture coordinates (First pass)
 		if (mask.num_textures > 0) {
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord0");
 			vgl_fast_memcpy(&ffp_vertex_attribute[1], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id)], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[1].streamIndex = 1;
-			ffp_vertex_attribute[1].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			ffp_vertex_attribute[1].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX0];
 			ffp_vertex_stream[1].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id)].stride;
 			ffp_vertex_stream[1].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
@@ -765,24 +767,19 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			ffp_lighting_streams = &ffp_vertex_stream[ffp_vertex_num_params];
 
 			// Lighting equation attributes
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
-			setup_lighting_attributes(GL_AMBIENT, GL_AMBIENT_AND_DIFFUSE);
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "diff");
-			setup_lighting_attributes(GL_DIFFUSE, GL_AMBIENT_AND_DIFFUSE);
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "spec");
-			setup_lighting_attributes(GL_SPECULAR, GL_SPECULAR);
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "emission");
-			setup_lighting_attributes(GL_EMISSION, GL_EMISSION);
+			setup_lighting_attributes(GL_AMBIENT, GL_AMBIENT_AND_DIFFUSE, FFP_ATTRIB_COLOR);
+			setup_lighting_attributes(GL_DIFFUSE, GL_AMBIENT_AND_DIFFUSE, FFP_ATTRIB_DIFFUSE);
+			setup_lighting_attributes(GL_SPECULAR, GL_SPECULAR, FFP_ATTRIB_SPECULAR);
+			setup_lighting_attributes(GL_EMISSION, GL_EMISSION, FFP_ATTRIB_EMISSION);
 			
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "normals");
 			if (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_NORMAL)) {
 				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_NORMAL], sizeof(SceGxmVertexAttribute));
 				ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
 				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
 			} else {
 				ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
 				ffp_vertex_attribute[ffp_vertex_num_params].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 				ffp_vertex_attribute[ffp_vertex_num_params].offset = 0;
 				ffp_vertex_attribute[ffp_vertex_num_params].componentCount = 3;
@@ -793,10 +790,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			ffp_lighting_streams = NULL;
 			if (mask.has_colors) {
 				// Vertex colors
-				param = sceGxmProgramFindParameterByName(ffp_vertex_program, "color");
 				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_COLOR], sizeof(SceGxmVertexAttribute));
 				ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_COLOR];
 				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
 				ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 				ffp_vertex_num_params++;
@@ -805,20 +801,18 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 		// Vertex texture coordinates (Second pass)
 		if (mask.num_textures > 1) {
-			param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord1");
 			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id + 1)], sizeof(SceGxmVertexAttribute));
 			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX1];
 			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id + 1)].stride;
 			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 			ffp_vertex_num_params++;
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 			// Vertex texture coordinates (Third pass)
 			if (mask.num_textures > 2) {
-				param = sceGxmProgramFindParameterByName(ffp_vertex_program, "texcoord2");
 				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id + 2)], sizeof(SceGxmVertexAttribute));
 				ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = sceGxmProgramParameterGetResourceIndex(param);
+				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX1];
 				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id + 2)].stride;
 				ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 				ffp_vertex_num_params++;

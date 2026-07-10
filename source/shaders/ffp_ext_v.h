@@ -80,24 +80,24 @@ void calculate_light(short i, float3 ecPosition, float3 N, float4 inout Ambient,
 #endif
 
 void main(
-	float4 position,
+	float4 Nposition,
 #if num_textures > 0
-	float2 texcoord0,
+	float2 Otexcoord0,
 #if num_textures > 1
-	float2 texcoord1,
+	float2 Utexcoord1,
 #if num_textures > 2
-	float2 texcoord2,
+	float2 Vtexcoord2,
 #endif
 #endif
 #endif
-#if has_colors == 1
-	float4 color, // We re-use this for ambient values when lighting is on
+#if has_colors == 1 || lights_num > 0
+	float4 Pcolor, // We re-use this for ambient values when lighting is on
 #endif
 #if lights_num > 0
-	float4 diff,
-	float4 spec,
-	float4 emission,
-	float3 normals,
+	float4 Qdiff,
+	float4 Rspec,
+	float4 Semission,
+	float3 Tnormals,
 #endif
 #if num_textures > 0
 	float2 out vTexcoord : TEXCOORD0,
@@ -124,9 +124,6 @@ void main(
 	float out vClip[clip_planes_num] : CLP0,
 	uniform float4 Hclip_planes_eq[clip_planes_num],
 #endif
-#if has_colors == 0 && lights_num > 0
-	uniform float4 ambient,
-#endif
 #if clip_planes_num > 0 || lights_num > 0 || calculate_wvp == 1
 	uniform float4x4 Imodelview,
 #endif
@@ -138,19 +135,19 @@ void main(
 	uniform float3x3 Lnormal_mat
 ) {
 #if fixed_mode_pos == 1
-	position.xy = GLFixed2ToFloat2(position.xy);
+	Nposition.xy = GLFixed2ToFloat2(Nposition.xy);
 #endif
 #if fixed_mode_pos == 2
-	position.xyz = GLFixed3ToFloat3(position.xyz);
+	Nposition.xyz = GLFixed3ToFloat3(Nposition.xyz);
 #endif
 #if fixed_mode_pos == 3
-	position = GLFixed4ToFloat4(position);
+	Nposition = GLFixed4ToFloat4(Nposition);
 #endif
 #if calculate_wvp == 1
 	Jwvp = mul(Jwvp, Imodelview); // Jwvp is actually the proj matrix
 #endif
 #if clip_planes_num > 0 || lights_num > 0
-	float4 modelpos = mul(Imodelview, position);
+	float4 modelpos = mul(Imodelview, Nposition);
 #endif
 	// User clip planes
 #if clip_planes_num > 0
@@ -158,17 +155,17 @@ void main(
 		vClip[i] = dot(modelpos, Hclip_planes_eq[i]);
 	}
 #endif
-	vPosition = mul(Jwvp, position);
+	vPosition = mul(Jwvp, Nposition);
 	
 	// Lighting
 #if lights_num > 0
 #if (fixed_mode_mask & 0x01) == 0x01
-	normals = GLFixed3ToFloat3(normals);
+	Tnormals = GLFixed3ToFloat3(Tnormals);
 #endif
 #if normalization == 1
-	float3 normal = normalize(mul(Lnormal_mat, normals));
+	float3 normal = normalize(mul(Lnormal_mat, Tnormals));
 #else
-	float3 normal = mul(Lnormal_mat, normals);
+	float3 normal = mul(Lnormal_mat, Tnormals);
 #endif
 	float3 ecPosition = modelpos.xyz / modelpos.w;
 #if shading_mode < 1 // GL_SMOOTH/GL_FLAT
@@ -183,41 +180,38 @@ void main(
 
 #if num_textures > 0
 #if (fixed_mode_mask & 0x02) == 0x02
-	texcoord0 = GLFixed2ToFloat2(texcoord0);
+	Otexcoord0 = GLFixed2ToFloat2(Otexcoord0);
 #endif
-	vTexcoord = mul(Ktexmat[0], float4(texcoord0, 0.f, 1.f)).xy;
+	vTexcoord = mul(Ktexmat[0], float4(Otexcoord0, 0.f, 1.f)).xy;
 #if num_textures > 1
 #if (fixed_mode_mask & 0x04) == 0x04
-	texcoord1 = GLFixed2ToFloat2(texcoord1);
+	Utexcoord1 = GLFixed2ToFloat2(Utexcoord1);
 #endif
-	vTexcoord2 = mul(Ktexmat[1], float4(texcoord1, 0.f, 1.f)).xy;
+	vTexcoord2 = mul(Ktexmat[1], float4(Utexcoord1, 0.f, 1.f)).xy;
 #if num_textures > 2
 #if (fixed_mode_mask & 0x08) == 0x08
-	texcoord2 = GLFixed2ToFloat2(texcoord2);
+	Vtexcoord2 = GLFixed2ToFloat2(Vtexcoord2);
 #endif
-	vTexcoord3 = mul(Ktexmat[2], float4(texcoord2, 0.f, 1.f)).xy;
+	vTexcoord3 = mul(Ktexmat[2], float4(Vtexcoord2, 0.f, 1.f)).xy;
 #endif
 #endif
 #endif
 #if lights_num > 0
-#if has_colors == 0
-	float4 color = ambient;
-#endif
 #if shading_mode < 1 // GL_SMOOTH/GL_FLAT
-	vColor = emission + color * Flight_global_ambient;
-	vColor += Ambient * color + Diffuse * diff + Specular * spec;
+	vColor = Semission + Pcolor * Flight_global_ambient;
+	vColor += Ambient * Pcolor + Diffuse * Qdiff + Specular * Rspec;
 	vColor = clamp(vColor, 0.0f, 1.0f);
 #endif
 #if shading_mode == 1 // GL_PHONG_WIN
-	vColor = color;
+	vColor = Pcolor;
 	vNormal = normal;
 	vEcPosition = ecPosition;
-	vDiffuse = diff;
-	vSpecular = spec;
-	vEmission = emission;
+	vDiffuse = Qdiff;
+	vSpecular = Rspec;
+	vEmission = Semission;
 #endif
 #elif has_colors == 1
-	vColor = color;
+	vColor = Pcolor;
 #endif
 	psize = Mpoint_size;
 }

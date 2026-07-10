@@ -297,10 +297,8 @@ extern int NEW_DISPLAY_HEIGHT; // Requested new display height in pixels
 #include "texture_callbacks.h"
 
 // Fixed-function pipeline shader cache settings
-#ifndef DISABLE_FS_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 27 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define SHADER_CACHE_MAGIC 28 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
-#endif
 
 // Custom shaders pipeline shader cache settings
 #ifdef HAVE_SHADER_CACHE
@@ -883,15 +881,16 @@ extern SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
 
 // Fixed function pipeline attribute masks
 enum {
-	FFP_ATTRIB_POSITION = 0,
-	FFP_ATTRIB_TEX0 = 1,
-	FFP_ATTRIB_COLOR = 2,
-	FFP_ATTRIB_DIFFUSE = 3,
-	FFP_ATTRIB_SPECULAR = 4,
-	FFP_ATTRIB_EMISSION = 5,
-	FFP_ATTRIB_NORMAL = 6,
-	FFP_ATTRIB_TEX1 = 7,
-	FFP_ATTRIB_TEX2 = 8,
+	FFP_ATTRIB_POSITION, // N
+	FFP_ATTRIB_TEX0, // O
+	FFP_ATTRIB_COLOR, // P
+	FFP_ATTRIB_DIFFUSE, // Q
+	FFP_ATTRIB_SPECULAR, // R
+	FFP_ATTRIB_EMISSION, // S
+	FFP_ATTRIB_NORMAL, // T
+	FFP_ATTRIB_TEX1, // U
+	FFP_ATTRIB_TEX2, // V
+	FFP_ATTRIBS_NUM,
 	FFP_ATTRIB_MASK_ALL = 0xFFFF
 };
 enum {
