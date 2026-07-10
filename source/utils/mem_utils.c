@@ -43,8 +43,15 @@ void *__real_realloc(void *ptr, uint32_t size);
 #endif
 
 #ifdef HAVE_CUSTOM_HEAP
+#ifndef UNSAFE_CUSTOM_HEAP
 static SceKernelLwMutexWork tm_mutexes[VGL_MEM_ALL - 1] = {};
 static SceKernelLwMutexWork header_mutex;
+#define tm_lock_mutex(mtx) sceKernelLockLwMutex(mtx, 1, NULL);
+#define tm_unlock_mutex(mtx) sceKernelUnlockLwMutex(mtx, 1);
+#else
+#define tm_lock_mutex(mtx)
+#define tm_unlock_mutex(mtx)
+#endif
 typedef struct tm_block_s {
 	struct tm_block_s *next; // next block in list (either free or allocated)
 	struct tm_block_s *prev; // prev block in list (used only during free)
@@ -53,23 +60,23 @@ typedef struct tm_block_s {
 	vglMemType type;
 } tm_block_t;
 
-static tm_block_t *tm_alloclist[VGL_MEM_ALL - 1]; // list of allocated blocks
-static tm_block_t *tm_freelist[VGL_MEM_ALL - 1]; // list of free blocks
-static uint32_t tm_free[VGL_MEM_ALL - 1]; // see enum vglMemType
+static tm_block_t *tm_alloclist[VGL_MEM_ALL - 1] = {}; // list of allocated blocks
+static tm_block_t *tm_freelist[VGL_MEM_ALL - 1] = {}; // list of free blocks
+static uint32_t tm_free[VGL_MEM_ALL - 1] = {}; // see enum vglMemType
 
 #define HEADERS_PER_CHUNK (8192)
 static tm_block_t *tm_free_headers = NULL;
 
 // get new block header
 static inline __attribute__((always_inline)) tm_block_t *heap_blk_new(void) {
-	sceKernelLockLwMutex(&header_mutex, 1, NULL);
+	tm_lock_mutex(&header_mutex)
 	if (!tm_free_headers) {
 		sceClibPrintf("More chunks\n");
 		tm_block_t *chunk = malloc(sizeof(tm_block_t) * HEADERS_PER_CHUNK);
 #ifndef SKIP_ERROR_HANDLING
 		if (!chunk) {
 			vgl_log("%s:%d Out of memory: cannot allocate new headers for memory blocks!\n", __FILE__, __LINE__, base);	
-			sceKernelUnlockLwMutex(&header_mutex, 1);
+			tm_unlock_mutex(&header_mutex)
 			return NULL;
 		}
 #endif
@@ -81,7 +88,7 @@ static inline __attribute__((always_inline)) tm_block_t *heap_blk_new(void) {
 	}
 	tm_block_t *h = tm_free_headers;
 	tm_free_headers = h->next;
-	sceKernelUnlockLwMutex(&header_mutex, 1);
+	tm_unlock_mutex(&header_mutex)
 	
 	vgl_memset(h, 0, sizeof(tm_block_t));
 	return h;
@@ -89,10 +96,10 @@ static inline __attribute__((always_inline)) tm_block_t *heap_blk_new(void) {
 
 // release block header
 static inline __attribute__((always_inline)) void heap_blk_release(tm_block_t *block) {
-	sceKernelLockLwMutex(&header_mutex, 1, NULL);
+	tm_lock_mutex(&header_mutex)
 	block->next = tm_free_headers;
 	tm_free_headers = block;
-	sceKernelUnlockLwMutex(&header_mutex, 1);
+	tm_unlock_mutex(&header_mutex)
 }
 
 // inserts a block into the free list and merges with neighboring
@@ -204,11 +211,11 @@ static void heap_blk_free(uintptr_t base, vglMemType type) {
 	tm_block_t **slot = (tm_block_t **)(base - 4);
 	tm_block_t *block = *slot;
 	
-	sceKernelLockLwMutex(&tm_mutexes[type], 1, NULL);
+	tm_lock_mutex(&tm_mutexes[type])
 
 #ifndef SKIP_ERROR_HANDLING
 	if (!block || block->base + 4 != base) {
-		sceKernelUnlockLwMutex(&tm_mutexes[type], 1);
+		tm_unlock_mutex(&tm_mutexes[type])
 		vgl_log("%s:%d A heap overflow or double free was detected on pointer: 0x%08X!\n", __FILE__, __LINE__, base);
 		return;
 	}
@@ -226,7 +233,7 @@ static void heap_blk_free(uintptr_t base, vglMemType type) {
 	block->prev = NULL;
 
 	heap_blk_insert_free(block);
-	sceKernelUnlockLwMutex(&tm_mutexes[type], 1);
+	tm_unlock_mutex(&tm_mutexes[type])
 }
 
 // initializes heap variables and blockpool
@@ -250,9 +257,9 @@ static void heap_extend(int32_t type, void *base, uint32_t size) {
 
 // allocates memory from the heap (basically malloc())
 static void *heap_alloc(int32_t type, uint32_t size, uint32_t alignment) {
-	sceKernelLockLwMutex(&tm_mutexes[type], 1, NULL);
+	tm_lock_mutex(&tm_mutexes[type])
 	tm_block_t *block = heap_blk_alloc(type, size + 4, alignment);
-	sceKernelUnlockLwMutex(&tm_mutexes[type], 1);
+	tm_unlock_mutex(&tm_mutexes[type])
 
 	if (!block)
 		return NULL;
@@ -295,54 +302,56 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_
 
 #ifdef HAVE_CUSTOM_HEAP
 	// Initialize heap
+#ifndef UNSAFE_CUSTOM_HEAP
 	sceKernelCreateLwMutex(&header_mutex, "header mutex alloc", 0, 0, NULL);
+#endif
 	heap_init();
 #endif
 
 	SceUID mempool_id[VGL_MEM_ALL - 1] = {}; // UIDs of heap memblocks
 	if (mempool_size[VGL_MEM_VRAM]) {
 		mempool_id[VGL_MEM_VRAM] = sceKernelAllocMemBlock("cdram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW, mempool_size[VGL_MEM_VRAM], NULL);
-#ifdef HAVE_CUSTOM_HEAP
+#if defined(HAVE_CUSTOM_HEAP) && !defined(UNSAFE_CUSTOM_HEAP)
 		sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_VRAM], "cdram mutex alloc", 0, 0, NULL);
 #endif
 	}
 	if (has_cached_mem) {
 		if (mempool_size[VGL_MEM_RAM]) {
 			mempool_id[VGL_MEM_RAM] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW, mempool_size[VGL_MEM_RAM], NULL);
-#ifdef HAVE_CUSTOM_HEAP
+#if defined(HAVE_CUSTOM_HEAP) && !defined(UNSAFE_CUSTOM_HEAP)
 			sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_RAM], "ram mutex alloc", 0, 0, NULL);
 #endif
 		}
 		if (mempool_size[VGL_MEM_SLOW]) {
 			mempool_id[VGL_MEM_SLOW] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW, mempool_size[VGL_MEM_SLOW], NULL);
-#ifdef HAVE_CUSTOM_HEAP
+#if defined(HAVE_CUSTOM_HEAP) && !defined(UNSAFE_CUSTOM_HEAP)
 			sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_SLOW], "phycont mutex alloc", 0, 0, NULL);
 #endif
 		}
 		if (mempool_size[VGL_MEM_BUDGET]) {
 			mempool_id[VGL_MEM_BUDGET] = sceKernelAllocMemBlock("cdlg_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_RW, mempool_size[VGL_MEM_BUDGET], NULL);
 			vgl_has_cdlg_support = GL_FALSE;
-#ifdef HAVE_CUSTOM_HEAP
+#if defined(HAVE_CUSTOM_HEAP) && !defined(UNSAFE_CUSTOM_HEAP)
 			sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_BUDGET], "cdlg mutex alloc", 0, 0, NULL);
 #endif
 		}
 	} else {
 		if (mempool_size[VGL_MEM_RAM]) {
 			mempool_id[VGL_MEM_RAM] = sceKernelAllocMemBlock("ram_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, mempool_size[VGL_MEM_RAM], NULL);
-#ifdef HAVE_CUSTOM_HEAP
+#if defined(HAVE_CUSTOM_HEAP) && !defined(UNSAFE_CUSTOM_HEAP)
 			sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_RAM], "ram mutex alloc", 0, 0, NULL);
 #endif
 		}
 		if (mempool_size[VGL_MEM_SLOW]) {
 			mempool_id[VGL_MEM_SLOW] = sceKernelAllocMemBlock("phycont_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW, mempool_size[VGL_MEM_SLOW], NULL);
-#ifdef HAVE_CUSTOM_HEAP
+#if defined(HAVE_CUSTOM_HEAP) && !defined(UNSAFE_CUSTOM_HEAP)
 			sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_SLOW], "phycont mutex alloc", 0, 0, NULL);
 #endif
 		}
 		if (mempool_size[VGL_MEM_BUDGET]) {
 			mempool_id[VGL_MEM_BUDGET] = sceKernelAllocMemBlock("cdlg_mempool", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_NC_RW, mempool_size[VGL_MEM_BUDGET], NULL);
 			vgl_has_cdlg_support = GL_FALSE;
-#ifdef HAVE_CUSTOM_HEAP
+#if defined(HAVE_CUSTOM_HEAP) && !defined(UNSAFE_CUSTOM_HEAP)
 			sceKernelCreateLwMutex(&tm_mutexes[VGL_MEM_BUDGET], "cdlg mutex alloc", 0, 0, NULL);
 #endif
 		}
