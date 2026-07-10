@@ -279,8 +279,6 @@ void *vgl_alloc_phycont_block(uint32_t size) {
 #endif
 
 void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_t size_cdlg) {
-	sceKernelCreateLwMutex(&header_mutex, "header mutex alloc", 0, 0, NULL);
-	
 	vgl_has_cdlg_support = GL_TRUE;
 
 	if (!has_cached_mem && size_ram > 0xC800000) // Vita has a smaller address mapping for uncached mem
@@ -297,6 +295,7 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_
 
 #ifdef HAVE_CUSTOM_HEAP
 	// Initialize heap
+	sceKernelCreateLwMutex(&header_mutex, "header mutex alloc", 0, 0, NULL);
 	heap_init();
 #endif
 
