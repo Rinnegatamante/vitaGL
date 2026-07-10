@@ -43,39 +43,56 @@ void *__real_realloc(void *ptr, uint32_t size);
 #endif
 
 #ifdef HAVE_CUSTOM_HEAP
-SceKernelLwMutexWork tm_mutexes[VGL_MEM_ALL - 1] = {};
-
+static SceKernelLwMutexWork tm_mutexes[VGL_MEM_ALL - 1] = {};
+static SceKernelLwMutexWork header_mutex;
 typedef struct tm_block_s {
 	struct tm_block_s *next; // next block in list (either free or allocated)
 	struct tm_block_s *prev; // prev block in list (used only during free)
-	int32_t type; // one of vglMemType
 	uintptr_t base; // block start address
-	uint32_t offset; // offset for USSE stuff (unused)
 	uint32_t size; // block size
+	vglMemType type;
 } tm_block_t;
 
 static tm_block_t *tm_alloclist[VGL_MEM_ALL - 1]; // list of allocated blocks
 static tm_block_t *tm_freelist[VGL_MEM_ALL - 1]; // list of free blocks
 static uint32_t tm_free[VGL_MEM_ALL - 1]; // see enum vglMemType
 
+#define HEADERS_PER_CHUNK (8192)
+static tm_block_t *tm_free_headers = NULL;
+
 // get new block header
-static inline tm_block_t *heap_blk_new(void) {
-	return calloc(1, sizeof(tm_block_t));
+static inline __attribute__((always_inline)) tm_block_t *heap_blk_new(void) {
+	sceKernelLockLwMutex(&header_mutex, 1, NULL);
+	if (!tm_free_headers) {
+		sceClibPrintf("More chunks\n");
+		tm_block_t *chunk = malloc(sizeof(tm_block_t) * HEADERS_PER_CHUNK);
+#ifndef SKIP_ERROR_HANDLING
+		if (!chunk) {
+			vgl_log("%s:%d Out of memory: cannot allocate new headers for memory blocks!\n", __FILE__, __LINE__, base);	
+			sceKernelUnlockLwMutex(&header_mutex, 1);
+			return NULL;
+		}
+#endif
+		for (int i = 0; i < HEADERS_PER_CHUNK - 1; i++) {
+			chunk[i].next = &chunk[i + 1];
+		}
+		chunk[HEADERS_PER_CHUNK - 1].next = NULL;
+		tm_free_headers = &chunk[0];
+	}
+	tm_block_t *h = tm_free_headers;
+	tm_free_headers = h->next;
+	sceKernelUnlockLwMutex(&header_mutex, 1);
+	
+	vgl_memset(h, 0, sizeof(tm_block_t));
+	return h;
 }
 
 // release block header
-static inline void heap_blk_release(tm_block_t *block) {
-	free(block);
-}
-
-// determine if two blocks can be merged into one
-// blocks of different types can't be merged,
-// blocks of same type can only be merged if they're next to each other
-// in memory and have matching offsets
-static inline int heap_blk_mergeable(tm_block_t *a, tm_block_t *b) {
-	return a->type == b->type
-		&& a->base + a->size == b->base
-		&& a->offset + a->size == b->offset;
+static inline __attribute__((always_inline)) void heap_blk_release(tm_block_t *block) {
+	sceKernelLockLwMutex(&header_mutex, 1, NULL);
+	block->next = tm_free_headers;
+	tm_free_headers = block;
+	sceKernelUnlockLwMutex(&header_mutex, 1);
 }
 
 // inserts a block into the free list and merges with neighboring
@@ -96,13 +113,13 @@ static void heap_blk_insert_free(tm_block_t *block) {
 	block->next = curblk;
 	tm_free[block->type] += block->size;
 
-	if (curblk && heap_blk_mergeable(block, curblk)) {
+	if (curblk && block->base + block->size == curblk->base) {
 		block->size += curblk->size;
 		block->next = curblk->next;
 		heap_blk_release(curblk);
 	}
 
-	if (prevblk && heap_blk_mergeable(prevblk, block)) {
+	if (prevblk && prevblk->base + prevblk->size == block->base) {
 		prevblk->size += block->size;
 		prevblk->next = block->next;
 		heap_blk_release(block);
@@ -145,11 +162,9 @@ static tm_block_t *heap_blk_alloc(int32_t type, uint32_t size, uint32_t alignmen
 				skipblk->next = curblk;
 				skipblk->type = curblk->type;
 				skipblk->base = curblk->base;
-				skipblk->offset = curblk->offset;
 				skipblk->size = skip;
 
 				curblk->base += skip;
-				curblk->offset += skip;
 				curblk->size -= skip;
 
 				prevblk = skipblk;
@@ -160,7 +175,6 @@ static tm_block_t *heap_blk_alloc(int32_t type, uint32_t size, uint32_t alignmen
 				curblk->next = unusedblk;
 				unusedblk->type = curblk->type;
 				unusedblk->base = curblk->base + size;
-				unusedblk->offset = curblk->offset + size;
 				unusedblk->size = curblk->size - size;
 				curblk->size = size;
 			}
@@ -230,7 +244,6 @@ static void heap_extend(int32_t type, void *base, uint32_t size) {
 	block->next = NULL;
 	block->type = type;
 	block->base = (uintptr_t)base;
-	block->offset = 0;
 	block->size = size;
 	heap_blk_insert_free(block);
 }
@@ -266,6 +279,8 @@ void *vgl_alloc_phycont_block(uint32_t size) {
 #endif
 
 void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_t size_cdlg) {
+	sceKernelCreateLwMutex(&header_mutex, "header mutex alloc", 0, 0, NULL);
+	
 	vgl_has_cdlg_support = GL_TRUE;
 
 	if (!has_cached_mem && size_ram > 0xC800000) // Vita has a smaller address mapping for uncached mem
