@@ -472,6 +472,9 @@ size_t vgl_malloc_usable_size(void *ptr) {
 }
 
 void vgl_free(void *ptr) {
+	if (!ptr)
+		return;
+
 	vglMemType type = vgl_mem_get_type_by_addr(ptr);
 	if (type == VGL_MEM_EXTERNAL)
 #ifdef HAVE_WRAPPED_ALLOCATORS
