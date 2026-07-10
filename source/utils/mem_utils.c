@@ -462,8 +462,13 @@ size_t vgl_malloc_usable_size(void *ptr) {
 		return info.mappedSize;
 	}
 #endif
-	else
-		return sceClibMspaceMallocUsableSize(ptr);
+#ifdef HAVE_CUSTOM_HEAP
+	tm_block_t **hdr = (tm_block_t **)((uintptr_t)ptr - 4);
+	tm_block_t *block = *hdr;
+	return block->size - 4;
+#else
+	return sceClibMspaceMallocUsableSize(ptr);
+#endif
 }
 
 void vgl_free(void *ptr) {
