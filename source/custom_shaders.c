@@ -1435,7 +1435,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 }
 
 #ifdef ENABLE_LEGACY_PIPELINE
-void _vglDrawObjects_CustomShadersIMPL(GLboolean implicit_wvp) {
+void _vglDrawObjects_CustomShadersIMPL() {
 #ifdef HAVE_PROFILING
 	uint32_t draw_start = sceKernelGetProcessTimeLow();
 #endif

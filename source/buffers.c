@@ -693,8 +693,8 @@ void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, con
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[0];
-	SceGxmVertexStream *streams = &ffp_vertex_stream_config[0];
+	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[FFP_ATTRIB_POSITION];
+	SceGxmVertexStream *streams = &ffp_vertex_stream_config[FFP_ATTRIB_POSITION];
 
 	unsigned short bpe;
 	switch (type) {
@@ -725,8 +725,8 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[2];
-	SceGxmVertexStream *streams = &ffp_vertex_stream_config[2];
+	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[FFP_ATTRIB_COLOR];
+	SceGxmVertexStream *streams = &ffp_vertex_stream_config[FFP_ATTRIB_COLOR];
 
 	unsigned short bpe;
 	switch (type) {
@@ -769,8 +769,8 @@ void vglTexCoordPointer(GLint size, GLenum type, GLsizei stride, GLuint count, c
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
-	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[1];
-	SceGxmVertexStream *streams = &ffp_vertex_stream_config[1];
+	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[FFP_ATTRIB_TEX0];
+	SceGxmVertexStream *streams = &ffp_vertex_stream_config[FFP_ATTRIB_TEX0];
 
 	unsigned short bpe;
 	switch (type) {
@@ -827,8 +827,8 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *po
 void vglVertexPointerMapped(GLint size, const GLvoid *pointer) {
 	THREAD_SAFE()
 
-	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[0];
-	SceGxmVertexStream *streams = &ffp_vertex_stream_config[0];
+	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[FFP_ATTRIB_POSITION];
+	SceGxmVertexStream *streams = &ffp_vertex_stream_config[FFP_ATTRIB_POSITION];
 
 	attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 	attributes->componentCount = size;
@@ -840,8 +840,8 @@ void vglVertexPointerMapped(GLint size, const GLvoid *pointer) {
 void vglColorPointerMapped(GLenum type, const GLvoid *pointer) {
 	THREAD_SAFE()
 
-	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[2];
-	SceGxmVertexStream *streams = &ffp_vertex_stream_config[2];
+	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[FFP_ATTRIB_COLOR];
+	SceGxmVertexStream *streams = &ffp_vertex_stream_config[FFP_ATTRIB_COLOR];
 
 	unsigned short bpe;
 	switch (type) {
@@ -878,8 +878,8 @@ void vglColorPointerMapped(GLenum type, const GLvoid *pointer) {
 void vglTexCoordPointerMapped(const GLvoid *pointer) {
 	THREAD_SAFE()
 
-	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[1];
-	SceGxmVertexStream *streams = &ffp_vertex_stream_config[1];
+	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[FFP_ATTRIB_TEX0];
+	SceGxmVertexStream *streams = &ffp_vertex_stream_config[FFP_ATTRIB_TEX0];
 
 	attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 	attributes->componentCount = 2;

@@ -567,7 +567,7 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type, const void
 	restore_polygon_mode(gxm_p);
 }
 
-void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
+void vglDrawObjects(GLenum mode, GLsizei count) {
 	THREAD_SAFE()
 
 #ifdef ENABLE_LEGACY_PIPELINE
@@ -585,11 +585,11 @@ void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp) {
 
 	texture_unit *tex_unit = &texture_units[0];
 	if (cur_program != 0) {
-		_vglDrawObjects_CustomShadersIMPL(implicit_wvp);
+		_vglDrawObjects_CustomShadersIMPL();
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, index_object, count);
-	} else if (ffp_vertex_attrib_state & (1 << 0)) {
+	} else if (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_POSITION)) {
 		reload_ffp_shaders(NULL, NULL, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
-		if (ffp_vertex_attrib_state & (1 << 1)) {
+		if (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_TEX0)) {
 			if (texture_slots[tex_unit->tex_id[0]].status != TEX_VALID)
 				return;
 #ifndef TEXTURES_SPEEDHACK

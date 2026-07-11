@@ -1072,7 +1072,7 @@ void vglColorPointer(GLint size, GLenum type, GLsizei stride, GLuint count, cons
 void vglColorPointerMapped(GLenum type, const GLvoid *pointer);
 
 // Performs a draw with the legacy vgl* draw pipeline.
-void vglDrawObjects(GLenum mode, GLsizei count, GLboolean implicit_wvp);
+void vglDrawObjects(GLenum mode, GLsizei count);
 
 // Sets up the index list to use for the subsequent legacy vgl* draw pipeline draw action.
 void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer);
