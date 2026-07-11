@@ -27,7 +27,6 @@ In order to build vitaGL use the following command: `make install`.
 | Flag | Description |
 | --- | --- |
 |`HAVE_CUSTOM_HEAP=1`| Replaces sceClibMspace heap implementation with custom one (Safer and with proper diagnostic).|
-|`HAVE_CUSTOM_HEAP=2`| Replaces sceClibMspace heap implementation with custom one without multithread-safeness for extra speed (Safer and with proper diagnostic).|
 |`HAVE_GLSL_TEXTURE_SIZE=1`| Enables experimental automatic handling of textureSize GLSL calls with the GLSL translator.|
 |`HAVE_GLSL_UBOS=1`| Enables experimental support for nominal uniform buffer objects in GLSL shaders with the GLSL translator.|
 |`HAVE_FFP_SHADER_SUPPORT=1`| Enables support for GLSL 1.20 legacy built-in ffp uniform bindings (eg. gl_ModelViewProjectionMatrix). Causes the shader pipeline to be slightly slower.|
