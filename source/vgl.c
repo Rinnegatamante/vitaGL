@@ -787,3 +787,9 @@ void *vglAllocFromScratch(size_t size) {
 uint32_t vglGetFrameNumber() {
 	return vgl_framecount;
 }
+
+void vglPhycontMemLazyInit(size_t size) {
+#ifndef PHYCONT_ON_DEMAND
+	vgl_mem_provide_phycont(size);
+#endif
+}

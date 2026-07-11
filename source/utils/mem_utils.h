@@ -99,6 +99,9 @@ void vgl_mem_term(void);
 size_t vgl_mem_get_free_space(vglMemType type);
 size_t vgl_mem_get_total_space(vglMemType type);
 vglMemType vgl_mem_get_type_by_addr(void *addr);
+#ifndef PHYCONT_ON_DEMAND
+void vgl_mem_provide_phycont(size_t size);
+#endif
 
 size_t vgl_malloc_usable_size(void *ptr);
 void *vgl_malloc(size_t size, vglMemType type);
