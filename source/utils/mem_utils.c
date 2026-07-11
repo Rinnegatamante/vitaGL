@@ -267,6 +267,73 @@ static void *heap_alloc(int32_t type, uint32_t size, uint32_t alignment) {
 	*(tm_block_t **)block->base = block;
 	return (void *)(block->base + 4);
 }
+
+static GLboolean heap_blk_try_extend(vglMemType type, tm_block_t *block, uint32_t new_size) {
+	uintptr_t target_base = block->base + block->size;
+
+	tm_block_t *curblk = tm_freelist[type];
+	tm_block_t *prevblk = NULL;
+	while (curblk && curblk->base < target_base) {
+		prevblk = curblk;
+		curblk = curblk->next;
+	}
+
+	if (!curblk || curblk->base != target_base)
+		return GL_FALSE;
+
+	uint32_t available = block->size + curblk->size;
+	if (available < new_size)
+		return GL_FALSE;
+
+	uint32_t needed_from_free = new_size - block->size;
+
+	if (needed_from_free == curblk->size) {
+		if (prevblk)
+			prevblk->next = curblk->next;
+		else
+			tm_freelist[type] = curblk->next;
+		tm_free[type] -= curblk->size;
+		heap_blk_release(curblk);
+	} else {
+		curblk->base += needed_from_free;
+		curblk->size -= needed_from_free;
+		tm_free[type] -= needed_from_free;
+	}
+
+	block->size = new_size;
+	return GL_TRUE;
+}
+
+static void *heap_realloc(vglMemType type, void *ptr, uint32_t size) {
+	uint32_t real_size = size + 4;
+
+	tm_block_t **slot = (tm_block_t **)((uintptr_t)ptr - 4);
+	tm_block_t *block = *slot;
+#ifndef SKIP_ERROR_HANDLING
+	if (!block || block->base + 4 != (uintptr_t)ptr) {
+		vgl_log("%s:%d Corrupted block during realloc: 0x%08X!\n", __FILE__, __LINE__, (uintptr_t)ptr);
+		return NULL;
+	}
+#endif
+	if (real_size <= block->size) {
+		return ptr;
+	}
+
+	sceKernelLockLwMutex(&tm_mutexes[type], 1, NULL);
+	int extended = heap_blk_try_extend(type, block, real_size);
+	sceKernelUnlockLwMutex(&tm_mutexes[type], 1);
+
+	if (extended) {
+		return ptr;
+	}
+
+	void *newptr = heap_alloc(type, size, MEM_ALIGNMENT);
+	if (newptr) {
+		vgl_fast_memcpy(newptr, ptr, block->size - 4);
+		heap_blk_free((uintptr_t)ptr, type);
+	}
+	return newptr;
+}
 #endif
 
 #ifdef PHYCONT_ON_DEMAND
@@ -594,18 +661,27 @@ void *vgl_memalign(size_t alignment, size_t size, vglMemType type) {
 }
 
 void *vgl_realloc(void *ptr, size_t size) {
+	if (!ptr) {
+#ifdef HAVE_WRAPPED_ALLOCATORS
+		return __real_malloc(size);
+#else
+		return malloc(size);
+#endif
+	}
 	vglMemType type = vgl_mem_get_type_by_addr(ptr);
-	if (type == VGL_MEM_EXTERNAL)
+	if (type == VGL_MEM_EXTERNAL) {
 #ifdef HAVE_WRAPPED_ALLOCATORS
 		return __real_realloc(ptr, size);
 #else
 		return realloc(ptr, size);
 #endif
+	}
 #ifdef PHYCONT_ON_DEMAND
-	else if (type == VGL_MEM_SLOW) {
+	if (type == VGL_MEM_SLOW) {
 		size_t old_size = vgl_malloc_usable_size(ptr);
-		if (old_size >= size)
+		if (old_size >= size) {
 			return ptr;
+		}
 		void *res = vgl_alloc_phycont_block(size);
 		if (res) {
 			vgl_fast_memcpy(res, ptr, old_size);
@@ -615,8 +691,8 @@ void *vgl_realloc(void *ptr, size_t size) {
 	}
 #endif
 #ifndef HAVE_CUSTOM_HEAP
-	else if (mempool_mspace[type])
-		return sceClibMspaceRealloc(mempool_mspace[type], ptr, size);
+	return sceClibMspaceRealloc(mempool_mspace[type], ptr, size);
+#else
+	return heap_realloc(type, ptr, size);
 #endif
-	return NULL;
 }
