@@ -68,7 +68,8 @@
 	streams = &ffp_vertex_stream_config[attrib]; \
 	attributes->format = fmt; \
 	attributes->componentCount = size; \
-	streams->stride = stride ? stride : _stride;
+	streams->stride = stride ? stride : _stride; \
+	ffp_dirty_vert_attr |= (1 << attrib);
 
 uint8_t ffp_texcoord_binds[3] = {FFP_ATTRIB_TEX0, FFP_ATTRIB_TEX1, FFP_ATTRIB_TEX2};
 
@@ -271,6 +272,7 @@ SceGxmVertexProgram *ffp_vertex_program_patched; // Patched vertex program for t
 SceGxmFragmentProgram *ffp_fragment_program_patched; // Patched fragment program for the fixed function pipeline implementation
 GLboolean ffp_dirty_frag = GL_TRUE;
 GLboolean ffp_dirty_vert = GL_TRUE;
+uint16_t ffp_dirty_vert_attr = 0xFFFF;
 uint16_t dirty_vert_unifs = 0xFFFF;
 uint32_t dirty_frag_unifs = 0xFFFFFFFF;
 blend_config ffp_blend_info;
@@ -588,6 +590,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 					ffp_vertex_unif_buf = vert_shader_cache[i].unif_buf;
 					ffp_vertex_params = vert_shader_cache[i].vert_unifs;
 					ffp_vertex_attribs = vert_shader_cache[i].attributes;
+					ffp_dirty_vert_attr = 0xFFFF;
 					ffp_dirty_vert = GL_FALSE;
 					break;
 				}
@@ -705,122 +708,146 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 		// Clearing dirty flags
 		ffp_dirty_vert = GL_FALSE;
+		ffp_dirty_vert_attr = 0xFFFF;
 	}
 
-	// Not going for the vertex config setup if we have aligned datas
-	if (!attrs && mask.num_textures == 1 && mask.lights_num == 0) {
-		attrs = ffp_vertex_attrib_config;
-		streams = ffp_vertex_stream_config;
-	}
+	if (ffp_dirty_vert_attr) {
+		// Not going for the vertex config setup if we have aligned datas
+		if (!attrs && mask.num_textures == 1 && mask.lights_num == 0) {
+			attrs = ffp_vertex_attrib_config;
+			streams = ffp_vertex_stream_config;
+		}
+		
+		ffp_vertex_num_params = 1;
+		if (attrs && base_texture_id == 0) { // Immediate mode and non-immediate only when #textures == 1 and no lights
+			// Vertex positions
+			attrs[0].regIndex = ffp_vertex_attribs[FFP_ATTRIB_POSITION];
 
-	ffp_vertex_num_params = 1;
-	if (attrs && base_texture_id == 0) { // Immediate mode and non-immediate only when #textures == 1 and no lights
-		// Vertex positions
-		attrs[0].regIndex = ffp_vertex_attribs[FFP_ATTRIB_POSITION];
-
-		if (mask.num_textures > 0) {
-			// Vertex texture coordinates (First Pass)
-			attrs[1].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX0];
-			ffp_vertex_num_params++;
-			
-			// Vertex texture coordinates (Second Pass)
-			if (mask.num_textures > 1) {
-				attrs[2].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX1];
+			if (mask.num_textures > 0) {
+				// Vertex texture coordinates (First Pass)
+				attrs[1].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX0];
 				ffp_vertex_num_params++;
-			}
-		}
-
-		// Vertex colors
-		if (mask.has_colors) {
-			attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_COLOR];
-		}
-
-		// Lighting data
-		if (mask.lights_num > 0) {
-			ffp_lighting_streams = &attrs[ffp_vertex_num_params];
-			attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_DIFFUSE];
-			attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_SPECULAR];
-			attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_EMISSION];
-			attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
-		} else {
-			ffp_lighting_streams = NULL;
-		}
-	} else { // Non immediate mode
-		// Vertex positions
-		vgl_fast_memcpy(&ffp_vertex_attribute[0], &ffp_vertex_attrib_config[FFP_ATTRIB_POSITION], sizeof(SceGxmVertexAttribute));
-		ffp_vertex_attribute[0].streamIndex = 0;
-		ffp_vertex_attribute[0].regIndex = ffp_vertex_attribs[FFP_ATTRIB_POSITION];
-		ffp_vertex_stream[0].stride = ffp_vertex_stream_config[FFP_ATTRIB_POSITION].stride;
-		ffp_vertex_stream[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-
-		// Vertex texture coordinates (First pass)
-		if (mask.num_textures > 0) {
-			vgl_fast_memcpy(&ffp_vertex_attribute[1], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id)], sizeof(SceGxmVertexAttribute));
-			ffp_vertex_attribute[1].streamIndex = 1;
-			ffp_vertex_attribute[1].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX0];
-			ffp_vertex_stream[1].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id)].stride;
-			ffp_vertex_stream[1].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-			ffp_vertex_num_params++;
-		}
-
-		if (mask.lights_num > 0) {
-			ffp_lighting_streams = &ffp_vertex_stream[ffp_vertex_num_params];
-
-			// Lighting equation attributes
-			setup_lighting_attributes(GL_AMBIENT, GL_AMBIENT_AND_DIFFUSE, FFP_ATTRIB_COLOR);
-			setup_lighting_attributes(GL_DIFFUSE, GL_AMBIENT_AND_DIFFUSE, FFP_ATTRIB_DIFFUSE);
-			setup_lighting_attributes(GL_SPECULAR, GL_SPECULAR, FFP_ATTRIB_SPECULAR);
-			setup_lighting_attributes(GL_EMISSION, GL_EMISSION, FFP_ATTRIB_EMISSION);
 			
-			if (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_NORMAL)) {
-				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_NORMAL], sizeof(SceGxmVertexAttribute));
-				ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
-				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-			} else {
-				ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
-				ffp_vertex_attribute[ffp_vertex_num_params].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-				ffp_vertex_attribute[ffp_vertex_num_params].offset = 0;
-				ffp_vertex_attribute[ffp_vertex_num_params].componentCount = 3;
-				ffp_vertex_stream[ffp_vertex_num_params].stride = 0;
+				// Vertex texture coordinates (Second Pass)
+				if (mask.num_textures > 1) {
+					attrs[2].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX1];
+					ffp_vertex_num_params++;
+				}
 			}
-			ffp_vertex_stream[ffp_vertex_num_params++].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-		} else {
-			ffp_lighting_streams = NULL;
+
+			// Vertex colors
 			if (mask.has_colors) {
-				// Vertex colors
-				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_COLOR], sizeof(SceGxmVertexAttribute));
-				ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_COLOR];
-				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
-				ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-				ffp_vertex_num_params++;
+				attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_COLOR];
 			}
-		}
 
-		// Vertex texture coordinates (Second pass)
-		if (mask.num_textures > 1) {
-			vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id + 1)], sizeof(SceGxmVertexAttribute));
-			ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-			ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX1];
-			ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id + 1)].stride;
-			ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-			ffp_vertex_num_params++;
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-			// Vertex texture coordinates (Third pass)
-			if (mask.num_textures > 2) {
-				vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id + 2)], sizeof(SceGxmVertexAttribute));
-				ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-				ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX1];
-				ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id + 2)].stride;
-				ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+			// Lighting data
+			if (mask.lights_num > 0) {
+				ffp_lighting_streams = &attrs[ffp_vertex_num_params];
+				attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_DIFFUSE];
+				attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_SPECULAR];
+				attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_EMISSION];
+				attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
+			} else {
+				ffp_lighting_streams = NULL;
+			}
+		} else { // Non immediate mode
+			// Vertex positions
+			if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_POSITION)) {
+				vgl_fast_memcpy(&ffp_vertex_attribute[0], &ffp_vertex_attrib_config[FFP_ATTRIB_POSITION], sizeof(SceGxmVertexAttribute));
+				ffp_vertex_attribute[0].streamIndex = 0;
+				ffp_vertex_attribute[0].regIndex = ffp_vertex_attribs[FFP_ATTRIB_POSITION];
+				ffp_vertex_stream[0].stride = ffp_vertex_stream_config[FFP_ATTRIB_POSITION].stride;
+				ffp_vertex_stream[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+			}
+
+			// Vertex texture coordinates (First pass)
+			if (mask.num_textures > 0) {
+				if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_TEX0)) {
+					vgl_fast_memcpy(&ffp_vertex_attribute[1], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id)], sizeof(SceGxmVertexAttribute));
+					ffp_vertex_attribute[1].streamIndex = 1;
+					ffp_vertex_attribute[1].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX0];
+					ffp_vertex_stream[1].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id)].stride;
+					ffp_vertex_stream[1].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+				}
 				ffp_vertex_num_params++;
 			}
+
+			if (mask.lights_num > 0) {
+				ffp_lighting_streams = &ffp_vertex_stream[ffp_vertex_num_params];
+
+				// Lighting equation attributes
+				if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_COLOR)) {
+					setup_lighting_attributes(GL_AMBIENT, GL_AMBIENT_AND_DIFFUSE, FFP_ATTRIB_COLOR);
+					setup_lighting_attributes(GL_DIFFUSE, GL_AMBIENT_AND_DIFFUSE, FFP_ATTRIB_DIFFUSE);
+					setup_lighting_attributes(GL_SPECULAR, GL_SPECULAR, FFP_ATTRIB_SPECULAR);
+					setup_lighting_attributes(GL_EMISSION, GL_EMISSION, FFP_ATTRIB_EMISSION);
+				} else {
+					ffp_vertex_num_params += 4;
+				}
+			
+				if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_NORMAL)) {
+					if (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_NORMAL)) {
+						vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_NORMAL], sizeof(SceGxmVertexAttribute));
+						ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+						ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
+						ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
+					} else {
+						ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+						ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
+						ffp_vertex_attribute[ffp_vertex_num_params].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+						ffp_vertex_attribute[ffp_vertex_num_params].offset = 0;
+						ffp_vertex_attribute[ffp_vertex_num_params].componentCount = 3;
+						ffp_vertex_stream[ffp_vertex_num_params].stride = 0;
+					}
+					ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+				}
+				ffp_vertex_num_params++;
+			} else {
+				ffp_lighting_streams = NULL;
+				if (mask.has_colors) {
+					if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_COLOR)) {
+						// Vertex colors
+						vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_COLOR], sizeof(SceGxmVertexAttribute));
+						ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+						ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_COLOR];
+						ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+						ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+						ffp_vertex_num_params++;
+					}
+				}
+			}
+
+			// Vertex texture coordinates (Second pass)
+			if (mask.num_textures > 1) {
+				if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_TEX1)) {
+					vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id + 1)], sizeof(SceGxmVertexAttribute));
+					ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+					ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX1];
+					ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id + 1)].stride;
+					ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+				}
+				ffp_vertex_num_params++;
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+				// Vertex texture coordinates (Third pass)
+				if (mask.num_textures > 2) {
+					if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_COLOR)) {
+						vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id + 2)], sizeof(SceGxmVertexAttribute));
+						ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+						ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX1];
+						ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id + 2)].stride;
+						ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+					}
+					ffp_vertex_num_params++;
+				}
 #endif
+			}
+			streams = ffp_vertex_stream;
+			attrs = ffp_vertex_attribute;
 		}
-		streams = ffp_vertex_stream;
-		attrs = ffp_vertex_attribute;
+		ffp_dirty_vert_attr = 0;
+		
+		// Creating patched vertex shader
+		patch_vertex_program(gxm_shader_patcher, ffp_vertex_program_id, attrs, ffp_vertex_num_params, streams, ffp_vertex_num_params, &ffp_vertex_program_patched);
 	}
 
 #ifndef INDICES_SPEEDHACK
@@ -828,9 +855,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		streams[i].indexSource = index_type;
 	}
 #endif
-
-	// Creating patched vertex shader
-	patch_vertex_program(gxm_shader_patcher, ffp_vertex_program_id, attrs, ffp_vertex_num_params, streams, ffp_vertex_num_params, &ffp_vertex_program_patched);
 
 	// Checking if fragment shader requires a recompilation
 	if (ffp_dirty_frag) {
@@ -1704,6 +1728,7 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[FFP_ATTRIB_POSITION];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[FFP_ATTRIB_POSITION];
+	ffp_dirty_vert_attr |= (1 << FFP_ATTRIB_POSITION);
 
 	unsigned short bpe;
 	switch (type) {
@@ -1748,6 +1773,7 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[FFP_ATTRIB_COLOR];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[FFP_ATTRIB_COLOR];
+	ffp_dirty_vert_attr |= (1 << FFP_ATTRIB_COLOR);
 
 	unsigned short bpe;
 	switch (type) {
@@ -1797,6 +1823,7 @@ void glNormalPointer(GLenum type, GLsizei stride, const void *pointer) {
 
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[FFP_ATTRIB_NORMAL];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[FFP_ATTRIB_NORMAL];
+	ffp_dirty_vert_attr |= (1 << FFP_ATTRIB_NORMAL);
 
 	unsigned short bpe;
 	switch (type) {
@@ -1846,6 +1873,7 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *po
 
 	SceGxmVertexAttribute *attributes = &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(client_texture_unit)];
 	SceGxmVertexStream *streams = &ffp_vertex_stream_config[FFP_ATTRIB_TEX(client_texture_unit)];
+	ffp_dirty_vert_attr |= (1 << FFP_ATTRIB_TEX(client_texture_unit));
 
 	unsigned short bpe;
 	switch (type) {
