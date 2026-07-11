@@ -718,39 +718,44 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			streams = ffp_vertex_stream_config;
 		}
 		
-		ffp_vertex_num_params = 1;
 		if (attrs && base_texture_id == 0) { // Immediate mode and non-immediate only when #textures == 1 and no lights
-			// Vertex positions
-			attrs[0].regIndex = ffp_vertex_attribs[FFP_ATTRIB_POSITION];
+			if (ffp_dirty_vert_attr == 0xFFFF) { // Fill register indices only when we have a brand new shader since those are immutable once set up once
+				ffp_vertex_num_params = 1;
+				
+				// Vertex positions
+				attrs[0].regIndex = ffp_vertex_attribs[FFP_ATTRIB_POSITION];
 
-			if (mask.num_textures > 0) {
-				// Vertex texture coordinates (First Pass)
-				attrs[1].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX0];
-				ffp_vertex_num_params++;
-			
-				// Vertex texture coordinates (Second Pass)
-				if (mask.num_textures > 1) {
-					attrs[2].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX1];
+				if (mask.num_textures > 0) {
+					// Vertex texture coordinates (First Pass)
+					attrs[1].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX0];
 					ffp_vertex_num_params++;
+			
+					// Vertex texture coordinates (Second Pass)
+					if (mask.num_textures > 1) {
+						attrs[2].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX1];
+						ffp_vertex_num_params++;
+					}
+				}
+
+				// Vertex colors
+				if (mask.has_colors) {
+					attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_COLOR];
+				}
+
+				// Lighting data
+				if (mask.lights_num > 0) {
+					ffp_lighting_streams = &attrs[ffp_vertex_num_params];
+					attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_DIFFUSE];
+					attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_SPECULAR];
+					attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_EMISSION];
+					attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
+				} else {
+					ffp_lighting_streams = NULL;
 				}
 			}
-
-			// Vertex colors
-			if (mask.has_colors) {
-				attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_COLOR];
-			}
-
-			// Lighting data
-			if (mask.lights_num > 0) {
-				ffp_lighting_streams = &attrs[ffp_vertex_num_params];
-				attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_DIFFUSE];
-				attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_SPECULAR];
-				attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_EMISSION];
-				attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
-			} else {
-				ffp_lighting_streams = NULL;
-			}
 		} else { // Non immediate mode
+			ffp_vertex_num_params = 1;
+			
 			// Vertex positions
 			if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_POSITION)) {
 				vgl_fast_memcpy(&ffp_vertex_attribute[0], &ffp_vertex_attrib_config[FFP_ATTRIB_POSITION], sizeof(SceGxmVertexAttribute));
@@ -848,13 +853,13 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		
 		// Creating patched vertex shader
 		patch_vertex_program(gxm_shader_patcher, ffp_vertex_program_id, attrs, ffp_vertex_num_params, streams, ffp_vertex_num_params, &ffp_vertex_program_patched);
-	}
-
+		
 #ifndef INDICES_SPEEDHACK
-	for (int i = 0; i < ffp_vertex_num_params; i++) {
-		streams[i].indexSource = index_type;
-	}
+		for (int i = 0; i < ffp_vertex_num_params; i++) {
+			streams[i].indexSource = index_type;
+		}
 #endif
+	}
 
 	// Checking if fragment shader requires a recompilation
 	if (ffp_dirty_frag) {
@@ -1672,6 +1677,7 @@ void glEnableClientState(GLenum array) {
 		ffp_vertex_attrib_state |= (1 << FFP_ATTRIB_SPECULAR);
 		ffp_vertex_attrib_state |= (1 << FFP_ATTRIB_EMISSION);
 		ffp_vertex_attrib_state |= (1 << FFP_ATTRIB_NORMAL);
+		ffp_dirty_vert_attr |= (1 << FFP_ATTRIB_NORMAL);
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, array)
@@ -1703,6 +1709,7 @@ void glDisableClientState(GLenum array) {
 		ffp_vertex_attrib_state &= ~(1 << FFP_ATTRIB_SPECULAR);
 		ffp_vertex_attrib_state &= ~(1 << FFP_ATTRIB_EMISSION);
 		ffp_vertex_attrib_state &= ~(1 << FFP_ATTRIB_NORMAL);
+		ffp_dirty_vert_attr |= (1 << FFP_ATTRIB_NORMAL);
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, array)
