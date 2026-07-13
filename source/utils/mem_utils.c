@@ -88,7 +88,7 @@ static tm_block_t *heap_blk_new(void) {
 		tm_block_t *chunk = malloc(sizeof(tm_block_t) * HEADERS_PER_CHUNK);
 #ifndef SKIP_ERROR_HANDLING
 		if (!chunk) {
-			vgl_log("%s:%d Out of memory: cannot allocate new headers for memory blocks!\n", __FILE__, __LINE__, base);	
+			vgl_log("%s:%d Out of memory: cannot allocate new headers for memory blocks!\n", __FILE__, __LINE__);	
 			tm_unlock_mutex(&header_mutex)
 			return NULL;
 		}
