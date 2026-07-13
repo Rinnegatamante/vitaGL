@@ -85,7 +85,12 @@ static tm_block_t *heap_blk_new(void) {
 	tm_lock_mutex(&header_mutex)
 	if (!tm_free_headers) {
 		vgl_log("Extending heap headers list with an extra chunk.\n");
+#ifdef HAVE_WRAPPED_ALLOCATORS
+		tm_block_t *chunk = __real_malloc(sizeof(tm_block_t) * HEADERS_PER_CHUNK);
+#else
 		tm_block_t *chunk = malloc(sizeof(tm_block_t) * HEADERS_PER_CHUNK);
+#endif
+		
 #ifndef SKIP_ERROR_HANDLING
 		if (!chunk) {
 			vgl_log("%s:%d Out of memory: cannot allocate new headers for memory blocks!\n", __FILE__, __LINE__);	
@@ -515,8 +520,14 @@ void vgl_mem_init(size_t size_ram, size_t size_cdram, size_t size_phycont, size_
 #endif
 
 	// Mapping newlib heap into sceGxm
+#ifdef HAVE_WRAPPED_ALLOCATORS
+	void *dummy = __real_malloc(1);
+	__real_free(dummy);
+#else
 	void *dummy = malloc(1);
 	free(dummy);
+#endif
+	
 
 	SceKernelMemBlockInfo info;
 	info.size = sizeof(SceKernelMemBlockInfo);
