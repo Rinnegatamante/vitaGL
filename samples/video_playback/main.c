@@ -1,4 +1,5 @@
 // Playing a video using sceAvPlayer
+// Note: This sample requires ENABLE_LEGACY_PIPELINE=1
 #include <vitasdk.h>
 #include <vitaGL.h>
 #include <math.h>
@@ -215,7 +216,7 @@ int main(){
 		// Drawing the last decoded video frame if we decoded at least one frame
 		if (movie_first_frame_decoded) {
 			glBindTexture(GL_TEXTURE_2D, movie_frames_tex[movie_frame_idx]);
-			vglDrawObjects(GL_TRIANGLE_STRIP, 4, GL_TRUE);
+			vglDrawObjects(GL_TRIANGLE_STRIP, 4);
 		}
 		
 		// Performing display swap
