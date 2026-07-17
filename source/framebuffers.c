@@ -422,6 +422,7 @@ void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, 
 #endif
 
 	switch (internalformat) {
+	case GL_STENCIL_INDEX8:
 	case GL_DEPTH24_STENCIL8:
 	case GL_DEPTH32F_STENCIL8:
 		active_rb->wants_stencil = GL_TRUE;
