@@ -491,6 +491,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_CubeIMPL(texture
 		}
 		break;
 	case GL_RG:
+	case GL_RG8:
 	case GL_LUMINANCE_ALPHA:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
@@ -631,6 +632,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 		}
 		break;
 	case GL_RG:
+	case GL_RG8:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 2;
@@ -849,6 +851,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 		tex_format = SCE_GXM_TEXTURE_FORMAT_L8;
 		break;
 	case GL_RG:
+	case GL_RG8:
 		tex->write_cb = write_rg88;
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8_00GR;
 		break;
@@ -1071,6 +1074,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		}
 		break;
 	case GL_RG:
+	case GL_RG8:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			read_cb = read_rg88;
