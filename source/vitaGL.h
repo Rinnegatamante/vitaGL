@@ -821,6 +821,7 @@ void glGetProgramBinary(GLuint program, GLsizei bufSize, GLsizei *length, GLenum
 void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 void glGetProgramiv(GLuint program, GLenum pname, GLint *params);
 void glGetQueryObjectiv(GLuint id, GLenum pname, GLint *params);
+void glGetQueryObjectuiv(GLuint id, GLenum pname, GLuint *params);
 void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 void glGetShaderiv(GLuint handle, GLenum pname, GLint *params);
 void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *source);

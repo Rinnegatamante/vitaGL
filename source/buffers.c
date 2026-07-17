@@ -201,6 +201,42 @@ void glGetQueryObjectiv(GLuint id, GLenum pname, GLint *params) {
 	}
 }
 
+void glGetQueryObjectuiv(GLuint id, GLenum pname, GLuint *params) {
+	THREAD_SAFE()
+
+	query *q = (query *)id;
+
+	switch (pname) {
+	case GL_QUERY_RESULT:
+		if (q->sync > *query_fence.address) {
+			dirty_query = GL_TRUE;
+			scene_reset();
+			sceGxmNotificationWait(&query_fence);
+		}
+		*params = queries_buffer[q->id] + queries_buffer[q->id + MAX_QUERIES_NUM] + queries_buffer[q->id + MAX_QUERIES_NUM * 2] + queries_buffer[q->id + MAX_QUERIES_NUM * 3];
+		if (q->mode != GL_SAMPLES_PASSED) {
+			*params = *params > 0 ? GL_TRUE : GL_FALSE;
+		}
+		break;
+	case GL_QUERY_RESULT_NO_WAIT:
+		if (q->sync <= *query_fence.address) {
+			*params = queries_buffer[q->id] + queries_buffer[q->id + MAX_QUERIES_NUM] + queries_buffer[q->id + MAX_QUERIES_NUM * 2] + queries_buffer[q->id + MAX_QUERIES_NUM * 3];
+			if (q->mode != GL_SAMPLES_PASSED) {
+				*params = *params > 0 ? GL_TRUE : GL_FALSE;
+			}
+		}
+		break;
+	case GL_QUERY_RESULT_AVAILABLE:
+		*params = (q->sync <= *query_fence.address) ? GL_TRUE : GL_FALSE;
+		break;
+	case GL_QUERY_TARGET:
+		*params = q->mode;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
+}
+
 void glGenVertexArrays(GLsizei n, GLuint *res) {
 	THREAD_SAFE()
 

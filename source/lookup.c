@@ -176,6 +176,7 @@ static const struct {
 	{"glGetProgramInfoLog", (void *)glGetProgramInfoLog},
 	{"glGetProgramiv", (void *)glGetProgramiv},
 	{"glGetQueryObjectiv", (void *)glGetQueryObjectiv},
+	{"glGetQueryObjectuiv", (void *)glGetQueryObjectuiv},
 	{"glGetShaderInfoLog", (void *)glGetShaderInfoLog},
 	{"glGetShaderiv", (void *)glGetShaderiv},
 	{"glGetShaderSource", (void *)glGetShaderSource},
