@@ -636,7 +636,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 2;
-			if (internalFormat == GL_RG)
+			if (internalFormat == GL_RG || internalFormat == GL_RG8)
 				fast_store = GL_TRUE;
 			else
 				read_cb = read_rg88;
@@ -853,7 +853,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	case GL_RG:
 	case GL_RG8:
 		tex->write_cb = write_rg88;
-		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8_00GR;
+		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8_GR;
 		break;
 	case GL_SLUMINANCE_ALPHA:
 	case GL_SLUMINANCE8_ALPHA8:
@@ -1161,7 +1161,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 	case GL_TEXTURE_2D:
 		// Detecting proper write callback
 		switch (tex_format) {
-		case SCE_GXM_TEXTURE_FORMAT_U8U8_00GR:
+		case SCE_GXM_TEXTURE_FORMAT_U8U8_GR:
 			if ((uintptr_t)read_cb == (uintptr_t)read_rg88)
 				fast_store = GL_TRUE;
 			else

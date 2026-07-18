@@ -620,6 +620,13 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 				read_cb = read_rgb888;
 			src_bpp = 3;
 			break;
+		case SCE_GXM_TRANSFER_FORMAT_U8U8_GR:
+			if ((format == GL_RG || format == GL_RG8) && type == GL_UNSIGNED_BYTE)
+				fast_store = GL_TRUE;
+			else
+				read_cb = read_rg88;
+			src_bpp = 2;
+			break;
 		case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
 			if (format == GL_RGB && type == GL_UNSIGNED_SHORT_5_6_5)
 				fast_store = GL_TRUE;
@@ -703,6 +710,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			}
 			break;
 		case GL_RGB:
+		case GL_RGB8:
 			switch (type) {
 			case GL_UNSIGNED_BYTE:
 				write_cb = write_rgb888;
@@ -717,6 +725,17 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			case GL_UNSIGNED_BYTE:
 				write_cb = write_bgr888;
 				dst_bpp = 3;
+				break;
+			default:
+				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
+			}
+			break;
+		case GL_RG:
+		case GL_RG8:
+			switch (type) {
+			case GL_UNSIGNED_BYTE:
+				write_cb = write_rg88;
+				dst_bpp = 2;
 				break;
 			default:
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
