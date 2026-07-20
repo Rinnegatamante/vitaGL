@@ -61,6 +61,12 @@
 #define WVP_ON_GPU 0
 #endif
 
+enum {
+	TEX0_ENV_PASS_COMBINE = 50,
+	TEX1_ENV_PASS_COMBINE,
+	TEX2_ENV_PASS_COMBINE
+};
+
 #define set_interleaved_comp(fmt, size, _stride, offs, attrib) \
 	ffp_vertex_attrib_offsets[attrib] = (uint32_t)pointer + offs; \
 	ffp_vertex_attrib_vbo[attrib] = vertex_array_unit; \
@@ -945,15 +951,15 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 			sprintf(fshader, ffp_frag_src, texenv_shad, alpha_op,
 				mask.num_textures, mask.has_colors, mask.fog_mode,
-				(mask.tex_env_mode_pass0 != COMBINE) ? mask.tex_env_mode_pass0 : 50,
-				(mask.tex_env_mode_pass1 != COMBINE) ? mask.tex_env_mode_pass1 : 51,
-				(mask.tex_env_mode_pass2 != COMBINE) ? mask.tex_env_mode_pass2 : 52,
+				(mask.tex_env_mode_pass0 != COMBINE) ? mask.tex_env_mode_pass0 : TEX0_ENV_PASS_COMBINE,
+				(mask.tex_env_mode_pass1 != COMBINE) ? mask.tex_env_mode_pass1 : TEX1_ENV_PASS_COMBINE,
+				(mask.tex_env_mode_pass2 != COMBINE) ? mask.tex_env_mode_pass2 : TEX2_ENV_PASS_COMBINE,
 				mask.lights_num, mask.shading_mode, mask.point_sprite, mask.fast_perspective_correction, mask.srgb_mode);
 #else
 			sprintf(fshader, ffp_frag_src, texenv_shad, alpha_op,
 				mask.num_textures, mask.has_colors, mask.fog_mode,
-				(mask.tex_env_mode_pass0 != COMBINE) ? mask.tex_env_mode_pass0 : 50,
-				(mask.tex_env_mode_pass1 != COMBINE) ? mask.tex_env_mode_pass1 : 51,
+				(mask.tex_env_mode_pass0 != COMBINE) ? mask.tex_env_mode_pass0 : TEX0_ENV_PASS_COMBINE,
+				(mask.tex_env_mode_pass1 != COMBINE) ? mask.tex_env_mode_pass1 : TEX1_ENV_PASS_COMBINE,
 				mask.lights_num, mask.shading_mode, mask.point_sprite, mask.fast_perspective_correction, mask.srgb_mode);
 #endif
 			uint32_t size = strlen(fshader);
