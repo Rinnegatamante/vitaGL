@@ -565,15 +565,27 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	
 	uint32_t vert_shader_mask = mask.raw & VERTEX_SHADER_MASK;
 	uint32_t frag_shader_mask = mask.raw & FRAGMENT_SHADER_MASK;
+	
 #ifdef DISABLE_TEXTURE_COMBINER
-	if (ffp_mask.raw == mask.raw) { // Fixed function pipeline config didn't change
+	#define is_ffp_mask_matching(src_mask, dst_mask) \
+		((src_mask) == (dst_mask))
+	#define is_cached_mask_matching(src_mask, dst_mask, src_cmb_mask, dst_cmb_mask) \
+		((src_mask) == (dst_mask))	
+#elif defined(HAVE_HIGH_FFP_TEXUNITS)
+	GLboolean is_combiner_matching = ffp_combiner_mask.raw_high == cmb_mask.raw_high && ffp_combiner_mask.raw_low == cmb_mask.raw_low;
+	#define is_ffp_mask_matching(src_mask, dst_mask) \
+		(is_combiner_matching && (src_mask) == (dst_mask))
+	#define is_cached_mask_matching(src_mask, dst_mask, src_cmb_mask, dst_cmb_mask) \
+		((src_mask) == (dst_mask) && src_cmb_mask.raw_high == dst_cmb_mask.raw_high && src_cmb_mask.raw_low == dst_cmb_mask.raw_low)
 #else
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-	if (ffp_mask.raw == mask.raw && ffp_combiner_mask.raw_high == cmb_mask.raw_high && ffp_combiner_mask.raw_low == cmb_mask.raw_low) { // Fixed function pipeline config didn't change
-#else
-	if (ffp_mask.raw == mask.raw && ffp_combiner_mask.raw == cmb_mask.raw) { // Fixed function pipeline config didn't change
+	GLboolean is_combiner_matching = ffp_combiner_mask.raw == cmb_mask.raw;
+	#define is_ffp_mask_matching(src_mask, dst_mask) \
+		(is_combiner_matching && (src_mask) == (dst_mask))
+	#define is_cached_mask_matching(src_mask, dst_mask, src_cmb_mask, dst_cmb_mask) \
+		((src_mask) == (dst_mask) && src_cmb_mask.raw == dst_cmb_mask.raw)
 #endif
-#endif
+
+	if (is_ffp_mask_matching(ffp_mask.raw, mask.raw)) { // Fixed function pipeline config didn't change
 		ffp_dirty_vert = GL_FALSE;
 		ffp_dirty_frag = GL_FALSE;
 	} else {
@@ -597,20 +609,11 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			}
 			dirty_vert_unifs = 0xFFFF;
 		}
-
-		if ((ffp_mask.raw & FRAGMENT_SHADER_MASK) == frag_shader_mask) {
+		if (is_ffp_mask_matching(ffp_mask.raw & FRAGMENT_SHADER_MASK, frag_shader_mask)) {
 			ffp_dirty_frag = GL_FALSE;
 		} else {
 			for (int i = 0; i < frag_shader_cache_size; i++) {
-#ifdef DISABLE_TEXTURE_COMBINER
-				if (frag_shader_cache[i].mask.raw == frag_shader_mask) {
-#else
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-				if (frag_shader_cache[i].mask.raw == frag_shader_mask && frag_shader_cache[i].cmb_mask.raw_high == cmb_mask.raw_high && frag_shader_cache[i].cmb_mask.raw_low == cmb_mask.raw_low) {
-#else
-				if (frag_shader_cache[i].mask.raw == frag_shader_mask && frag_shader_cache[i].cmb_mask.raw == cmb_mask.raw) {
-#endif
-#endif
+				if (is_cached_mask_matching(frag_shader_cache[i].mask.raw, frag_shader_mask, frag_shader_cache[i].cmb_mask, cmb_mask)) {
 					ffp_fragment_program = frag_shader_cache[i].prog;
 					ffp_fragment_program_id = frag_shader_cache[i].id;
 					ffp_fragment_unif_buf_size = frag_shader_cache[i].unif_buf_size;
