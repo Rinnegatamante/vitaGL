@@ -1086,7 +1086,7 @@ void glsl_translator_process(shader *s) {
 	vgl_log("%s:%d %s: GLSL translation input:\n\n%s\n\n", __FILE__, __LINE__, __func__, input);
 #endif
 
-	char *out = vglMalloc(strlen(input));
+	char *out = vglMalloc(strlen(input) + 1);
 	glsl_preprocess("full", input, out);
 	vgl_free(input);
 #ifdef DEBUG_GLSL_PREPROCESSOR
@@ -1308,10 +1308,11 @@ void glsl_translator_process(shader *s) {
 	// Manually handle global variables, adding "static" to them
 	char *dst2 = vglMalloc(strlen(dst) + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
 	glsl_handle_globals(dst, dst2, preamble_size);
+	size_t dst_len = strlen(dst);
 	vgl_free(dst);
 #ifdef HAVE_GLSL_UBOS
 	// Manually handle ubos
-	dst = vglMalloc(strlen(dst) + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
+	dst = vglMalloc(dst_len + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
 	glsl_handle_ubos(dst2, dst, preamble_size);
 	vgl_free(dst2);	
 	dst2 = dst;
