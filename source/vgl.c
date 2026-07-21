@@ -729,7 +729,10 @@ void *vglRealloc(void *ptr, uint32_t size) {
 
 	res = vglMalloc(size);
 	if (res) {
-		vgl_fast_memcpy(res, ptr, vgl_malloc_usable_size(ptr));
+		size_t copy_size = vgl_malloc_usable_size(ptr);
+		if (copy_size > size)
+			copy_size = size;
+		vgl_fast_memcpy(res, ptr, copy_size);
 		vglFree(ptr);
 	}
 #ifndef SKIP_ERROR_HANDLING
