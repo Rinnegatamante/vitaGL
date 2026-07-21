@@ -3376,13 +3376,11 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 	else if (!strcmp(pname, "_sampler"))
 		pname = "sampler";
 
-	if (bufSize > 0) {
-		bufSize = min(strlen(pname), bufSize - 1);
-		if (length)
-			*length = bufSize;
-		strncpy(name, pname, bufSize);
-		name[bufSize] = 0;
-	}
+	bufSize = min(strlen(pname), bufSize - 1);
+	if (length)
+		*length = bufSize;
+	strncpy(name, pname, bufSize);
+	name[bufSize] = 0;
 }
 
 /*
