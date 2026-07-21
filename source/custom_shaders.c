@@ -1693,7 +1693,6 @@ void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *
 			src_len = bufSize - 1;
 		strncpy(source, s->source, src_len);
 		size = src_len;
-		source[size] = 0;
 	}
 	if (length)
 		*length = size;
