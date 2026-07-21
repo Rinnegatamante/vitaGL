@@ -1702,7 +1702,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	THREAD_SAFE()
 
 #ifndef SKIP_ERROR_HANDLING
-	if (count < 0) {
+	if (count < 0 || count > 32) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
@@ -3366,15 +3366,20 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 	}
 	
 	// Copying uniform name
+	if (bufSize == 0) {
+		if (length)
+			*length = 0;
+		return;
+	}
 	// texture, sampler and matrix are reserved keywords in CG but are not in GLSL
 	if (!strcmp(pname, "vgl_tex"))
 		pname = "texture";
 	else if (!strcmp(pname, "Vgl_tex"))
 		pname = "Texture";
-	else if (!strcmp(name, "_matrix"))
-		name = "matrix";
-	else if (!strcmp(name, "_sampler"))
-		name = "sampler";
+	else if (!strcmp(pname, "_matrix"))
+		pname = "matrix";
+	else if (!strcmp(pname, "_sampler"))
+		pname = "sampler";
 
 	bufSize = min(strlen(pname), bufSize - 1);
 	if (length)
