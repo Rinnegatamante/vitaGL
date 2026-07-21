@@ -660,7 +660,7 @@ size_t vgl_malloc_usable_size(void *ptr) {
 #ifdef HAVE_CUSTOM_HEAP
 	tm_block_t **hdr = (tm_block_t **)((uintptr_t)ptr - 4);
 	tm_block_t *block = *hdr;
-	return block->size - 4;
+	return block->size - 8; // 4b header + 4b footer
 #else
 	return sceClibMspaceMallocUsableSize(ptr);
 #endif
