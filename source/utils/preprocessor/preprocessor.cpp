@@ -16,6 +16,8 @@
 #include "const.h"
 #include "expression.h"
 
+#include <vitaGL.h>
+
 using namespace std;
 
 namespace preprocessor
@@ -2145,4 +2147,5 @@ char * glsl_preprocess(char *mode, const char *infile) {
 	char *output = (char *)vglMalloc(out.size() + 1);
 	memcpy(output, out.c_str(), out.size() + 1);
 	return output;
+}
 }
