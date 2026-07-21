@@ -646,8 +646,7 @@ static inline __attribute__((always_inline)) void compile_shader(shader *s, GLbo
 			} else if (sceShaccCgGetParameterClass(param) == SCE_SHACCCG_PARAMETERCLASS_UNIFORMBLOCK) {
 				block_uniform *b = (block_uniform *)vglMalloc(sizeof(block_uniform));
 				b->idx = sceShaccCgGetParameterBufferIndex(param);
-				strncpy(b->name, sceShaccCgGetParameterName(param), sizeof(b->name)-1);
-				b->name[sizeof(b->name)-1] = 0;
+				strcpy(b->name, sceShaccCgGetParameterName(param));
 				b->chain = s->unif_blk;
 				s->unif_blk = b;
 			}
@@ -2476,7 +2475,7 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	char tmp[64];
 	char *start = strstr(name, "[");
 	if (start) {
-		strncpy(tmp, name, sizeof(tmp)-1);
+		strcpy(tmp, name);
 		start = tmp + (start - name);
 		name = tmp;
 		char *end = strstr(start + 1, "]");
@@ -3243,9 +3242,7 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 		if (!p->glsl_attr_map)
 			p->glsl_attr_map = vglMalloc(sizeof(attr_mapping) * VERTEX_ATTRIBS_NUM);
 		p->glsl_attr_map[p->num_glsl_attr].idx = index;
-		strncpy(p->glsl_attr_map[p->num_glsl_attr].name, name, sizeof(p->glsl_attr_map[p->num_glsl_attr].name)-1);
-		p->glsl_attr_map[p->num_glsl_attr].name[sizeof(p->glsl_attr_map[p->num_glsl_attr].name)-1] = 0;
-		p->num_glsl_attr++;
+		strcpy(p->glsl_attr_map[p->num_glsl_attr++].name, name);
 		return;
 	}
 
@@ -3308,14 +3305,12 @@ void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *leng
 	}
 
 	// Copying attribute name
-	if (bufSize > 0) {
-		const char *pname = sceGxmProgramParameterGetName(param);
-		bufSize = min(strlen(pname), bufSize - 1);
-		if (length)
-			*length = bufSize;
-		strncpy(name, pname, bufSize);
-		name[bufSize] = 0;
-	}
+	const char *pname = sceGxmProgramParameterGetName(param);
+	bufSize = min(strlen(pname), bufSize - 1);
+	if (length)
+		*length = bufSize;
+	strncpy(name, pname, bufSize);
+	name[bufSize] = 0;
 
 	*type = gxm_attr_type_to_gl(sceGxmProgramParameterGetComponentCount(param), sceGxmProgramParameterGetArraySize(param));
 	*size = 1;
@@ -3578,8 +3573,7 @@ void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum typ
 		return;
 	}			
 #endif
-	strncpy(glsl_custom_bindings[glsl_custom_bindings_num].name, varying, sizeof(glsl_custom_bindings[glsl_custom_bindings_num].name)-1);
-	glsl_custom_bindings[glsl_custom_bindings_num].name[sizeof(glsl_custom_bindings[glsl_custom_bindings_num].name)-1] = 0;
+	strcpy(glsl_custom_bindings[glsl_custom_bindings_num].name, varying);
 	glsl_custom_bindings[glsl_custom_bindings_num].idx = index;
 	glsl_custom_bindings[glsl_custom_bindings_num].type = type;
 	glsl_custom_bindings[glsl_custom_bindings_num++].ref_idx = glsl_current_ref_idx;
@@ -3594,8 +3588,7 @@ void vglAddSemanticBindingHint(const GLchar *const *varying, GLenum type) {
 		return;
 	}			
 #endif
-	strncpy(glsl_custom_bindings[glsl_custom_bindings_num].name, varying, sizeof(glsl_custom_bindings[glsl_custom_bindings_num].name)-1);
-	glsl_custom_bindings[glsl_custom_bindings_num].name[sizeof(glsl_custom_bindings[glsl_custom_bindings_num].name)-1] = 0;
+	strcpy(glsl_custom_bindings[glsl_custom_bindings_num].name, varying);
 	glsl_custom_bindings[glsl_custom_bindings_num].idx = -1;
 	glsl_custom_bindings[glsl_custom_bindings_num].type = type;
 	glsl_custom_bindings[glsl_custom_bindings_num++].ref_idx = glsl_current_ref_idx;
