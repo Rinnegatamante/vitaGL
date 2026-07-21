@@ -3366,6 +3366,11 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 	}
 	
 	// Copying uniform name
+	if (bufSize == 0) {
+		if (length)
+			*length = 0;
+		return;
+	}
 	// texture, sampler and matrix are reserved keywords in CG but are not in GLSL
 	if (!strcmp(pname, "vgl_tex"))
 		pname = "texture";
