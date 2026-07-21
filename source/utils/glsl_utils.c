@@ -1086,8 +1086,7 @@ void glsl_translator_process(shader *s) {
 	vgl_log("%s:%d %s: GLSL translation input:\n\n%s\n\n", __FILE__, __LINE__, __func__, input);
 #endif
 
-	char *out = vglMalloc(strlen(input) + 1);
-	glsl_preprocess("full", input, out);
+	char *out = glsl_preprocess("full", input);
 	vgl_free(input);
 #ifdef DEBUG_GLSL_PREPROCESSOR
 	vgl_log("%s:%d %s: GLSL preprocessor output:\n\n%s\n\n", __FILE__, __LINE__, __func__, out);
