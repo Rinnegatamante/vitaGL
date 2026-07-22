@@ -1086,7 +1086,7 @@ void glsl_translator_process(shader *s) {
 	vgl_log("%s:%d %s: GLSL translation input:\n\n%s\n\n", __FILE__, __LINE__, __func__, input);
 #endif
 
-	char *out = glsl_preprocess("full", input);
+	char *out = glsl_preprocessor_run("full", input);
 	vgl_free(input);
 #ifdef DEBUG_GLSL_PREPROCESSOR
 	vgl_log("%s:%d %s: GLSL preprocessor output:\n\n%s\n\n", __FILE__, __LINE__, __func__, out);
@@ -1198,7 +1198,7 @@ void glsl_translator_process(shader *s) {
 	GLsizei preamble_size = strlen(s->source);
 	char *text = s->source + preamble_size;
 	strcat(s->source, out);
-	vgl_free(out);
+	glsl_preprocessor_clean();
 
 	switch (glsl_sema_mode) {
 		case VGL_MODE_SHADER_PAIR:
