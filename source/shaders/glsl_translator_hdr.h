@@ -4,6 +4,23 @@
 static const char *glsl_hdr =
 R"(#define GL_ES 1
 #define VITAGL
+#define GLFixedToFloat(fx) (float(bit_cast<short2>(fx).y + (bit_cast<unsigned short2>(fx).x * (1.0f / 65536.0f))))
+inline float vglUnpack(float v) {
+	int bits = bit_cast<int>(v);
+	int exponent = (bits >> 23) & 0xFF;
+	if ((exponent == 0) || (exponent == 255))
+		return GLFixedToFloat(v);
+	return v;
+}
+inline float2 vglUnpack(float2 v) {
+	return float2(vglUnpack(v.x), vglUnpack(v.y));
+}
+inline float3 vglUnpack(float3 v) {
+		return float3(vglUnpack(v.x), vglUnpack(v.y), vglUnpack(v.z));
+}
+inline float4 vglUnpack(float4 v) {
+		return float4(vglUnpack(v.x), vglUnpack(v.y), vglUnpack(v.z), vglUnpack(v.w));
+}
 inline float4x4 vglMul(float4x4 M1, float4x4 M2) { return mul(M2, M1); }
 inline float3x3 vglMul(float3x3 M1, float3x3 M2) { return mul(M2, M1); }
 inline float2x2 vglMul(float2x2 M1, float2x2 M2) { return mul(M2, M1); }

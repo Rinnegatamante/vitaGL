@@ -111,6 +111,10 @@ GLboolean glsl_is_first_shader = GL_TRUE;
 GLboolean glsl_precision_low = GL_FALSE;
 GLenum glsl_sema_mode = VGL_MODE_POSTPONED;
 binds_map glsl_bindings_map;
+#ifdef HAVE_FIXED_ATTRIBUTES
+char glsl_attributes[32][256];
+int glsl_attributes_num = 0;
+#endif
 
 void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFrontFacing) {
 	char newline[128];
@@ -136,6 +140,18 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 			if (t == str) { // Attribute
 				// Replace attribute with 'vgl in' that will get extended in a 'varying in' by the preprocessor
 				vgl_fast_memcpy(t, "vgl in    ", 10);
+#ifdef HAVE_FIXED_ATTRIBUTES
+				char *attr_name = &t[10];
+				char *attr_end = strstr(attr_name, ";");
+				char *_attr = attr_name;
+				while (_attr < attr_end) {
+					if (*_attr == ' ' || *_attr == '\t')
+						attr_name = _attr + 1;
+					_attr++;
+				}
+				sceClibMemcpy(glsl_attributes[glsl_attributes_num], attr_name, attr_end - attr_name);
+				glsl_attributes[glsl_attributes_num++][attr_end - attr_name] = 0;
+#endif
 				str = strstr(t, "attribute");
 				while (str && !(str[9] == ' ' || str[9] == '\t')) {
 					str = strstr(str + 9, "attribute");
@@ -522,6 +538,18 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 			if (t == str) { // Attribute
 				// Replace attribute with 'vgl in' that will get extended in a 'varying in' by the preprocessor
 				vgl_fast_memcpy(t, "vgl in    ", 10);
+#ifdef HAVE_FIXED_ATTRIBUTES
+				char *attr_name = &t[10];
+				char *attr_end = strstr(attr_name, ";");
+				char *_attr = attr_name;
+				while (_attr < attr_end) {
+					if (*_attr == ' ' || *_attr == '\t')
+						attr_name = _attr + 1;
+					_attr++;
+				}
+				sceClibMemcpy(glsl_attributes[glsl_attributes_num], attr_name, attr_end - attr_name);
+				glsl_attributes[glsl_attributes_num++][attr_end - attr_name] = 0;
+#endif
 				str = strstr(t, "attribute");
 				while (str && !(str[9] == ' ' || str[9] == '\t')) {
 					str = strstr(str + 9, "attribute");
@@ -1047,6 +1075,9 @@ LOOP_START:
 }
 
 void glsl_translator_process(shader *s) {
+#ifdef HAVE_FIXED_ATTRIBUTES
+	glsl_attributes_num = 0;
+#endif
 	uint32_t source_size = 1 + strlen(s->source);
 	uint32_t size = 1;
 	GLboolean hasFragCoord = GL_FALSE, hasInstanceID = GL_FALSE, hasVertexID = GL_FALSE, hasPointCoord = GL_FALSE;
@@ -1299,6 +1330,25 @@ void glsl_translator_process(shader *s) {
 			str = strstr(str, "\f");
 		}
 	}
+	
+#ifdef HAVE_FIXED_ATTRIBUTES
+	if (s->type == GL_VERTEX_SHADER) {
+		char *dst = vglMalloc(size + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
+		char *_s = strstr(s->source, "void main(");
+		_s = strstr(_s, "{") + 1;
+		sceClibMemcpy(dst, s->source, _s - s->source);
+		dst[_s - s->source] = 0;
+		for (int i = 0; i < glsl_attributes_num; i++) {
+			char inj[256];
+			sceClibPrintf("%s:%d %s: Adding unpacking instructions for %s attribute.\n", __FILE__, __LINE__, __func__, glsl_attributes[i]);
+			sprintf(inj, "%s=vglUnpack(%s);", glsl_attributes[i], glsl_attributes[i]);
+			strcat(dst, inj);
+		}
+		strcat(dst, _s);
+		vgl_free(s->source);
+		s->source = dst;
+	}
+#endif
 
 	// Manually handle * operator replacements for vector * matrix and matrix * vector operations support
 	char *dst = vglMalloc(size + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big

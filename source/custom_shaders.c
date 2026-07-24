@@ -2991,6 +2991,9 @@ void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean norm
 		bpe = 2;
 		break;
 	case GL_FLOAT:
+#ifdef HAVE_FIXED_ATTRIBUTES
+	case GL_FIXED:
+#endif
 		attributes->format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
 		bpe = 4;
 		break;

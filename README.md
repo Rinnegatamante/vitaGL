@@ -39,6 +39,7 @@ In order to build vitaGL use the following command: `make install`.
 |`SAFE_UNIFORMS=1`| Makes some optimizations in the shaders pipeline less efficient but makes uniform location indexing for basic type arrays compliant.|
 |`UNPURE_TEXFORMATS=1`| Enables support for texture dimensions different than 2D (tex2D is still required in shader code).|
 |`ENABLE_LEGACY_PIPELINE=1`| Enables support for the legacy vglDrawObjects pipeline.|
+|`HAVE_FIXED_ATTRIBUTES=1`| Enables experimental support for GL_FIXED attributes in shaders when GLSL shaders are used.|
 ### Hack Flags
 | Flag | Description |
 | --- | --- |
