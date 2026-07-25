@@ -26,6 +26,10 @@
 
 static GLboolean vgl_inited = GL_FALSE;
 
+#ifdef HAVE_SHADER_CACHE
+static char shader_cache_root[128] = {};
+#endif
+
 #ifdef HAVE_SOFTFP_ABI
 __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
 	asm volatile(
@@ -166,11 +170,11 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 #if defined(HAVE_SHADER_CACHE) || defined(HAVE_TEX_CACHE)
 	char titleid[12];
 	sceAppMgrAppParamGetString(0, 12, titleid , 256);
+#endif
 #ifdef HAVE_TEX_CACHE
 	sceIoMkdir("ux0:data/vgl_cache", 0777);
 	sprintf(vgl_file_cache_path, "ux0:data/vgl_cache/%s", titleid);
 	sceIoMkdir(vgl_file_cache_path, 0777);
-#endif
 #endif
 	sceIoMkdir("ux0:data/shader_cache", 0777);
 	char fname[256];
@@ -181,9 +185,12 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	sprintf(fname, "ux0:data/shader_cache/v%d/f", FFP_SHADER_CACHE_MAGIC);
 	sceIoMkdir(fname, 0777);
 #ifdef HAVE_SHADER_CACHE
-	sprintf(vgl_shader_cache_path, "ux0:data/shader_cache/%s", titleid);
+	if (!shader_cache_root[0])
+		strcpy(shader_cache_root, "ux0:data/shader_cache");
+	sceIoMkdir(shader_cache_root, 0777);
+	sprintf(vgl_shader_cache_path, "%s/%s", shader_cache_root, titleid);
 	sceIoMkdir(vgl_shader_cache_path, 0777);
-	sprintf(vgl_shader_cache_path, "ux0:data/shader_cache/%s/v%d", titleid, SHADER_CACHE_MAGIC);
+	sprintf(vgl_shader_cache_path, "%s/%s/v%d", shader_cache_root, titleid, SHADER_CACHE_MAGIC);
 	sceIoMkdir(vgl_shader_cache_path, 0777);
 	sprintf(fname, "%s/v", vgl_shader_cache_path);
 	sceIoMkdir(fname, 0777);
@@ -796,5 +803,11 @@ uint32_t vglGetFrameNumber() {
 void vglPhycontMemLazyInit(size_t size) {
 #ifndef PHYCONT_ON_DEMAND
 	vgl_mem_provide_phycont(size);
+#endif
+}
+
+void vglSetShaderCachePath(const char *path) {
+#ifdef HAVE_SHADER_CACHE
+	strcpy(shader_cache_root, path);
 #endif
 }

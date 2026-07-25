@@ -112,7 +112,7 @@ GLboolean glsl_precision_low = GL_FALSE;
 GLenum glsl_sema_mode = VGL_MODE_POSTPONED;
 binds_map glsl_bindings_map;
 #ifdef HAVE_FIXED_ATTRIBUTES
-char glsl_attributes[32][256];
+char glsl_attributes[VERTEX_ATTRIBS_NUM][128];
 int glsl_attributes_num = 0;
 #endif
 
@@ -1340,7 +1340,6 @@ void glsl_translator_process(shader *s) {
 		dst[_s - s->source] = 0;
 		for (int i = 0; i < glsl_attributes_num; i++) {
 			char inj[256];
-			sceClibPrintf("%s:%d %s: Adding unpacking instructions for %s attribute.\n", __FILE__, __LINE__, __func__, glsl_attributes[i]);
 			sprintf(inj, "%s=vglUnpack(%s);", glsl_attributes[i], glsl_attributes[i]);
 			strcat(dst, inj);
 		}
