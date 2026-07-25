@@ -647,9 +647,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	if (ffp_dirty_vert) {
 		char fname[256];
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-		sprintf(fname, "ux0:data/shader_cache/v%d/v/%016llX-%d.gxp", SHADER_CACHE_MAGIC, vert_shader_mask, WVP_ON_GPU);
+		sprintf(fname, "ux0:data/shader_cache/v%d/v/%016llX-%d.gxp", FFP_SHADER_CACHE_MAGIC, vert_shader_mask, WVP_ON_GPU);
 #else
-		sprintf(fname, "ux0:data/shader_cache/v%d/v/%08X-%d.gxp", SHADER_CACHE_MAGIC, vert_shader_mask, WVP_ON_GPU);
+		sprintf(fname, "ux0:data/shader_cache/v%d/v/%08X-%d.gxp", FFP_SHADER_CACHE_MAGIC, vert_shader_mask, WVP_ON_GPU);
 #endif
 		SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
 		if (f >= 0) {
@@ -669,29 +669,14 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode, mask.normalize, mask.fixed_mask, mask.pos_fixed_mask, WVP_ON_GPU, mask.fast_perspective_correction);
 			uint32_t size = strlen(vshader);
 			SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
-#ifdef DUMP_SHADER_SOURCES
-			if (t) {
-#endif
-				ffp_vertex_program = (SceGxmProgram *)vglMalloc(size);
-				vgl_fast_memcpy((void *)ffp_vertex_program, (void *)t, size);
-				shark_clear_output();
+			ffp_vertex_program = (SceGxmProgram *)vglMalloc(size);
+			vgl_fast_memcpy((void *)ffp_vertex_program, (void *)t, size);
+			shark_clear_output();
 				
-				// Saving compiled shader in filesystem cache
-				f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_TRUNC | SCE_O_CREAT, 0777);
-				sceIoWrite(f, ffp_vertex_program, size);
-				sceIoClose(f);
-#ifdef DUMP_SHADER_SOURCES
-			}
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-			sprintf(fname, "ux0:data/shader_cache/v%d/v/%016llX-%d.cg", SHADER_CACHE_MAGIC, vert_shader_mask, WVP_ON_GPU);
-#else
-			sprintf(fname, "ux0:data/shader_cache/v%d/v/%08X-%d.cg", SHADER_CACHE_MAGIC, vert_shader_mask, WVP_ON_GPU);
-#endif
-			// Saving shader source in filesystem cache
-			f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
-			sceIoWrite(f, vshader, strlen(vshader));
+			// Saving compiled shader in filesystem cache
+			f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_TRUNC | SCE_O_CREAT, 0777);
+			sceIoWrite(f, ffp_vertex_program, size);
 			sceIoClose(f);
-#endif
 		}
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_vertex_program, &ffp_vertex_program_id);
 		ffp_vertex_unif_buf_size = sceGxmProgramGetDefaultUniformBufferSize(ffp_vertex_program);
@@ -875,15 +860,15 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		char fname[256];
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-		sprintf(fname, "ux0:data/shader_cache/v%d/f/%016llX-%016llX-%08X.cg", SHADER_CACHE_MAGIC, frag_shader_mask, cmb_mask.raw_high, cmb_mask.raw_low);
+		sprintf(fname, "ux0:data/shader_cache/v%d/f/%016llX-%016llX-%08X.gxp", FFP_SHADER_CACHE_MAGIC, frag_shader_mask, cmb_mask.raw_high, cmb_mask.raw_low);
 #else
-		sprintf(fname, "ux0:data/shader_cache/v%d/f/%08X-%016llX.gxp", SHADER_CACHE_MAGIC, frag_shader_mask, cmb_mask.raw);
+		sprintf(fname, "ux0:data/shader_cache/v%d/f/%08X-%016llX.gxp", FFP_SHADER_CACHE_MAGIC, frag_shader_mask, cmb_mask.raw);
 #endif
 #else
 #ifdef HAVE_HIGH_FFP_TEXUNITS
-		sprintf(fname, "ux0:data/shader_cache/v%d/f/%016llX-0000000000000000.gxp", SHADER_CACHE_MAGIC, frag_shader_mask);
+		sprintf(fname, "ux0:data/shader_cache/v%d/f/%016llX-0000000000000000.gxp", FFP_SHADER_CACHE_MAGIC, frag_shader_mask);
 #else
-		sprintf(fname, "ux0:data/shader_cache/v%d/f/%08X-0000000000000000.gxp", SHADER_CACHE_MAGIC, frag_shader_mask);
+		sprintf(fname, "ux0:data/shader_cache/v%d/f/%08X-0000000000000000.gxp", FFP_SHADER_CACHE_MAGIC, frag_shader_mask);
 #endif
 #endif
 		SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
@@ -964,9 +949,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #endif
 			uint32_t size = strlen(fshader);
 			SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
-#ifdef DUMP_SHADER_SOURCES
-			if (t) {
-#endif
 			ffp_fragment_program = (SceGxmProgram *)vglMalloc(size);
 			vgl_fast_memcpy((void *)ffp_fragment_program, (void *)t, size);
 			shark_clear_output();
@@ -975,26 +957,6 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			f = sceIoOpen(fname, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0777);
 			sceIoWrite(f, ffp_fragment_program, size);
 			sceIoClose(f);
-#ifdef DUMP_SHADER_SOURCES
-			}
-#ifndef DISABLE_TEXTURE_COMBINER
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-			sprintf(fname, "ux0:data/shader_cache/v%d/f/%016llX-%016llX-%08X.cg", SHADER_CACHE_MAGIC, frag_shader_mask, cmb_mask.raw_high, cmb_mask.raw_low);
-#else
-			sprintf(fname, "ux0:data/shader_cache/v%d/f/%08X-%016llX.cg", SHADER_CACHE_MAGIC, frag_shader_mask, cmb_mask.raw);
-#endif
-#else
-#ifdef HAVE_HIGH_FFP_TEXUNITS
-			sprintf(fname, "ux0:data/shader_cache/v%d/f/%016llX-0000000000000000.cg", SHADER_CACHE_MAGIC, frag_shader_mask);
-#else
-			sprintf(fname, "ux0:data/shader_cache/v%d/f/%08X-0000000000000000.cg", SHADER_CACHE_MAGIC, frag_shader_mask);
-#endif
-#endif
-			// Saving shader source in filesystem cache
-			f = sceIoOpen(fname, SCE_O_CREAT | SCE_O_TRUNC | SCE_O_WRONLY, 0777);
-			sceIoWrite(f, fshader, strlen(fshader));
-			sceIoClose(f);
-#endif
 		}
 		sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, ffp_fragment_program, &ffp_fragment_program_id);
 		ffp_fragment_unif_buf_size = sceGxmProgramGetDefaultUniformBufferSize(ffp_fragment_program);

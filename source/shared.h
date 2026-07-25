@@ -297,11 +297,12 @@ extern int NEW_DISPLAY_HEIGHT; // Requested new display height in pixels
 #include "texture_callbacks.h"
 
 // Fixed-function pipeline shader cache settings
-#define SHADER_CACHE_MAGIC 28 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define FFP_SHADER_CACHE_MAGIC 28 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 
 // Custom shaders pipeline shader cache settings
 #ifdef HAVE_SHADER_CACHE
+#define SHADER_CACHE_MAGIC 0
 extern char vgl_shader_cache_path[256];
 #endif
 

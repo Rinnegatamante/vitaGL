@@ -172,21 +172,23 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	sceIoMkdir(vgl_file_cache_path, 0777);
 #endif
 #endif
-#if !defined(DISABLE_ADVANCED_SHADER_CACHE) || defined(HAVE_SHADER_CACHE)
 	sceIoMkdir("ux0:data/shader_cache", 0777);
-#ifndef DISABLE_ADVANCED_SHADER_CACHE
 	char fname[256];
-	sprintf(fname, "ux0:data/shader_cache/v%d", SHADER_CACHE_MAGIC);
+	sprintf(fname, "ux0:data/shader_cache/v%d", FFP_SHADER_CACHE_MAGIC);
 	sceIoMkdir(fname, 0777);
-	sprintf(fname, "ux0:data/shader_cache/v%d/v", SHADER_CACHE_MAGIC);
+	sprintf(fname, "ux0:data/shader_cache/v%d/v", FFP_SHADER_CACHE_MAGIC);
 	sceIoMkdir(fname, 0777);
-	sprintf(fname, "ux0:data/shader_cache/v%d/f", SHADER_CACHE_MAGIC);
+	sprintf(fname, "ux0:data/shader_cache/v%d/f", FFP_SHADER_CACHE_MAGIC);
 	sceIoMkdir(fname, 0777);
-#endif
 #ifdef HAVE_SHADER_CACHE
 	sprintf(vgl_shader_cache_path, "ux0:data/shader_cache/%s", titleid);
 	sceIoMkdir(vgl_shader_cache_path, 0777);
-#endif
+	sprintf(vgl_shader_cache_path, "ux0:data/shader_cache/%s/v%d", titleid, SHADER_CACHE_MAGIC);
+	sceIoMkdir(vgl_shader_cache_path, 0777);
+	sprintf(fname, "%s/v", vgl_shader_cache_path);
+	sceIoMkdir(fname, 0777);
+	sprintf(fname, "%s/f", vgl_shader_cache_path);
+	sceIoMkdir(fname, 0777);
 #endif
 	// Check if framebuffer size is valid
 	GLboolean res_fallback = GL_FALSE;
