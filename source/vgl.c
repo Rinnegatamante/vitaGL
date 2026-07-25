@@ -186,11 +186,9 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	sceIoMkdir(fname, 0777);
 #ifdef HAVE_SHADER_CACHE
 	if (!shader_cache_root[0])
-		strcpy(shader_cache_root, "ux0:data/shader_cache");
+		sprintf(shader_cache_root, "ux0:data/shader_cache/%s", titleid);
 	sceIoMkdir(shader_cache_root, 0777);
-	sprintf(vgl_shader_cache_path, "%s/%s", shader_cache_root, titleid);
-	sceIoMkdir(vgl_shader_cache_path, 0777);
-	sprintf(vgl_shader_cache_path, "%s/%s/v%d", shader_cache_root, titleid, SHADER_CACHE_MAGIC);
+	sprintf(vgl_shader_cache_path, "%s/v%d", shader_cache_root, SHADER_CACHE_MAGIC);
 	sceIoMkdir(vgl_shader_cache_path, 0777);
 	sprintf(fname, "%s/v", vgl_shader_cache_path);
 	sceIoMkdir(fname, 0777);
