@@ -1243,6 +1243,9 @@ void vglSetParamBufferSize(uint32_t size);
 // Change the currently used semantics binding resolution mode for the GLSL translator. Default value: VGL_MODE_POSTPONED.
 void vglSetSemanticBindingMode(GLenum mode);
 
+// Overloads the shader cache path when HAVE_SHADER_CACHE=1 is used. Must be called before vglInit*. Default value: ux0:data/shader_cache.
+void vglSetShaderCachePath(const char *path);
+
 // Change the lifetime for a texture to be considered cacheable. Requires HAVE_TEXTURE_CACHE.
 void vglSetTextureCacheFrequency(GLuint freq);
 
