@@ -86,10 +86,6 @@ In order to build vitaGL use the following command: `make install`.
 
 You can find samples in the *samples* folder in this repository.
 
-# Help and Troubleshooting
-
-If you plan to use vitaGL for one of your projects, you can find an official channel to get help with it on Vita Nuova discord server: https://discord.gg/PyCaBx9
-
 # Projects actually using vitaGL
 
 Here you can find a list of projects using vitaGL:
