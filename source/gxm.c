@@ -820,11 +820,11 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		sceSharedFbEnd(shared_fb);
 	else {
 #ifdef HAVE_RAZOR
-		sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_front_buffer_index], gxm_sync_objects[gxm_front_buffer_index]);
+		sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
 #ifdef HAVE_DEVKIT
 		if (has_razor_live) {
 			SceRazorGpuLiveResultInfo razor_res;
-			sceRazorGpuLiveSetBuffer(razor_buf[gxm_front_buffer_index], RAZOR_BUF_SIZE, &razor_res);
+			sceRazorGpuLiveSetBuffer(razor_buf[gxm_back_buffer_index], RAZOR_BUF_SIZE, &razor_res);
 
 			if (razor_res.result_data) {
 				if (!razor_res.overflow_count) {
