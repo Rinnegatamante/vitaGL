@@ -609,7 +609,7 @@ void scene_reset(void) {
 			if (system_app_mode) {
 				sceSharedFbBegin(shared_fb, &shared_fb_info);
 				shared_fb_info.vsync = vsync_interval;
-				gxm_front_buffer_index = (shared_fb_info.index + 1) % 2;
+				gxm_back_buffer_index = (shared_fb_info.index + 1) % 2;
 			}
 			int r = sceGxmBeginScene(gxm_context, 0, gxm_render_target,
 				NULL, NULL,
