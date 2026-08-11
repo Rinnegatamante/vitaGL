@@ -215,21 +215,6 @@ void vgl_debugger_draw(uint32_t *fb) {
 }
 #endif
 
-#ifdef FILE_LOG
-static char msg[512 * 1024];
-void vgl_file_log(const char *format, ...) {
-	__gnuc_va_list arg;
-	va_start(arg, format);
-	vsnprintf(msg, sizeof(msg), format, arg);
-	va_end(arg);
-	SceUID log = sceIoOpen("ux0:/data/vitaGL.log", SCE_O_WRONLY | SCE_O_APPEND | SCE_O_CREAT, 0777);
-	if (log >= 0) {
-		sceIoWrite(log, msg, strlen(msg));
-		sceIoClose(log);
-	}
-}
-#endif
-
 #ifdef LOG_ERRORS
 #define ERROR_CASE(x) \
 	case x: \

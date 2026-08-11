@@ -30,10 +30,7 @@ extern "C" {
 
 // Debugging tool
 char *get_gxm_error_literal(uint32_t code);
-#ifdef FILE_LOG
-void vgl_file_log(const char *format, ...);
-#define vgl_log vgl_file_log
-#elif defined(LOG_ERRORS)
+#ifdef LOG_ERRORS
 #define vgl_log sceClibPrintf
 #else
 #define vgl_log(...)
