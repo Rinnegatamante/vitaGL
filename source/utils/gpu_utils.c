@@ -91,7 +91,7 @@ void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
 static inline __attribute__((always_inline)) void *gpu_alloc_mapped_aligned_for_cpu_inner(size_t alignment, size_t size) {
 	void *res;
 	vgl_alloc_attempt(alignment, size, VGL_MEM_RAM)
-	vgl_alloc_attempt(alignment, size, VGL_MEM_SLOW)
+	vgl_alloc_attempt(alignment, size, VGL_MEM_PHYCONT)
 	vgl_alloc_attempt(alignment, size, VGL_MEM_BUDGET)
 	vgl_alloc_attempt(alignment, size, VGL_MEM_VRAM)
 	if (use_extra_mem) {
@@ -104,7 +104,7 @@ static inline __attribute__((always_inline)) void *gpu_alloc_mapped_aligned_for_
 	void *res;
 	vgl_alloc_attempt(alignment, size, VGL_MEM_VRAM)
 	vgl_alloc_attempt(alignment, size, VGL_MEM_RAM)
-	vgl_alloc_attempt(alignment, size, VGL_MEM_SLOW)
+	vgl_alloc_attempt(alignment, size, VGL_MEM_PHYCONT)
 	vgl_alloc_attempt(alignment, size, VGL_MEM_BUDGET)
 	if (use_extra_mem) {
 		res = vgl_memalign(alignment, size, VGL_MEM_EXTERNAL);

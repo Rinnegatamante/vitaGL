@@ -641,7 +641,7 @@ void *vglMalloc(uint32_t size) {
 		return res;
 
 	// If it fails, we try with physically contiguous RAM
-	res = vgl_malloc(size, VGL_MEM_SLOW);
+	res = vgl_malloc(size, VGL_MEM_PHYCONT);
 	if (res)
 		return res;
 
@@ -676,7 +676,7 @@ void *vglMemalign(uint32_t alignment, uint32_t size) {
 		return res;
 
 	// If it fails, we try with physically contiguous RAM
-	res = vgl_memalign(alignment, size, VGL_MEM_SLOW);
+	res = vgl_memalign(alignment, size, VGL_MEM_PHYCONT);
 	if (res)
 		return res;
 
@@ -707,7 +707,7 @@ void *vglCalloc(uint32_t nmember, uint32_t size) {
 		return res;
 
 	// If it fails, we try with physically contiguous RAM
-	res = vgl_calloc(nmember, size, VGL_MEM_SLOW);
+	res = vgl_calloc(nmember, size, VGL_MEM_PHYCONT);
 	if (res)
 		return res;
 

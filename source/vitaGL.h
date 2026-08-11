@@ -1117,7 +1117,7 @@ void vglGetShaderBinary(GLuint index, GLsizei bufSize, GLsizei *length, void *bi
 typedef enum {
 	VGL_MEM_VRAM, // CDRAM
 	VGL_MEM_RAM, // USER_RW RAM
-	VGL_MEM_SLOW, // PHYCONT_USER_RW RAM
+	VGL_MEM_PHYCONT, // PHYCONT_USER_RW RAM
 	VGL_MEM_BUDGET, // CDLG RAM
 	VGL_MEM_EXTERNAL, // newlib mem
 	VGL_MEM_ALL
@@ -1216,7 +1216,7 @@ void vglOverloadTexDataPointer(GLenum target, void *data);
 // Allows to override texture format of a GL texture. Requires HAVE_UNPURE_TEXFORMATS.
 void vglOverrideTexFormat(GLenum target);
 
-// Allows to init phycont memory heap (VGL_MEM_SLOW) after vglInit* calls. Useful for when SceAvPlayer is used only for an intro video.
+// Allows to init phycont memory heap (VGL_MEM_PHYCONT) after vglInit* calls. Useful for when SceAvPlayer is used only for an intro video.
 void vglPhycontMemLazyInit(size_t size);
 
 // Variant of glReadPixels that uses GPU underneat to perform the readback. The passed data pointer must be GPU mapped (eg: heap memory).

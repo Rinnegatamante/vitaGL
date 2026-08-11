@@ -111,7 +111,7 @@ static void vgl_debugger_draw_mem_usage(const char *str, vglMemType type, int y_
 static inline __attribute__((always_inline)) void vgl_debugger_draw_mem_usage_metrics(int y_disp) {
 	vgl_debugger_draw_mem_usage("RAM Usage", VGL_MEM_RAM, y_disp);
 	vgl_debugger_draw_mem_usage("VRAM Usage", VGL_MEM_VRAM, y_disp);
-	vgl_debugger_draw_mem_usage("Phycont RAM Usage", VGL_MEM_SLOW, y_disp);
+	vgl_debugger_draw_mem_usage("Phycont RAM Usage", VGL_MEM_PHYCONT, y_disp);
 	vgl_debugger_draw_mem_usage("CDLG RAM Usage", VGL_MEM_BUDGET, y_disp);
 }
 
