@@ -917,7 +917,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 #ifdef HAVE_PROFILING
 		tick = sceKernelGetProcessTimeLow();
 #endif
-		sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_back_buffer_index], gxm_sync_objects[gxm_front_buffer_index], &queue_cb_data);
+		sceGxmDisplayQueueAddEntry(gxm_sync_objects[gxm_front_buffer_index], gxm_sync_objects[gxm_back_buffer_index], &queue_cb_data);
 #ifdef HAVE_PROFILING
 		gpu_stall_cnt += sceKernelGetProcessTimeLow() - tick;
 #endif
