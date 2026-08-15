@@ -27,14 +27,7 @@
 #include "shaders/ffp_f.h"
 #include "shaders/ffp_v.h"
 #endif
-#include "shaders/texture_combiners/add.h"
-#include "shaders/texture_combiners/blend.h"
-#include "shaders/texture_combiners/decal.h"
-#include "shaders/texture_combiners/modulate.h"
-#include "shaders/texture_combiners/replace.h"
-#ifndef DISABLE_TEXTURE_COMBINER
-#include "shaders/texture_combiners/combine.h"
-#endif
+#include "shaders/tex_env.h"
 #include "shared.h"
 
 #define setup_lighting_attributes(type, type2, attr) \
