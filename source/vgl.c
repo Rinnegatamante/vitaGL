@@ -838,3 +838,7 @@ void vglSetShaderCachePath(const char *path) {
 	strcpy(shader_cache_root, path);
 #endif
 }
+
+void vglSetShaderAssociationPath(const char *path) {
+	shark_set_shader_association_path(path);
+}
