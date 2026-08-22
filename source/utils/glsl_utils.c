@@ -469,7 +469,7 @@ HINT_DETECTION_PAIR_2:
 								if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
 									sprintf(newline, "CIN(%s, \f);", str + 8);
 								} else {
-									glsl_reserve_texcoord_bind(idx, start)
+									glsl_reserve_color_bind(idx, start)
 #ifndef SKIP_ERROR_HANDLING
 									if (idx == -1) {
 										idx = MAX_CG_COLOR_ID - 1;
