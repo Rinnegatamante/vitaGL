@@ -184,6 +184,7 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 				if (idx != -1) {
 					switch (glsl_custom_bindings[idx].type) {
 					case VGL_TYPE_TEXCOORD:
+					case VGL_TYPE_TEXCOORD_CENTROID:
 						{
 							if (glsl_custom_bindings[idx].idx != -1) {
 								strcpy(glsl_bindings_map.texcoord_names[glsl_custom_bindings[idx].idx], start);
@@ -195,6 +196,7 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 						}
 						break;
 					case VGL_TYPE_COLOR:
+					case VGL_TYPE_COLOR_CENTROID:
 						if (glsl_custom_bindings[idx].idx != -1) {
 							strcpy(glsl_bindings_map.color_names[glsl_custom_bindings[idx].idx], start);
 							glsl_bindings_map.color_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
@@ -205,6 +207,7 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 						}
 						break;
 					case VGL_TYPE_FOG:
+					case VGL_TYPE_FOG_CENTROID:
 						sprintf(newline, "FOUT(%s,%d);", str2 + 8, 0);
 						break;
 					case VGL_TYPE_CLIP:
@@ -346,6 +349,18 @@ HINT_DETECTION_PAIR:
 			else
 				t = min(str, str2);
 			if (t == str) { // Varying
+				GLboolean is_centroid = GL_FALSE;
+				char *back = str - 1;
+				while (back > text && (*back == ' ' || *back == '\t' || *back == '\n' || *back == '\r')) {
+					back--;
+				}
+				back -= 7;
+				if (back >= text && !strncmp(back, "centroid", 8)) {
+					for (int i = 0; i < 8; i++) {
+						back[i] = ' ';
+					}
+					is_centroid = GL_TRUE;
+				}
 				char *end = strstr(str, ";");
 				GLboolean name_started = GL_FALSE;
 				int extra_chars = -1;
@@ -363,7 +378,7 @@ HINT_DETECTION_PAIR:
 				start++;
 				end[0] = 0;
 				idx = -1;
-				vglSemanticType hint_type = VGL_TYPE_TEXCOORD;
+				vglSemanticType hint_type = is_centroid ? VGL_TYPE_TEXCOORD_CENTROID: VGL_TYPE_TEXCOORD;
 				// Check first if the varying has a known binding
 				for (int j = 0; j < glsl_custom_bindings_num; j++) {
 					if (!strcmp(glsl_custom_bindings[j].name, start)) {
@@ -381,6 +396,16 @@ HINT_DETECTION_PAIR:
 							goto HINT_DETECTION_PAIR_2;
 						}
 						break;
+					case VGL_TYPE_TEXCOORD_CENTROID:
+						if (glsl_custom_bindings[idx].idx != -1) {
+							strcpy(glsl_bindings_map.texcoord_names[glsl_custom_bindings[idx].idx], start);
+							glsl_bindings_map.texcoord_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+							sprintf(newline, "BIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
+						} else {
+							hint_type = VGL_TYPE_TEXCOORD_CENTROID;
+							goto HINT_DETECTION_PAIR_2;
+						}
+						break;
 					case VGL_TYPE_COLOR:
 						if (glsl_custom_bindings[idx].idx != -1) {
 							strcpy(glsl_bindings_map.color_names[glsl_custom_bindings[idx].idx], start);
@@ -391,8 +416,21 @@ HINT_DETECTION_PAIR:
 							goto HINT_DETECTION_PAIR_2;
 						}
 						break;
+					case VGL_TYPE_COLOR_CENTROID:
+						if (glsl_custom_bindings[idx].idx != -1) {
+							strcpy(glsl_bindings_map.color_names[glsl_custom_bindings[idx].idx], start);
+							glsl_bindings_map.color_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+							sprintf(newline, "JIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
+						} else {
+							hint_type = VGL_TYPE_COLOR_CENTROID;
+							goto HINT_DETECTION_PAIR_2;
+						}
+						break;
 					case VGL_TYPE_FOG:
 						sprintf(newline, "FIN(%s, %d);", str + 8, 0);
+						break;
+					case VGL_TYPE_FOG_CENTROID:
+						sprintf(newline, "ZIN(%s, %d);", str + 8, 0);
 						break;
 					case VGL_TYPE_CLIP:
 						vgl_log("%s:%d %s: Unexpected varying type (VGL_TYPE_CLIP) for %s in fragment shader.\n", __FILE__, __LINE__, __func__, str + 8);
@@ -403,20 +441,29 @@ HINT_DETECTION_PAIR_2:
 					idx = -1;
 					if (glsl_is_first_shader) {
 						// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
-						if (hint_type == VGL_TYPE_TEXCOORD) {
+						if (hint_type == VGL_TYPE_TEXCOORD || hint_type == VGL_TYPE_TEXCOORD_CENTROID) {
 							glsl_get_existing_texcoord_bind(idx, start);
 						} else {
 							glsl_get_existing_color_bind(idx, start);							
 						}
 						if (idx == -1) {
 							if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
-								if (hint_type == VGL_TYPE_TEXCOORD) {
+								switch (hint_type) {
+								case VGL_TYPE_TEXCOORD:
 									sprintf(newline, "VIN(%s, \v);", str + 8);
-								} else if (hint_type == VGL_TYPE_COLOR) {
-									sprintf(newline, "CIN(%s, \f);", str + 8);									
+									break;
+								case VGL_TYPE_TEXCOORD_CENTROID:
+									sprintf(newline, "BIN(%s, \v);", str + 8);
+									break;
+								case VGL_TYPE_COLOR:
+									sprintf(newline, "CIN(%s, \v);", str + 8);
+									break;
+								case VGL_TYPE_COLOR_CENTROID:
+									sprintf(newline, "JIN(%s, \v);", str + 8);
+									break;
 								}
 							} else {
-								if (hint_type == VGL_TYPE_TEXCOORD) {
+								if (hint_type == VGL_TYPE_TEXCOORD || hint_type == VGL_TYPE_TEXCOORD_CENTROID) {
 									glsl_reserve_texcoord_bind(idx, start);
 #ifndef SKIP_ERROR_HANDLING
 									if (idx == -1) {
@@ -424,8 +471,12 @@ HINT_DETECTION_PAIR_2:
 										vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
 									}
 #endif
-									sprintf(newline, "VIN(%s, %d);", str + 8, idx);
-								} else if (hint_type == VGL_TYPE_COLOR) {
+									if (hint_type == VGL_TYPE_TEXCOORD) {
+										sprintf(newline, "VIN(%s, %d);", str + 8, idx);
+									} else {
+										sprintf(newline, "BIN(%s, %d);", str + 8, idx);
+									}
+								} else if (hint_type == VGL_TYPE_COLOR || hint_type == VGL_TYPE_COLOR_CENTROID) {
 									glsl_reserve_color_bind(idx, start);
 #ifndef SKIP_ERROR_HANDLING
 									if (idx == -1) {
@@ -433,15 +484,28 @@ HINT_DETECTION_PAIR_2:
 										vgl_log("%s:%d %s: An error occurred during GLSL translation (COLOR overflow).\n", __FILE__, __LINE__, __func__);
 									}
 #endif
-									sprintf(newline, "CIN(%s, %d);", str + 8, idx);
+									if (hint_type == VGL_TYPE_COLOR) {
+										sprintf(newline, "CIN(%s, %d);", str + 8, idx);
+									} else {
+										sprintf(newline, "JIN(%s, %d);", str + 8, idx);
+									}
 								}
 								
 							}
 						} else {
-							if (hint_type == VGL_TYPE_TEXCOORD) {
+							switch (hint_type) {
+							case VGL_TYPE_TEXCOORD:
 								sprintf(newline, "VIN(%s, %d);", str + 8, idx);
-							} else if (hint_type == VGL_TYPE_COLOR) {
+								break;
+							case VGL_TYPE_TEXCOORD_CENTROID:
+								sprintf(newline, "BIN(%s, %d);", str + 8, idx);
+								break;
+							case VGL_TYPE_COLOR:
 								sprintf(newline, "CIN(%s, %d);", str + 8, idx);
+								break;
+							case VGL_TYPE_COLOR_CENTROID:
+								sprintf(newline, "JIN(%s, %d);", str + 8, idx);
+								break;
 							}
 						}
 					} else {
@@ -463,6 +527,24 @@ HINT_DETECTION_PAIR_2:
 								}
 							} else
 								sprintf(newline, "VIN(%s, %d);", str + 8, idx);
+						} else if (hint_type == VGL_TYPE_TEXCOORD_CENTROID) {
+							glsl_get_existing_texcoord_bind(idx, start);
+							if (idx == -1) {
+								if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
+									sprintf(newline, "BIN(%s, \v);", str + 8);
+								} else {
+									glsl_reserve_texcoord_bind(idx, start)
+#ifndef SKIP_ERROR_HANDLING
+									if (idx == -1) {
+										idx = MAX_CG_TEXCOORD_ID - 1;
+										vgl_log("%s:%d %s: An error occurred during GLSL translation (TEXCOORD overflow).\n", __FILE__, __LINE__, __func__);
+									}
+#endif
+									vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d_CENTROID.\n", __FILE__, __LINE__, __func__, start, idx);
+									sprintf(newline, "BIN(%s, %d);", str + 8, idx);
+								}
+							} else
+								sprintf(newline, "BIN(%s, %d);", str + 8, idx);
 						} else if (hint_type == VGL_TYPE_COLOR) {
 							glsl_get_existing_color_bind(idx, start);
 							if (idx == -1) {
@@ -481,6 +563,24 @@ HINT_DETECTION_PAIR_2:
 								}
 							} else
 								sprintf(newline, "CIN(%s, %d);", str + 8, idx);
+						} else if (hint_type == VGL_TYPE_COLOR_CENTROID) {
+							glsl_get_existing_color_bind(idx, start);
+							if (idx == -1) {
+								if (glsl_custom_bindings_num > 0) { // To prevent clashing with custom semantic bindings, we need to go for a slower path
+									sprintf(newline, "JIN(%s, \f);", str + 8);
+								} else {
+									glsl_reserve_color_bind(idx, start)
+#ifndef SKIP_ERROR_HANDLING
+									if (idx == -1) {
+										idx = MAX_CG_COLOR_ID - 1;
+										vgl_log("%s:%d %s: An error occurred during GLSL translation (COLOR overflow).\n", __FILE__, __LINE__, __func__);
+									}
+#endif
+									vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to COLOR%d_CENTROID.\n", __FILE__, __LINE__, __func__, start, idx);
+									sprintf(newline, "JIN(%s, %d);", str + 8, idx);
+								}
+							} else
+								sprintf(newline, "JIN(%s, %d);", str + 8, idx);
 						}
 					}
 				}
@@ -582,6 +682,7 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 				if (idx != -1) {
 					switch (glsl_custom_bindings[idx].type) {
 					case VGL_TYPE_TEXCOORD:
+					case VGL_TYPE_TEXCOORD_CENTROID:
 						{
 							if (glsl_custom_bindings[idx].idx != -1) {
 								strcpy(glsl_bindings_map.texcoord_names[glsl_custom_bindings[idx].idx], start);
@@ -593,6 +694,7 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 						}
 						break;
 					case VGL_TYPE_COLOR:
+					case VGL_TYPE_COLOR_CENTROID:
 						{
 							if (glsl_custom_bindings[idx].idx != -1) {
 								strcpy(glsl_bindings_map.color_names[glsl_custom_bindings[idx].idx], start);
@@ -604,6 +706,7 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 						}
 						break;
 					case VGL_TYPE_FOG:
+					case VGL_TYPE_FOG_CENTROID:
 						sprintf(newline, "FOUT(%s,%d);", str2 + 8, 0);
 						break;
 					case VGL_TYPE_CLIP:
@@ -658,6 +761,18 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 			else
 				t = min(str, str2);
 			if (t == str) { // Varying
+				GLboolean is_centroid = GL_FALSE;
+				char *back = str - 1;
+				while (back > text && (*back == ' ' || *back == '\t' || *back == '\n' || *back == '\r')) {
+					back--;
+				}
+				back -= 7;
+				if (back >= text && !strncmp(back, "centroid", 8)) {
+					for (int i = 0; i < 8; i++) {
+						back[i] = ' ';
+					}
+					is_centroid = GL_TRUE;
+				}
 				char *end = strstr(str, ";");
 				GLboolean name_started = GL_FALSE;
 				int extra_chars = -1;
@@ -695,6 +810,17 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 							}
 						}
 						break;
+					case VGL_TYPE_TEXCOORD_CENTROID:
+						{
+							if (glsl_custom_bindings[idx].idx != -1) {
+								strcpy(glsl_bindings_map.texcoord_names[glsl_custom_bindings[idx].idx], start);
+								glsl_bindings_map.texcoord_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+								sprintf(newline, "BIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
+							} else {
+								sprintf(newline, "BIN(%s, \v);", str + 8);
+							}
+						}
+						break;
 					case VGL_TYPE_COLOR:
 						{
 							if (glsl_custom_bindings[idx].idx != -1) {
@@ -706,8 +832,22 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 							}
 						}
 						break;
+					case VGL_TYPE_COLOR_CENTROID:
+						{
+							if (glsl_custom_bindings[idx].idx != -1) {
+								strcpy(glsl_bindings_map.color_names[glsl_custom_bindings[idx].idx], start);
+								glsl_bindings_map.color_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
+								sprintf(newline, "JIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
+							} else {
+								sprintf(newline, "JIN(%s, \f);", str + 8);
+							}
+						}
+						break;
 					case VGL_TYPE_FOG:
 						sprintf(newline, "FIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
+						break;
+					case VGL_TYPE_FOG_CENTROID:
+						sprintf(newline, "ZIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 						break;
 					case VGL_TYPE_CLIP:
 						vgl_log("%s:%d %s: Unexpected varying type (VGL_TYPE_CLIP) for %s in fragment shader.\n", __FILE__, __LINE__, __func__, str + 8);
@@ -1264,7 +1404,7 @@ void glsl_translator_process(shader *s) {
 					idx = j;
 					for (int i = 0; i < glsl_custom_bindings_num; i++) {
 						// Check if amongst the currently known bindings, used in the shader, there's one mapped to the attempted index
-						if (glsl_custom_bindings[i].type == VGL_TYPE_TEXCOORD && glsl_custom_bindings[i].idx == j && glsl_custom_bindings[i].ref_idx == glsl_current_ref_idx) {
+						if ((glsl_custom_bindings[i].type == VGL_TYPE_TEXCOORD || glsl_custom_bindings[i].type == VGL_TYPE_TEXCOORD_CENTROID) && glsl_custom_bindings[i].idx == j && glsl_custom_bindings[i].ref_idx == glsl_current_ref_idx) {
 							idx = -1;
 							break;
 						}
@@ -1272,8 +1412,16 @@ void glsl_translator_process(shader *s) {
 					if (idx != -1)
 						break;
 				}
-				if (idx != -1)
-					vglAddSemanticBinding(start, idx, VGL_TYPE_TEXCOORD);
+				if (idx != -1) {
+					GLenum binding_type = VGL_TYPE_TEXCOORD;
+					for (int i = 0; i < glsl_custom_bindings_num; i++) {
+						if (!strcmp(glsl_custom_bindings[i].name, start) && glsl_custom_bindings[i].type == VGL_TYPE_TEXCOORD_CENTROID) {
+							binding_type = VGL_TYPE_TEXCOORD_CENTROID;
+							break;
+						}
+					}
+					vglAddSemanticBinding(start, idx, binding_type);
+				}
 			} else {
 				glsl_reserve_texcoord_bind(idx, start);
 			}
@@ -1306,7 +1454,7 @@ void glsl_translator_process(shader *s) {
 					idx = j;
 					for (int i = 0; i < glsl_custom_bindings_num; i++) {
 						// Check if amongst the currently known bindings, used in the shader, there's one mapped to the attempted index
-						if (glsl_custom_bindings[i].type == VGL_TYPE_COLOR && glsl_custom_bindings[i].idx == j && glsl_custom_bindings[i].ref_idx == glsl_current_ref_idx) {
+						if ((glsl_custom_bindings[i].type == VGL_TYPE_COLOR || glsl_custom_bindings[i].type == VGL_TYPE_COLOR_CENTROID) && glsl_custom_bindings[i].idx == j && glsl_custom_bindings[i].ref_idx == glsl_current_ref_idx) {
 							idx = -1;
 							break;
 						}
@@ -1314,8 +1462,16 @@ void glsl_translator_process(shader *s) {
 					if (idx != -1)
 						break;
 				}
-				if (idx != -1)
-					vglAddSemanticBinding(start, idx, VGL_TYPE_COLOR);
+				if (idx != -1) {
+					GLenum binding_type = VGL_TYPE_COLOR;
+					for (int i = 0; i < glsl_custom_bindings_num; i++) {
+						if (!strcmp(glsl_custom_bindings[i].name, start) && glsl_custom_bindings[i].type == VGL_TYPE_COLOR_CENTROID) {
+							binding_type = VGL_TYPE_COLOR_CENTROID;
+							break;
+						}
+					}
+					vglAddSemanticBinding(start, idx, binding_type);
+				}
 			} else {
 				glsl_reserve_color_bind(idx, start);
 			}

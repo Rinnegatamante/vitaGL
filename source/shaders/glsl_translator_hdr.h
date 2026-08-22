@@ -115,6 +115,7 @@ inline float4 texture2DLod(sampler2D x, float2 coord, float lod) { return tex2Dl
 #define lowp
 #define mediump
 #define highp
+#define centroid
 #define vec2 float2
 #define vec3 float3
 #define vec4 float4
@@ -153,10 +154,16 @@ inline float4 vgl_atan(float4 x) { return atan(x); }
 	varying out x : TEXCOORD##y
 #define FIN(x, y) \
 	varying in x : FOGC
+#define ZIN(x, y) \
+	varying in x : FOG_CENTROID
 #define CIN(x, y) \
 	varying in x : COLOR##y
+#define JIN(x, y) \
+	varying in x : COLOR##y_CENTROID
 #define VIN(x, y) \
 	varying in x : TEXCOORD##y
+#define BIN(x, y) \
+	varying in x : TEXCOORD##y##_CENTROID
 #ifdef VGL_IS_VERTEX_SHADER
 varying out float4 gl_Position : POSITION;
 #else
