@@ -302,7 +302,7 @@ extern int NEW_DISPLAY_HEIGHT; // Requested new display height in pixels
 
 // Custom shaders pipeline shader cache settings
 #ifdef HAVE_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 0
+#define SHADER_CACHE_MAGIC 1
 extern char vgl_shader_cache_path[256];
 #endif
 
