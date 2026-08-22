@@ -152,7 +152,7 @@ static inline __attribute__((always_inline)) uint32_t vgl_cache_old_textures(siz
 }
 #endif
 
-static int unsafe_allocator_counter = 0;
+int unsafe_allocator_counter = 0;
 void *gpu_alloc_mapped_aligned_unsafe_for_cpu(size_t alignment, size_t size) {
 	// Performing a garbage collection cycle prior to attempting to allocate the memory again
 	unsafe_allocator_counter++;
