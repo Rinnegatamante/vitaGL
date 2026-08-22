@@ -854,7 +854,11 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 						break;
 					}
 				} else {
-					sprintf(newline, "VIN(%s, \v);", str + 8);
+					if (is_centroid) {
+						sprintf(newline, "BIN(%s, \v);", str + 8);
+					} else {
+						sprintf(newline, "VIN(%s, \v);", str + 8);
+					}
 				}
 				vgl_fast_memcpy(str, newline, strlen(newline));
 				if (extra_chars > 0) {
