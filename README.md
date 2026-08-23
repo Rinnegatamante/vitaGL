@@ -4,6 +4,10 @@ vitaGL is an opensource openGL driver for PSVITA development. It acts as a wrapp
 # Prerequisites
 In order to run an homebrew made with vitaGL, you are going to need libshacccg.suprx extracted and decrypted on your console. You can refer to this guide for more details about its extraction: https://samilops2.gitbook.io/vita-troubleshooting-guide/shader-compiler/extract-libshacccg.suprx<br>
 
+# Help and Troubleshooting
+
+If you plan to use vitaGL for one of your projects, you can find an official channel to get help with it on Vita Nuova discord server: https://discord.gg/Mz7MmktcuK
+
 # Build Instructions
 In order to build vitaGL use the following command: `make install`.
 <br>These are all the available flags usable when compiling the library:<br>
