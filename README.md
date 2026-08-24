@@ -14,7 +14,7 @@ In order to build vitaGL use the following command: `make install`.
 ### Debug Flags
 | Flag | Description |
 | --- | --- |
-| `HAVE_SHARK_LOG=1`|  Enables logging support in runtime shader compiler.|
+|`HAVE_SHARK_LOG=1`|  Enables logging support in runtime shader compiler.|
 |`LOG_ERRORS=1`| Errors will be logged with sceClibPrintf.|
 |`HAVE_PROFILING=1`| Enables lightweighted profiler for CPU time spent in draw calls.|
 |`HAVE_DEBUGGER=1`| Enables lightweighted on screen debugger interface.|

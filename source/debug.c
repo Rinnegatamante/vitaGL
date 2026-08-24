@@ -23,6 +23,12 @@ extern razor_results razor_metrics;
 #endif
 
 void glPushGroupMarker(GLsizei length, const GLchar *marker) {
+#ifndef SKIP_ERROR_HANDLING
+	size_t len = strlen(marker);
+	if (len > 64) {
+		vgl_log("%s:%d %s: Debug marker too long (%u). It will be truncated to 64 characters.\n", __FILE__, __LINE__, __func__, len);
+	}
+#endif
 	sceGxmPushUserMarker(gxm_context, marker);
 }
 
