@@ -2921,7 +2921,7 @@ inline void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpos
 	if (transpose) {
 		float *tmp = gpu_alloc_mapped_temp(count * 16 * sizeof(float));
 		for (int i = 0; i < count; i++) {
-			matrix3x3_transpose(&tmp[i * 16], &value[i * 16]);
+			matrix4x4_transpose(&tmp[i * 16], &value[i * 16]);
 		}
 		value = tmp;
 	}
