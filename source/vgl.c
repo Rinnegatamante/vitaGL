@@ -303,7 +303,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	blit_attrs[0].regIndex = sceGxmProgramParameterGetResourceIndex(blit_position);
 	blit_attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(blit_texcoord);
 	blit_attrs[0].streamIndex = blit_attrs[1].streamIndex = 0;
-	blit_streams[0].indexSource = blit_streams[1].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+	blit_streams[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 	{ patch_vertex_program(gxm_shader_patcher, blit_vertex_id, blit_attrs, 2, blit_streams, 1, &blit_vertex_program_patched); }
 	{ patch_fragment_program(gxm_shader_patcher, blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, NULL, NULL, &blit_fragment_program_patched); }
 	{ patch_fragment_program(gxm_shader_patcher, blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4, msaa_mode, NULL, NULL, &blit_fragment_program_float_patched); }
