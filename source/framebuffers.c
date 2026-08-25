@@ -747,6 +747,9 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	}
 
 #ifdef HAVE_UNFLIPPED_FBOS
+	if (fast_store) {
+		dst_bpp = src_bpp;
+	}
 	uint8_t *data_u8 = (uint8_t *)data + (width * dst_bpp * (height - 1));
 #else
 	uint8_t *data_u8 = active_read_fb ? (uint8_t *)data : ((uint8_t *)data + (width * dst_bpp * (height - 1)));
