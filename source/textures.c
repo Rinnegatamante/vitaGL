@@ -2162,7 +2162,7 @@ void glActiveTexture(GLenum texture) {
 
 	// Changing current in use server texture unit
 #ifndef SKIP_ERROR_HANDLING
-	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE15)) {
+	if ((texture < GL_TEXTURE0) || (texture > GL_TEXTURE15)) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, texture)
 	} else
 #endif
