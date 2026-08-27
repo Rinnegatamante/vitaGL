@@ -1267,11 +1267,11 @@ void vglSetVertexAttribPoolSize(uint32_t main_size, uint32_t aux_size);
 // Setup the vertex ring buffer size of sceGxm. Must be called before vglInit*. Default value: SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE.
 void vglSetVertexBufferSize(uint32_t size);
 
-// Change the scenes per frame value to use for the display rendertarget. Default value: 1
-void vglSetupDisplayRenderTarget(uint8_t size);
-
 // Change the priority and affinity to use for the garbage collector thread. Must be called before vglInit*.
 void vglSetupGarbageCollector(int priority, int affinity);
+
+// Change the scenes per frame value to use for the display and fbos rendertargets. Default value: 1, 1.
+void vglSetupRenderTargetScenesNum(uint8_t display_size, uint8_t fbo_size);
 
 // Change what kind of vertex buffer objects are considered eligible for scratch memory usage in order to reduce allocation costs. Requires USE_SCRATCH_MEMORY.
 void vglSetupScratchMemory(GLboolean scratch_for_dynamic, GLboolean scratch_for_stream);

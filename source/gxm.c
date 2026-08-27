@@ -113,6 +113,7 @@ SceUID gc_mutex[2];
 static int gc_thread_priority = 0x10000100;
 static int gc_thread_affinity = 0;
 static uint8_t gxm_display_rt_size = 1; // Number of scenes per frame to use for the display rendertarget
+static uint8_t gxm_fbo_rt_size = 1; // Number of scenes per frame to use for framebuffers rendertargets
 #ifdef HAVE_PTHREAD
 pthread_t gc_thread;
 #else
@@ -639,7 +640,7 @@ void scene_reset(void) {
 #ifdef HAVE_SHARED_RENDERTARGETS
 				active_write_fb->target = (SceGxmRenderTarget *)get_free_render_target(active_write_fb->width, active_write_fb->height);
 #else
-				int r = setup_render_target(&active_write_fb->target, active_write_fb->width, active_write_fb->height, 1);
+				int r = setup_render_target(&active_write_fb->target, active_write_fb->width, active_write_fb->height, gxm_fbo_rt_size);
 #ifdef LOG_ERRORS
 				if (r) {
 					vgl_log("%s:%d Failed to create a rendertarget of size %dx%d for framebuffer 0x%08X (%s).\n", __FILE__, __LINE__, active_write_fb->width, active_write_fb->height, active_write_fb, get_gxm_error_literal(r));
@@ -993,11 +994,12 @@ void vglSetupShaderPatcher(uint32_t buffer_mem_size, uint32_t vertex_usse_mem_si
 	shader_patcher_fragment_usse_size = fragment_usse_mem_size;
 }
 
-void vglSetupDisplayRenderTarget(uint8_t size) {
+void vglSetupRenderTargetScenesNum(uint8_t size_main, uint8_t size_fbos) {
 #ifndef SKIP_ERROR_HANDLING
 	if (size > MAX_SCENES_PER_FRAME) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, size)
 	}
 #endif
-	gxm_display_rt_size = size;
+	gxm_display_rt_size = size_main;
+	gxm_fbo_rt_size = size_fbos;
 }
