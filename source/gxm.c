@@ -996,8 +996,10 @@ void vglSetupShaderPatcher(uint32_t buffer_mem_size, uint32_t vertex_usse_mem_si
 
 void vglSetupRenderTargetScenesNum(uint8_t size_main, uint8_t size_fbos) {
 #ifndef SKIP_ERROR_HANDLING
-	if (size > MAX_SCENES_PER_FRAME) {
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, size)
+	if (size_main > MAX_SCENES_PER_FRAME) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, size_main)
+	} else if (size_fbos > MAX_SCENES_PER_FRAME) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, size_fbos)
 	}
 #endif
 	gxm_display_rt_size = size_main;
