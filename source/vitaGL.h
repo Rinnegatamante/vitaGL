@@ -1247,7 +1247,7 @@ void vglSetParamBufferSize(uint32_t size);
 void vglSetSemanticBindingMode(GLenum mode);
 
 // Sets path where to save shader association data for Razor. If an empty string is supplied, shader association data is disabled. Default value: "".
-void vglSetShaderAssocationPath(const char *path);
+void vglSetShaderAssociationPath(const char *path);
 
 // Overloads the shader cache path when HAVE_SHADER_CACHE=1 is used. Must be called before vglInit*. Default value: ux0:data/shader_cache.
 void vglSetShaderCachePath(const char *path);
