@@ -1183,6 +1183,9 @@ void *vglGetProcAddress(const char *name);
 // Get the internal texture data pointer of a GL texture.
 void *vglGetTexDataPointer(GLenum target);
 
+// Get the internal texture palette data pointer of a GL texture.
+void *vglGetTexPaletteDataPointer(GLenum target);
+
 // Simple vitaGL init function. Legacy pool size is the amount of memory to reserve to handle immediate mode usage.
 GLboolean vglInit(int legacy_pool_size);
 
@@ -1215,6 +1218,9 @@ size_t vglMemTotal(vglMemType type);
 
 // Replaces original texture data pointer with a new one in a GL texture.
 void vglOverloadTexDataPointer(GLenum target, void *data);
+
+// Replaces original texture palette data pointer with a new one in a GL texture.
+void vglOverloadTexPaletteDataPointer(GLenum target, void *data);
 
 // Allows to override texture format of a GL texture. Requires HAVE_UNPURE_TEXFORMATS.
 void vglOverrideTexFormat(GLenum target);

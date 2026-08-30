@@ -2692,6 +2692,25 @@ void *vglGetTexDataPointer(GLenum target) {
 	}
 }
 
+void *vglGetTexPaletteDataPointer(GLenum target) {
+	// Aliasing texture unit for cleaner code
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx;
+	resolve_tex_target(target, SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL));
+	texture *tex = &texture_slots[texture2d_idx];
+
+	switch (target) {
+	case GL_TEXTURE_CUBE_MAP:
+	case GL_TEXTURE_2D:
+#ifdef HAVE_UNPURE_TEXFORMATS
+	case GL_TEXTURE_1D:
+#endif
+		return tex->palette_data;
+	default:
+		SET_GL_ERROR_WITH_RET(GL_INVALID_ENUM, NULL)
+	}
+}
+
 void vglOverloadTexDataPointer(GLenum target, void *data) {
 	THREAD_SAFE()
 
@@ -2708,6 +2727,28 @@ void vglOverloadTexDataPointer(GLenum target, void *data) {
 	case GL_TEXTURE_1D:
 #endif
 		tex->data = data;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+}
+
+void vglOverloadTexPaletteDataPointer(GLenum target, void *data) {
+	THREAD_SAFE()
+
+	// Aliasing texture unit for cleaner code
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx;
+	resolve_tex_target(target, SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target));
+	texture *tex = &texture_slots[texture2d_idx];
+
+	switch (target) {
+	case GL_TEXTURE_CUBE_MAP:
+	case GL_TEXTURE_2D:
+#ifdef HAVE_UNPURE_TEXFORMATS
+	case GL_TEXTURE_1D:
+#endif
+		tex->palette_data = data;
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
