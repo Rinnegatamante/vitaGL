@@ -297,7 +297,7 @@ extern int NEW_DISPLAY_HEIGHT; // Requested new display height in pixels
 #include "texture_callbacks.h"
 
 // Fixed-function pipeline shader cache settings
-#define FFP_SHADER_CACHE_MAGIC 28 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define FFP_SHADER_CACHE_MAGIC 29 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 //#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
 
 // Custom shaders pipeline shader cache settings
@@ -546,7 +546,7 @@ typedef enum {
 
 typedef union {
 	struct {
-		uint32_t rgb_func : 3;
+		uint32_t rgb_func : 4; // 4 bits: DOT3_RGBA is 8 and does not fit in 3
 		uint32_t a_func : 3;
 		uint32_t op_mode_rgb_0 : 2;
 		uint32_t op_mode_a_0 : 2;
@@ -560,7 +560,7 @@ typedef union {
 		uint32_t op_mode_a_2 : 2;
 		uint32_t op_rgb_2 : 2;
 		uint32_t op_a_2 : 2; // This can be ideally reduced to 1 bit if necessary
-		uint32_t UNUSED : 2;
+		uint32_t UNUSED : 1; // narrowed so the union stays exactly 32 bits
 	};
 	uint32_t raw;
 } combiner_state;
@@ -634,9 +634,16 @@ typedef enum {
 	REPLACE,
 	SUBTRACT,
 	COMBINE,
+	DOT3_RGB,
+	DOT3_RGBA,
 	ADD_SIGNED = 1,
 	INTERPOLATE = 2,
 } texenv_mode;
+
+// combiner_state.rgb_func is a 4 bit field: a texenv_mode above 15 would be
+// silently truncated on assignment. DOT3_RGBA (8) did not fit the original
+// 3 bit field and became MODULATE (0) without any diagnostic.
+_Static_assert(DOT3_RGBA < 16, "texenv_mode does not fit combiner_state.rgb_func");
 
 #ifndef DISABLE_TEXTURE_COMBINER
 typedef enum {

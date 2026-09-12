@@ -399,6 +399,9 @@ void setup_combiner_pass(int i, char *dst) {
 	sprintf(arg0_rgb, op_modes[tex_unit->combiner.op_mode_rgb_0], operands[tex_unit->combiner.op_rgb_0]);
 	sprintf(arg0_a, op_modes[tex_unit->combiner.op_mode_a_0], operands[tex_unit->combiner.op_a_0]);
 
+	if (tex_unit->combiner.rgb_func == DOT3_RGBA)
+		sprintf(tmp, combine_dot3a_src, i, calc_funcs[tex_unit->combiner.rgb_func], 'O' + i, i);
+	else
 	sprintf(tmp, combine_src, i, calc_funcs[tex_unit->combiner.rgb_func], 'O' + i, i, calc_funcs[tex_unit->combiner.a_func], 'O' + i, i);
 	switch (extra_args_count) {
 	case 1:
@@ -2784,6 +2787,12 @@ inline void glTexEnvi(GLenum target, GLenum pname, GLint param) {
 				break;
 			case GL_SUBTRACT:
 				tex_unit->combiner.rgb_func = SUBTRACT;
+				break;
+			case GL_DOT3_RGB:
+				tex_unit->combiner.rgb_func = DOT3_RGB;
+				break;
+			case GL_DOT3_RGBA:
+				tex_unit->combiner.rgb_func = DOT3_RGBA;
 				break;
 			}
 			break;

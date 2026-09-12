@@ -390,6 +390,8 @@ extern "C" {
 #define GL_RGB_SCALE                                    0x8573
 #define GL_ADD_SIGNED                                   0x8574
 #define GL_INTERPOLATE                                  0x8575
+#define GL_DOT3_RGB                                     0x86AE
+#define GL_DOT3_RGBA                                    0x86AF
 #define GL_CONSTANT                                     0x8576
 #define GL_PRIMARY_COLOR                                0x8577
 #define GL_PREVIOUS                                     0x8578

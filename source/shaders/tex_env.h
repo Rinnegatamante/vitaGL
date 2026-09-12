@@ -62,7 +62,14 @@ const char *calc_funcs[] = {
 	"(%s * %s + %s * (1 - %s))", // GL_INTERPOLATE
 	"%s + %s", // GL_ADD
 	"%s", // GL_REPLACE
-	"%s - %s" // GL_SUBTRACT
+	"%s - %s", // GL_SUBTRACT
+	"%s * %s", // COMBINE (placeholder: never used as a function, keeps the indices aligned)
+	// GL_DOT3_RGB / GL_DOT3_RGBA: dot product with a -0.5 bias and a scale of 4.
+	// The scalar result is broadcast to every channel (Cg does this implicitly).
+	// ES 1.1 era Android games use this to pull an alpha mask out of an ETC1
+	// atlas, since ETC1 carries no alpha channel of its own.
+	"4.0f * dot((%s) - 0.5f, (%s) - 0.5f)", // GL_DOT3_RGB
+	"4.0f * dot((%s) - 0.5f, (%s) - 0.5f)"  // GL_DOT3_RGBA
 };
 
 const char *operands[] = {
@@ -86,6 +93,20 @@ R"(float4 texenv5%d(sampler2D tex, float2 texcoord, float4 prepass, float4 fragc
 	
 	res.rgb = (%s) * %cpass%d_scale.x;
 	res.a = (%s) * %cpass%d_scale.y;
+	
+	return clamp(res, 0.0f, 1.0f);
+}
+)";
+
+// GL_DOT3_RGBA writes the dot product to alpha as well as to RGB, so the alpha
+// line does not take a function of its own the way the generic template does.
+const char *combine_dot3a_src =
+R"(float4 texenv5%d(sampler2D tex, float2 texcoord, float4 prepass, float4 fragcol, float4 texenvcol) {
+	float4 texcol = tex2D(tex, texcoord);
+	float4 res;
+	float d3 = (%s) * %cpass%d_scale.x;
+	res.rgb = float3(d3, d3, d3);
+	res.a = d3;
 	
 	return clamp(res, 0.0f, 1.0f);
 }
