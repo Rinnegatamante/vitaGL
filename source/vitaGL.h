@@ -414,6 +414,8 @@ extern "C" {
 #define GL_PROGRAM_ERROR_POSITION_ARB                   0x864B
 #define GL_NUM_COMPRESSED_TEXTURE_FORMATS               0x86A2
 #define GL_COMPRESSED_TEXTURE_FORMATS                   0x86A3
+#define GL_DOT3_RGB                                     0x86AE
+#define GL_DOT3_RGBA                                    0x86AF
 #define GL_PROGRAM_BINARY_LENGTH                        0x8741
 #define GL_MIRROR_CLAMP_EXT                             0x8742
 #define GL_BUFFER_SIZE                                  0x8764

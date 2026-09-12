@@ -399,7 +399,12 @@ void setup_combiner_pass(int i, char *dst) {
 	sprintf(arg0_rgb, op_modes[tex_unit->combiner.op_mode_rgb_0], operands[tex_unit->combiner.op_rgb_0]);
 	sprintf(arg0_a, op_modes[tex_unit->combiner.op_mode_a_0], operands[tex_unit->combiner.op_a_0]);
 
-	sprintf(tmp, combine_src, i, calc_funcs[tex_unit->combiner.rgb_func], 'O' + i, i, calc_funcs[tex_unit->combiner.a_func], 'O' + i, i);
+	const char env_id = 'O' + i;
+	if (tex_unit->combiner.rgb_func == DOT3_RGBA) { // DOT3_RGBA overloads alpha mode
+		sprintf(tmp, combine_dot3_rgba_src, i, calc_funcs[DOT3_RGB], env_id, i, env_id, i);
+	} else {
+		sprintf(tmp, combine_src, i, calc_funcs[tex_unit->combiner.rgb_func], env_id, i, calc_funcs[tex_unit->combiner.a_func], env_id, i);
+	}
 	switch (extra_args_count) {
 	case 1:
 		sprintf(dst, tmp, arg0_rgb, args[0]);
@@ -2785,6 +2790,12 @@ inline void glTexEnvi(GLenum target, GLenum pname, GLint param) {
 			case GL_SUBTRACT:
 				tex_unit->combiner.rgb_func = SUBTRACT;
 				break;
+			case GL_DOT3_RGB:
+				tex_unit->combiner.rgb_func = DOT3_RGB;
+				break;
+			case GL_DOT3_RGBA:
+				tex_unit->combiner.rgb_func = DOT3_RGBA;
+				break;
 			}
 			break;
 		case GL_COMBINE_ALPHA:
@@ -3080,6 +3091,12 @@ void glGetTexEnviv(GLenum target, GLenum pname, GLint *params) {
 				break;
 			case SUBTRACT:
 				*params = GL_SUBTRACT;
+				break;
+			case DOT3_RGB:
+				*params = GL_DOT3_RGB;
+				break;
+			case DOT3_RGBA:
+				*params = GL_DOT3_RGBA;
 				break;
 			}
 			break;

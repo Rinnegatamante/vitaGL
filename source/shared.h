@@ -297,8 +297,7 @@ extern int NEW_DISPLAY_HEIGHT; // Requested new display height in pixels
 #include "texture_callbacks.h"
 
 // Fixed-function pipeline shader cache settings
-#define FFP_SHADER_CACHE_MAGIC 28 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
-//#define DUMP_SHADER_SOURCES // Enable this flag to dump shader sources inside shader cache
+#define FFP_SHADER_CACHE_MAGIC 29 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 
 // Custom shaders pipeline shader cache settings
 #ifdef HAVE_SHADER_CACHE
@@ -636,6 +635,8 @@ typedef enum {
 	COMBINE,
 	ADD_SIGNED = 1,
 	INTERPOLATE = 2,
+	DOT3_RGB = 6,
+	DOT3_RGBA = 7
 } texenv_mode;
 
 #ifndef DISABLE_TEXTURE_COMBINER

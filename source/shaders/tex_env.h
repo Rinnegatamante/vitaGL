@@ -62,7 +62,8 @@ const char *calc_funcs[] = {
 	"(%s * %s + %s * (1 - %s))", // GL_INTERPOLATE
 	"%s + %s", // GL_ADD
 	"%s", // GL_REPLACE
-	"%s - %s" // GL_SUBTRACT
+	"%s - %s", // GL_SUBTRACT
+	"4 * dot(%s - 0.5f, %s - 0.5f)", // GL_DOT3_RGB
 };
 
 const char *operands[] = {
@@ -90,4 +91,18 @@ R"(float4 texenv5%d(sampler2D tex, float2 texcoord, float4 prepass, float4 fragc
 	return clamp(res, 0.0f, 1.0f);
 }
 )";
+
+const char *combine_dot3_rgba_src =
+R"(float4 texenv5%d(sampler2D tex, float2 texcoord, float4 prepass, float4 fragcol, float4 texenvcol) {
+	float4 texcol = tex2D(tex, texcoord);
+	float4 res;
+	
+	float v = (%s);
+	res.rgb = float3(v, v, v) * %cpass%d_scale.x;
+	res.a = v * %cpass%d_scale.y;
+	
+	return clamp(res, 0.0f, 1.0f);
+}
+)";
+
 #endif

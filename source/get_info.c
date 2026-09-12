@@ -57,6 +57,7 @@ static GLubyte *extensions[] = {
 	"GL_EXT_texture_env_add",
 #ifndef DISABLE_TEXTURE_COMBINER
 	"GL_EXT_texture_env_combine",
+	"GL_ARB_texture_env_dot3",
 #endif
 	"GL_EXT_texture_format_BGRA8888",
 	"GL_EXT_Cg_shader",
