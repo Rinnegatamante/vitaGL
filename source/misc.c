@@ -961,7 +961,7 @@ void glPopAttrib(void) {
 		SET_GL_ERROR(GL_STACK_UNDERFLOW)
 	}
 #endif
-	attrib_state *setup = &attrib_stack[attrib_stack_counter--];
+	attrib_state *setup = &attrib_stack[--attrib_stack_counter];
 
 	if (setup->enabled_bits & (1 << COLOR_BUFFER_BIT)) {
 		alpha_test_state = setup->alpha_test_state;
