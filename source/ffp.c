@@ -1624,11 +1624,6 @@ void update_fogging_state() {
 void glEnableClientState(GLenum array) {
 	THREAD_SAFE()
 
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glEnableClientState, DLIST_FUNC_U32, array))
-		return;
-#endif
 	ffp_dirty_vert = GL_TRUE;
 	ffp_dirty_frag = GL_TRUE;
 	switch (array) {
@@ -1656,11 +1651,6 @@ void glEnableClientState(GLenum array) {
 void glDisableClientState(GLenum array) {
 	THREAD_SAFE()
 
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glEnableClientState, DLIST_FUNC_U32, array))
-		return;
-#endif
 	ffp_dirty_vert = GL_TRUE;
 	ffp_dirty_frag = GL_TRUE;
 	switch (array) {
@@ -1688,11 +1678,6 @@ void glDisableClientState(GLenum array) {
 void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 	THREAD_SAFE()
 
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glVertexPointer, DLIST_FUNC_I32_U32_I32_U32, size, type, stride, pointer))
-		return;
-#endif
 #ifndef SKIP_ERROR_HANDLING
 	if ((stride < 0) || (size < 2) || (size > 4)) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -1733,11 +1718,6 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *poin
 void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 	THREAD_SAFE()
 
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColorPointer, DLIST_FUNC_I32_U32_I32_U32, size, type, stride, pointer))
-		return;
-#endif
 #ifndef SKIP_ERROR_HANDLING
 	if ((stride < 0) || (size < 3) || (size > 4)) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -1783,11 +1763,6 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *point
 void glNormalPointer(GLenum type, GLsizei stride, const void *pointer) {
 	THREAD_SAFE()
 
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glNormalPointer, DLIST_FUNC_U32_I32_U32, type, stride, pointer))
-		return;
-#endif
 #ifndef SKIP_ERROR_HANDLING
 	if (stride < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -1833,11 +1808,6 @@ void glNormalPointer(GLenum type, GLsizei stride, const void *pointer) {
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) {
 	THREAD_SAFE()
 
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTexCoordPointer, DLIST_FUNC_I32_U32_I32_U32, size, type, stride, pointer))
-		return;
-#endif
 #ifndef SKIP_ERROR_HANDLING
 	if ((stride < 0) || (size < 1) || (size > 4)) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
@@ -1979,11 +1949,6 @@ inline void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 void glClientActiveTexture(GLenum texture) {
 	THREAD_SAFE()
 
-#ifdef HAVE_DLISTS
-	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glClientActiveTexture, DLIST_FUNC_U32, texture))
-		return;
-#endif
 #ifndef SKIP_ERROR_HANDLING
 	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE15)) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, texture)
