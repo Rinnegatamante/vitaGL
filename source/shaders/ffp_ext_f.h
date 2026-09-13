@@ -43,7 +43,7 @@ uniform float3 Elights_attenuations[lights_num];
 uniform float Gshininess;
 
 void point_light(short i, float3 normal, float3 position, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
-	float3 VP = Dlights_positions[i].xyz - position;
+	float3 VP = (Dlights_positions[i].xyz / Dlights_positions[i].w) - position;
 	float d = length(VP);
 	VP = normalize(VP);
 	float attenuation = 1.0f / (Elights_attenuations[i].x +
@@ -60,12 +60,13 @@ void point_light(short i, float3 normal, float3 position, float4 inout Ambient, 
 }
 
 void directional_light(short i, float3 normal, float3 position, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
-	float nDotVP = max(0.0f, dot(normal, normalize(Dlights_positions[i].xyz)));
+	float3 VP = normalize(Dlights_positions[i].xyz);
+	float nDotVP = max(0.0f, dot(normal, VP));
 		
 	Ambient += Alights_ambients[i];
 	Diffuse += Blights_diffuses[i] * nDotVP;
 	if (nDotVP != 0.0f) {
-		float nDotHV = max(0.0f, dot(normal, normalize(Dlights_positions[i].xyz - position)));
+		float nDotHV = max(0.0f, dot(normal, normalize(VP + float3(0.0f, 0.0f, 1.0f))));
 		Specular += Clights_speculars[i] * pow(nDotHV, Gshininess);
 	}
 }

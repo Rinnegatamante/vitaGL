@@ -1146,7 +1146,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 					upload_ffp_vertex_unif(LIGHTS_ATTENUATIONS_V_UNIF, i, 1, 3, (const float *)light_vars[i][4])
 				}
 			}
-			}
+		}
 		sceClibMemcpy(buffer, ffp_vertex_unif_buf, ffp_vertex_unif_buf_size);
 		dirty_vert_unifs = 0;
 	}

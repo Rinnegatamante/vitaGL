@@ -297,7 +297,7 @@ extern int NEW_DISPLAY_HEIGHT; // Requested new display height in pixels
 #include "texture_callbacks.h"
 
 // Fixed-function pipeline shader cache settings
-#define FFP_SHADER_CACHE_MAGIC 29 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
+#define FFP_SHADER_CACHE_MAGIC 30 // This must be increased whenever ffp shader sources or shader mask/combiner mask changes
 
 // Custom shaders pipeline shader cache settings
 #ifdef HAVE_SHADER_CACHE
