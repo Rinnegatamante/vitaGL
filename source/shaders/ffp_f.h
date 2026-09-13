@@ -64,7 +64,7 @@ void directional_light(short i, float3 normal, float3 position, float4 inout Amb
 }
 
 void calculate_light(short i, float3 ecPosition, float3 N, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
-	if (Dlights_positions[i].w == 1.0f)
+	if (Dlights_positions[i].w != 0.0f)
 		point_light(i, N, ecPosition, Ambient, Diffuse, Specular);
 	else
 		directional_light(i, N, ecPosition, Ambient, Diffuse, Specular);
