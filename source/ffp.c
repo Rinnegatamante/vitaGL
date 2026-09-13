@@ -3315,7 +3315,7 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
-	if (light < GL_LIGHT0 && light > GL_LIGHT7) {
+	if (light < GL_LIGHT0 || light > GL_LIGHT7) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, light)
 	}
 #endif
@@ -3363,7 +3363,7 @@ void glLightxv(GLenum light, GLenum pname, const GLfixed *params) {
 		return;
 #endif
 #ifndef SKIP_ERROR_HANDLING
-	if (light < GL_LIGHT0 && light > GL_LIGHT7) {
+	if (light < GL_LIGHT0 || light > GL_LIGHT7) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, light)
 	}
 #endif
