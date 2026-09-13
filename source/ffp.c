@@ -569,8 +569,13 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		draw_mask_state &= ~(1 << FFP_ATTRIB_NORMAL);
 	}
 	
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+	uint64_t vert_shader_mask = mask.raw & VERTEX_SHADER_MASK;
+	uint64_t frag_shader_mask = mask.raw & FRAGMENT_SHADER_MASK;
+#else
 	uint32_t vert_shader_mask = mask.raw & VERTEX_SHADER_MASK;
 	uint32_t frag_shader_mask = mask.raw & FRAGMENT_SHADER_MASK;
+#endif
 	
 #ifdef DISABLE_TEXTURE_COMBINER
 	#define is_ffp_mask_matching(src_mask, dst_mask) \
