@@ -127,8 +127,9 @@ float4 main(
 		calculate_light(i, vEcPosition, vNormal, Ambient, Diffuse, Specular);
 	}
 	float4 fragColor = vColor;
-	vColor = vEmission + fragColor * Flight_global_ambient;
-	vColor += Ambient * fragColor + Diffuse * vDiffuse + Specular * vSpecular;
+	vColor.rgb = vEmission.rgb + fragColor.rgb * Flight_global_ambient.rgb;
+	vColor.rgb += Ambient.rgb * fragColor.rgb + Diffuse.rgb * vDiffuse.rgb + Specular.rgb * vSpecular.rgb;
+	vColor.a = vDiffuse.a;
 	vColor = clamp(vColor, 0.0f, 1.0f);
 #endif	
 #if num_textures > 0

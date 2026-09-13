@@ -184,8 +184,9 @@ void main(
 #endif
 #if lights_num > 0
 #if shading_mode < 1 // GL_SMOOTH/GL_FLAT
-	vColor = Semission + Pcolor * Flight_global_ambient;
-	vColor += Ambient * Pcolor + Diffuse * Qdiff + Specular * Rspec;
+	vColor.rgb = Semission.rgb + Pcolor.rgb * Flight_global_ambient.rgb;
+	vColor.rgb += Ambient.rgb * Pcolor.rgb + Diffuse.rgb * Qdiff.rgb + Specular.rgb * Rspec.rgb;
+	vColor.a = Qdiff.a;
 	vColor = clamp(vColor, 0.0f, 1.0f);
 #endif
 #if shading_mode == 1 // GL_PHONG_WIN
