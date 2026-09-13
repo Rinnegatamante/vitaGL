@@ -398,6 +398,7 @@ void glEnable(GLenum cap) {
 		break;
 	case GL_LIGHTING:
 		ffp_dirty_vert = GL_TRUE;
+		ffp_dirty_frag = GL_TRUE;
 		lighting_state = GL_TRUE;
 		break;
 	case GL_DEPTH_TEST:

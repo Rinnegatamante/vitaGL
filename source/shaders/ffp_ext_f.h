@@ -13,6 +13,7 @@ uniform float2 Qpass2_scale;
 #define pass1_func texenv%d
 #define pass2_func texenv%d
 #define lights_num %d
+#define lighting %d
 #define shading_mode %d
 #define point_sprite %d
 #define interp %d
@@ -29,13 +30,16 @@ uniform float2 Qpass2_scale;
 #define TEXCOORD7 TEXCOORD7_HALF
 #endif
 
+#if lighting == 1 && shading_mode == 1 // GL_PHONG_WIN
+uniform float4 Flight_global_ambient;
+#endif
+
 #if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
 uniform float4 Alights_ambients[lights_num];
 uniform float4 Blights_diffuses[lights_num];
 uniform float4 Clights_speculars[lights_num];
 uniform float4 Dlights_positions[lights_num];
 uniform float3 Elights_attenuations[lights_num];
-uniform float4 Flight_global_ambient;
 uniform float Gshininess;
 
 void point_light(short i, float3 normal, float3 position, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
@@ -84,14 +88,14 @@ float4 main(
 #endif
 #endif
 #endif
-#if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
+#if lighting == 1 && shading_mode == 1 // GL_PHONG_WIN
 	float3 vNormal : TEXCOORD3,
 	float3 vEcPosition : TEXCOORD4,
 	float4 vDiffuse : TEXCOORD5,
 	float4 vSpecular : TEXCOORD6,
 	float4 vEmission : TEXCOORD7,
 #endif
-#if (has_colors == 1 || lights_num > 0)
+#if (has_colors == 1 || lighting == 1)
 	float4 vColor : COLOR,
 #endif
 #if fog_mode < 3
@@ -115,17 +119,19 @@ float4 main(
 #if alpha_test_mode == 6
 	discard;
 #endif
-#if has_colors == 0 && lights_num == 0
+#if has_colors == 0 && lighting == 0
 	float4 vColor = LtintColor;
 #endif
 	// Lighting
-#if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
+#if lighting == 1 && shading_mode == 1 // GL_PHONG_WIN
 	float4 Ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	float4 Diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	float4 Specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+#if lights_num > 0
 	for (short i = 0; i < lights_num; i++) {
 		calculate_light(i, vEcPosition, vNormal, Ambient, Diffuse, Specular);
 	}
+#endif
 	float4 fragColor = vColor;
 	vColor.rgb = vEmission.rgb + fragColor.rgb * Flight_global_ambient.rgb;
 	vColor.rgb += Ambient.rgb * fragColor.rgb + Diffuse.rgb * vDiffuse.rgb + Specular.rgb * vSpecular.rgb;

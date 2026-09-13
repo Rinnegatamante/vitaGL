@@ -179,12 +179,13 @@ typedef union {
 		uint64_t point_sprite : 1; // Frag
 		uint64_t fast_perspective_correction : 1; // Frag/Vert
 		uint64_t srgb_mode : 1; // Frag
-		uint64_t UNUSED : 29;
+		uint64_t lighting : 1; // Frag/Vert
+		uint64_t UNUSED : 28;
 	};
 	uint64_t raw;
 } shader_mask;
-#define VERTEX_SHADER_MASK   (0b0000000000000000000000000000001011111100011000000111111100111000)
-#define FRAGMENT_SHADER_MASK (0b0000000000000000000000000000011100000011101111111111100011111111)
+#define VERTEX_SHADER_MASK   (0b0000000000000000000000000000101011111100011000000111111100111000)
+#define FRAGMENT_SHADER_MASK (0b0000000000000000000000000000111100000011101111111111100011111111)
 #else
 typedef union {
 	struct {
@@ -203,11 +204,12 @@ typedef union {
 		uint32_t point_sprite : 1; // Frag
 		uint32_t fast_perspective_correction : 1; // Frag/Vert
 		uint32_t srgb_mode : 1; // Frag
+		uint32_t lighting : 1; // Frag/Vert
 	};
 	uint32_t raw;
 } shader_mask;
-#define VERTEX_SHADER_MASK   (0b0101111111000000111111100111000)
-#define FRAGMENT_SHADER_MASK (0b1110000001111111111100011111111)
+#define VERTEX_SHADER_MASK   (0b10101111111000000111111100111000)
+#define FRAGMENT_SHADER_MASK (0b11110000001111111111100011111111)
 #endif
 #ifndef DISABLE_TEXTURE_COMBINER
 typedef union {
@@ -457,6 +459,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	mask.pos_fixed_mask = ffp_vertex_attrib_fixed_pos_mask;
 	mask.fast_perspective_correction = fast_perspective_correction_hint;
 	mask.srgb_mode = srgb_mode;
+	mask.lighting = lighting_state;
 	uint16_t draw_mask_state = ffp_vertex_attrib_state;
 
 	// Counting number of enabled texture units
@@ -549,8 +552,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				}
 			}
 		}
-		// Force enabling lights related streams
-		if (mask.lights_num > 0) {
+		if (mask.lighting) {
 			draw_mask_state |= (1 << FFP_ATTRIB_COLOR);
 			draw_mask_state |= (1 << FFP_ATTRIB_DIFFUSE);
 			draw_mask_state |= (1 << FFP_ATTRIB_SPECULAR);
@@ -559,8 +561,8 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		}
 	}
 	
-	// Force disabling lights state
-	if (mask.lights_num == 0) {
+	// Force disabling lighting state
+	if (!mask.lighting) {
 		draw_mask_state &= ~(1 << FFP_ATTRIB_DIFFUSE);
 		draw_mask_state &= ~(1 << FFP_ATTRIB_SPECULAR);
 		draw_mask_state &= ~(1 << FFP_ATTRIB_EMISSION);
@@ -664,7 +666,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 			// Compiling the new shader
 			char vshader[8192];
-			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.shading_mode, mask.normalize, mask.fixed_mask, mask.pos_fixed_mask, WVP_ON_GPU, mask.fast_perspective_correction);
+			sprintf(vshader, ffp_vert_src, mask.clip_planes_num, mask.num_textures, mask.has_colors, mask.lights_num, mask.lighting, mask.shading_mode, mask.normalize, mask.fixed_mask, mask.pos_fixed_mask, WVP_ON_GPU, mask.fast_perspective_correction);
 			uint32_t size = strlen(vshader);
 			SceGxmProgram *t = shark_compile_shader_extended(vshader, &size, SHARK_VERTEX_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
 			ffp_vertex_program = (SceGxmProgram *)vglMalloc(size);
@@ -705,7 +707,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 	if (ffp_dirty_vert_attr) {
 		// Not going for the vertex config setup if we have aligned datas
-		if (!attrs && mask.num_textures == 1 && mask.lights_num == 0) {
+		if (!attrs && mask.num_textures == 1 && !mask.lighting) {
 			attrs = ffp_vertex_attrib_config;
 			streams = ffp_vertex_stream_config;
 		}
@@ -735,7 +737,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				}
 
 				// Lighting data
-				if (mask.lights_num > 0) {
+				if (mask.lighting) {
 					ffp_lighting_streams = &attrs[ffp_vertex_num_params];
 					attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_DIFFUSE];
 					attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_SPECULAR];
@@ -769,7 +771,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				ffp_vertex_num_params++;
 			}
 
-			if (mask.lights_num > 0) {
+			if (mask.lighting) {
 				ffp_lighting_streams = &ffp_vertex_stream[ffp_vertex_num_params];
 
 				// Lighting equation attributes
@@ -937,13 +939,13 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				(mask.tex_env_mode_pass0 != COMBINE) ? mask.tex_env_mode_pass0 : TEX0_ENV_PASS_COMBINE,
 				(mask.tex_env_mode_pass1 != COMBINE) ? mask.tex_env_mode_pass1 : TEX1_ENV_PASS_COMBINE,
 				(mask.tex_env_mode_pass2 != COMBINE) ? mask.tex_env_mode_pass2 : TEX2_ENV_PASS_COMBINE,
-				mask.lights_num, mask.shading_mode, mask.point_sprite, mask.fast_perspective_correction, mask.srgb_mode);
+				mask.lights_num, mask.lighting, mask.shading_mode, mask.point_sprite, mask.fast_perspective_correction, mask.srgb_mode);
 #else
 			sprintf(fshader, ffp_frag_src, texenv_shad, alpha_op,
 				mask.num_textures, mask.has_colors, mask.fog_mode,
 				(mask.tex_env_mode_pass0 != COMBINE) ? mask.tex_env_mode_pass0 : TEX0_ENV_PASS_COMBINE,
 				(mask.tex_env_mode_pass1 != COMBINE) ? mask.tex_env_mode_pass1 : TEX1_ENV_PASS_COMBINE,
-				mask.lights_num, mask.shading_mode, mask.point_sprite, mask.fast_perspective_correction, mask.srgb_mode);
+				mask.lights_num, mask.lighting, mask.shading_mode, mask.point_sprite, mask.fast_perspective_correction, mask.srgb_mode);
 #endif
 			uint32_t size = strlen(fshader);
 			SceGxmProgram *t = shark_compile_shader_extended(fshader, &size, SHARK_FRAGMENT_SHADER, compiler_opts, compiler_fastmath, compiler_fastprecision, compiler_fastint);
@@ -1013,7 +1015,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		matrix4x4_multiply(vgl_mvp_matrix, projection_matrix, modelview_matrix);
 #endif
 		// Recalculating normal matrix if necessary (TODO: This should be recalculated only when MV changes)
-		if (mask.lights_num > 0) {
+		if (mask.lighting) {
 			recalculate_normal_matrix();
 		}
 
@@ -1064,9 +1066,13 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			if (ffp_fragment_params[FOG_DENSITY_UNIF] >= 0) {
 				upload_ffp_fragment_unif(FOG_DENSITY_UNIF, 0, 1, 1, (const float *)&fog_density)
 			}
-			if (ffp_fragment_params[LIGHTS_AMBIENTS_F_UNIF] >= 0) {
+			if (ffp_fragment_params[LIGHT_GLOBAL_AMBIENT_F_UNIF] >= 0) {
 				upload_ffp_fragment_unif(LIGHT_GLOBAL_AMBIENT_F_UNIF, 0, 1, 4, (const float *)&light_global_ambient.r)
+			}
+			if (ffp_fragment_params[SHININESS_F_UNIF] >= 0) {
 				upload_ffp_fragment_unif(SHININESS_F_UNIF, 0, 1, 1, (const float *)&current_shininess)
+			}
+			if (ffp_fragment_params[LIGHTS_AMBIENTS_F_UNIF] >= 0) {
 				if (lights_aligned) {
 					upload_ffp_fragment_unif(LIGHTS_AMBIENTS_F_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][0])
 					upload_ffp_fragment_unif(LIGHTS_DIFFUSES_F_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][1])
@@ -1112,26 +1118,30 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		upload_ffp_vertex_unif(POINT_SIZE_UNIF, 0, 1, 1, &point_size)
 		if (ffp_vertex_params[NORMAL_MATRIX_UNIF] >= 0) {
 			upload_ffp_vertex_unif(NORMAL_MATRIX_UNIF, 0, 3, 3, (const float *)normal_matrix)
-			if (ffp_vertex_params[LIGHTS_AMBIENTS_V_UNIF] >= 0) {
-				upload_ffp_vertex_unif(LIGHT_GLOBAL_AMBIENT_V_UNIF, 0, 1, 4, (const float *)&light_global_ambient.r)
-				upload_ffp_vertex_unif(SHININESS_V_UNIF, 0, 1, 1, (const float *)&current_shininess)
-				if (lights_aligned) {
-					upload_ffp_vertex_unif(LIGHTS_AMBIENTS_V_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][0])
-					upload_ffp_vertex_unif(LIGHTS_DIFFUSES_V_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][1])
-					upload_ffp_vertex_unif(LIGHTS_SPECULARS_V_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][2])
-					upload_ffp_vertex_unif(LIGHTS_POSITIONS_V_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][3])
-					upload_ffp_vertex_unif(LIGHTS_ATTENUATIONS_V_UNIF, 0, mask.lights_num, 3, (const float *)light_vars[0][4])
-				} else {
-					for (int i = 0; i < mask.lights_num; i++) {
-						upload_ffp_vertex_unif(LIGHTS_AMBIENTS_V_UNIF, i, 1, 4, (const float *)light_vars[i][0])
-						upload_ffp_vertex_unif(LIGHTS_DIFFUSES_V_UNIF, i, 1, 4, (const float *)light_vars[i][1])
-						upload_ffp_vertex_unif(LIGHTS_SPECULARS_V_UNIF, i, 1, 4, (const float *)light_vars[i][2])
-						upload_ffp_vertex_unif(LIGHTS_POSITIONS_V_UNIF, i, 1, 4, (const float *)light_vars[i][3])
-						upload_ffp_vertex_unif(LIGHTS_ATTENUATIONS_V_UNIF, i, 1, 3, (const float *)light_vars[i][4])
-					}
+		}
+		if (ffp_vertex_params[LIGHT_GLOBAL_AMBIENT_V_UNIF] >= 0) {
+			upload_ffp_vertex_unif(LIGHT_GLOBAL_AMBIENT_V_UNIF, 0, 1, 4, (const float *)&light_global_ambient.r)
+		}
+		if (ffp_vertex_params[SHININESS_V_UNIF] >= 0) {
+			upload_ffp_vertex_unif(SHININESS_V_UNIF, 0, 1, 1, (const float *)&current_shininess)
+		}
+		if (ffp_vertex_params[LIGHTS_AMBIENTS_V_UNIF] >= 0) {
+			if (lights_aligned) {
+				upload_ffp_vertex_unif(LIGHTS_AMBIENTS_V_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][0])
+				upload_ffp_vertex_unif(LIGHTS_DIFFUSES_V_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][1])
+				upload_ffp_vertex_unif(LIGHTS_SPECULARS_V_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][2])
+				upload_ffp_vertex_unif(LIGHTS_POSITIONS_V_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][3])
+				upload_ffp_vertex_unif(LIGHTS_ATTENUATIONS_V_UNIF, 0, mask.lights_num, 3, (const float *)light_vars[0][4])
+			} else {
+				for (int i = 0; i < mask.lights_num; i++) {
+					upload_ffp_vertex_unif(LIGHTS_AMBIENTS_V_UNIF, i, 1, 4, (const float *)light_vars[i][0])
+					upload_ffp_vertex_unif(LIGHTS_DIFFUSES_V_UNIF, i, 1, 4, (const float *)light_vars[i][1])
+					upload_ffp_vertex_unif(LIGHTS_SPECULARS_V_UNIF, i, 1, 4, (const float *)light_vars[i][2])
+					upload_ffp_vertex_unif(LIGHTS_POSITIONS_V_UNIF, i, 1, 4, (const float *)light_vars[i][3])
+					upload_ffp_vertex_unif(LIGHTS_ATTENUATIONS_V_UNIF, i, 1, 3, (const float *)light_vars[i][4])
 				}
 			}
-		}
+			}
 		sceClibMemcpy(buffer, ffp_vertex_unif_buf, ffp_vertex_unif_buf_size);
 		dirty_vert_unifs = 0;
 	}

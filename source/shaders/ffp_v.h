@@ -10,6 +10,7 @@ R"(#define clip_planes_num %d
 #define num_textures %d
 #define has_colors %d
 #define lights_num %d
+#define lighting %d
 #define shading_mode %d
 #define normalization %d
 #define fixed_mode_mask %d
@@ -32,13 +33,16 @@ R"(#define clip_planes_num %d
 #define GLFixed3ToFloat3(fx3) (float3(GLFixedToFloat(fx3.x), GLFixedToFloat(fx3.y), GLFixedToFloat(fx3.z)))
 #define GLFixed4ToFloat4(fx4) (float4(GLFixedToFloat(fx4.x), GLFixedToFloat(fx4.y), GLFixedToFloat(fx4.z), GLFixedToFloat(fx4.w)))
 
+#if lighting == 1 && shading_mode < 1 // GL_SMOOTH/GL_FLAT
+uniform float4 Flight_global_ambient;
+#endif
+
 #if lights_num > 0 && shading_mode < 1 // GL_SMOOTH/GL_FLAT
 uniform float4 Alights_ambients[lights_num];
 uniform float4 Blights_diffuses[lights_num];
 uniform float4 Clights_speculars[lights_num];
 uniform float4 Dlights_positions[lights_num];
 uniform float3 Elights_attenuations[lights_num];
-uniform float4 Flight_global_ambient;
 uniform float Gshininess;
 
 void point_light(short i, float3 normal, float3 position, float4 inout Ambient, float4 inout Diffuse, float4 inout Specular) {
@@ -85,10 +89,10 @@ void main(
 	float2 Utexcoord1,
 #endif
 #endif
-#if has_colors == 1 || lights_num > 0
+#if has_colors == 1 || lighting == 1
 	float4 Pcolor, // We re-use this for ambient values when lighting is on
 #endif
-#if lights_num > 0
+#if lighting == 1
 	float4 Qdiff,
 	float4 Rspec,
 	float4 Semission,
@@ -100,7 +104,7 @@ void main(
 	float2 out vTexcoord2 : TEXCOORD1,
 #endif
 #endif
-#if lights_num > 0 && shading_mode == 1 // GL_PHONG_WIN
+#if lighting == 1 && shading_mode == 1 // GL_PHONG_WIN
 	float3 out vNormal : TEXCOORD2,
 	float3 out vEcPosition : TEXCOORD3,
 	float4 out vDiffuse : TEXCOORD4,
@@ -108,7 +112,7 @@ void main(
 	float4 out vEmission : TEXCOORD6,
 #endif
 	float4 out vPosition : POSITION,
-#if has_colors == 1 || lights_num > 0
+#if has_colors == 1 || lighting == 1
 	float4 out vColor : COLOR,
 #endif
 	float out psize : PSIZE,
@@ -116,7 +120,7 @@ void main(
 	float out vClip[clip_planes_num] : CLP0,
 	uniform float4 Hclip_planes_eq[clip_planes_num],
 #endif
-#if clip_planes_num > 0 || lights_num > 0 || calculate_wvp == 1
+#if clip_planes_num > 0 || lighting == 1 || calculate_wvp == 1
 	uniform float4x4 Imodelview,
 #endif
 	uniform float4x4 Jwvp,
@@ -138,7 +142,7 @@ void main(
 #if calculate_wvp == 1
 	Jwvp = mul(Jwvp, Imodelview); // Jwvp is actually the proj matrix
 #endif
-#if clip_planes_num > 0 || lights_num > 0
+#if clip_planes_num > 0 || lighting == 1
 	float4 modelpos = mul(Imodelview, Nposition);
 #endif	
 	// User clip planes
@@ -150,7 +154,7 @@ void main(
 	vPosition = mul(Jwvp, Nposition);
 	
 	// Lighting
-#if lights_num > 0
+#if lighting == 1
 #if (fixed_mode_mask & 0x01) == 0x01
 	Tnormals = GLFixed3ToFloat3(Tnormals);
 #endif
@@ -164,9 +168,11 @@ void main(
 	float4 Ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	float4 Diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	float4 Specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+#if lights_num > 0
 	for (short i = 0; i < lights_num; i++) {
 		calculate_light(i, ecPosition, normal, Ambient, Diffuse, Specular);
 	}
+#endif
 #endif
 #endif
 
@@ -182,7 +188,7 @@ void main(
 	vTexcoord2 = mul(Ktexmat[1], float4(Utexcoord1, 0.f, 1.f)).xy;
 #endif
 #endif
-#if lights_num > 0
+#if lighting == 1
 #if shading_mode < 1 // GL_SMOOTH/GL_FLAT
 	vColor.rgb = Semission.rgb + Pcolor.rgb * Flight_global_ambient.rgb;
 	vColor.rgb += Ambient.rgb * Pcolor.rgb + Diffuse.rgb * Qdiff.rgb + Specular.rgb * Rspec.rgb;
