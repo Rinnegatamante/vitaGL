@@ -110,6 +110,77 @@ GLboolean _vgl_enqueue_list_func(void (*func)(), dlist_func_type type, ...) {
 	}
 
 	return !display_list_execute;
+
+}
+
+GLboolean _vgl_enqueue_list_func_with_ptr(void (*func)(), dlist_func_type type, uint8_t ptr_arg, const void *data, uint32_t data_size, ...) {
+	// Check if we are creating a display list
+	if (!curr_display_list)
+		return GL_FALSE;
+
+	// Enqueuing function call with a buffer for the encoded data
+	list_chain *new_tail = (list_chain *)vglMalloc(sizeof(list_chain) + data_size);
+	uint8_t *data_buf = (uint8_t *)new_tail + sizeof(list_chain);
+	vgl_fast_memcpy(data_buf, data, data_size);
+	if (curr_display_list->tail)
+		curr_display_list->tail->next = new_tail;
+	curr_display_list->tail = new_tail;
+	if (!curr_display_list->head)
+		curr_display_list->head = new_tail;
+	new_tail->func = func;
+	new_tail->next = NULL;
+	new_tail->type = type;
+
+	// Record regular arguments exactly as the original path, injecting the stable copied pointer at ptr_arg.
+	if (type) {
+		int i = 0;
+		uint8_t arg_idx = 0;
+		va_list arglist;
+		va_start(arglist, data_size);
+		while (type) {
+			uint8_t arg_type = (uint8_t)type;
+			uint32_t uarg;
+			int32_t iarg;
+			float farg;
+			uint8_t suarg;
+			int16_t sarg;
+			switch (arg_type) {
+			case DLIST_ARG_U32:
+				uarg = arg_idx == ptr_arg ? (uint32_t)(uintptr_t)data_buf : va_arg(arglist, uint32_t);
+				vgl_fast_memcpy(&new_tail->args[i], &uarg, sizeof(uarg));
+				i += sizeof(uarg);
+				break;
+			case DLIST_ARG_I32:
+				iarg = va_arg(arglist, int32_t);
+				vgl_fast_memcpy(&new_tail->args[i], &iarg, sizeof(iarg));
+				i += sizeof(iarg);
+				break;
+			case DLIST_ARG_F32:
+				farg = (float)va_arg(arglist, double);
+				vgl_fast_memcpy(&new_tail->args[i], &farg, sizeof(farg));
+				i += sizeof(farg);
+				break;
+			case DLIST_ARG_I16:
+				sarg = (int16_t)va_arg(arglist, int);
+				vgl_fast_memcpy(&new_tail->args[i], &sarg, sizeof(sarg));
+				i += sizeof(sarg);
+				break;
+			case DLIST_ARG_U8:
+				suarg = (uint8_t)va_arg(arglist, int);
+				vgl_fast_memcpy(&new_tail->args[i], &suarg, sizeof(suarg));
+				i += sizeof(suarg);
+				break;
+			case DLIST_ARG_VOID:
+			default:
+				break;
+			}
+			arg_idx++;
+			type >>= 8;
+		}
+		va_end(arglist);
+	}
+
+	return !display_list_execute;
 }
 
 void glListBase(GLuint base) {

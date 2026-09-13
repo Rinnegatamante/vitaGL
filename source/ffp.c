@@ -2036,8 +2036,24 @@ void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glMaterialfv, DLIST_FUNC_U32_U32_U32, face, pname, params))
-		return;
+	switch (pname) {
+	case GL_SHININESS:
+		if (_vgl_enqueue_list_func_with_ptr(glMaterialfv, DLIST_FUNC_U32_U32_U32, 2, params, sizeof(GLfloat), face, pname)) {
+			return;
+		}
+		break;
+	case GL_AMBIENT:
+	case GL_DIFFUSE:
+	case GL_SPECULAR:
+	case GL_EMISSION:
+	case GL_AMBIENT_AND_DIFFUSE:
+		if (_vgl_enqueue_list_func_with_ptr(glMaterialfv, DLIST_FUNC_U32_U32_U32, 2, params, sizeof(GLfloat) * 4, face, pname)) {
+			return;
+		}
+		break;
+	default:
+		break;
+	}
 #endif
 	switch (pname) {
 	case GL_AMBIENT:
@@ -2092,8 +2108,24 @@ void glMaterialxv(GLenum face, GLenum pname, const GLfixed *params) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glMaterialxv, DLIST_FUNC_U32_U32_U32, face, pname, params))
-		return;
+	switch (pname) {
+	case GL_SHININESS:
+		if (_vgl_enqueue_list_func_with_ptr(glMaterialxv, DLIST_FUNC_U32_U32_U32, 2, params, sizeof(GLfixed), face, pname)) {
+			return;
+		}
+		break;
+	case GL_AMBIENT:
+	case GL_DIFFUSE:
+	case GL_SPECULAR:
+	case GL_EMISSION:
+	case GL_AMBIENT_AND_DIFFUSE:
+		if (_vgl_enqueue_list_func_with_ptr(glMaterialxv, DLIST_FUNC_U32_U32_U32, 2, params, sizeof(GLfixed) * 4, face, pname)) {
+			return;
+		}
+		break;
+	default:
+		break;
+	}
 #endif
 	switch (pname) {
 	case GL_AMBIENT:
@@ -2160,8 +2192,9 @@ void glColor3f(GLfloat red, GLfloat green, GLfloat blue) {
 void glColor3fv(const GLfloat *v) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor3fv, DLIST_FUNC_U32, v))
+	if (_vgl_enqueue_list_func_with_ptr(glColor3fv, DLIST_FUNC_U32, 0, v, sizeof(GLfloat) * 3)) {
 		return;
+	}
 #endif
 	// Setting current color value
 	vgl_fast_memcpy(&current_vtx.clr.r, v, sizeof(vector3f));
@@ -2214,8 +2247,9 @@ void glColor3ubv(const GLubyte *c) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor3ubv, DLIST_FUNC_U32, c))
+	if (_vgl_enqueue_list_func_with_ptr(glColor3ubv, DLIST_FUNC_U32, 0, c, sizeof(GLubyte) * 3)) {
 		return;
+	}
 #endif
 	// Setting current color value
 	current_vtx.clr.r = (float)c[0] / 255.0f;
@@ -2248,8 +2282,9 @@ void glColor4fv(const GLfloat *v) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor4fv, DLIST_FUNC_U32, v))
+	if (_vgl_enqueue_list_func_with_ptr(glColor4fv, DLIST_FUNC_U32, 0, v, sizeof(GLfloat) * 4)) {
 		return;
+	}
 #endif
 	// Setting current color value
 	vgl_fast_memcpy(&current_vtx.clr.r, v, sizeof(vector4f));
@@ -2300,8 +2335,9 @@ void glColor4ubv(const GLubyte *c) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor4ubv, DLIST_FUNC_U32, c))
+	if (_vgl_enqueue_list_func_with_ptr(glColor4ubv, DLIST_FUNC_U32, 0, c, sizeof(GLubyte) * 4)) {
 		return;
+	}
 #endif
 	// Setting current color value
 	current_vtx.clr.r = (float)c[0] / 255.0f;
@@ -2363,8 +2399,9 @@ void glNormal3fv(const GLfloat *v) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glNormal3fv, DLIST_FUNC_U32, v))
+	if (_vgl_enqueue_list_func_with_ptr(glNormal3fv, DLIST_FUNC_U32, 0, v, sizeof(GLfloat) * 3)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -2620,8 +2657,21 @@ void glEnd(void) {
 void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTexEnvf, DLIST_FUNC_U32_U32_U32, target, pname, param))
-		return;
+	switch (pname) {
+	case GL_TEXTURE_ENV_COLOR:
+		if (_vgl_enqueue_list_func_with_ptr(glTexEnvfv, DLIST_FUNC_U32_U32_U32, 2, param, sizeof(GLfloat) * 4, target, pname)) {
+			return;
+		}
+		break;
+	case GL_RGB_SCALE:
+	case GL_ALPHA_SCALE:
+		if (_vgl_enqueue_list_func_with_ptr(glTexEnvfv, DLIST_FUNC_U32_U32_U32, 2, param, sizeof(GLfloat), target, pname)) {
+			return;
+		}
+		break;
+	default:
+		break;
+	}
 #endif
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
@@ -2666,8 +2716,21 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTexEnvxv, DLIST_FUNC_U32_U32_U32, target, pname, param))
-		return;
+	switch (pname) {
+	case GL_TEXTURE_ENV_COLOR:
+		if (_vgl_enqueue_list_func_with_ptr(glTexEnvxv, DLIST_FUNC_U32_U32_U32, 2, param, sizeof(GLfixed) * 4, target, pname)) {
+			return;
+		}
+		break;
+	case GL_RGB_SCALE:
+	case GL_ALPHA_SCALE:
+		if (_vgl_enqueue_list_func_with_ptr(glTexEnvxv, DLIST_FUNC_U32_U32_U32, 2, param, sizeof(GLfixed), target, pname)) {
+			return;
+		}
+		break;
+	default:
+		break;
+	}
 #endif
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
@@ -3311,8 +3374,25 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glLightfv, DLIST_FUNC_U32_U32_U32, light, pname, params))
-		return;
+	switch (pname) {
+	case GL_CONSTANT_ATTENUATION:
+	case GL_LINEAR_ATTENUATION:
+	case GL_QUADRATIC_ATTENUATION:
+		if (_vgl_enqueue_list_func_with_ptr(glLightfv, DLIST_FUNC_U32_U32_U32, 2, params, sizeof(GLfloat), light, pname)) {
+			return;
+		}
+		break;
+	case GL_AMBIENT:
+	case GL_DIFFUSE:
+	case GL_SPECULAR:
+	case GL_POSITION:
+		if (_vgl_enqueue_list_func_with_ptr(glLightfv, DLIST_FUNC_U32_U32_U32, 2, params, sizeof(GLfloat) * 4, light, pname)) {
+			return;
+		}
+		break;
+	default:
+		break;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	if (light < GL_LIGHT0 || light > GL_LIGHT7) {
@@ -3359,8 +3439,25 @@ void glLightxv(GLenum light, GLenum pname, const GLfixed *params) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glLightxv, DLIST_FUNC_U32_U32_U32, light, pname, params))
-		return;
+	switch (pname) {
+	case GL_CONSTANT_ATTENUATION:
+	case GL_LINEAR_ATTENUATION:
+	case GL_QUADRATIC_ATTENUATION:
+		if (_vgl_enqueue_list_func_with_ptr(glLightxv, DLIST_FUNC_U32_U32_U32, 2, params, sizeof(GLfixed), light, pname)) {
+			return;
+		}
+		break;
+	case GL_AMBIENT:
+	case GL_DIFFUSE:
+	case GL_SPECULAR:
+	case GL_POSITION:
+		if (_vgl_enqueue_list_func_with_ptr(glLightxv, DLIST_FUNC_U32_U32_U32, 2, params, sizeof(GLfixed) * 4, light, pname)) {
+			return;
+		}
+		break;
+	default:
+		break;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	if (light < GL_LIGHT0 || light > GL_LIGHT7) {
@@ -3421,8 +3518,13 @@ void glLightModelfv(GLenum pname, const GLfloat *params) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glLightModelfv, DLIST_FUNC_U32_U32, pname, params))
-		return;
+	if (pname == GL_LIGHT_MODEL_AMBIENT) {
+		if (_vgl_enqueue_list_func_with_ptr(glLightModelfv, DLIST_FUNC_U32_U32, 1, params, sizeof(GLfloat) * 4, pname)) {
+			return;
+		}
+	} else {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -3446,8 +3548,13 @@ void glLightModelxv(GLenum pname, const GLfixed *params) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glLightModelxv, DLIST_FUNC_U32_U32, pname, params))
-		return;
+	if (pname == GL_LIGHT_MODEL_AMBIENT) {
+		if (_vgl_enqueue_list_func_with_ptr(glLightModelxv, DLIST_FUNC_U32_U32, 1, params, sizeof(GLfixed) * 4, pname)) {
+			return;
+		}
+	} else {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -3540,8 +3647,23 @@ void glFogfv(GLenum pname, const GLfloat *params) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glFogfv, DLIST_FUNC_U32_U32, pname, params))
-		return;
+	switch (pname) {
+	case GL_FOG_COLOR:
+		if (_vgl_enqueue_list_func_with_ptr(glFogfv, DLIST_FUNC_U32_U32, 1, params, sizeof(GLfloat) * 4, pname)) {
+			return;
+		}
+		break;
+	case GL_FOG_MODE:
+	case GL_FOG_DENSITY:
+	case GL_FOG_START:
+	case GL_FOG_END:
+		if (_vgl_enqueue_list_func_with_ptr(glFogfv, DLIST_FUNC_U32_U32, 1, params, sizeof(GLfloat), pname)) {
+			return;
+		}
+		break;
+	default:
+		break;
+	}
 #endif
 	switch (pname) {
 	case GL_FOG_MODE:
@@ -3577,8 +3699,23 @@ void glFogxv(GLenum pname, const GLfixed *params) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glFogxv, DLIST_FUNC_U32_U32, pname, params))
-		return;
+	switch (pname) {
+	case GL_FOG_COLOR:
+		if (_vgl_enqueue_list_func_with_ptr(glFogxv, DLIST_FUNC_U32_U32, 1, params, sizeof(GLfixed) * 4, pname)) {
+			return;
+		}
+		break;
+	case GL_FOG_MODE:
+	case GL_FOG_DENSITY:
+	case GL_FOG_START:
+	case GL_FOG_END:
+		if (_vgl_enqueue_list_func_with_ptr(glFogxv, DLIST_FUNC_U32_U32, 1, params, sizeof(GLfixed), pname)) {
+			return;
+		}
+		break;
+	default:
+		break;
+	}
 #endif
 	switch (pname) {
 	case GL_FOG_MODE:
@@ -3650,8 +3787,9 @@ void glClipPlane(GLenum plane, const GLdouble *equation) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glClipPlane, DLIST_FUNC_U32_U32, plane, equation))
+	if (_vgl_enqueue_list_func_with_ptr(glClipPlane, DLIST_FUNC_U32_U32, 1, equation, sizeof(GLdouble) * 4, plane)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	if (plane < GL_CLIP_PLANE0 || plane > GL_CLIP_PLANE6) {
@@ -3675,8 +3813,9 @@ void glClipPlane(GLenum plane, const GLdouble *equation) {
 void glClipPlanef(GLenum plane, const GLfloat *equation) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glClipPlanef, DLIST_FUNC_U32_U32, plane, equation))
+	if (_vgl_enqueue_list_func_with_ptr(glClipPlanef, DLIST_FUNC_U32_U32, 1, equation, sizeof(GLfloat) * 4, plane)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	if (plane < GL_CLIP_PLANE0 || plane > GL_CLIP_PLANE6) {
@@ -3702,8 +3841,9 @@ void glClipPlanex(GLenum plane, const GLfixed *equation) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glClipPlanex, DLIST_FUNC_U32_U32, plane, equation))
+	if (_vgl_enqueue_list_func_with_ptr(glClipPlanex, DLIST_FUNC_U32_U32, 1, equation, sizeof(GLfixed) * 4, plane)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	if (plane < GL_CLIP_PLANE0 || plane > GL_CLIP_PLANE6) {

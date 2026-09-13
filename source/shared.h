@@ -1148,6 +1148,7 @@ extern GLboolean srgb_mode; // SRGB mode for color output
 extern display_list *curr_display_list; // Current display list being generated
 extern GLboolean display_list_execute; // Flag to check if compiled function should be executed as well
 extern GLboolean _vgl_enqueue_list_func(void (*func)(), dlist_func_type type, ...);
+extern GLboolean _vgl_enqueue_list_func_with_ptr(void (*func)(), dlist_func_type type, uint8_t ptr_arg, const void *data, uint32_t data_size, ...);
 
 // vgl* Draw Pipeline
 extern void *vertex_object;
