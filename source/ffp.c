@@ -1072,7 +1072,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 					upload_ffp_fragment_unif(LIGHTS_DIFFUSES_F_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][1])
 					upload_ffp_fragment_unif(LIGHTS_SPECULARS_F_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][2])
 					upload_ffp_fragment_unif(LIGHTS_POSITIONS_F_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][3])
-					upload_ffp_fragment_unif(LIGHTS_ATTENUATIONS_F_UNIF, 0, mask.lights_num, 4, (const float *)light_vars[0][4])
+					upload_ffp_fragment_unif(LIGHTS_ATTENUATIONS_F_UNIF, 0, mask.lights_num, 3, (const float *)light_vars[0][4])
 				} else {
 					for (int i = 0; i < mask.lights_num; i++) {
 						upload_ffp_fragment_unif(LIGHTS_AMBIENTS_F_UNIF, i, 1, 4, (const float *)light_vars[i][0])
