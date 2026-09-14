@@ -458,9 +458,22 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	
 	// If passing from immediate mode to non-immediate or viceversa, force a vertex binding re-gen
 	static SceGxmVertexAttribute *last_attrs = NULL;
+#ifndef INDICES_SPEEDHACK
+	static SceGxmIndexSource last_index_type = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+#endif
 	if (attrs != last_attrs) {
 		ffp_dirty_vert_attr = 0xFFFF;
 	}
+#ifndef INDICES_SPEEDHACK
+	else
+	{
+		if (index_type != last_index_type) {
+			// FIXME: Maybe we can add a new dirty flag only for index type but is it even worth it?
+			ffp_dirty_vert_attr = 0xFFFF;
+		}
+	}
+	last_index_type = index_type;
+#endif
 	last_attrs = attrs;
 
 	// Checking if mask changed
@@ -874,14 +887,14 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		}
 		ffp_dirty_vert_attr = 0;
 		
-		// Creating patched vertex shader
-		patch_vertex_program(gxm_shader_patcher, ffp_vertex_program_id, attrs, ffp_vertex_num_params, streams, ffp_vertex_num_params, &ffp_vertex_program_patched);
-		
 #ifndef INDICES_SPEEDHACK
 		for (int i = 0; i < ffp_vertex_num_params; i++) {
 			streams[i].indexSource = index_type;
 		}
 #endif
+
+		// Creating patched vertex shader
+		patch_vertex_program(gxm_shader_patcher, ffp_vertex_program_id, attrs, ffp_vertex_num_params, streams, ffp_vertex_num_params, &ffp_vertex_program_patched);
 	}
 
 	// Checking if fragment shader requires a recompilation
