@@ -375,8 +375,8 @@ typedef struct {
 } cached_vertex_shader;
 cached_fragment_shader frag_shader_cache[SHADER_CACHE_SIZE];
 cached_vertex_shader vert_shader_cache[SHADER_CACHE_SIZE];
-uint8_t frag_shader_cache_size = 0;
-uint8_t vert_shader_cache_size = 0;
+uint16_t frag_shader_cache_size = 0;
+uint16_t vert_shader_cache_size = 0;
 int frag_shader_cache_idx = -1;
 int vert_shader_cache_idx = -1;
 uint8_t ffp_vertex_num_params = 1;
