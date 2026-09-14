@@ -456,17 +456,20 @@ GLuint glGenLists(GLsizei range) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_VALUE, 0)
 	} else if (phase == MODEL_CREATION) {
 		SET_GL_ERROR_WITH_RET(GL_INVALID_OPERATION, 0)
+	} else if (range == 0) {
+		return 0;
 	}
 #endif
 	GLsizei r = range;
 	GLuint first = 0;
 	for (GLuint i = 0; i < NUM_DISPLAY_LISTS; i++) {
 		if (!display_lists[i].used) {
-			if (first == 0)
+			if (first == 0) {
 				first = i + 1;
+			}
 			r--;
 		} else {
-			first = i + 1;
+			first = 0;
 			r = range;
 		}
 		if (!r)
@@ -478,7 +481,7 @@ GLuint glGenLists(GLsizei range) {
 		return 0;
 	}
 #endif
-	for (GLuint i = first - 1; i < first + range; i++) {
+	for (GLuint i = first - 1; i < first + range - 1; i++) {
 		display_lists[i].used = GL_TRUE;
 		display_lists[i].head = display_lists[i].tail = NULL;
 	}
@@ -493,9 +496,11 @@ void glDeleteLists(GLuint list, GLsizei range) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, range)
 	} else if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
+	} else if (range == 0) {
+		return;
 	}
 #endif
-	for (GLuint i = list - 1; i < list + range; i++) {
+	for (GLuint i = list - 1; i < list + range - 1; i++) {
 		list_chain *l = display_lists[i].head;
 		while (l) {
 			list_chain *old = l;
