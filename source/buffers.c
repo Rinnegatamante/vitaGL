@@ -124,7 +124,8 @@ void glDeleteQueries(GLsizei n, const GLuint *ids) {
 	}
 #endif
 	for (GLuint i = 0; i < n; i++) {
-		queries[ids[i]].id = 0xFF;
+		query *q = (query*)ids[i];
+		q->id = 0xFF;
 	}
 }
 
