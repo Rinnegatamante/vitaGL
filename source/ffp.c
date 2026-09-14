@@ -455,6 +455,14 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifdef HAVE_PROFILING
 	uint32_t reload_ffp_shaders_start = sceKernelGetProcessTimeLow();
 #endif
+	
+	// If passing from immediate mode to non-immediate or viceversa, force a vertex binding re-gen
+	static SceGxmVertexAttribute *last_attrs = NULL;
+	if (attrs != last_attrs) {
+		ffp_dirty_vert_attr = 0xFFFF;
+	}
+	last_attrs = attrs;
+
 	// Checking if mask changed
 	GLboolean ffp_dirty_frag_blend = ffp_blend_info.raw != blend_info.raw;
 	shader_mask mask = {.raw = 0};
