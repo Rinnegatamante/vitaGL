@@ -1017,6 +1017,15 @@ void glPopAttrib(void) {
 		update_fogging_state();
 		clip_planes_mask = setup->clip_planes_mask;
 		light_mask = setup->light_mask;
+		light_range[0] = light_mask ? __builtin_ctz(light_mask) : 0;
+		light_range[1] = light_mask ? 8 - (__builtin_clz(light_mask) - 24) : 0;
+		lights_aligned = GL_TRUE;
+		for (int i = light_range[0]; i < light_range[1]; i++) {
+			if (!(light_mask & (1 << i))) {
+				lights_aligned = GL_FALSE;
+				break;
+			}
+		}
 		ffp_dirty_vert = GL_TRUE;
 		ffp_dirty_frag = GL_TRUE;
 	}
