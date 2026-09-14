@@ -1247,37 +1247,43 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 						ptr = materials;
 						materials += 4;
 					} else { // Color array mapped to this attribute (FIXME: This could be optimized by re-using color temp mem)
+						if (id != FFP_ATTRIB_NORMAL && ffp_vertex_attrib_vbo[FFP_ATTRIB_COLOR]) {
+							vbo *gpu_buf = (vbo *)ffp_vertex_attrib_vbo[FFP_ATTRIB_COLOR];
+							gpu_buf->last_frame = vgl_framecount;
+							ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + first * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+						} else {
 #ifdef DRAW_SPEEDHACK
-						if (id != FFP_ATTRIB_NORMAL) {
-							ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + first * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
-						} else {
-							ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + first * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-						}
-#else
-						if (id != FFP_ATTRIB_NORMAL) {
-							uint32_t size = count * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
-#ifdef SAFER_DRAW_SPEEDHACK
-							if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+							if (id != FFP_ATTRIB_NORMAL) {
 								ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + first * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
-							} else
-#endif
-							{
-								ptr = gpu_alloc_mapped_temp(size);
-								vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + first * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride, size);
-							}
-						} else {
-							uint32_t size = count * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-#ifdef SAFER_DRAW_SPEEDHACK
-							if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+							} else {
 								ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + first * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-							} else
-#endif
-							{
-								ptr = gpu_alloc_mapped_temp(size);
-								vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + first * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride, size);
 							}
-						}
+#else
+							if (id != FFP_ATTRIB_NORMAL) {
+								uint32_t size = count * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+#ifdef SAFER_DRAW_SPEEDHACK
+								if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+									ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + first * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+								} else
 #endif
+								{
+									ptr = gpu_alloc_mapped_temp(size);
+									vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + first * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride, size);
+								}
+							} else {
+								uint32_t size = count * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
+#ifdef SAFER_DRAW_SPEEDHACK
+								if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+									ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + first * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
+								} else
+#endif
+								{
+									ptr = gpu_alloc_mapped_temp(size);
+									vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + first * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride, size);
+								}
+							}
+#endif
+						}
 					}
 				} else {
 #ifdef DRAW_SPEEDHACK
@@ -1385,41 +1391,48 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 						strides[j] = 0;
 						materials += 4;
 					} else { // Color array mapped to this attribute (FIXME: This could be optimized by re-using color temp mem)
+						if (id != FFP_ATTRIB_NORMAL && ffp_vertex_attrib_vbo[FFP_ATTRIB_COLOR]) {
+							vbo *gpu_buf = (vbo *)ffp_vertex_attrib_vbo[FFP_ATTRIB_COLOR];
+							gpu_buf->last_frame = vgl_framecount;
+							ptrs[j] = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+						} else {
 #ifdef DRAW_SPEEDHACK
-						if (id != FFP_ATTRIB_NORMAL) {
-							ptrs[j] = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
-							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
-						} else {
-							ptrs[j] = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-						}
-#else
-						if (id != FFP_ATTRIB_NORMAL) {
-							uint32_t size = (highest - lowest) * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
-#ifdef SAFER_DRAW_SPEEDHACK
-							if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+							if (id != FFP_ATTRIB_NORMAL) {
 								ptrs[j] = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
-							} else
-#endif
-							{
-								ptrs[j] = gpu_alloc_mapped_temp(size);
-								vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride, size);
-							}
-							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
-						} else {
-							uint32_t size = (highest - lowest) * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-#ifdef SAFER_DRAW_SPEEDHACK
-							if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+								strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+							} else {
 								ptrs[j] = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-							} else
-#endif
-							{
-								ptrs[j] = gpu_alloc_mapped_temp(size);
-								vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride, size);
+								strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
 							}
-							strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-						}
+#else
+							if (id != FFP_ATTRIB_NORMAL) {
+								uint32_t size = (highest - lowest) * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+#ifdef SAFER_DRAW_SPEEDHACK
+								if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+									ptrs[j] = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+								} else
 #endif
+								{
+									ptrs[j] = gpu_alloc_mapped_temp(size);
+									vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride, size);
+								}
+								strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+							} else {
+								uint32_t size = (highest - lowest) * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
+#ifdef SAFER_DRAW_SPEEDHACK
+								if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+									ptrs[j] = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
+								} else
+#endif
+								{
+									ptrs[j] = gpu_alloc_mapped_temp(size);
+									vgl_fast_memcpy(ptrs[j], (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL] + lowest * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride, size);
+								}
+								strides[j] = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
+							}
+#endif
+						}
 					}
 				} else {
 					strides[j] = ffp_vertex_stream_config[id].stride;
@@ -1570,37 +1583,43 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 					ptr = materials;
 					materials += 4;
 				} else { // Color array mapped to this attribute (FIXME: This could be optimized by re-using color temp mem)
+					if (attr_idx != FFP_ATTRIB_NORMAL && ffp_vertex_attrib_vbo[FFP_ATTRIB_COLOR]) {
+						vbo *gpu_buf = (vbo *)ffp_vertex_attrib_vbo[FFP_ATTRIB_COLOR];
+						gpu_buf->last_frame = vgl_framecount;
+						ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR];
+					} else {
 #ifdef DRAW_SPEEDHACK
-					if (attr_idx != FFP_ATTRIB_NORMAL) {
-						ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR];
-					} else {
-						ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL];
-					}
-#else
-					if (attr_idx != FFP_ATTRIB_NORMAL) {
-						uint32_t size = top_idx * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
-#ifdef SAFER_DRAW_SPEEDHACK
-						if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+						if (attr_idx != FFP_ATTRIB_NORMAL) {
 							ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR];
-						} else
-#endif
-						{
-							ptr = gpu_alloc_mapped_temp(size);
-							vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR], size);
-						}
-					} else {
-						uint32_t size = top_idx * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-#ifdef SAFER_DRAW_SPEEDHACK
-						if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+						} else {
 							ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL];
-						} else
-#endif
-						{
-							ptr = gpu_alloc_mapped_temp(size);
-							vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL], size);
 						}
-					}
+#else
+						if (attr_idx != FFP_ATTRIB_NORMAL) {
+							uint32_t size = top_idx * ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
+#ifdef SAFER_DRAW_SPEEDHACK
+							if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+								ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR];
+							} else
 #endif
+							{
+								ptr = gpu_alloc_mapped_temp(size);
+								vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR], size);
+							}
+						} else {
+							uint32_t size = top_idx * ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
+#ifdef SAFER_DRAW_SPEEDHACK
+							if (size > SAFE_DRAW_SIZE_THRESHOLD) {
+								ptr = (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL];
+							} else
+#endif
+							{
+								ptr = gpu_alloc_mapped_temp(size);
+								vgl_fast_memcpy(ptr, (void *)ffp_vertex_attrib_offsets[FFP_ATTRIB_NORMAL], size);
+							}
+						}
+#endif
+					}
 				}
 			} else {
 #ifdef DRAW_SPEEDHACK
