@@ -38,6 +38,7 @@ uint32_t read_rgba5551(const void *data);
 uint32_t read_argb1555(const void *data);
 uint32_t read_abgr1555(const void *data);
 uint32_t read_rgba4444(const void *data);
+uint32_t read_bgra4444(const void *data);
 uint32_t read_l8(const void *data);
 uint32_t read_la88(const void *data);
 

@@ -605,7 +605,10 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA:
 			if (format == GL_BGRA && type == GL_UNSIGNED_SHORT_4_4_4_4)
-				
+				fast_store = GL_TRUE;
+			else
+				read_cb = read_bgra4444;
+			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8_R:
 			if ((format == GL_R8 || format == GL_RED) && type == GL_UNSIGNED_BYTE)
 				fast_store = GL_TRUE;
