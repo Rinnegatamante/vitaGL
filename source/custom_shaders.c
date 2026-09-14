@@ -1859,6 +1859,11 @@ void glGetAttachedShaders(GLuint prog, GLsizei maxCount, GLsizei *count, GLuint 
 		shads[0] = shad;
 		*count = 1;
 	}
+#ifndef SKIP_ERROR_HANDLING
+	if (*count >= maxCount) {
+		return;
+	}
+#endif
 	if (p->fshader) {
 		for (int i = 1; i <= MAX_CUSTOM_SHADERS; i++) {
 			if (p->fshader == &shaders[i - 1]) {
