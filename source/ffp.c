@@ -146,20 +146,134 @@ static inline float *get_material_attr_ptr(uint8_t coeff) {
 }
 
 // Non-Immediate Mode
-SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
-SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
+SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM] = {
+	{0, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0},
+	{1, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0},
+	{2, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0},
+	{3, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0},
+	{4, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0},
+	{5, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0},
+	{6, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0},
+	{7, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0},
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+	{8, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}
+#endif
+};
+SceGxmVertexStream ffp_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM] = {
+	{0, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{0, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{0, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{0, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{0, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{0, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{0, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{0, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+#ifdef HAVE_HIGH_FFP_TEXUNITS
+	{0, SCE_GXM_INDEX_SOURCE_INDEX_16BIT}
+#endif
+};
 
 // Immediate Mode with Texturing
-SceGxmVertexAttribute legacy_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 1];
-SceGxmVertexStream legacy_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 1];
+static SceGxmVertexAttribute legacy_vertex_attrib_config[7] = {
+	{0, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 0}, // Position
+	{1, sizeof(float) * 3, SCE_GXM_ATTRIBUTE_FORMAT_F32, 2, 0}, // Texcoord0
+	{2, sizeof(float) * 5, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Color/Ambient
+	{3, sizeof(float) * 9, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Diffuse
+	{4, sizeof(float) * 13, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Specular
+	{5, sizeof(float) * 17, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Emission
+	{6, sizeof(float) * 21, SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 0}, // Normals
+};
+static SceGxmVertexStream legacy_vertex_stream_config[7] = {
+	{sizeof(float) * LEGACY_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+};
+static SceGxmVertexAttribute legacy_vertex_attrib_zero_lights_config[] = {
+	{0, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 0}, // Position
+	{1, sizeof(float) * 3, SCE_GXM_ATTRIBUTE_FORMAT_F32, 2, 0}, // Texcoord0
+	{2, sizeof(float) * 5, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Color/Ambient
+	{3, sizeof(float) * 9, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Diffuse
+	{4, sizeof(float) * 17, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0} // Emission
+};
+static SceGxmVertexStream legacy_vertex_stream_zero_lights_config[] = {
+	{sizeof(float) * LEGACY_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT}
+};
 
 // Immediate Mode with Multitexturing
-SceGxmVertexAttribute legacy_mt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
-SceGxmVertexStream legacy_mt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM];
+static SceGxmVertexAttribute legacy_mt_vertex_attrib_config[8] = {
+	{0, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 0}, // Position
+	{1, sizeof(float) * 3, SCE_GXM_ATTRIBUTE_FORMAT_F32, 2, 0}, // Texcoord0
+	{2, sizeof(float) * 5, SCE_GXM_ATTRIBUTE_FORMAT_F32, 2, 0}, // Texcoord1
+	{3, sizeof(float) * 7, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Color/Ambient
+	{4, sizeof(float) * 11, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Diffuse
+	{5, sizeof(float) * 15, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Specular
+	{6, sizeof(float) * 19, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Emission
+	{7, sizeof(float) * 23, SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 0}, // Normals
+};
+static SceGxmVertexStream legacy_mt_vertex_stream_config[8] = {
+	{sizeof(float) * LEGACY_MT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_MT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_MT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_MT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_MT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_MT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_MT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_MT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT}
+};
+static SceGxmVertexAttribute legacy_mt_vertex_attrib_zero_lights_config[] = {
+	{0, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 0}, // Position
+	{1, sizeof(float) * 3, SCE_GXM_ATTRIBUTE_FORMAT_F32, 2, 0}, // Texcoord0
+	{2, sizeof(float) * 5, SCE_GXM_ATTRIBUTE_FORMAT_F32, 2, 0}, // Texcoord1
+	{3, sizeof(float) * 7, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Color/Ambient
+	{4, sizeof(float) * 11, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Diffuse
+	{5, sizeof(float) * 19, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Emission
+};
+static SceGxmVertexStream legacy_mt_vertex_stream_zero_lights_config[] = {
+	{sizeof(float) * LEGACY_MT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_MT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_MT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_MT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_MT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_MT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+};
 
 // Immediate Mode without Texturing
-SceGxmVertexAttribute legacy_nt_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM - 2];
-SceGxmVertexStream legacy_nt_vertex_stream_config[FFP_VERTEX_ATTRIBS_NUM - 2];
+static SceGxmVertexAttribute legacy_nt_vertex_attrib_config[6] = {
+	{0, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 0}, // Position
+	{1, sizeof(float) * 3, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Color/Ambient
+	{2, sizeof(float) * 7, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Diffuse
+	{3, sizeof(float) * 11, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Specular
+	{4, sizeof(float) * 15, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Emission
+	{5, sizeof(float) * 19, SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 0}, // Normals
+};
+static SceGxmVertexStream legacy_nt_vertex_stream_config[6] = {
+	{sizeof(float) * LEGACY_NT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_NT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_NT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_NT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_NT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_NT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+};
+static SceGxmVertexAttribute legacy_nt_vertex_attrib_zero_lights_config[] = {
+	{0, 0, SCE_GXM_ATTRIBUTE_FORMAT_F32, 3, 0}, // Position
+	{1, sizeof(float) * 3, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Color/Ambient
+	{2, sizeof(float) * 7, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0}, // Diffuse
+	{3, sizeof(float) * 15, SCE_GXM_ATTRIBUTE_FORMAT_F32, 4, 0} // Emission
+};
+static SceGxmVertexStream legacy_nt_vertex_stream_zero_lights_config[] = {
+	{sizeof(float) * LEGACY_NT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_NT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_NT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT},
+	{sizeof(float) * LEGACY_NT_VERTEX_STRIDE, SCE_GXM_INDEX_SOURCE_INDEX_16BIT}
+};
 
 static uint32_t ffp_vertex_attrib_offsets[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
 static uint32_t ffp_vertex_attrib_vbo[FFP_VERTEX_ATTRIBS_NUM] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -299,6 +413,9 @@ combiner_mask ffp_combiner_mask = {.raw = 0};
 SceGxmVertexAttribute ffp_vertex_attribute[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream ffp_vertex_stream[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream *ffp_lighting_streams = NULL;
+
+#define FFP_ATTRIB_LIGHT_INDEX(attr) \
+	((ffp_mask.lights_num == 0 && attr == FFP_ATTRIB_EMISSION) ? (FFP_ATTRIB_LIGHT_COEFF(attr) - 1) : FFP_ATTRIB_LIGHT_COEFF(attr))
 
 static inline GLboolean does_color_material_track(GLenum pname) {
 	if (!color_material_state) {
@@ -570,7 +687,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	if (!lighting_state)
 		mask.lights_num = 0;
 	else {
-		if (lights_aligned) {
+		if (!light_mask) {
+			mask.lights_num = 0;
+		} else if (lights_aligned) {
 			light_vars[0][0] = &lights_ambients[light_range[0]].x;
 			light_vars[0][1] = &lights_diffuses[light_range[0]].x;
 			light_vars[0][2] = &lights_speculars[light_range[0]].x;
@@ -592,9 +711,14 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		if (mask.lighting) {
 			draw_mask_state |= (1 << FFP_ATTRIB_COLOR);
 			draw_mask_state |= (1 << FFP_ATTRIB_DIFFUSE);
-			draw_mask_state |= (1 << FFP_ATTRIB_SPECULAR);
 			draw_mask_state |= (1 << FFP_ATTRIB_EMISSION);
-			draw_mask_state |= (1 << FFP_ATTRIB_NORMAL);
+			if (mask.lights_num > 0) {
+				draw_mask_state |= (1 << FFP_ATTRIB_SPECULAR);
+				draw_mask_state |= (1 << FFP_ATTRIB_NORMAL);
+			} else {
+				draw_mask_state &= ~(1 << FFP_ATTRIB_SPECULAR);
+				draw_mask_state &= ~(1 << FFP_ATTRIB_NORMAL);
+			}
 		}
 	}
 	
@@ -782,9 +906,13 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				if (mask.lighting) {
 					ffp_lighting_streams = &streams[ffp_vertex_num_params];
 					attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_DIFFUSE];
-					attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_SPECULAR];
+					if (mask.lights_num > 0) {
+						attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_SPECULAR];
+					}
 					attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_EMISSION];
-					attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
+					if (mask.lights_num > 0) {
+						attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
+					}
 				} else {
 					ffp_lighting_streams = NULL;
 				}
@@ -820,29 +948,33 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_COLOR)) {
 					setup_lighting_attributes(GL_AMBIENT, GL_AMBIENT_AND_DIFFUSE, FFP_ATTRIB_COLOR);
 					setup_lighting_attributes(GL_DIFFUSE, GL_AMBIENT_AND_DIFFUSE, FFP_ATTRIB_DIFFUSE);
-					setup_lighting_attributes(GL_SPECULAR, GL_SPECULAR, FFP_ATTRIB_SPECULAR);
+					if (mask.lights_num > 0) {
+						setup_lighting_attributes(GL_SPECULAR, GL_SPECULAR, FFP_ATTRIB_SPECULAR);
+					}
 					setup_lighting_attributes(GL_EMISSION, GL_EMISSION, FFP_ATTRIB_EMISSION);
 				} else {
-					ffp_vertex_num_params += 4;
+					ffp_vertex_num_params += mask.lights_num > 0 ? 4 : 3;
 				}
 			
-				if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_NORMAL)) {
-					if (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_NORMAL)) {
-						vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_NORMAL], sizeof(SceGxmVertexAttribute));
-						ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-						ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
-						ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
-					} else {
-						ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-						ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
-						ffp_vertex_attribute[ffp_vertex_num_params].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-						ffp_vertex_attribute[ffp_vertex_num_params].offset = 0;
-						ffp_vertex_attribute[ffp_vertex_num_params].componentCount = 3;
-						ffp_vertex_stream[ffp_vertex_num_params].stride = 0;
+				if (mask.lights_num > 0) {
+					if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_NORMAL)) {
+						if (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_NORMAL)) {
+							vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_NORMAL], sizeof(SceGxmVertexAttribute));
+							ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+							ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
+							ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
+						} else {
+							ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
+							ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
+							ffp_vertex_attribute[ffp_vertex_num_params].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+							ffp_vertex_attribute[ffp_vertex_num_params].offset = 0;
+							ffp_vertex_attribute[ffp_vertex_num_params].componentCount = 3;
+							ffp_vertex_stream[ffp_vertex_num_params].stride = 0;
+						}
+						ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 					}
-					ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+					ffp_vertex_num_params++;
 				}
-				ffp_vertex_num_params++;
 			} else {
 				ffp_lighting_streams = NULL;
 				if (mask.has_colors) {
@@ -1229,7 +1361,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 	// Preparing materials temp buffer if lights are enabled
 	float *materials;
 	if (ffp_lighting_streams) {
-		materials = (float *)gpu_alloc_mapped_temp(19 * sizeof(float));
+		materials = (float *)gpu_alloc_mapped_temp((ffp_mask.lights_num > 0 ? 19 : 12) * sizeof(float));
 	}
 
 	// Uploading vertex streams
@@ -1259,7 +1391,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 				ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[id] + first * ffp_vertex_stream_config[id].stride;
 			} else {
 				if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(id)) {
-					if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(id)].stride == 0) { // Color array not mapped to this material attribute
+					if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_INDEX(id)].stride == 0) { // Color array not mapped to this material attribute
 						if (id == FFP_ATTRIB_NORMAL) {
 							vgl_fast_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
 						} else {
@@ -1368,7 +1500,7 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 	// Preparing materials temp buffer if lights are enabled
 	float *materials;
 	if (ffp_lighting_streams) {
-		materials = (float *)gpu_alloc_mapped_temp(19 * sizeof(float));
+		materials = (float *)gpu_alloc_mapped_temp((ffp_mask.lights_num > 0 ? 19 : 12) * sizeof(float));
 	}
 
 	// Uploading vertex streams
@@ -1402,7 +1534,7 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 				strides[j] = ffp_vertex_stream_config[id].stride;
 			} else {
 				if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(id)) {
-					if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(id)].stride == 0) { // Color array not mapped to this material attribute
+					if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_INDEX(id)].stride == 0) { // Color array not mapped to this material attribute
 						if (id != FFP_ATTRIB_NORMAL) {
 							vgl_fast_memcpy(materials, get_material_attr_ptr(FFP_ATTRIB_LIGHT_COEFF(id)), 4 * sizeof(float));
 						} else {
@@ -1582,7 +1714,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 	// Preparing materials temp buffer if lights are enabled
 	float *materials;
 	if (ffp_lighting_streams) {
-		materials = (float *)gpu_alloc_mapped_temp(19 * sizeof(float));
+		materials = (float *)gpu_alloc_mapped_temp((ffp_mask.lights_num > 0 ? 19 : 12) * sizeof(float));
 	}
 
 	// Uploading vertex streams
@@ -1595,7 +1727,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 			ptr = (uint8_t *)gpu_buf->ptr + ffp_vertex_attrib_offsets[attr_idx];
 		} else {
 			if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(attr_idx)) {
-				if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(attr_idx)].stride == 0) { // Color array not mapped to this material attribute
+				if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_INDEX(attr_idx)].stride == 0) { // Color array not mapped to this material attribute
 					if (attr_idx != FFP_ATTRIB_NORMAL) {
 						vgl_fast_memcpy(materials, get_material_attr_ptr(FFP_ATTRIB_LIGHT_COEFF(attr_idx)), 4 * sizeof(float));
 					} else {
@@ -2613,9 +2745,14 @@ void glEnd(void) {
 
 	ffp_dirty_frag = GL_TRUE;
 	ffp_dirty_vert = GL_TRUE;
+	GLboolean zero_lights = lighting_state && !light_mask;
 	if (texture_units[1].state) { // Multitexture usage
 		ffp_vertex_attrib_state = FFP_ATTRIB_MASK_ALL;
-		reload_ffp_shaders(legacy_mt_vertex_attrib_config, legacy_mt_vertex_stream_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
+		if (zero_lights) {
+			reload_ffp_shaders(legacy_mt_vertex_attrib_zero_lights_config, legacy_mt_vertex_stream_zero_lights_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
+		} else {
+			reload_ffp_shaders(legacy_mt_vertex_attrib_config, legacy_mt_vertex_stream_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
+		}
 		for (int i = 0; i < 2; i++) {
 			texture *tex = &texture_slots[texture_units[i].tex_id[texture_units[i].state > 1 ? 0 : 1]];
 #ifdef HAVE_TEX_CACHE
@@ -2644,7 +2781,11 @@ void glEnd(void) {
 		}
 	} else if (texture_units[0].state) { // Texturing usage
 		ffp_vertex_attrib_state = (1 << FFP_ATTRIB_POSITION) | (1 << FFP_ATTRIB_TEX0) | (1 << FFP_ATTRIB_COLOR);
-		reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
+		if (zero_lights) {
+			reload_ffp_shaders(legacy_vertex_attrib_zero_lights_config, legacy_vertex_stream_zero_lights_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
+		} else {
+			reload_ffp_shaders(legacy_vertex_attrib_config, legacy_vertex_stream_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
+		}
 		texture *tex = &texture_slots[texture_units[0].tex_id[texture_units[0].state > 1 ? 0 : 1]];
 #ifdef HAVE_TEX_CACHE
 		restore_tex_cache(tex);
@@ -2671,7 +2812,11 @@ void glEnd(void) {
 		sceGxmSetFragmentTexture(gxm_context, 0, &tex->gxm_tex);
 	} else { // No texturing usage
 		ffp_vertex_attrib_state = (1 << FFP_ATTRIB_POSITION) | (1 << FFP_ATTRIB_COLOR);
-		reload_ffp_shaders(legacy_nt_vertex_attrib_config, legacy_nt_vertex_stream_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
+		if (zero_lights) {
+			reload_ffp_shaders(legacy_nt_vertex_attrib_zero_lights_config, legacy_nt_vertex_stream_zero_lights_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
+		} else {
+			reload_ffp_shaders(legacy_nt_vertex_attrib_config, legacy_nt_vertex_stream_config, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);	
+		}
 	}
 
 	// Restoring original attributes state settings

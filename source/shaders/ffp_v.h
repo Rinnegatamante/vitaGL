@@ -95,9 +95,13 @@ void main(
 #endif
 #if lighting == 1
 	float4 Qdiff,
+#if lights_num > 0
 	float4 Rspec,
+#endif
 	float4 Semission,
+#if lights_num > 0
 	float3 Tnormals,
+#endif
 #endif
 #if num_textures > 0
 	float2 out vTexcoord : TEXCOORD0,
@@ -106,11 +110,16 @@ void main(
 #endif
 #endif
 #if lighting == 1 && shading_mode == 1 // GL_PHONG_WIN
+#if lights_num > 0
 	float3 out vNormal : TEXCOORD2,
 	float3 out vEcPosition : TEXCOORD3,
 	float4 out vDiffuse : TEXCOORD4,
 	float4 out vSpecular : TEXCOORD5,
 	float4 out vEmission : TEXCOORD6,
+#else
+	float4 out vDiffuse : TEXCOORD2,
+	float4 out vEmission : TEXCOORD3,
+#endif
 #endif
 	float4 out vPosition : POSITION,
 #if has_colors == 1 || lighting == 1
@@ -155,7 +164,7 @@ void main(
 	vPosition = mul(Jwvp, Nposition);
 	
 	// Lighting
-#if lighting == 1
+#if lighting == 1 && lights_num > 0
 #if (fixed_mode_mask & 0x01) == 0x01
 	Tnormals = GLFixed3ToFloat3(Tnormals);
 #endif
@@ -192,16 +201,22 @@ void main(
 #if lighting == 1
 #if shading_mode < 1 // GL_SMOOTH/GL_FLAT
 	vColor.rgb = Semission.rgb + Pcolor.rgb * Flight_global_ambient.rgb;
+#if lights_num > 0
 	vColor.rgb += Ambient.rgb * Pcolor.rgb + Diffuse.rgb * Qdiff.rgb + Specular.rgb * Rspec.rgb;
+#endif
 	vColor.a = Qdiff.a;
 	vColor = clamp(vColor, 0.0f, 1.0f);
 #endif
 #if shading_mode == 1 // GL_PHONG_WIN
 	vColor = Pcolor;
+#if lights_num > 0
 	vNormal = normal;
 	vEcPosition = ecPosition;
+#endif
 	vDiffuse = Qdiff;
+#if lights_num > 0
 	vSpecular = Rspec;
+#endif
 	vEmission = Semission;
 #endif
 #elif has_colors == 1

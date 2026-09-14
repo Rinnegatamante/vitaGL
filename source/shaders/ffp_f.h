@@ -84,11 +84,16 @@ float4 main(
 #endif
 #endif
 #if lighting == 1 && shading_mode == 1 // GL_PHONG_WIN
+#if lights_num > 0
 	float3 vNormal : TEXCOORD2,
 	float3 vEcPosition : TEXCOORD3,
 	float4 vDiffuse : TEXCOORD4,
 	float4 vSpecular : TEXCOORD5,
 	float4 vEmission : TEXCOORD6,
+#else
+	float4 vDiffuse : TEXCOORD2,
+	float4 vEmission : TEXCOORD3,
+#endif
 #endif
 #if (has_colors == 1 || lighting == 1)
 	float4 vColor : COLOR,
@@ -119,17 +124,19 @@ float4 main(
 #endif
 	// Lighting
 #if lighting == 1 && shading_mode == 1 // GL_PHONG_WIN
+#if lights_num > 0
 	float4 Ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	float4 Diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	float4 Specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-#if lights_num > 0
 	for (short i = 0; i < lights_num; i++) {
 		calculate_light(i, vEcPosition, vNormal, Ambient, Diffuse, Specular);
 	}
 #endif
 	float4 fragColor = vColor;
 	vColor.rgb = vEmission.rgb + fragColor.rgb * Flight_global_ambient.rgb;
+#if lights_num > 0
 	vColor.rgb += Ambient.rgb * fragColor.rgb + Diffuse.rgb * vDiffuse.rgb + Specular.rgb * vSpecular.rgb;
+#endif
 	vColor.a = vDiffuse.a;
 	vColor = clamp(vColor, 0.0f, 1.0f);
 #endif
