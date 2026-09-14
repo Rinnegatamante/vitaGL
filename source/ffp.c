@@ -1003,10 +1003,10 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 				// Vertex texture coordinates (Third pass)
 				if (mask.num_textures > 2) {
-					if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_COLOR)) {
+					if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_TEX2)) {
 						vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id + 2)], sizeof(SceGxmVertexAttribute));
 						ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
-						ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX1];
+						ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX2];
 						ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id + 2)].stride;
 						ffp_vertex_stream[ffp_vertex_num_params].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 					}
