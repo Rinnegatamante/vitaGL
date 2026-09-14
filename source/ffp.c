@@ -130,12 +130,20 @@ legacy_vtx_attachment current_vtx = {
 	.uv2 = {0.0f, 0.0f}
 };
 
-static float *lighting_attr_ptr[FFP_COEFF_NUM] = {
-	&current_vtx.amb.x,
-	&current_vtx.diff.x,
-	&current_vtx.spec.x,
-	&current_vtx.emiss.x
-};
+static inline float *get_material_attr_ptr(uint8_t coeff) {
+	switch (coeff) {
+	case FFP_AMBIENT_COEFF:
+		return &current_vtx.amb.x;
+	case FFP_DIFFUSE_COEFF:
+		return &current_vtx.diff.x;
+	case FFP_SPECULAR_COEFF:
+		return &current_vtx.spec.x;
+	case FFP_EMISSION_COEFF:
+		return &current_vtx.emiss.x;
+	default:
+		return NULL;
+	}
+}
 
 // Non-Immediate Mode
 SceGxmVertexAttribute ffp_vertex_attrib_config[FFP_VERTEX_ATTRIBS_NUM];
@@ -292,29 +300,37 @@ SceGxmVertexAttribute ffp_vertex_attribute[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream ffp_vertex_stream[FFP_VERTEX_ATTRIBS_NUM];
 SceGxmVertexStream *ffp_lighting_streams = NULL;
 
+static inline GLboolean does_color_material_track(GLenum pname) {
+	if (!color_material_state) {
+		return GL_FALSE;
+	}
+
+	return color_material_mode == pname || (color_material_mode == GL_AMBIENT_AND_DIFFUSE && (pname == GL_AMBIENT || pname == GL_DIFFUSE));
+}
+
 void adjust_color_material_state() {
-	if (color_material_state) {
-		if (color_material_mode == GL_AMBIENT || color_material_mode == GL_AMBIENT_AND_DIFFUSE)
-			lighting_attr_ptr[FFP_AMBIENT_COEFF] = &current_vtx.clr.x;
-		else
-			lighting_attr_ptr[FFP_AMBIENT_COEFF] = &current_vtx.amb.x;
-		if (color_material_mode == GL_DIFFUSE || color_material_mode == GL_AMBIENT_AND_DIFFUSE)
-			lighting_attr_ptr[FFP_DIFFUSE_COEFF] = &current_vtx.clr.x;
-		else
-			lighting_attr_ptr[FFP_DIFFUSE_COEFF] = &current_vtx.diff.x;
-		if (color_material_mode == GL_SPECULAR)
-			lighting_attr_ptr[FFP_SPECULAR_COEFF] = &current_vtx.clr.x;
-		else
-			lighting_attr_ptr[FFP_SPECULAR_COEFF] = &current_vtx.spec.x;
-		if (color_material_mode == GL_EMISSION)
-			lighting_attr_ptr[FFP_EMISSION_COEFF] = &current_vtx.clr.x;
-		else
-			lighting_attr_ptr[FFP_EMISSION_COEFF] = &current_vtx.emiss.x;
-	} else {
-		lighting_attr_ptr[FFP_AMBIENT_COEFF] = &current_vtx.amb.x;
-		lighting_attr_ptr[FFP_DIFFUSE_COEFF] = &current_vtx.diff.x;
-		lighting_attr_ptr[FFP_SPECULAR_COEFF] = &current_vtx.spec.x;
-		lighting_attr_ptr[FFP_EMISSION_COEFF] = &current_vtx.emiss.x;
+	if (!color_material_state)
+		return;
+
+	switch (color_material_mode) {
+	case GL_AMBIENT:
+		vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.x, sizeof(vector4f));
+		break;
+	case GL_DIFFUSE:
+		vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.x, sizeof(vector4f));
+		break;
+	case GL_SPECULAR:
+		vgl_fast_memcpy(&current_vtx.spec.x, &current_vtx.clr.x, sizeof(vector4f));
+		break;
+	case GL_EMISSION:
+		vgl_fast_memcpy(&current_vtx.emiss.x, &current_vtx.clr.x, sizeof(vector4f));
+		break;
+	case GL_AMBIENT_AND_DIFFUSE:
+		vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.x, sizeof(vector4f));
+		vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.x, sizeof(vector4f));
+		break;
+	default:
+		break;
 	}
 }
 
@@ -1226,7 +1242,7 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 						if (id == FFP_ATTRIB_NORMAL) {
 							vgl_fast_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
 						} else {
- 							vgl_fast_memcpy(materials, lighting_attr_ptr[FFP_ATTRIB_LIGHT_COEFF(id)], 4 * sizeof(float));
+							vgl_fast_memcpy(materials, get_material_attr_ptr(FFP_ATTRIB_LIGHT_COEFF(id)), 4 * sizeof(float));
 						}
 						ptr = materials;
 						materials += 4;
@@ -1361,7 +1377,7 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 				if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(id)) {
 					if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(id)].stride == 0) { // Color array not mapped to this material attribute
 						if (id != FFP_ATTRIB_NORMAL) {
-							vgl_fast_memcpy(materials, lighting_attr_ptr[FFP_ATTRIB_LIGHT_COEFF(id)], 4 * sizeof(float));
+							vgl_fast_memcpy(materials, get_material_attr_ptr(FFP_ATTRIB_LIGHT_COEFF(id)), 4 * sizeof(float));
 						} else {
 							vgl_fast_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
 						}
@@ -1547,7 +1563,7 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 			if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(attr_idx)) {
 				if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_COEFF(attr_idx)].stride == 0) { // Color array not mapped to this material attribute
 					if (attr_idx != FFP_ATTRIB_NORMAL) {
-						vgl_fast_memcpy(materials, lighting_attr_ptr[FFP_ATTRIB_LIGHT_COEFF(attr_idx)], 4 * sizeof(float));
+						vgl_fast_memcpy(materials, get_material_attr_ptr(FFP_ATTRIB_LIGHT_COEFF(attr_idx)), 4 * sizeof(float));
 					} else {
 						vgl_fast_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
 					}
@@ -2037,20 +2053,32 @@ void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
 #endif
 	switch (pname) {
 	case GL_AMBIENT:
-		vgl_fast_memcpy(&current_vtx.amb.x, params, sizeof(float) * 4);
+		if (!does_color_material_track(GL_AMBIENT)) {
+			vgl_fast_memcpy(&current_vtx.amb.x, params, sizeof(float) * 4);
+		}
 		break;
 	case GL_DIFFUSE:
-		vgl_fast_memcpy(&current_vtx.diff.x, params, sizeof(float) * 4);
+		if (!does_color_material_track(GL_DIFFUSE)) {
+			vgl_fast_memcpy(&current_vtx.diff.x, params, sizeof(float) * 4);
+		}
 		break;
 	case GL_SPECULAR:
-		vgl_fast_memcpy(&current_vtx.spec.x, params, sizeof(float) * 4);
+		if (!does_color_material_track(GL_SPECULAR)) {
+			vgl_fast_memcpy(&current_vtx.spec.x, params, sizeof(float) * 4);
+		}
 		break;
 	case GL_EMISSION:
-		vgl_fast_memcpy(&current_vtx.emiss.x, params, sizeof(float) * 4);
+		if (!does_color_material_track(GL_EMISSION)) {
+			vgl_fast_memcpy(&current_vtx.emiss.x, params, sizeof(float) * 4);
+		}
 		break;
 	case GL_AMBIENT_AND_DIFFUSE:
-		vgl_fast_memcpy(&current_vtx.amb.x, params, sizeof(float) * 4);
-		vgl_fast_memcpy(&current_vtx.diff.x, params, sizeof(float) * 4);
+		if (!does_color_material_track(GL_AMBIENT)) {
+			vgl_fast_memcpy(&current_vtx.amb.x, params, sizeof(float) * 4);
+		}
+		if (!does_color_material_track(GL_DIFFUSE)) {
+			vgl_fast_memcpy(&current_vtx.diff.x, params, sizeof(float) * 4);
+		}
 		break;
 	case GL_SHININESS:
 		current_shininess = params[0];
@@ -2109,35 +2137,50 @@ void glMaterialxv(GLenum face, GLenum pname, const GLfixed *params) {
 #endif
 	switch (pname) {
 	case GL_AMBIENT:
-		current_vtx.amb.x = (float)params[0] / 65536.0f;
-		current_vtx.amb.y = (float)params[1] / 65536.0f;
-		current_vtx.amb.z = (float)params[2] / 65536.0f;
-		current_vtx.amb.w = (float)params[3] / 65536.0f;
+		if (!does_color_material_track(GL_AMBIENT)) {
+			current_vtx.amb.x = (float)params[0] / 65536.0f;
+			current_vtx.amb.y = (float)params[1] / 65536.0f;
+			current_vtx.amb.z = (float)params[2] / 65536.0f;
+			current_vtx.amb.w = (float)params[3] / 65536.0f;
+		}
 		break;
 	case GL_DIFFUSE:
-		current_vtx.diff.x = (float)params[0] / 65536.0f;
-		current_vtx.diff.y = (float)params[1] / 65536.0f;
-		current_vtx.diff.z = (float)params[2] / 65536.0f;
-		current_vtx.diff.w = (float)params[3] / 65536.0f;
+		if (!does_color_material_track(GL_DIFFUSE)) {
+			current_vtx.diff.x = (float)params[0] / 65536.0f;
+			current_vtx.diff.y = (float)params[1] / 65536.0f;
+			current_vtx.diff.z = (float)params[2] / 65536.0f;
+			current_vtx.diff.w = (float)params[3] / 65536.0f;
+		}
 		break;
 	case GL_SPECULAR:
-		current_vtx.spec.x = (float)params[0] / 65536.0f;
-		current_vtx.spec.y = (float)params[1] / 65536.0f;
-		current_vtx.spec.z = (float)params[2] / 65536.0f;
-		current_vtx.spec.w = (float)params[3] / 65536.0f;
+		if (!does_color_material_track(GL_SPECULAR)) {
+			current_vtx.spec.x = (float)params[0] / 65536.0f;
+			current_vtx.spec.y = (float)params[1] / 65536.0f;
+			current_vtx.spec.z = (float)params[2] / 65536.0f;
+			current_vtx.spec.w = (float)params[3] / 65536.0f;
+		}
 		break;
 	case GL_EMISSION:
-		current_vtx.emiss.x = (float)params[0] / 65536.0f;
-		current_vtx.emiss.y = (float)params[1] / 65536.0f;
-		current_vtx.emiss.z = (float)params[2] / 65536.0f;
-		current_vtx.emiss.w = (float)params[3] / 65536.0f;
+		if (!does_color_material_track(GL_EMISSION)) {
+			current_vtx.emiss.x = (float)params[0] / 65536.0f;
+			current_vtx.emiss.y = (float)params[1] / 65536.0f;
+			current_vtx.emiss.z = (float)params[2] / 65536.0f;
+			current_vtx.emiss.w = (float)params[3] / 65536.0f;
+		}
 		break;
 	case GL_AMBIENT_AND_DIFFUSE:
-		current_vtx.amb.x = (float)params[0] / 65536.0f;
-		current_vtx.amb.y = (float)params[1] / 65536.0f;
-		current_vtx.amb.z = (float)params[2] / 65536.0f;
-		current_vtx.amb.w = (float)params[3] / 65536.0f;
-		vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.amb.x, sizeof(float) * 4);
+		if (!does_color_material_track(GL_AMBIENT)) {
+			current_vtx.amb.x = (float)params[0] / 65536.0f;
+			current_vtx.amb.y = (float)params[1] / 65536.0f;
+			current_vtx.amb.z = (float)params[2] / 65536.0f;
+			current_vtx.amb.w = (float)params[3] / 65536.0f;
+		}
+		if (!does_color_material_track(GL_DIFFUSE)) {
+			current_vtx.diff.x = (float)params[0] / 65536.0f;
+			current_vtx.diff.y = (float)params[1] / 65536.0f;
+			current_vtx.diff.z = (float)params[2] / 65536.0f;
+			current_vtx.diff.w = (float)params[3] / 65536.0f;
+		}
 		break;
 	case GL_SHININESS:
 		current_shininess = (float)params[0] / 65536.0f;
@@ -2166,6 +2209,7 @@ void glColor3f(GLfloat red, GLfloat green, GLfloat blue) {
 	current_vtx.clr.b = blue;
 	current_vtx.clr.a = 1.0f;
 
+	adjust_color_material_state();
 	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
@@ -2180,6 +2224,7 @@ void glColor3fv(const GLfloat *v) {
 	vgl_fast_memcpy(&current_vtx.clr.r, v, sizeof(vector3f));
 	current_vtx.clr.a = 1.0f;
 
+	adjust_color_material_state();
 	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
@@ -2191,6 +2236,7 @@ void glColor3us(GLushort red, GLushort green, GLushort blue) {
 	current_vtx.clr.b = (float)blue / 65535.0f;
 	current_vtx.clr.a = 1.0f;
 	
+	adjust_color_material_state();
 	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 };
 
@@ -2202,6 +2248,7 @@ void glColor3usv(const GLushort *c) {
 	current_vtx.clr.b = (float)c[2] / 65535.0f;
 	current_vtx.clr.a = 1.0f;
 	
+	adjust_color_material_state();
 	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 };
 
@@ -2219,6 +2266,7 @@ void glColor3ub(GLubyte red, GLubyte green, GLubyte blue) {
 	current_vtx.clr.b = (float)blue / 255.0f;
 	current_vtx.clr.a = 1.0f;
 
+	adjust_color_material_state();
 	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
@@ -2237,6 +2285,7 @@ void glColor3ubv(const GLubyte *c) {
 	current_vtx.clr.b = (float)c[2] / 255.0f;
 	current_vtx.clr.a = 1.0f;
 
+	adjust_color_material_state();
 	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
@@ -2254,6 +2303,7 @@ void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
 	current_vtx.clr.b = blue;
 	current_vtx.clr.a = alpha;
 
+	adjust_color_material_state();
 	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
@@ -2269,6 +2319,7 @@ void glColor4fv(const GLfloat *v) {
 	// Setting current color value
 	vgl_fast_memcpy(&current_vtx.clr.r, v, sizeof(vector4f));
 
+	adjust_color_material_state();
 	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
@@ -2285,6 +2336,7 @@ void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha) {
 	current_vtx.clr.b = (float)blue / 255.0f;
 	current_vtx.clr.a = (float)alpha / 255.0f;
 
+	adjust_color_material_state();
 	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
@@ -2296,6 +2348,7 @@ void glColor4us(GLushort red, GLushort green, GLushort blue, GLushort alpha) {
 	current_vtx.clr.b = (float)blue / 65535.0f;
 	current_vtx.clr.a = (float)alpha / 65535.0f;
 	
+	adjust_color_material_state();
 	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 };
 
@@ -2307,6 +2360,7 @@ void glColor4usv(const GLushort *c) {
 	current_vtx.clr.b = (float)c[2] / 65535.0f;
 	current_vtx.clr.a = (float)c[3] / 65535.0f;
 	
+	adjust_color_material_state();
 	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 };
 
@@ -2325,6 +2379,7 @@ void glColor4ubv(const GLubyte *c) {
 	current_vtx.clr.b = (float)c[2] / 255.0f;
 	current_vtx.clr.a = (float)c[3] / 255.0f;
 
+	adjust_color_material_state();
 	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
@@ -2343,6 +2398,7 @@ void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha) {
 	current_vtx.clr.b = (float)blue / 65536.0f;
 	current_vtx.clr.a = (float)alpha / 65536.0f;
 
+	adjust_color_material_state();
 	flag_dirty_frag_unif(TINT_COLOR_UNIF)
 }
 
@@ -3892,9 +3948,16 @@ void glColorMaterial(GLenum face, GLenum mode) {
 	if (phase == MODEL_CREATION) {
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	}
+	if (face != GL_FRONT && face != GL_BACK && face != GL_FRONT_AND_BACK) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, face)
+	}
+	if (mode != GL_AMBIENT && mode != GL_DIFFUSE && mode != GL_SPECULAR && mode != GL_EMISSION && mode != GL_AMBIENT_AND_DIFFUSE) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
+	}
 #endif
 	color_material_mode = mode;
 	adjust_color_material_state();
+	ffp_dirty_vert_attr |= (1 << FFP_ATTRIB_COLOR);
 }
 
 void glGetPointerv(GLenum pname, void **params) {

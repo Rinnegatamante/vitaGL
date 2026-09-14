@@ -417,6 +417,7 @@ void glEnable(GLenum cap) {
 	case GL_COLOR_MATERIAL:
 		color_material_state = GL_TRUE;
 		adjust_color_material_state();
+		ffp_dirty_vert_attr |= (1 << FFP_ATTRIB_COLOR);
 		break;
 	case GL_SCISSOR_TEST:
 		scissor_test_state = GL_TRUE;
@@ -536,6 +537,7 @@ void glDisable(GLenum cap) {
 	case GL_COLOR_MATERIAL:
 		color_material_state = GL_FALSE;
 		adjust_color_material_state();
+		ffp_dirty_vert_attr |= (1 << FFP_ATTRIB_COLOR);
 		break;
 	case GL_DEPTH_TEST:
 		depth_test_state = GL_FALSE;
