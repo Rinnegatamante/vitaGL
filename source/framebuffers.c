@@ -205,6 +205,8 @@ inline __attribute__((always_inline)) void glGenFramebuffers(GLsizei n, GLuint *
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
+	} else if (n == 0) {
+		return;
 	}
 #endif
 	for (i = 0; i < BUFFERS_NUM; i++) {
@@ -232,6 +234,8 @@ void glGenRenderbuffers(GLsizei n, GLuint *ids) {
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
+	} else if (n == 0) {
+		return;
 	}
 #endif
 	for (i = 0; i < BUFFERS_NUM; i++) {

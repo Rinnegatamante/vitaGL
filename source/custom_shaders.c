@@ -1843,6 +1843,8 @@ void glGetAttachedShaders(GLuint prog, GLsizei maxCount, GLsizei *count, GLuint 
 #ifndef SKIP_ERROR_HANDLING
 	if (maxCount < 0) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, maxCount)
+	} else if (maxCount == 0) {
+		return;
 	}
 #endif
 

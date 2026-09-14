@@ -101,6 +101,8 @@ void glGenQueries(GLsizei n, GLuint *ids) {
 #ifndef SKIP_ERROR_HANDLING
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
+	} else if (n == 0) {
+		return;
 	}
 #endif
 	for (GLuint i = 0; i < MAX_QUERIES_NUM; i++) {

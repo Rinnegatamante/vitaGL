@@ -1720,6 +1720,8 @@ inline __attribute__((always_inline)) void glGenTextures(GLsizei n, GLuint *res)
 	// Error handling
 	if (n < 0) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
+	} else if (n == 0) {
+		return;
 	}
 #endif
 
