@@ -759,7 +759,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 				// Lighting data
 				if (mask.lighting) {
-					ffp_lighting_streams = &attrs[ffp_vertex_num_params];
+					ffp_lighting_streams = &streams[ffp_vertex_num_params];
 					attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_DIFFUSE];
 					attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_SPECULAR];
 					attrs[ffp_vertex_num_params++].regIndex = ffp_vertex_attribs[FFP_ATTRIB_EMISSION];
