@@ -96,7 +96,7 @@ uint32_t read_rgba4444(const void *data) {
 }
 
 // Read callback for 16bpp unsigned BGRA4444 format
-uint32_t read_rgba4444(const void *data) {
+uint32_t read_bgra4444(const void *data) {
 	const uint16_t clr = *(uint16_t *)data;
 	uint8_t r, g, b, a;
 	b = convert_u16_to_u32_cspace(clr, 0, 12, 0x0F);
