@@ -982,6 +982,7 @@ extern GLboolean dirty_shader_vert_unifs;
 // Internal fixed function pipeline dirty flags and variables
 extern GLboolean ffp_dirty_frag;
 extern GLboolean ffp_dirty_vert;
+extern uint16_t ffp_dirty_vert_attr;
 extern uint16_t ffp_vertex_attrib_state;
 extern uint8_t ffp_vertex_num_params;
 
