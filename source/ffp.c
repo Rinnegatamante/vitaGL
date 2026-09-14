@@ -2153,10 +2153,10 @@ void glClientActiveTexture(GLenum texture) {
 	THREAD_SAFE()
 
 #ifndef SKIP_ERROR_HANDLING
-	if ((texture < GL_TEXTURE0) && (texture > GL_TEXTURE15)) {
+	if ((texture < GL_TEXTURE0) || (texture > GL_TEXTURE15)) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, texture)
 	}
-	if (texture - GL_TEXTURE0 > TEXTURE_COORDS_NUM) {
+	if (texture - GL_TEXTURE0 >= TEXTURE_COORDS_NUM) {
 		vgl_log("%s:%d Attempting to use a too high client texture unit (GL_TEXTURE%d).\n", __FILE__, __LINE__, texture - GL_TEXTURE0);
 	}
 #endif
