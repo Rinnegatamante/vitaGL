@@ -427,8 +427,8 @@ float *reserve_attrib_pool(uint8_t count) {
 	float *res = cur_vao->vertex_attrib_pool_ptr;
 	cur_vao->vertex_attrib_pool_ptr += count;
 	if (cur_vao->vertex_attrib_pool_ptr > cur_vao->vertex_attrib_pool_limit) {
-		cur_vao->vertex_attrib_pool_ptr = cur_vao->vertex_attrib_pool;
-		return cur_vao->vertex_attrib_pool_ptr;
+		cur_vao->vertex_attrib_pool_ptr = cur_vao->vertex_attrib_pool + count;
+		return cur_vao->vertex_attrib_pool;
 	}
 	return res;
 }
