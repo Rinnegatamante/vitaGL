@@ -800,7 +800,7 @@ typedef struct {
 // Generic shader struct
 typedef struct {
 	GLenum type;
-	GLboolean valid;
+	uint16_t slot;
 	GLboolean dirty;
 	GLboolean is_glsl;
 	binds_map semantics;

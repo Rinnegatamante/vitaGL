@@ -372,7 +372,7 @@ typedef struct {
 } program;
 
 // Internal shaders and array
-static shader shaders[MAX_CUSTOM_SHADERS];
+static shader *shaders[MAX_CUSTOM_SHADERS];
 static program progs[MAX_CUSTOM_PROGRAMS];
 
 #ifdef HAVE_SHARK_LOG
@@ -393,34 +393,30 @@ static inline __attribute__((always_inline)) uniform *get_uniform_from_ptr(GLint
 
 void release_shader(shader *s) {
 	// Deallocating shader and unregistering it from sceGxmShaderPatcher
-	if (s->valid) {
-		if (s->prog) {
-			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
-			vgl_free((void *)s->prog);
-			while (s->mat) {
-				matrix_uniform *m = (matrix_uniform *)s->mat->chain;
-				vgl_free(s->mat);
-				s->mat = m;
-			}
-			while (s->unif_blk) {
-				block_uniform *b = (block_uniform *)s->unif_blk->chain;
-				vgl_free(s->unif_blk);
-				s->unif_blk = b;
-			}
-#ifdef HAVE_SHARK_LOG
-			if (s->log) {
-				vgl_free(s->log);
-				s->log = NULL;
-			}
-#endif
+	if (s->prog) {
+		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
+		vgl_free((void *)s->prog);
+		while (s->mat) {
+			matrix_uniform *m = (matrix_uniform *)s->mat->chain;
+			vgl_free(s->mat);
+			s->mat = m;
 		}
+		while (s->unif_blk) {
+			block_uniform *b = (block_uniform *)s->unif_blk->chain;
+			vgl_free(s->unif_blk);
+			s->unif_blk = b;
+		}
+#ifdef HAVE_SHARK_LOG
+		if (s->log) {
+			vgl_free(s->log);
+		}
+#endif
 	}
 	if (s->source) {
 		vgl_free(s->source);
-		s->source = NULL;
 	}
-	s->valid = GL_FALSE;
-	s->dirty = GL_FALSE;
+	shaders[s->slot] = NULL;
+	vgl_free(s);
 }
 
 float *reserve_attrib_pool(uint8_t count) {
@@ -672,13 +668,7 @@ static inline __attribute__((always_inline)) void compile_shader(shader *s, GLbo
 
 void reset_custom_shaders(void) {
 	// Init custom shaders
-	for (int i = 0; i < MAX_CUSTOM_SHADERS; i++) {
-		shaders[i].valid = GL_FALSE;
-#ifdef HAVE_SHARK_LOG
-		shaders[i].log = NULL;
-#endif
-		shaders[i].source = NULL;
-	}
+	sceClibMemset(shaders, 0, sizeof(uint32_t) * MAX_CUSTOM_SHADERS);
 
 	// Init custom programs
 	for (int i = 0; i < MAX_CUSTOM_PROGRAMS; i++) {
@@ -1578,9 +1568,9 @@ GLuint glCreateShader(GLenum shaderType) {
 #endif
 
 	// Looking for a free shader slot
-	GLuint i, res = 0;
-	for (i = 1; i <= MAX_CUSTOM_SHADERS; i++) {
-		if (!(shaders[i - 1].valid)) {
+	GLuint res = MAX_CUSTOM_SHADERS;
+	for (GLuint i = 0; i < MAX_CUSTOM_SHADERS; i++) {
+		if (!shaders[i]) {
 			res = i;
 			break;
 		}
@@ -1588,41 +1578,38 @@ GLuint glCreateShader(GLenum shaderType) {
 
 #ifndef SKIP_ERROR_HANDLING
 	// All shader slots are busy, exiting call
-	if (res == 0) {
+	if (res == MAX_CUSTOM_SHADERS) {
 		vgl_log("%s:%d %s: Out of shaders handles. Consider increasing MAX_CUSTOM_SHADERS...\n", __FILE__, __LINE__, __func__);
-		return res;
+		return 0;
 	}
 #endif
+
+	shaders[res] = vglCalloc(1, sizeof(shader));
+	shader *s = shaders[res];
+	s->slot = res;
 
 	// Reserving and initializing shader slot
 	switch (shaderType) {
 	case GL_CG_VERTEX_SHADER_EXT:
-		shaders[res - 1].type = GL_VERTEX_SHADER;
-		shaders[res - 1].is_glsl = GL_FALSE;
+		s->type = GL_VERTEX_SHADER;
 		break;
 	case GL_CG_FRAGMENT_SHADER_EXT:
-		shaders[res - 1].type = GL_FRAGMENT_SHADER;
-		shaders[res - 1].is_glsl = GL_FALSE;
+		s->type = GL_FRAGMENT_SHADER;
 		break;
 	default:
-		shaders[res - 1].type = shaderType;
-		shaders[res - 1].is_glsl = GL_TRUE;
+		s->type = shaderType;
+		s->is_glsl = GL_TRUE;
 		break;
 	}
-	shaders[res - 1].mat = NULL;
-	shaders[res - 1].unif_blk = NULL;
-	shaders[res - 1].prog = NULL;
-	shaders[res - 1].valid = GL_TRUE;
-	shaders[res - 1].source = NULL;
 
-	return res;
+	return res + 1;
 }
 
 void glGetShaderiv(GLuint handle, GLenum pname, GLint *params) {
 	THREAD_SAFE()
 
 	// Grabbing passed shader
-	shader *s = &shaders[handle - 1];
+	shader *s = shaders[handle - 1];
 	switch (pname) {
 	case GL_SHADER_TYPE:
 		*params = s->type;
@@ -1663,7 +1650,7 @@ void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLcha
 
 	GLsizei len = 0;
 #ifdef HAVE_SHARK_LOG
-	shader *s = &shaders[handle - 1];
+	shader *s = shaders[handle - 1];
 	if (s->log) {
 		len = min(strlen(s->log), maxLength - 1);
 		vgl_fast_memcpy(infoLog, s->log, len);
@@ -1684,7 +1671,7 @@ void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *
 #endif
 
 	// Grabbing passed shader
-	shader *s = &shaders[handle - 1];
+	shader *s = shaders[handle - 1];
 
 	GLsizei size = 0;
 	if (s->source) {
@@ -1707,7 +1694,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	}
 #endif
 	// Grabbing passed shader
-	shader *s = &shaders[handle - 1];
+	shader *s = shaders[handle - 1];
 	
 	uint32_t size = 1;
 	size_t lengths[32];
@@ -1736,7 +1723,7 @@ void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, c
 	THREAD_SAFE()
 
 	// Grabbing passed shader
-	shader *s = &shaders[handles[0] - 1];
+	shader *s = shaders[handles[0] - 1];
 
 	unserialize_shader((void *)binary, length, s, GL_FALSE);
 }
@@ -1750,7 +1737,7 @@ void glCompileShader(GLuint handle) {
 	}
 	
 	// Grabbing passed shader
-	shader *s = &shaders[handle - 1];
+	shader *s = shaders[handle - 1];
 	
 	// If we use VGL_MODE_POSTPONED, we compile shaders in glLinkProgram
 	if (s->is_glsl && glsl_sema_mode == VGL_MODE_POSTPONED)
@@ -1784,31 +1771,33 @@ void glDeleteShader(GLuint shad) {
 	THREAD_SAFE()
 
 	// Grabbing passed shader
-	shader *s = &shaders[shad - 1];
+	shader *s = shaders[shad - 1];
 
 	// If the shader is attached to any program, we only mark it for deletion
-	if (s->ref_counter > 0)
+	if (s->ref_counter > 0) {
 		s->dirty = GL_TRUE;
-	else
+	} else {
 		release_shader(s);
+	}
 }
 
 void glAttachShader(GLuint prog, GLuint shad) {
 	THREAD_SAFE()
 
 	// Grabbing passed shader and program
-	shader *s = &shaders[shad - 1];
+	shader *s = shaders[shad - 1];
 	program *p = &progs[prog - 1];
 	
 	// Attaching shader to desired program
-	if (p->status == PROG_UNLINKED && s->valid) {
+	if (p->status == PROG_UNLINKED) {
 		switch (s->type) {
 		case GL_VERTEX_SHADER:
 			s->ref_counter++;
 			if (p->vshader) {
 				p->vshader->ref_counter--;
-				if (p->vshader->dirty && p->vshader->ref_counter == 0)
+				if (p->vshader->dirty && p->vshader->ref_counter == 0) {
 					release_shader(p->vshader);
+				}
 			}
 			p->vshader = s;
 			// If we use VGL_MODE_POSTPONED, we perform attributes binding in glLinkProgram
@@ -1821,8 +1810,9 @@ void glAttachShader(GLuint prog, GLuint shad) {
 			s->ref_counter++;
 			if (p->fshader) {
 				p->fshader->ref_counter--;
-				if (p->fshader->dirty && p->fshader->ref_counter == 0)
+				if (p->fshader->dirty && p->fshader->ref_counter == 0) {
 					release_shader(p->fshader);
+				}
 			}
 			p->fshader = s;
 			break;
@@ -1852,13 +1842,7 @@ void glGetAttachedShaders(GLuint prog, GLsizei maxCount, GLsizei *count, GLuint 
 	GLuint shad = 1;
 	*count = 0;
 	if (p->vshader) {
-		for (int i = 1; i <= MAX_CUSTOM_SHADERS; i++) {
-			if (p->vshader == &shaders[i - 1]) {
-				shad = i;
-				break;
-			}
-		}
-		shads[0] = shad;
+		shads[0] = p->vshader->slot + 1;
 		*count = 1;
 	}
 #ifndef SKIP_ERROR_HANDLING
@@ -1867,13 +1851,7 @@ void glGetAttachedShaders(GLuint prog, GLsizei maxCount, GLsizei *count, GLuint 
 	}
 #endif
 	if (p->fshader) {
-		for (int i = 1; i <= MAX_CUSTOM_SHADERS; i++) {
-			if (p->fshader == &shaders[i - 1]) {
-				shad = i;
-				break;
-			}
-		}
-		shads[*count] = shad;
+		shads[*count] = p->fshader->slot + 1;
 		*count = *count + 1;
 	}
 }
@@ -2029,13 +2007,15 @@ void glDeleteProgram(GLuint prog) {
 		// Checking if attached shaders are marked for deletion and should be deleted
 		if (p->vshader) {
 			p->vshader->ref_counter--;
-			if (p->vshader->dirty && p->vshader->ref_counter == 0)
+			if (p->vshader->dirty && p->vshader->ref_counter == 0) {
 				release_shader(p->vshader);
+			}
 		}
 		if (p->fshader) {
 			p->fshader->ref_counter--;
-			if (p->fshader->dirty && p->fshader->ref_counter == 0)
+			if (p->fshader->dirty && p->fshader->ref_counter == 0) {
 				release_shader(p->fshader);
+			}
 		}
 	}
 	p->status = PROG_INVALID;
@@ -3564,7 +3544,7 @@ void vglGetShaderBinary(GLuint handle, GLsizei bufSize, GLsizei *length, void *b
 #endif
 
 	// Grabbing passed shader
-	shader *s = &shaders[handle - 1];
+	shader *s = shaders[handle - 1];
 
 #ifndef SKIP_ERROR_HANDLING
 	if (s->prog == NULL) {
@@ -3633,7 +3613,7 @@ void vglShaderGxpBinary(GLsizei count, const GLuint *handles, const void *binary
 	THREAD_SAFE()
 
 	// Grabbing passed shader
-	shader *s = &shaders[handles[0] - 1];
+	shader *s = shaders[handles[0] - 1];
 	
 	s->size = length;
 	s->prog = (SceGxmProgram *)vglMalloc(s->size);
