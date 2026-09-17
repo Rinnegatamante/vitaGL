@@ -484,6 +484,8 @@ inline void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum text
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	} else if (textarget != GL_TEXTURE_2D) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, textarget)
+	} else if (tex_id >= TEXTURES_NUM) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, tex_id)
 	}
 #endif
 	
@@ -500,6 +502,8 @@ inline void glNamedFramebufferTexture2D(GLuint target, GLenum attachment, GLenum
 		SET_GL_ERROR(GL_INVALID_OPERATION)
 	} else if (textarget != GL_TEXTURE_2D) {
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, textarget)
+	} else if (tex_id >= TEXTURES_NUM) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, tex_id)
 	}
 #endif
 	
