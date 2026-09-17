@@ -27,7 +27,95 @@
 #include "glsl_utils.h"
 #include "preprocessor/preprocessor_c.h"
 
-#define MEM_ENLARGER_SIZE (1024 * 1024) // FIXME: Check if this is too big/small
+#define GLSL_BUFFER_MIN_CAPACITY (4096)
+
+typedef struct {
+	char *data;
+	size_t len;
+	size_t capacity;
+} glsl_buffer;
+
+static inline __attribute__((always_inline)) void glsl_buffer_reset(glsl_buffer *buf) {
+	buf->len = 0;
+	if (buf->data) {
+		buf->data[0] = 0;
+	}
+}
+
+static void glsl_buffer_reserve(glsl_buffer *buf, size_t needed) {
+	if (needed <= buf->capacity) {
+		return;
+	}
+
+	size_t capacity = buf->capacity ? buf->capacity : GLSL_BUFFER_MIN_CAPACITY;
+	while (capacity < needed) {
+		size_t grown = capacity + (capacity >> 1);
+		capacity = grown > capacity ? grown : needed;
+	}
+
+	buf->data = vgl_realloc(buf->data, capacity);
+	buf->capacity = capacity;
+}
+
+static inline __attribute__((always_inline)) void glsl_buffer_append(glsl_buffer *buf, const char *src, size_t len) {
+	glsl_buffer_reserve(buf, buf->len + len + 1);
+	vgl_fast_memcpy(buf->data + buf->len, src, len);
+	buf->len += len;
+	buf->data[buf->len] = 0;
+}
+
+static inline __attribute__((always_inline)) void glsl_buffer_init(glsl_buffer *buf, const char *src, size_t len, size_t padding) {
+	glsl_buffer_reset(buf);
+	glsl_buffer_reserve(buf, len + padding + 1);
+	vgl_fast_memcpy(buf->data, src, len);
+	buf->len = len;
+	buf->data[len] = 0;
+}
+
+static void glsl_buffer_replace(glsl_buffer *buf, size_t offset, size_t removed_len, const char *replacement, size_t replacement_len) {
+	size_t tail = offset + removed_len;
+	size_t new_len = buf->len - removed_len + replacement_len;
+	glsl_buffer_reserve(buf, new_len + 1);
+	sceClibMemmove(buf->data + offset + replacement_len, buf->data + tail, buf->len - tail + 1);
+	if (replacement_len) {
+		vgl_fast_memcpy(buf->data + offset, replacement, replacement_len);
+	}
+	buf->len = new_len;
+}
+
+static inline __attribute__((always_inline)) void glsl_buffer_release(glsl_buffer *buf) {
+	if (buf->data) {
+		vgl_free(buf->data);
+	}
+}
+
+static inline __attribute__((always_inline)) void glsl_buffer_swap(glsl_buffer *a, glsl_buffer *b) {
+	glsl_buffer tmp = *a;
+	*a = *b;
+	*b = tmp;
+}
+
+static void glsl_replace_marker(glsl_buffer *buf, GLsizei preamble_size, const char *marker, const char *replacement) {
+	char *type = strstr(buf->data + preamble_size, marker);
+	size_t replacement_len = strlen(replacement);
+	while (type) {
+		size_t offset = type - buf->data;
+		glsl_buffer_replace(buf, offset, 1, replacement, replacement_len);
+		type = strstr(buf->data + preamble_size, marker);
+	}
+}
+
+static void glsl_replace_marker_progressive(glsl_buffer *buf, GLsizei preamble_size, const char *marker, const char *prefix, const char *suffix) {
+	char *type = strstr(buf->data + preamble_size, marker);
+	uint8_t idx = 1;
+	while (type) {
+		char line[32];
+		int line_len = sprintf(line, "%s%u%s", prefix, idx++, suffix);
+		size_t offset = type - buf->data;
+		glsl_buffer_replace(buf, offset, 1, line, line_len);
+		type = strstr(buf->data + preamble_size, marker);
+	}
+}
 
 #define glsl_get_existing_texcoord_bind(idx, s) \
 	for (int j = 0; j < MAX_CG_TEXCOORD_ID; j++) { \
@@ -64,37 +152,6 @@
 			break; \
 		} \
 	}
-
-#define glsl_replace_marker(m, r) \
-	type = strstr(txt + preamble_size, m); \
-	while (type) { \
-		char *res = (char *)vglMalloc(MEM_ENLARGER_SIZE); \
-		type[0] = 0; \
-		strcpy(res, txt); \
-		strcat(res, r); \
-		strcat(res, type + 1); \
-		strcpy(out, res); \
-		vgl_free(res); \
-		txt = out; \
-		type = strstr(txt + preamble_size, m); \
-	}
-	
-#define glsl_replace_marker_progressive(m, r1, r2) \
-	type = strstr(txt + preamble_size, m); \
-	uint8_t idx = 1; \
-	while (type) { \
-		char line[32]; \
-		sprintf(line, "%s%u%s", r1, idx++, r2); \
-		char *res = (char *)vglMalloc(MEM_ENLARGER_SIZE); \
-		type[0] = 0; \
-		strcpy(res, txt); \
-		strcat(res, line); \
-		strcat(res, type + 1); \
-		strcpy(out, res); \
-		vgl_free(res); \
-		txt = out; \
-		type = strstr(txt + preamble_size, m); \
-	}	
 
 #ifdef HAVE_FFP_SHADER_SUPPORT
 const char *ffp_bind_defines[FFP_BINDS_NUM] = {
@@ -593,10 +650,11 @@ HINT_DETECTION_PAIR_2:
 					str = strstr(str + 7, "varying");
 				}
 			} else { // "texture" Uniform
-				if (t[0] == 't')
+				if (t[0] == 't') {
 					vgl_fast_memcpy(t, "vgl_tex", 7);
-				else
+				} else {
 					vgl_fast_memcpy(t, "Vgl_tex", 7);
+				}
 				str2 = strcasestr(t, "texture");
 				while (str2) {
 					char *str2_end = str2 + 7;
@@ -604,8 +662,9 @@ HINT_DETECTION_PAIR_2:
 						while (*str2_end == ' ' || *str2_end == '\t') {
 							str2_end++;
 						}
-						if (*str2_end == ',' || *str2_end == ';')
+						if (*str2_end == ',' || *str2_end == ';') {
 							break;
+						}
 					}
 					str2 = strcasestr(str2_end, "texture");
 				}
@@ -629,12 +688,13 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 		}
 		while (str || str2) {
 			char *t;
-			if (!str)
+			if (!str) {
 				t = str2;
-			else if (!str2)
+			} else if (!str2) {
 				t = str;
-			else
+			} else {
 				t = min(str, str2);
+			}
 			if (t == str) { // Attribute
 				// Replace attribute with 'vgl in' that will get extended in a 'varying in' by the preprocessor
 				vgl_fast_memcpy(t, "vgl in    ", 10);
@@ -643,8 +703,9 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 				char *attr_end = strstr(attr_name, ";");
 				char *_attr = attr_name;
 				while (_attr < attr_end) {
-					if (*_attr == ' ' || *_attr == '\t')
+					if (*_attr == ' ' || *_attr == '\t') {
 						attr_name = _attr + 1;
+					}
 					_attr++;
 				}
 				sceClibMemcpy(glsl_attributes[glsl_attributes_num], attr_name, attr_end - attr_name);
@@ -896,10 +957,9 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
  * The idea behind this is to check if a uniform is auniform block, and if so, bind to a
  * specific index.
  */
-void glsl_handle_ubos(char *txt, char *out, GLsizei preamble_size) {
+GLboolean glsl_handle_ubos(char *txt, glsl_buffer *out, GLsizei preamble_size) {
 	GLboolean has_ubos = GL_FALSE;
-	char *src = txt;
-	out[0] = 0;
+	uint32_t ubo_count = 0;
 	char *type = strstr(txt + preamble_size, "uniform");
 	// First pass: marking all ubos
 	while (type) {
@@ -910,15 +970,16 @@ void glsl_handle_ubos(char *txt, char *out, GLsizei preamble_size) {
 			s1 = strstr(s1, ";");
 			s1[0] = '\v';
 			has_ubos = GL_TRUE;
+			ubo_count++;
 		}
 		type = strstr(s2, "uniform");
 	}
 	// Second pass: replacing all marked variables
 	if (has_ubos) {
-		glsl_replace_marker_progressive("\v", ": BUFFER[", "];");
-	} else {
-		strcpy(out, src);
+		glsl_buffer_init(out, txt, strlen(txt), ubo_count * 16);
+		glsl_replace_marker_progressive(out, preamble_size, "\v", ": BUFFER[", "];");
 	}
+	return has_ubos;
 }
 #endif
 
@@ -928,10 +989,10 @@ void glsl_handle_ubos(char *txt, char *out, GLsizei preamble_size) {
  * add to it static keyword only if not uniform. This is required cause CG handles
  * global variables by default as uniforms.
  */
-void glsl_handle_globals(char *txt, char *out, GLsizei preamble_size) {
+GLboolean glsl_handle_globals(char *txt, glsl_buffer *out, GLsizei preamble_size) {
 	GLboolean has_globals = GL_FALSE;
+	uint32_t globals_count = 0;
 	char *src = txt;
-	out[0] = 0;
 	char *type = txt + preamble_size;
 	char *last_func_start = strstr(type, "{");
 	char *last_func_end = strstr(last_func_start, "}");
@@ -965,8 +1026,9 @@ HANDLE_VAR:
 			} else if (last_func_end && type > last_func_end) { // Var is after last function, need to update last function
 				last_func_start = next_func_start;
 				last_func_end = strstr(last_func_end + 1, "}");
-				if (last_func_start)
+				if (last_func_start) {
 					next_func_start = strstr(last_func_start + 1, "{");
+				}
 				// Branch inside a function, skipping until end of function
 				while (next_func_start && next_func_start < last_func_end) {
 					last_func_end = strstr(last_func_end + 1, "}");
@@ -977,6 +1039,7 @@ HANDLE_VAR:
 				type[0] = '\v';
 				type = var_end + 1;
 				has_globals = GL_TRUE;
+				globals_count++;
 			} else { // Var is a function, skipping
 				type = last_func_end + 1;
 			}
@@ -988,18 +1051,18 @@ HANDLE_VAR:
 	}
 	// Second pass: replacing all marked variables
 	if (has_globals) {
-		glsl_replace_marker("\vloat", "static f");
-		glsl_replace_marker("\vnt", "static i");
-		glsl_replace_marker("\vec", "static v");
-		glsl_replace_marker("\vvec", "static i");
-		glsl_replace_marker("\vat", "static m");
-		glsl_replace_marker("\vonst", "static c");
-		glsl_replace_marker("\vowp", "static l");
-		glsl_replace_marker("\vediump", "static m");
-		glsl_replace_marker("\vighp", "static h");
-	} else {
-		strcpy(out, src);
+		glsl_buffer_init(out, src, strlen(src), globals_count * 7);
+		glsl_replace_marker(out, preamble_size, "\vloat", "static f");
+		glsl_replace_marker(out, preamble_size, "\vnt", "static i");
+		glsl_replace_marker(out, preamble_size, "\vec", "static v");
+		glsl_replace_marker(out, preamble_size, "\vvec", "static i");
+		glsl_replace_marker(out, preamble_size, "\vat", "static m");
+		glsl_replace_marker(out, preamble_size, "\vonst", "static c");
+		glsl_replace_marker(out, preamble_size, "\vowp", "static l");
+		glsl_replace_marker(out, preamble_size, "\vediump", "static m");
+		glsl_replace_marker(out, preamble_size, "\vighp", "static h");
 	}
+	return has_globals;
 }
 
 #ifdef HAVE_GLSL_TEXTURE_SIZE
@@ -1060,18 +1123,23 @@ void glsl_handle_tex_size(char *txt, GLsizei preamble_size, glsl_samplers_info *
  * and vector * matrix operations. This implementation is very likely non exhaustive
  * since, for a proper implementation, ideally we'd want a proper GLSL parser.
  */
-void glsl_inject_mul(char *txt, char *out, GLsizei preamble_size) {
+GLboolean glsl_inject_mul(char *txt, GLsizei txt_len, glsl_buffer *out, GLsizei preamble_size) {
 	char *star = strstr(txt + preamble_size, "*");
 	while (star) {
-		if (star[1] == '=') // FIXME: *= still not handled
+		if (star[1] == '=') { // FIXME: *= still not handled
 			star = strstr(star + 1, "*");
-		else
+		} else {
 			break;
+		}
 	}
 	if (!star) {
-		strcpy(out, txt);
-		return;
+		return GL_FALSE;
 	}
+	const size_t star_offs = star - txt;
+	glsl_buffer_init(out, txt, txt_len, txt_len >> 2);
+	txt = out->data;
+	star = txt + star_offs;
+	glsl_buffer replacement = {};
 	char *left;
 LOOP_START:
 	left = star - 1;
@@ -1184,30 +1252,22 @@ LOOP_START:
 		else
 			right++;
 	}
-	char *res = (char *)vglMalloc(MEM_ENLARGER_SIZE);
 	if (found < 2) { // Standard match
-		char tmp = *left;
-		left[0] = 0;
-		strcpy(res, txt);
-		left[0] = tmp;
-		strcat(res, " vglMul(");
-		tmp = *right;
-		right[0] = 0;
-		*star = ',';
-		strcat(res, left);
-		strcat(res, ")");
-		right[0] = tmp;
-		strcat(res, right);
-		strcpy(out, res);
-		vgl_free(res);
-		txt = out;
+		size_t left_offset = left - txt;
+		size_t star_offset = star - txt;
+		size_t right_offset = right - txt;
+		glsl_buffer_reset(&replacement);
+		glsl_buffer_reserve(&replacement, right_offset - left_offset + 10);
+		glsl_buffer_append(&replacement, " vglMul(", 8);
+		glsl_buffer_append(&replacement, txt + left_offset, star_offset - left_offset);
+		glsl_buffer_append(&replacement, ",", 1);
+		glsl_buffer_append(&replacement, txt + star_offset + 1, right_offset - star_offset - 1);
+		glsl_buffer_append(&replacement, ")", 1);
+		glsl_buffer_replace(out, left_offset, right_offset - left_offset, replacement.data, replacement.len);
+		txt = out->data;
 		star = strstr(txt + preamble_size, "*");
 	} else { // [ bracket match, we assume a matrix is not involved
 		uint32_t jump = right - txt;
-		strcpy(res, txt);
-		strcpy(out, res);
-		vgl_free(res);
-		txt = out;
 		star = strstr(txt + jump, "*");
 	}
 	while (star) {
@@ -1216,6 +1276,8 @@ LOOP_START:
 		else
 			goto LOOP_START;
 	}
+	glsl_buffer_release(&replacement);
+	return GL_TRUE;
 }
 
 void glsl_translator_process(shader *s) {
@@ -1493,64 +1555,64 @@ void glsl_translator_process(shader *s) {
 	
 #ifdef HAVE_FIXED_ATTRIBUTES
 	if (s->type == GL_VERTEX_SHADER) {
-		char *dst = vglMalloc(size + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
 		char *_s = strstr(s->source, "void main(");
 		_s = strstr(_s, "{") + 1;
-		sceClibMemcpy(dst, s->source, _s - s->source);
-		dst[_s - s->source] = 0;
+		size_t insert_offset = _s - s->source;
+		glsl_buffer injected = {};
 		for (int i = 0; i < glsl_attributes_num; i++) {
 			char inj[256];
-			sprintf(inj, "%s=vglUnpack(%s);", glsl_attributes[i], glsl_attributes[i]);
-			strcat(dst, inj);
+			int inj_len = sprintf(inj, "%s=vglUnpack(%s);", glsl_attributes[i], glsl_attributes[i]);
+			glsl_buffer_append(&injected, inj, inj_len);
 		}
-		strcat(dst, _s);
+		glsl_buffer fixed = {0};
+		glsl_buffer_init(&fixed, s->source, strlen(s->source), injected.len);
+		glsl_buffer_replace(&fixed, insert_offset, 0, injected.data, injected.len);
+		glsl_buffer_release(&injected);
 		vgl_free(s->source);
-		s->source = dst;
+		s->source = fixed.data;
 	}
 #endif
+
+	glsl_buffer work_a = {};
+	glsl_buffer work_b = {};
+	GLsizei src_len = strlen(s->source);
+	glsl_buffer_init(&work_a, s->source, src_len, 0);
+	vgl_free(s->source);
 
 	// Manually handle * operator replacements for vector * matrix and matrix * vector operations support
-	char *dst = vglMalloc(size + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
-	glsl_inject_mul(s->source, dst, preamble_size);
-	vgl_free(s->source);
+	if (glsl_inject_mul(work_a.data, src_len, &work_b, preamble_size)) {
+		glsl_buffer_swap(&work_a, &work_b);
+	}
 	// Manually handle global variables, adding "static" to them
-	char *dst2 = vglMalloc(strlen(dst) + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
-	glsl_handle_globals(dst, dst2, preamble_size);
-	size_t dst_len = strlen(dst);
-	vgl_free(dst);
+	if (glsl_handle_globals(work_a.data, &work_b, preamble_size)) {
+		glsl_buffer_swap(&work_a, &work_b);
+	}
 #ifdef HAVE_GLSL_UBOS
 	// Manually handle ubos
-	dst = vglMalloc(dst_len + MEM_ENLARGER_SIZE); // FIXME: This is just an estimation, check if 1MB is enough/too big
-	glsl_handle_ubos(dst2, dst, preamble_size);
-	vgl_free(dst2);	
-	dst2 = dst;
+	if (glsl_handle_ubos(work_a.data, &work_b, preamble_size)) {
+		glsl_buffer_swap(&work_a, &work_b);
+	}
 #endif
 
-	char *final;
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 	// Manually handle textureSize calls
-	glsl_handle_tex_size(dst2, preamble_size, s->sized_samplers, &s->sized_samplers_num);
+	glsl_handle_tex_size(work_a.data, preamble_size, s->sized_samplers, &s->sized_samplers_num);
 	if (s->sized_samplers_num > 0) {
-		char *samplers_blk = (char *)vglMalloc(2048); // FIXME: Is this big enough?
-		size_t sz = 0;
+		glsl_buffer_reset(&work_b);
+		glsl_buffer_reserve(&work_b, work_a.len + (s->sized_samplers_num * 32) + 1);
 		for (uint8_t i = 0; i < s->sized_samplers_num; i++) {
-			sz += sprintf(&samplers_blk[sz], "uniform float2 vgl_smp%u;\n", i);
+			char sampler_decl[32];
+			int sampler_decl_len = sprintf(sampler_decl, "uniform float2 vgl_smp%u;\n", i);
+			glsl_buffer_append(&work_b, sampler_decl, sampler_decl_len);
 		}
-		// Keeping on mem only the strict minimum necessary for the translated shader
-		final = vglMalloc(strlen(dst2) + sz + 1);
-		vgl_fast_memcpy(final, samplers_blk, sz);
-		vgl_fast_memcpy(final + sz, dst2, strlen(dst2) + 1);
-		vgl_free(samplers_blk);
+		glsl_buffer_append(&work_b, work_a.data, work_a.len);
+		glsl_buffer_swap(&work_a, &work_b);
 	}
-	else
 #endif
-	{
-		// Keeping on mem only the strict minimum necessary for the translated shader
-		final = vglMalloc(strlen(dst2) + 1);
-		vgl_fast_memcpy(final, dst2, strlen(dst2) + 1);
-	}
-	vgl_free(dst2);
-	s->source = final;
+	glsl_buffer_release(&work_b);
+	
+	// Keep only the actually used amount of mem alive
+	s->source = vgl_realloc(work_a.data, work_a.len + 1);
 #ifdef DEBUG_GLSL_TRANSLATOR
 	vgl_log("%s:%d %s: GLSL translation output (%s shader):\n\n%s\n\n", __FILE__, __LINE__, __func__, glsl_is_first_shader ? "first" : "second", s->source);
 #endif
