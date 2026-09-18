@@ -1745,7 +1745,9 @@ void glCompileShader(GLuint handle) {
 	
 #ifdef HAVE_SHADER_CACHE
 	char fname[256];
-	sprintf(fname, "%s/%s/%llX.gxp", vgl_shader_cache_path, s->type == GL_VERTEX_SHADER ? "v" : "f", XXH3_64bits(s->source, s->size));
+	uint64_t hash = XXH3_64bits(s->source, s->size);
+	uint8_t subdir_hash = hash >> 56;
+	sprintf(fname, "%s/%s/%02X/%llX.gxp", vgl_shader_cache_path, s->type == GL_VERTEX_SHADER ? "v" : "f", subdir_hash, hash);
 	SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
 	if (f >= 0) {
 		vgl_free(s->source);
@@ -2123,7 +2125,9 @@ void glLinkProgram(GLuint progr) {
 		char frag_fname[256], vert_fname[256];
 		char *fname;
 		if (!p->vshader->prog) {
-			sprintf(vert_fname, "%s/v/%llX.gxp", vgl_shader_cache_path, XXH3_64bits(p->vshader->source, p->vshader->size));
+			uint64_t hash = XXH3_64bits(p->vshader->source, p->vshader->size);
+			uint8_t subdir_hash = hash >> 56;
+			sprintf(vert_fname, "%s/v/%02X/%llX.gxp", vgl_shader_cache_path, subdir_hash, hash);
 			SceUID f = sceIoOpen(vert_fname, SCE_O_RDONLY, 0777);
 			if (f >= 0) {
 				size_t sz = sceIoLseek(f, 0, SCE_SEEK_END);
@@ -2136,7 +2140,9 @@ void glLinkProgram(GLuint progr) {
 			}
 		}
 		if (!p->fshader->prog) {
-			sprintf(frag_fname, "%s/f/%llX.gxp", vgl_shader_cache_path, XXH3_64bits(p->fshader->source, p->fshader->size));
+			uint64_t hash = XXH3_64bits(p->fshader->source, p->fshader->size);
+			uint8_t subdir_hash = hash >> 56;
+			sprintf(frag_fname, "%s/f/%02X/%llX.gxp", vgl_shader_cache_path, subdir_hash, hash);
 			SceUID f = sceIoOpen(frag_fname, SCE_O_RDONLY, 0777);
 			if (f >= 0) {
 				size_t sz = sceIoLseek(f, 0, SCE_SEEK_END);
