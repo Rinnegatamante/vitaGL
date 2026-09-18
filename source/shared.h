@@ -125,6 +125,7 @@ extern void *vdm_ring_buffer_addr[GXM_CONTEXTS_NUM]; // VDM ring buffer memblock
 extern void *vertex_ring_buffer_addr[GXM_CONTEXTS_NUM]; // vertex ring buffer memblock starting address
 extern void *fragment_ring_buffer_addr[GXM_CONTEXTS_NUM]; // fragment ring buffer memblock starting address
 extern void *fragment_usse_ring_buffer_addr[GXM_CONTEXTS_NUM]; // fragment USSE ring buffer memblock starting address
+extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 
 // sceDisplay callback data struct
 struct display_queue_callback_data { void *addr; };
@@ -453,19 +454,50 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 	vgl_error = x; \
 	return y;
 
+extern size_t max_vcache_size;
+extern size_t max_fcache_size;
+static inline __attribute__((always_inline)) void patch_vertex_program(SceGxmShaderPatcherId id, const SceGxmVertexAttribute *attr, uint32_t attr_num, const SceGxmVertexStream *stream, uint32_t stream_num, SceGxmVertexProgram **prog) {
+	int r = sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, id, attr, attr_num, stream, stream_num, prog);
 #ifdef LOG_ERRORS
-#define patch_vertex_program(patcher, id, attr, attr_num, stream, stream_num, prog) \
-	int __v = sceGxmShaderPatcherCreateVertexProgram(patcher, id, attr, attr_num, stream, stream_num, prog); \
-	if (__v) \
-		vgl_log("Vertex shader patching failed (%s) on shader 0x%X with %d attributes and %d streams.\n", get_gxm_error_literal(__v), id, attr_num, stream_num);
-#define patch_fragment_program(patcher, id, fmt, msaa_mode, blend_cfg, vertex_link, prog) \
-	int __f = sceGxmShaderPatcherCreateFragmentProgram(patcher, id, fmt, msaa_mode, blend_cfg, vertex_link, prog); \
-	if (__f) \
-		vgl_log("Fragment shader patching failed (%s) on shader 0x%X.\n", get_gxm_error_literal(__f), id);
-#else
-#define patch_vertex_program sceGxmShaderPatcherCreateVertexProgram
-#define patch_fragment_program sceGxmShaderPatcherCreateFragmentProgram
+	if (r) {
+		vgl_log("Vertex shader patching failed (%s) on shader 0x%X with %d attributes and %d streams.\n", get_gxm_error_literal(r), id, attr_num, stream_num);
+		return;
+	}
+#ifdef HAVE_PROFILING
+	int cache_size = 1;
+	uint32_t *p = (uint32_t *)(((uint32_t *)(*prog))[0x1D]);
+	while (p) {
+		p = (uint32_t *)p[0x1D];
+		cache_size++;
+	}
+	if (max_vcache_size < cache_size) {
+		max_vcache_size = cache_size;
+		vgl_log("Maximum registered patched vertex programs cache size peaked at %u\n", max_vcache_size);
+	}
 #endif
+#endif
+}
+static inline __attribute__((always_inline)) void patch_fragment_program(SceGxmShaderPatcherId id, SceGxmOutputRegisterFormat fmt, SceGxmMultisampleMode msaa_mode, const SceGxmBlendInfo *blend_cfg, const SceGxmProgram *vertex_link, SceGxmFragmentProgram **prog) {
+	int r = sceGxmShaderPatcherCreateFragmentProgram(gxm_shader_patcher, id, fmt, msaa_mode, blend_cfg, vertex_link, prog);
+#ifdef LOG_ERRORS
+	if (r) {
+		vgl_log("Fragment shader patching failed (%s) on shader 0x%X.\n", get_gxm_error_literal(r), id);
+		return;
+	}
+#ifdef HAVE_PROFILING
+	int cache_size = 1;
+	uint32_t *p = (uint32_t *)(((uint32_t *)(*prog))[0x1F]);
+	while (p) {
+		p = (uint32_t *)p[0x1F];
+		cache_size++;
+	}
+	if (max_fcache_size < cache_size) {
+		max_fcache_size = cache_size;
+		vgl_log("Maximum registered patched fragment programs cache size peaked at %u\n", max_fcache_size);
+	}
+#endif
+#endif
+}
 
 #define recalculate_normal_matrix() \
 	matrix3x3 inverted; \
@@ -476,7 +508,7 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 	matrix3x3_invert(inverted, top_modelview_matrix); \
 	matrix3x3_transpose(normal_matrix, inverted);
 
-#define rebuild_frag_shader(x, y, z, w) patch_fragment_program(gxm_shader_patcher, x, w, msaa_mode, &blend_info.info, z, y) // Creates a new patched fragment program with proper blend settings
+#define rebuild_frag_shader(x, y, z, w) patch_fragment_program(x, w, msaa_mode, &blend_info.info, z, y) // Creates a new patched fragment program with proper blend settings
 
 #ifdef HAVE_SOFTFP_ABI
 extern __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale);
@@ -1010,7 +1042,6 @@ extern float fullscreen_z_scale;
 
 extern SceGxmContext *gxm_context; // sceGxm context instance
 extern GLenum vgl_error; // Error returned by glGetError
-extern SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 extern SceGxmDepthStencilSurface gxm_depth_stencil_surface; // Depth/Stencil surfaces setup for sceGxm
 extern GLboolean system_app_mode; // Flag for system app mode usage
 

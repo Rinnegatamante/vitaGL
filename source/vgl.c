@@ -33,6 +33,11 @@ void *gpu_alloc_mapped_aligned_unsafe_for_cpu(size_t alignment, size_t size);
 static char shader_cache_root[128] = {};
 #endif
 
+#ifdef HAVE_PROFILING
+size_t max_vcache_size = 0;
+size_t max_fcache_size = 0;
+#endif
+
 #ifdef HAVE_SOFTFP_ABI
 __attribute__((naked)) void sceGxmSetViewport_sfp(SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
 	asm volatile(
@@ -281,9 +286,9 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	clear_position = sceGxmProgramFindParameterByName(gxm_program_clear_v, "position");
 	clear_depth = sceGxmProgramFindParameterByName(gxm_program_clear_v, "u_clear_depth");
 	clear_color = sceGxmProgramFindParameterByName(gxm_program_clear_f, "u_clear_color");
-	{ patch_vertex_program(gxm_shader_patcher, clear_vertex_id, NULL, 0, NULL, 0, &clear_vertex_program_patched); }
-	{ patch_fragment_program(gxm_shader_patcher, clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, NULL, NULL, &clear_fragment_program_patched); }
-	{ patch_fragment_program(gxm_shader_patcher, clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4, msaa_mode, NULL, NULL, &clear_fragment_program_float_patched); }
+	{ patch_vertex_program(clear_vertex_id, NULL, 0, NULL, 0, &clear_vertex_program_patched); }
+	{ patch_fragment_program(clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, NULL, NULL, &clear_fragment_program_patched); }
+	{ patch_fragment_program(clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4, msaa_mode, NULL, NULL, &clear_fragment_program_float_patched); }
 
 #ifndef SKIP_SPLASHSCREEN
 	if (!system_app_mode)
@@ -310,9 +315,9 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	blit_attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(blit_texcoord);
 	blit_attrs[0].streamIndex = blit_attrs[1].streamIndex = 0;
 	blit_streams[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-	{ patch_vertex_program(gxm_shader_patcher, blit_vertex_id, blit_attrs, 2, blit_streams, 1, &blit_vertex_program_patched); }
-	{ patch_fragment_program(gxm_shader_patcher, blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, NULL, NULL, &blit_fragment_program_patched); }
-	{ patch_fragment_program(gxm_shader_patcher, blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4, msaa_mode, NULL, NULL, &blit_fragment_program_float_patched); }
+	{ patch_vertex_program(blit_vertex_id, blit_attrs, 2, blit_streams, 1, &blit_vertex_program_patched); }
+	{ patch_fragment_program(blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, NULL, NULL, &blit_fragment_program_patched); }
+	{ patch_fragment_program(blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4, msaa_mode, NULL, NULL, &blit_fragment_program_float_patched); }
 
 	sceGxmSetTwoSidedEnable(gxm_context, SCE_GXM_TWO_SIDED_ENABLED);
 

@@ -6510,7 +6510,7 @@ void invoke_splashscreen() {
 	splash_attrs[0].streamIndex = 0;
 	splash_attrs[1].streamIndex = 0;
 	splash_streams[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-	{ patch_vertex_program(gxm_shader_patcher, splash_vertex_id, splash_attrs, 2, splash_streams, 1, &splash_vertex_program_patched); }
+	{ patch_vertex_program(splash_vertex_id, splash_attrs, 2, splash_streams, 1, &splash_vertex_program_patched); }
 	SceGxmBlendInfo blend_config;
 	blend_config.colorMask = SCE_GXM_COLOR_MASK_ALL;
 	blend_config.colorFunc = SCE_GXM_BLEND_FUNC_ADD;
@@ -6519,8 +6519,8 @@ void invoke_splashscreen() {
 	blend_config.colorDst = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 	blend_config.alphaSrc = SCE_GXM_BLEND_FACTOR_ONE;
 	blend_config.alphaDst = SCE_GXM_BLEND_FACTOR_ZERO;
-	{ patch_fragment_program(gxm_shader_patcher, splash_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, &blend_config, gxm_program_splash_v, &splash_fragment_program_patched); }
-	{ patch_fragment_program(gxm_shader_patcher, clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, &blend_config, NULL, &font_fragment_program_patched); }
+	{ patch_fragment_program(splash_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, &blend_config, gxm_program_splash_v, &splash_fragment_program_patched); }
+	{ patch_fragment_program(clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, &blend_config, NULL, &font_fragment_program_patched); }
 	
 	// Starting dedicated thread for splashscreen rendering
 	splash_mutex[0] = sceKernelCreateSema("vitaGL Splashscreen Sema Push", 0, 0, 1, NULL);
