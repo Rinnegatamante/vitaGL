@@ -144,7 +144,7 @@ uint8_t *vgl_reserve_data_pool(uint32_t size) {
 	}
 #else
 #ifdef LOG_ERRORS
-	size_t pool_size = (size_t)circular_data_pool_limit - (size_t)circular_data_pool_ptr;
+	size_t pool_size = (size_t)circular_data_pool_limit - (size_t)circular_data_pool;
 	if (size > pool_size) {
 		vgl_log("%s:%d Attempting to alloc %u bytes in the circular pool but the pool is only %u bytes. You must increase its size with vglSetCircularPoolSize.\n", __FILE__, __LINE__, size, pool_size);
 	}
