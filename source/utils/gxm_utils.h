@@ -31,6 +31,26 @@ extern SceGxmContext *gxm_context;
 void vglSetupUniformCircularPool(void);
 void *vglReserveUniformCircularPoolBuffer(uint32_t size);
 
+#ifdef HAVE_PROFILING
+typedef struct {
+	uint32_t calls_num;
+	uint32_t hits;
+	uint32_t mru_hits;
+	uint32_t table_hits;
+	uint32_t gen_calls;
+	uint32_t evictions;
+	uint32_t total_us;
+	uint32_t mru_us;
+	uint32_t table_us;
+	uint32_t gen_us;
+} vgl_vertex_program_cache_stats;
+extern vgl_vertex_program_cache_stats vgl_vcache_stats;
+#endif
+
+int vglCreateVertexProgram(SceGxmShaderPatcherId id, const SceGxmVertexAttribute *attr, uint32_t attr_num, const SceGxmVertexStream *stream, uint32_t stream_num, SceGxmVertexProgram **prog);
+void vglVertexProgramCacheReset(void);
+void vglVertexProgramCacheInvalidate(SceGxmShaderPatcherId id);
+
 void vglSetUniformData(uint8_t *uniformBuffer, const SceGxmParameterType t, const int offset, const uint32_t count, const uint32_t componentCount, const void *sourceData, const SceGxmParameterType input_type);
 
 static inline __attribute__((always_inline)) void vglRestoreFragmentUniformBuffer(void) {

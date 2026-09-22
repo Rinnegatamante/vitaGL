@@ -6531,7 +6531,7 @@ void invoke_splashscreen() {
 }
 
 void clear_splashscreen() {
-	sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, splash_vertex_id);
+	vglVertexProgramCacheInvalidate(splash_vertex_id);
 	sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, splash_fragment_id);
 	sceGxmShaderPatcherReleaseFragmentProgram(gxm_shader_patcher, font_fragment_program_patched);
 }

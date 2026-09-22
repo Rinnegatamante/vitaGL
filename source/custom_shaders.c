@@ -394,7 +394,7 @@ static inline __attribute__((always_inline)) uniform *get_uniform_from_ptr(GLint
 void release_shader(shader *s) {
 	// Deallocating shader and unregistering it from sceGxmShaderPatcher
 	if (s->prog) {
-		sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, s->id);
+		vglVertexProgramCacheInvalidate(s->id);
 		vgl_free((void *)s->prog);
 		while (s->mat) {
 			matrix_uniform *m = (matrix_uniform *)s->mat->chain;

@@ -853,7 +853,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		if (vert_shader_cache_size < SHADER_CACHE_SIZE) {
 			vert_shader_cache_size++;
 		} else {
-			sceGxmShaderPatcherForceUnregisterProgram(gxm_shader_patcher, vert_shader_cache[vert_shader_cache_idx].id);
+			vglVertexProgramCacheInvalidate(vert_shader_cache[vert_shader_cache_idx].id);
 			vgl_free(vert_shader_cache[vert_shader_cache_idx].prog);
 			vgl_free(vert_shader_cache[vert_shader_cache_idx].unif_buf);
 		}

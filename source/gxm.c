@@ -560,6 +560,10 @@ void start_shader_patcher(void) {
 
 	// Creating shader patcher instance
 	sceGxmShaderPatcherCreate(&shader_patcher_params, &gxm_shader_patcher);
+	vglVertexProgramCacheReset();
+#ifdef HAVE_PROFILING
+	sceClibMemset(&vgl_vcache_stats, 0, sizeof(vgl_vertex_program_cache_stats));
+#endif
 }
 
 static inline __attribute__((always_inline)) void scene_end(void) {
@@ -764,6 +768,9 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		vgl_log("%ums spent processing %u shaders pipeline draw calls.\n", shaders_draw_profiler_cnt / 1000, shaders_draw_cnt);
 		vgl_log("%ums spent waiting for GPU to process frames.\n", gpu_stall_cnt / 1000);
 		vgl_log("-----------------------------------------\n");
+		vgl_log("Vertex shaders cache stats: %u calls, %u cache hits (%u MRU, %u table), %u cache misses, %u cache evictions.\n", vgl_vcache_stats.calls_num, vgl_vcache_stats.hits, vgl_vcache_stats.mru_hits, vgl_vcache_stats.table_hits, vgl_vcache_stats.gen_calls, vgl_vcache_stats.evictions);
+		vgl_log("%uus spent inside vertex shaders patching (%uus MRU, %uus table, %uus cache gens).\n", vgl_vcache_stats.total_us, vgl_vcache_stats.mru_us, vgl_vcache_stats.table_us, vgl_vcache_stats.gen_us);
+		vgl_log("-----------------------------------------\n");
 		frame_profiler_cnt = 0;
 		ffp_draw_profiler_cnt = 0;
 		ffp_reload_profiler_cnt = 0;
@@ -771,6 +778,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		shaders_draw_cnt = 0;
 		ffp_draw_cnt = 0;
 		gpu_stall_cnt = 0;
+		sceClibMemset(&vgl_vcache_stats, 0, sizeof(vgl_vertex_program_cache_stats));
 	}
 	frame_start_profiler_cnt = tick;
 #endif

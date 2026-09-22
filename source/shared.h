@@ -457,7 +457,7 @@ extern GLboolean prim_is_non_native; // Flag for when a primitive not supported 
 extern size_t max_vcache_size;
 extern size_t max_fcache_size;
 static inline __attribute__((always_inline)) void patch_vertex_program(SceGxmShaderPatcherId id, const SceGxmVertexAttribute *attr, uint32_t attr_num, const SceGxmVertexStream *stream, uint32_t stream_num, SceGxmVertexProgram **prog) {
-	int r = sceGxmShaderPatcherCreateVertexProgram(gxm_shader_patcher, id, attr, attr_num, stream, stream_num, prog);
+	int r = vglCreateVertexProgram(id, attr, attr_num, stream, stream_num, prog);
 #ifdef LOG_ERRORS
 	if (r) {
 		vgl_log("Vertex shader patching failed (%s) on shader 0x%X with %d attributes and %d streams.\n", get_gxm_error_literal(r), id, attr_num, stream_num);
