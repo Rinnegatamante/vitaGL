@@ -463,18 +463,6 @@ static inline __attribute__((always_inline)) void patch_vertex_program(SceGxmSha
 		vgl_log("Vertex shader patching failed (%s) on shader 0x%X with %d attributes and %d streams.\n", get_gxm_error_literal(r), id, attr_num, stream_num);
 		return;
 	}
-#ifdef HAVE_PROFILING
-	int cache_size = 1;
-	uint32_t *p = (uint32_t *)(((uint32_t *)(*prog))[0x1D]);
-	while (p) {
-		p = (uint32_t *)p[0x1D];
-		cache_size++;
-	}
-	if (max_vcache_size < cache_size) {
-		max_vcache_size = cache_size;
-		vgl_log("Maximum registered patched vertex programs cache size peaked at %u\n", max_vcache_size);
-	}
-#endif
 #endif
 }
 static inline __attribute__((always_inline)) void patch_fragment_program(SceGxmShaderPatcherId id, SceGxmOutputRegisterFormat fmt, SceGxmMultisampleMode msaa_mode, const SceGxmBlendInfo *blend_cfg, const SceGxmProgram *vertex_link, SceGxmFragmentProgram **prog) {
@@ -484,18 +472,6 @@ static inline __attribute__((always_inline)) void patch_fragment_program(SceGxmS
 		vgl_log("Fragment shader patching failed (%s) on shader 0x%X.\n", get_gxm_error_literal(r), id);
 		return;
 	}
-#ifdef HAVE_PROFILING
-	int cache_size = 1;
-	uint32_t *p = (uint32_t *)(((uint32_t *)(*prog))[0x1F]);
-	while (p) {
-		p = (uint32_t *)p[0x1F];
-		cache_size++;
-	}
-	if (max_fcache_size < cache_size) {
-		max_fcache_size = cache_size;
-		vgl_log("Maximum registered patched fragment programs cache size peaked at %u\n", max_fcache_size);
-	}
-#endif
 #endif
 }
 
