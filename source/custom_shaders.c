@@ -1689,7 +1689,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	THREAD_SAFE()
 
 #ifndef SKIP_ERROR_HANDLING
-	if (count < 0 || count > 32) {
+	if (count < 0 || count > 512) {
 		SET_GL_ERROR(GL_INVALID_VALUE)
 	}
 #endif
@@ -1697,7 +1697,7 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	shader *s = shaders[handle - 1];
 	
 	uint32_t size = 1;
-	size_t lengths[32];
+	size_t lengths[512];
 
 	for (int i = 0; i < count; i++) {
 		if (length && length[i] >= 0) {
@@ -1710,13 +1710,14 @@ void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, c
 	}
 
 	s->source = (char *)vglMalloc(size);
-	s->source[0] = 0;
-
+	size = 0;
 	for (int i = 0; i < count; i++) {
-		strncat(s->source, string[i], lengths[i]);
+		vgl_fast_memcpy(&s->source[size], string[i], lengths[i]);
+		size += lengths[i];
 	}
 
-	s->size = size - 1;
+	s->source[size] = 0;
+	s->size = size;
 }
 
 void glShaderBinary(GLsizei count, const GLuint *handles, GLenum binaryFormat, const void *binary, GLsizei length) {
