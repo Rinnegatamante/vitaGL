@@ -768,6 +768,9 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		vgl_log("%ums spent processing %u shaders pipeline draw calls.\n", shaders_draw_profiler_cnt / 1000, shaders_draw_cnt);
 		vgl_log("%ums spent waiting for GPU to process frames.\n", gpu_stall_cnt / 1000);
 		vgl_log("-----------------------------------------\n");
+#if defined(HAVE_VERTEX_LAYOUT_CACHE) && !defined(STRICT_DRAW_COMPLIANCE) && !defined(DRAW_SPEEDHACK)
+		vgl_log("Vertex layout cache stats: %u hits, %u misses.\n", vgl_vcache_stats.layout_hits, vgl_vcache_stats.layout_misses);
+#endif
 		vgl_log("Vertex shaders cache stats: %u calls, %u cache hits (%u MRU, %u table), %u cache misses, %u cache evictions.\n", vgl_vcache_stats.calls_num, vgl_vcache_stats.hits, vgl_vcache_stats.mru_hits, vgl_vcache_stats.table_hits, vgl_vcache_stats.gen_calls, vgl_vcache_stats.evictions);
 		vgl_log("%uus spent inside vertex shaders patching (%uus MRU, %uus table, %uus cache gens).\n", vgl_vcache_stats.total_us, vgl_vcache_stats.mru_us, vgl_vcache_stats.table_us, vgl_vcache_stats.gen_us);
 		vgl_log("-----------------------------------------\n");

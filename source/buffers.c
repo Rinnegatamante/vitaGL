@@ -38,6 +38,9 @@ void *index_object; // Index object address for vgl* draw pipeline
 
 static vao default_vao; // Vertex Array Object used when no vao is bound
 vao *cur_vao = &default_vao; // Current in-use vertex array object
+#if defined(HAVE_VERTEX_LAYOUT_CACHE) && !defined(STRICT_DRAW_COMPLIANCE) && !defined(DRAW_SPEEDHACK)
+uint32_t vertex_layout_cur_ver = 0;
+#endif
 
 query *active_query = NULL; // Active query object
 static query queries[MAX_QUERIES_NUM]; // Available query objects pool
@@ -45,6 +48,9 @@ uint32_t *queries_buffer = NULL; // Buffer used for visibility testing
 SceGxmNotification query_fence; // Fence used for occlusion queries sync
 
 void reset_vao(vao *v) {
+#if defined(HAVE_VERTEX_LAYOUT_CACHE) && !defined(STRICT_DRAW_COMPLIANCE) && !defined(DRAW_SPEEDHACK)
+	v->vertex_layout_version = ++vertex_layout_cur_ver;
+#endif
 	vgl_memset(v->vertex_attrib_offsets, 0, sizeof(uint32_t) * VERTEX_ATTRIBS_NUM);
 	vgl_memset(v->vertex_attrib_vbo, 0, sizeof(uint32_t) * VERTEX_ATTRIBS_NUM);
 	for (int i = 0; i < VERTEX_ATTRIBS_NUM; i++) {

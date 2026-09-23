@@ -678,6 +678,9 @@ typedef struct {
 // VAO struct
 typedef struct {
 	uint32_t index_array_unit;
+#if defined(HAVE_VERTEX_LAYOUT_CACHE) && !defined(STRICT_DRAW_COMPLIANCE) && !defined(DRAW_SPEEDHACK)
+	uint32_t vertex_layout_version;
+#endif
 	uint8_t vertex_attrib_size[VERTEX_ATTRIBS_NUM];
 	uint32_t vertex_attrib_offsets[VERTEX_ATTRIBS_NUM];
 	uint32_t vertex_attrib_vbo[VERTEX_ATTRIBS_NUM];
@@ -690,6 +693,10 @@ typedef struct {
 	float *vertex_attrib_pool_ptr;
 	float *vertex_attrib_pool_limit;
 } vao;
+
+#if defined(HAVE_VERTEX_LAYOUT_CACHE) && !defined(STRICT_DRAW_COMPLIANCE) && !defined(DRAW_SPEEDHACK)
+extern uint32_t vertex_layout_cur_ver;
+#endif
 
 // 3D vertex for position + 4D vertex for RGBA color struct
 typedef struct {

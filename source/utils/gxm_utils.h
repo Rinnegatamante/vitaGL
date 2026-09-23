@@ -39,6 +39,10 @@ typedef struct {
 	uint32_t table_hits;
 	uint32_t gen_calls;
 	uint32_t evictions;
+#if defined(HAVE_VERTEX_LAYOUT_CACHE) && !defined(STRICT_DRAW_COMPLIANCE) && !defined(DRAW_SPEEDHACK)
+	uint32_t layout_hits;
+	uint32_t layout_misses;
+#endif
 	uint32_t total_us;
 	uint32_t mru_us;
 	uint32_t table_us;
