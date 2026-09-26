@@ -66,6 +66,7 @@ GLboolean dirty_framebuffer = GL_FALSE; // Flag whether current in use framebuff
 GLboolean dirty_query = GL_FALSE; // Flag whether occlusion queries needs results
 static GLboolean needs_end_scene = GL_FALSE; // Flag for gxm end scene requirement at scene reset
 static GLboolean needs_scene_reset = GL_TRUE; // Flag for when a scene reset is required
+static GLboolean scene_not_flushed = GL_FALSE; // Flag for when a scene had been forcibly flushed as last operation
 
 SceGxmContext *gxm_context; // sceGxm context instance
 GLenum vgl_error = GL_NO_ERROR; // Error returned by glGetError
@@ -576,6 +577,7 @@ static inline __attribute__((always_inline)) void scene_end(void) {
 
 void scene_reset(void) {
 	if (in_use_framebuffer != active_write_fb || needs_scene_reset || dirty_framebuffer || dirty_query) {
+		scene_not_flushed = GL_TRUE;
 		dirty_framebuffer = GL_FALSE;
 		dirty_query = GL_FALSE;
 		needs_scene_reset = GL_FALSE;
@@ -974,9 +976,12 @@ void glFinish(void) {
 	THREAD_SAFE()
 
 	// Waiting for GPU to finish drawing jobs
-	dirty_framebuffer = GL_TRUE;
-	scene_reset();
-	sceGxmFinish(gxm_context);
+	if (scene_not_flushed) {
+		dirty_framebuffer = GL_TRUE;
+		scene_reset();
+		sceGxmFinish(gxm_context);
+		scene_not_flushed = GL_FALSE;
+	}
 }
 
 void glReleaseShaderCompiler(void) {
@@ -990,9 +995,12 @@ void glReleaseShaderCompiler(void) {
 
 void glFlush(void) {
 	THREAD_SAFE()
-
-	dirty_framebuffer = GL_TRUE;
-	scene_reset();
+	
+	if (scene_not_flushed) {
+		dirty_framebuffer = GL_TRUE;
+		scene_reset();
+		scene_not_flushed = GL_FALSE;
+	}
 }
 
 void vglSetDisplayCallback(void (*cb)(void *framebuf)) {
