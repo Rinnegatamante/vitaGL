@@ -231,6 +231,10 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 				start++;
 				end[0] = 0;
 				idx = -1;
+				if (!strncmp(start, "gl_ClipDistance[", 16)) {
+					sprintf(newline, "POUT(%s,0);", str2 + 8);
+					goto ENTRY_HANDLED_SHADER_PAIR;
+				}
 				vglSemanticType hint_type = VGL_TYPE_TEXCOORD;
 				// Check first if the varying has a known binding
 				for (int j = 0; j < glsl_custom_bindings_num; j++) {
@@ -248,7 +252,7 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 								glsl_bindings_map.texcoord_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
 								sprintf(newline, "VOUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
 							} else {
-								goto HINT_DETECTION_PAIR;
+								goto HINT_DETECTION_PAIR_VERTEX;
 							}
 						}
 						break;
@@ -260,7 +264,7 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 							sprintf(newline, "COUT(%s,%d);", str2 + 8, glsl_custom_bindings[idx].idx);
 						} else {
 							hint_type = VGL_TYPE_COLOR;
-							goto HINT_DETECTION_PAIR;							
+							goto HINT_DETECTION_PAIR_VERTEX;							
 						}
 						break;
 					case VGL_TYPE_FOG:
@@ -272,7 +276,7 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 						break;
 					}
 				} else {
-HINT_DETECTION_PAIR:
+HINT_DETECTION_PAIR_VERTEX:
 					idx = -1;
 					if (glsl_is_first_shader) {
 						// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
@@ -361,6 +365,7 @@ HINT_DETECTION_PAIR:
 						}
 					}
 				}
+ENTRY_HANDLED_SHADER_PAIR:
 				vgl_fast_memcpy(str2, newline, strlen(newline));
 				if (extra_chars) {
 					vgl_memset(str2 + strlen(newline), ' ', extra_chars);
@@ -450,7 +455,7 @@ HINT_DETECTION_PAIR:
 							glsl_bindings_map.texcoord_used[glsl_custom_bindings[idx].idx] = GL_TRUE;
 							sprintf(newline, "VIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 						} else {
-							goto HINT_DETECTION_PAIR_2;
+							goto HINT_DETECTION_PAIR_FRAGMENT;
 						}
 						break;
 					case VGL_TYPE_TEXCOORD_CENTROID:
@@ -460,7 +465,7 @@ HINT_DETECTION_PAIR:
 							sprintf(newline, "BIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 						} else {
 							hint_type = VGL_TYPE_TEXCOORD_CENTROID;
-							goto HINT_DETECTION_PAIR_2;
+							goto HINT_DETECTION_PAIR_FRAGMENT;
 						}
 						break;
 					case VGL_TYPE_COLOR:
@@ -470,7 +475,7 @@ HINT_DETECTION_PAIR:
 							sprintf(newline, "CIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 						} else {
 							hint_type = VGL_TYPE_COLOR;
-							goto HINT_DETECTION_PAIR_2;
+							goto HINT_DETECTION_PAIR_FRAGMENT;
 						}
 						break;
 					case VGL_TYPE_COLOR_CENTROID:
@@ -480,7 +485,7 @@ HINT_DETECTION_PAIR:
 							sprintf(newline, "JIN(%s, %d);", str + 8, glsl_custom_bindings[idx].idx);
 						} else {
 							hint_type = VGL_TYPE_COLOR_CENTROID;
-							goto HINT_DETECTION_PAIR_2;
+							goto HINT_DETECTION_PAIR_FRAGMENT;
 						}
 						break;
 					case VGL_TYPE_FOG:
@@ -494,7 +499,7 @@ HINT_DETECTION_PAIR:
 						break;
 					}
 				} else {
-HINT_DETECTION_PAIR_2:
+HINT_DETECTION_PAIR_FRAGMENT:
 					idx = -1;
 					if (glsl_is_first_shader) {
 						// Check if varying has been already bound (eg: a varying that changes in size depending on preprocessor if)
@@ -733,6 +738,10 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 				start++;
 				end[0] = 0;
 				idx = -1;
+				if (!strncmp(start, "gl_ClipDistance[", 16)) {
+					sprintf(newline, "POUT(%s,0);", str2 + 8);
+					goto ENTRY_HANDLED_GLOBAL;
+				}
 				// Check first if the varying has a known binding
 				for (int j = 0; j < glsl_custom_bindings_num; j++) {
 					if (!strcmp(glsl_custom_bindings[j].name, start)) {
@@ -777,6 +786,7 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 				} else {
 					sprintf(newline, "VOUT(%s,\v);", str2 + 8);
 				}
+ENTRY_HANDLED_GLOBAL:
 				vgl_fast_memcpy(str2, newline, strlen(newline));
 				if (extra_chars > 0) {
 					vgl_memset(str2 + strlen(newline), ' ', extra_chars);
