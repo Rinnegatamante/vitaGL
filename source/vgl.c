@@ -81,6 +81,13 @@ const SceGxmProgramParameter *blit_texcoord;
 
 vector4f *clear_vertices = NULL; // Memblock starting address for clear screen vertices
 vector3f *depth_vertices = NULL; // Memblock starting address for depth clear screen vertices
+SceGxmPrecomputedVertexState scissor_clear_vertex_state; // Precomputed vertex state for the fullscreen mask clear
+SceGxmPrecomputedDraw scissor_clear_draw_state; // Precomputed draw state for the scissor region update
+uint32_t clear_position_offset;
+uint32_t clear_depth_offset;
+static void *scissor_clear_vertex_state_mem = NULL;
+static void *scissor_clear_uniform_buffer = NULL;
+static void *scissor_clear_draw_state_mem = NULL;
 
 // sceGxm viewport setup (NOTE: origin is on center screen)
 float x_port = 480.0f;
@@ -112,6 +119,12 @@ uint16_t *default_quads_idx_ptr; // sceGxm mapped progressive indices buffer for
 uint16_t *default_line_strips_idx_ptr; // sceGxm mapped progressive indices buffer for line strips
 
 // Internal functions
+void update_scissor_test_uniforms(void) {
+	const float scissor_depth = 1.0f;
+	vglSetUniformData((uint8_t *)scissor_clear_uniform_buffer + clear_position_offset, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 4, &clear_vertices->x, SCE_GXM_PARAMETER_TYPE_F32);
+	vglSetUniformData((uint8_t *)scissor_clear_uniform_buffer + clear_depth_offset, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 1, &scissor_depth, SCE_GXM_PARAMETER_TYPE_F32);
+}
+
 #ifndef DISABLE_CIRCULAR_POOL
 #define CIRCULAR_POOL_SIZE_DEF (32 * 1024 * 1024) // Default size in bytes for the circular vertex pool
 #ifdef HAVE_SCRATCH_MEMORY
@@ -301,9 +314,21 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	clear_position = sceGxmProgramFindParameterByName(gxm_program_clear_v, "position");
 	clear_depth = sceGxmProgramFindParameterByName(gxm_program_clear_v, "u_clear_depth");
 	clear_color = sceGxmProgramFindParameterByName(gxm_program_clear_f, "u_clear_color");
+	clear_position_offset = sceGxmProgramParameterGetResourceIndex(clear_position) * 4;
+	clear_depth_offset = sceGxmProgramParameterGetResourceIndex(clear_depth) * 4;
 	{ patch_vertex_program(clear_vertex_id, NULL, 0, NULL, 0, &clear_vertex_program_patched); }
 	{ patch_fragment_program(clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, NULL, NULL, &clear_fragment_program_patched); }
 	{ patch_fragment_program(clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4, msaa_mode, NULL, NULL, &clear_fragment_program_float_patched); }
+
+	// Prepare precomputed data for scissor test region update draws
+	scissor_clear_uniform_buffer = gpu_alloc_mapped_for_cpu(sceGxmProgramGetDefaultUniformBufferSize(gxm_program_clear_v));
+	update_scissor_test_uniforms();
+	scissor_clear_vertex_state_mem = gpu_alloc_mapped_for_cpu(sceGxmGetPrecomputedVertexStateSize(clear_vertex_program_patched));
+	sceGxmPrecomputedVertexStateInit(&scissor_clear_vertex_state, clear_vertex_program_patched, scissor_clear_vertex_state_mem);
+	sceGxmPrecomputedVertexStateSetDefaultUniformBuffer(&scissor_clear_vertex_state, scissor_clear_uniform_buffer);
+	scissor_clear_draw_state_mem = gpu_alloc_mapped_for_cpu(sceGxmGetPrecomputedDrawSize(clear_vertex_program_patched));
+	sceGxmPrecomputedDrawInit(&scissor_clear_draw_state, clear_vertex_program_patched, scissor_clear_draw_state_mem);
+	sceGxmPrecomputedDrawSetParams(&scissor_clear_draw_state, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 
 #ifndef SKIP_SPLASHSCREEN
 	if (!system_app_mode)

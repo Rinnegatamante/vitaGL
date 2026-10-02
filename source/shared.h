@@ -1050,6 +1050,10 @@ extern GLboolean depth_mask_state; // Current state for glDepthMask
 // Scissor Test
 extern scissor_region region; // Current scissor test region setup
 extern GLboolean scissor_test_state; // Current state for GL_SCISSOR_TEST
+extern SceGxmPrecomputedVertexState scissor_clear_vertex_state; // Precomputed vertex state for the fullscreen mask clear
+extern SceGxmPrecomputedDraw scissor_clear_draw_state; // Precomputed draw state for the scissor region update
+extern uint32_t clear_position_offset;
+extern uint32_t clear_depth_offset;
 
 // Stencil Test
 extern uint8_t stencil_mask_front; // Current in use mask for stencil test on front
@@ -1230,6 +1234,7 @@ GLboolean change_stencil_func_config(SceGxmStencilFunc *cfg, GLenum new_cfg); //
 void update_alpha_test_settings(void); // Changes current in use alpha test operation value
 void update_scissor_test(void); // Changes current in use scissor test region
 void reset_scissor_test_region(void); // Resets scissor test region to default values
+void update_scissor_test_uniforms(void); // Updates scissor test region update uniforms
 void invalidate_viewport(void); // Invalidates currently set viewport
 void validate_viewport(void); // Restores previously invalidated viewport
 

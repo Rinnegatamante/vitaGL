@@ -702,7 +702,12 @@ void scene_reset(void) {
 			sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
 		}
 #endif
-#ifndef STORE_DEPTH_STENCIL
+#ifdef STORE_DEPTH_STENCIL
+		if (in_use_framebuffer) {
+			dirty_scissor_state = GL_TRUE;
+		}
+#else
+		dirty_scissor_state = GL_TRUE;
 		skip_scissor_invalidation = GL_TRUE;
 #endif
 	}
@@ -966,6 +971,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		DISPLAY_HEIGHT_FLOAT = DISPLAY_HEIGHT * 1.0f;
 		DISPLAY_STRIDE = VGL_ALIGN(DISPLAY_WIDTH, 64);
 		vector4f_convert_to_local_space(clear_vertices, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+		update_scissor_test_uniforms();
 		create_display_render_target();
 		init_display_color_surfaces(GL_TRUE);
 		NEW_DISPLAY_WIDTH = 0;

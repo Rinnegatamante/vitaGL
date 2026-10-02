@@ -302,10 +302,7 @@ void update_scissor_test() {
 		// Calculating scissor test region vertices
 		vector4f_convert_to_local_space(scissor_test_vertices, region.x, region.y, region.w, region.h);
 
-		void *vertex_buffer;
-		sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
-		sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, &clear_vertices->x);
-		sceGxmSetUniformDataF(vertex_buffer, clear_depth, 0, 1, &scissor_depth);
+		sceGxmSetPrecomputedVertexState(gxm_context, &scissor_clear_vertex_state);
 
 		// Cleaning stencil surface mask update bit on the whole screen
 		sceGxmSetFrontStencilFunc(gxm_context,
@@ -320,7 +317,9 @@ void update_scissor_test() {
 			SCE_GXM_STENCIL_OP_KEEP,
 			SCE_GXM_STENCIL_OP_KEEP,
 			0, 0);
-		sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+		sceGxmDrawPrecomputed(gxm_context, &scissor_clear_draw_state);
+
+		sceGxmSetPrecomputedVertexState(gxm_context, NULL);
 	}
 
 	// Setting stencil surface mask update bit on the scissor test region
@@ -339,10 +338,10 @@ void update_scissor_test() {
 
 	void *vertex_buffer;
 	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
-	sceGxmSetUniformDataF(vertex_buffer, clear_position, 0, 4, scissor_test_state ? &scissor_test_vertices->x : &clear_vertices->x);
-	sceGxmSetUniformDataF(vertex_buffer, clear_depth, 0, 1, &scissor_depth);
+	vglSetUniformData((uint8_t *)vertex_buffer + clear_position_offset, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 4, scissor_test_state ? &scissor_test_vertices->x : &clear_vertices->x, SCE_GXM_PARAMETER_TYPE_F32);
+	vglSetUniformData((uint8_t *)vertex_buffer + clear_depth_offset, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 1, &scissor_depth, SCE_GXM_PARAMETER_TYPE_F32);
 
-	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+	sceGxmDrawPrecomputed(gxm_context, &scissor_clear_draw_state);
 
 	// Restoring viewport and culling
 	validate_viewport();
@@ -396,8 +395,9 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
 	region.gl_w = width;
 	region.gl_h = height;
 
-	if (scissor_test_state)
+	if (scissor_test_state) {
 		dirty_scissor_state = GL_TRUE;
+	}
 }
 
 void glDepthFunc(GLenum func) {
