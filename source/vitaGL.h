@@ -90,7 +90,6 @@ extern "C" {
 #define GL_POLYGON                                      0x0009
 #define GL_ADD                                          0x0104
 #define GL_NEVER                                        0x0200
-#define GL_NEVER                                        0x0200
 #define GL_LESS                                         0x0201
 #define GL_EQUAL                                        0x0202
 #define GL_LEQUAL                                       0x0203
