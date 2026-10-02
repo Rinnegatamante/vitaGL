@@ -73,6 +73,10 @@ GLenum vgl_error = GL_NO_ERROR; // Error returned by glGetError
 SceGxmShaderPatcher *gxm_shader_patcher; // sceGxmShaderPatcher shader patcher instance
 GLboolean is_fbo_float = GL_FALSE; // Current framebuffer mode
 
+#ifndef STORE_DEPTH_STENCIL
+extern GLboolean skip_scissor_invalidation; // Flag whether to skip mask update bit invalidation pass during scissor test region update
+#endif
+
 #ifdef HAVE_PROFILING
 uint32_t frame_profiler_cnt = 0;
 uint32_t ffp_draw_profiler_cnt = 0;
@@ -694,8 +698,12 @@ void scene_reset(void) {
 		}
 
 #ifndef DISABLE_TILE_CLIPPER
-		if (scissor_test_state)
+		if (scissor_test_state) {
 			sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, region.x, region.y, region.x + region.w - 1, region.y + region.h - 1);
+		}
+#endif
+#ifndef STORE_DEPTH_STENCIL
+		skip_scissor_invalidation = GL_TRUE;
 #endif
 	}
 	

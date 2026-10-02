@@ -877,7 +877,7 @@ extern uint16_t *default_line_strips_idx_ptr; // sceGxm mapped progressive indic
 extern int garbage_collector(unsigned int args, void *arg); // Garbage collector function
 #endif
 extern SceUID gc_mutex[2]; // Garbage collector mutex
-extern GLboolean has_cached_mem; // Flag for wether to use cached memory for mempools or not
+extern GLboolean has_cached_mem; // Flag for whether to use cached memory for mempools or not
 extern uint8_t gxm_display_buffer_count; // Display buffers count
 
 extern int legacy_pool_size; // Mempool size for GL1 immediate draw pipeline
@@ -1182,7 +1182,7 @@ extern uint32_t uniform_array_unit; // Current in-use uniform buffer unit
 
 extern GLenum orig_depth_test; // Original depth test state (used for depth test invalidation)
 extern framebuffer *in_use_framebuffer; // Currently in use framebuffer
-extern uint8_t dirty_framebuffer; // Flag wether current in use framebuffer is invalidated
+extern uint8_t dirty_framebuffer; // Flag whether current in use framebuffer is invalidated
 
 // Scissor test shaders
 extern SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program

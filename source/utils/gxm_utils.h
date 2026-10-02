@@ -169,7 +169,7 @@ static inline __attribute__((always_inline)) int vglDepthStencilSurfaceInit(SceG
 	s[2] = (uint32_t)stencilData;
 #endif
 	s[3] = 0x3F800000;
-	s[4] = 0x300;
+	s[4] = 0x200;
 	return 0;
 }
 #endif

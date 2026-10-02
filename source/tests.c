@@ -36,6 +36,9 @@ scissor_region region; // Current scissor test region setup
 GLboolean scissor_test_state = GL_FALSE; // Current state for GL_SCISSOR_TEST
 SceGxmFragmentProgram *scissor_test_fragment_program; // Scissor test fragment program
 vector4f *scissor_test_vertices = NULL; // Scissor test region vertices
+#ifndef STORE_DEPTH_STENCIL
+GLboolean skip_scissor_invalidation = GL_TRUE; // Flag whether to skip mask update bit invalidation pass during scissor test region update
+#endif
 
 // Stencil Test
 uint8_t stencil_mask_front = 0xFF; // Current in use mask for stencil test on front
@@ -289,7 +292,13 @@ void update_scissor_test() {
 	sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, 0, 0, active_w - 1, active_h - 1);
 #endif
 	
+#ifdef STORE_DEPTH_STENCIL
 	if (scissor_test_state) {
+#else
+	if (skip_scissor_invalidation) {
+		skip_scissor_invalidation = GL_FALSE;
+	} else if (scissor_test_state) {
+#endif
 		// Calculating scissor test region vertices
 		vector4f_convert_to_local_space(scissor_test_vertices, region.x, region.y, region.w, region.h);
 
