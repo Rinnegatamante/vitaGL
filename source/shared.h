@@ -1051,7 +1051,7 @@ extern GLboolean depth_mask_state; // Current state for glDepthMask
 extern scissor_region region; // Current scissor test region setup
 extern GLboolean scissor_test_state; // Current state for GL_SCISSOR_TEST
 extern SceGxmPrecomputedVertexState scissor_clear_vertex_state; // Precomputed vertex state for the fullscreen mask clear
-extern SceGxmPrecomputedDraw scissor_clear_draw_state; // Precomputed draw state for the scissor region update
+extern SceGxmPrecomputedDraw clear_draw_state; // Precomputed draw state for fullscreen clear draws
 extern uint32_t clear_position_offset;
 extern uint32_t clear_depth_offset;
 

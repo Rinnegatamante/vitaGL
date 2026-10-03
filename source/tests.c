@@ -317,7 +317,7 @@ void update_scissor_test() {
 			SCE_GXM_STENCIL_OP_KEEP,
 			SCE_GXM_STENCIL_OP_KEEP,
 			0, 0);
-		sceGxmDrawPrecomputed(gxm_context, &scissor_clear_draw_state);
+		sceGxmDrawPrecomputed(gxm_context, &clear_draw_state);
 
 		sceGxmSetPrecomputedVertexState(gxm_context, NULL);
 	}
@@ -341,7 +341,7 @@ void update_scissor_test() {
 	vglSetUniformData((uint8_t *)vertex_buffer + clear_position_offset, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 4, scissor_test_state ? &scissor_test_vertices->x : &clear_vertices->x, SCE_GXM_PARAMETER_TYPE_F32);
 	vglSetUniformData((uint8_t *)vertex_buffer + clear_depth_offset, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 1, &scissor_depth, SCE_GXM_PARAMETER_TYPE_F32);
 
-	sceGxmDrawPrecomputed(gxm_context, &scissor_clear_draw_state);
+	sceGxmDrawPrecomputed(gxm_context, &clear_draw_state);
 
 	// Restoring viewport and culling
 	validate_viewport();

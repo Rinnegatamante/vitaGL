@@ -717,7 +717,7 @@ void glClear(GLbitfield mask) {
 		sceGxmSetBackStencilRef(gxm_context, stencil_value & 0xFF);
 	}
 
-	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+	sceGxmDrawPrecomputed(gxm_context, &clear_draw_state);
 
 	validate_depth_test();
 	change_depth_write((depth_mask_state && depth_test_state) ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED);

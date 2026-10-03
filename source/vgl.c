@@ -82,12 +82,12 @@ const SceGxmProgramParameter *blit_texcoord;
 vector4f *clear_vertices = NULL; // Memblock starting address for clear screen vertices
 vector3f *depth_vertices = NULL; // Memblock starting address for depth clear screen vertices
 SceGxmPrecomputedVertexState scissor_clear_vertex_state; // Precomputed vertex state for the fullscreen mask clear
-SceGxmPrecomputedDraw scissor_clear_draw_state; // Precomputed draw state for the scissor region update
+SceGxmPrecomputedDraw clear_draw_state; // Precomputed draw state for fullscreen clear draws
 uint32_t clear_position_offset;
 uint32_t clear_depth_offset;
 static void *scissor_clear_vertex_state_mem = NULL;
 static void *scissor_clear_uniform_buffer = NULL;
-static void *scissor_clear_draw_state_mem = NULL;
+static void *clear_draw_state_mem = NULL;
 
 // sceGxm viewport setup (NOTE: origin is on center screen)
 float x_port = 480.0f;
@@ -326,9 +326,9 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	scissor_clear_vertex_state_mem = gpu_alloc_mapped_for_cpu(sceGxmGetPrecomputedVertexStateSize(clear_vertex_program_patched));
 	sceGxmPrecomputedVertexStateInit(&scissor_clear_vertex_state, clear_vertex_program_patched, scissor_clear_vertex_state_mem);
 	sceGxmPrecomputedVertexStateSetDefaultUniformBuffer(&scissor_clear_vertex_state, scissor_clear_uniform_buffer);
-	scissor_clear_draw_state_mem = gpu_alloc_mapped_for_cpu(sceGxmGetPrecomputedDrawSize(clear_vertex_program_patched));
-	sceGxmPrecomputedDrawInit(&scissor_clear_draw_state, clear_vertex_program_patched, scissor_clear_draw_state_mem);
-	sceGxmPrecomputedDrawSetParams(&scissor_clear_draw_state, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+	clear_draw_state_mem = gpu_alloc_mapped_for_cpu(sceGxmGetPrecomputedDrawSize(clear_vertex_program_patched));
+	sceGxmPrecomputedDrawInit(&clear_draw_state, clear_vertex_program_patched, clear_draw_state_mem);
+	sceGxmPrecomputedDrawSetParams(&clear_draw_state, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 
 #ifndef SKIP_SPLASHSCREEN
 	if (!system_app_mode)
