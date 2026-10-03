@@ -6348,6 +6348,9 @@ int splashscreen_thread(unsigned int args, void *arg) {
 	
 	// Initializing an alternate sceGxm context
 	init_gxm_context(&splash_gxm_context, VGL_CONTEXT_SPLASHSCREEN);
+#ifndef STORE_DEPTH_STENCIL
+	vglDepthStencilSurfaceSetBackgroundMask(&gxm_depth_stencil_surface, GL_TRUE);
+#endif
 	
 	// Setup any immutable state
 	sceGxmSetCullMode(splash_gxm_context, SCE_GXM_CULL_NONE);
@@ -6415,7 +6418,7 @@ int splashscreen_thread(unsigned int args, void *arg) {
 		sceGxmSetUniformDataF(vbuffer, clear_depth, 0, 1, &clear_depth_value);
 		sceGxmReserveFragmentDefaultUniformBuffer(splash_gxm_context, &fbuffer);
 		sceGxmSetUniformDataF(fbuffer, clear_color, 0, 4, clear_rgba_val);
-		sceGxmDraw(splash_gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+		sceGxmDrawPrecomputed(splash_gxm_context, &clear_draw_state);
 		
 		// Draw the rotating splashscreen
 		sceGxmSetFrontDepthFunc(splash_gxm_context, SCE_GXM_DEPTH_FUNC_LESS_EQUAL);
@@ -6441,7 +6444,7 @@ int splashscreen_thread(unsigned int args, void *arg) {
 			sceGxmSetUniformDataF(vbuffer, clear_depth, 0, 1, &clear_depth_value);
 			sceGxmReserveFragmentDefaultUniformBuffer(splash_gxm_context, &fbuffer);
 			sceGxmSetUniformDataF(fbuffer, clear_color, 0, 4, hash_color);
-			sceGxmDraw(splash_gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+			sceGxmDrawPrecomputed(splash_gxm_context, &clear_draw_state);
 		}
 		
 		sceGxmEndScene(splash_gxm_context, NULL, NULL);
@@ -6471,6 +6474,9 @@ int splashscreen_thread(unsigned int args, void *arg) {
 
 	// Notify main renderer thread that splashscreen is over
 	sceGxmFinish(splash_gxm_context);
+#ifndef STORE_DEPTH_STENCIL
+	vglDepthStencilSurfaceSetBackgroundMask(&gxm_depth_stencil_surface, GL_FALSE);
+#endif
 	sceKernelSignalSema(splash_mutex[1], 1);
 	
 	// Cleanup any resource used for the splashscreen

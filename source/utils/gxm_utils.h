@@ -172,4 +172,12 @@ static inline __attribute__((always_inline)) int vglDepthStencilSurfaceInit(SceG
 	s[4] = 0x200;
 	return 0;
 }
+static inline __attribute__((always_inline)) void vglDepthStencilSurfaceSetBackgroundMask(SceGxmDepthStencilSurface *surface, uint8_t enable) {
+	uint32_t *s = (uint32_t *)surface;
+	if (enable) {
+		s[4] |= 0x100;
+	} else {
+		s[4] &= ~0x100;
+	}
+}
 #endif
