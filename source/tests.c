@@ -297,6 +297,10 @@ void update_scissor_test() {
 #else
 	if (skip_scissor_invalidation) {
 		skip_scissor_invalidation = GL_FALSE;
+		if (scissor_test_state) {
+			// Calculating scissor test region vertices
+			vector4f_convert_to_local_space(scissor_test_vertices, region.x, region.y, region.w, region.h);
+		}
 	} else if (scissor_test_state) {
 #endif
 		// Calculating scissor test region vertices
