@@ -1052,8 +1052,11 @@ extern scissor_region region; // Current scissor test region setup
 extern GLboolean scissor_test_state; // Current state for GL_SCISSOR_TEST
 extern SceGxmPrecomputedVertexState scissor_clear_vertex_state; // Precomputed vertex state for the fullscreen mask clear
 extern SceGxmPrecomputedDraw clear_draw_state; // Precomputed draw state for fullscreen clear draws
+extern SceGxmPrecomputedDraw blit_draw_state; // Precomputed draw state for framebuffer blits
 extern uint32_t clear_position_offset;
 extern uint32_t clear_depth_offset;
+extern uint32_t blit_position_offset;
+extern uint32_t blit_texcoord_offset;
 
 // Stencil Test
 extern uint8_t stencil_mask_front; // Current in use mask for stencil test on front

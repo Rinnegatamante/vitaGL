@@ -841,10 +841,11 @@ void glBlitNamedFramebuffer(GLuint readFramebuffer, GLuint drawFramebuffer, GLin
 
 	// Set framebuffer blit shader
 	sceGxmSetVertexProgram(gxm_context, blit_vertex_program_patched);
-	if (is_fbo_float)
+	if (is_fbo_float) {
 		sceGxmSetFragmentProgram(gxm_context, blit_fragment_program_float_patched);
-	else
+	} else {
 		sceGxmSetFragmentProgram(gxm_context, blit_fragment_program_patched);
+	}
 	
 	// Set fragment texture to read framebuffer bound color attachment
 	framebuffer *read_fb = (framebuffer *)readFramebuffer;
@@ -875,37 +876,35 @@ void glBlitNamedFramebuffer(GLuint readFramebuffer, GLuint drawFramebuffer, GLin
 		0xFF, 0xFF);
 	
 	// Filling position and texcoord values
-	float *vertex_data = (float *)gpu_alloc_mapped_temp(16 * sizeof(float));
-	// Position
-	vector4f tmp;
-	vector4f_convert_to_local_space(&tmp, dstX0, dstY0, dstX1 - dstX0, dstY1 - dstY0);
-	vertex_data[0] = vertex_data[2] = tmp.x; // X0
-	vertex_data[1] = vertex_data[7] = tmp.z; // Y0
-	vertex_data[4] = vertex_data[6] = tmp.y; // X1
-	vertex_data[3] = vertex_data[5] = tmp.w; // Y1
-	// Texcoords
+	vector4f position;
+	vector4f texcoord;
+	vector4f_convert_to_local_space(&position, dstX0, dstY0, dstX1 - dstX0, dstY1 - dstY0);
+	texcoord.x = (float)srcX0;
+	texcoord.y = (float)srcX1;
 	if (readFramebuffer) {
+		texcoord.x /= (float)read_fb->width;
+		texcoord.y /= (float)read_fb->width;
 #ifndef HAVE_UNFLIPPED_FBOS
-		vertex_data[8] = vertex_data[10] = (float)srcX0 / (float)read_fb->width; // X0
-		vertex_data[9] = vertex_data[15] = ((float)read_fb->height - (float)srcY0) / (float)read_fb->height; // Y0
-		vertex_data[12] = vertex_data[14] = (float)srcX1 / (float)read_fb->width; // X1
-		vertex_data[11] = vertex_data[13] = ((float)read_fb->height - (float)srcY1) / (float)read_fb->height; // Y1
+		texcoord.z = ((float)read_fb->height - (float)srcY0) / (float)read_fb->height;
+		texcoord.w = ((float)read_fb->height - (float)srcY1) / (float)read_fb->height;
 #else
-		vertex_data[8] = vertex_data[10] = (float)srcX0 / (float)read_fb->width; // X0
-		vertex_data[9] = vertex_data[15] = ((float)read_fb->height - (float)srcY1) / (float)read_fb->height; // Y0
-		vertex_data[12] = vertex_data[14] = (float)srcX1 / (float)read_fb->width; // X1
-		vertex_data[11] = vertex_data[13] = ((float)read_fb->height - (float)srcY0) / (float)read_fb->height; // Y1
+		texcoord.z = ((float)read_fb->height - (float)srcY1) / (float)read_fb->height;
+		texcoord.w = ((float)read_fb->height - (float)srcY0) / (float)read_fb->height;
 #endif
 	} else {
-		vertex_data[8] = vertex_data[10] = (float)srcX0 / DISPLAY_WIDTH_FLOAT; // X0
-		vertex_data[9] = vertex_data[15] = (DISPLAY_HEIGHT_FLOAT - (float)srcY1) / DISPLAY_HEIGHT_FLOAT; // Y0
-		vertex_data[12] = vertex_data[14] = (float)srcX1 / DISPLAY_WIDTH_FLOAT; // X1
-		vertex_data[11] = vertex_data[13] = (DISPLAY_HEIGHT_FLOAT - (float)srcY0) / DISPLAY_HEIGHT_FLOAT; // Y1
+		texcoord.x /= DISPLAY_WIDTH_FLOAT;
+		texcoord.y /= DISPLAY_WIDTH_FLOAT;
+		texcoord.z = (DISPLAY_HEIGHT_FLOAT - (float)srcY1) / DISPLAY_HEIGHT_FLOAT;
+		texcoord.w = (DISPLAY_HEIGHT_FLOAT - (float)srcY0) / DISPLAY_HEIGHT_FLOAT;
 	}
-	sceGxmSetVertexStream(gxm_context, 0, vertex_data);
+
+	void *vertex_buffer;
+	sceGxmReserveVertexDefaultUniformBuffer(gxm_context, &vertex_buffer);
+	vglSetUniformData((uint8_t *)vertex_buffer + blit_position_offset, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 4, &position.x, SCE_GXM_PARAMETER_TYPE_F32);
+	vglSetUniformData((uint8_t *)vertex_buffer + blit_texcoord_offset, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 4, &texcoord.x, SCE_GXM_PARAMETER_TYPE_F32);
 
 	// Draw read framebuffer on top of write framebuffer
-	sceGxmDraw(gxm_context, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+	sceGxmDrawPrecomputed(gxm_context, &blit_draw_state);
 
 	// Restore all invalidated configurations
 	if (readFramebuffer) {

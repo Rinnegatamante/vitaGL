@@ -83,11 +83,15 @@ vector4f *clear_vertices = NULL; // Memblock starting address for clear screen v
 vector3f *depth_vertices = NULL; // Memblock starting address for depth clear screen vertices
 SceGxmPrecomputedVertexState scissor_clear_vertex_state; // Precomputed vertex state for the fullscreen mask clear
 SceGxmPrecomputedDraw clear_draw_state; // Precomputed draw state for fullscreen clear draws
+SceGxmPrecomputedDraw blit_draw_state; // Precomputed draw state for framebuffer blits
 uint32_t clear_position_offset;
 uint32_t clear_depth_offset;
+uint32_t blit_position_offset;
+uint32_t blit_texcoord_offset;
 static void *scissor_clear_vertex_state_mem = NULL;
 static void *scissor_clear_uniform_buffer = NULL;
 static void *clear_draw_state_mem = NULL;
+static void *blit_draw_state_mem = NULL;
 
 // sceGxm viewport setup (NOTE: origin is on center screen)
 float x_port = 480.0f;
@@ -343,21 +347,14 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 
 	blit_position = sceGxmProgramFindParameterByName(gxm_program_blit_v, "position");
 	blit_texcoord = sceGxmProgramFindParameterByName(gxm_program_blit_v, "texcoord");
-		
-	SceGxmVertexAttribute blit_attrs[2];
-	SceGxmVertexStream blit_streams[1];
-	blit_attrs[0].offset = 0;
-	blit_attrs[1].offset = 8 * sizeof(float);
-	blit_attrs[0].format = blit_attrs[1].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-	blit_attrs[0].componentCount = blit_attrs[1].componentCount = 2;
-	blit_streams[0].stride = 2 * sizeof(float);
-	blit_attrs[0].regIndex = sceGxmProgramParameterGetResourceIndex(blit_position);
-	blit_attrs[1].regIndex = sceGxmProgramParameterGetResourceIndex(blit_texcoord);
-	blit_attrs[0].streamIndex = blit_attrs[1].streamIndex = 0;
-	blit_streams[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-	{ patch_vertex_program(blit_vertex_id, blit_attrs, 2, blit_streams, 1, &blit_vertex_program_patched); }
+	blit_position_offset = sceGxmProgramParameterGetResourceIndex(blit_position) * 4;
+	blit_texcoord_offset = sceGxmProgramParameterGetResourceIndex(blit_texcoord) * 4;
+	{ patch_vertex_program(blit_vertex_id, NULL, 0, NULL, 0, &blit_vertex_program_patched); }
 	{ patch_fragment_program(blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, msaa_mode, NULL, NULL, &blit_fragment_program_patched); }
 	{ patch_fragment_program(blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4, msaa_mode, NULL, NULL, &blit_fragment_program_float_patched); }
+	blit_draw_state_mem = gpu_alloc_mapped_for_cpu(sceGxmGetPrecomputedDrawSize(blit_vertex_program_patched));
+	sceGxmPrecomputedDrawInit(&blit_draw_state, blit_vertex_program_patched, blit_draw_state_mem);
+	sceGxmPrecomputedDrawSetParams(&blit_draw_state, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 
 	sceGxmSetTwoSidedEnable(gxm_context, SCE_GXM_TWO_SIDED_ENABLED);
 
