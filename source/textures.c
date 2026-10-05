@@ -2713,6 +2713,69 @@ void *vglGetTexPaletteDataPointer(GLenum target) {
 	}
 }
 
+void vglSetupTexture(GLenum target, void *data, SceGxmTextureFormat format, SceGxmTextureType type, GLsizei width, GLsizei height, GLsizei mip_count) {
+	// Aliasing texture unit for cleaner code
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx;
+	resolve_tex_target(target, SET_GL_ERROR(GL_INVALID_ENUM));
+	texture *tex = &texture_slots[texture2d_idx];
+
+#ifndef SKIP_ERROR_HANDLING
+	if (!data || width <= 0 || height <= 0 || mip_count <= 0 || mip_count > 16) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+
+	SceGxmTexture new_tex;
+	switch (type) {
+	case SCE_GXM_TEXTURE_SWIZZLED:
+		sceGxmTextureInitSwizzled(&new_tex, data, format, width, height, mip_count);
+		break;
+	case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
+		vglInitSwizzledTexture(&new_tex, data, format, width, height, mip_count);
+		break;
+	case SCE_GXM_TEXTURE_LINEAR:
+		vglInitLinearTexture(&new_tex, data, format, width, height, mip_count);
+		break;
+	case SCE_GXM_TEXTURE_TILED:
+		sceGxmTextureInitTiled(&new_tex, data, format, width, height, mip_count);
+		break;
+	case SCE_GXM_TEXTURE_CUBE:
+		vglInitCubeTexture(&new_tex, data, format, width, height, mip_count);
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
+	}
+
+	// Preserve GL sampler state across the descriptor replacement.
+	vglSetTexUMode(&new_tex, tex->u_mode);
+	vglSetTexVMode(&new_tex, tex->v_mode);
+	vglSetTexMinFilter(&new_tex, tex->min_filter);
+	vglSetTexMagFilter(&new_tex, tex->mag_filter);
+	vglSetTexMipFilter(&new_tex, tex->mip_filter);
+	vglSetTexLodBias(&new_tex, tex->lod_bias);
+	vglSetTexMipmapCount(&new_tex, tex->use_mips ? mip_count : 0);
+
+	if (tex->status == TEX_VALID) {
+		gpu_free_texture_data(tex);
+	}
+	tex->gxm_tex = new_tex;
+	tex->data = data;
+	tex->palette_data = NULL;
+	tex->format = format;
+	tex->mip_count = mip_count;
+	tex->faces_counter = 0;
+	tex->dirty = GL_FALSE;
+	tex->write_cb = NULL;
+	tex->status = TEX_VALID;
+#ifndef TEXTURES_SPEEDHACK
+	tex->last_frame = OBJ_NOT_USED;
+#endif
+#ifdef HAVE_TEX_CACHE
+	mark_as_cacheable(tex)
+#endif
+}
+
 void vglOverloadTexDataPointer(GLenum target, void *data) {
 	THREAD_SAFE()
 

@@ -1217,6 +1217,9 @@ size_t vglMemFree(vglMemType type);
 // Gets the total amount of free and used memory in a given internal memory pool.
 size_t vglMemTotal(vglMemType type);
 
+// Setups a GL texture with custom internal values.
+void vglSetupTexture(GLenum target, void *data, SceGxmTextureFormat format, SceGxmTextureType type, GLsizei width, GLsizei height, GLsizei mip_count);
+
 // Replaces original texture data pointer with a new one in a GL texture.
 void vglOverloadTexDataPointer(GLenum target, void *data);
 
