@@ -358,7 +358,7 @@ void init_gxm(void) {
 	// Initializing garbage collector
 	gc_mutex[0] = sceKernelCreateSema("vitaGL GC Sema Push", 0, 0, FRAME_PURGE_FREQ, NULL);
 	gc_mutex[1] = sceKernelCreateSema("vitaGL GC Sema Pull", 0, FRAME_PURGE_FREQ, FRAME_PURGE_FREQ, NULL);
-#ifdef HAVE_PTRHEAD
+#ifdef HAVE_PTHREAD
 	pthread_create(&gc_thread, NULL, garbage_collector, NULL);
 	pthread_setaffinity_np(gc_thread, 4, &gc_thread_affinity);
 #else
