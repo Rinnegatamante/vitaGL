@@ -98,6 +98,9 @@ inline int notEqual(bool a, bool b) { return (a != b ? 1 : 0); }
 inline int2 notEqual(bool2 a, bool2 b) { return int2(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0); }
 inline int3 notEqual(bool3 a, bool3 b) { return int3(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0, a.z != b.z ? 1 : 0); }
 inline int4 notEqual(bool4 a, bool4 b) { return int4(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0, a.z != b.z ? 1 : 0, a.w != b.w ? 1 : 0); }
+inline bool2 not(bool2 a) { return bool2(!a.x, !a.y); }
+inline bool3 not(bool3 a) { return bool3(!a.x, !a.y, !a.z); }
+inline bool4 not(bool4 a) { return bool4(!a.x, !a.y, !a.z, !a.w); }
 inline float4 texture2DProj(sampler2D s, float3 c) { return tex2Dproj(s, c); }
 inline float4 texture2DProj(sampler2D s, float4 c) { return tex2Dproj(s, c.xyw); }
 inline float4 texture2DProj(sampler2D s, float4 c, float b) { return tex2Dbias(s, float4(c.xy / c.w, 1, b)); }
