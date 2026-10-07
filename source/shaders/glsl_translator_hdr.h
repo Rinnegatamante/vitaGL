@@ -114,6 +114,9 @@ inline float4 textureCube(samplerCUBE x, float3 s) { return texCUBE(x,s); }
 inline float4 textureCube(samplerCUBE x, float4 s) { return texCUBE(x,s); }
 inline float4 textureCube(samplerCUBE x, float3 s, float b) { return texCUBEbias(x,float4(s,b)); }
 inline float4 texture2DLod(sampler2D x, float2 coord, float lod) { return tex2Dlod(x, float4(coord, 0.0f, lod)); }
+inline float4 texture2DProjLod(sampler2D x, float3 coord, float lod) { return tex2Dlod(x, float4(coord.xy / coord.z, 0.0f, lod)); }
+inline float4 texture2DProjLod(sampler2D x, float4 coord, float lod) { return tex2Dlod(x, float4(coord.xy / coord.w, 0.0f, lod)); }
+inline float4 textureCubeLod(samplerCUBE x, float3 coord, float lod) { return texCUBElod(x, float4(coord, lod)); }
 #define dFdx(a) ddx(a)
 #define dFdy(a) ddy(a)
 #define s x
