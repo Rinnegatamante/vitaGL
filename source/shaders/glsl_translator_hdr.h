@@ -158,6 +158,7 @@ inline float4 vgl_mod(float4 x, float4 y) { return x - y * floor(x / y); }
 #define mat2 float2x2
 #define mat3 float3x3
 #define mat4 float4x4
+#define matrixCompMult(x, y) ((x) * (y))
 #define matrix _matrix
 #define Matrix _Matrix
 #define sampler _sampler
