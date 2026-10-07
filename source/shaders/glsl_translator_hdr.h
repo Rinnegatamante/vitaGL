@@ -82,6 +82,10 @@ inline int equal(float a, float b) { return (a == b ? 1 : 0); }
 inline int2 equal(float2 a, float2 b) { return int2(a.x == b.x ? 1 : 0, a.y == b.y ? 1 : 0); }
 inline int3 equal(float3 a, float3 b) { return int3(a.x == b.x ? 1 : 0, a.y == b.y ? 1 : 0, a.z == b.z ? 1 : 0); }
 inline int4 equal(float4 a, float4 b) { return int4(a.x == b.x ? 1 : 0, a.y == b.y ? 1 : 0, a.z == b.z ? 1 : 0, a.w == b.w ? 1 : 0); }
+inline int equal(bool a, bool b) { return (a == b ? 1 : 0); }
+inline int2 equal(bool2 a, bool2 b) { return int2(a.x == b.x ? 1 : 0, a.y == b.y ? 1 : 0); }
+inline int3 equal(bool3 a, bool3 b) { return int3(a.x == b.x ? 1 : 0, a.y == b.y ? 1 : 0, a.z == b.z ? 1 : 0); }
+inline int4 equal(bool4 a, bool4 b) { return int4(a.x == b.x ? 1 : 0, a.y == b.y ? 1 : 0, a.z == b.z ? 1 : 0, a.w == b.w ? 1 : 0); }
 inline int notEqual(int a, int b) { return (a != b ? 1 : 0); }
 inline int2 notEqual(int2 a, int2 b) { return int2(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0); }
 inline int3 notEqual(int3 a, int3 b) { return int3(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0, a.z != b.z ? 1 : 0); }
@@ -90,6 +94,10 @@ inline int notEqual(float a, float b) { return (a != b ? 1 : 0); }
 inline int2 notEqual(float2 a, float2 b) { return int2(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0); }
 inline int3 notEqual(float3 a, float3 b) { return int3(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0, a.z != b.z ? 1 : 0); }
 inline int4 notEqual(float4 a, float4 b) { return int4(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0, a.z != b.z ? 1 : 0, a.w != b.w ? 1 : 0); }
+inline int notEqual(bool a, bool b) { return (a != b ? 1 : 0); }
+inline int2 notEqual(bool2 a, bool2 b) { return int2(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0); }
+inline int3 notEqual(bool3 a, bool3 b) { return int3(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0, a.z != b.z ? 1 : 0); }
+inline int4 notEqual(bool4 a, bool4 b) { return int4(a.x != b.x ? 1 : 0, a.y != b.y ? 1 : 0, a.z != b.z ? 1 : 0, a.w != b.w ? 1 : 0); }
 inline float4 texture2DProj(sampler2D s, float3 c) { return tex2Dproj(s, c); }
 inline float4 texture2DProj(sampler2D s, float4 c) { return tex2Dproj(s, c.xyw); }
 inline float4 texture2DProj(sampler2D s, float4 c, float b) { return tex2Dbias(s, float4(c.xy / c.w, 1, b)); }
