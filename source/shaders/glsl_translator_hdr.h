@@ -64,7 +64,7 @@ inline int greaterThanEqual(float a, float b) { return (a >= b ? 1 : 0); }
 inline int2 greaterThanEqual(float2 a, float2 b) { return int2(a.x >= b.x ? 1 : 0, a.y >= b.y ? 1 : 0); }
 inline int3 greaterThanEqual(float3 a, float3 b) { return int3(a.x >= b.x ? 1 : 0, a.y >= b.y ? 1 : 0, a.z >= b.z ? 1 : 0); }
 inline int4 greaterThanEqual(float4 a, float4 b) { return int4(a.x >= b.x ? 1 : 0, a.y >= b.y ? 1 : 0, a.z >= b.z ? 1 : 0, a.w >= b.w ? 1 : 0); }
-inline int greaterThan(int a, int b) { return (a >= b ? 1 : 0); }
+inline int greaterThan(int a, int b) { return (a > b ? 1 : 0); }
 inline int2 greaterThan(int2 a, int2 b) { return int2(a.x > b.x ? 1 : 0, a.y > b.y ? 1 : 0); }
 inline int3 greaterThan(int3 a, int3 b) { return int3(a.x > b.x ? 1 : 0, a.y > b.y ? 1 : 0, a.z > b.z ? 1 : 0); }
 inline int4 greaterThan(int4 a, int4 b) { return int4(a.x > b.x ? 1 : 0, a.y > b.y ? 1 : 0, a.z > b.z ? 1 : 0, a.w > b.w ? 1 : 0); }
@@ -72,8 +72,8 @@ inline int greaterThan(float a, float b) { return (a > b ? 1 : 0); }
 inline int2 greaterThan(float2 a, float2 b) { return int2(a.x > b.x ? 1 : 0, a.y > b.y ? 1 : 0); }
 inline int3 greaterThan(float3 a, float3 b) { return int3(a.x > b.x ? 1 : 0, a.y > b.y ? 1 : 0, a.z > b.z ? 1 : 0); }
 inline int4 greaterThan(float4 a, float4 b) { return int4(a.x > b.x ? 1 : 0, a.y > b.y ? 1 : 0, a.z > b.z ? 1 : 0, a.w > b.w ? 1 : 0); }
-#define lessThan(x, y) greaterThanEqual(y, x)
-#define lessThanEqual(x, y) greaterThan(y, x)
+#define lessThan(x, y) greaterThan(y, x)
+#define lessThanEqual(x, y) greaterThanEqual(y, x)
 inline int equal(int a, int b) { return (a == b ? 1 : 0); }
 inline int2 equal(int2 a, int2 b) { return int2(a.x == b.x ? 1 : 0, a.y == b.y ? 1 : 0); }
 inline int3 equal(int3 a, int3 b) { return int3(a.x == b.x ? 1 : 0, a.y == b.y ? 1 : 0, a.z == b.z ? 1 : 0); }
