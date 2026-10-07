@@ -136,7 +136,14 @@ inline float4 vgl_atan(float4 x) { return atan(x); }
 #define bvec3 bool3
 #define bvec4 bool4
 #define fract(x) frac(x)
-#define mod(x,y) fmod(x,y)
+inline float vgl_mod(float x, float y) { return x - y * floor(x / y); }
+inline float2 vgl_mod(float2 x, float y) { return x - y * floor(x / y); }
+inline float3 vgl_mod(float3 x, float y) { return x - y * floor(x / y); }
+inline float4 vgl_mod(float4 x, float y) { return x - y * floor(x / y); }
+inline float2 vgl_mod(float2 x, float2 y) { return x - y * floor(x / y); }
+inline float3 vgl_mod(float3 x, float3 y) { return x - y * floor(x / y); }
+inline float4 vgl_mod(float4 x, float4 y) { return x - y * floor(x / y); }
+#define mod vgl_mod
 #define mat2 float2x2
 #define mat3 float3x3
 #define mat4 float4x4
