@@ -189,7 +189,7 @@ float4 main(
 
 	// Fogging
 #if fog_mode < 3
-	float fog_dist = coords.z / coords.w;
+	float fog_dist = coords.z;
 #if fog_mode == 0 // GL_LINEAR
 	float vFog = (Nfog_far - fog_dist) / Mfog_range;
 #else
