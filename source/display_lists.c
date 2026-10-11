@@ -42,7 +42,7 @@ GLboolean display_list_execute;
 display_list display_lists[NUM_DISPLAY_LISTS];
 static uint32_t dlist_offs = 0;
 
-void resetDlists() {
+void reset_dlists() {
 	vgl_memset(&display_lists[0], 0, sizeof(display_list) * NUM_DISPLAY_LISTS);
 }
 
