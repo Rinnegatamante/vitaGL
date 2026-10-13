@@ -224,19 +224,18 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	sprintf(fname, "%s/v", vgl_shader_cache_path);
 	sceIoMkdir(fname, 0777);
 	char dirname[256];
-	sprintf(dirname, "%s/00", fname);
+	int dirlen = sprintf(dirname, "%s/00", fname);
 	GLboolean skip_creation = sceIoMkdir(dirname, 0777) != 0;
 	if (!skip_creation) {
 		for (int i = 1; i <= 0xFF; i++) {
-			sprintf(dirname, "%s/%02X", fname, i);
+			sprintf(&dirname[dirlen - 2], "%02X", i);
 			sceIoMkdir(dirname, 0777);
 		}
-	}
-	sprintf(fname, "%s/f", vgl_shader_cache_path);
-	sceIoMkdir(fname, 0777);
-	if (!skip_creation) {
+		sprintf(fname, "%s/f", vgl_shader_cache_path);
+		sceIoMkdir(fname, 0777);
+		dirname[dirlen - 4] = 'f';
 		for (int i = 0; i <= 0xFF; i++) {
-			sprintf(dirname, "%s/%02X", fname, i);
+			sprintf(&dirname[dirlen - 2], "%02X", i);
 			sceIoMkdir(dirname, 0777);
 		}
 	}
