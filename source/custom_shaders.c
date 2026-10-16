@@ -725,8 +725,8 @@ void unserialize_shader(void *in, size_t sz, shader *s, GLboolean load_bindings)
 }
 
 #ifdef HAVE_SHADER_CACHE
-#define vgl_compile_shader(shd, sv) compile_shader(shd, sv, fname)
-static inline __attribute__((always_inline)) void compile_shader(shader *s, GLboolean save_bindings, const char *cache_fname) {
+#define vgl_compile_shader(shd, sv) compile_shader(shd, sv, fname, fname_len)
+static inline __attribute__((always_inline)) void compile_shader(shader *s, GLboolean save_bindings, char *cache_fname, int fname_len) {
 #else
 #define vgl_compile_shader(shd, sv) compile_shader(shd, sv)
 static inline __attribute__((always_inline)) void compile_shader(shader *s, GLboolean save_bindings) {
@@ -772,6 +772,9 @@ static inline __attribute__((always_inline)) void compile_shader(shader *s, GLbo
 #endif
 	shark_clear_output();
 #ifdef HAVE_SHADER_CACHE
+	cache_fname[fname_len - 21] = 0;
+	sceIoMkdir(cache_fname, 0777);
+	cache_fname[fname_len - 21] = '/';
 	SceUID f = sceIoOpen(cache_fname, SCE_O_CREAT | SCE_O_WRONLY | SCE_O_TRUNC, 0777);
 	size_t sz;
 	void *buf = serialize_shader(NULL, &sz, s, save_bindings);
@@ -2001,7 +2004,7 @@ void glCompileShader(GLuint handle) {
 	char fname[256];
 	uint64_t hash = XXH3_64bits(s->source, s->size);
 	uint8_t subdir_hash = hash >> 56;
-	sprintf(fname, "%s/%s/%02X/%llX.gxp", vgl_shader_cache_path, s->type == GL_VERTEX_SHADER ? "v" : "f", subdir_hash, hash);
+	int fname_len = sprintf(fname, "%s/%s/%02X/%016llX.gxp", vgl_shader_cache_path, s->type == GL_VERTEX_SHADER ? "v" : "f", subdir_hash, hash);
 	SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
 	if (f >= 0) {
 		vgl_free(s->source);
@@ -2383,11 +2386,12 @@ void glLinkProgram(GLuint progr) {
 		glsl_sema_mode = VGL_MODE_SHADER_PAIR;
 #ifdef HAVE_SHADER_CACHE
 		char frag_fname[256], vert_fname[256];
+		int fname_len;
 		char *fname;
 		if (!p->vshader->prog) {
 			uint64_t hash = XXH3_64bits(p->vshader->source, p->vshader->size);
 			uint8_t subdir_hash = hash >> 56;
-			sprintf(vert_fname, "%s/v/%02X/%llX.gxp", vgl_shader_cache_path, subdir_hash, hash);
+			fname_len = sprintf(vert_fname, "%s/v/%02X/%016llX.gxp", vgl_shader_cache_path, subdir_hash, hash);
 			SceUID f = sceIoOpen(vert_fname, SCE_O_RDONLY, 0777);
 			if (f >= 0) {
 				size_t sz = sceIoLseek(f, 0, SCE_SEEK_END);
@@ -2402,7 +2406,7 @@ void glLinkProgram(GLuint progr) {
 		if (!p->fshader->prog) {
 			uint64_t hash = XXH3_64bits(p->fshader->source, p->fshader->size);
 			uint8_t subdir_hash = hash >> 56;
-			sprintf(frag_fname, "%s/f/%02X/%llX.gxp", vgl_shader_cache_path, subdir_hash, hash);
+			fname_len = sprintf(frag_fname, "%s/f/%02X/%016llX.gxp", vgl_shader_cache_path, subdir_hash, hash);
 			SceUID f = sceIoOpen(frag_fname, SCE_O_RDONLY, 0777);
 			if (f >= 0) {
 				size_t sz = sceIoLseek(f, 0, SCE_SEEK_END);

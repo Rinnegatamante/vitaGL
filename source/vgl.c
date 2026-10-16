@@ -216,28 +216,16 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	sprintf(fname, "ux0:data/shader_cache/v%d/f", FFP_SHADER_CACHE_MAGIC);
 	sceIoMkdir(fname, 0777);
 #ifdef HAVE_SHADER_CACHE
-	if (!shader_cache_root[0])
+	if (!shader_cache_root[0]) {
 		sprintf(shader_cache_root, "ux0:data/shader_cache/%s", titleid);
+	}
 	sceIoMkdir(shader_cache_root, 0777);
 	sprintf(vgl_shader_cache_path, "%s/v%d", shader_cache_root, SHADER_CACHE_MAGIC);
-	sceIoMkdir(vgl_shader_cache_path, 0777);
-	sprintf(fname, "%s/v", vgl_shader_cache_path);
-	sceIoMkdir(fname, 0777);
-	char dirname[256];
-	int dirlen = sprintf(dirname, "%s/00", fname);
-	GLboolean skip_creation = sceIoMkdir(dirname, 0777) != 0;
-	if (!skip_creation) {
-		for (int i = 1; i <= 0xFF; i++) {
-			sprintf(&dirname[dirlen - 2], "%02X", i);
-			sceIoMkdir(dirname, 0777);
-		}
-		sprintf(fname, "%s/f", vgl_shader_cache_path);
+	if (!sceIoMkdir(vgl_shader_cache_path, 0777)) {
+		int fname_len = sprintf(fname, "%s/v", vgl_shader_cache_path);
 		sceIoMkdir(fname, 0777);
-		dirname[dirlen - 4] = 'f';
-		for (int i = 0; i <= 0xFF; i++) {
-			sprintf(&dirname[dirlen - 2], "%02X", i);
-			sceIoMkdir(dirname, 0777);
-		}
+		fname[fname_len - 1] = 'f';
+		sceIoMkdir(fname, 0777);
 	}
 #endif
 	// Check if framebuffer size is valid
