@@ -314,7 +314,7 @@ static const struct {
 	{"glTexCoord2f", (void *)glTexCoord2f},
 	{"glTexCoord2fv", (void *)glTexCoord2fv},
 	{"glTexCoord2i", (void *)glTexCoord2i},
-	{"glTexCoord2iv", (void *)glTexCoord2i},
+	{"glTexCoord2iv", (void *)glTexCoord2iv},
 	{"glTexCoord2s", (void *)glTexCoord2s},
 	{"glTexCoordPointer", (void *)glTexCoordPointer},
 	{"glTexEnvf", (void *)glTexEnvf},

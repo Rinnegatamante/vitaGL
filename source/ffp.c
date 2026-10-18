@@ -2690,6 +2690,10 @@ void glTexCoord2i(GLint s, GLint t) {
 	glTexCoord2f(s, t);
 }
 
+void glTexCoord2iv(const GLint *v) {
+	glTexCoord2f(v[0], v[1]);
+}
+
 void glTexCoord2s(GLshort s, GLshort t) {
 	glTexCoord2f(s, t);
 }

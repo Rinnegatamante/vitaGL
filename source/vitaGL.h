@@ -965,6 +965,7 @@ void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass
 void glTexCoord2f(GLfloat s, GLfloat t);
 void glTexCoord2fv(GLfloat *f);
 void glTexCoord2i(GLint s, GLint t);
+void glTexCoord2iv(const GLint *v);
 void glTexCoord2s(GLshort s, GLshort t);
 void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 void glTexEnvf(GLenum target, GLenum pname, GLfloat param);
