@@ -1079,12 +1079,12 @@ void gluLookAt(GLdouble eyeX, GLdouble eyeY, GLdouble eyeZ, GLdouble centerX, GL
 	float s[4], u[3];
 	vector3f_cross_product((vector3f *)s, (vector3f *)f, (vector3f *)up);
 	s[3] = 0.0f;
+	vector4f_normalize((vector4f *)s);
 	m[0][0] = s[0];
 	m[0][1] = s[1];
 	m[0][2] = s[2];
 	m[0][3] = 0.0f;
 
-	vector4f_normalize((vector4f *)s);
 	vector3f_cross_product((vector3f *)u, (vector3f *)s, (vector3f *)f);
 	m[1][0] = u[0];
 	m[1][1] = u[1];
@@ -1099,7 +1099,7 @@ void gluLookAt(GLdouble eyeX, GLdouble eyeY, GLdouble eyeZ, GLdouble centerX, GL
 	m[3][2] = 0.0f;
 	m[3][3] = 1.0f;
 
-	matrix4x4_multiply(res, m, *matrix);
+	matrix4x4_multiply(res, *matrix, m);
 	matrix4x4_copy(*matrix, res);
 	matrix4x4_translate(*matrix, -eyeX, -eyeY, -eyeZ);
 
