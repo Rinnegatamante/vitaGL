@@ -902,7 +902,7 @@ inline void glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glRotatef, DLIST_FUNC_F32_F32_F32, x, y, z)) {
+	if (_vgl_enqueue_list_func(glRotatef, DLIST_FUNC_F32_F32_F32_F32, angle, x, y, z)) {
 		return;
 	}
 #endif

@@ -204,7 +204,7 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBlendFunc, DLIST_FUNC_U32_U32_U32_U32, srcRGB, dstRGB, srcAlpha, dstAlpha)) {
+	if (_vgl_enqueue_list_func(glBlendFuncSeparate, DLIST_FUNC_U32_U32_U32_U32, srcRGB, dstRGB, srcAlpha, dstAlpha)) {
 		return;
 	}
 #endif
