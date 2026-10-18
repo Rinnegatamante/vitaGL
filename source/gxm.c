@@ -472,7 +472,7 @@ void init_gxm_context(SceGxmContext **ctx, uint8_t ctx_slot) {
 	// Initializing sceGxm context
 	sceGxmCreateContext(&gxm_context_params, ctx);
 #ifdef DISABLE_W_CLAMPING
-	sceGxmSetWClampEnable(**ctx, SCE_GXM_WCLAMP_MODE_DISABLED);
+	sceGxmSetWClampEnable(*ctx, SCE_GXM_WCLAMP_MODE_DISABLED);
 #endif
 
 	// Initializing circular pool for uniform buffers
