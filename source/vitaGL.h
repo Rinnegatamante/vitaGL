@@ -1141,6 +1141,16 @@ typedef enum {
 	VGL_MODE_POSTPONED // Moves shaders compilation into glLinkProgram. Best results since will always have correct shader couples for the translation for accurate semantic bindings resolution.
 } vglSemanticMode;
 
+typedef struct {
+	SceGxmContext *context; // Usable gxm context during a custom splashscreen rendering
+	SceGxmShaderPatcher *patcher; // Usable gxm shader patcher during a custom splashscreen rendering
+	float elapsed_seconds; // Elapsed time since splashscreen start in seconds
+	float delta_seconds; // Elapsed time since previous splahscreen frame in seconds
+	GLboolean must_stop; // Flag whether splashscreen is supposed to end
+} vglSplashDetails;
+
+typedef GLboolean (*vglSplashCallback)(const vglSplashDetails *details);
+
 // vgl*
 // Add a new global custom semantic binding for the GLSL translator.
 void vglAddSemanticBinding(const GLchar *const *varying, GLint index, GLenum type);
@@ -1241,6 +1251,9 @@ void *vglRealloc(void *ptr, uint32_t size);
 // Change the total memory to use for internal circular pools to use in vitaGL. Disabled with NO_CIRCULAR_POOL. Default value: 32 * 1024 * 1024.
 void vglSetCircularPoolSize(uint32_t size);
 
+// Set color for the commit hash text during a custom splashscreen rendering
+void vglSetCustomSplashscreenHashColor(float r, float g, float b, float a);
+
 // Sets the number of buffers to use for the display swapchain. Default value: 3.
 void vglSetDisplayBufferCount(int count);
 
@@ -1261,6 +1274,9 @@ void vglSetShaderAssociationPath(const char *path);
 
 // Overloads the shader cache path when HAVE_SHADER_CACHE=1 is used. Must be called before vglInit*. Default value: ux0:data/shader_cache.
 void vglSetShaderCachePath(const char *path);
+
+// Overloads the default vitaGL boot splashscreen with a custom one. Not compatible with NO_SPLASHSCREEN=1.
+void vglSetupCustomSplashscreen(vglSplashCallback init_callback, vglSplashCallback term_callback, vglSplashCallback main_callback, GLboolean clear_screen);
 
 // Change the lifetime for a texture to be considered cacheable. Requires HAVE_TEXTURE_CACHE.
 void vglSetTextureCacheFrequency(GLuint freq);
