@@ -6605,8 +6605,10 @@ void *vglGetCaveBuffer(size_t *sz) {
 }
 
 void vglSetCustomSplashscreenHashColor(float r, float g, float b, float a) {
+#ifndef SKIP_SPLASHSCREEN
 	splash_hash_color.r = r;
 	splash_hash_color.g = g;
 	splash_hash_color.b = b;
 	splash_hash_color.a = a;
+#endif
 }
