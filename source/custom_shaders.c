@@ -690,10 +690,29 @@ void *serialize_shader(void *out, size_t *sz, shader *s, GLboolean save_bindings
 	return _out;
 }
 
-void unserialize_shader(void *in, size_t sz, shader *s, GLboolean load_bindings) {
+GLboolean unserialize_shader(void *in, size_t sz, shader *s, GLboolean load_bindings) {
 	uint8_t *buf = (uint8_t *)in;
 	uint32_t matrix_uniforms_num;
+	// Rejecting truncated or corrupted data before touching the shader
+	if (sz < sizeof(uint32_t))
+		return GL_FALSE;
 	vgl_fast_memcpy(&matrix_uniforms_num, buf, sizeof(uint32_t));
+	if (matrix_uniforms_num >= sz / sizeof(uint32_t))
+		return GL_FALSE;
+	size_t hdr_size = sizeof(uint32_t) * (matrix_uniforms_num + 1) + (load_bindings ? sizeof(binds_map) : 0);
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+	if (hdr_size >= sz || buf[hdr_size] > SCE_GXM_MAX_TEXTURE_UNITS)
+		return GL_FALSE;
+	hdr_size += sizeof(uint8_t) + sizeof(glsl_samplers_info) * buf[hdr_size];
+#endif
+	if (hdr_size >= sz)
+		return GL_FALSE;
+	SceGxmProgram *prog = (SceGxmProgram *)vglMalloc(sz - hdr_size);
+	vgl_fast_memcpy(prog, buf + hdr_size, sz - hdr_size);
+	if (sceGxmProgramCheck(prog) || sceGxmProgramGetSize(prog) > sz - hdr_size) {
+		vgl_free(prog);
+		return GL_FALSE;
+	}
 	buf += sizeof(uint32_t) * (matrix_uniforms_num + 1);
 	if (load_bindings) {
 		vgl_fast_memcpy(&s->semantics, buf, sizeof(binds_map));
@@ -707,9 +726,8 @@ void unserialize_shader(void *in, size_t sz, shader *s, GLboolean load_bindings)
 		buf += sizeof(glsl_samplers_info) * s->sized_samplers_num;
 	}
 #endif
-	s->size = sz - ((uintptr_t)buf - (uintptr_t)in);
-	s->prog = (SceGxmProgram *)vglMalloc(s->size);
-	vgl_fast_memcpy((SceGxmProgram *)s->prog, buf, s->size);
+	s->size = sz - hdr_size;
+	s->prog = prog;
 	sceGxmShaderPatcherRegisterProgram(gxm_shader_patcher, s->prog, &s->id);
 	s->unif_buf_size = sceGxmProgramGetDefaultUniformBufferSize(s->prog);
 	if (matrix_uniforms_num) {
@@ -722,9 +740,26 @@ void unserialize_shader(void *in, size_t sz, shader *s, GLboolean load_bindings)
 			s->mat = m;
 		}
 	}
+	return GL_TRUE;
 }
 
 #ifdef HAVE_SHADER_CACHE
+static GLboolean load_cached_shader(const char *fname, shader *s, GLboolean load_bindings) {
+	SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
+	if (f < 0)
+		return GL_FALSE;
+	size_t sz = sceIoLseek(f, 0, SCE_SEEK_END);
+	sceIoLseek(f, 0, SCE_SEEK_SET);
+	void *buf = vglMalloc(sz);
+	sceIoRead(f, buf, sz);
+	sceIoClose(f);
+	GLboolean res = unserialize_shader(buf, sz, s, load_bindings);
+	vgl_free(buf);
+	if (!res) // Removing the corrupted file so that the shader gets compiled and cached again
+		sceIoRemove(fname);
+	return res;
+}
+
 #define vgl_compile_shader(shd, sv) compile_shader(shd, sv, fname, fname_len)
 static inline __attribute__((always_inline)) void compile_shader(shader *s, GLboolean save_bindings, char *cache_fname, int fname_len) {
 #else
@@ -2005,17 +2040,9 @@ void glCompileShader(GLuint handle) {
 	uint64_t hash = XXH3_64bits(s->source, s->size);
 	uint8_t subdir_hash = hash >> 56;
 	int fname_len = sprintf(fname, "%s/%s/%02X/%016llX.gxp", vgl_shader_cache_path, s->type == GL_VERTEX_SHADER ? "v" : "f", subdir_hash, hash);
-	SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
-	if (f >= 0) {
+	if (load_cached_shader(fname, s, GL_FALSE)) {
 		vgl_free(s->source);
 		s->source = NULL;
-		size_t sz = sceIoLseek(f, 0, SCE_SEEK_END);
-		sceIoLseek(f, 0, SCE_SEEK_SET);
-		void *buf = vglMalloc(sz);
-		sceIoRead(f, buf, sz);
-		sceIoClose(f);
-		unserialize_shader(buf, sz, s, GL_FALSE);
-		vgl_free(buf);
 		return;
 	}
 #endif
@@ -2392,31 +2419,13 @@ void glLinkProgram(GLuint progr) {
 			uint64_t hash = XXH3_64bits(p->vshader->source, p->vshader->size);
 			uint8_t subdir_hash = hash >> 56;
 			fname_len = sprintf(vert_fname, "%s/v/%02X/%016llX.gxp", vgl_shader_cache_path, subdir_hash, hash);
-			SceUID f = sceIoOpen(vert_fname, SCE_O_RDONLY, 0777);
-			if (f >= 0) {
-				size_t sz = sceIoLseek(f, 0, SCE_SEEK_END);
-				sceIoLseek(f, 0, SCE_SEEK_SET);
-				void *buf = vglMalloc(sz);
-				sceIoRead(f, buf, sz);
-				sceIoClose(f);
-				unserialize_shader(buf, sz, p->vshader, GL_TRUE);
-				vgl_free(buf);
-			}
+			load_cached_shader(vert_fname, p->vshader, GL_TRUE);
 		}
 		if (!p->fshader->prog) {
 			uint64_t hash = XXH3_64bits(p->fshader->source, p->fshader->size);
 			uint8_t subdir_hash = hash >> 56;
 			fname_len = sprintf(frag_fname, "%s/f/%02X/%016llX.gxp", vgl_shader_cache_path, subdir_hash, hash);
-			SceUID f = sceIoOpen(frag_fname, SCE_O_RDONLY, 0777);
-			if (f >= 0) {
-				size_t sz = sceIoLseek(f, 0, SCE_SEEK_END);
-				sceIoLseek(f, 0, SCE_SEEK_SET);
-				void *buf = vglMalloc(sz);
-				sceIoRead(f, buf, sz);
-				sceIoClose(f);
-				unserialize_shader(buf, sz, p->fshader, GL_TRUE);
-				vgl_free(buf);
-			}
+			load_cached_shader(frag_fname, p->fshader, GL_TRUE);
 		}
 #endif
 		if (!p->vshader->prog || !p->fshader->prog) {
