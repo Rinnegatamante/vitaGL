@@ -772,6 +772,8 @@ static inline __attribute__((always_inline)) void compile_shader(shader *s, GLbo
 #endif
 	shark_clear_output();
 #ifdef HAVE_SHADER_CACHE
+	if (!s->prog)
+		return;
 	cache_fname[fname_len - 21] = 0;
 	sceIoMkdir(cache_fname, 0777);
 	cache_fname[fname_len - 21] = '/';
