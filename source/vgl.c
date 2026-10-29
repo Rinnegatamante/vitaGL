@@ -583,8 +583,12 @@ void *vglAlloc(uint32_t size, vglMemType type) {
 	return vgl_malloc(size, type);
 }
 
-void *vglForceAlloc(uint32_t size) {
-	return gpu_alloc_mapped_for_cpu(size);
+void *vglForceAlloc(uint32_t size, GLboolean for_gpu) {
+	return for_gpu ? gpu_alloc_mapped_for_gpu(size) : gpu_alloc_mapped_for_cpu(size);
+}
+
+void *vglForceAllocAligned(uint32_t alignment, uint32_t size, GLboolean for_gpu) {
+	return for_gpu ? gpu_alloc_mapped_aligned_for_gpu(alignment, size) : gpu_alloc_mapped_aligned_for_cpu(alignment, size);
 }
 
 void *vglMalloc(uint32_t size) {

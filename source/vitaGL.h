@@ -1171,7 +1171,10 @@ void vglBufferData(GLenum target, const GLvoid *data);
 void *vglCalloc(uint32_t nmember, uint32_t size);
 
 // Alloc memory from vitaGL internal memory pools. If the memory pools exhausted, vitaGL will attempt to free enough memory to not fail this allocation. Needs to be freed with vglFree.
-void *vglForceAlloc(uint32_t size);
+void *vglForceAlloc(uint32_t size, GLboolean for_gpu);
+
+// Alloc aligned memory from vitaGL internal memory pools. If the memory pools exhausted, vitaGL will attempt to free enough memory to not fail this allocation. Needs to be freed with vglFree.
+void *vglForceAllocAligned(uint32_t alignment, uint32_t size, GLboolean for_gpu);
 
 // Frees a previously allocated memory block in the vitaGL internal memory pools.
 void vglFree(void *addr);
