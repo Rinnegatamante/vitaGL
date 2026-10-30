@@ -3124,8 +3124,9 @@ inline void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpos
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
+	float stack_tmp[4 * 4];
 	if (transpose) {
-		float *tmp = gpu_alloc_mapped_temp(count * 4 * sizeof(float));
+		float *tmp = count <= 4 ? stack_tmp : gpu_alloc_mapped_temp(count * 4 * sizeof(float));
 		for (int i = 0; i < count; i++) {
 			matrix2x2_transpose(&tmp[i * 4], &value[i * 4]);
 		}
@@ -3150,8 +3151,9 @@ inline void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpos
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
+	float stack_tmp[4 * 9];
 	if (transpose) {
-		float *tmp = gpu_alloc_mapped_temp(count * 9 * sizeof(float));
+		float *tmp = count <= 4 ? stack_tmp : gpu_alloc_mapped_temp(count * 9 * sizeof(float));
 		for (int i = 0; i < count; i++) {
 			matrix3x3_transpose(&tmp[i * 9], &value[i * 9]);
 		}
@@ -3177,8 +3179,9 @@ inline void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpos
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
+	float stack_tmp[4 * 16];
 	if (transpose) {
-		float *tmp = gpu_alloc_mapped_temp(count * 16 * sizeof(float));
+		float *tmp = count <= 4 ? stack_tmp : gpu_alloc_mapped_temp(count * 16 * sizeof(float));
 		for (int i = 0; i < count; i++) {
 			matrix4x4_transpose(&tmp[i * 16], &value[i * 16]);
 		}
