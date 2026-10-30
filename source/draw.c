@@ -152,6 +152,12 @@ GLboolean prim_is_non_native = GL_FALSE; // Flag for when a primitive not suppor
 		break; \
 	}
 
+static inline __attribute__((always_inline)) void convert_16_to_8bit_indices(uint16_t *restrict dst, const uint8_t *restrict src, int32_t count) {
+	for (int32_t i = 0; i < count; i++) {
+		dst[i] = src[i];
+	}
+}
+
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	THREAD_SAFE()
 
@@ -357,10 +363,7 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 	// sceGxm doesn't support 8bit indices natively, so we internally convert to 16bit
 	if (type == GL_UNSIGNED_BYTE) {
 		uint16_t *idx16 = gpu_alloc_mapped_temp(count * sizeof(uint16_t));
-		uint8_t *idx8 = (uint8_t *)src;
-		for (GLsizei i = 0; i < count; i++) {
-			idx16[i] = idx8[i];
-		}
+		convert_16_to_8bit_indices(idx16, (const uint8_t *)src, count);
 		src = idx16;
 	}
 	
