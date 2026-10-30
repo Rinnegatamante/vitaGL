@@ -3066,7 +3066,7 @@ inline void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 	uniform *u = (uniform *)get_uniform_from_ptr(location, &offs);
 
 	// Setting passed value to desired uniform
-	vgl_fill_uniform_data(value, SCE_GXM_PARAMETER_TYPE_S32, 4, 1)
+	vgl_fill_uniform_data(value, SCE_GXM_PARAMETER_TYPE_S32, 4, count)
 }
 
 void glProgramUniform4iv(GLuint prog, GLint location, GLsizei count, const GLint *value) {
