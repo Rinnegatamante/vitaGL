@@ -2674,6 +2674,10 @@ void glLinkProgram(GLuint progr) {
 void glUseProgram(GLuint prog) {
 	THREAD_SAFE()
 
+	if (cur_program == prog) {
+		return;
+	}
+
 	// Setting current custom program to passed program
 	cur_program = prog;
 	dirty_shader_frag_unifs = GL_TRUE;
