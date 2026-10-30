@@ -475,14 +475,7 @@ static inline __attribute__((always_inline)) void patch_fragment_program(SceGxmS
 #endif
 }
 
-#define recalculate_normal_matrix() \
-	matrix3x3 inverted; \
-	matrix3x3 top_modelview_matrix; \
-	vgl_fast_memcpy(top_modelview_matrix[0], modelview_matrix[0], sizeof(float) * 3); \
-	vgl_fast_memcpy(top_modelview_matrix[1], modelview_matrix[1], sizeof(float) * 3); \
-	vgl_fast_memcpy(top_modelview_matrix[2], modelview_matrix[2], sizeof(float) * 3); \
-	matrix3x3_invert(inverted, top_modelview_matrix); \
-	matrix3x3_transpose(normal_matrix, inverted);
+#define recalculate_normal_matrix() matrix4x4_normal_matrix(normal_matrix, modelview_matrix)
 
 #define rebuild_frag_shader(x, y, z, w) patch_fragment_program(x, w, msaa_mode, &blend_info.info, z, y) // Creates a new patched fragment program with proper blend settings
 

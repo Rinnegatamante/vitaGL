@@ -24,6 +24,7 @@
 #ifndef _MATH_UTILS_H_
 #define _MATH_UTILS_H_
 
+#include <stdint.h>
 #include <math.h>
 #include <math_neon.h>
 
@@ -58,6 +59,13 @@ typedef float matrix2x2[2][2];
 typedef float matrix3x3[3][3];
 typedef float matrix4x4[4][4];
 
+enum {
+	AXIS_NONE,
+	AXIS_X,
+	AXIS_Y,
+	AXIS_Z
+};
+
 // Creates an identity matrix
 static inline __attribute__((always_inline)) void matrix4x4_identity(matrix4x4 m) {
 	vgl_memset(m, 0, sizeof(matrix4x4));
@@ -66,7 +74,7 @@ static inline __attribute__((always_inline)) void matrix4x4_identity(matrix4x4 m
 
 // Copy a matrix to another one
 static inline __attribute__((always_inline)) void matrix4x4_copy(matrix4x4 dst, const matrix4x4 src) {
-	vgl_fast_memcpy(dst, src, sizeof(matrix4x4));
+	__builtin_memcpy(dst, src, sizeof(matrix4x4));
 }
 
 // Perform a matrix per matrix moltiplication
@@ -76,8 +84,46 @@ static inline __attribute__((always_inline)) void matrix4x4_multiply(matrix4x4 d
 
 // Rotate a matrix on x,y,z axis
 static inline __attribute__((always_inline)) void matrix4x4_rotate(matrix4x4 m, float rad, float x, float y, float z) {
+	uint32_t bx, by, bz;
+	__builtin_memcpy(&bx, &x, sizeof(bx));
+	__builtin_memcpy(&by, &y, sizeof(by));
+	__builtin_memcpy(&bz, &z, sizeof(bz));
+	bx &= 0x7FFFFFFFu;
+	by &= 0x7FFFFFFFu;
+	bz &= 0x7FFFFFFFu;
+	int cardinal_axis = AXIS_NONE;
+	float sign = 1.0f;
+	if (bx == 0x3F800000u && by == 0 && bz == 0) {
+		cardinal_axis = AXIS_X;
+		sign = x;
+	} else if (by == 0x3F800000u && bx == 0 && bz == 0) {
+		cardinal_axis = AXIS_Y;
+		sign = y;
+	} else if (bz == 0x3F800000u && bx == 0 && by == 0) {
+		cardinal_axis = AXIS_Z;
+		sign = z;
+	}
 	float cs[2];
 	sincosf_c(rad, cs);
+	if (cardinal_axis != AXIS_NONE) {
+		const float c = cs[1], s = cs[0] * sign;
+		for (int i = 0; i < 4; i++) {
+			if (cardinal_axis == AXIS_X) {
+				const float a = m[i][1], b = m[i][2];
+				m[i][1] = a * c + b * s;
+				m[i][2] = b * c - a * s;
+			} else if (cardinal_axis == AXIS_Y) {
+				const float a = m[i][0], b = m[i][2];
+				m[i][0] = a * c - b * s;
+				m[i][2] = a * s + b * c;
+			} else {
+				const float a = m[i][0], b = m[i][1];
+				m[i][0] = a * c + b * s;
+				m[i][1] = b * c - a * s;
+			}
+		}
+		return;
+	}
 
 	matrix4x4 m1, m2;
 	vgl_memset(m1, 0, sizeof(matrix4x4));
@@ -105,46 +151,40 @@ static inline __attribute__((always_inline)) void matrix4x4_rotate(matrix4x4 m, 
 
 // Translate a matrix
 static inline __attribute__((always_inline)) void matrix4x4_translate(matrix4x4 m, float x, float y, float z) {
-	matrix4x4 m1, m2;
-	matrix4x4_identity(m1);
-	m1[0][3] = x;
-	m1[1][3] = y;
-	m1[2][3] = z;
-
-	matrix4x4_multiply(m2, m, m1);
-	matrix4x4_copy(m, m2);
+	for (int i = 0; i < 4; i++) {
+		m[i][3] = m[i][0] * x + m[i][1] * y + m[i][2] * z + m[i][3];
+	}
 }
 
 // Scale a matrix
 static inline __attribute__((always_inline)) void matrix4x4_scale(matrix4x4 m, float x, float y, float z) {
-	matrix4x4 m1, m2;
-	vgl_memset(m1, 0, sizeof(matrix4x4));
-	m1[0][0] = x;
-	m1[1][1] = y;
-	m1[2][2] = z;
-	m1[3][3] = 1.0f;
-
-	matrix4x4_multiply(m2, m, m1);
-	matrix4x4_copy(m, m2);
+	for (int i = 0; i < 4; i++) {
+		m[i][0] *= x;
+		m[i][1] *= y;
+		m[i][2] *= z;
+	}
 }
 
 // Transpose a matrix
 static inline __attribute__((always_inline)) void matrix2x2_transpose(matrix2x2 out, const matrix2x2 m) {
 	for (int i = 0; i < 2; i++) {
-		for (int j = 0; j < 2; j++)
+		for (int j = 0; j < 2; j++) {
 			out[i][j] = m[j][i];
+		}
 	}
 }
 static inline __attribute__((always_inline)) void matrix3x3_transpose(matrix3x3 out, const matrix3x3 m) {
 	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++)
+		for (int j = 0; j < 3; j++) {
 			out[i][j] = m[j][i];
+		}
 	}
 }
 static inline __attribute__((always_inline)) void matrix4x4_transpose(matrix4x4 out, const matrix4x4 m) {
 	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 4; j++)
+		for (int j = 0; j < 4; j++) {
 			out[i][j] = m[j][i];
+		}
 	}
 }
 
@@ -206,6 +246,39 @@ static inline __attribute__((always_inline)) int matrix3x3_invert(matrix3x3 out,
 	
 	return 1;
 }
+
+// Calculate the 3x3 normal matrix off a 4x4 matrix
+static inline __attribute__((always_inline)) int matrix4x4_normal_matrix(matrix3x3 out, const matrix4x4 m) {
+	const float a = m[0][0], b = m[0][1], c = m[0][2];
+	const float d = m[1][0], e = m[1][1], f = m[1][2];
+	const float g = m[2][0], h = m[2][1], i = m[2][2];
+	const float c00 = e * i - f * h;
+	const float c01 = f * g - d * i;
+	const float c02 = d * h - e * g;
+	const float c10 = c * h - b * i;
+	const float c11 = a * i - c * g;
+	const float c12 = b * g - a * h;
+	const float c20 = b * f - c * e;
+	const float c21 = c * d - a * f;
+	const float c22 = a * e - b * d;
+	const float det = a * c00 + d * c10 + g * c20;
+	if (det == 0.0f) {
+		return 0;
+	}
+	const float invdet = 1.0f / det;
+	out[0][0] = c00 * invdet;
+	out[0][1] = c01 * invdet;
+	out[0][2] = c02 * invdet;
+	out[1][0] = c10 * invdet;
+	out[1][1] = c11 * invdet;
+	out[1][2] = c12 * invdet;
+	out[2][0] = c20 * invdet;
+	out[2][1] = c21 * invdet;
+	out[2][2] = c22 * invdet;
+	return 1;
+}
+
+// Invert a 4x4 matrix
 static inline __attribute__((always_inline)) int matrix4x4_invert(matrix4x4 out, const matrix4x4 in) {
 	float inv[16], det;
 	float *invOut = (float *)&out[0][0];
