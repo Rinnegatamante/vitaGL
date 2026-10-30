@@ -2784,15 +2784,39 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	return -1;
 }
 
-#define vgl_fill_uniform_data(p, type, size, count) \
-	if (u->vptr) { \
-		vglSetUniformData(u->vptr, sceGxmProgramParameterGetType(u->ptr), offs, count, size, p, type); \
-		dirty_shader_vert_unifs = GL_TRUE; \
+#define vgl_fill_uniform_data(p, type, size, count) { \
+	if (count == 1 && size >= 1 && size <= 4 && offs == 0 && (type == SCE_GXM_PARAMETER_TYPE_F32 || type == SCE_GXM_PARAMETER_TYPE_S32)) { \
+		const SceGxmParameterType dst_type = sceGxmProgramParameterGetType(u->ptr); \
+		if (dst_type == type) { \
+			if (u->vptr) { \
+				__builtin_memcpy(u->vptr, p, size * sizeof(uint32_t)); \
+				dirty_shader_vert_unifs = GL_TRUE; \
+			} \
+			if (u->fptr) { \
+				__builtin_memcpy(u->fptr, p, size * sizeof(uint32_t)); \
+				dirty_shader_frag_unifs = GL_TRUE; \
+			} \
+		} else { \
+			if (u->vptr) { \
+				vglSetUniformData(u->vptr, dst_type, offs, count, size, p, type); \
+				dirty_shader_vert_unifs = GL_TRUE; \
+			} \
+			if (u->fptr) { \
+				vglSetUniformData(u->fptr, dst_type, offs, count, size, p, type); \
+				dirty_shader_frag_unifs = GL_TRUE; \
+			} \
+		} \
+	} else { \
+		if (u->vptr) { \
+			vglSetUniformData(u->vptr, sceGxmProgramParameterGetType(u->ptr), offs, count, size, p, type); \
+			dirty_shader_vert_unifs = GL_TRUE; \
+		} \
+		if (u->fptr) { \
+			vglSetUniformData(u->fptr, sceGxmProgramParameterGetType(u->ptr), offs, count, size, p, type); \
+			dirty_shader_frag_unifs = GL_TRUE; \
+		} \
 	} \
-	if (u->fptr) { \
-		vglSetUniformData(u->fptr, sceGxmProgramParameterGetType(u->ptr), offs, count, size, p, type); \
-		dirty_shader_frag_unifs = GL_TRUE; \
-	}
+}
 
 inline void glUniform1i(GLint location, GLint v0) {
 	THREAD_SAFE()
