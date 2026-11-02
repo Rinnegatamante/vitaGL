@@ -609,6 +609,8 @@ void vglDrawObjects(GLenum mode, GLsizei count) {
 	}
 
 	restore_polygon_mode(gxm_p);
+#else
+	vgl_log("%s:%d %s: This function requires ENABLE_LEGACY_PIPELINE=1 flag.\n", __FILE__, __LINE__, __func__);
 #endif
 }
 

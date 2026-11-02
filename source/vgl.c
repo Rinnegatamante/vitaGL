@@ -758,6 +758,8 @@ void vglUseExtraMem(GLboolean use) {
 void vglSetCircularPoolSize(uint32_t size) {
 #ifndef DISABLE_CIRCULAR_POOL
 	circular_data_pool_size = size;
+#else
+	vgl_log("%s:%d %s: This function is not compatible with NO_CIRCULAR_POOL=1 flag.\n", __FILE__, __LINE__, __func__);
 #endif
 }
 
@@ -768,6 +770,8 @@ void vglUseCachedMem(GLboolean use) {
 void vglSetTextureCacheFrequency(GLuint freq) {
 #ifdef HAVE_TEX_CACHE
 	vgl_tex_cache_freq = freq;
+#else
+	vgl_log("%s:%d %s: This function requires HAVE_TEXTURE_CACHE=1 flag.\n", __FILE__, __LINE__, __func__);
 #endif
 }
 
@@ -775,6 +779,8 @@ void vglSetupScratchMemory(GLboolean scratch_for_dynamic, GLboolean scratch_for_
 #if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
 	vgl_dynamic_wants_scratch = scratch_for_dynamic;
 	vgl_stream_wants_scratch = scratch_for_stream;
+#else
+	vgl_log("%s:%d %s: This function is not compatible with the current vitaGL compile flags.\n", __FILE__, __LINE__, __func__);
 #endif
 }
 
@@ -789,12 +795,16 @@ uint32_t vglGetFrameNumber() {
 void vglPhycontMemLazyInit(size_t size) {
 #ifndef PHYCONT_ON_DEMAND
 	vgl_mem_provide_phycont(size);
+#else
+	vgl_log("%s:%d %s: This function is not compatible with PHYCONT_ON_DEMAND=1 flag.\n", __FILE__, __LINE__, __func__);
 #endif
 }
 
 void vglSetShaderCachePath(const char *path) {
 #ifdef HAVE_SHADER_CACHE
 	strcpy(shader_cache_root, path);
+#else
+	vgl_log("%s:%d %s: This function requires HAVE_SHADER_CACHE=1 flag.\n", __FILE__, __LINE__, __func__);
 #endif
 }
 
