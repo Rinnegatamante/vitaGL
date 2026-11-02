@@ -584,6 +584,15 @@ enum {
 	DEPTHBUFFER_READY
 };
 
+#ifndef DEPTH_STENCIL_HACK
+static inline __attribute__((always_inline)) void mark_depth_stencil_as_dirty(SceGxmDepthStencilSurface *surface) {
+	mark_as_dirty(surface->depthData);
+	if (surface->stencilData) {
+		mark_as_dirty(surface->stencilData);
+	}
+}
+#endif
+
 // Framebuffer struct
 typedef struct {
 	GLboolean active;
@@ -1372,7 +1381,7 @@ static inline __attribute__((always_inline)) void _glFramebufferTexture2D(frameb
 			}
 			if (fb->depthbuffer_ptr) {
 #ifndef DEPTH_STENCIL_HACK
-				mark_as_dirty(fb->depthbuffer_ptr->depthData);
+				mark_depth_stencil_as_dirty(fb->depthbuffer_ptr);
 #endif
 				fb->depthbuffer_ptr = NULL;
 				fb->depthbuffer_state &= ~DEPTHBUFFER_READY;

@@ -1827,7 +1827,9 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 						if (fb) {
 							gpu_free_texture(&texture_slots[i]);
 							if (fb->depthbuffer_ptr) {
-								mark_as_dirty(fb->depthbuffer_ptr->depthData);
+#ifndef DEPTH_STENCIL_HACK
+								mark_depth_stencil_as_dirty(fb->depthbuffer_ptr);
+#endif
 								fb->depthbuffer_ptr = NULL;
 								fb->depthbuffer_state = DEPTHBUFFER_MISSING;
 							}
