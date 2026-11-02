@@ -43,6 +43,7 @@ In order to build vitaGL use the following command: `make install`.
 |`UNPURE_TEXFORMATS=1`| Enables support for texture dimensions different than 2D (tex2D is still required in shader code).|
 |`ENABLE_LEGACY_PIPELINE=1`| Enables support for the legacy vglDrawObjects pipeline.|
 |`HAVE_FIXED_ATTRIBUTES=1`| Enables experimental support for GL_FIXED attributes in shaders when GLSL shaders are used.|
+|`HAVE_ACCURATE_MSAA=1`| Enables `GL_EXT_multisampled_render_to_texture` extension support, replacing global MSAA handling.|
 ### Hack Flags
 | Flag | Description |
 | --- | --- |

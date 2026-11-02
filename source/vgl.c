@@ -79,6 +79,20 @@ SceGxmFragmentProgram *blit_fragment_program_float_patched;
 const SceGxmProgramParameter *blit_position;
 const SceGxmProgramParameter *blit_texcoord;
 
+#ifdef HAVE_ACCURATE_MSAA
+static SceGxmFragmentProgram *builtin_programs[3][4];
+static SceGxmMultisampleMode curr_msaa_mode;
+void refresh_builtin_programs(SceGxmMultisampleMode mode) {
+	if (mode != curr_msaa_mode) {
+		clear_fragment_program_patched = builtin_programs[mode][0];
+		clear_fragment_program_float_patched = builtin_programs[mode][1];
+		blit_fragment_program_patched = builtin_programs[mode][2];
+		blit_fragment_program_float_patched = builtin_programs[mode][3];
+		curr_msaa_mode = mode;
+	}
+}
+#endif
+
 vector4f *clear_vertices = NULL; // Memblock starting address for clear screen vertices
 vector3f *depth_vertices = NULL; // Memblock starting address for depth clear screen vertices
 SceGxmPrecomputedVertexState scissor_clear_vertex_state; // Precomputed vertex state for the fullscreen mask clear
@@ -342,6 +356,23 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	blit_draw_state_mem = gpu_alloc_mapped_for_cpu(sceGxmGetPrecomputedDrawSize(blit_vertex_program_patched));
 	sceGxmPrecomputedDrawInit(&blit_draw_state, blit_vertex_program_patched, blit_draw_state_mem);
 	sceGxmPrecomputedDrawSetParams(&blit_draw_state, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
+
+#ifdef HAVE_ACCURATE_MSAA
+	curr_msaa_mode = msaa_mode;
+	for (int i = 0; i < 3; i++) {
+		if (i == msaa_mode) {
+			builtin_programs[i][0] = clear_fragment_program_patched;
+			builtin_programs[i][1] = clear_fragment_program_float_patched;
+			builtin_programs[i][2] = blit_fragment_program_patched;
+			builtin_programs[i][3] = blit_fragment_program_float_patched;
+		} else {
+			{ patch_fragment_program(clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, i, NULL, NULL, &builtin_programs[i][0]); }
+			{ patch_fragment_program(clear_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4, i, NULL, NULL, &builtin_programs[i][1]); }
+			{ patch_fragment_program(blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4, i, NULL, NULL, &builtin_programs[i][2]); }
+			{ patch_fragment_program(blit_fragment_id, SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4, i, NULL, NULL, &builtin_programs[i][3]); }
+		}
+    }
+#endif
 
 	sceGxmSetTwoSidedEnable(gxm_context, SCE_GXM_TWO_SIDED_ENABLED);
 

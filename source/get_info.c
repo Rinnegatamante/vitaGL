@@ -47,6 +47,9 @@ static GLubyte *extensions[] = {
 	"GL_EXT_draw_instanced",
 	"GL_EXT_framebuffer_object",
 	"GL_EXT_map_buffer_range",
+#ifdef HAVE_ACCURATE_MSAA
+	"GL_EXT_multisampled_render_to_texture",
+#endif
 	"GL_EXT_packed_depth_stencil",
 	"GL_EXT_packed_float",
 	"GL_EXT_read_format_bgra",

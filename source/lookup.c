@@ -145,6 +145,7 @@ static const struct {
 	{"glFramebufferRenderbuffer", (void *)glFramebufferRenderbuffer},
 	{"glFramebufferTexture", (void *)glFramebufferTexture},
 	{"glFramebufferTexture2D", (void *)glFramebufferTexture2D},
+	{"glFramebufferTexture2DMultisample", (void *)glFramebufferTexture2DMultisample},
 	{"glFrontFace", (void *)glFrontFace},
 	{"glFrustum", (void *)glFrustum},
 	{"glFrustumf", (void *)glFrustumf},

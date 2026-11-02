@@ -20,6 +20,10 @@ ifeq ($(SOFTFP_ABI),1)
 CFLAGS += -mfloat-abi=softfp -DHAVE_SOFTFP_ABI
 endif
 
+ifeq ($(HAVE_ACCURATE_MSAA),1)
+CFLAGS += -DHAVE_ACCURATE_MSAA
+endif
+
 ifeq ($(NO_DEBUG),1)
 CFLAGS += -DSKIP_ERROR_HANDLING
 endif

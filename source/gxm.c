@@ -155,13 +155,13 @@ razor_results razor_metrics;
 GLboolean has_razor_live = GL_FALSE; // Flag for live metrics support with sceRazor
 #endif
 
-static inline __attribute__((always_inline)) int setup_render_target(SceGxmRenderTarget **rt, int w, int h, int refs) {
+static inline __attribute__((always_inline)) int setup_render_target(SceGxmRenderTarget **rt, int w, int h, int refs, SceGxmMultisampleMode samples) {
 	SceGxmRenderTargetParams renderTargetParams;
 	vgl_memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
 	renderTargetParams.width = w ? w : 1;
 	renderTargetParams.height = h ? h : 1;
 	renderTargetParams.scenesPerFrame = refs;
-	renderTargetParams.multisampleMode = msaa_mode;
+	renderTargetParams.multisampleMode = samples;
 	renderTargetParams.driverMemBlock = -1;
 	return sceGxmCreateRenderTarget(&renderTargetParams, rt);
 }
@@ -171,22 +171,29 @@ static inline __attribute__((always_inline)) int setup_render_target(SceGxmRende
 #define MAX_SHARED_RT_SIZE 256 // Maximum  width value in pixels for shared rendertargets usage
 render_target rt_list[MAX_RENDER_TARGETS_NUM];
 
-render_target *get_free_render_target(int w, int h) {
+render_target *get_free_render_target(int w, int h, SceGxmMultisampleMode samples) {
 	int i;
 	for (i = 0; i < MAX_RENDER_TARGETS_NUM; i++) {
 		if (rt_list[i].rt != NULL) {
+#ifdef HAVE_ACCURATE_MSAA
+			if (w == rt_list[i].w && h == rt_list[i].h && rt_list[i].ref_count < rt_list[i].max_refs && samples == rt_list[i].msaa_mode) {
+#else
 			if (w == rt_list[i].w && h == rt_list[i].h && rt_list[i].ref_count < rt_list[i].max_refs) {
+#endif
 				rt_list[i].ref_count++;
 				return &rt_list[i];
 			}
 		} else {
 			rt_list[i].max_refs = w > MAX_SHARED_RT_SIZE ? 1 : MAX_SCENES_PER_FRAME;
-			int r = setup_render_target(&rt_list[i].rt, w, h, rt_list[i].max_refs);
+			int r = setup_render_target(&rt_list[i].rt, w, h, rt_list[i].max_refs, samples);
 #ifdef LOG_ERRORS
 			if (r)
 				vgl_log("%s:%d Failed to create a shared rendertarget of size %dx%d (%s).\n", __FILE__, __LINE__, w, h, get_gxm_error_literal(r));
 #endif
 			rt_list[i].w = w;
+#ifdef HAVE_ACCURATE_MSAA
+			rt_list[i].msaa_mode = samples;
+#endif
 			rt_list[i].h = h;
 			rt_list[i].ref_count = 1;
 			return &rt_list[i];
@@ -205,12 +212,15 @@ render_target *get_free_render_target(int w, int h) {
 	sceGxmFinish(gxm_context);
 	sceGxmDestroyRenderTarget(r->rt);
 	r->max_refs = w > MAX_SHARED_RT_SIZE ? 1 : MAX_SCENES_PER_FRAME;
-	int res = setup_render_target(&r->rt, w, h, r->max_refs);
+	int res = setup_render_target(&r->rt, w, h, r->max_refs, samples);
 #ifdef LOG_ERRORS
 	if (res)
 		vgl_log("%s:%d Failed to create a shared rendertarget of size %dx%d (%s).\n", __FILE__, __LINE__, w, h, get_gxm_error_literal(res));
 #endif
 	r->w = w;
+#ifdef HAVE_ACCURATE_MSAA
+	r->msaa_mode = samples;
+#endif
 	r->h = h;
 	r->ref_count = 1;
 	return r;
@@ -440,7 +450,7 @@ void init_gxm_context(SceGxmContext **ctx, uint8_t ctx_slot) {
 
 void create_display_render_target(void) {
 	// Creating render target for the display
-	setup_render_target(&gxm_render_target, DISPLAY_WIDTH, DISPLAY_HEIGHT, gxm_display_rt_size);
+	setup_render_target(&gxm_render_target, DISPLAY_WIDTH, DISPLAY_HEIGHT, gxm_display_rt_size, msaa_mode);
 }
 
 void init_display_color_surfaces(GLboolean is_swap) {
@@ -483,16 +493,17 @@ void init_display_color_surfaces(GLboolean is_swap) {
 	}
 }
 
-void init_depth_stencil_buffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, GLboolean has_stencil) {
+static void init_depth_stencil_buffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface *surface, GLboolean has_stencil, SceGxmMultisampleMode samples) {
 	// Calculating sizes for depth and stencil surfaces
 	unsigned int depth_stencil_width = VGL_ALIGN(w, SCE_GXM_TILE_SIZEX);
 #ifndef DEPTH_STENCIL_HACK
 	unsigned int depth_stencil_height = VGL_ALIGN(h, SCE_GXM_TILE_SIZEY);
 	unsigned int depth_stencil_samples = depth_stencil_width * depth_stencil_height;
-	if (msaa_mode == SCE_GXM_MULTISAMPLE_2X)
+	if (samples == SCE_GXM_MULTISAMPLE_2X) {
 		depth_stencil_samples *= 2;
-	else if (msaa_mode == SCE_GXM_MULTISAMPLE_4X)
+	} else if (samples == SCE_GXM_MULTISAMPLE_4X) {
 		depth_stencil_samples *= 4;
+	}
 
 	// Allocating depth surface
 	void *depth_buffer = gpu_alloc_mapped_aligned_for_gpu(SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT, 4 * depth_stencil_samples);
@@ -512,7 +523,7 @@ void init_depth_stencil_buffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface
 	vglDepthStencilSurfaceInit(surface,
 		has_stencil ? SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M_S8 : SCE_GXM_DEPTH_STENCIL_FORMAT_DF32M,
 		SCE_GXM_DEPTH_STENCIL_SURFACE_LINEAR,
-		msaa_mode == SCE_GXM_MULTISAMPLE_4X ? depth_stencil_width * 2 : depth_stencil_width,
+		samples == SCE_GXM_MULTISAMPLE_4X ? depth_stencil_width * 2 : depth_stencil_width,
 #ifdef DEPTH_STENCIL_HACK
 		// Vita's GPU can run without actual depth/stencil memory as far as no partial rendering is hit
 		NULL, NULL);
@@ -527,7 +538,7 @@ void init_depth_stencil_buffer(uint32_t w, uint32_t h, SceGxmDepthStencilSurface
 }
 
 void init_display_depth_stencil_surfaces(void) {
-	init_depth_stencil_buffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, &gxm_depth_stencil_surface, GL_TRUE);
+	init_depth_stencil_buffer(DISPLAY_WIDTH, DISPLAY_HEIGHT, &gxm_depth_stencil_surface, GL_TRUE, msaa_mode);
 }
 
 void start_shader_patcher(void) {
@@ -614,6 +625,9 @@ void scene_reset(void) {
 		}
 #endif
 
+#ifdef HAVE_ACCURATE_MSAA
+		refresh_builtin_programs(VGL_ACTIVE_MSAA_MODE);
+#endif
 		// Starting drawing scene
 		is_rendering_display = !active_write_fb;
 		if (is_rendering_display) { // Default framebuffer is used
@@ -640,7 +654,7 @@ void scene_reset(void) {
 			
 			// If the depthbuffer is dirty, we re-gen it
 			if (!(active_write_fb->depthbuffer_state & DEPTHBUFFER_READY)) {
-				init_depth_stencil_buffer(active_write_fb->width, active_write_fb->height, &active_write_fb->depthbuffer, active_write_fb->depthbuffer_state == DEPTHBUFFER_WANTS_STENCIL);
+				init_depth_stencil_buffer(active_write_fb->width, active_write_fb->height, &active_write_fb->depthbuffer, active_write_fb->depthbuffer_state == DEPTHBUFFER_WANTS_STENCIL, VGL_FRAMEBUFFER_MSAA(active_write_fb));
 				active_write_fb->depthbuffer_ptr = &active_write_fb->depthbuffer;
 				active_write_fb->depthbuffer_state |= DEPTHBUFFER_READY;
 			}
@@ -648,9 +662,9 @@ void scene_reset(void) {
 			// If a rendertarget is not bound to the in use framebuffer, we get one for it
 			if (!active_write_fb->target) {
 #ifdef HAVE_SHARED_RENDERTARGETS
-				active_write_fb->target = (SceGxmRenderTarget *)get_free_render_target(active_write_fb->width, active_write_fb->height);
+				active_write_fb->target = (SceGxmRenderTarget *)get_free_render_target(active_write_fb->width, active_write_fb->height, VGL_FRAMEBUFFER_MSAA(active_write_fb));
 #else
-				int r = setup_render_target(&active_write_fb->target, active_write_fb->width, active_write_fb->height, gxm_fbo_rt_size);
+				int r = setup_render_target(&active_write_fb->target, active_write_fb->width, active_write_fb->height, gxm_fbo_rt_size, VGL_FRAMEBUFFER_MSAA(active_write_fb));
 #ifdef LOG_ERRORS
 				if (r) {
 					vgl_log("%s:%d Failed to create a rendertarget of size %dx%d for framebuffer 0x%08X (%s).\n", __FILE__, __LINE__, active_write_fb->width, active_write_fb->height, active_write_fb, get_gxm_error_literal(r));
@@ -661,9 +675,13 @@ void scene_reset(void) {
 #ifdef RECYCLE_RENDERTARGETS
 			else {
 				render_target *fbo_rt = (render_target *)active_write_fb->target;
+#ifdef HAVE_ACCURATE_MSAA
+				if (active_write_fb->width != fbo_rt->w || active_write_fb->height != fbo_rt->h || active_write_fb->msaa_mode != fbo_rt->msaa_mode) {
+#else
 				if (active_write_fb->width != fbo_rt->w || active_write_fb->height != fbo_rt->h) {
+#endif
 					vgl_log("%s:%d Attempting to use a recycled rendertarget. Re-allocating it.\n", __FILE__, __LINE__);
-					active_write_fb->target = (SceGxmRenderTarget *)get_free_render_target(active_write_fb->width, active_write_fb->height);
+					active_write_fb->target = (SceGxmRenderTarget *)get_free_render_target(active_write_fb->width, active_write_fb->height, VGL_FRAMEBUFFER_MSAA(active_write_fb));
 				}
 			}
 #endif

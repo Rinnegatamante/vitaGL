@@ -218,6 +218,16 @@ char vgl_file_cache_path[256];
 	}
 #endif
 	
+#ifdef HAVE_ACCURATE_MSAA
+#define setup_frag_program() \
+	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float) || p->msaa_mode != VGL_ACTIVE_MSAA_MODE) { \
+		p->is_fbo_float = is_fbo_float; \
+		p->blend_info.raw = blend_info.raw; \
+		p->msaa_mode = VGL_ACTIVE_MSAA_MODE; \
+		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4); \
+	} \
+	sceGxmSetFragmentProgram(gxm_context, p->fprog);
+#else
 #define setup_frag_program() \
 	if ((p->blend_info.raw != blend_info.raw) || (is_fbo_float != p->is_fbo_float)) { \
 		p->is_fbo_float = is_fbo_float; \
@@ -225,6 +235,7 @@ char vgl_file_cache_path[256];
 		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4); \
 	} \
 	sceGxmSetFragmentProgram(gxm_context, p->fprog);
+#endif
 	
 #define align_attributes(attributes, streams) \
 	if (p->has_unaligned_attrs) { \
@@ -344,6 +355,9 @@ typedef struct {
 	uint8_t attr_map[VERTEX_ATTRIBS_NUM];
 	SceGxmVertexProgram *vprog;
 	SceGxmFragmentProgram *fprog;
+#ifdef HAVE_ACCURATE_MSAA
+	SceGxmMultisampleMode msaa_mode;
+#endif
 	blend_config blend_info;
 	GLuint attr_num;
 	GLuint attr_idx;
@@ -2154,6 +2168,9 @@ GLuint glCreateProgram(void) {
 			progs[i].num_glsl_attr = 0;
 			progs[i].glsl_attr_map = NULL;
 			progs[i].is_fbo_float = 0xFF;
+#ifdef HAVE_ACCURATE_MSAA
+			progs[i].msaa_mode = VGL_ACTIVE_MSAA_MODE;
+#endif
 			for (j = 0; j < VERTEX_ATTRIBS_NUM; j++) {
 				progs[i].attr[j].regIndex = 0xDEAD;
 			}
@@ -2641,6 +2658,9 @@ void glLinkProgram(GLuint progr) {
 			p->stream, p->attr_mode == VGL_ATTRIB_UNPACKED ? p->attr_num : 1, &p->vprog);
 		rebuild_frag_shader(p->fshader->id, &p->fprog, (SceGxmProgram *)p->vshader->prog, is_fbo_float ? SCE_GXM_OUTPUT_REGISTER_FORMAT_HALF4 : SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4);
 		p->is_fbo_float = is_fbo_float;
+#ifdef HAVE_ACCURATE_MSAA
+		p->msaa_mode = VGL_ACTIVE_MSAA_MODE;
+#endif
 
 		// Populating current blend settings
 		p->blend_info.raw = blend_info.raw;

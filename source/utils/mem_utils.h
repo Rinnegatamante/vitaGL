@@ -67,6 +67,9 @@ typedef struct {
 	int h;
 	int ref_count;
 	int max_refs;
+#ifdef HAVE_ACCURATE_MSAA
+	SceGxmMultisampleMode msaa_mode;
+#endif
 #ifdef RECYCLE_RENDERTARGETS
 	uint32_t last_frame;
 #endif

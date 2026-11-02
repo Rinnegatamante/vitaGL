@@ -399,6 +399,9 @@ uint16_t ffp_dirty_vert_attr = 0xFFFF;
 uint16_t dirty_vert_unifs = 0xFFFF;
 uint32_t dirty_frag_unifs = 0xFFFFFFFF;
 blend_config ffp_blend_info;
+#ifdef HAVE_ACCURATE_MSAA
+static SceGxmMultisampleMode ffp_msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
+#endif
 shader_mask ffp_mask = {.raw = 0xFFFFFFFF};
 GLenum color_material_mode = GL_AMBIENT_AND_DIFFUSE;
 GLboolean color_material_state = GL_FALSE;
@@ -595,6 +598,10 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 	// Checking if mask changed
 	GLboolean ffp_dirty_frag_blend = ffp_blend_info.raw != blend_info.raw;
+#ifdef HAVE_ACCURATE_MSAA
+	// This will cause a frag program re-patching when MSAA mode needs to change
+	ffp_dirty_frag_blend |= ffp_msaa_mode != VGL_ACTIVE_MSAA_MODE;
+#endif
 	shader_mask mask = {.raw = 0};
 #ifndef DISABLE_TEXTURE_COMBINER
 #ifdef HAVE_HIGH_FFP_TEXUNITS
@@ -1178,6 +1185,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 
 		// Updating current fixed function pipeline blend config
 		ffp_blend_info.raw = blend_info.raw;
+#ifdef HAVE_ACCURATE_MSAA
+		ffp_msaa_mode = VGL_ACTIVE_MSAA_MODE;
+#endif
 	}
 
 	sceGxmSetVertexProgram(gxm_context, ffp_vertex_program_patched);
