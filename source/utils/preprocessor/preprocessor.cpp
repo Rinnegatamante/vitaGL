@@ -1852,7 +1852,7 @@ void processFile(string fname, map<string,Var> &vars, const list<string> &includ
             done = true;
         else if (*ed == '\r' && *(ed + 1) == '\n') 
             skip = 2;
-        else if (*ed == '\n') 
+        else // \n or a lone \r
             skip = 1;
 
         *ed = '\0';  // insert end of line marker
