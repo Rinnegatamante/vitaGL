@@ -310,6 +310,7 @@ inline __attribute__((always_inline)) void glGenBuffers(GLsizei n, GLuint *res) 
 		}
 #endif
 		gpu_buf->ptr = NULL;
+		gpu_buf->size = 0;
 		gpu_buf->last_frame = OBJ_NOT_USED;
 		res[i] = (GLuint)gpu_buf;
 	}
