@@ -2098,7 +2098,9 @@ void glCompileShader(GLuint handle) {
 
 #ifdef HAVE_SHADER_CACHE
 	char fname[256];
-	uint64_t hash = XXH3_64bits(s->source, s->size);
+	// GLSL shaders cached here have no bindings and depend on the semantics mode, so they must not share cache entries
+	// with the ones glLinkProgram saves in VGL_MODE_POSTPONED
+	uint64_t hash = XXH3_64bits_withSeed(s->source, s->size, s->is_glsl ? glsl_sema_mode + 1 : 0);
 	uint8_t subdir_hash = hash >> 56;
 	int fname_len = sprintf(fname, "%s/%s/%02X/%016llX.gxp", vgl_shader_cache_path, s->type == GL_VERTEX_SHADER ? "v" : "f", subdir_hash, hash);
 	SceUID f = sceIoOpen(fname, SCE_O_RDONLY, 0777);
