@@ -353,6 +353,15 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 				} else {
 					vgl_free(gpu_buf->ptr);
 				}
+				if ((vbo *)vertex_array_unit == gpu_buf) {
+					vertex_array_unit = 0;
+				}
+				if ((vbo *)uniform_array_unit == gpu_buf) {
+					uniform_array_unit = 0;
+				}
+				if ((vbo *)cur_vao->index_array_unit == gpu_buf) {
+					cur_vao->index_array_unit = 0;
+				}
 			}
 			vgl_free(gpu_buf);
 		}
