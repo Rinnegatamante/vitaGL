@@ -362,6 +362,8 @@ void glDeleteBuffers(GLsizei n, const GLuint *gl_buffers) {
 				if ((vbo *)cur_vao->index_array_unit == gpu_buf) {
 					cur_vao->index_array_unit = 0;
 				}
+				// Setting back to NULL just to prevent double free crashes
+				gpu_buf->ptr = NULL;
 			}
 			vgl_free(gpu_buf);
 		}
