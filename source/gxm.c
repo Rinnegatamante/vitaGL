@@ -280,6 +280,45 @@ static void display_queue_callback(const void *callbackData) {
 		sceDisplayWaitVblankStartMulti(vsync_interval);
 }
 
+static void garbage_collect(int slot) {
+	int i;
+	for (i = 0; i < FRAME_PURGE_LIST_SIZE; i++) {
+		if (frame_purge_list[slot][i]) {
+			vgl_free(frame_purge_list[slot][i]);
+		} else {
+			break;
+		}
+	}
+	vgl_memset(frame_purge_list[slot], 0, i * sizeof(void *));
+	for (i = 0; i < FRAME_PURGE_RENDERTARGETS_LIST_SIZE; i++) {
+		if (frame_rt_purge_list[slot][i]) {
+			sceGxmDestroyRenderTarget(frame_rt_purge_list[slot][i]);
+		} else {
+			break;
+		}
+	}
+	vgl_memset(frame_rt_purge_list[slot], 0, i * sizeof (void *));
+}
+
+#ifdef HAVE_GC_ON_FINISH
+static void drain_garbage_collector(void) {
+#ifndef HAVE_SINGLE_THREADED_GC
+	if (sceKernelWaitSema(gc_mutex[1], FRAME_PURGE_FREQ, NULL) < 0) {
+		return;
+	}
+#endif
+	for (int i = 0; i < FRAME_PURGE_FREQ; i++) {
+		garbage_collect(i);
+	}
+
+	frame_elem_purge_idx = 0;
+	frame_rt_purge_idx = 0;
+#ifndef HAVE_SINGLE_THREADED_GC
+	sceKernelSignalSema(gc_mutex[1], FRAME_PURGE_FREQ);
+#endif
+}
+#endif
+
 // Garbage collector
 #if defined(HAVE_PTHREAD) && !defined(HAVE_SINGLE_THREADED_GC)
 void garbage_collector(void *arg) {
@@ -292,20 +331,7 @@ int garbage_collector(unsigned int args, void *arg) {
 		sceKernelWaitSema(gc_mutex[0], 1, NULL);
 #endif
 		// Purging all elements marked for deletion
-		for (int i = 0; i < FRAME_PURGE_LIST_SIZE; i++) {
-			if (frame_purge_list[frame_purge_clean_idx][i]) {
-				vgl_free(frame_purge_list[frame_purge_clean_idx][i]);
-				frame_purge_list[frame_purge_clean_idx][i] = NULL;
-			} else
-				break;
-		}
-		for (int i = 0; i < FRAME_PURGE_RENDERTARGETS_LIST_SIZE; i++) {
-			if (frame_rt_purge_list[frame_purge_clean_idx][i]) {
-				sceGxmDestroyRenderTarget(frame_rt_purge_list[frame_purge_clean_idx][i]);
-				frame_rt_purge_list[frame_purge_clean_idx][i] = NULL;
-			} else
-				break;
-		}
+		garbage_collect(frame_purge_clean_idx);
 		frame_purge_clean_idx = (frame_purge_clean_idx + 1) % FRAME_PURGE_FREQ;
 		frame_purge_idx = (frame_purge_idx + 1) % FRAME_PURGE_FREQ;
 		frame_elem_purge_idx = 0;
@@ -578,7 +604,7 @@ void start_shader_patcher(void) {
 	sceGxmShaderPatcherCreate(&shader_patcher_params, &gxm_shader_patcher);
 	vglVertexProgramCacheReset();
 #ifdef HAVE_PROFILING
-	sceClibMemset(&vgl_vcache_stats, 0, sizeof(vgl_vertex_program_cache_stats));
+	vgl_memset(&vgl_vcache_stats, 0, sizeof(vgl_vertex_program_cache_stats));
 #endif
 }
 
@@ -591,8 +617,9 @@ static inline __attribute__((always_inline)) void scene_end(void) {
 }
 
 void scene_reset(void) {
+	scene_not_flushed = GL_TRUE;
+	
 	if (in_use_framebuffer != active_write_fb || needs_scene_reset || dirty_framebuffer || dirty_query) {
-		scene_not_flushed = GL_TRUE;
 		dirty_framebuffer = GL_FALSE;
 		dirty_query = GL_FALSE;
 		needs_scene_reset = GL_FALSE;
@@ -814,7 +841,7 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		shaders_draw_cnt = 0;
 		ffp_draw_cnt = 0;
 		gpu_stall_cnt = 0;
-		sceClibMemset(&vgl_vcache_stats, 0, sizeof(vgl_vertex_program_cache_stats));
+		vgl_memset(&vgl_vcache_stats, 0, sizeof(vgl_vertex_program_cache_stats));
 	}
 	frame_start_profiler_cnt = tick;
 #endif
@@ -1011,9 +1038,13 @@ void glFinish(void) {
 	if (scene_not_flushed) {
 		dirty_framebuffer = GL_TRUE;
 		scene_reset();
-		sceGxmFinish(gxm_context);
 		scene_not_flushed = GL_FALSE;
 	}
+
+	sceGxmFinish(gxm_context);
+#ifdef HAVE_GC_ON_FINISH
+	drain_garbage_collector();
+#endif
 }
 
 void glReleaseShaderCompiler(void) {

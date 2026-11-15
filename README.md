@@ -86,6 +86,7 @@ In order to build vitaGL use the following command: `make install`.
 |`DISABLE_W_CLAMPING=1`| Disables W clamping during viewport calculation. Might fix some glitches.|
 |`NO_TILE_CLIPPER=1`| Disables early tile clipping for scissor testing. Slightly reduces CPU workload but increases GPU workload.|
 |`NO_SPLASHSCREEN=1`| Disables the vitaGL boot splashscreen that hides loading times.|
+|`HAVE_GC_ON_FINISH=1`| Forces full garbage collection drain on glFinish calls. Makes glFinish slower but improves memory management.|
 
 # Samples
 

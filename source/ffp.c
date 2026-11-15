@@ -455,7 +455,7 @@ void adjust_color_material_state() {
 }
 
 void reload_vertex_uniforms_and_attributes(int *vertex_params, int *vertex_attributes) {
-	sceClibMemset(vertex_params, -1, VERTEX_UNIFORMS_NUM * sizeof(int));
+	vgl_memset(vertex_params, -1, VERTEX_UNIFORMS_NUM * sizeof(int));
 	int cnt = sceGxmProgramGetParameterCount(ffp_vertex_program);
 	uint32_t *ptr = vglProgramGetParameterBase(ffp_vertex_program);
 	for (int i = 0; i < cnt; i++) {
@@ -478,7 +478,7 @@ void reload_vertex_uniforms_and_attributes(int *vertex_params, int *vertex_attri
 }
 
 void reload_fragment_uniforms(int *fragment_params) {
-	sceClibMemset(fragment_params, -1, FRAGMENT_UNIFORMS_NUM * sizeof(int));
+	vgl_memset(fragment_params, -1, FRAGMENT_UNIFORMS_NUM * sizeof(int));
 	int cnt = sceGxmProgramGetParameterCount(ffp_fragment_program);
 	uint32_t *ptr = vglProgramGetParameterBase(ffp_fragment_program);
 	for (int i = 0; i < cnt; i++) {
