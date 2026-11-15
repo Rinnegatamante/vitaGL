@@ -285,6 +285,9 @@ void glDeleteVertexArrays(GLsizei n, const GLuint *gl_arrays) {
 	for (int j = 0; j < n; j++) {
 		if (gl_arrays[j]) {
 			vao *gpu_buf = (vao *)gl_arrays[j];
+			if (cur_vao == gpu_buf) {
+				cur_vao = &default_vao;
+			}
 			mark_as_dirty(gpu_buf->vertex_attrib_pool);
 			vgl_free(gpu_buf);
 		}
