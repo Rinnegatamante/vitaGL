@@ -1525,16 +1525,19 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #endif
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
+#ifndef STRICT_DRAW_COMPLIANCE
+			// Disabled attributes use their constant value, so they don't require the highest index
+			if (!(cur_vao->vertex_attrib_state & (1 << attr_idx)))
+				continue;
+#endif
 			vbo *attr_vbo = (vbo *)cur_vao->vertex_attrib_vbo[attr_idx];
 			if (attr_vbo) {
 #ifdef STRICT_DRAW_COMPLIANCE
 					vgl_memset(is_packed, 0, p->attr_num * sizeof(GLboolean));
 					break;
 #else
-				if (attr_vbo != target_vbo) {
+				if (attr_vbo != target_vbo)
 					is_packed = GL_FALSE;
-					break;
-				}
 #endif
 			} else {
 #ifdef STRICT_DRAW_COMPLIANCE
