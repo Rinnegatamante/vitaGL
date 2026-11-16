@@ -2109,6 +2109,17 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer) {
 	}
 }
 
+// This is approximately 35% faster than vgl_fast_memcpy
+static inline __attribute__((always_inline)) void vgl_lighting_data_copy(void *dst, const void *src) {
+	uint8_t *d = (uint8_t *)dst;
+	const uint8_t *s = (const uint8_t *)src;
+	__builtin_memcpy(d, s, 16);
+	__builtin_memcpy(d + 16, s + 16, 16);
+	__builtin_memcpy(d + 32, s + 32, 16);
+	__builtin_memcpy(d + 48, s + 48, 16);
+	__builtin_memcpy(d + 64, s + 64, 12);
+}
+
 inline void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 	THREAD_SAFE()
 
@@ -2131,7 +2142,7 @@ inline void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 		__builtin_memcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 2);
 		__builtin_memcpy(legacy_pool_ptr + 5, &current_vtx.uv2.x, sizeof(float) * 2);
 		if (lighting_state) {
-			vgl_fast_memcpy(legacy_pool_ptr + 7, &current_vtx.amb.x, sizeof(float) * 19);
+			vgl_lighting_data_copy(legacy_pool_ptr + 7, &current_vtx.amb.x);
 		} else {
 			__builtin_memcpy(legacy_pool_ptr + 7, &current_vtx.clr.x, sizeof(float) * 4);
 		}
@@ -2139,14 +2150,14 @@ inline void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 	} else if (texture_units[0].state) { // Texturing enabled
 		if (lighting_state) {
 			__builtin_memcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 2);
-			vgl_fast_memcpy(legacy_pool_ptr + 5, &current_vtx.amb.x, sizeof(float) * 19);
+			vgl_lighting_data_copy(legacy_pool_ptr + 5, &current_vtx.amb.x);
 		} else {
 			__builtin_memcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 6);
 		}
 		legacy_pool_ptr += LEGACY_VERTEX_STRIDE;
 	} else { // Texturing disabled
 		if (lighting_state) {
-			vgl_fast_memcpy(legacy_pool_ptr + 3, &current_vtx.amb.x, sizeof(float) * 19);
+			vgl_lighting_data_copy(legacy_pool_ptr + 3, &current_vtx.amb.x);
 		} else {
 			__builtin_memcpy(legacy_pool_ptr + 3, &current_vtx.clr.x, sizeof(float) * 4);
 		}
