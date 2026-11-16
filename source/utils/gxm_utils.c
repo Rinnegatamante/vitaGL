@@ -281,48 +281,40 @@ void *vglReserveUniformCircularPoolBuffer(uint32_t size) {
 		dst += align_size; \
 	}
 
-// Allowing for fast load/store on small copies where this would be faster than sceClibMemcpy
-static __attribute__((noinline)) void vgl_fast_uniform_copy(void *dst, const void *src, size_t size) {
-	switch (size) {
-	case 1:
-		__builtin_memcpy(dst, src, 1);
-		break;
-	case 2:
-		__builtin_memcpy(dst, src, 2);
-		break;
-	case 3:
-		__builtin_memcpy(dst, src, 3);
-		break;
-	case 4:
-		__builtin_memcpy(dst, src, 4);
-		break;
-	case 6:
-		__builtin_memcpy(dst, src, 6);
-		break;
-	case 8:
-		__builtin_memcpy(dst, src, 8);
-		break;
-	case 12:
-		__builtin_memcpy(dst, src, 12);
-		break;
-	case 16:
-		__builtin_memcpy(dst, src, 16);
-		break;
-	case 24:
-		__builtin_memcpy(dst, src, 24);
-		break;
-	case 48:
-		__builtin_memcpy(dst, src, 48);
-		break;
-	default:
-		vgl_fast_memcpy(dst, src, size);
-		break;
-	}
-}
-
+// Keep common vec2/vec4 copies as direct fast paths, then inline other small sizes.
 static inline __attribute__((always_inline)) void vgl_uniform_copy(void *dst, const void *src, size_t size) {
-	if (size <= 16 || size == 24 || size == 48) {
-		vgl_fast_uniform_copy(dst, src, size);
+	if (size == 8) {
+		__builtin_memcpy(dst, src, 8);
+	} else if (size == 16) {
+		__builtin_memcpy(dst, src, 16);
+	} else if (size <= 16) {
+		switch (size) {
+		case 1:
+			__builtin_memcpy(dst, src, 1);
+			break;
+		case 2:
+			__builtin_memcpy(dst, src, 2);
+			break;
+		case 3:
+			__builtin_memcpy(dst, src, 3);
+			break;
+		case 4:
+			__builtin_memcpy(dst, src, 4);
+			break;
+		case 6:
+			__builtin_memcpy(dst, src, 6);
+			break;
+		case 12:
+			__builtin_memcpy(dst, src, 12);
+			break;
+		default:
+			vgl_fast_memcpy(dst, src, size);
+			break;
+		}
+	} else if (size == 24) {
+		__builtin_memcpy(dst, src, 24);
+	} else if (size == 48) {
+		__builtin_memcpy(dst, src, 48);
 	} else {
 		vgl_fast_memcpy(dst, src, size);
 	}
