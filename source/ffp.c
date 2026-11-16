@@ -32,7 +32,7 @@
 
 #define setup_lighting_attributes(type, type2, attr) \
 	if (mask.has_colors && color_material_state && (color_material_mode == type || color_material_mode == type2)) { \
-		vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_COLOR], sizeof(SceGxmVertexAttribute)); \
+		__builtin_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_COLOR], sizeof(SceGxmVertexAttribute)); \
 		ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params; \
 		ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[attr]; \
 		ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride; \
@@ -434,20 +434,20 @@ void adjust_color_material_state() {
 
 	switch (color_material_mode) {
 	case GL_AMBIENT:
-		vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.x, sizeof(vector4f));
+		__builtin_memcpy(&current_vtx.amb.x, &current_vtx.clr.x, sizeof(vector4f));
 		break;
 	case GL_DIFFUSE:
-		vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.x, sizeof(vector4f));
+		__builtin_memcpy(&current_vtx.diff.x, &current_vtx.clr.x, sizeof(vector4f));
 		break;
 	case GL_SPECULAR:
-		vgl_fast_memcpy(&current_vtx.spec.x, &current_vtx.clr.x, sizeof(vector4f));
+		__builtin_memcpy(&current_vtx.spec.x, &current_vtx.clr.x, sizeof(vector4f));
 		break;
 	case GL_EMISSION:
-		vgl_fast_memcpy(&current_vtx.emiss.x, &current_vtx.clr.x, sizeof(vector4f));
+		__builtin_memcpy(&current_vtx.emiss.x, &current_vtx.clr.x, sizeof(vector4f));
 		break;
 	case GL_AMBIENT_AND_DIFFUSE:
-		vgl_fast_memcpy(&current_vtx.amb.x, &current_vtx.clr.x, sizeof(vector4f));
-		vgl_fast_memcpy(&current_vtx.diff.x, &current_vtx.clr.x, sizeof(vector4f));
+		__builtin_memcpy(&current_vtx.amb.x, &current_vtx.clr.x, sizeof(vector4f));
+		__builtin_memcpy(&current_vtx.diff.x, &current_vtx.clr.x, sizeof(vector4f));
 		break;
 	default:
 		break;
@@ -684,7 +684,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		clip_planes = &temp_clip_planes[0];
 		for (int i = clip_plane_range[0]; i < clip_plane_range[1]; i++) {
 			if (clip_planes_mask & (1 << i)) {
-				vgl_fast_memcpy(&clip_planes[mask.clip_planes_num], &clip_planes_eq[i], sizeof(vector4f));
+				__builtin_memcpy(&clip_planes[mask.clip_planes_num], &clip_planes_eq[i], sizeof(vector4f));
 				mask.clip_planes_num++;
 			}
 		}
@@ -929,7 +929,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			
 			// Vertex positions
 			if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_POSITION)) {
-				vgl_fast_memcpy(&ffp_vertex_attribute[0], &ffp_vertex_attrib_config[FFP_ATTRIB_POSITION], sizeof(SceGxmVertexAttribute));
+				__builtin_memcpy(&ffp_vertex_attribute[0], &ffp_vertex_attrib_config[FFP_ATTRIB_POSITION], sizeof(SceGxmVertexAttribute));
 				ffp_vertex_attribute[0].streamIndex = 0;
 				ffp_vertex_attribute[0].regIndex = ffp_vertex_attribs[FFP_ATTRIB_POSITION];
 				ffp_vertex_stream[0].stride = ffp_vertex_stream_config[FFP_ATTRIB_POSITION].stride;
@@ -939,7 +939,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			// Vertex texture coordinates (First pass)
 			if (mask.num_textures > 0) {
 				if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_TEX0)) {
-					vgl_fast_memcpy(&ffp_vertex_attribute[1], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id)], sizeof(SceGxmVertexAttribute));
+					__builtin_memcpy(&ffp_vertex_attribute[1], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id)], sizeof(SceGxmVertexAttribute));
 					ffp_vertex_attribute[1].streamIndex = 1;
 					ffp_vertex_attribute[1].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX0];
 					ffp_vertex_stream[1].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id)].stride;
@@ -966,7 +966,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				if (mask.lights_num > 0) {
 					if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_NORMAL)) {
 						if (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_NORMAL)) {
-							vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_NORMAL], sizeof(SceGxmVertexAttribute));
+							__builtin_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_NORMAL], sizeof(SceGxmVertexAttribute));
 							ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 							ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_NORMAL];
 							ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_NORMAL].stride;
@@ -987,7 +987,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				if (mask.has_colors) {
 					if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_COLOR)) {
 						// Vertex colors
-						vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_COLOR], sizeof(SceGxmVertexAttribute));
+						__builtin_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_COLOR], sizeof(SceGxmVertexAttribute));
 						ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 						ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_COLOR];
 						ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
@@ -1000,7 +1000,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			// Vertex texture coordinates (Second pass)
 			if (mask.num_textures > 1) {
 				if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_TEX1)) {
-					vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id + 1)], sizeof(SceGxmVertexAttribute));
+					__builtin_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id + 1)], sizeof(SceGxmVertexAttribute));
 					ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 					ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX1];
 					ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id + 1)].stride;
@@ -1011,7 +1011,7 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 				// Vertex texture coordinates (Third pass)
 				if (mask.num_textures > 2) {
 					if (ffp_dirty_vert_attr & (1 << FFP_ATTRIB_TEX2)) {
-						vgl_fast_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id + 2)], sizeof(SceGxmVertexAttribute));
+						__builtin_memcpy(&ffp_vertex_attribute[ffp_vertex_num_params], &ffp_vertex_attrib_config[FFP_ATTRIB_TEX(base_texture_id + 2)], sizeof(SceGxmVertexAttribute));
 						ffp_vertex_attribute[ffp_vertex_num_params].streamIndex = ffp_vertex_num_params;
 						ffp_vertex_attribute[ffp_vertex_num_params].regIndex = ffp_vertex_attribs[FFP_ATTRIB_TEX2];
 						ffp_vertex_stream[ffp_vertex_num_params].stride = ffp_vertex_stream_config[FFP_ATTRIB_TEX(base_texture_id + 2)].stride;
@@ -1426,9 +1426,9 @@ void _glDrawArrays_FixedFunctionIMPL(GLint first, GLsizei count) {
 				if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(id)) {
 					if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_INDEX(id)].stride == 0) { // Color array not mapped to this material attribute
 						if (id == FFP_ATTRIB_NORMAL) {
-							vgl_fast_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
+							__builtin_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
 						} else {
-							vgl_fast_memcpy(materials, get_material_attr_ptr(FFP_ATTRIB_LIGHT_COEFF(id)), 4 * sizeof(float));
+							__builtin_memcpy(materials, get_material_attr_ptr(FFP_ATTRIB_LIGHT_COEFF(id)), 4 * sizeof(float));
 						}
 						ptr = materials;
 						materials += 4;
@@ -1561,9 +1561,9 @@ void _glMultiDrawArrays_FixedFunctionIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 				if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(id)) {
 					if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_INDEX(id)].stride == 0) { // Color array not mapped to this material attribute
 						if (id != FFP_ATTRIB_NORMAL) {
-							vgl_fast_memcpy(materials, get_material_attr_ptr(FFP_ATTRIB_LIGHT_COEFF(id)), 4 * sizeof(float));
+							__builtin_memcpy(materials, get_material_attr_ptr(FFP_ATTRIB_LIGHT_COEFF(id)), 4 * sizeof(float));
 						} else {
-							vgl_fast_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
+							__builtin_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
 						}
 						ptrs[j] = materials;
 						strides[j] = 0;
@@ -1746,9 +1746,9 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 			if (ffp_lighting_streams && FFP_ATTRIB_IS_LIGHT(attr_idx)) {
 				if (ffp_lighting_streams[FFP_ATTRIB_LIGHT_INDEX(attr_idx)].stride == 0) { // Color array not mapped to this material attribute
 					if (attr_idx != FFP_ATTRIB_NORMAL) {
-						vgl_fast_memcpy(materials, get_material_attr_ptr(FFP_ATTRIB_LIGHT_COEFF(attr_idx)), 4 * sizeof(float));
+						__builtin_memcpy(materials, get_material_attr_ptr(FFP_ATTRIB_LIGHT_COEFF(attr_idx)), 4 * sizeof(float));
 					} else {
-						vgl_fast_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
+						__builtin_memcpy(materials, &current_vtx.nor.x, 3 * sizeof(float));
 					}
 					ptr = materials;
 					materials += 4;
@@ -2128,27 +2128,27 @@ inline void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 	legacy_pool_ptr[1] = y;
 	legacy_pool_ptr[2] = z;
 	if (texture_units[1].state) { // Multitexturing enabled
-		vgl_fast_memcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 2);
-		vgl_fast_memcpy(legacy_pool_ptr + 5, &current_vtx.uv2.x, sizeof(float) * 2);
+		__builtin_memcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 2);
+		__builtin_memcpy(legacy_pool_ptr + 5, &current_vtx.uv2.x, sizeof(float) * 2);
 		if (lighting_state) {
 			vgl_fast_memcpy(legacy_pool_ptr + 7, &current_vtx.amb.x, sizeof(float) * 19);
 		} else {
-			vgl_fast_memcpy(legacy_pool_ptr + 7, &current_vtx.clr.x, sizeof(float) * 4);
+			__builtin_memcpy(legacy_pool_ptr + 7, &current_vtx.clr.x, sizeof(float) * 4);
 		}
 		legacy_pool_ptr += LEGACY_MT_VERTEX_STRIDE;
 	} else if (texture_units[0].state) { // Texturing enabled
 		if (lighting_state) {
-			vgl_fast_memcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 2);
+			__builtin_memcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 2);
 			vgl_fast_memcpy(legacy_pool_ptr + 5, &current_vtx.amb.x, sizeof(float) * 19);
 		} else {
-			vgl_fast_memcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 6);
+			__builtin_memcpy(legacy_pool_ptr + 3, &current_vtx.uv.x, sizeof(float) * 6);
 		}
 		legacy_pool_ptr += LEGACY_VERTEX_STRIDE;
 	} else { // Texturing disabled
 		if (lighting_state) {
 			vgl_fast_memcpy(legacy_pool_ptr + 3, &current_vtx.amb.x, sizeof(float) * 19);
 		} else {
-			vgl_fast_memcpy(legacy_pool_ptr + 3, &current_vtx.clr.x, sizeof(float) * 4);
+			__builtin_memcpy(legacy_pool_ptr + 3, &current_vtx.clr.x, sizeof(float) * 4);
 		}
 		legacy_pool_ptr += LEGACY_NT_VERTEX_STRIDE;
 	}
@@ -2234,30 +2234,30 @@ void glMaterialfv(GLenum face, GLenum pname, const GLfloat *params) {
 	switch (pname) {
 	case GL_AMBIENT:
 		if (!does_color_material_track(GL_AMBIENT)) {
-			vgl_fast_memcpy(&current_vtx.amb.x, params, sizeof(float) * 4);
+			__builtin_memcpy(&current_vtx.amb.x, params, sizeof(float) * 4);
 		}
 		break;
 	case GL_DIFFUSE:
 		if (!does_color_material_track(GL_DIFFUSE)) {
-			vgl_fast_memcpy(&current_vtx.diff.x, params, sizeof(float) * 4);
+			__builtin_memcpy(&current_vtx.diff.x, params, sizeof(float) * 4);
 		}
 		break;
 	case GL_SPECULAR:
 		if (!does_color_material_track(GL_SPECULAR)) {
-			vgl_fast_memcpy(&current_vtx.spec.x, params, sizeof(float) * 4);
+			__builtin_memcpy(&current_vtx.spec.x, params, sizeof(float) * 4);
 		}
 		break;
 	case GL_EMISSION:
 		if (!does_color_material_track(GL_EMISSION)) {
-			vgl_fast_memcpy(&current_vtx.emiss.x, params, sizeof(float) * 4);
+			__builtin_memcpy(&current_vtx.emiss.x, params, sizeof(float) * 4);
 		}
 		break;
 	case GL_AMBIENT_AND_DIFFUSE:
 		if (!does_color_material_track(GL_AMBIENT)) {
-			vgl_fast_memcpy(&current_vtx.amb.x, params, sizeof(float) * 4);
+			__builtin_memcpy(&current_vtx.amb.x, params, sizeof(float) * 4);
 		}
 		if (!does_color_material_track(GL_DIFFUSE)) {
-			vgl_fast_memcpy(&current_vtx.diff.x, params, sizeof(float) * 4);
+			__builtin_memcpy(&current_vtx.diff.x, params, sizeof(float) * 4);
 		}
 		break;
 	case GL_SHININESS:
@@ -2401,7 +2401,7 @@ void glColor3fv(const GLfloat *v) {
 	}
 #endif
 	// Setting current color value
-	vgl_fast_memcpy(&current_vtx.clr.r, v, sizeof(vector3f));
+	__builtin_memcpy(&current_vtx.clr.r, v, sizeof(vector3f));
 	current_vtx.clr.a = 1.0f;
 
 	adjust_color_material_state();
@@ -2497,7 +2497,7 @@ void glColor4fv(const GLfloat *v) {
 	}
 #endif
 	// Setting current color value
-	vgl_fast_memcpy(&current_vtx.clr.r, v, sizeof(vector4f));
+	__builtin_memcpy(&current_vtx.clr.r, v, sizeof(vector4f));
 
 	adjust_color_material_state();
 	flag_dirty_frag_unif(TINT_COLOR_UNIF)
@@ -2910,7 +2910,7 @@ void glTexEnvfv(GLenum target, GLenum pname, GLfloat *param) {
 	case GL_TEXTURE_ENV:
 		switch (pname) {
 		case GL_TEXTURE_ENV_COLOR:
-			vgl_fast_memcpy(&tex_unit->env_color.r, param, sizeof(GLfloat) * 4);
+			__builtin_memcpy(&tex_unit->env_color.r, param, sizeof(GLfloat) * 4);
 			flag_dirty_frag_unif(TEX_ENV_COLOR_UNIF)
 			break;
 #ifndef DISABLE_TEXTURE_COMBINER
@@ -3631,15 +3631,15 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {
 
 	switch (pname) {
 	case GL_AMBIENT:
-		vgl_fast_memcpy(&lights_ambients[light - GL_LIGHT0].r, params, sizeof(float) * 4);
+		__builtin_memcpy(&lights_ambients[light - GL_LIGHT0].r, params, sizeof(float) * 4);
 		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_AMBIENTS_V_UNIF, LIGHTS_AMBIENTS_F_UNIF)
 		break;
 	case GL_DIFFUSE:
-		vgl_fast_memcpy(&lights_diffuses[light - GL_LIGHT0].r, params, sizeof(float) * 4);
+		__builtin_memcpy(&lights_diffuses[light - GL_LIGHT0].r, params, sizeof(float) * 4);
 		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_DIFFUSES_V_UNIF, LIGHTS_DIFFUSES_F_UNIF)
 		break;
 	case GL_SPECULAR:
-		vgl_fast_memcpy(&lights_speculars[light - GL_LIGHT0].r, params, sizeof(float) * 4);
+		__builtin_memcpy(&lights_speculars[light - GL_LIGHT0].r, params, sizeof(float) * 4);
 		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHTS_SPECULARS_V_UNIF, LIGHTS_SPECULARS_F_UNIF)
 		break;
 	case GL_POSITION:
@@ -3764,7 +3764,7 @@ void glLightModelfv(GLenum pname, const GLfloat *params) {
 
 	switch (pname) {
 	case GL_LIGHT_MODEL_AMBIENT:
-		vgl_fast_memcpy(&light_global_ambient.r, params, sizeof(float) * 4);
+		__builtin_memcpy(&light_global_ambient.r, params, sizeof(float) * 4);
 		flag_dirty_ffp_unif(shading_mode == SMOOTH, LIGHT_GLOBAL_AMBIENT_V_UNIF, LIGHT_GLOBAL_AMBIENT_F_UNIF)
 		break;
 	default:
@@ -3915,7 +3915,7 @@ void glFogfv(GLenum pname, const GLfloat *params) {
 		flag_dirty_frag_unif(FOG_FAR_UNIF)
 		break;
 	case GL_FOG_COLOR:
-		vgl_fast_memcpy(&fog_color.r, params, sizeof(vector4f));
+		__builtin_memcpy(&fog_color.r, params, sizeof(vector4f));
 		flag_dirty_frag_unif(FOG_COLOR_UNIF)
 		break;
 	default:
@@ -4035,7 +4035,7 @@ void glClipPlane(GLenum plane, const GLdouble *equation) {
 	matrix4x4_transpose(inverted_transposed, inverted);
 	vector4f temp;
 	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
-	vgl_fast_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
+	__builtin_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
 	flag_dirty_frag_unif(CLIP_PLANES_EQUATION_UNIF)
 }
 
@@ -4061,7 +4061,7 @@ void glClipPlanef(GLenum plane, const GLfloat *equation) {
 	matrix4x4_transpose(inverted_transposed, inverted);
 	vector4f temp;
 	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
-	vgl_fast_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
+	__builtin_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
 	flag_dirty_frag_unif(CLIP_PLANES_EQUATION_UNIF)
 }
 
@@ -4089,7 +4089,7 @@ void glClipPlanex(GLenum plane, const GLfixed *equation) {
 	matrix4x4_transpose(inverted_transposed, inverted);
 	vector4f temp;
 	vector4f_matrix4x4_mult(&temp, inverted_transposed, &clip_planes_eq[idx]);
-	vgl_fast_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
+	__builtin_memcpy(&clip_planes_eq[idx].x, &temp.x, sizeof(vector4f));
 	flag_dirty_frag_unif(CLIP_PLANES_EQUATION_UNIF)
 }
 

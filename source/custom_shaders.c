@@ -802,12 +802,12 @@ static inline __attribute__((always_inline)) void compile_shader(shader *s, GLbo
 
 void reset_custom_shaders(void) {
 #if defined(HAVE_VERTEX_LAYOUT_CACHE) && !defined(STRICT_DRAW_COMPLIANCE) && !defined(DRAW_SPEEDHACK)
-	sceClibMemset(&vertex_layout_cache, 0, sizeof(vertex_layout_cache));
+	vgl_memset(&vertex_layout_cache, 0, sizeof(vertex_layout_cache));
 	vertex_layout_cache_id = 0;
 #endif
 
 	// Init custom shaders
-	sceClibMemset(shaders, 0, sizeof(uint32_t) * MAX_CUSTOM_SHADERS);
+	vgl_memset(shaders, 0, sizeof(uint32_t) * MAX_CUSTOM_SHADERS);
 
 	// Init custom programs
 	for (int i = 0; i < MAX_CUSTOM_PROGRAMS; i++) {
@@ -954,7 +954,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 	vbo *target_vbo = (vbo *)cur_vao->vertex_attrib_vbo[p->attr_map[0]];
 #ifdef STRICT_DRAW_COMPLIANCE
 	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
-	vgl_memset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
+	__builtin_memset(is_packed, GL_TRUE, VERTEX_ATTRIBS_NUM);
 #else
 	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
@@ -964,7 +964,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 			vbo *attr_vbo = (vbo *)cur_vao->vertex_attrib_vbo[attr_idx];
 			if (attr_vbo) {
 #ifdef STRICT_DRAW_COMPLIANCE
-				vgl_memset(is_packed, 0, p->attr_num * sizeof(GLboolean));
+				__builtin_memset(is_packed, GL_FALSE, VERTEX_ATTRIBS_NUM);
 				break;
 #else
 				if (attr_vbo != target_vbo) {
@@ -1211,7 +1211,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 	vbo *target_vbo = (vbo *)cur_vao->vertex_attrib_vbo[p->attr_map[0]];
 #ifdef STRICT_DRAW_COMPLIANCE
 	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
-	vgl_memset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
+	__builtin_memset(is_packed, GL_TRUE, VERTEX_ATTRIBS_NUM);
 #else
 	GLboolean is_packed = p->attr_num > 1;
 	if (is_packed) {
@@ -1221,7 +1221,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 			vbo *attr_vbo = (vbo *)cur_vao->vertex_attrib_vbo[attr_idx];
 			if (attr_vbo) {
 #ifdef STRICT_DRAW_COMPLIANCE
-				vgl_memset(is_packed, 0, p->attr_num * sizeof(GLboolean));
+				__builtin_memset(is_packed, GL_FALSE, VERTEX_ATTRIBS_NUM);
 				break;
 #else
 				if (attr_vbo != target_vbo) {
@@ -1519,7 +1519,12 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #ifdef STRICT_DRAW_COMPLIANCE
 	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
 	GLboolean packed_compatible = cur_vao->vertex_attrib_state & (1 << p->attr_map[0]) ? GL_TRUE : GL_FALSE;
-	vgl_memset(is_packed, packed_compatible, p->attr_num * sizeof(GLboolean));
+	// Doing a memset with packed_compatible as value makes GCC emit a memset call for some reason...
+	if (packed_compatible) {
+		__builtin_memset(is_packed, GL_TRUE, VERTEX_ATTRIBS_NUM);
+	} else {
+		__builtin_memset(is_packed, GL_FALSE, VERTEX_ATTRIBS_NUM);
+	}
 #else
 	GLboolean is_packed = p->attr_num > 1 && (cur_vao->vertex_attrib_state & (1 << p->attr_map[0]));
 #endif
@@ -1532,7 +1537,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		if (attr_vbo) {
 #ifdef STRICT_DRAW_COMPLIANCE
 			if (packed_compatible) {
-				vgl_memset(is_packed, GL_FALSE, p->attr_num * sizeof(GLboolean));
+				__builtin_memset(is_packed, GL_FALSE, VERTEX_ATTRIBS_NUM);
 				packed_compatible = GL_FALSE;
 			}
 #else
