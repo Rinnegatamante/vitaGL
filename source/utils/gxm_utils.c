@@ -82,12 +82,37 @@ static inline __attribute__((always_inline)) void vertex_program_cache_profile_e
 }
 #endif
 
+static inline __attribute__((always_inline)) GLboolean vgl_fast_memcmp(const void *a, const void *b, uint32_t size) {
+	switch (size) {
+	case 4: {
+		uint32_t x, y;
+		__builtin_memcpy(&x, a, 4);
+		__builtin_memcpy(&y, b, 4);
+		return x == y;
+	}
+	case 8: {
+		uint32_t x[2], y[2];
+		__builtin_memcpy(x, a, 8);
+		__builtin_memcpy(y, b, 8);
+		return x[0] == y[0] && x[1] == y[1];
+	}
+	case 16: {
+		uint32_t x[4], y[4];
+		__builtin_memcpy(x, a, 16);
+		__builtin_memcpy(y, b, 16);
+		return x[0] == y[0] && x[1] == y[1] && x[2] == y[2] && x[3] == y[3];
+	}
+	default:
+		return sceClibMemcmp(a, b, size) == 0;
+	}
+}
+
 static inline __attribute__((always_inline)) GLboolean vertex_program_is_mru(const vertex_program_cache_mru_entry *entry, SceGxmShaderPatcherId id, const SceGxmVertexAttribute *attr, uint32_t attr_num, const SceGxmVertexStream *stream, uint32_t stream_num) {
 	if (entry->id != id || entry->attr_num != attr_num || entry->stream_num != stream_num) {
 		return GL_FALSE;
-	} else if (attr_num && sceClibMemcmp(entry->attr, attr, attr_num * sizeof(SceGxmVertexAttribute))) {
+	} else if (attr_num && !vgl_fast_memcmp(entry->attr, attr, attr_num * sizeof(SceGxmVertexAttribute))) {
 		return GL_FALSE;
-	} else if (stream_num && sceClibMemcmp(entry->stream, stream, stream_num * sizeof(SceGxmVertexStream))) {
+	} else if (stream_num && !vgl_fast_memcmp(entry->stream, stream, stream_num * sizeof(SceGxmVertexStream))) {
 		return GL_FALSE;
 	}
 	return GL_TRUE;
