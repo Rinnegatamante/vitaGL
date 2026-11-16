@@ -1518,14 +1518,8 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	GLboolean is_full_vbo = GL_TRUE;
 #ifdef STRICT_DRAW_COMPLIANCE
 	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
-	GLboolean packed_compatible;
-	if (!(cur_vao->vertex_attrib_state & (1 << p->attr_map[0]))) {
-		vgl_memset(is_packed, GL_FALSE, p->attr_num * sizeof(GLboolean));
-		packed_compatible = GL_FALSE;
-	} else {
-		vgl_memset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
-		packed_compatible = GL_TRUE;
-	}
+	GLboolean packed_compatible = cur_vao->vertex_attrib_state & (1 << p->attr_map[0]) ? GL_TRUE : GL_FALSE;
+	vgl_memset(is_packed, packed_compatible, p->attr_num * sizeof(GLboolean));
 #else
 	GLboolean is_packed = p->attr_num > 1 && (cur_vao->vertex_attrib_state & (1 << p->attr_map[0]));
 #endif
@@ -1548,7 +1542,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 #endif
 		} else {
 #ifdef STRICT_DRAW_COMPLIANCE
-			if (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[attr_idx] && cur_vao->vertex_attrib_offsets[attr_idx] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]])) {
+			if (packed_compatible && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[attr_idx] && cur_vao->vertex_attrib_offsets[attr_idx] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]]))) {
 				is_packed[attr_idx] = GL_FALSE;
 			}
 #else
