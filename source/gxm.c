@@ -869,8 +869,9 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 	dirty_shader_vert_unifs = GL_TRUE;
 	needs_end_scene = GL_FALSE;
 
-	if (!needs_scene_reset)
+	if (!needs_scene_reset) {
 		scene_end();
+	}
 
 	if (vgl_has_cdlg_support && has_commondialog) {
 		// Performing commondialog update
@@ -1034,13 +1035,14 @@ void glFinish(void) {
 	THREAD_SAFE()
 
 	// Waiting for GPU to finish drawing jobs
-	if (scene_not_flushed) {
-		dirty_framebuffer = GL_TRUE;
-		scene_reset();
-		scene_not_flushed = GL_FALSE;
+	if (needs_end_scene) {
+		scene_end();
+		needs_end_scene = GL_FALSE;
+		needs_scene_reset = GL_TRUE;
 	}
-
+	scene_not_flushed = GL_FALSE;
 	sceGxmFinish(gxm_context);
+
 #ifdef HAVE_GC_ON_FINISH
 	drain_garbage_collector();
 #endif
