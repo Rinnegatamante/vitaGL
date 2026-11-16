@@ -579,9 +579,11 @@ typedef struct {
 } texture_unit;
 
 enum {
-	DEPTHBUFFER_MISSING,
-	DEPTHBUFFER_WANTS_STENCIL,
-	DEPTHBUFFER_READY
+	DEPTHBUFFER_MISSING = 0x00,
+	DEPTHBUFFER_WANTS_STENCIL = 0x01,
+	DEPTHBUFFER_WANTS_LOAD = 0x02,
+	DEPTHBUFFER_WANTS_STORE = 0x04,
+	DEPTHBUFFER_READY = 0x08,
 };
 
 #ifndef DEPTH_STENCIL_HACK
@@ -601,7 +603,6 @@ typedef struct {
 	SceGxmRenderTarget *target;
 	SceGxmColorSurface colorbuffer;
 	SceGxmDepthStencilSurface depthbuffer;
-	SceGxmDepthStencilSurface *depthbuffer_ptr;
 	SceGxmTextureFormat format;
 	int width;
 	int height;
@@ -1389,11 +1390,10 @@ static inline __attribute__((always_inline)) void _glFramebufferTexture2D(frameb
 				mark_rt_as_dirty(fb->target);
 				fb->target = NULL;
 			}
-			if (fb->depthbuffer_ptr) {
+			if (fb->depthbuffer_state & DEPTHBUFFER_READY) {
 #ifndef DEPTH_STENCIL_HACK
-				mark_depth_stencil_as_dirty(fb->depthbuffer_ptr);
+				mark_depth_stencil_as_dirty(&fb->depthbuffer);
 #endif
-				fb->depthbuffer_ptr = NULL;
 				fb->depthbuffer_state &= ~DEPTHBUFFER_READY;
 			}
 		}

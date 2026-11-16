@@ -558,8 +558,7 @@ static void init_depth_stencil_buffer(uint32_t w, uint32_t h, SceGxmDepthStencil
 #endif
 
 #ifdef STORE_DEPTH_STENCIL
-	sceGxmDepthStencilSurfaceSetForceLoadMode(surface, SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED);
-	sceGxmDepthStencilSurfaceSetForceStoreMode(surface, SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED);
+	vglDepthStencilSurfaceSetForceStoreLoadMode(surface, GL_TRUE, GL_TRUE);
 #endif
 }
 
@@ -681,8 +680,10 @@ void scene_reset(void) {
 			
 			// If the depthbuffer is dirty, we re-gen it
 			if (!(active_write_fb->depthbuffer_state & DEPTHBUFFER_READY)) {
-				init_depth_stencil_buffer(active_write_fb->width, active_write_fb->height, &active_write_fb->depthbuffer, active_write_fb->depthbuffer_state == DEPTHBUFFER_WANTS_STENCIL, VGL_FRAMEBUFFER_MSAA(active_write_fb));
-				active_write_fb->depthbuffer_ptr = &active_write_fb->depthbuffer;
+				init_depth_stencil_buffer(active_write_fb->width, active_write_fb->height, &active_write_fb->depthbuffer, active_write_fb->depthbuffer_state & DEPTHBUFFER_WANTS_STENCIL, VGL_FRAMEBUFFER_MSAA(active_write_fb));
+#ifndef STORE_DEPTH_STENCIL
+				vglDepthStencilSurfaceSetForceStoreLoadMode(&active_write_fb->depthbuffer, active_write_fb->depthbuffer_state & DEPTHBUFFER_WANTS_STORE, active_write_fb->depthbuffer_state & DEPTHBUFFER_WANTS_LOAD);
+#endif
 				active_write_fb->depthbuffer_state |= DEPTHBUFFER_READY;
 			}
 
@@ -717,16 +718,14 @@ void scene_reset(void) {
 #ifdef RECYCLE_RENDERTARGETS
 			fbo_rt->last_frame = vgl_framecount;
 #endif
-			int r = sceGxmBeginScene(gxm_context, 0, fbo_rt->rt,
+			int r = sceGxmBeginScene(gxm_context, 0, fbo_rt->rt, NULL, NULL, NULL, &active_write_fb->colorbuffer, &active_write_fb->depthbuffer);
 #else
-			int r = sceGxmBeginScene(gxm_context, 0, active_write_fb->target,
-#endif
-					NULL, NULL, NULL,
-					&active_write_fb->colorbuffer,
-					active_write_fb->depthbuffer_ptr);
+			int r = sceGxmBeginScene(gxm_context, 0, active_write_fb->target, NULL, NULL, NULL, &active_write_fb->colorbuffer, &active_write_fb->depthbuffer);
+#endif	
 #ifdef LOG_ERRORS
-			if (r)
+			if (r) {
 				vgl_log("%s:%d Scene reset failed due to sceGxmBeginScene erroring (%s) on framebuffer 0x%08X.\n", __FILE__, __LINE__, get_gxm_error_literal(r), active_write_fb);
+			}
 #endif
 		}
 

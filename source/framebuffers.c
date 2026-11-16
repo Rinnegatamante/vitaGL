@@ -50,13 +50,12 @@ static void update_framebuffer_msaa(framebuffer *fb, SceGxmMultisampleMode mode)
 		mark_rt_as_dirty(fb->target);
 		fb->target = NULL;
 	}
-	if (fb->depthbuffer_ptr) {
+	if (fb->depthbuffer_state & DEPTHBUFFER_READY) {
 #ifndef DEPTH_STENCIL_HACK
-		mark_depth_stencil_as_dirty(fb->depthbuffer_ptr);
+		mark_depth_stencil_as_dirty(&fb->depthbuffer);
 #endif
-		fb->depthbuffer_ptr = NULL;
+		fb->depthbuffer_state &= ~DEPTHBUFFER_READY;
 	}
-	fb->depthbuffer_state &= ~DEPTHBUFFER_READY;
 	fb->msaa_mode = mode;
 	if (fb->tex) {
 		sceGxmColorSurfaceSetScaleMode(&fb->colorbuffer, mode == SCE_GXM_MULTISAMPLE_NONE ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE);
@@ -243,7 +242,6 @@ inline __attribute__((always_inline)) void glGenFramebuffers(GLsizei n, GLuint *
 			framebuffers[i].msaa_mode = SCE_GXM_MULTISAMPLE_NONE;
 #endif
 			framebuffers[i].depthbuffer_state = DEPTHBUFFER_MISSING;
-			framebuffers[i].depthbuffer_ptr = NULL;
 			framebuffers[i].target = NULL;
 			framebuffers[i].tex = NULL;
 		}
@@ -309,8 +307,8 @@ void glDeleteFramebuffers(GLsizei n, const GLuint *ids) {
 				mark_rt_as_dirty(fb->target);
 			}
 #ifndef DEPTH_STENCIL_HACK
-			if (fb->depthbuffer_ptr) {
-				mark_depth_stencil_as_dirty(fb->depthbuffer_ptr);
+			if (fb->depthbuffer_state & DEPTHBUFFER_READY) {
+				mark_depth_stencil_as_dirty(&fb->depthbuffer);
 			}
 #endif
 		}
@@ -392,18 +390,22 @@ void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbu
 #endif
 
 	// Discarding any previously bound hidden depth buffers
-	if (fb->depthbuffer_ptr) {
+	if (fb->depthbuffer_state & DEPTHBUFFER_READY) {
 #ifndef DEPTH_STENCIL_HACK
-		mark_depth_stencil_as_dirty(fb->depthbuffer_ptr);
+		mark_depth_stencil_as_dirty(&fb->depthbuffer);
 #endif
+		fb->depthbuffer_state &= ~DEPTHBUFFER_READY;
 	}
-	fb->depthbuffer_ptr = NULL;
 
 	switch (attachment) {
 	case GL_DEPTH_STENCIL_ATTACHMENT:
 	case GL_DEPTH_ATTACHMENT:
 	case GL_STENCIL_ATTACHMENT:
-		fb->depthbuffer_state = (rb && ((renderbuffer *)rb)->wants_stencil) ? DEPTHBUFFER_WANTS_STENCIL : DEPTHBUFFER_MISSING;
+		if (rb && ((renderbuffer *)rb)->wants_stencil) {
+			fb->depthbuffer_state |= DEPTHBUFFER_WANTS_STENCIL;
+		} else {
+			fb->depthbuffer_state &= ~DEPTHBUFFER_WANTS_STENCIL;
+		}
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, attachment)
@@ -424,18 +426,22 @@ void glNamedFramebufferRenderbuffer(GLuint target, GLenum attachment, GLenum ren
 	framebuffer *fb = (framebuffer *)target;
 
 	// Discarding any previously bound hidden depth buffers
-	if (fb->depthbuffer_ptr) {
+	if (fb->depthbuffer_state & DEPTHBUFFER_READY) {
 #ifndef DEPTH_STENCIL_HACK
-		mark_depth_stencil_as_dirty(fb->depthbuffer_ptr);
+		mark_depth_stencil_as_dirty(&fb->depthbuffer);
 #endif
-		fb->depthbuffer_ptr = NULL;
+		fb->depthbuffer_state &= ~DEPTHBUFFER_READY;
 	}
 
 	switch (attachment) {
 	case GL_DEPTH_STENCIL_ATTACHMENT:
 	case GL_DEPTH_ATTACHMENT:
 	case GL_STENCIL_ATTACHMENT:
-		fb->depthbuffer_state = (rb && ((renderbuffer *)rb)->wants_stencil) ? DEPTHBUFFER_WANTS_STENCIL : DEPTHBUFFER_MISSING;
+		if (rb && ((renderbuffer *)rb)->wants_stencil) {
+			fb->depthbuffer_state |= DEPTHBUFFER_WANTS_STENCIL;
+		} else {
+			fb->depthbuffer_state &= ~DEPTHBUFFER_WANTS_STENCIL;
+		}
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, attachment)
@@ -1010,32 +1016,6 @@ void glBlitFramebuffer(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint
 	glBlitNamedFramebuffer((GLuint)active_read_fb, (GLuint)active_write_fb, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
 }
 
-/* vgl* */
-
-void vglTexImageDepthBuffer(GLenum target) {
-	THREAD_SAFE()
-
-	// Setting some aliases to make code more readable
-	texture_unit *tex_unit = &texture_units[server_texture_unit];
-	int texture2d_idx = tex_unit->tex_id[0];
-	texture *tex = &texture_slots[texture2d_idx];
-
-	switch (target) {
-	case GL_TEXTURE_2D: {
-		if (active_read_fb) {
-			sceGxmDepthStencilSurfaceSetForceStoreMode(active_read_fb->depthbuffer_ptr, SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED);
-			sceGxmTextureInitLinear(&tex->gxm_tex, active_read_fb->depthbuffer_ptr->depthData, SCE_GXM_TEXTURE_FORMAT_DF32M, active_read_fb->width, active_read_fb->height, 0);
-		} else {
-			sceGxmDepthStencilSurfaceSetForceStoreMode(&gxm_depth_stencil_surface, SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED);
-			sceGxmTextureInitLinear(&tex->gxm_tex, gxm_depth_stencil_surface.depthData, SCE_GXM_TEXTURE_FORMAT_DF32M, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0);
-		}
-		tex->status = TEX_VALID;
-	} break;
-	default:
-		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
-	}
-}
-
 GLboolean glIsFramebuffer(GLuint fb) {
 	framebuffer *p = (framebuffer *)fb;
 	return (p && p->active);
@@ -1062,5 +1042,58 @@ void glReadBuffer(GLenum mode) {
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
 		}
 #endif
+	}
+}
+
+/* vgl* */
+
+void vglTexImageDepthBuffer(GLenum target) {
+	THREAD_SAFE()
+
+	// Setting some aliases to make code more readable
+	texture_unit *tex_unit = &texture_units[server_texture_unit];
+	int texture2d_idx = tex_unit->tex_id[0];
+	texture *tex = &texture_slots[texture2d_idx];
+
+	switch (target) {
+	case GL_TEXTURE_2D: {
+		if (active_read_fb) {
+			SceGxmDepthStencilSurface *surf = &active_read_fb->depthbuffer;
+			sceGxmTextureInitLinear(&tex->gxm_tex, surf->depthData, SCE_GXM_TEXTURE_FORMAT_DF32M, active_read_fb->width, active_read_fb->height, 0);
+		} else {
+			sceGxmTextureInitLinear(&tex->gxm_tex, gxm_depth_stencil_surface.depthData, SCE_GXM_TEXTURE_FORMAT_DF32M, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0);
+		}
+		tex->status = TEX_VALID;
+	} break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+}
+
+void vglSetFramebufferStoreLoadMode(GLuint id, GLboolean store, GLboolean load) {
+	THREAD_SAFE()
+	
+	if (id) {
+		framebuffer *fb = (framebuffer *)id;
+		SceGxmDepthStencilSurface *surf = &fb->depthbuffer;
+		vglDepthStencilSurfaceSetForceStoreLoadMode(surf, store, load);
+		if (store) {
+			fb->depthbuffer_state |= DEPTHBUFFER_WANTS_STORE;
+		} else {
+			fb->depthbuffer_state &= ~DEPTHBUFFER_WANTS_STORE;
+		}
+		if (load) {
+			fb->depthbuffer_state |= DEPTHBUFFER_WANTS_LOAD;
+		} else {
+			fb->depthbuffer_state &= ~DEPTHBUFFER_WANTS_LOAD;
+		}
+		if (fb == active_write_fb || fb == in_use_framebuffer) {
+			dirty_framebuffer = GL_TRUE;
+		}
+	} else {
+		vglDepthStencilSurfaceSetForceStoreLoadMode(&gxm_depth_stencil_surface, store, load);
+		if (!active_write_fb || !in_use_framebuffer) {
+			dirty_framebuffer = GL_TRUE;
+		}
 	}
 }

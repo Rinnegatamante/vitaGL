@@ -180,4 +180,8 @@ static inline __attribute__((always_inline)) void vglDepthStencilSurfaceSetBackg
 		s[4] &= ~0x100;
 	}
 }
+static inline __attribute__((always_inline)) void vglDepthStencilSurfaceSetForceStoreLoadMode(SceGxmDepthStencilSurface *surface, uint8_t store, uint8_t load) {
+	uint32_t *s = (uint32_t *)surface;
+	*s = (store ? 4 : 0) | (load ? 2 : 0) | *s & 0xFFFFFFF9;
+}
 #endif

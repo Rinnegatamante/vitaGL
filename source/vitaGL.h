@@ -1267,6 +1267,9 @@ void vglSetDisplayCallback(void (*cb)(void *framebuf));
 // Setup the fragment ring buffer size of sceGxm. Must be called before vglInit*. Default value: SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE.
 void vglSetFragmentBufferSize(uint32_t size);
 
+// Sets force load/store modes for the underlying depthstencil surfaces for a given framebuffer. Default values: GL_FALSE, GL_FALSE.
+void vglSetFramebufferStoreLoadMode(GLuint id, GLboolean store, GLboolean load);
+
 // Setup the parameter buffer size of sceGxm. Must be called before vglInit*. Default value: SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE.
 void vglSetParamBufferSize(uint32_t size);
 
