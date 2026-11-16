@@ -1518,55 +1518,67 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 	GLboolean is_full_vbo = GL_TRUE;
 #ifdef STRICT_DRAW_COMPLIANCE
 	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
-	vgl_memset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
+	GLboolean packed_compatible;
+	if (!(cur_vao->vertex_attrib_state & (1 << p->attr_map[0]))) {
+		vgl_memset(is_packed, GL_FALSE, p->attr_num * sizeof(GLboolean));
+		packed_compatible = GL_FALSE;
+	} else {
+		vgl_memset(is_packed, GL_TRUE, p->attr_num * sizeof(GLboolean));
+		packed_compatible = GL_TRUE;
+	}
 #else
-	GLboolean is_packed = p->attr_num > 1;
-	if (is_packed) {
+	GLboolean is_packed = p->attr_num > 1 && (cur_vao->vertex_attrib_state & (1 << p->attr_map[0]));
 #endif
-		for (int i = 0; i < p->attr_num; i++) {
-			uint8_t attr_idx = p->attr_map[i];
-#ifndef STRICT_DRAW_COMPLIANCE
-			// Disabled attributes use their constant value, so they don't require the highest index
-			if (!(cur_vao->vertex_attrib_state & (1 << attr_idx)))
-				continue;
-#endif
-			vbo *attr_vbo = (vbo *)cur_vao->vertex_attrib_vbo[attr_idx];
-			if (attr_vbo) {
+	for (int i = 0; i < p->attr_num; i++) {
+		uint8_t attr_idx = p->attr_map[i];
+		if (!(cur_vao->vertex_attrib_state & (1 << attr_idx))) {
+			continue;
+		}
+		vbo *attr_vbo = (vbo *)cur_vao->vertex_attrib_vbo[attr_idx];
+		if (attr_vbo) {
 #ifdef STRICT_DRAW_COMPLIANCE
-					vgl_memset(is_packed, 0, p->attr_num * sizeof(GLboolean));
-					break;
-#else
-				if (attr_vbo != target_vbo)
-					is_packed = GL_FALSE;
-#endif
-			} else {
-#ifdef STRICT_DRAW_COMPLIANCE
-				if (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[attr_idx] && cur_vao->vertex_attrib_offsets[attr_idx] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]])) {
-					is_packed[attr_idx] = GL_FALSE;
-				}
-#endif
-				is_full_vbo = GL_FALSE;
+			if (packed_compatible) {
+				vgl_memset(is_packed, GL_FALSE, p->attr_num * sizeof(GLboolean));
+				packed_compatible = GL_FALSE;
 			}
+#else
+			if (attr_vbo != target_vbo) {
+				is_packed = GL_FALSE;
+			}
+#endif
+		} else {
+#ifdef STRICT_DRAW_COMPLIANCE
+			if (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[attr_idx] && cur_vao->vertex_attrib_offsets[attr_idx] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]])) {
+				is_packed[attr_idx] = GL_FALSE;
+			}
+#else
+			if (target_vbo) {
+				is_packed = GL_FALSE;
+			}
+#endif
+			is_full_vbo = GL_FALSE;
 		}
 #ifndef STRICT_DRAW_COMPLIANCE
-		if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[1]] && cur_vao->vertex_attrib_offsets[p->attr_map[1]] > cur_vao->vertex_attrib_offsets[p->attr_map[0]])))
-			is_packed = GL_FALSE;
-	} else if (!target_vbo)
-		is_full_vbo = GL_FALSE;
+		if (!is_packed && !is_full_vbo) {
+			break;
+		}
+#endif
+	}
+#ifndef STRICT_DRAW_COMPLIANCE
+	if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[1]] && cur_vao->vertex_attrib_offsets[p->attr_map[1]] > cur_vao->vertex_attrib_offsets[p->attr_map[0]]))) {
+		is_packed = GL_FALSE;
+	}
 #endif
 
 	// Detecting highest index value
 	if (!is_full_vbo && !top_idx) {
-		if ((index_type & 1) == 0)
-		{
+		if ((index_type & 1) == 0) {
 			for (int i = 0; i < count; i++) {
 				if (idx_buf[i] > top_idx) {
 					top_idx = idx_buf[i];
 				}
 			}
-		}
-		else
-		{
+		} else {
 			uint32_t *_idx_buf = (uint32_t *)idx_buf;
 			for (int i = 0; i < count; i++) {
 				if (_idx_buf[i] > top_idx) {

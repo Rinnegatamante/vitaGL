@@ -661,7 +661,7 @@ void glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLe
 
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data) {
 	THREAD_SAFE()
-	GLint gpu_y = y; // y is turned into a byte offset below
+	GLint real_y = y;
 
 	/*
 	 * Callbacks are actually used to just perform down/up-sampling
@@ -773,7 +773,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 
 	if (!fast_store) {
 		// Attempt first to use sceGxmTransfer variant since faster
-		if (_glReadPixels_gpu(x, gpu_y, width, height, format, type, data, GL_FALSE))
+		if (_glReadPixels_gpu(x, real_y, width, height, format, type, data, GL_FALSE))
 			return;
 		
 		switch (format) {
