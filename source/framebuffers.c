@@ -152,13 +152,13 @@ GLboolean _glReadPixels_gpu(GLint x, GLint y, GLsizei width, GLsizei height, GLe
 		int stride = active_read_fb->stride;
 		sceGxmTransferCopy(width, height, 0, 0, SCE_GXM_TRANSFER_COLORKEY_NONE,
 			tex_format_to_transfer(active_read_fb->format), SCE_GXM_TRANSFER_LINEAR, src, x, y, stride, 
-			dst_fmt, SCE_GXM_TRANSFER_LINEAR, dst, x, y, width * dst_bpp, NULL, 0, NULL);
+			dst_fmt, SCE_GXM_TRANSFER_LINEAR, dst, 0, 0, width * dst_bpp, NULL, 0, NULL);
 #else
 		uint8_t *src = (uint8_t *)active_read_fb->data + active_read_fb->stride * (active_read_fb->height - y - 1);
 		int stride = -(int)active_read_fb->stride;
 		sceGxmTransferCopy(width, height, 0, 0, SCE_GXM_TRANSFER_COLORKEY_NONE,
 			tex_format_to_transfer(active_read_fb->format), SCE_GXM_TRANSFER_LINEAR, src, x, 0, stride, 
-			dst_fmt, SCE_GXM_TRANSFER_LINEAR, dst, x, y, width * dst_bpp, NULL, 0, NULL);
+			dst_fmt, SCE_GXM_TRANSFER_LINEAR, dst, 0, 0, width * dst_bpp, NULL, 0, NULL);
 #endif
 	} else {
 		dst = is_mapped ? data : gpu_alloc_mapped_temp(width * height * dst_bpp);
@@ -171,7 +171,7 @@ GLboolean _glReadPixels_gpu(GLint x, GLint y, GLsizei width, GLsizei height, GLe
 		src += DISPLAY_STRIDE * 4 * (DISPLAY_HEIGHT - y - 1);
 		sceGxmTransferCopy(width, height, 0, 0, SCE_GXM_TRANSFER_COLORKEY_NONE,
 			SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR, SCE_GXM_TRANSFER_LINEAR, src, x, 0, -DISPLAY_STRIDE * 4, 
-			dst_fmt, SCE_GXM_TRANSFER_LINEAR, dst, x, y, width * dst_bpp, NULL, 0, NULL);
+			dst_fmt, SCE_GXM_TRANSFER_LINEAR, dst, 0, 0, width * dst_bpp, NULL, 0, NULL);
 	}
 	sceGxmTransferFinish();
 	
@@ -208,16 +208,6 @@ GLboolean _glReadPixels_gpu(GLint x, GLint y, GLsizei width, GLsizei height, GLe
 			for (int i = 0; i < width * height; i++) {
 				uint16_t clr = p[i];
 				p[i] = reswizzle_565(clr);
-			}
-		}
-		break;
-	case SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR:
-		{
-			uint8_t *p = (uint8_t *)data;
-			for (int i = 0; i < width * height * 3; i += 3) {
-				uint8_t clr = p[i];
-				p[i] = p[i + 2];
-				p[i + 2] = clr;
 			}
 		}
 		break;
@@ -671,6 +661,7 @@ void glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLe
 
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data) {
 	THREAD_SAFE()
+	GLint gpu_y = y; // y is turned into a byte offset below
 
 	/*
 	 * Callbacks are actually used to just perform down/up-sampling
@@ -782,7 +773,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 
 	if (!fast_store) {
 		// Attempt first to use sceGxmTransfer variant since faster
-		if (_glReadPixels_gpu(x, y, width, height, format, type, data, GL_FALSE))
+		if (_glReadPixels_gpu(x, gpu_y, width, height, format, type, data, GL_FALSE))
 			return;
 		
 		switch (format) {
