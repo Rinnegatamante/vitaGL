@@ -108,7 +108,7 @@ static tm_block_t *heap_blk_new(void) {
 	tm_free_headers = h->next;
 	tm_unlock_mutex(&header_mutex)
 	
-	vgl_memset(h, 0, sizeof(tm_block_t));
+	__builtin_memset(h, 0, sizeof(tm_block_t));
 	return h;
 }
 
