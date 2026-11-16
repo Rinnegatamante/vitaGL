@@ -655,6 +655,25 @@ static inline __attribute__((always_inline)) void gxm_unif_to_mat(GLenum *type, 
 	}
 }
 
+/*
+ * Serialized shader layout:
+ *   uint32 matrix_uniforms_num, uint32 parameter index per matrix uniform,
+ *   uint32 block_uniforms_num, per uniform block: uint8 buffer index, uint8 name length, name (no terminator),
+ *   [binds_map], [sized samplers], GXP program.
+ * Uniform block names only exist in the SceShaccCg compile output, so they have to be stored here:
+ * without them a program loaded from the cache (or glShaderBinary) has no block list and linking it
+ * dereferences a NULL block.
+ */
+static inline __attribute__((always_inline)) size_t serialized_blocks_size(shader *s) {
+	size_t sz = sizeof(uint32_t);
+	block_uniform *b = s->unif_blk;
+	while (b) {
+		sz += 2 * sizeof(uint8_t) + strlen(b->name);
+		b = (block_uniform *)b->chain;
+	}
+	return sz;
+}
+
 static inline __attribute__((always_inline)) size_t serialized_shader_size(shader *s, GLboolean have_bindings, uint32_t *matrix_uniforms_num) {
 	*matrix_uniforms_num = 0;
 	matrix_uniform *m = s->mat;
@@ -662,7 +681,7 @@ static inline __attribute__((always_inline)) size_t serialized_shader_size(shade
 		*matrix_uniforms_num = *matrix_uniforms_num + 1;
 		m = (matrix_uniform *)m->chain;
 	}
-	size_t sz = (1 + *matrix_uniforms_num) * sizeof(uint32_t) + s->size;
+	size_t sz = (1 + *matrix_uniforms_num) * sizeof(uint32_t) + serialized_blocks_size(s) + s->size;
 	if (have_bindings)
 		sz += sizeof(binds_map);
 #ifdef HAVE_GLSL_TEXTURE_SIZE
@@ -688,6 +707,20 @@ void *serialize_shader(void *out, size_t *sz, shader *s, GLboolean save_bindings
 		buf += sizeof(uint32_t);
 		m = (matrix_uniform *)m->chain;
 	}
+	uint32_t block_uniforms_num = 0;
+	uint8_t *blocks_num_ptr = buf;
+	buf += sizeof(uint32_t);
+	block_uniform *b = s->unif_blk;
+	while (b) {
+		uint8_t name_len = strlen(b->name);
+		*buf++ = b->idx;
+		*buf++ = name_len;
+		vgl_fast_memcpy(buf, b->name, name_len);
+		buf += name_len;
+		block_uniforms_num++;
+		b = (block_uniform *)b->chain;
+	}
+	vgl_fast_memcpy(blocks_num_ptr, &block_uniforms_num, sizeof(uint32_t));
 	if (save_bindings) {
 		vgl_fast_memcpy(buf, &s->semantics, sizeof(binds_map));
 		buf += sizeof(binds_map);
@@ -709,6 +742,24 @@ void unserialize_shader(void *in, size_t sz, shader *s, GLboolean load_bindings)
 	uint32_t matrix_uniforms_num;
 	vgl_fast_memcpy(&matrix_uniforms_num, buf, sizeof(uint32_t));
 	buf += sizeof(uint32_t) * (matrix_uniforms_num + 1);
+	while (s->unif_blk) {
+		block_uniform *b = (block_uniform *)s->unif_blk->chain;
+		vgl_free(s->unif_blk);
+		s->unif_blk = b;
+	}
+	uint32_t block_uniforms_num;
+	vgl_fast_memcpy(&block_uniforms_num, buf, sizeof(uint32_t));
+	buf += sizeof(uint32_t);
+	for (uint32_t i = 0; i < block_uniforms_num; i++) {
+		block_uniform *b = (block_uniform *)vglMalloc(sizeof(block_uniform));
+		b->idx = *buf++;
+		uint8_t name_len = *buf++;
+		vgl_fast_memcpy(b->name, buf, name_len);
+		b->name[name_len] = 0;
+		buf += name_len;
+		b->chain = s->unif_blk;
+		s->unif_blk = b;
+	}
 	if (load_bindings) {
 		vgl_fast_memcpy(&s->semantics, buf, sizeof(binds_map));
 		buf += sizeof(binds_map);
@@ -2615,7 +2666,7 @@ void glLinkProgram(GLuint progr) {
 			u->idx = sceGxmProgramParameterGetResourceIndex(param);
 			u->ptr = (const SceGxmProgramParameter *)get_block_details(p->vshader->unif_blk, u->idx);
 			u->bind = 0;
-			u->alias = has_block_alias(p->frag_ubos, ((block_uniform *)u->ptr)->name);
+			u->alias = u->ptr ? has_block_alias(p->frag_ubos, ((block_uniform *)u->ptr)->name) : NULL;
 			p->vert_ubos = u;
 		}
 		ptr += 4;
@@ -2723,14 +2774,14 @@ GLuint glGetUniformBlockIndex(GLuint prog, const GLchar *uniformBlockName) {
 	ubo *j = p->vert_ubos;
 	while (j) {
 		block_uniform *b = (block_uniform *)j->ptr;
-		if (!strcmp(b->name, uniformBlockName))
+		if (b && !strcmp(b->name, uniformBlockName))
 			return j->alias ? (GLuint)j->alias : (GLuint)j;
 		j = j->chain;
 	}
 	j = p->frag_ubos;
 	while (j) {
 		block_uniform *b = (block_uniform *)j->ptr;
-		if (!strcmp(b->name, uniformBlockName))
+		if (b && !strcmp(b->name, uniformBlockName))
 			return (GLuint)j;
 		j = j->chain;
 	}
