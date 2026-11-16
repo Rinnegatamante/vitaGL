@@ -1543,7 +1543,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		} else {
 #ifdef STRICT_DRAW_COMPLIANCE
 			if (packed_compatible && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[attr_idx] && cur_vao->vertex_attrib_offsets[attr_idx] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]]))) {
-				is_packed[attr_idx] = GL_FALSE;
+				is_packed[i] = GL_FALSE;
 			}
 #else
 			if (target_vbo) {
