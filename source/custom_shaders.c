@@ -2468,6 +2468,13 @@ void glLinkProgram(GLuint progr) {
 #endif
 				vgl_compile_shader(p->fshader, GL_TRUE);
 			}
+#ifndef SKIP_ERROR_HANDLING
+			if (!p->vshader->prog || !p->fshader->prog) {
+				vgl_log("%s:%d: %s: %s shader failed to compile.\n", __FILE__, __LINE__, __func__, p->fshader->prog ? "vertex" : "fragment");
+				glsl_sema_mode = VGL_MODE_POSTPONED;
+				return;
+			}
+#endif
 		}
 
 		// Setting progressive default attribute bindings
