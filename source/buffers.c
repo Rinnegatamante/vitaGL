@@ -561,7 +561,23 @@ inline void *glMapNamedBuffer(GLuint buffer, GLenum access) {
 	}
 #endif
 
-	// FIXME: Current implementation doesn't take into account 'last_frame' state
+#ifndef BUFFERS_SPEEDHACK
+	// Allocating a new buffer if the GPU may still be reading the old one and the mapped content can be discarded
+	if ((access & (GL_MAP_INVALIDATE_BUFFER_BIT)) && gpu_buf->last_frame != OBJ_NOT_USED && (vgl_framecount - gpu_buf->last_frame <= FRAME_PURGE_FREQ)) {
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
+		uint8_t *ptr = gpu_buf->scratch ? vgl_reserve_data_pool(gpu_buf->size) : gpu_buf->alloc_func(gpu_buf->size);
+#else
+		uint8_t *ptr = gpu_buf->alloc_func(gpu_buf->size);
+#endif
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
+		if (!gpu_buf->scratch)
+#endif
+			mark_as_dirty(gpu_buf->ptr);
+		gpu_buf->ptr = ptr;
+		gpu_buf->last_frame = OBJ_NOT_USED;
+	}
+#endif
+
 	gpu_buf->mapped = GL_TRUE;
 	return gpu_buf->ptr;
 }
@@ -604,21 +620,19 @@ inline void *glMapNamedBufferRange(GLuint buffer, GLintptr offset, GLsizeiptr le
 #else
 		uint8_t *ptr = gpu_buf->alloc_func(gpu_buf->size);
 #endif
-		if (ptr) {
-			// Only the mapped range is discarded with GL_MAP_INVALIDATE_RANGE_BIT
-			if (!(access & GL_MAP_INVALIDATE_BUFFER_BIT))
-				vgl_memcpy(ptr, gpu_buf->ptr, gpu_buf->size);
-#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
-			if (!gpu_buf->scratch)
-#endif
-				mark_as_dirty(gpu_buf->ptr);
-			gpu_buf->ptr = ptr;
-			gpu_buf->last_frame = OBJ_NOT_USED;
+		// Only the mapped range is discarded with GL_MAP_INVALIDATE_RANGE_BIT
+		if (!(access & GL_MAP_INVALIDATE_BUFFER_BIT)) {
+			vgl_memcpy(ptr, gpu_buf->ptr, gpu_buf->size);
 		}
+#if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
+		if (!gpu_buf->scratch)
+#endif
+			mark_as_dirty(gpu_buf->ptr);
+		gpu_buf->ptr = ptr;
+		gpu_buf->last_frame = OBJ_NOT_USED;
 	}
 #endif
 
-	// FIXME: Mappings without GL_MAP_INVALIDATE_*_BIT don't take into account 'last_frame' state
 	gpu_buf->mapped = GL_TRUE;
 	return (void *)((uint8_t *)gpu_buf->ptr + offset);
 }
