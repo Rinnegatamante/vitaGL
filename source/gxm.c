@@ -673,6 +673,12 @@ void scene_reset(void) {
 			}
 #endif
 		} else {
+#ifdef HAVE_TEX_CACHE
+			restore_tex_cache(active_write_fb->tex);
+#endif
+#ifndef TEXTURES_SPEEDHACK
+			active_write_fb->tex->last_frame = vgl_framecount;
+#endif	
 			// Double check that colorsurface and target texture are synced
 			if (sceGxmColorSurfaceGetData(&active_write_fb->colorbuffer) != active_write_fb->tex->data) {
 				_glFramebufferTexture2D(active_write_fb, GL_COLOR_ATTACHMENT0, active_write_fb->tex, 1);
