@@ -1097,7 +1097,7 @@ void glsl_handle_tex_size(char *txt, GLsizei preamble_size, glsl_samplers_info *
 		s = end + 1;
 		while (*(end - 1) == ' ' || *(end - 1) == '\t')
 			end--;
-		char name[sizeof(info[0].name)];
+		char name[64];
 		size_t name_len = min((size_t)(end - start), sizeof(name) - 1);
 		vgl_fast_memcpy(name, start, name_len);
 		name[name_len] = 0;
@@ -1109,12 +1109,12 @@ void glsl_handle_tex_size(char *txt, GLsizei preamble_size, glsl_samplers_info *
 			}
 		}
 		if (idx == *num) {
-			if (*num == SCE_GXM_MAX_TEXTURE_UNITS) {
 #ifndef SKIP_ERROR_HANDLING
+			if (*num == SCE_GXM_MAX_TEXTURE_UNITS) {
 				vgl_log("%s:%d %s: Too many samplers used. PSVita supports at best %d unique samplers.\n", __FILE__, __LINE__, __func__, SCE_GXM_MAX_TEXTURE_UNITS);
-#endif
 				break;
 			}
+#endif
 			strcpy(info[*num].name, name);
 			*num = *num + 1;
 		}
