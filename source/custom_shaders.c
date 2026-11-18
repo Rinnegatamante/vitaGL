@@ -1937,7 +1937,7 @@ void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLcha
 	GLsizei len = 0;
 #ifdef HAVE_SHARK_LOG
 	shader *s = shaders[handle - 1];
-	if (s->log) {
+	if (s->log && maxLength > 0) {
 		len = min(strlen(s->log), maxLength - 1);
 		vgl_fast_memcpy(infoLog, s->log, len);
 		infoLog[len] = 0;
@@ -1960,11 +1960,12 @@ void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *
 	shader *s = shaders[handle - 1];
 
 	GLsizei size = 0;
-	if (s->source) {
+	if (s->source && bufSize > 0) {
 		GLsizei src_len = strlen(s->source);
 		if (bufSize <= src_len)
 			src_len = bufSize - 1;
-		strncpy(source, s->source, src_len);
+		vgl_fast_memcpy(source, s->source, src_len);
+		source[src_len] = 0;
 		size = src_len;
 	}
 	if (length)
@@ -3724,14 +3725,18 @@ void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *leng
 
 	// Copying attribute name
 	const char *pname = sceGxmProgramParameterGetName(param);
+	*type = gxm_attr_type_to_gl(sceGxmProgramParameterGetComponentCount(param), sceGxmProgramParameterGetArraySize(param));
+	*size = 1;
+	if (bufSize == 0) {
+		if (length)
+			*length = 0;
+		return;
+	}
 	bufSize = min(strlen(pname), bufSize - 1);
 	if (length)
 		*length = bufSize;
 	strncpy(name, pname, bufSize);
 	name[bufSize] = 0;
-
-	*type = gxm_attr_type_to_gl(sceGxmProgramParameterGetComponentCount(param), sceGxmProgramParameterGetArraySize(param));
-	*size = 1;
 }
 
 void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name) {
