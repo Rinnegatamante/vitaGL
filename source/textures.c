@@ -1110,6 +1110,10 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		break;
 	case GL_RGBA:
 		switch (type) {
+		case GL_HALF_FLOAT:
+		case GL_HALF_FLOAT_OES:
+			data_bpp = 8;
+			break;
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 4;
 			read_cb = read_rgba8888;
@@ -1192,6 +1196,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 				write_cb = write_bgra8888;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_L8:
+		case SCE_GXM_TEXTURE_FORMAT_U8_R:
 		case SCE_GXM_TEXTURE_FORMAT_U8_RRRR:
 		case SCE_GXM_TEXTURE_FORMAT_U8_R111:
 		case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
@@ -1210,6 +1215,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
 		case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA:
 		case SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA:
+		case SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA:
 			fast_store = GL_TRUE;
 			break;
 		}
