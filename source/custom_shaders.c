@@ -668,6 +668,12 @@ static inline __attribute__((always_inline)) size_t serialized_shader_size(shade
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 	sz += sizeof(glsl_samplers_info) * s->sized_samplers_num + sizeof(uint8_t);
 #endif
+	sz += sizeof(uint8_t);
+	block_uniform *b = s->unif_blk;
+	while (b) {
+		sz += sizeof(uint8_t) + strlen(b->name) + 1;
+		b = (block_uniform *)b->chain;
+	}
 	return sz;
 }
 
@@ -700,6 +706,17 @@ void *serialize_shader(void *out, size_t *sz, shader *s, GLboolean save_bindings
 		buf += sizeof(glsl_samplers_info) * s->sized_samplers_num;
 	}
 #endif
+	uint8_t *blocks_num = buf++;
+	*blocks_num = 0;
+	block_uniform *b = s->unif_blk;
+	while (b) {
+		*buf++ = b->idx;
+		size_t len = strlen(b->name) + 1;
+		vgl_fast_memcpy(buf, b->name, len);
+		buf += len;
+		*blocks_num = *blocks_num + 1;
+		b = (block_uniform *)b->chain;
+	}
 	vgl_fast_memcpy(buf, s->prog, s->size);
 	return _out;
 }
@@ -721,6 +738,16 @@ void unserialize_shader(void *in, size_t sz, shader *s, GLboolean load_bindings)
 		buf += sizeof(glsl_samplers_info) * s->sized_samplers_num;
 	}
 #endif
+	uint8_t blocks_num = *buf++;
+	for (int i = 0; i < blocks_num; i++) {
+		block_uniform *b = (block_uniform *)vglMalloc(sizeof(block_uniform));
+		b->idx = *buf++;
+		size_t len = strlen((const char *)buf) + 1;
+		vgl_fast_memcpy(b->name, buf, len);
+		buf += len;
+		b->chain = s->unif_blk;
+		s->unif_blk = b;
+	}
 	s->size = sz - ((uintptr_t)buf - (uintptr_t)in);
 	s->prog = (SceGxmProgram *)vglMalloc(s->size);
 	vgl_fast_memcpy((SceGxmProgram *)s->prog, buf, s->size);
