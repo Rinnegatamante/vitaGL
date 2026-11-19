@@ -1349,8 +1349,8 @@ static inline __attribute__((always_inline)) uint32_t get_color_from_texture(Sce
 		return SCE_GXM_COLOR_FORMAT_U1U5U5U5_ABGR;
 	case SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA:
 		return SCE_GXM_COLOR_FORMAT_U5U5U5U1_RGBA;
-	case SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA:
-		return SCE_GXM_COLOR_FORMAT_F16F16F16F16_RGBA;
+	case SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_ABGR:
+		return SCE_GXM_COLOR_FORMAT_F16F16F16F16_ABGR;
 	default:
 		SET_GL_ERROR_WITH_RET_AND_VALUE(GL_INVALID_ENUM, 0, type)
 	}
@@ -1403,7 +1403,7 @@ static inline __attribute__((always_inline)) void _glFramebufferTexture2D(frameb
 		tex->ref_counter++;
 
 		// Checking if the framebuffer requires extended register size
-		fb->is_float = tex->format == SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
+		fb->is_float = tex->format == SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_ABGR;
 
 		// Allocating colorbuffer
 		sceGxmColorSurfaceInit(&fb->colorbuffer, get_color_from_texture(fmt), SCE_GXM_COLOR_SURFACE_LINEAR,

@@ -77,7 +77,7 @@ uint32_t get_alpha_channel_size(SceGxmColorFormat type) {
 		return 4;
 	case SCE_GXM_COLOR_FORMAT_U1U5U5U5_ABGR:
 		return 1;
-	case SCE_GXM_COLOR_FORMAT_F16F16F16F16_RGBA:
+	case SCE_GXM_COLOR_FORMAT_F16F16F16F16_ABGR:
 		return 16;
 	default:
 		return 8;
@@ -740,7 +740,7 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 				read_cb = read_rgba5551;
 			src_bpp = 2;
 			break;
-		case SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA:
+		case SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_ABGR:
 			// FIXME: Add slow path support
 			if (format == GL_RGBA && type == GL_RGBA16F)
 				fast_store = GL_TRUE;
