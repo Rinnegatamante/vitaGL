@@ -771,7 +771,7 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	case GL_RGBA16F:
 		fast_store = GL_TRUE;
 		tex->write_cb = (void *)GL_TRUE; // Avoid to let this case fall in compressed texture case
-		tex_format = SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA;
+		tex_format = SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_ABGR;
 		break;
 	case GL_COMPRESSED_SRGB_S3TC_DXT1:
 	case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1:
@@ -1215,7 +1215,7 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
 		case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA:
 		case SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA:
-		case SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_RGBA:
+		case SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_ABGR:
 			fast_store = GL_TRUE;
 			break;
 		}
