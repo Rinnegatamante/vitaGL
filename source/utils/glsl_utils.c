@@ -188,12 +188,13 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 		}
 		while (str || str2) {
 			char *t;
-			if (!str)
+			if (!str) {
 				t = str2;
-			else if (!str2)
+			} else if (!str2) {
 				t = str;
-			else
+			} else {
 				t = min(str, str2);
+			}
 			if (t == str) { // Attribute
 				// Replace attribute with 'vgl in' that will get extended in a 'varying in' by the preprocessor
 				vgl_fast_memcpy(t, "vgl in    ", 10);
@@ -202,8 +203,9 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 				char *attr_end = strstr(attr_name, ";");
 				char *_attr = attr_name;
 				while (_attr < attr_end) {
-					if (*_attr == ' ' || *_attr == '\t')
+					if (*_attr == ' ' || *_attr == '\t') {
 						attr_name = _attr + 1;
+					}
 					_attr++;
 				}
 				sceClibMemcpy(glsl_attributes[glsl_attributes_num], attr_name, attr_end - attr_name);
@@ -219,8 +221,9 @@ void glsl_translate_with_shader_pair(char *text, GLenum type, GLboolean hasFront
 				int extra_chars = -1;
 				char *start = end;
 				while ((*start != ' ' && *start != '\t') || !name_started) {
-					if (!name_started && *start != ' ' && *start != '\t' && *start != ';')
+					if (!name_started && *start != ' ' && *start != '\t' && *start != ';') {
 						name_started = GL_TRUE;
+					}
 					if (!name_started) {
 						end--;
 						extra_chars++;
@@ -397,19 +400,21 @@ ENTRY_HANDLED_SHADER_PAIR:
 				while (*str2_end == ' ' || *str2_end == '\t') {
 					str2_end++;
 				}
-				if (*str2_end == ',' || *str2_end == ';')
+				if (*str2_end == ',' || *str2_end == ';') {
 					break;
+				}
 			}
 			str2 = strcasestr(str2_end, "texture");
 		}
 		while (str || str2) {
 			char *t;
-			if (!str)
+			if (!str) {
 				t = str2;
-			else if (!str2)
+			} else if (!str2) {
 				t = str;
-			else
+			} else {
 				t = min(str, str2);
+			}
 			if (t == str) { // Varying
 				GLboolean is_centroid = GL_FALSE;
 				char *back = str - 1;
@@ -428,8 +433,9 @@ ENTRY_HANDLED_SHADER_PAIR:
 				int extra_chars = -1;
 				char *start = end;
 				while ((*start != ' ' && *start != '\t') || !name_started) {
-					if (!name_started && *start != ' ' && *start != '\t' && *start != ';')
+					if (!name_started && *start != ' ' && *start != '\t' && *start != ';') {
 						name_started = GL_TRUE;
+					}
 					if (!name_started) {
 						end--;
 						extra_chars++;
@@ -587,8 +593,9 @@ HINT_DETECTION_PAIR_FRAGMENT:
 									vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d.\n", __FILE__, __LINE__, __func__, start, idx);
 									sprintf(newline, "VIN(%s, %d);", str + 8, idx);
 								}
-							} else
+							} else {
 								sprintf(newline, "VIN(%s, %d);", str + 8, idx);
+							}
 						} else if (hint_type == VGL_TYPE_TEXCOORD_CENTROID) {
 							glsl_get_existing_texcoord_bind(idx, start);
 							if (idx == -1) {
@@ -605,8 +612,9 @@ HINT_DETECTION_PAIR_FRAGMENT:
 									vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to TEXCOORD%d_CENTROID.\n", __FILE__, __LINE__, __func__, start, idx);
 									sprintf(newline, "BIN(%s, %d);", str + 8, idx);
 								}
-							} else
+							} else {
 								sprintf(newline, "BIN(%s, %d);", str + 8, idx);
+							}
 						} else if (hint_type == VGL_TYPE_COLOR) {
 							glsl_get_existing_color_bind(idx, start);
 							if (idx == -1) {
@@ -623,8 +631,9 @@ HINT_DETECTION_PAIR_FRAGMENT:
 									vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to COLOR%d.\n", __FILE__, __LINE__, __func__, start, idx);
 									sprintf(newline, "CIN(%s, %d);", str + 8, idx);
 								}
-							} else
+							} else {
 								sprintf(newline, "CIN(%s, %d);", str + 8, idx);
+							}
 						} else if (hint_type == VGL_TYPE_COLOR_CENTROID) {
 							glsl_get_existing_color_bind(idx, start);
 							if (idx == -1) {
@@ -641,8 +650,9 @@ HINT_DETECTION_PAIR_FRAGMENT:
 									vgl_log("%s:%d %s: Unexpected varying (%s), forcing binding to COLOR%d_CENTROID.\n", __FILE__, __LINE__, __func__, start, idx);
 									sprintf(newline, "JIN(%s, %d);", str + 8, idx);
 								}
-							} else
+							} else {
 								sprintf(newline, "JIN(%s, %d);", str + 8, idx);
+							}
 						}
 					}
 				}
@@ -726,8 +736,9 @@ void glsl_translate_with_global(char *text, GLenum type, GLboolean hasFrontFacin
 				int extra_chars = -1;
 				char *start = end;
 				while ((*start != ' ' && *start != '\t') || !name_started) {
-					if (!name_started && *start != ' ' && *start != '\t' && *start != ';')
+					if (!name_started && *start != ' ' && *start != '\t' && *start != ';') {
 						name_started = GL_TRUE;
+					}
 					if (!name_started) {
 						end--;
 						extra_chars++;
@@ -818,19 +829,21 @@ ENTRY_HANDLED_GLOBAL:
 				while (*str2_end == ' ' || *str2_end == '\t') {
 					str2_end++;
 				}
-				if (*str2_end == ',' || *str2_end == ';')
+				if (*str2_end == ',' || *str2_end == ';') {
 					break;
+				}
 			}
 			str2 = strcasestr(str2_end, "texture");
 		}
 		while (str || str2) {
 			char *t;
-			if (!str)
+			if (!str) {
 				t = str2;
-			else if (!str2)
+			} else if (!str2) {
 				t = str;
-			else
+			} else {
 				t = min(str, str2);
+			}
 			if (t == str) { // Varying
 				GLboolean is_centroid = GL_FALSE;
 				char *back = str - 1;
@@ -849,8 +862,9 @@ ENTRY_HANDLED_GLOBAL:
 				int extra_chars = -1;
 				char *start = end;
 				while ((*start != ' ' && *start != '\t') || !name_started) {
-					if (!name_started && *start != ' ' && *start != '\t' && *start != ';')
+					if (!name_started && *start != ' ' && *start != '\t' && *start != ';') {
 						name_started = GL_TRUE;
+					}
 					if (!name_started) {
 						end--;
 						extra_chars++;
@@ -940,10 +954,11 @@ ENTRY_HANDLED_GLOBAL:
 					str = strstr(str + 7, "varying");
 				}
 			} else { // "texture" Uniform
-				if (t[0] == 't')
+				if (t[0] == 't') {
 					vgl_fast_memcpy(t, "vgl_tex", 7);
-				else
+				} else {
 					vgl_fast_memcpy(t, "Vgl_tex", 7);
+				}
 				str2 = strcasestr(t, "texture");
 				while (str2) {
 					char *str2_end = str2 + 7;
@@ -951,8 +966,9 @@ ENTRY_HANDLED_GLOBAL:
 						while (*str2_end == ' ' || *str2_end == '\t') {
 							str2_end++;
 						}
-						if (*str2_end == ',' || *str2_end == ';')
+						if (*str2_end == ',' || *str2_end == ';') {
 							break;
+						}
 					}
 					str2 = strcasestr(str2_end, "texture");
 				}
@@ -1017,8 +1033,9 @@ GLboolean glsl_handle_globals(char *txt, glsl_buffer *out, GLsizei preamble_size
 		while (*type == ' ' || *type == '\t' || *type == '\r' || *type == '\n') {
 			type++;
 		}
-		if (*type == 0)
+		if (*type == 0) {
 			break;
+		}
 		if (!strncmp(type, "float", 5) ||
 			!strncmp(type, "int", 3) || 
 			!strncmp(type, "vec", 3) ||
@@ -1055,9 +1072,10 @@ HANDLE_VAR:
 			}
 		} else {
 			type = strstr(type, ";");
-			if (type)
-				type++;
-		}
+			if (type) {
+		type++;
+	}
+}
 	}
 	// Second pass: replacing all marked variables
 	if (has_globals) {
@@ -1164,8 +1182,9 @@ LOOP_START:
 		switch (*left) {
 		case 'n':
 			if (!strncmp(left - 5, "return", 6)) {
-				if (left[1] == ' ' || left[1] == '\t')
+				if (left[1] == ' ' || left[1] == '\t') {
 					left++;
+				}
 				found = 1;
 			}
 			break;
@@ -1174,8 +1193,9 @@ LOOP_START:
 			break;
 		case '[':
 			quad_para_left--;
-			if (quad_para_left < 0)
+			if (quad_para_left < 0) {
 				found = 2;
+			}
 			break;
 		case ']':
 			quad_para_left++;
@@ -1185,8 +1205,9 @@ LOOP_START:
 			break;
 		case '(':
 			para_left--;
-			if (para_left < 0)
+			if (para_left < 0) {
 				found = 1;
+			}
 			break;
 		case '!':
 		case '=':
@@ -1195,15 +1216,18 @@ LOOP_START:
 		case ',':
 		case '?':
 		case ':':
-			if (para_left == 0 && quad_para_left == 0)
+			if (para_left == 0 && quad_para_left == 0) {
 				found = 1;
+			}
 			break;
 		case '-':
 		case '+':
-			if ((*(left - 1) == 'E' || *(left - 1) == 'e') && *(left - 2) >= '0' && *(left - 2) <= '9')
+			if ((*(left - 1) == 'E' || *(left - 1) == 'e') && *(left - 2) >= '0' && *(left - 2) <= '9') {
 				break;
-			if (para_left == 0 && quad_para_left == 0)
+			}
+			if (para_left == 0 && quad_para_left == 0) {
 				found = 1;
+			}
 			break;
 		default:
 			break;
@@ -1211,8 +1235,9 @@ LOOP_START:
 		if (found) {
 			left++;
 			break;
-		} else
+		} else {
 			left--;
+		}
 	}
 	found = 0;
 	char *right = star + 1;
@@ -1225,8 +1250,9 @@ LOOP_START:
 			break;
 		case ']':
 			quad_para_left--;
-			if (quad_para_left < 0)
+			if (quad_para_left < 0) {
 				found = 2;
+			}
 			break;
 		case '[':
 			quad_para_left++;
@@ -1236,23 +1262,27 @@ LOOP_START:
 			break;
 		case ')':
 			para_left--;
-			if (para_left < 0)
+			if (para_left < 0) {
 				found = 1;
+			}
 			break;
 		case '>':
 		case '<':
 		case ',':
 		case ':':
 		case '*':
-			if (para_left == 0 && quad_para_left == 0)
+			if (para_left == 0 && quad_para_left == 0) {
 				found = 1;
+			}
 			break;
 		case '-':
 		case '+':
-			if ((*(right - 1) == 'E' || *(right - 1) == 'e') && *(right - 2) >= '0' && *(right - 2) <= '9')
+			if ((*(right - 1) == 'E' || *(right - 1) == 'e') && *(right - 2) >= '0' && *(right - 2) <= '9') {
 				break;
-			if (para_left == 0 && quad_para_left == 0 && literal)
+			}
+			if (para_left == 0 && quad_para_left == 0 && literal) {
 				found = 1;
+			}
 			break;
 		case ';':
 			found = 1;
@@ -1261,10 +1291,11 @@ LOOP_START:
 			literal = 1;
 			break;
 		}
-		if (found)
+		if (found) {
 			break;
-		else
+		} else {
 			right++;
+		}
 	}
 	if (found < 2) { // Standard match
 		size_t left_offset = left - txt;
@@ -1285,10 +1316,11 @@ LOOP_START:
 		star = strstr(txt + jump, "*");
 	}
 	while (star) {
-		if (star[1] == '=') // FIXME: *= still not handled
+		if (star[1] == '=') { // FIXME: *= still not handled
 			star = strstr(star + 1, "*");
-		else
+		} else {
 			goto LOOP_START;
+		}
 	}
 	glsl_buffer_release(&replacement);
 	return GL_TRUE;
@@ -1304,18 +1336,21 @@ void glsl_translator_process(shader *s) {
 	GLboolean hasPointSize = GL_FALSE, hasFragDepth = GL_FALSE, hasFrontFacing = GL_FALSE, hasFrontColor = GL_FALSE;
 	GLboolean hasColor = GL_FALSE;
 	size += strlen(glsl_hdr);
-	if (glsl_precision_low)
+	if (glsl_precision_low) {
 		size += strlen(glsl_precision_hdr);
+	}
 #ifdef HAVE_FFP_SHADER_SUPPORT
 	size += strlen(glsl_ffp_hdr);
 #endif
 #ifndef SKIP_ERROR_HANDLING
-	if (glsl_sema_mode == VGL_MODE_GLOBAL)
+	if (glsl_sema_mode == VGL_MODE_GLOBAL) {
 		glsl_current_ref_idx++;
+	}
 #endif
-	if (s->type == GL_VERTEX_SHADER)
+	if (s->type == GL_VERTEX_SHADER) {
 		size += strlen("#define VGL_IS_VERTEX_SHADER\n");
-	
+	}
+
 	char *input = vglMalloc(source_size);
 	vgl_fast_memcpy(input, s->source, source_size - 1);
 	input[source_size - 1] = 0;
@@ -1380,31 +1415,41 @@ void glsl_translator_process(shader *s) {
 	GLboolean has_ffp_bind[FFP_BINDS_NUM];
 	for (int i = 0; i < FFP_BINDS_NUM; i++) {
 		has_ffp_bind[i] = strstr(out, ffp_bind_names[i]) ? GL_TRUE : GL_FALSE;
-		if (has_ffp_bind[i])
+		if (has_ffp_bind[i]) {
 			size += strlen(ffp_bind_defines[i]);
+		}
 	}
 #endif
 
 	if (s->type == GL_VERTEX_SHADER) {
-		if (hasPointSize)
+		if (hasPointSize) {
 			size += strlen("varying out float gl_PointSize : PSIZE;\n");
-		if (hasInstanceID)
+		}
+		if (hasInstanceID) {
 			size += strlen("varying in int gl_InstanceID : INSTANCE;\n");
-		if (hasVertexID)
+		}
+		if (hasVertexID) {
 			size += strlen("varying in int gl_VertexID : INDEX;\n");
-		if (hasFrontColor)
+		}
+		if (hasFrontColor) {
 			size += strlen("varying out float4 gl_FrontColor : COLOR;\n");
+		}
 	} else {
-		if (hasFrontFacing)
+		if (hasFrontFacing) {
 			size += strlen("varying in float vgl_Face : FACE;\n");
-		if (hasFragCoord)
+		}
+		if (hasFragCoord) {
 			size += strlen("varying in float4 gl_FragCoord : WPOS;\n");
-		if (hasFragDepth)
+		}
+		if (hasFragDepth) {
 			size += strlen("varying out float gl_FragDepth : DEPTH;\n");
-		if (hasPointCoord)
+		}
+		if (hasPointCoord) {
 			size += strlen("varying in float2 gl_PointCoord : SPRITECOORD;\n");
-		if (hasColor)
+		}
+		if (hasColor) {
 			size += strlen("varying in float4 gl_Color : COLOR;\n");
+		}
 	}
 	
 	vgl_free(s->source);
@@ -1414,34 +1459,45 @@ void glsl_translator_process(shader *s) {
 	// Injecting GLSL to CG header
 	if (s->type == GL_VERTEX_SHADER) {
 		strcat(s->source, "#define VGL_IS_VERTEX_SHADER\n");
-		if (hasPointSize)
+		if (hasPointSize) {
 			strcat(s->source, "varying out float gl_PointSize : PSIZE;\n");
-		if (hasInstanceID)
+		}
+		if (hasInstanceID) {
 			strcat(s->source, "varying in int gl_InstanceID : INSTANCE;\n");
-		if (hasVertexID)
+		}
+		if (hasVertexID) {
 			strcat(s->source, "varying in int gl_VertexID : INDEX;\n");
-		if (hasFrontColor)
+		}
+		if (hasFrontColor) {
 			strcat(s->source, "varying out float4 gl_FrontColor : COLOR;\n");
+		}
 	} else {
-		if (hasFrontFacing)
+		if (hasFrontFacing) {
 			strcat(s->source, "varying in float vgl_Face : FACE;\n");
-		if (hasFragCoord)
+		}
+		if (hasFragCoord) {
 			strcat(s->source, "varying in float4 gl_FragCoord : WPOS;\n");
-		if (hasFragDepth)
+		}
+		if (hasFragDepth) {
 			strcat(s->source, "varying out float gl_FragDepth : DEPTH;\n");
-		if (hasPointCoord)
+		}
+		if (hasPointCoord) {
 			strcat(s->source, "varying in float2 gl_PointCoord : SPRITECOORD;\n");
-		if (hasColor)
+		}
+		if (hasColor) {
 			strcat(s->source, "varying in float4 gl_Color : COLOR;\n");
+		}
 	}
 	strcat(s->source, glsl_hdr);
-	if (glsl_precision_low)
+	if (glsl_precision_low) {
 		strcat(s->source, glsl_precision_hdr);
-	
+	}
+
 #ifdef HAVE_FFP_SHADER_SUPPORT
 	for (int i = 0; i < FFP_BINDS_NUM; i++) {
-		if (has_ffp_bind[i])
+		if (has_ffp_bind[i]) {
 			strcat(s->source, ffp_bind_defines[i]);
+		}
 	}
 	strcat(s->source, glsl_ffp_hdr);
 #endif
@@ -1489,8 +1545,9 @@ void glsl_translator_process(shader *s) {
 							break;
 						}
 					}
-					if (idx != -1)
+					if (idx != -1) {
 						break;
+					}
 				}
 				if (idx != -1) {
 					GLenum binding_type = VGL_TYPE_TEXCOORD;
@@ -1539,8 +1596,9 @@ void glsl_translator_process(shader *s) {
 							break;
 						}
 					}
-					if (idx != -1)
+					if (idx != -1) {
 						break;
+					}
 				}
 				if (idx != -1) {
 					GLenum binding_type = VGL_TYPE_COLOR;

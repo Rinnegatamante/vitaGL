@@ -24,9 +24,10 @@ void *alloc_for_gpu(void *p, uint32_t align, uint32_t size) {
 	
 	// Allocating a new memblock of the required size
 	SceUID blk = sceKernelAllocMemBlock("av_blk", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW, size, NULL);
-	if (blk < 0)
+	if (blk < 0) {
 		return NULL;
-	
+	}
+
 	// Mapping it as read/write for GPU usage
 	void *res;
 	sceKernelGetMemBlockBase(blk, &res);

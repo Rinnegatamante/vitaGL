@@ -116,8 +116,9 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBlendFunc, DLIST_FUNC_U32_U32, sfactor, dfactor))
+	if (_vgl_enqueue_list_func(glBlendFunc, DLIST_FUNC_U32_U32, sfactor, dfactor)) {
 		return;
+	}
 #endif
 	switch (sfactor) {
 	case GL_ZERO:
@@ -193,8 +194,9 @@ void glBlendFunc(GLenum sfactor, GLenum dfactor) {
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, dfactor)
 	}
-	if (blend_state)
+	if (blend_state) {
 		change_blend_factor();
+	}
 }
 
 void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha) {
@@ -202,8 +204,9 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBlendFunc, DLIST_FUNC_U32_U32_U32_U32, srcRGB, dstRGB, srcAlpha, dstAlpha))
+	if (_vgl_enqueue_list_func(glBlendFunc, DLIST_FUNC_U32_U32_U32_U32, srcRGB, dstRGB, srcAlpha, dstAlpha)) {
 		return;
+	}
 #endif
 	switch (srcRGB) {
 	case GL_ZERO:
@@ -353,8 +356,9 @@ void glBlendFuncSeparate(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum d
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, dstAlpha)
 	}
-	if (blend_state)
+	if (blend_state) {
 		change_blend_factor();
+	}
 }
 
 void glBlendEquation(GLenum mode) {
@@ -362,8 +366,9 @@ void glBlendEquation(GLenum mode) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBlendEquation, DLIST_FUNC_U32, mode))
+	if (_vgl_enqueue_list_func(glBlendEquation, DLIST_FUNC_U32, mode)) {
 		return;
+	}
 #endif
 	switch (mode) {
 	case GL_FUNC_ADD:
@@ -384,8 +389,9 @@ void glBlendEquation(GLenum mode) {
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, mode)
 	}
-	if (blend_state)
+	if (blend_state) {
 		change_blend_factor();
+	}
 }
 
 void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
@@ -393,8 +399,9 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBlendEquationSeparate, DLIST_FUNC_U32_U32, modeRGB, modeAlpha))
+	if (_vgl_enqueue_list_func(glBlendEquationSeparate, DLIST_FUNC_U32_U32, modeRGB, modeAlpha)) {
 		return;
+	}
 #endif
 	switch (modeRGB) {
 	case GL_FUNC_ADD:
@@ -434,8 +441,9 @@ void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) {
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, modeAlpha)
 	}
-	if (blend_state)
+	if (blend_state) {
 		change_blend_factor();
+	}
 }
 
 void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha) {
@@ -443,20 +451,26 @@ void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColorMask, DLIST_FUNC_U8_U8_U8_U8, red, green, blue, alpha))
+	if (_vgl_enqueue_list_func(glColorMask, DLIST_FUNC_U8_U8_U8_U8, red, green, blue, alpha)) {
 		return;
+	}
 #endif
 	blend_color_mask = SCE_GXM_COLOR_MASK_NONE;
-	if (red)
+	if (red) {
 		blend_color_mask |= SCE_GXM_COLOR_MASK_R;
-	if (green)
+	}
+	if (green) {
 		blend_color_mask |= SCE_GXM_COLOR_MASK_G;
-	if (blue)
+	}
+	if (blue) {
 		blend_color_mask |= SCE_GXM_COLOR_MASK_B;
-	if (alpha)
+	}
+	if (alpha) {
 		blend_color_mask |= SCE_GXM_COLOR_MASK_A;
-	if (blend_state)
+	}
+	if (blend_state) {
 		change_blend_factor();
-	else
+	} else {
 		change_blend_mask();
+	}
 }

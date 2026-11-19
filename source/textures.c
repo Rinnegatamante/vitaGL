@@ -145,8 +145,9 @@ static inline __attribute__((always_inline)) void _glTexParameterx(texture *tex,
 			default:
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
-			if (tex->status == TEX_VALID)
+			if (tex->status == TEX_VALID) {
 				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
+			}
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -216,8 +217,9 @@ static inline __attribute__((always_inline)) void _glTexParameterx(texture *tex,
 			default:
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
-			if (tex->status == TEX_VALID)
+			if (tex->status == TEX_VALID) {
 				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
+			}
 			break;
 		case GL_TEXTURE_WRAP_S: // U Mode
 			switch (param) {
@@ -237,8 +239,9 @@ static inline __attribute__((always_inline)) void _glTexParameterx(texture *tex,
 			default:
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
-			if (tex->status == TEX_VALID)
+			if (tex->status == TEX_VALID) {
 				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+			}
 			break;
 		case GL_TEXTURE_WRAP_T: // V Mode
 			switch (param) {
@@ -258,13 +261,15 @@ static inline __attribute__((always_inline)) void _glTexParameterx(texture *tex,
 			default:
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
-			if (tex->status == TEX_VALID)
+			if (tex->status == TEX_VALID) {
 				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+			}
 			break;
 		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
 			tex->lod_bias = (uint32_t)((uint32_t)((float)param / 65536.0f) + GL_MAX_TEXTURE_LOD_BIAS);
-			if (tex->status == TEX_VALID)
+			if (tex->status == TEX_VALID) {
 				vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
+			}
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -339,8 +344,9 @@ static inline __attribute__((always_inline)) void _glTexParameteri(texture *tex,
 			default:
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
-			if (tex->status == TEX_VALID)
+			if (tex->status == TEX_VALID) {
 				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
+			}
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -410,8 +416,9 @@ static inline __attribute__((always_inline)) void _glTexParameteri(texture *tex,
 			default:
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
-			if (tex->status == TEX_VALID)
+			if (tex->status == TEX_VALID) {
 				vglSetTexMagFilter(&tex->gxm_tex, tex->mag_filter);
+			}
 			break;
 		case GL_TEXTURE_WRAP_S: // U Mode
 			switch (param) {
@@ -431,8 +438,9 @@ static inline __attribute__((always_inline)) void _glTexParameteri(texture *tex,
 			default:
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
-			if (tex->status == TEX_VALID)
+			if (tex->status == TEX_VALID) {
 				vglSetTexUMode(&tex->gxm_tex, tex->u_mode);
+			}
 			break;
 		case GL_TEXTURE_WRAP_T: // V Mode
 			switch (param) {
@@ -452,13 +460,15 @@ static inline __attribute__((always_inline)) void _glTexParameteri(texture *tex,
 			default:
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
-			if (tex->status == TEX_VALID)
+			if (tex->status == TEX_VALID) {
 				vglSetTexVMode(&tex->gxm_tex, tex->v_mode);
+			}
 			break;
 		case GL_TEXTURE_LOD_BIAS: // Distant LOD bias
 			tex->lod_bias = (uint32_t)(param + GL_MAX_TEXTURE_LOD_BIAS);
-			if (tex->status == TEX_VALID)
+			if (tex->status == TEX_VALID) {
 				vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
+			}
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -545,10 +555,11 @@ static inline __attribute__((always_inline)) void _glTexImage2D_CubeIMPL(texture
 	case GL_SRGB8:
 		gamma_correction = GL_TRUE;
 	case GL_RGB:
-		if (data_bpp == 2)
+		if (data_bpp == 2) {
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB;
-		else
+		} else {
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
+		}
 		break;
 	case GL_SRGB_ALPHA:
 	case GL_SRGB8_ALPHA8:
@@ -558,12 +569,14 @@ static inline __attribute__((always_inline)) void _glTexImage2D_CubeIMPL(texture
 	case GL_RGBA4:
 	case GL_RGB5_A1:
 		if (data_bpp == 2) {
-			if (src_format == SCE_GXM_TRANSFER_FORMAT_U1U5U5U5_ABGR)
+			if (src_format == SCE_GXM_TRANSFER_FORMAT_U1U5U5U5_ABGR) {
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
-			else
+			} else {
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA;
-		} else
+			}
+		} else {
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
+		}
 		break;
 	default:
 		tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
@@ -572,8 +585,9 @@ static inline __attribute__((always_inline)) void _glTexImage2D_CubeIMPL(texture
 
 	// Allocating texture/mipmaps depending on user call
 	tex->format = src_format;
-	if (level == 0) // FIXME: Add proper mipmaps support
+	if (level == 0) { // FIXME: Add proper mipmaps support
 		gpu_alloc_cube_texture(width, height, tex_format, src_format, data, tex, data_bpp, index);
+	}
 
 	// Setting texture parameters
 	vglSetTexUMode(&tex->gxm_tex, SCE_GXM_TEXTURE_ADDR_CLAMP);
@@ -583,8 +597,9 @@ static inline __attribute__((always_inline)) void _glTexImage2D_CubeIMPL(texture
 	vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
 	vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
 	vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
-	if (gamma_correction)
+	if (gamma_correction) {
 		vglSetTexGammaMode(&tex->gxm_tex, SCE_GXM_TEXTURE_GAMMA_BGR);
+	}
 }
 
 static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture *tex, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *data) {
@@ -608,10 +623,11 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	case GL_ALPHA:
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
-			if (internalFormat == GL_RED || internalFormat == GL_ALPHA)
+			if (internalFormat == GL_RED || internalFormat == GL_ALPHA) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_r8;
+			}
 			data_bpp = 1;
 			break;
 		default:
@@ -622,10 +638,11 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 1;
-			if (internalFormat == GL_LUMINANCE || internalFormat == GL_SLUMINANCE || internalFormat == GL_SLUMINANCE8)
+			if (internalFormat == GL_LUMINANCE || internalFormat == GL_SLUMINANCE || internalFormat == GL_SLUMINANCE8) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_l8;
+			}
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -636,10 +653,11 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 2;
-			if (internalFormat == GL_RG || internalFormat == GL_RG8)
+			if (internalFormat == GL_RG || internalFormat == GL_RG8) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_rg88;
+			}
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -649,10 +667,11 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 2;
-			if (internalFormat == GL_LUMINANCE_ALPHA || internalFormat == GL_SLUMINANCE_ALPHA || internalFormat == GL_SLUMINANCE8_ALPHA8)
+			if (internalFormat == GL_LUMINANCE_ALPHA || internalFormat == GL_SLUMINANCE_ALPHA || internalFormat == GL_SLUMINANCE8_ALPHA8) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_la88;
+			}
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -662,10 +681,11 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 3;
-			if (internalFormat == GL_BGR)
+			if (internalFormat == GL_BGR) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_bgr888;
+			}
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -675,17 +695,19 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 3;
-			if (internalFormat == GL_RGB || internalFormat == GL_RGB8)
+			if (internalFormat == GL_RGB || internalFormat == GL_RGB8) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_rgb888;
+			}
 			break;
 		case GL_UNSIGNED_SHORT_5_6_5:
 			data_bpp = 2;
-			if (internalFormat == GL_RGB)
+			if (internalFormat == GL_RGB) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_rgb565;
+			}
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -696,10 +718,11 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 		case GL_UNSIGNED_INT_8_8_8_8_REV:
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 4;
-			if (internalFormat == GL_BGRA)
+			if (internalFormat == GL_BGRA) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_bgra8888;
+			}
 			break;
 		case GL_UNSIGNED_INT_8_8_8_8:
 			data_bpp = 4;
@@ -717,10 +740,11 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 		switch (type) {
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 4;
-			if (internalFormat == GL_ABGR_EXT)
+			if (internalFormat == GL_ABGR_EXT) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_abgr8888;
+			}
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
@@ -735,10 +759,11 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 			break;
 		case GL_UNSIGNED_BYTE:
 			data_bpp = 4;
-			if (internalFormat == GL_RGBA || internalFormat == GL_RGBA8)
+			if (internalFormat == GL_RGBA || internalFormat == GL_RGBA8) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_rgba8888;
+			}
 			break;
 		case GL_UNSIGNED_SHORT_1_5_5_5_REV:
 			data_bpp = 2;
@@ -746,14 +771,16 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 			break;
 		case GL_UNSIGNED_SHORT_5_5_5_1:
 			data_bpp = 2;
-			if (internalFormat == GL_RGBA)
+			if (internalFormat == GL_RGBA) {
 				fast_store = GL_TRUE;
+			}
 			read_cb = read_rgba5551;
 			break;
 		case GL_UNSIGNED_SHORT_4_4_4_4:
 			data_bpp = 2;
-			if (internalFormat == GL_RGBA)
+			if (internalFormat == GL_RGBA) {
 				fast_store = GL_TRUE;
+			}
 			read_cb = read_rgba4444;
 			break;
 		default:
@@ -793,10 +820,11 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	case GL_RGB8:
 	case GL_RGB:
 		tex->write_cb = write_rgb888;
-		if (fast_store && data_bpp == 2)
+		if (fast_store && data_bpp == 2) {
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB;
-		else
+		} else {
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
+		}
 		break;
 	case GL_BGR:
 		tex->write_cb = write_bgr888;
@@ -811,12 +839,14 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	case GL_RGBA:
 		tex->write_cb = write_rgba8888;
 		if (fast_store && data_bpp == 2) {
-			if ((uintptr_t)read_cb == (uintptr_t)read_rgba5551)
+			if ((uintptr_t)read_cb == (uintptr_t)read_rgba5551) {
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U5U5U5U1_RGBA;
-			else
+			} else {
 				tex_format = SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA;
-		} else
+			}
+		} else {
 			tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR;
+		}
 		break;
 	case GL_BGRA:
 		tex->write_cb = write_bgra8888;
@@ -934,8 +964,9 @@ static inline __attribute__((always_inline)) void _glTexImage2D_FlatIMPL(texture
 	vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
 	vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
 	vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 0);
-	if (gamma_correction)
+	if (gamma_correction) {
 		vglSetTexGammaMode(&tex->gxm_tex, SCE_GXM_TEXTURE_GAMMA_BGR);
+	}
 
 	// Setting palette if the format requests one
 	if (tex->palette_data) {
@@ -1166,50 +1197,57 @@ static inline __attribute__((always_inline)) void _glTexSubImage2D(texture *tex,
 		// Detecting proper write callback
 		switch (tex_format) {
 		case SCE_GXM_TEXTURE_FORMAT_U8U8_GR:
-			if ((uintptr_t)read_cb == (uintptr_t)read_rg88)
+			if ((uintptr_t)read_cb == (uintptr_t)read_rg88) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				write_cb = write_rg88;
+			}
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
-			if ((uintptr_t)read_cb == (uintptr_t)read_rgb888)
+			if ((uintptr_t)read_cb == (uintptr_t)read_rgb888) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				write_cb = write_rgb888;
+			}
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8_RGB:
-			if ((uintptr_t)read_cb == (uintptr_t)read_bgr888)
+			if ((uintptr_t)read_cb == (uintptr_t)read_bgr888) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				write_cb = write_bgr888;
+			}
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-			if ((uintptr_t)read_cb == (uintptr_t)read_rgba8888)
+			if ((uintptr_t)read_cb == (uintptr_t)read_rgba8888) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				write_cb = write_rgba8888;
+			}
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
-			if ((uintptr_t)read_cb == (uintptr_t)read_bgra8888)
+			if ((uintptr_t)read_cb == (uintptr_t)read_bgra8888) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				write_cb = write_bgra8888;
+			}
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_L8:
 		case SCE_GXM_TEXTURE_FORMAT_U8_R:
 		case SCE_GXM_TEXTURE_FORMAT_U8_RRRR:
 		case SCE_GXM_TEXTURE_FORMAT_U8_R111:
 		case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
-			if ((uintptr_t)read_cb == (uintptr_t)read_r8 || (uintptr_t)read_cb == (uintptr_t)read_l8)
+			if ((uintptr_t)read_cb == (uintptr_t)read_r8 || (uintptr_t)read_cb == (uintptr_t)read_l8) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				write_cb = write_r8;
+			}
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_A8L8:
-			if ((uintptr_t)read_cb == (uintptr_t)read_la88)
+			if ((uintptr_t)read_cb == (uintptr_t)read_la88) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				write_cb = write_ra88;
+			}
 			break;
 		// From here, we assume we're always in fast_store trunk (Not 100% accurate)
 		case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
@@ -1296,8 +1334,9 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 	THREAD_SAFE()
 
 #ifdef HAVE_UNPURE_TEXTURES
-	if (tex->mip_start < 0)
+	if (tex->mip_start < 0) {
 		tex->mip_start = level;
+	}
 	level -= tex->mip_start;
 #endif
 
@@ -1329,8 +1368,9 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 	case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
 	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
 	case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
-		if (level != 0) // FIXME: Add proper mipmaps support for cubemaps
+		if (level != 0) { // FIXME: Add proper mipmaps support for cubemaps
 			return;
+		}
 #ifdef HAVE_UNPURE_TEXFORMATS
 	case GL_TEXTURE_1D: // Workaround for 1D textures support
 #endif
@@ -1514,8 +1554,9 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 				if (recompress_non_native && target == GL_TEXTURE_2D) {
 					read_cb = read_rgb888;
 					tex_format = SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR;
-				} else
+				} else {
 					tex_format = SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR;
+				}
 				data_bpp = 3;
 #ifndef DISABLE_HW_ETC1
 			}
@@ -1693,8 +1734,9 @@ void _glCompressedTexImage2D(texture *tex, GLenum target, GLint level, GLenum in
 		vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
 		vglSetTexLodBias(&tex->gxm_tex, tex->lod_bias);
 		vglSetTexMipmapCount(&tex->gxm_tex, tex->use_mips ? tex->mip_count : 1);
-		if (gamma_correction)
+		if (gamma_correction) {
 			vglSetTexGammaMode(&tex->gxm_tex, SCE_GXM_TEXTURE_GAMMA_BGR);
+		}
 		break;
 	default:
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
@@ -1762,8 +1804,9 @@ inline __attribute__((always_inline)) void glGenTextures(GLsizei n, GLuint *res)
 			texture_slots[i].v_mode = SCE_GXM_TEXTURE_ADDR_REPEAT;
 			texture_slots[i].lod_bias = GL_MAX_TEXTURE_LOD_BIAS; // sceGxm range is 0 - (GL_MAX_TEXTURE_LOD_BIAS*2 + 1)
 		}
-		if (j >= n)
+		if (j >= n) {
 			return;
+		}
 	}
 
 	vgl_log("%s:%d %s: Texture slots limit reached (%d textures hadn't been generated).\n", __FILE__, __LINE__, __func__, n - j);
@@ -1778,8 +1821,9 @@ void glBindTexture(GLenum target, GLuint texture) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBindTexture, DLIST_FUNC_U32_U32, target, texture))
+	if (_vgl_enqueue_list_func(glBindTexture, DLIST_FUNC_U32_U32, target, texture)) {
 		return;
+	}
 #endif
 
 #ifndef SKIP_ERROR_HANDLING
@@ -1826,10 +1870,11 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 				if (texture_slots[i].ref_counter > 0) {
 					if (texture_slots[i].ref_counter == 1) {
 						framebuffer *fb = NULL;
-						if (active_read_fb && active_read_fb->tex == &texture_slots[i])
+						if (active_read_fb && active_read_fb->tex == &texture_slots[i]) {
 							fb = active_read_fb;
-						else if (active_write_fb && active_write_fb->tex == &texture_slots[i])
+						} else if (active_write_fb && active_write_fb->tex == &texture_slots[i]) {
 							fb = active_write_fb;
+						}
 						if (fb) {
 							gpu_free_texture(&texture_slots[i]);
 							if (fb->depthbuffer_state & DEPTHBUFFER_READY) {
@@ -1864,12 +1909,15 @@ void glDeleteTextures(GLsizei n, const GLuint *gl_textures) {
 
 			for (int k = 0; k < TEXTURE_IMAGE_UNITS_NUM; k++) {
 				texture_unit *tex_unit = &texture_units[k];
-				if (i == tex_unit->tex_id[0])
+				if (i == tex_unit->tex_id[0]) {
 					tex_unit->tex_id[0] = 0;
-				if (i == tex_unit->tex_id[1])
+				}
+				if (i == tex_unit->tex_id[1]) {
 					tex_unit->tex_id[1] = 0;
-				if (i == tex_unit->tex_id[2])
+				}
+				if (i == tex_unit->tex_id[2]) {
 					tex_unit->tex_id[2] = 0;
+				}
 			}
 		}
 	}
@@ -1892,8 +1940,9 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 #endif
 
 #ifdef HAVE_UNPURE_TEXTURES
-	if (tex->mip_start < 0)
+	if (tex->mip_start < 0) {
 		tex->mip_start = level;
+	}
 	level -= tex->mip_start;
 #endif
 
@@ -1946,8 +1995,9 @@ void glTextureImage2D(GLuint tex_id, GLint level, GLint internalFormat, GLsizei 
 #endif
 
 #ifdef HAVE_UNPURE_TEXTURES
-	if (tex->mip_start < 0)
+	if (tex->mip_start < 0) {
 		tex->mip_start = level;
+	}
 	level -= tex->mip_start;
 #endif
 
@@ -2178,8 +2228,9 @@ void glActiveTexture(GLenum texture) {
 	{
 		int8_t old_server_texture_unit = server_texture_unit;
 		server_texture_unit = texture - GL_TEXTURE0;
-		if (matrix == &texture_matrix[old_server_texture_unit])
+		if (matrix == &texture_matrix[old_server_texture_unit]) {
 			matrix = &texture_matrix[server_texture_unit];
+		}
 	}
 }
 
@@ -2193,8 +2244,9 @@ void glGenerateMipmap(GLenum target) {
 
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if current texture is valid
-	if (tex->status != TEX_VALID)
+	if (tex->status != TEX_VALID) {
 		return;
+	}
 	// Checking if current texture is compressed/planar
 	else {
 		SceGxmTextureFormat fmt = vglGetTexFormat(&tex->gxm_tex);
@@ -2233,8 +2285,9 @@ void glGenerateTextureMipmap(GLuint target) {
 
 #ifndef SKIP_ERROR_HANDLING
 	// Checking if current texture is valid
-	if (tex->status != TEX_VALID)
+	if (tex->status != TEX_VALID) {
 		return;
+	}
 	// Checking if current texture is compressed
 	else {
 		SceGxmTextureFormat fmt = vglGetTexFormat(&tex->gxm_tex);
@@ -2552,8 +2605,9 @@ void glDeleteSamplers(GLsizei n, const GLuint *smp) {
 
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < COMBINED_TEXTURE_IMAGE_UNITS_NUM; j++) {
-			if (smp[i] == (GLuint)samplers[j])
+			if (smp[i] == (GLuint)samplers[j]) {
 				samplers[j] = NULL;
+			}
 		}
 		vgl_free((void *)smp[i]);
 	}

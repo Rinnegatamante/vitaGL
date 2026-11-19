@@ -269,8 +269,9 @@ void glBindVertexArray(GLuint array) {
 	THREAD_SAFE()
 
 	cur_vao = (vao *)array;
-	if (!cur_vao)
+	if (!cur_vao) {
 		cur_vao = &default_vao;
+	}
 }
 
 void glDeleteVertexArrays(GLsizei n, const GLuint *gl_arrays) {
@@ -301,8 +302,9 @@ inline __attribute__((always_inline)) void glGenBuffers(GLsizei n, GLuint *res) 
 	for (int i = 0; i < n; i++) {
 		vbo *gpu_buf = (vbo *)vglMalloc(sizeof(vbo));
 #ifdef LOG_ERRORS
-		if (!gpu_buf)
+		if (!gpu_buf) {
 			vgl_log("%s:%d glGenBuffers failed to alloc a buffer (%d/%lu).\n", __FILE__, __LINE__, i, n);
+		}
 #endif
 		gpu_buf->ptr = NULL;
 		gpu_buf->last_frame = OBJ_NOT_USED;
@@ -428,9 +430,9 @@ inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLe
 
 	// Allocating a new buffer
 #if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
-	if (gpu_buf->scratch)
+	if (gpu_buf->scratch) {
 		gpu_buf->ptr = vgl_reserve_data_pool(size);
-	else
+	} else
 #endif
 		gpu_buf->ptr = gpu_buf->alloc_func(size);	
 
@@ -443,8 +445,9 @@ inline void glNamedBufferData(GLuint buffer, GLsizei size, const void *data, GLe
 	gpu_buf->size = size;
 	gpu_buf->last_frame = OBJ_NOT_USED;
 
-	if (data)
+	if (data) {
 		vgl_fast_memcpy(gpu_buf->ptr, data, size);
+	}
 }
 
 void glBufferData(GLenum target, GLsizei size, const GLvoid *data, GLenum usage) {
@@ -501,11 +504,13 @@ inline void glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizeiptr size
 #endif
 
 		// Copying up previous data combined to modified data
-		if (offset > 0)
+		if (offset > 0) {
 			vgl_memcpy(ptr, gpu_buf->ptr, offset);
+		}
 		vgl_memcpy(ptr + offset, data, size);
-		if (gpu_buf->size - size - offset > 0)
+		if (gpu_buf->size - size - offset > 0) {
 			vgl_memcpy(ptr + offset + size, (uint8_t *)gpu_buf->ptr + offset + size, gpu_buf->size - size - offset);
+		}
 
 		// Marking previous content for deletion
 #if defined(HAVE_SCRATCH_MEMORY) && !defined(DISABLE_CIRCULAR_POOL)
@@ -897,9 +902,9 @@ void vglIndexPointer(GLenum type, GLsizei stride, GLuint count, const GLvoid *po
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, type)
 	}
 	index_object = gpu_alloc_mapped_temp(count * bpe);
-	if (stride == 0)
+	if (stride == 0) {
 		vgl_fast_memcpy(index_object, pointer, count * bpe);
-	else {
+	} else {
 		int i;
 		uint8_t *dst = (uint8_t *)index_object;
 		uint8_t *src = (uint8_t *)pointer;

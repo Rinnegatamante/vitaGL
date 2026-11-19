@@ -105,15 +105,17 @@ uint8_t * DETEX_RESTRICT pixel_buffer) {
 bool detexDecompressBlockETC2_EAC(const uint8_t * DETEX_RESTRICT bitstring, uint32_t mode_mask,
 uint32_t flags, uint8_t * DETEX_RESTRICT pixel_buffer) {
 	bool r = detexDecompressBlockETC2(&bitstring[8], mode_mask, flags, pixel_buffer);
-	if (!r)
+	if (!r) {
 		return false;
+	}
 	// Decode the alpha part.
 	int base_codeword = bitstring[0];
 	const int8_t *modifier_table = eac_modifier_table[(bitstring[1] & 0x0F)];
 	int multiplier = (bitstring[1] & 0xF0) >> 4;
-	if (multiplier == 0 && (flags & DETEX_DECOMPRESS_FLAG_ENCODE))
+	if (multiplier == 0 && (flags & DETEX_DECOMPRESS_FLAG_ENCODE)) {
 		// Not allowed in encoding. Decoder should handle it.
 		return false;
+	}
 	uint64_t pixels = ((uint64_t)bitstring[2] << 40) | ((uint64_t)bitstring[3] << 32) |
 		((uint64_t)bitstring[4] << 24)
 		| ((uint64_t)bitstring[5] << 16) | ((uint64_t)bitstring[6] << 8) | bitstring[7];
@@ -147,10 +149,12 @@ uint32_t *colors) {
 }
 
 static DETEX_INLINE_ONLY int Clamp0To2047(int x) {
-	if (x < 0)
+	if (x < 0) {
 		return 0;
-	if (x > 2047)
+	}
+	if (x > 2047) {
 		return 2047;
+	}
 	return x;
 }
 
@@ -165,8 +169,9 @@ uint8_t * DETEX_RESTRICT pixel_buffer) {
 	int modifier_index = (qword & 0x000F000000000000) >> 48;
 	const int8_t *modifier_table = eac_modifier_table[modifier_index];
 	int multiplier_times_8 = (qword & 0x00F0000000000000) >> (52 - 3);
-	if (multiplier_times_8 == 0)
+	if (multiplier_times_8 == 0) {
 		multiplier_times_8 = 1;
+	}
 	uint16_t *buffer = (uint16_t *)pixel_buffer;
 	for (int i = 0; i < 16; i++) {
 		int pixel_index = (qword & (0x0000E00000000000 >> (i * 3))) >> (45 - i * 3);
@@ -208,16 +213,19 @@ uint32_t flags, uint8_t * DETEX_RESTRICT pixel_buffer) {
 }
 
 static DETEX_INLINE_ONLY int ClampMinus1023To1023(int x) {
-	if (x < - 1023)
+	if (x < - 1023) {
 		return - 1023;
-	if (x > 1023)
+	}
+	if (x > 1023) {
 		return 1023;
+	}
 	return x;
 }
 
 static DETEX_INLINE_ONLY uint32_t ReplicateSigned11BitsTo16Bits(int value) {
-	if (value >= 0)
+	if (value >= 0) {
 		return (value << 5) | (value >> 5);
+	}
 	value = - value;
 	value = (value << 5) | (value >> 5);
 	return - value;
@@ -231,15 +239,17 @@ static DETEX_INLINE_ONLY uint32_t ReplicateSigned11BitsTo16Bits(int value) {
 static DETEX_INLINE_ONLY bool DecodeBlockEACSigned11Bit(uint64_t qword, int shift, int offset,
 uint8_t *pixel_buffer) {
 	int base_codeword = (int8_t)((qword & 0xFF00000000000000) >> 56);	// Signed 8 bits.
-	if (base_codeword == - 128)
+	if (base_codeword == - 128) {
 		// Not allowed in encoding. Decoder should handle it but we don't do that yet.
 		return false;
+	}
 	int base_codeword_times_8 = base_codeword << 3;				// Arithmetic shift.
 	int modifier_index = (qword & 0x000F000000000000) >> 48;
 	const int8_t *modifier_table = eac_modifier_table[modifier_index];
 	int multiplier_times_8 = (qword & 0x00F0000000000000) >> (52 - 3);
-	if (multiplier_times_8 == 0)
+	if (multiplier_times_8 == 0) {
 		multiplier_times_8 = 1;
+	}
 	uint16_t *buffer = (uint16_t *)pixel_buffer;
 	for (int i = 0; i < 16; i++) {
 		int pixel_index = (qword & (0x0000E00000000000 >> (i * 3))) >> (45 - i * 3);
@@ -272,8 +282,9 @@ uint32_t mode_mask, uint32_t flags, uint8_t * DETEX_RESTRICT pixel_buffer) {
 		((uint64_t)bitstring[3] << 32) | ((uint64_t)bitstring[4] << 24) |
 		((uint64_t)bitstring[5] << 16) | ((uint64_t)bitstring[6] << 8) | bitstring[7];
 	int r = DecodeBlockEACSigned11Bit(red_qword, 1, 0, pixel_buffer);
-	if (!r)
+	if (!r) {
 		return false;
+	}
 	uint64_t green_qword = ((uint64_t)bitstring[8] << 56) | ((uint64_t)bitstring[9] << 48) |
 		((uint64_t)bitstring[10] << 40) |
 		((uint64_t)bitstring[11] << 32) | ((uint64_t)bitstring[12] << 24) |

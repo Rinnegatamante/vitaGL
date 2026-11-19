@@ -161,8 +161,9 @@ create_gear(GLfloat inner_radius, GLfloat outer_radius, GLfloat width,
 
    /* Allocate memory for the gear */
    gear = malloc(sizeof *gear);
-   if (gear == NULL)
-      return NULL;
+   if (gear == NULL) {
+       return NULL;
+   }
 
    /* Calculate the radii used in the gear */
    r0 = inner_radius;
@@ -438,8 +439,9 @@ void perspective(GLfloat *m, GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloa
    deltaZ = zFar - zNear;
    sincos(radians, &sine, &cosine);
 
-   if ((deltaZ == 0) || (sine == 0) || (aspect == 0))
-      return;
+   if ((deltaZ == 0) || (sine == 0) || (aspect == 0)) {
+       return;
+   }
 
    cotangent = cosine / sine;
 
@@ -573,14 +575,18 @@ gears_special(int special, int crap, int morecrap)
 {
    SceCtrlData pad;
    sceCtrlPeekBufferPositive(0, &pad, 1);
-   if (pad.buttons & SCE_CTRL_LEFT)
-         view_rot[1] += 5.0;
-   if (pad.buttons & SCE_CTRL_RIGHT)
-         view_rot[1] -= 5.0;
-   if (pad.buttons & SCE_CTRL_UP)
-         view_rot[0] += 5.0;
-   if (pad.buttons & SCE_CTRL_DOWN)
-         view_rot[0] -= 5.0;
+   if (pad.buttons & SCE_CTRL_LEFT) {
+       view_rot[1] += 5.0;
+   }
+   if (pad.buttons & SCE_CTRL_RIGHT) {
+       view_rot[1] -= 5.0;
+   }
+   if (pad.buttons & SCE_CTRL_UP) {
+       view_rot[0] += 5.0;
+   }
+   if (pad.buttons & SCE_CTRL_DOWN) {
+       view_rot[0] -= 5.0;
+   }
 }
 
 static void
@@ -590,23 +596,26 @@ gears_idle(void)
    static double tRot0 = -1.0, tRate0 = -1.0;
    double dt, t = (double)sceKernelGetProcessTimeWide() / 1000000.0;
 
-   if (tRot0 < 0.0)
-      tRot0 = t;
+   if (tRot0 < 0.0) {
+       tRot0 = t;
+   }
    dt = t - tRot0;
    tRot0 = t;
 
    /* advance rotation for next frame */
    angle += 70.0 * dt;  /* 70 degrees per second */
-   if (angle > 3600.0)
-      angle -= 3600.0;
+   if (angle > 3600.0) {
+       angle -= 3600.0;
+   }
 
    gears_special(0, 0, 0);
    gears_reshape(DISPLAY_WIDTH, DISPLAY_HEIGHT);
    gears_draw();
    frames++;
 
-   if (tRate0 < 0.0)
-      tRate0 = t;
+   if (tRate0 < 0.0) {
+       tRate0 = t;
+   }
    if (t - tRate0 >= 5.0) {
       GLfloat seconds = t - tRate0;
       GLfloat fps = frames / seconds;

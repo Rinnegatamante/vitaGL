@@ -948,12 +948,13 @@ static DETEX_INLINE_ONLY uint8_t detexClamp0To255(int x) {
 
 /* Clamp a float point value to the range 0.0 to 1.0f. */
 static DETEX_INLINE_ONLY float detexClamp0To1(float f) {
-	if (f < 0.0f)
+	if (f < 0.0f) {
 		return 0.0f;
-	else if (f > 1.0f)
+	} else if (f > 1.0f) {
 		return 1.0f;
-	else
+	} else {
 		return f;
+	}
 }
 
 

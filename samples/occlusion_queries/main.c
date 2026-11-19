@@ -118,8 +118,9 @@ int main(){
 		glDisableClientState(GL_COLOR_ARRAY);
 		
 		// Getting passed samples result and printing on console
-		if (show_front_cube)
+		if (show_front_cube) {
 			glGetQueryObjectiv(queries[0], GL_QUERY_RESULT, &samples_passed[0]);
+		}
 		glGetQueryObjectiv(queries[1], GL_QUERY_RESULT, &samples_passed[1]);
 		sceClibPrintf("Front cube samples: %u\n", samples_passed[0]);
 		sceClibPrintf("Back cube samples: %u\n", samples_passed[1]);

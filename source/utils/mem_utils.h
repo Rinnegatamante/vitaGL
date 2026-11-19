@@ -116,11 +116,12 @@ void vgl_free(void *ptr);
 // Helper function for fastest memory copy on uncached mem
 static inline __attribute__((always_inline)) void vgl_memcpy(void *dst, const void *src, size_t size) {
 #ifndef DISABLE_DMAC
-	if (size >= 0x2000 && (uint32_t)src < 0x81000000 && (uint32_t)dst < 0x81000000)
+	if (size >= 0x2000 && (uint32_t)src < 0x81000000 && (uint32_t)dst < 0x81000000) {
 		sceDmacMemcpy(dst, src, size);
-	else
+		return;
+	}
 #endif
-		vgl_fast_memcpy(dst, src, size);
+	vgl_fast_memcpy(dst, src, size);
 }
 
 #endif

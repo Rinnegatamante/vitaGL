@@ -88,8 +88,9 @@ int init_msg_dialog(const char *msg) {
 
 // Gets current state for sceMsgDialog running widget
 int get_msg_dialog_result(void) {
-	if (sceMsgDialogGetStatus() != SCE_COMMON_DIALOG_STATUS_FINISHED)
+	if (sceMsgDialogGetStatus() != SCE_COMMON_DIALOG_STATUS_FINISHED) {
 		return 0;
+	}
 	sceMsgDialogTerm();
 	return 1;
 }
@@ -120,8 +121,9 @@ void loadShader(const char *name, int type) {
 	char fname[256];
 	sprintf(fname, "app0:%s.vert", name);
 	FILE *f = fopen(fname, "r");
-	if (!f)
+	if (!f) {
 		fatal_error("Cannot open %s", fname);
+	}
 	fseek(f, 0, SEEK_END);
 	int32_t vsize = ftell(f);
 	fseek(f, 0, SEEK_SET);
@@ -132,8 +134,9 @@ void loadShader(const char *name, int type) {
 	// Load fragment shader from filesystem
 	sprintf(fname, "app0:%s.frag", name);
 	f = fopen(fname, "r");
-	if (!f)
+	if (!f) {
 		fatal_error("Cannot open %s", fname);
+	}
 	fseek(f, 0, SEEK_END);
 	int32_t fsize = ftell(f);
 	fseek(f, 0, SEEK_SET);
@@ -242,11 +245,13 @@ int main() {
 	
 	// Loading our models
 	to_model plane, bunny;
-	if (to_loadObj("app0:plane.obj", &plane))
+	if (to_loadObj("app0:plane.obj", &plane)) {
 		fatal_error("Cannot open app0:plane.obj");
-	if (to_loadObj("app0:bunny.obj", &bunny))
+	}
+	if (to_loadObj("app0:bunny.obj", &bunny)) {
 		fatal_error("Cannot open app0:bunny.obj");
-	
+	}
+
 	// Setting up camera
 	update_camera();
 	
@@ -266,10 +271,11 @@ int main() {
 		
 		// Checking for wireframe mode changes requests
 		if (CHECK_BTN(SCE_CTRL_CROSS)) {
-			if (wireframe)
+			if (wireframe) {
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			else
+			} else {
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			}
 			wireframe = !wireframe;
 		}
 		
@@ -317,10 +323,11 @@ int main() {
 		// Performing camera setup update if required
 		if (needs_camera_update) {
 			// Preventing pitch to get on the "back"
-			if (camera_orientation.y < -89.0f)
+			if (camera_orientation.y < -89.0f) {
 				camera_orientation.y = -89.0f;
-			else if (camera_orientation.y > 89.0f)
+			} else if (camera_orientation.y > 89.0f) {
 				camera_orientation.y = 89.0f;
+			}
 			update_camera();
 		}
 		

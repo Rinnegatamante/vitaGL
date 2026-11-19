@@ -34,18 +34,22 @@ static const int modifier_table[8][4] = {
 };
 
 static DETEX_INLINE_ONLY int clamp2047(int x) {
-	if (x < 0)
+	if (x < 0) {
 		return 0;
-	if (x > 2047)
+	}
+	if (x > 2047) {
 		return 2047;
+	}
 	return x;
 }
 
 static DETEX_INLINE_ONLY int clamp1023_signed(int x) {
-	if (x < - 1023)
+	if (x < - 1023) {
 		return - 1023;
-	if (x > 1023)
+	}
+	if (x > 1023) {
 		return 1023;
+	}
 	return x;
 }
 
@@ -56,14 +60,16 @@ static DETEX_INLINE_ONLY int complement3bitshifted(int x) {
 }
 
 static DETEX_INLINE_ONLY int complement3bitshifted_slow(int x) {
-	if (x & 4)
+	if (x & 4) {
 		return ((x & 3) - 4) << 3;	// Note: shift is arithmetic.
+	}
 	return x << 3;
 }
 
 static DETEX_INLINE_ONLY int complement3bit(int x) {
-	if (x & 4)
+	if (x & 4) {
 		return ((x & 3) - 4);
+	}
 	return x;
 }
 
@@ -90,12 +96,14 @@ bool detexDecompressBlockETC1(const uint8_t * DETEX_RESTRICT bitstring, uint32_t
 uint32_t flags, uint8_t * DETEX_RESTRICT pixel_buffer) {
 	int differential_mode = bitstring[3] & 2;
 	if (differential_mode) {
-		if ((mode_mask & DETEX_MODE_MASK_ETC_DIFFERENTIAL) == 0)
+		if ((mode_mask & DETEX_MODE_MASK_ETC_DIFFERENTIAL) == 0) {
 			return false;
+		}
 	}
 	else
-		if ((mode_mask & DETEX_MODE_MASK_ETC_INDIVIDUAL) == 0)
-			return false;
+		if ((mode_mask & DETEX_MODE_MASK_ETC_INDIVIDUAL) == 0) {
+		return false;
+	}
 	int flipbit = bitstring[3] & 1;
 	int base_color_subblock1[3];
 	int base_color_subblock2[3];
@@ -108,18 +116,21 @@ uint32_t flags, uint8_t * DETEX_RESTRICT pixel_buffer) {
 		base_color_subblock1[2] |= (base_color_subblock1[2] & 224) >> 5;
 		base_color_subblock2[0] = (bitstring[0] & 0xF8);			// 5 highest order bits.
 		base_color_subblock2[0] += complement3bitshifted(bitstring[0] & 7);	// Add difference.
-		if (base_color_subblock2[0] & 0xFF07)					// Check for overflow.
+		if (base_color_subblock2[0] & 0xFF07) { // Check for overflow.
 			return false;
+		}
 		base_color_subblock2[0] |= (base_color_subblock2[0] & 224) >> 5;	// Replicate.
 		base_color_subblock2[1] = (bitstring[1] & 0xF8);
 		base_color_subblock2[1] += complement3bitshifted(bitstring[1] & 7);
-		if (base_color_subblock2[1] & 0xFF07)
+		if (base_color_subblock2[1] & 0xFF07) {
 			return false;
+		}
 		base_color_subblock2[1] |= (base_color_subblock2[1] & 224) >> 5;
 		base_color_subblock2[2] = (bitstring[2] & 0xF8);
 		base_color_subblock2[2] += complement3bitshifted(bitstring[2] & 7);
-		if (base_color_subblock2[2] & 0xFF07)
+		if (base_color_subblock2[2] & 0xFF07) {
 			return false;
+		}
 		base_color_subblock2[2] |= (base_color_subblock2[2] & 224) >> 5;
 	}
 	else {
@@ -182,19 +193,21 @@ uint32_t flags, uint8_t * DETEX_RESTRICT pixel_buffer) {
 /* Return the internal mode of a ETC1 block. */
 uint32_t detexGetModeETC1(const uint8_t *bitstring) {
 	// Figure out the mode.
-	if ((bitstring[3] & 2) == 0)
+	if ((bitstring[3] & 2) == 0) {
 		// Individual mode.
 		return 0;
-	else
+	} else {
 		return 1;
+	}
 }
 
 void detexSetModeETC1(uint8_t *bitstring, uint32_t mode, uint32_t flags,
 uint32_t *colors) {
-	if (mode == 0)
+	if (mode == 0) {
 		bitstring[3] &= ~0x2;
-	else
+	} else {
 		bitstring[3] |= 0x2;
+	}
 }
 
 static const int etc2_distance_table[8] = { 3, 6, 11, 16, 23, 32, 41, 64 };
@@ -253,10 +266,11 @@ uint8_t * DETEX_RESTRICT pixel_buffer) {
 		int base_color1_value = (base_color1_R << 16) + (base_color1_G << 8) + base_color1_B;
 		int base_color2_value = (base_color2_R << 16) + (base_color2_G << 8) + base_color2_B;
 		int bit;
-		if (base_color1_value >= base_color2_value)
+		if (base_color1_value >= base_color2_value) {
 			bit = 1;
-		else
+		} else {
 			bit = 0;
+		}
 		distance = etc2_distance_table[(bitstring[3] & 0x04) | ((bitstring[3] & 0x01) << 1) | bit];
 		paint_color_R[0] = detexClamp0To255(base_color1_R + distance);
 		paint_color_G[0] = detexClamp0To255(base_color1_G + distance);
@@ -326,8 +340,9 @@ uint32_t flags, uint8_t * DETEX_RESTRICT pixel_buffer) {
 		return detexDecompressBlockETC1(bitstring, mode_mask, flags,
 			pixel_buffer);
 	}
-	if ((mode_mask & (~DETEX_MODE_MASK_ETC_INDIVIDUAL)) == 0)
+	if ((mode_mask & (~DETEX_MODE_MASK_ETC_INDIVIDUAL)) == 0) {
 		return false;
+	}
 	int R = (bitstring[0] & 0xF8);
 	R += complement3bitshifted(bitstring[0] & 7);
 	int G = (bitstring[1] & 0xF8);
@@ -336,8 +351,9 @@ uint32_t flags, uint8_t * DETEX_RESTRICT pixel_buffer) {
 	B += complement3bitshifted(bitstring[2] & 7);
 	if (R & 0xFF07) {
 		// T mode.
-		if ((mode_mask & DETEX_MODE_MASK_ETC_T) == 0)
+		if ((mode_mask & DETEX_MODE_MASK_ETC_T) == 0) {
 			return false;
+		}
 		ProcessBlockETC2TOrHMode(bitstring, DETEX_MODE_MASK_ETC_T,
 			pixel_buffer);
 		return true;
@@ -345,8 +361,9 @@ uint32_t flags, uint8_t * DETEX_RESTRICT pixel_buffer) {
 	else
 	if (G & 0xFF07) {
 		// H mode.
-		if ((mode_mask & DETEX_MODE_MASK_ETC_H) == 0)
+		if ((mode_mask & DETEX_MODE_MASK_ETC_H) == 0) {
 			return false;
+		}
 		ProcessBlockETC2TOrHMode(bitstring, DETEX_MODE_MASK_ETC_H,
 			pixel_buffer);
 		return true;
@@ -354,8 +371,9 @@ uint32_t flags, uint8_t * DETEX_RESTRICT pixel_buffer) {
 	else
 	if (B & 0xFF07) {
 		// Planar mode.
-		if ((mode_mask & DETEX_MODE_MASK_ETC_PLANAR) == 0)
+		if ((mode_mask & DETEX_MODE_MASK_ETC_PLANAR) == 0) {
 			return false;
+		}
 		ProcessBlockETC2PlanarMode(bitstring, pixel_buffer);
 		return true;
 	}
@@ -369,29 +387,31 @@ uint32_t flags, uint8_t * DETEX_RESTRICT pixel_buffer) {
 /* Return the internal mode of a ETC2 block. */
 uint32_t detexGetModeETC2(const uint8_t *bitstring) {
 	// Figure out the mode.
-	if ((bitstring[3] & 2) == 0)
+	if ((bitstring[3] & 2) == 0) {
 		// Individual mode.
 		return 0;
+	}
 	int R = (bitstring[0] & 0xF8);
 	R += complement3bitshifted(bitstring[0] & 7);
 	int G = (bitstring[1] & 0xF8);
 	G += complement3bitshifted(bitstring[1] & 7);
 	int B = (bitstring[2] & 0xF8);
 	B += complement3bitshifted(bitstring[2] & 7);
-	if (R & 0xFF07)
+	if (R & 0xFF07) {
 		// T mode.
 		return 2;
-	else
-	if (G & 0xFF07)
+	} else
+	if (G & 0xFF07) {
 		// H mode.
 		return 3;
-	else
-	if (B & 0xFF07)
+	} else
+	if (B & 0xFF07) {
 		// Planar mode.
 		return 4;
-	else
+	} else {
 		// Differential mode.
 		return 1;
+	}
 }
 
 static void SetModeETC2THP(uint8_t *bitstring, uint32_t mode) {
@@ -459,10 +479,10 @@ static void SetModeETC2THP(uint8_t *bitstring, uint32_t mode) {
 
 void detexSetModeETC2(uint8_t *bitstring, uint32_t mode, uint32_t flags,
 uint32_t *colors) {
-	if (mode == 0)
+	if (mode == 0) {
 		// Set Individual mode.
 		bitstring[3] &= ~0x2;
-	else {
+	} else {
 		// Set Differential, T, H or P mode.
 		bitstring[3] |= 0x2;
 		SetModeETC2THP(bitstring, mode);
@@ -616,10 +636,11 @@ int mode, uint8_t * DETEX_RESTRICT pixel_buffer) {
 		int base_color1_value = (base_color1_R << 16) + (base_color1_G << 8) + base_color1_B;
 		int base_color2_value = (base_color2_R << 16) + (base_color2_G << 8) + base_color2_B;
 		int bit;
-		if (base_color1_value >= base_color2_value)
+		if (base_color1_value >= base_color2_value) {
 			bit = 1;
-		else
+		} else {
 			bit = 0;
+		}
 		distance = etc2_distance_table[(bitstring[3] & 0x04) | ((bitstring[3] & 0x01) << 1) | bit];
 		paint_color_R[0] = detexClamp0To255(base_color1_R + distance);
 		paint_color_G[0] = detexClamp0To255(base_color1_G + distance);
@@ -659,14 +680,17 @@ uint32_t mode_mask, uint32_t flags, uint8_t * DETEX_RESTRICT pixel_buffer) {
 	int B = (bitstring[2] & 0xF8);
 	B += complement3bitshifted(bitstring[2] & 7);
 	int opaque = bitstring[3] & 2;
-	if (opaque && (flags & DETEX_DECOMPRESS_FLAG_NON_OPAQUE_ONLY))
+	if (opaque && (flags & DETEX_DECOMPRESS_FLAG_NON_OPAQUE_ONLY)) {
 		return false;
-	if (!opaque && (flags & DETEX_DECOMPRESS_FLAG_OPAQUE_ONLY))
+	}
+	if (!opaque && (flags & DETEX_DECOMPRESS_FLAG_OPAQUE_ONLY)) {
 		return false;
+	}
 	if (R & 0xFF07) {
 		// T mode.
-		if ((mode_mask & DETEX_MODE_MASK_ETC_T) == 0)
+		if ((mode_mask & DETEX_MODE_MASK_ETC_T) == 0) {
 			return false;
+		}
 		if (opaque) {
 			ProcessBlockETC2TOrHMode(bitstring, DETEX_MODE_MASK_ETC_T,
 				pixel_buffer);
@@ -680,8 +704,9 @@ uint32_t mode_mask, uint32_t flags, uint8_t * DETEX_RESTRICT pixel_buffer) {
 	else
 	if (G & 0xFF07) {
 		// H mode.
-		if ((mode_mask & DETEX_MODE_MASK_ETC_H) == 0)
+		if ((mode_mask & DETEX_MODE_MASK_ETC_H) == 0) {
 			return false;
+		}
 		if (opaque) {
 			ProcessBlockETC2TOrHMode(bitstring, DETEX_MODE_MASK_ETC_H,
 				pixel_buffer);
@@ -695,22 +720,26 @@ uint32_t mode_mask, uint32_t flags, uint8_t * DETEX_RESTRICT pixel_buffer) {
 	else
 	if (B & 0xFF07) {
 		// Planar mode.
-		if ((mode_mask & DETEX_MODE_MASK_ETC_PLANAR) == 0)
+		if ((mode_mask & DETEX_MODE_MASK_ETC_PLANAR) == 0) {
 			return false;
+		}
 		// Opaque always set.
-		if (flags & DETEX_DECOMPRESS_FLAG_NON_OPAQUE_ONLY)
+		if (flags & DETEX_DECOMPRESS_FLAG_NON_OPAQUE_ONLY) {
 			return false;
+		}
 		ProcessBlockETC2PlanarMode(bitstring, pixel_buffer);
 		return true;
 	}
 	else {
 		// Differential mode.
-		if (opaque)
+		if (opaque) {
 			return detexDecompressBlockETC1(bitstring, mode_mask, flags,
 				pixel_buffer);
+		}
 		// Differential mode with punchthrough alpha.
-		if ((mode_mask & DETEX_MODE_MASK_ETC_DIFFERENTIAL) == 0)
+		if ((mode_mask & DETEX_MODE_MASK_ETC_DIFFERENTIAL) == 0) {
 			return false;
+		}
 		ProcessBlockETC2PunchthroughDifferentialMode(bitstring, pixel_buffer);
 		return true;
 	}
@@ -727,26 +756,29 @@ uint32_t detexGetModeETC2_PUNCHTHROUGH(const uint8_t *bitstring) {
 	G += complement3bitshifted(bitstring[1] & 7);
 	int B = (bitstring[2] & 0xF8);
 	B += complement3bitshifted(bitstring[2] & 7);
-	if (R & 0xFF07)
+	if (R & 0xFF07) {
 		// T mode.
 		return 2;
-	else if (G & 0xFF07)
+	} else if (G & 0xFF07) {
 		// H mode.
 		return 3;
-	else if (B & 0xFF07)
+	} else if (B & 0xFF07) {
 		// Planar mode.
 		return 4;
-	else
+	} else {
 		// Differential mode.
 		return 1;
+	}
 }
 
 void detexSetModeETC2_PUNCHTHROUGH(uint8_t *bitstring, uint32_t mode, uint32_t flags,
 uint32_t *colors) {
-	if (flags & DETEX_DECOMPRESS_FLAG_NON_OPAQUE_ONLY)
+	if (flags & DETEX_DECOMPRESS_FLAG_NON_OPAQUE_ONLY) {
 		bitstring[3] &= ~0x2;
-	if (flags & DETEX_DECOMPRESS_FLAG_OPAQUE_ONLY)
+	}
+	if (flags & DETEX_DECOMPRESS_FLAG_OPAQUE_ONLY) {
 		bitstring[3] |= 0x2;
+	}
 	SetModeETC2THP(bitstring, flags);
 }
 

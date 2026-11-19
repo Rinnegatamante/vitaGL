@@ -245,8 +245,9 @@ inline __attribute__((always_inline)) void glGenFramebuffers(GLsizei n, GLuint *
 			framebuffers[i].target = NULL;
 			framebuffers[i].tex = NULL;
 		}
-		if (j >= n)
+		if (j >= n) {
 			break;
+		}
 	}
 }
 
@@ -271,8 +272,9 @@ void glGenRenderbuffers(GLsizei n, GLuint *ids) {
 			renderbuffers[i].active = GL_TRUE;
 			renderbuffers[i].wants_stencil = GL_FALSE;
 		}
-		if (j >= n)
+		if (j >= n) {
 			break;
+		}
 	}
 }
 
@@ -651,10 +653,11 @@ void glGetFramebufferAttachmentParameteriv(GLenum target, GLenum attachment, GLe
 			*params = (GLint)fb;
 			break;
 		case GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE:
-			if (!fb || !fb->tex)
+			if (!fb || !fb->tex) {
 				*params = GL_NONE;
-			else
+			} else {
 				*params = GL_TEXTURE;
+			}
 			break;
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
@@ -692,58 +695,66 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 			src_bpp = 4;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
-			if (format == GL_BGRA && type == GL_UNSIGNED_BYTE)
+			if (format == GL_BGRA && type == GL_UNSIGNED_BYTE) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_bgra8888;
+			}
 			src_bpp = 4;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA:
-			if (format == GL_BGRA && type == GL_UNSIGNED_SHORT_4_4_4_4)
+			if (format == GL_BGRA && type == GL_UNSIGNED_SHORT_4_4_4_4) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_bgra4444;
+			}
 			src_bpp = 2;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8_R:
-			if ((format == GL_R8 || format == GL_RED) && type == GL_UNSIGNED_BYTE)
+			if ((format == GL_R8 || format == GL_RED) && type == GL_UNSIGNED_BYTE) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_r8;
+			}
 			src_bpp = 1;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
-			if ((format == GL_RGB || format == GL_RGB8) && type == GL_UNSIGNED_BYTE)
+			if ((format == GL_RGB || format == GL_RGB8) && type == GL_UNSIGNED_BYTE) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_rgb888;
+			}
 			src_bpp = 3;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U8U8_GR:
-			if ((format == GL_RG || format == GL_RG8) && type == GL_UNSIGNED_BYTE)
+			if ((format == GL_RG || format == GL_RG8) && type == GL_UNSIGNED_BYTE) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_rg88;
+			}
 			src_bpp = 2;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
-			if (format == GL_RGB && type == GL_UNSIGNED_SHORT_5_6_5)
+			if (format == GL_RGB && type == GL_UNSIGNED_SHORT_5_6_5) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_rgb565;
+			}
 			src_bpp = 2;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
-			if ((format == GL_RGBA && type == GL_UNSIGNED_SHORT_5_5_5_1) || format == GL_RGB5_A1)
+			if ((format == GL_RGBA && type == GL_UNSIGNED_SHORT_5_5_5_1) || format == GL_RGB5_A1) {
 				fast_store = GL_TRUE;
-			else
+			} else {
 				read_cb = read_rgba5551;
+			}
 			src_bpp = 2;
 			break;
 		case SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_ABGR:
 			// FIXME: Add slow path support
-			if (format == GL_RGBA && type == GL_RGBA16F)
+			if (format == GL_RGBA && type == GL_RGBA16F) {
 				fast_store = GL_TRUE;
+			}
 			src_bpp = 16;
 			break;
 		default:
@@ -764,8 +775,9 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		if (format == GL_RGBA && type == GL_UNSIGNED_BYTE) {
 			fast_store = GL_TRUE;
 			dst_bpp = src_bpp;
-		} else
+		} else {
 			read_cb = read_rgba8888;
+		}
 	}
 	
 #ifndef READBACKS_SPEEDHACK
@@ -779,9 +791,10 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 
 	if (!fast_store) {
 		// Attempt first to use sceGxmTransfer variant since faster
-		if (_glReadPixels_gpu(x, real_y, width, height, format, type, data, GL_FALSE))
+		if (_glReadPixels_gpu(x, real_y, width, height, format, type, data, GL_FALSE)) {
 			return;
-		
+		}
+
 		switch (format) {
 		case GL_RGBA:
 			switch (type) {

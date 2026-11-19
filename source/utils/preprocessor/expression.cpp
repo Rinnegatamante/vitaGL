@@ -20,8 +20,12 @@ namespace expression
 
         ~Node()
         {
-            if (child) delete child;
-            if (child2) delete child2;
+            if (child) {
+                delete child;
+            }
+            if (child2) {
+                delete child2;
+            }
         }
 
         int type;
@@ -77,7 +81,9 @@ namespace expression
         if (type == OPEN_BRACKET) {
             advance();
             exp = parse_exp();
-            if (getType() != CLOSE_BRACKET) fail("Expected )");
+            if (getType() != CLOSE_BRACKET) {
+                fail("Expected )");
+            }
             advance();
         }
         else if (type == NUMBER) {
@@ -112,8 +118,9 @@ namespace expression
             advance();
             exp->child = parse_factor();
         }
-        else
+        else {
             fail("Expected literal or unary operator");
+        }
 
         return exp;
     }
@@ -130,10 +137,11 @@ namespace expression
             Node* next_factor = parse_factor();
             Node* new_factor = new Node; //(Node*)malloc(sizeof(Node));
 
-            if (nextType == ASTERISK)
+            if (nextType == ASTERISK) {
                 new_factor->type = BINARY_TIMES;
-            else
+            } else {
                 new_factor->type = BINARY_DIVIDE;
+            }
 
             new_factor->child = factor;
             new_factor->child2 = next_factor;
@@ -156,10 +164,11 @@ namespace expression
             Node* next_term = parse_term();
             Node* new_term = new Node; // (Node*)malloc(sizeof(Node));
 
-            if (nextType == PLUS)
+            if (nextType == PLUS) {
                 new_term->type = BINARY_PLUS;
-            else
+            } else {
                 new_term->type = BINARY_MINUS;
+            }
 
             new_term->child = term;
             new_term->child2 = next_term;
@@ -182,10 +191,11 @@ namespace expression
             Node* next_term = parse_additive_exp();
             Node* new_term = new Node; // (Node*)malloc(sizeof(Node));
 
-            if (nextType == LESSTHAN2)
+            if (nextType == LESSTHAN2) {
                 new_term->type = BINARY_LEFT_SHIFT;
-            else
+            } else {
                 new_term->type = BINARY_RIGHT_SHIFT;
+            }
 
             new_term->child = term;
             new_term->child2 = next_term;
@@ -243,10 +253,11 @@ namespace expression
             Node* next_term = parse_relational_exp();
             Node* new_term = new Node; // (Node*)malloc(sizeof(Node));
 
-            if (nextType == EQUALS2)
+            if (nextType == EQUALS2) {
                 new_term->type = BINARY_EQUAL;
-            else
+            } else {
                 new_term->type = BINARY_NOT_EQUAL;
+            }
 
             new_term->child = term;
             new_term->child2 = next_term;
@@ -411,10 +422,11 @@ namespace expression
 
             eax = strtoll(node->id.c_str(), &endptr, 0);
 
-            if (errno == ERANGE && eax == LONG_MIN)
+            if (errno == ERANGE && eax == LONG_MIN) {
                 throw "Number invalid (underflow occurred): " + node->id;
-            else if (errno == ERANGE && eax == LONG_MAX)
+            } else if (errno == ERANGE && eax == LONG_MAX) {
                 throw "Number invalid (overflow occurred): " + node->id;
+            }
 
             bool ok = true;
             if (errno == 0)
@@ -437,28 +449,29 @@ namespace expression
         }
         else if (node->type == CHAR)
         {
-            if (node->id == "\\0")
+            if (node->id == "\\0") {
                 eax = 0;
-            else if (node->id == "\\n")
+            } else if (node->id == "\\n") {
                 eax = '\n';
-            else if (node->id == "\\r")
+            } else if (node->id == "\\r") {
                 eax = '\r';
-            else if (node->id == "\\a")
+            } else if (node->id == "\\a") {
                 eax = '\a';
-            else if (node->id == "\\b")
+            } else if (node->id == "\\b") {
                 eax = '\b';
-            else if (node->id == "\\f")
+            } else if (node->id == "\\f") {
                 eax = '\f';
-            else if (node->id == "\\t")
+            } else if (node->id == "\\t") {
                 eax = '\t';
-            else if (node->id == "\\v")
+            } else if (node->id == "\\v") {
                 eax = '\v';
-            else if (node->id == "\\'")
+            } else if (node->id == "\\'") {
                 eax = '\'';
-            else if (node->id == "\\\\")
+            } else if (node->id == "\\\\") {
                 eax = '\\';
-            else
+            } else {
                 eax = (long long int)node->id[0];
+            }
         }
         else if (node->type == BINARY_PLUS)
         {

@@ -187,8 +187,9 @@ render_target *get_free_render_target(int w, int h, SceGxmMultisampleMode sample
 			rt_list[i].max_refs = w > MAX_SHARED_RT_SIZE ? 1 : MAX_SCENES_PER_FRAME;
 			int r = setup_render_target(&rt_list[i].rt, w, h, rt_list[i].max_refs, samples);
 #ifdef LOG_ERRORS
-			if (r)
+			if (r) {
 				vgl_log("%s:%d Failed to create a shared rendertarget of size %dx%d (%s).\n", __FILE__, __LINE__, w, h, get_gxm_error_literal(r));
+			}
 #endif
 			rt_list[i].w = w;
 #ifdef HAVE_ACCURATE_MSAA
@@ -214,8 +215,9 @@ render_target *get_free_render_target(int w, int h, SceGxmMultisampleMode sample
 	r->max_refs = w > MAX_SHARED_RT_SIZE ? 1 : MAX_SCENES_PER_FRAME;
 	int res = setup_render_target(&r->rt, w, h, r->max_refs, samples);
 #ifdef LOG_ERRORS
-	if (res)
+	if (res) {
 		vgl_log("%s:%d Failed to create a shared rendertarget of size %dx%d (%s).\n", __FILE__, __LINE__, w, h, get_gxm_error_literal(res));
+	}
 #endif
 	r->w = w;
 #ifdef HAVE_ACCURATE_MSAA
@@ -269,33 +271,33 @@ static void display_queue_callback(const void *callbackData) {
 	vgl_debugger_draw(cb_data->addr);
 #endif
 
-	if (vgl_display_cb)
+	if (vgl_display_cb) {
 		vgl_display_cb(cb_data->addr);
+	}
 
 	// Setting sceDisplay framebuffer
 	sceDisplaySetFrameBuf(&display_fb, SCE_DISPLAY_SETBUF_NEXTFRAME);
 
 	// Performing VSync if enabled
-	if (vsync_interval)
+	if (vsync_interval) {
 		sceDisplayWaitVblankStartMulti(vsync_interval);
+	}
 }
 
 static void garbage_collect(int slot) {
 	int i;
 	for (i = 0; i < FRAME_PURGE_LIST_SIZE; i++) {
-		if (frame_purge_list[slot][i]) {
-			vgl_free(frame_purge_list[slot][i]);
-		} else {
+		if (!frame_purge_list[slot][i]) {
 			break;
 		}
+		vgl_free(frame_purge_list[slot][i]);
 	}
 	vgl_memset(frame_purge_list[slot], 0, i * sizeof(void *));
 	for (i = 0; i < FRAME_PURGE_RENDERTARGETS_LIST_SIZE; i++) {
-		if (frame_rt_purge_list[slot][i]) {
-			sceGxmDestroyRenderTarget(frame_rt_purge_list[slot][i]);
-		} else {
+		if (!frame_rt_purge_list[slot][i]) {
 			break;
 		}
+		sceGxmDestroyRenderTarget(frame_rt_purge_list[slot][i]);
 	}
 	vgl_memset(frame_rt_purge_list[slot], 0, i * sizeof (void *));
 }
@@ -353,8 +355,9 @@ GLboolean start_shader_compiler(void) {
 	if (!is_shark_online) {
 		is_shark_online = shark_init("ur0:data/external/libshacccg.suprx") >= 0;
 #ifdef LOG_ERRORS
-		if (!is_shark_online)
+		if (!is_shark_online) {
 			vgl_log("%s:%d Fatal error: SceShaccCg not found.\n", __FILE__, __LINE__);
+		}
 #endif
 	}
 
@@ -362,8 +365,9 @@ GLboolean start_shader_compiler(void) {
 }
 
 void init_gxm(void) {
-	if (gxm_initialized)
+	if (gxm_initialized) {
 		return;
+	}
 
 #ifdef HAVE_RAZOR
 	// Initializing sceRazor debugger
@@ -409,8 +413,9 @@ void init_gxm(void) {
 	if (!sceAppMgrGetBudgetInfo(&info)) {
 		system_app_mode = GL_TRUE;
 		gxm_display_buffer_count = 2; // Forcing double buffering in system app mode
-		if (msaa_mode == SCE_GXM_MULTISAMPLE_NONE) // FIXME: For some reasons, disabling MSAA makes the shader patcher not able to compile fragment programs in sysapp mode...
+		if (msaa_mode == SCE_GXM_MULTISAMPLE_NONE) { // FIXME: For some reasons, disabling MSAA makes the shader patcher not able to compile fragment programs in sysapp mode...
 			msaa_mode = SCE_GXM_MULTISAMPLE_2X;
+		}
 	}
 
 	// Initializing sceGxm init parameters
@@ -485,9 +490,9 @@ void init_display_color_surfaces(GLboolean is_swap) {
 		shared_fb = sceSharedFbOpen(1);
 		vgl_memset(&shared_fb_info, 0, sizeof(SceSharedFbInfo));
 		sceSharedFbGetInfo(shared_fb, &shared_fb_info);
-		if (shared_fb_info.index == 1)
+		if (shared_fb_info.index == 1) {
 			sceSharedFbClose(shared_fb);
-		else {
+		} else {
 			sceGxmMapMemory(shared_fb_info.fb_base, shared_fb_info.fb_size, SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE);
 			gxm_color_surfaces_addr[0] = shared_fb_info.fb_base;
 			gxm_color_surfaces_addr[1] = shared_fb_info.fb_base2;
@@ -514,8 +519,9 @@ void init_display_color_surfaces(GLboolean is_swap) {
 			gxm_color_surfaces_addr[i]);
 
 		// Creating a display sync object for the allocated color surface
-		if (!is_swap)
+		if (!is_swap) {
 			sceGxmSyncObjectCreate(&gxm_sync_objects[i]);
+		}
 	}
 }
 
@@ -611,8 +617,9 @@ static inline __attribute__((always_inline)) void scene_end(void) {
 	// Ends current gxm scene
 	query_fence.value++;
 	sceGxmEndScene(gxm_context, NULL, &query_fence);
-	if (system_app_mode && vsync_interval)
+	if (system_app_mode && vsync_interval) {
 		sceDisplayWaitVblankStartMulti(vsync_interval);
+	}
 }
 
 void scene_reset(void) {
@@ -816,8 +823,9 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 
 #ifndef SKIP_SPLASHSCREEN
 	// Ignore display swaps during splashscreen since we handle them in the splashscreen thread
-	if (is_splashscreen_active)
+	if (is_splashscreen_active) {
 		return;
+	}
 #endif
 
 #ifdef HAVE_PROFILING
@@ -894,9 +902,9 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 		sceCommonDialogUpdate(&updateParam);
 	}
 
-	if (system_app_mode)
+	if (system_app_mode) {
 		sceSharedFbEnd(shared_fb);
-	else {
+	} else {
 #ifdef HAVE_RAZOR
 		sceGxmPadHeartbeat(&gxm_color_surfaces[gxm_back_buffer_index], gxm_sync_objects[gxm_back_buffer_index]);
 #ifdef HAVE_DEVKIT
@@ -916,8 +924,9 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 						switch (r.job->header.entry_type) {
 						case SCE_RAZOR_LIVE_TRACE_METRIC_ENTRY_TYPE_JOB:
 							if ((pid == r.job->process_id) && (r.job->type != SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_FIRMWARE)) {
-								if (razor_metrics.scene_count < r.job->scene_index + 1)
+								if (razor_metrics.scene_count < r.job->scene_index + 1) {
 									razor_metrics.scene_count = r.job->scene_index + 1;
+								}
 								switch (r.job->type) {
 								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX0:
 								case SCE_RAZOR_LIVE_TRACE_METRIC_JOB_TYPE_VERTEX1:

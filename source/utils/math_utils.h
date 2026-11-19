@@ -229,8 +229,9 @@ static inline __attribute__((always_inline)) int matrix3x3_invert(matrix3x3 out,
 
 	det = m[0] * inv[0] + m[3] * inv[1] + m[6] * inv[2];
 
-	if (det == 0)
+	if (det == 0) {
 		return 0;
+	}
 
 	inv[ 3] = m[5] * m[6] - m[3] * m[8];
 	inv[ 4] = m[0] * m[8] - m[2] * m[6];
@@ -292,9 +293,10 @@ static inline __attribute__((always_inline)) int matrix4x4_invert(matrix4x4 out,
 	
 	det = m[0] * inv[0] + m[4] * inv[1] + m[8] * inv[2] + m[12] * inv[3];
   
-	if(det == 0)
+	if(det == 0) {
 		return 0;
-	
+	}
+
 	inv[ 4] = -m[4] * m[10] * m[15] + m[4] * m[14] * m[11] + m[6] * m[8] * m[15] - m[6] * m[12] * m[11] - m[7] * m[8] * m[14] + m[7] * m[12] * m[10];
 	inv[ 5] =  m[0] * m[10] * m[15] - m[0] * m[14] * m[11] - m[2] * m[8] * m[15] + m[2] * m[12] * m[11] + m[3] * m[8] * m[14] - m[3] * m[12] * m[10];
 	inv[ 6] = -m[0] * m[ 6] * m[15] + m[0] * m[14] * m[ 7] + m[2] * m[4] * m[15] - m[2] * m[12] * m[ 7] - m[3] * m[4] * m[14] + m[3] * m[12] * m[ 6];

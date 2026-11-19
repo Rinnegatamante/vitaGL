@@ -48,16 +48,19 @@ void reset_dlists() {
 
 GLboolean _vgl_enqueue_list_func(void (*func)(), dlist_func_type type, ...) {
 	// Check if we are creating a display list
-	if (!curr_display_list)
+	if (!curr_display_list) {
 		return GL_FALSE;
+	}
 
 	// Enqueuing function call
 	list_chain *new_tail = (list_chain *)vglMalloc(sizeof(list_chain));
-	if (curr_display_list->tail)
+	if (curr_display_list->tail) {
 		curr_display_list->tail->next = new_tail;
+	}
 	curr_display_list->tail = new_tail;
-	if (!curr_display_list->head)
+	if (!curr_display_list->head) {
 		curr_display_list->head = new_tail;
+	}
 	new_tail->func = func;
 	new_tail->next = NULL;
 	new_tail->type = type;
@@ -115,18 +118,21 @@ GLboolean _vgl_enqueue_list_func(void (*func)(), dlist_func_type type, ...) {
 
 GLboolean _vgl_enqueue_list_func_with_ptr(void (*func)(), dlist_func_type type, uint8_t ptr_arg, const void *data, uint32_t data_size, ...) {
 	// Check if we are creating a display list
-	if (!curr_display_list)
+	if (!curr_display_list) {
 		return GL_FALSE;
+	}
 
 	// Enqueuing function call with a buffer for the encoded data
 	list_chain *new_tail = (list_chain *)vglMalloc(sizeof(list_chain) + data_size);
 	uint8_t *data_buf = (uint8_t *)new_tail + sizeof(list_chain);
 	vgl_fast_memcpy(data_buf, data, data_size);
-	if (curr_display_list->tail)
+	if (curr_display_list->tail) {
 		curr_display_list->tail->next = new_tail;
+	}
 	curr_display_list->tail = new_tail;
-	if (!curr_display_list->head)
+	if (!curr_display_list->head) {
 		curr_display_list->head = new_tail;
+	}
 	new_tail->func = func;
 	new_tail->next = NULL;
 	new_tail->type = type;
@@ -472,8 +478,9 @@ GLuint glGenLists(GLsizei range) {
 			first = 0;
 			r = range;
 		}
-		if (!r)
+		if (!r) {
 			break;
+		}
 	}
 #ifndef SKIP_ERROR_HANDLING
 	if (r) {

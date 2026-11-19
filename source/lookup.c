@@ -460,8 +460,9 @@ void *vglGetProcAddress(const char *name) {
 char *vglGetFuncName(uint32_t func) {
 	// search for function name
 	for (size_t i = 0; i < vgl_numproc; ++i) {
-		if ((void *)func == vgl_proctable[i].proc)
+		if ((void *)func == vgl_proctable[i].proc) {
 			return (char *)vgl_proctable[i].name;
+		}
 	}
 	
 #ifndef SKIP_ERROR_HANDLING

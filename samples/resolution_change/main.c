@@ -96,15 +96,17 @@ int main() {
 		sceCtrlPeekBufferPositive(0, &pad, 1);
 		if ((pad.buttons & SCE_CTRL_LEFT) && (!(oldpad & SCE_CTRL_LEFT))) {
 			cur_res--;
-			if (cur_res < 0)
+			if (cur_res < 0) {
 				cur_res = 3;
+			}
 			vglSwapResolution(resolutions[cur_res][0], resolutions[cur_res][1]);
 			reset_wvp(resolutions[cur_res][0], resolutions[cur_res][1]);
 			glViewport(0, 0, resolutions[cur_res][0], resolutions[cur_res][1]);
 		} else if ((pad.buttons & SCE_CTRL_RIGHT) && (!(oldpad & SCE_CTRL_RIGHT))) {
 			cur_res++;
-			if (cur_res > 3)
+			if (cur_res > 3) {
 				cur_res = 0;
+			}
 			vglSwapResolution(resolutions[cur_res][0], resolutions[cur_res][1]);
 			reset_wvp(resolutions[cur_res][0], resolutions[cur_res][1]);
 		}

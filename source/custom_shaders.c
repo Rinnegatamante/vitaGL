@@ -663,8 +663,9 @@ static inline __attribute__((always_inline)) size_t serialized_shader_size(shade
 		m = (matrix_uniform *)m->chain;
 	}
 	size_t sz = (1 + *matrix_uniforms_num) * sizeof(uint32_t) + s->size;
-	if (have_bindings)
+	if (have_bindings) {
 		sz += sizeof(binds_map);
+	}
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 	sz += sizeof(glsl_samplers_info) * s->sized_samplers_num + sizeof(uint8_t);
 #endif
@@ -806,15 +807,17 @@ static inline __attribute__((always_inline)) void compile_shader(shader *s, GLbo
 		}
 	}
 #ifdef HAVE_SHARK_LOG
-	if (s->log)
+	if (s->log) {
 		vgl_free(s->log);
+	}
 	s->log = shark_log;
 	shark_log = NULL;
 #endif
 	shark_clear_output();
 #ifdef HAVE_SHADER_CACHE
-	if (!s->prog)
+	if (!s->prog) {
 		return;
+	}
 	cache_fname[fname_len - 21] = 0;
 	sceIoMkdir(cache_fname, 0777);
 	cache_fname[fname_len - 21] = '/';
@@ -1008,8 +1011,9 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 			}
 		}
 #ifndef STRICT_DRAW_COMPLIANCE
-		if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[1]] && cur_vao->vertex_attrib_offsets[p->attr_map[1]] > cur_vao->vertex_attrib_offsets[p->attr_map[0]])))
+		if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[1]] && cur_vao->vertex_attrib_offsets[p->attr_map[1]] > cur_vao->vertex_attrib_offsets[p->attr_map[0]]))) {
 			is_packed = GL_FALSE;
+		}
 	}
 #endif
 #ifdef STRICT_DRAW_COMPLIANCE
@@ -1079,15 +1083,17 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 			GLboolean is_active = (cur_vao->vertex_attrib_state & (1 << attr_idx)) ? GL_TRUE : GL_FALSE;
 			if (is_active) {
 #ifdef STRICT_DRAW_COMPLIANCE
-				if (is_packed[i])
+				if (is_packed[i]) {
 					sceGxmSetVertexStream(gxm_context, i, ptrs[0] + (first[j] - lowest) * streams[0].stride);
-				else
+				} else {
 					sceGxmSetVertexStream(gxm_context, i, ptrs[i] + (first[j] - lowest) * streams[i].stride);
+				}
 #else
-				if (is_packed)
+				if (is_packed) {
 					sceGxmSetVertexStream(gxm_context, i, ptrs[0] + (first[j] - lowest) * streams[0].stride);
-				else
+				} else {
 					sceGxmSetVertexStream(gxm_context, i, ptrs[i] + (first[j] - lowest) * streams[i].stride);
+				}
 #endif
 			}
 		}
@@ -1209,10 +1215,11 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			if (cur_vao->vertex_attrib_state & (1 << attr_idx)) {
-				if (layout_entry->is_packed)
+				if (layout_entry->is_packed) {
 					sceGxmSetVertexStream(gxm_context, i, ptrs[0]);
-				else
+				} else {
 					sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
+				}
 			} else {
 				sceGxmSetVertexStream(gxm_context, i, cur_vao->vertex_attrib_value[attr_idx]);
 			}
@@ -1265,8 +1272,9 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 			}
 		}
 #ifndef STRICT_DRAW_COMPLIANCE
-		if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[1]] && cur_vao->vertex_attrib_offsets[p->attr_map[1]] > cur_vao->vertex_attrib_offsets[p->attr_map[0]])))
+		if (is_packed && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[p->attr_map[1]] && cur_vao->vertex_attrib_offsets[p->attr_map[1]] > cur_vao->vertex_attrib_offsets[p->attr_map[0]]))) {
 			is_packed = GL_FALSE;
+		}
 	}
 #endif
 #ifdef STRICT_DRAW_COMPLIANCE
@@ -1486,21 +1494,24 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 		if (!layout_entry->is_full_vbo && !top_idx) {
 			if ((index_type & 1) == 0) {
 				for (int i = 0; i < count; i++) {
-					if (idx_buf[i] > top_idx)
+					if (idx_buf[i] > top_idx) {
 						top_idx = idx_buf[i];
+					}
 				}
 			} else {
 				uint32_t *_idx_buf = (uint32_t *)idx_buf;
 				for (int i = 0; i < count; i++) {
-					if (_idx_buf[i] > top_idx)
+					if (_idx_buf[i] > top_idx) {
 						top_idx = _idx_buf[i];
+					}
 				}
 			}
 			top_idx += base_idx + 1;
 		}
 #ifndef INDICES_SPEEDHACK
-		if (top_idx && top_idx < 0xFFFF)
+		if (top_idx && top_idx < 0xFFFF) {
 			index_type &= ~1;
+		}
 #endif
 		if (layout_entry->variant == (uint8_t)index_type) {
 #ifdef HAVE_PROFILING
@@ -1514,10 +1525,11 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			for (int i = 0; i < p->attr_num; i++) {
 				uint8_t attr_idx = p->attr_map[i];
 				if (cur_vao->vertex_attrib_state & (1 << attr_idx)) {
-					if (layout_entry->is_packed)
+					if (layout_entry->is_packed) {
 						sceGxmSetVertexStream(gxm_context, i, ptrs[0]);
-					else
+					} else {
 						sceGxmSetVertexStream(gxm_context, i, ptrs[i]);
+					}
 				} else {
 					sceGxmSetVertexStream(gxm_context, i, cur_vao->vertex_attrib_value[attr_idx]);
 				}
@@ -1811,10 +1823,11 @@ void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
 	}
 	uint32_t size = (is_extra_line ? strlen(shark_log) : 0) + strlen(newline);
 	shark_log = shark_log ? vglRealloc(shark_log, size + 1) : vglMalloc(size + 1);
-	if (is_extra_line)
+	if (is_extra_line) {
 		strcat(shark_log, newline);
-	else
+	} else {
 		strcpy(shark_log, newline);
+	}
 }
 #elif defined(LOG_ERRORS)
 void shark_log_cb(const char *msg, shark_log_level msg_level, int line) {
@@ -1854,8 +1867,9 @@ static inline __attribute__((always_inline)) ubo *has_block_alias(ubo *u, const 
 
 static inline __attribute__((always_inline)) block_uniform *get_block_details(block_uniform *b, uint8_t idx) {
 	while (b) {
-		if (b->idx == idx)
+		if (b->idx == idx) {
 			return b;
+		}
 		b = (block_uniform *)b->chain;
 	}
 	return NULL;
@@ -1970,8 +1984,9 @@ void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLcha
 		infoLog[len] = 0;
 	}
 #endif
-	if (length)
+	if (length) {
 		*length = len;
+	}
 }
 
 void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *source) {
@@ -1989,14 +2004,16 @@ void glGetShaderSource(GLuint handle, GLsizei bufSize, GLsizei *length, GLchar *
 	GLsizei size = 0;
 	if (s->source && bufSize > 0) {
 		GLsizei src_len = strlen(s->source);
-		if (bufSize <= src_len)
+		if (bufSize <= src_len) {
 			src_len = bufSize - 1;
+		}
 		vgl_fast_memcpy(source, s->source, src_len);
 		source[src_len] = 0;
 		size = src_len;
 	}
-	if (length)
+	if (length) {
 		*length = size;
+	}
 }
 
 void glShaderSource(GLuint handle, GLsizei count, const GLchar *const *string, const GLint *length) {
@@ -2055,9 +2072,10 @@ void glCompileShader(GLuint handle) {
 	shader *s = shaders[handle - 1];
 	
 	// If we use VGL_MODE_POSTPONED, we compile shaders in glLinkProgram
-	if (s->is_glsl && glsl_sema_mode == VGL_MODE_POSTPONED)
+	if (s->is_glsl && glsl_sema_mode == VGL_MODE_POSTPONED) {
 		return;
-	
+	}
+
 #ifdef HAVE_SHADER_CACHE
 	char fname[256];
 	uint64_t hash = XXH3_64bits(s->source, s->size);
@@ -2229,8 +2247,9 @@ GLuint glCreateProgram(void) {
 }
 
 GLboolean glIsProgram(GLuint i) {
-	if (progs[i - 1].status != PROG_INVALID)
+	if (progs[i - 1].status != PROG_INVALID) {
 		return GL_TRUE;
+	}
 	return GL_FALSE;
 }
 
@@ -2260,8 +2279,9 @@ void glGetProgramBinary(GLuint prog, GLsizei bufSize, GLsizei *length, GLenum *b
 	buf += sizeof(uint32_t) + *(uint32_t *)buf;
 	serialize_shader(&buf[sizeof(uint32_t)], (size_t *)buf, p->fshader, GL_FALSE);
 
-	if (length)
+	if (length) {
 		*length = ((uintptr_t)buf - (uintptr_t)binary) + sizeof(uint32_t) + *(uint32_t *)buf;
+	}
 }
 
 void glProgramBinary(GLuint prog, GLenum binaryFormat, const void *binary, GLsizei length) {
@@ -2347,8 +2367,9 @@ void glDeleteProgram(GLuint prog) {
 void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog) {
 	THREAD_SAFE()
 
-	if (length)
+	if (length) {
 		*length = 0;
+	}
 }
 
 void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
@@ -2374,10 +2395,12 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 		break;
 	case GL_ATTACHED_SHADERS:
 		i = 0;
-		if (p->fshader)
+		if (p->fshader) {
 			i++;
-		if (p->vshader)
+		}
+		if (p->vshader) {
 			i++;
+		}
 		*params = i;
 		break;
 	case GL_ACTIVE_ATTRIBUTES:
@@ -2387,13 +2410,15 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 		i = 0;
 		for (int j = 0; j < p->vert_uniforms_num; j++) {
 			int len = strlen(sceGxmProgramParameterGetName(p->vert_uniforms[j].ptr)) + 1;
-			if (len > i)
+			if (len > i) {
 				i = len;
+			}
 		}
 		for (int j = 0; j < p->frag_uniforms_num; j++) {
 			int len = strlen(sceGxmProgramParameterGetName(p->frag_uniforms[j].ptr)) + 1;
-			if (len > i)
+			if (len > i) {
 				i = len;
+			}
 		}
 		*params = i;
 		break;
@@ -2405,8 +2430,9 @@ void glGetProgramiv(GLuint progr, GLenum pname, GLint *params) {
 			SceGxmProgramParameter *param = (SceGxmProgramParameter *)ptr;
 			if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
 				int len = strlen(sceGxmProgramParameterGetName(param)) + 1;
-				if (len > i)
+				if (len > i) {
 					i = len;
+				}
 			}
 			ptr += 4;
 		}
@@ -2566,8 +2592,9 @@ void glLinkProgram(GLuint progr) {
 			SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
 			if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
 				uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
-				if (p->max_frag_texunit_idx < texunit_idx)
+				if (p->max_frag_texunit_idx < texunit_idx) {
 					p->max_frag_texunit_idx = texunit_idx;
+				}
 				uniform *u = &p->frag_uniforms[j++];
 				u->ptr = param;
 				u->type = sceGxmProgramParameterIsSamplerCube(param) ? UNIFORM_CUBE_SAMPLER : UNIFORM_SAMPLER;
@@ -2581,8 +2608,9 @@ void glLinkProgram(GLuint progr) {
 						char smp[16];
 						sprintf(smp, "vgl_smp%u", i);
 						// If the linked uniform is missing, textureSize usage has been stripped out
-						if (sceGxmProgramFindParameterByName(p->fshader->prog, smp))
+						if (sceGxmProgramFindParameterByName(p->fshader->prog, smp)) {
 							u->sampler = &p->fshader->sized_samplers[i];
+						}
 						break;
 					}
 				}
@@ -2669,8 +2697,9 @@ void glLinkProgram(GLuint progr) {
 			SceGxmParameterCategory cat = sceGxmProgramParameterGetCategory(param);
 			if (cat == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
 				uint8_t texunit_idx = sceGxmProgramParameterGetResourceIndex(param) + 1;
-				if (p->max_vert_texunit_idx < texunit_idx)
+				if (p->max_vert_texunit_idx < texunit_idx) {
 					p->max_vert_texunit_idx = texunit_idx;
+				}
 				uniform *u = &p->vert_uniforms[j++];
 				u->ptr = param;
 				u->type = sceGxmProgramParameterIsSamplerCube(param) ? UNIFORM_CUBE_SAMPLER : UNIFORM_SAMPLER;
@@ -2763,15 +2792,17 @@ GLuint glGetUniformBlockIndex(GLuint prog, const GLchar *uniformBlockName) {
 	ubo *j = p->vert_ubos;
 	while (j) {
 		block_uniform *b = (block_uniform *)j->ptr;
-		if (!strcmp(b->name, uniformBlockName))
+		if (!strcmp(b->name, uniformBlockName)) {
 			return j->alias ? (GLuint)j->alias : (GLuint)j;
+		}
 		j = j->chain;
 	}
 	j = p->frag_ubos;
 	while (j) {
 		block_uniform *b = (block_uniform *)j->ptr;
-		if (!strcmp(b->name, uniformBlockName))
+		if (!strcmp(b->name, uniformBlockName)) {
 			return (GLuint)j;
+		}
 		j = j->chain;
 	}
 
@@ -2795,16 +2826,17 @@ GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
 	program *p = &progs[prog - 1];
 
 	// texture, sampler and matrix are reserved keywords in CG but are not in GLSL
-	if (!strcmp(name, "texture"))
+	if (!strcmp(name, "texture")) {
 		name = "vgl_tex";
-	else if (!strcmp(name, "Texture"))
+	} else if (!strcmp(name, "Texture")) {
 		name = "Vgl_tex";
-	else if (!strcmp(name, "matrix"))
+	} else if (!strcmp(name, "matrix")) {
 		name = "_matrix";
-	else if (!strcmp(name, "Matrix"))
+	} else if (!strcmp(name, "Matrix")) {
 		name = "_Matrix";
-	else if (!strcmp(name, "sampler"))
+	} else if (!strcmp(name, "sampler")) {
 		name = "_sampler";
+	}
 
 #ifdef STRICT_UNIFORMS_COMPLIANCE
 	int index = 0;
@@ -2900,8 +2932,9 @@ inline void glUniform1i(GLint location, GLint v0) {
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -2923,8 +2956,9 @@ inline void glUniform1iv(GLint location, GLsizei count, const GLint *value) {
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -2946,8 +2980,9 @@ inline void glUniform1f(GLint location, GLfloat v0) {
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -2965,8 +3000,9 @@ inline void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) {
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -2984,8 +3020,9 @@ inline void glUniform2i(GLint location, GLint v0, GLint v1) {
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -3004,8 +3041,9 @@ inline void glUniform2iv(GLint location, GLsizei count, const GLint *value) {
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -3023,8 +3061,9 @@ inline void glUniform2f(GLint location, GLfloat v0, GLfloat v1) {
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -3043,8 +3082,9 @@ inline void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) {
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -3062,8 +3102,9 @@ inline void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) {
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -3082,8 +3123,9 @@ inline void glUniform3iv(GLint location, GLsizei count, const GLint *value) {
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -3101,8 +3143,9 @@ inline void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -3121,8 +3164,9 @@ inline void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) {
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -3140,8 +3184,9 @@ inline void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) 
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -3160,8 +3205,9 @@ inline void glUniform4iv(GLint location, GLsizei count, const GLint *value) {
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -3179,8 +3225,9 @@ inline void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfl
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -3199,8 +3246,9 @@ inline void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) {
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -3218,8 +3266,9 @@ inline void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpos
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -3245,8 +3294,9 @@ inline void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpos
 	THREAD_SAFE()
 
 	// Checking if the uniform does exist
-	if (location == -1 || location == 0)
+	if (location == -1 || location == 0) {
 		return;
+	}
 
 	// Grabbing passed uniform
 	int offs = 0;
@@ -3686,8 +3736,9 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 	
 	// If we use VGL_MODE_POSTPONED, we perform attributes binding in glLinkProgram
 	if (glsl_sema_mode == VGL_MODE_POSTPONED && p->vshader->is_glsl) {
-		if (!p->glsl_attr_map)
+		if (!p->glsl_attr_map) {
 			p->glsl_attr_map = vglMalloc(sizeof(attr_mapping) * VERTEX_ATTRIBS_NUM);
+		}
 		p->glsl_attr_map[p->num_glsl_attr].idx = index;
 		strcpy(p->glsl_attr_map[p->num_glsl_attr++].name, name);
 		return;
@@ -3695,8 +3746,9 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 
 	// Looking for desired parameter in requested program
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
-	if (param == NULL || sceGxmProgramParameterGetCategory(param) != SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE)
+	if (param == NULL || sceGxmProgramParameterGetCategory(param) != SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
 		return;
+	}
 	uint32_t attr_index = sceGxmProgramParameterGetResourceIndex(param);
 	
 	// Swapping any previously made bind to the requested attribute
@@ -3720,14 +3772,16 @@ void glBindAttribLocation(GLuint prog, GLuint index, const GLchar *name) {
 GLint glGetAttribLocation(GLuint prog, const GLchar *name) {
 	program *p = &progs[prog - 1];
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
-	if (param == NULL || sceGxmProgramParameterGetCategory(param) != SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE)
+	if (param == NULL || sceGxmProgramParameterGetCategory(param) != SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
 		return -1;
+	}
 	uint32_t index = sceGxmProgramParameterGetResourceIndex(param);
 
 	// Return requested attribute location
 	for (int i = 0; i < p->attr_highest_idx; i++) {
-		if (p->attr[i].regIndex == index)
+		if (p->attr[i].regIndex == index) {
 			return i;
+		}
 	}
 
 	return -1;
@@ -3750,8 +3804,9 @@ void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *leng
 	SceGxmProgramParameter *param;
 	for (i = 0; i < cnt; i++) {
 		param = (SceGxmProgramParameter *)ptr;
-		if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE && (sceGxmProgramParameterGetResourceIndex(param) / 4) == index)
+		if (sceGxmProgramParameterGetCategory(param) == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE && (sceGxmProgramParameterGetResourceIndex(param) / 4) == index) {
 			break;
+		}
 		ptr += 4;
 	}
 
@@ -3760,13 +3815,15 @@ void glGetActiveAttrib(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *leng
 	*type = gxm_attr_type_to_gl(sceGxmProgramParameterGetComponentCount(param), sceGxmProgramParameterGetArraySize(param));
 	*size = 1;
 	if (bufSize == 0) {
-		if (length)
+		if (length) {
 			*length = 0;
+		}
 		return;
 	}
 	bufSize = min(strlen(pname), bufSize - 1);
-	if (length)
+	if (length) {
 		*length = bufSize;
+	}
 	strncpy(name, pname, bufSize);
 	name[bufSize] = 0;
 }
@@ -3823,23 +3880,26 @@ void glGetActiveUniform(GLuint prog, GLuint index, GLsizei bufSize, GLsizei *len
 	
 	// Copying uniform name
 	if (bufSize == 0) {
-		if (length)
+		if (length) {
 			*length = 0;
+		}
 		return;
 	}
 	// texture, sampler and matrix are reserved keywords in CG but are not in GLSL
-	if (!strcmp(pname, "vgl_tex"))
+	if (!strcmp(pname, "vgl_tex")) {
 		pname = "texture";
-	else if (!strcmp(pname, "Vgl_tex"))
+	} else if (!strcmp(pname, "Vgl_tex")) {
 		pname = "Texture";
-	else if (!strcmp(pname, "_matrix"))
+	} else if (!strcmp(pname, "_matrix")) {
 		pname = "matrix";
-	else if (!strcmp(pname, "_sampler"))
+	} else if (!strcmp(pname, "_sampler")) {
 		pname = "sampler";
+	}
 
 	bufSize = min(strlen(pname), bufSize - 1);
-	if (length)
+	if (length) {
 		*length = bufSize;
+	}
 	strncpy(name, pname, bufSize);
 	name[bufSize] = 0;
 }
@@ -3862,8 +3922,9 @@ void vglBindAttribLocation(GLuint prog, GLuint index, const GLchar *name, const 
 
 	// Looking for desired parameter in requested program
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
-	if (param == NULL)
+	if (param == NULL) {
 		return;
+	}
 
 	// Setting stream index and offset values
 	attributes->streamIndex = index;
@@ -3907,8 +3968,9 @@ GLint vglBindPackedAttribLocation(GLuint prog, const GLchar *name, const GLuint 
 
 	// Looking for desired parameter in requested program
 	const SceGxmProgramParameter *param = sceGxmProgramFindParameterByName(p->vshader->prog, name);
-	if (param == NULL)
+	if (param == NULL) {
 		return GL_FALSE;
+	}
 
 	// Setting stream index and offset values
 	attributes->streamIndex = 0;
@@ -3973,9 +4035,9 @@ void vglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean nor
 	void *ptr = gpu_alloc_mapped_temp(count * bpe * size);
 
 	// Copying passed data to vitaGL mempool
-	if (stride == 0)
+	if (stride == 0) {
 		vgl_fast_memcpy(ptr, pointer, count * bpe * size); // Faster if stride == 0
-	else {
+	} else {
 		int i;
 		uint8_t *dst = (uint8_t *)ptr;
 		uint8_t *src = (uint8_t *)pointer;

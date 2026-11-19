@@ -82,8 +82,9 @@ int init_msg_dialog(const char *msg) {
 
 // Gets current state for sceMsgDialog running widget
 int get_msg_dialog_result(void) {
-	if (sceMsgDialogGetStatus() != SCE_COMMON_DIALOG_STATUS_FINISHED)
+	if (sceMsgDialogGetStatus() != SCE_COMMON_DIALOG_STATUS_FINISHED) {
 		return 0;
+	}
 	sceMsgDialogTerm();
 	return 1;
 }
@@ -114,8 +115,9 @@ void loadShader(const char *name, int type) {
 	char fname[256];
 	sprintf(fname, "app0:%s.vert", name);
 	FILE *f = fopen(fname, "r");
-	if (!f)
+	if (!f) {
 		fatal_error("Cannot open %s", fname);
+	}
 	fseek(f, 0, SEEK_END);
 	int32_t vsize = ftell(f);
 	fseek(f, 0, SEEK_SET);
@@ -126,8 +128,9 @@ void loadShader(const char *name, int type) {
 	// Load fragment shader from filesystem
 	sprintf(fname, "app0:%s.frag", name);
 	f = fopen(fname, "r");
-	if (!f)
+	if (!f) {
 		fatal_error("Cannot open %s", fname);
+	}
 	fseek(f, 0, SEEK_END);
 	int32_t fsize = ftell(f);
 	fseek(f, 0, SEEK_SET);
@@ -154,9 +157,10 @@ void loadShader(const char *name, int type) {
 	
 	// Binding attrib locations for the given shaders
 	glBindAttribLocation(programs[type], 0, "position");
-	if (type == MIRROR)
+	if (type == MIRROR) {
 		glBindAttribLocation(programs[type], 1, "normal");
-	
+	}
+
 	// Linking program
 	glLinkProgram(programs[type]);
 	
@@ -177,13 +181,15 @@ void loadShader(const char *name, int type) {
 // Draws a model
 void drawModel(to_model *mdl, GLboolean is_skybox) {
 	glEnableVertexAttribArray(0);
-	if (is_skybox)
+	if (is_skybox) {
 		glDisableVertexAttribArray(1);
-	else	
+	} else {
 		glEnableVertexAttribArray(1);
+	}
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, mdl->pos);
-	if (!is_skybox)
+	if (!is_skybox) {
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, mdl->normals);
+	}
 	glDrawArrays(GL_TRIANGLES, 0, mdl->num_vertices);
 }
 
@@ -236,11 +242,13 @@ int main() {
 	
 	// Loading our models
 	to_model cube, bunny;
-	if (to_loadObj("app0:cube.obj", &cube))
+	if (to_loadObj("app0:cube.obj", &cube)) {
 		fatal_error("Cannot open app0:cube.obj");
-	if (to_loadObj("app0:bunny.obj", &bunny))
+	}
+	if (to_loadObj("app0:bunny.obj", &bunny)) {
 		fatal_error("Cannot open app0:bunny.obj");
-	
+	}
+
 	// Our skybox faces texture filenames
 	char *skybox_fnames[] = {
 		"app0:skybox/right.jpg",
@@ -283,10 +291,11 @@ int main() {
 		
 		// Checking for wireframe mode changes requests
 		if (CHECK_BTN(SCE_CTRL_CROSS)) {
-			if (wireframe)
+			if (wireframe) {
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			else
+			} else {
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			}
 			wireframe = !wireframe;
 		}
 		
@@ -334,10 +343,11 @@ int main() {
 		// Performing camera setup update if required
 		if (needs_camera_update) {
 			// Preventing pitch to get on the "back"
-			if (camera_orientation.y < -89.0f)
+			if (camera_orientation.y < -89.0f) {
 				camera_orientation.y = -89.0f;
-			else if (camera_orientation.y > 89.0f)
+			} else if (camera_orientation.y > 89.0f) {
 				camera_orientation.y = 89.0f;
+			}
 			update_camera();
 		}
 		

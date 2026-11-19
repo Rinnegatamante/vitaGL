@@ -58,12 +58,14 @@ void vglVertexProgramCacheInvalidate(SceGxmShaderPatcherId id);
 void vglSetUniformData(uint8_t *uniformBuffer, const SceGxmParameterType t, const int offset, const uint32_t count, const uint32_t componentCount, const void *sourceData, const SceGxmParameterType input_type);
 
 static inline __attribute__((always_inline)) void vglRestoreFragmentUniformBuffer(void) {
-	if (vgl_def_frag_buf)
-		sceGxmSetFragmentDefaultUniformBuffer(gxm_context, vgl_def_frag_buf);	
+	if (vgl_def_frag_buf) {
+		sceGxmSetFragmentDefaultUniformBuffer(gxm_context, vgl_def_frag_buf);
+	}
 }
 static inline __attribute__((always_inline)) void vglRestoreVertexUniformBuffer(void) {
-	if (vgl_def_vert_buf)
+	if (vgl_def_vert_buf) {
 		sceGxmSetVertexDefaultUniformBuffer(gxm_context, vgl_def_vert_buf);
+	}
 }
 static inline __attribute__((always_inline)) void *vglReserveFragmentUniformBuffer(uint32_t size) {
 	vgl_def_frag_buf = vglReserveUniformCircularPoolBuffer(size);

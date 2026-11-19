@@ -153,42 +153,48 @@ GLboolean skip_viewport_override = GL_FALSE;
 void update_polygon_offset() {
 	switch (polygon_mode_front) {
 	case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
-		if (pol_offset_line)
+		if (pol_offset_line) {
 			sceGxmSetFrontDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
-		else
+		} else {
 			sceGxmSetFrontDepthBias(gxm_context, 0, 0);
+		}
 		break;
 	case SCE_GXM_POLYGON_MODE_TRIANGLE_POINT:
-		if (pol_offset_point)
+		if (pol_offset_point) {
 			sceGxmSetFrontDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
-		else
+		} else {
 			sceGxmSetFrontDepthBias(gxm_context, 0, 0);
+		}
 		break;
 	case SCE_GXM_POLYGON_MODE_TRIANGLE_FILL:
-		if (pol_offset_fill)
+		if (pol_offset_fill) {
 			sceGxmSetFrontDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
-		else
+		} else {
 			sceGxmSetFrontDepthBias(gxm_context, 0, 0);
+		}
 		break;
 	}
 	switch (polygon_mode_back) {
 	case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
-		if (pol_offset_line)
+		if (pol_offset_line) {
 			sceGxmSetBackDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
-		else
+		} else {
 			sceGxmSetBackDepthBias(gxm_context, 0, 0);
+		}
 		break;
 	case SCE_GXM_POLYGON_MODE_TRIANGLE_POINT:
-		if (pol_offset_point)
+		if (pol_offset_point) {
 			sceGxmSetBackDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
-		else
+		} else {
 			sceGxmSetBackDepthBias(gxm_context, 0, 0);
+		}
 		break;
 	case SCE_GXM_POLYGON_MODE_TRIANGLE_FILL:
-		if (pol_offset_fill)
+		if (pol_offset_fill) {
 			sceGxmSetBackDepthBias(gxm_context, (int)pol_factor, (int)pol_units);
-		else
+		} else {
 			sceGxmSetBackDepthBias(gxm_context, 0, 0);
+		}
 		break;
 	}
 }
@@ -306,16 +312,18 @@ void glCullFace(GLenum mode) {
 	THREAD_SAFE()
 
 	gl_cull_mode = mode;
-	if (cull_face_state)
+	if (cull_face_state) {
 		change_cull_mode();
+	}
 }
 
 void glFrontFace(GLenum mode) {
 	THREAD_SAFE()
 
 	gl_front_face = mode;
-	if (cull_face_state)
+	if (cull_face_state) {
 		change_cull_mode();
+	}
 }
 
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
@@ -344,8 +352,9 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
 		gl_viewport.y = y;
 		gl_viewport.w = width;
 		gl_viewport.h = height;
-	} else
+	} else {
 		skip_viewport_override = GL_FALSE;
+	}
 }
 
 void glDepthRange(GLdouble nearVal, GLdouble farVal) {
@@ -379,8 +388,9 @@ void glEnable(GLenum cap) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glEnable, DLIST_FUNC_U32, cap))
+	if (_vgl_enqueue_list_func(glEnable, DLIST_FUNC_U32, cap)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
@@ -410,8 +420,9 @@ void glEnable(GLenum cap) {
 		refresh_stencil_settings();
 		break;
 	case GL_BLEND:
-		if (!blend_state)
+		if (!blend_state) {
 			change_blend_factor();
+		}
 		blend_state = GL_TRUE;
 		break;
 	case GL_COLOR_MATERIAL:
@@ -511,8 +522,9 @@ void glDisable(GLenum cap) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glDisable, DLIST_FUNC_U32, cap))
+	if (_vgl_enqueue_list_func(glDisable, DLIST_FUNC_U32, cap)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
@@ -548,8 +560,9 @@ void glDisable(GLenum cap) {
 		refresh_stencil_settings();
 		break;
 	case GL_BLEND:
-		if (blend_state)
+		if (blend_state) {
 			change_blend_mask();
+		}
 		blend_state = GL_FALSE;
 		break;
 	case GL_SCISSOR_TEST:
@@ -770,10 +783,11 @@ void glLineWidth(GLfloat width) {
 
 	line_width = width;
 	uint32_t int_width = width;
-	if (int_width > 16)
+	if (int_width > 16) {
 		int_width = 16;
-	else if (int_width < 1)
+	} else if (int_width < 1) {
 		int_width = 1;
+	}
 
 	// Changing line width as requested
 	sceGxmSetFrontPointLineWidth(gxm_context, int_width);
@@ -979,10 +993,11 @@ void glPopAttrib(void) {
 		blend_sfactor_a = setup->blend_sfactor_a;
 		blend_dfactor_rgb = setup->blend_dfactor_rgb;
 		blend_dfactor_a = setup->blend_dfactor_a;
-		if (blend_state)
+		if (blend_state) {
 			change_blend_factor();
-		else
+		} else {
 			change_blend_mask();
+		}
 	}
 	if (setup->enabled_bits & (1 << DEPTH_BUFFER_BIT)) {
 		depth_test_state = setup->depth_test_state;
@@ -995,18 +1010,20 @@ void glPopAttrib(void) {
 		alpha_test_state = setup->alpha_test_state;
 		update_alpha_test_settings();
 		blend_state = setup->blend_state;
-		if (blend_state)
+		if (blend_state) {
 			change_blend_factor();
-		else
+		} else {
 			change_blend_mask();
+		}
 		depth_test_state = setup->depth_test_state;
 		change_depth_func();
 		lighting_state = setup->lighting_state;
 		stencil_test_state = setup->stencil_test_state;
 		refresh_stencil_settings();
 		scissor_test_state = setup->scissor_test_state;
-		if (scissor_test_state)
+		if (scissor_test_state) {
 			dirty_scissor_state = GL_TRUE;
+		}
 		cull_face_state = setup->cull_face_state;
 		change_cull_mode();
 		pol_offset_fill = setup->pol_offset_fill;

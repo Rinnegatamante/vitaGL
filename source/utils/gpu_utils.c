@@ -79,10 +79,12 @@ void dxt_compress(uint8_t *dst, uint8_t *src, int w, int h, int isdxt5) {
 	uint64_t d, offs_x, offs_y;
 	for (d = 0; d < num_blocks; d++) {
 		d2xy_morton(d, &offs_x, &offs_y);
-		if (offs_x * 4 >= h)
+		if (offs_x * 4 >= h) {
 			continue;
-		if (offs_y * 4 >= w)
+		}
+		if (offs_y * 4 >= w) {
 			continue;
+		}
 		extract_block(src + offs_y * 16 + offs_x * w * 16, w, block);
 		stb_compress_dxt_block(dst, block, isdxt5, fast_texture_compression ? STB_DXT_NORMAL : STB_DXT_HIGHQUAL);
 		dst += isdxt5 ? 16 : 8;
@@ -410,9 +412,9 @@ void gpu_alloc_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const
 			uint8_t *src = (uint8_t *)data;
 			uint8_t *dst;
 			if (fast_store) { // Internal Format and Data Format are the same, we can just use vgl_fast_memcpy for better performance
-				if (aligned_w == w) // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
+				if (aligned_w == w) { // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
 					vgl_fast_memcpy(texture_data, src, tex_size);
-				else {
+				} else {
 					uint32_t line_size = w * bpp;
 					for (int i = 0; i < h; i++) {
 						dst = ((uint8_t *)texture_data) + (aligned_w * bpp) * i;
@@ -586,12 +588,14 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 	if (tex->status == TEX_VALID && tex->faces_counter >= 6) {
 		gpu_free_texture_data(tex);
 		tex->faces_counter = 1;
-	} else
+	} else {
 		tex->faces_counter++;
+	}
 
 	// Calculating swizzled compressed texture size on memory
-	if (!image_size)
+	if (!image_size) {
 		image_size = gpu_get_compressed_mip_size(0, w, h, format);
+	}
 
 	const uint32_t aligned_width = nearest_po2(w);
 	const uint32_t aligned_height = nearest_po2(h);
@@ -677,8 +681,9 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 					break;
 				}
 			}
-		} else
+		} else {
 			vgl_memset(mip_data, 0, mip_size);
+		}
 
 		// Initializing texture and validating it
 		tex->mip_count = 0;
@@ -697,12 +702,14 @@ void gpu_alloc_compressed_cube_texture(uint32_t w, uint32_t h, SceGxmTextureForm
 
 void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, SceGxmTextureFormat format, uint32_t image_size, const void *data, texture *tex, uint8_t src_bpp, GLboolean uncompressed) {
 	// If there's already a texture in passed texture object we first dealloc it
-	if (tex->status == TEX_VALID && !mip_level)
+	if (tex->status == TEX_VALID && !mip_level) {
 		gpu_free_texture_data(tex);
+	}
 
 	// Calculating swizzled compressed texture size on memory
-	if (!image_size)
+	if (!image_size) {
 		image_size = gpu_get_compressed_mip_size(mip_level, w, h, format);
+	}
 
 	const uint32_t aligned_width = nearest_po2(w);
 	const uint32_t aligned_height = nearest_po2(h);
@@ -730,9 +737,9 @@ void gpu_alloc_compressed_texture(int32_t mip_level, uint32_t w, uint32_t h, Sce
 		tex_width = max_width;
 		tex_height = max_height;
 
-		if (mip_count >= mip_level)
+		if (mip_count >= mip_level) {
 			texture_data = tex->data;
-		else {
+		} else {
 			texture_data = vgl_realloc(tex->data, tex_size);
 			if (!texture_data) {
 				// Reallocation in the same mspace failed, try manually.
@@ -869,10 +876,11 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 			}
 			jumps[mips] = MAX(w, 8) * h * bpp;
 			size += jumps[mips];
-			if (level < 0)
+			if (level < 0) {
 				level = mips;
-			else
+			} else {
 				level++;
+			}
 		} else {
 			for (int j = 0; j < level; j++) {
 				jumps[j] = MAX(w, 8) * h * bpp;
@@ -898,13 +906,16 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 		uint8_t *curPtr = (uint8_t *)texture_data;
 		uint32_t curWidth = orig_w;
 		uint32_t curHeight = orig_h;
-		if (curWidth % 2)
+		if (curWidth % 2) {
 			curWidth--;
-		if (curHeight % 2)
+		}
+		if (curHeight % 2) {
 			curHeight--;
+		}
 		for (int j = 0; j < level - 1; j++) {
-			if (curWidth <= 1 || curHeight <= 1)
+			if (curWidth <= 1 || curHeight <= 1) {
 				break;
+			}
 			uint32_t curSrcStride = VGL_ALIGN(curWidth, 8);
 			uint32_t curDstStride = VGL_ALIGN(curWidth >> 1, 8);
 			uint8_t *dstPtr = curPtr + jumps[j];
@@ -947,14 +958,16 @@ void gpu_alloc_mipmaps(int level, texture *tex) {
 
 void gpu_free_palette(void *pal) {
 	// Deallocating palette memblock and object
-	if (pal != NULL)
+	if (pal != NULL) {
 		vgl_free(pal);
+	}
 }
 
 void gpu_alloc_planar_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format, const void *data, texture *tex) {
 	// If there's already a texture in passed texture object we first dealloc it
-	if (tex->status == TEX_VALID)
+	if (tex->status == TEX_VALID) {
 		gpu_free_texture_data(tex);
+	}
 
 	// Allocating texture data buffer
 	const int plane_w = MAX(nearest_po2(w), 8);
@@ -971,9 +984,9 @@ void gpu_alloc_planar_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format
 	if (texture_data != NULL) {
 		// Initializing texture data buffer
 		if (data != NULL) {
-			if (plane_w == w && plane_h == h && half_plane_w == half_w && half_plane_h == half_h) // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
+			if (plane_w == w && plane_h == h && half_plane_w == half_w && half_plane_h == half_h) { // Texture size is already aligned, we can use a single vgl_fast_memcpy for better performance
 				vgl_fast_memcpy(texture_data, data, tex_size);
-			else if ((format & 0x9F000000) == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3) {
+			} else if ((format & 0x9F000000) == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3) {
 				uint8_t *src_y = (uint8_t *)data;
 				uint8_t *src_u = src_y + w * h;
 				uint8_t *src_v = src_u + half_w * half_h;
@@ -1026,8 +1039,9 @@ void gpu_alloc_planar_texture(uint32_t w, uint32_t h, SceGxmTextureFormat format
 					}
 				}
 			}
-		} else
+		} else {
 			vgl_memset(texture_data, 0, tex_size);
+		}
 
 		// Initializing texture and validating it
 		tex->mip_count = 1;

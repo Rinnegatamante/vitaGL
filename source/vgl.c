@@ -336,8 +336,9 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	sceGxmPrecomputedDrawSetParams(&clear_draw_state, SCE_GXM_PRIMITIVE_TRIANGLE_FAN, SCE_GXM_INDEX_FORMAT_U16, depth_clear_indices, 4);
 
 #ifndef SKIP_SPLASHSCREEN
-	if (!system_app_mode)
+	if (!system_app_mode) {
 		invoke_splashscreen();
+	}
 #endif
 	
 	// Framebuffer blit shader register
@@ -592,24 +593,27 @@ void vglWaitVblankStart(GLboolean enable) {
 
 size_t vglMemFree(vglMemType type) {
 #ifndef SKIP_ERROR_HANDLING
-	if (type >= VGL_MEM_ALL)
+	if (type >= VGL_MEM_ALL) {
 		return 0;
+	}
 #endif
 	return vgl_mem_get_free_space(type);
 }
 
 size_t vglMemTotal(vglMemType type) {
 #ifndef SKIP_ERROR_HANDLING
-	if (type >= VGL_MEM_ALL)
+	if (type >= VGL_MEM_ALL) {
 		return 0;
+	}
 #endif
 	return vgl_mem_get_total_space(type);
 }
 
 void *vglAlloc(uint32_t size, vglMemType type) {
 #ifndef SKIP_ERROR_HANDLING
-	if (type >= VGL_MEM_ALL)
+	if (type >= VGL_MEM_ALL) {
 		return NULL;
+	}
 #endif
 	return vgl_malloc(size, type);
 }
@@ -625,23 +629,27 @@ void *vglForceAllocAligned(uint32_t alignment, uint32_t size, GLboolean for_gpu)
 void *vglMalloc(uint32_t size) {
 	// First we try to use newlib mem
 	void *res = vgl_malloc(size, VGL_MEM_EXTERNAL);
-	if (res)
+	if (res) {
 		return res;
+	}
 
 	// If it fails, we try with standard RAM mem pool
 	res = vgl_malloc(size, VGL_MEM_RAM);
-	if (res)
+	if (res) {
 		return res;
+	}
 
 	// If it fails, we try with physically contiguous RAM
 	res = vgl_malloc(size, VGL_MEM_PHYCONT);
-	if (res)
+	if (res) {
 		return res;
+	}
 
 	// If it fails, we try with common dialog mem
 	res = vgl_malloc(size, VGL_MEM_BUDGET);
-	if (res)
+	if (res) {
 		return res;
+	}
 
 	// If it fails, as last resort, we try VRAM
 	res = vgl_malloc(size, VGL_MEM_VRAM);
@@ -669,23 +677,27 @@ size_t vglMallocUsableSize(void *ptr) {
 void *vglMemalign(uint32_t alignment, uint32_t size) {
 	// First we try to use newlib mem
 	void *res = vgl_memalign(alignment, size, VGL_MEM_EXTERNAL);
-	if (res)
+	if (res) {
 		return res;
+	}
 
 	// If it fails, we try with standard RAM mem pool
 	res = vgl_memalign(alignment, size, VGL_MEM_RAM);
-	if (res)
+	if (res) {
 		return res;
+	}
 
 	// If it fails, we try with physically contiguous RAM
 	res = vgl_memalign(alignment, size, VGL_MEM_PHYCONT);
-	if (res)
+	if (res) {
 		return res;
+	}
 
 	// If it fails, we try with common dialog mem
 	res = vgl_memalign(alignment, size, VGL_MEM_BUDGET);
-	if (res)
+	if (res) {
 		return res;
+	}
 
 	// If it fails, as last resort, we try VRAM
 	res = vgl_memalign(alignment, size, VGL_MEM_VRAM);
@@ -709,23 +721,27 @@ void *vglMemalign(uint32_t alignment, uint32_t size) {
 void *vglCalloc(uint32_t nmember, uint32_t size) {
 	// First we try to use newlib mem
 	void *res = vgl_calloc(nmember, size, VGL_MEM_EXTERNAL);
-	if (res)
+	if (res) {
 		return res;
+	}
 
 	// If it fails, we try with standard RAM mem pool
 	res = vgl_calloc(nmember, size, VGL_MEM_RAM);
-	if (res)
+	if (res) {
 		return res;
+	}
 
 	// If it fails, we try with physically contiguous RAM
 	res = vgl_calloc(nmember, size, VGL_MEM_PHYCONT);
-	if (res)
+	if (res) {
 		return res;
+	}
 
 	// If it fails, we try with common dialog mem
 	res = vgl_calloc(nmember, size, VGL_MEM_BUDGET);
-	if (res)
+	if (res) {
 		return res;
+	}
 
 	// If it fails, as last resort, we try VRAM
 	res = vgl_calloc(nmember, size, VGL_MEM_VRAM);
@@ -746,18 +762,21 @@ void *vglCalloc(uint32_t nmember, uint32_t size) {
 }
 
 void *vglRealloc(void *ptr, uint32_t size) {
-	if (!ptr)
+	if (!ptr) {
 		return vglMalloc(size);
+	}
 
 	void *res = vgl_realloc(ptr, size);
-	if (res)
+	if (res) {
 		return res;
+	}
 
 	res = vglMalloc(size);
 	if (res) {
 		size_t copy_size = vgl_malloc_usable_size(ptr);
-		if (copy_size > size)
+		if (copy_size > size) {
 			copy_size = size;
+		}
 		vgl_fast_memcpy(res, ptr, copy_size);
 		vglFree(ptr);
 	}
@@ -770,8 +789,9 @@ void *vglRealloc(void *ptr, uint32_t size) {
 }
 
 void vglFree(void *addr) {
-	if (!addr)
+	if (!addr) {
 		return;
+	}
 
 	vgl_free(addr);
 }

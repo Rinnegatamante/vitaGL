@@ -201,8 +201,9 @@ const GLubyte *glGetString(GLenum name) {
 			extension[0] = 0;
 			for (i = 0; i < NUM_EXTENSIONS; i++) {
 				strcat(extension, extensions[i]);
-				if (i != (NUM_EXTENSIONS - 1))
+				if (i != (NUM_EXTENSIONS - 1)) {
 					strcat(extension, " ");
+				}
 			}
 		}
 		return extension;

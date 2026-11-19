@@ -14,8 +14,9 @@ void main(
 ) {
     gl_Position = mul(mul(mul(float4(position, 1.0f), modelMatrix), viewMatrix), projectionMatrix);
     
-	if (invertedNormals == 1.0f)
+	if (invertedNormals == 1.0f) {
 		vNormal = mul(-normal, normalMatrix);
-	else
+	} else {
 		vNormal = mul(normal, normalMatrix);
+	}
 }

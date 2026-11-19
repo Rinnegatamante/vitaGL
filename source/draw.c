@@ -163,8 +163,9 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glDrawArrays, DLIST_FUNC_U32_I32_I32, mode, first, count))
+	if (_vgl_enqueue_list_func(glDrawArrays, DLIST_FUNC_U32_I32_I32, mode, first, count)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	if (phase == MODEL_CREATION) {
@@ -178,11 +179,12 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 	scene_reset();
 	GLboolean is_draw_legal = GL_TRUE;
 
-	if (cur_program != 0)
+	if (cur_program != 0) {
 		is_draw_legal = _glDrawArrays_CustomShadersIMPL(first, count, GL_FALSE);
-	else {
-		if (!(ffp_vertex_attrib_state & (1 << 0)))
+	} else {
+		if (!(ffp_vertex_attrib_state & (1 << 0))) {
 			return;
+		}
 		_glDrawArrays_FixedFunctionIMPL(first, count);
 	}
 
@@ -236,13 +238,16 @@ void glMultiDrawArrays(GLenum mode, const GLint *first, const GLsizei *count, GL
 	GLint lowest = 0x7FFFFFFF;
 	GLsizei highest = 0, highest_count = 0;
 	for (int i = 0; i < drawcount; i++) {
-		if (first[i] < lowest)
+		if (first[i] < lowest) {
 			lowest = first[i];
+		}
 		GLsizei last = first[i] + count[i];
-		if (last > highest)
+		if (last > highest) {
 			highest = last;
-		if (count[i] > highest_count)
+		}
+		if (count[i] > highest_count) {
 			highest_count = count[i];
+		}
 	}
 	
 	SceGxmPrimitiveType gxm_p;
@@ -270,11 +275,12 @@ void glMultiDrawArrays(GLenum mode, const GLint *first, const GLsizei *count, GL
 		break;
 	}
 	
-	if (cur_program != 0)
+	if (cur_program != 0) {
 		_glMultiDrawArrays_CustomShadersIMPL(gxm_p, idx_ptr, first, count, lowest, highest, drawcount);
-	else {
-		if (!(ffp_vertex_attrib_state & (1 << 0)))
+	} else {
+		if (!(ffp_vertex_attrib_state & (1 << 0))) {
 			return;
+		}
 		_glMultiDrawArrays_FixedFunctionIMPL(gxm_p, idx_ptr, first, count, lowest, highest, drawcount);
 	}
 
@@ -339,8 +345,9 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glDrawElements, DLIST_FUNC_U32_I32_U32_U32, mode, count, type, gl_indices))
+	if (_vgl_enqueue_list_func(glDrawElements, DLIST_FUNC_U32_I32_U32_U32, mode, count, type, gl_indices)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	if (type != GL_UNSIGNED_SHORT && type != GL_UNSIGNED_INT && type != GL_UNSIGNED_BYTE) {
@@ -367,11 +374,12 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 		src = idx16;
 	}
 	
-	if (cur_program != 0)
+	if (cur_program != 0) {
 		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, 0, type != GL_UNSIGNED_INT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
-	else {
-		if (!(ffp_vertex_attrib_state & (1 << 0)))
+	} else {
+		if (!(ffp_vertex_attrib_state & (1 << 0))) {
 			return;
+		}
 		_glDrawElements_FixedFunctionIMPL(src, count, 0, 0, type != GL_UNSIGNED_INT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
 	}
 
@@ -413,11 +421,12 @@ void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLv
 
 	vbo *gpu_buf = (vbo *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
-	if (cur_program != 0)
+	if (cur_program != 0) {
 		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, 0, baseVertex, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
-	else {
-		if (!(ffp_vertex_attrib_state & (1 << 0)))
+	} else {
+		if (!(ffp_vertex_attrib_state & (1 << 0))) {
 			return;
+		}
 		_glDrawElements_FixedFunctionIMPL(src, count, 0, baseVertex, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
 	}
 
@@ -460,11 +469,12 @@ void glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, G
 
 	vbo *gpu_buf = (vbo *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
-	if (cur_program != 0)
+	if (cur_program != 0) {
 		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end + 1, 0, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
-	else {
-		if (!(ffp_vertex_attrib_state & (1 << 0)))
+	} else {
+		if (!(ffp_vertex_attrib_state & (1 << 0))) {
 			return;
+		}
 		_glDrawElements_FixedFunctionIMPL(src, count, end + 1, 0, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
 	}
 
@@ -505,11 +515,12 @@ void glDrawRangeElementsBaseVertex(GLenum mode, GLuint start, GLuint end, GLsize
 
 	vbo *gpu_buf = (vbo *)cur_vao->index_array_unit;
 	uint16_t *src = gpu_buf ? (uint16_t *)((uint8_t *)gpu_buf->ptr + (uint32_t)gl_indices) : (uint16_t *)gl_indices;
-	if (cur_program != 0)
+	if (cur_program != 0) {
 		is_draw_legal = _glDrawElements_CustomShadersIMPL(src, count, end + baseVertex + 1, baseVertex, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
-	else {
-		if (!(ffp_vertex_attrib_state & (1 << 0)))
+	} else {
+		if (!(ffp_vertex_attrib_state & (1 << 0))) {
 			return;
+		}
 		_glDrawElements_FixedFunctionIMPL(src, count, end + baseVertex + 1, baseVertex, type == GL_UNSIGNED_SHORT ? SCE_GXM_INDEX_SOURCE_INDEX_16BIT : SCE_GXM_INDEX_SOURCE_INDEX_32BIT);
 	}
 
@@ -593,17 +604,20 @@ void vglDrawObjects(GLenum mode, GLsizei count) {
 	} else if (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_POSITION)) {
 		reload_ffp_shaders(NULL, NULL, SCE_GXM_INDEX_SOURCE_INDEX_16BIT);
 		if (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_TEX0)) {
-			if (texture_slots[tex_unit->tex_id[0]].status != TEX_VALID)
+			if (texture_slots[tex_unit->tex_id[0]].status != TEX_VALID) {
 				return;
+			}
 #ifndef TEXTURES_SPEEDHACK
 			texture_slots[tex_unit->tex_id[0]].last_frame = vgl_framecount;
 #endif
 			sceGxmSetFragmentTexture(gxm_context, 0, &texture_slots[tex_unit->tex_id[0]].gxm_tex);
 			sceGxmSetVertexStream(gxm_context, 1, texture_object);
-			if (ffp_vertex_num_params > 2)
+			if (ffp_vertex_num_params > 2) {
 				sceGxmSetVertexStream(gxm_context, 2, color_object);
-		} else if (ffp_vertex_num_params > 1)
+			}
+		} else if (ffp_vertex_num_params > 1) {
 			sceGxmSetVertexStream(gxm_context, 1, color_object);
+		}
 		sceGxmSetVertexStream(gxm_context, 0, vertex_object);
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, index_object, count);
 	}

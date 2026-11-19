@@ -63,10 +63,12 @@ static EGLenum rend_api = EGL_OPENGL_ES_API;
 // EGL implementation
 
 EGLBoolean eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor) {
-	if (major)
+	if (major) {
 		*major = 2;
-	if (minor)
+	}
+	if (minor) {
 		*minor = 2;
+	}
 	EGL_RET(EGL_TRUE)
 }
 
@@ -261,8 +263,9 @@ EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig 
 	}
 #endif
 	*num_config = 1;
-	if (configs)
+	if (configs) {
 		*configs = (EGLConfig)EGL_DEFAULT_CFG;
+	}
 
 	EGL_RET(EGL_TRUE)
 }

@@ -123,28 +123,31 @@ int main(){
 		
 		// Checking for lighting state changes requests
 		if (CHECK_BTN(SCE_CTRL_CROSS)) {
-			if (light)
+			if (light) {
 				glDisable(GL_LIGHTING);
-			else
+			} else {
 				glEnable(GL_LIGHTING);
+			}
 			light = !light;
 		}
 		
 		// Checking for fogging state changes requests
 		if (CHECK_BTN(SCE_CTRL_SQUARE)) {
-			if (fog)
+			if (fog) {
 				glDisable(GL_FOG);
-			else
+			} else {
 				glEnable(GL_FOG);
+			}
 			fog = !fog;
 		}
 		
 		// Checking for illumination models changes requests
 		if (CHECK_BTN(SCE_CTRL_CIRCLE)) {
-			if (!phong)
+			if (!phong) {
 				glShadeModel(GL_PHONG_WIN);
-			else
+			} else {
 				glShadeModel(GL_SMOOTH);
+			}
 			phong = !phong;
 		}
 		

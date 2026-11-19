@@ -429,8 +429,9 @@ static inline GLboolean does_color_material_track(GLenum pname) {
 }
 
 void adjust_color_material_state() {
-	if (!color_material_state)
+	if (!color_material_state) {
 		return;
+	}
 
 	switch (color_material_mode) {
 	case GL_AMBIENT:
@@ -636,8 +637,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 		if (texture_units[i].state && (ffp_vertex_attrib_state & (1 << FFP_ATTRIB_TEX(i)))) {
 #ifdef HAVE_UNPURE_TEXCOORDS
 			if (i != mask.num_textures) {
-				if (base_texture_id == 0)
+				if (base_texture_id == 0) {
 					base_texture_id = i;
+				}
 				draw_mask_state &= ~(1 << FFP_ATTRIB_TEX(i));
 				draw_mask_state |= (1 << FFP_ATTRIB_TEX(i - base_texture_id));
 			}
@@ -647,23 +649,26 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			case 0:
 				mask.tex_env_mode_pass0 = texture_units[base_texture_id].env_mode;
 #ifndef DISABLE_TEXTURE_COMBINER
-				if (mask.tex_env_mode_pass0 == COMBINE)
+				if (mask.tex_env_mode_pass0 == COMBINE) {
 					cmb_mask.pass0.raw = texture_units[base_texture_id].combiner.raw;
+				}
 #endif
 				break;
 			case 1:
 				mask.tex_env_mode_pass1 = texture_units[base_texture_id + 1].env_mode;
 #ifndef DISABLE_TEXTURE_COMBINER
-				if (mask.tex_env_mode_pass1 == COMBINE)
+				if (mask.tex_env_mode_pass1 == COMBINE) {
 					cmb_mask.pass1.raw = texture_units[base_texture_id + 1].combiner.raw;
+				}
 #endif
 				break;
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 			case 2:
 				mask.tex_env_mode_pass2 = texture_units[base_texture_id + 2].env_mode;
 #ifndef DISABLE_TEXTURE_COMBINER
-				if (mask.tex_env_mode_pass2 == COMBINE)
+				if (mask.tex_env_mode_pass2 == COMBINE) {
 					cmb_mask.pass2.raw = texture_units[base_texture_id + 2].combiner.raw;
+				}
 #endif
 				break;
 #endif
@@ -691,9 +696,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 	}
 
 	float *light_vars[MAX_LIGHTS_NUM][5];
-	if (!lighting_state)
+	if (!lighting_state) {
 		mask.lights_num = 0;
-	else {
+	} else {
 		if (!light_mask) {
 			mask.lights_num = 0;
 		} else if (lights_aligned) {
@@ -834,8 +839,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			sceIoClose(f);
 		} else {
 			// Restarting vitaShaRK if we released it before
-			if (!is_shark_online)
+			if (!is_shark_online) {
 				start_shader_compiler();
+			}
 
 			// Compiling the new shader
 			char vshader[8192];
@@ -1062,8 +1068,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 			sceIoClose(f);
 		} else {
 			// Restarting vitaShaRK if we released it before
-			if (!is_shark_online)
+			if (!is_shark_online) {
 				start_shader_compiler();
+			}
 
 			// Compiling the new shader
 			char fshader[8192];
@@ -1336,8 +1343,9 @@ uint8_t reload_ffp_shaders(SceGxmVertexAttribute *attrs, SceGxmVertexStream *str
 }
 
 static inline __attribute__((always_inline)) void *ffp_client_color_shared(void **cached, GLint first, GLsizei count) {
-	if (*cached)
+	if (*cached) {
 		return *cached;
+	}
 	const uint32_t stride = ffp_vertex_stream_config[FFP_ATTRIB_COLOR].stride;
 	const uint32_t size = count * stride;
 	const uint8_t *src = (const uint8_t *)ffp_vertex_attrib_offsets[FFP_ATTRIB_COLOR] + first * stride;
@@ -1663,16 +1671,18 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 					break;
 				}
 #ifndef DRAW_SPEEDHACK
-				if (!ffp_vertex_attrib_vbo[tex_id])
+				if (!ffp_vertex_attrib_vbo[tex_id]) {
 					is_full_vbo = GL_FALSE;
+				}
 #endif
 				attr_idxs[attr_num++] = tex_id;				
 			} else
 #endif
 			{
 #ifndef DRAW_SPEEDHACK
-				if (!ffp_vertex_attrib_vbo[i])
+				if (!ffp_vertex_attrib_vbo[i]) {
 					is_full_vbo = GL_FALSE;
+				}
 #endif
 				attr_idxs[attr_num++] = i;
 			}
@@ -1685,14 +1695,16 @@ void _glDrawElements_FixedFunctionIMPL(uint16_t *idx_buf, GLsizei count, uint32_
 		if ((index_type & 1) == 0)
 		{
 			for (int i = 0; i < count; i++) {
-				if (idx_buf[i] > top_idx)
+				if (idx_buf[i] > top_idx) {
 					top_idx = idx_buf[i];
+				}
 			}
 		} else {
 			uint32_t *_idx_buf = (uint32_t *)idx_buf;
 			for (int i = 0; i < count; i++) {
-				if (_idx_buf[i] > top_idx)
+				if (_idx_buf[i] > top_idx) {
 					top_idx = _idx_buf[i];
+				}
 			}
 		}
 		top_idx += base_idx + 1;
@@ -2125,8 +2137,9 @@ inline void glVertex3f(GLfloat x, GLfloat y, GLfloat z) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glVertex3f, DLIST_FUNC_F32_F32_F32, x, y, z))
+	if (_vgl_enqueue_list_func(glVertex3f, DLIST_FUNC_F32_F32_F32, x, y, z)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -2285,8 +2298,9 @@ void glMaterialf(GLenum face, GLenum pname, GLfloat param) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glMaterialf, DLIST_FUNC_U32_U32_F32, face, pname, param))
+	if (_vgl_enqueue_list_func(glMaterialf, DLIST_FUNC_U32_U32_F32, face, pname, param)) {
 		return;
+	}
 #endif
 	switch (pname) {
 	case GL_SHININESS:
@@ -2391,8 +2405,9 @@ void glColor3f(GLfloat red, GLfloat green, GLfloat blue) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor3f, DLIST_FUNC_F32_F32_F32, red, green, blue))
+	if (_vgl_enqueue_list_func(glColor3f, DLIST_FUNC_F32_F32_F32, red, green, blue)) {
 		return;
+	}
 #endif
 	// Setting current color value
 	current_vtx.clr.r = red;
@@ -2448,8 +2463,9 @@ void glColor3ub(GLubyte red, GLubyte green, GLubyte blue) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor3ub, DLIST_FUNC_U8_U8_U8, red, green, blue))
+	if (_vgl_enqueue_list_func(glColor3ub, DLIST_FUNC_U8_U8_U8, red, green, blue)) {
 		return;
+	}
 #endif
 	// Setting current color value
 	current_vtx.clr.r = (float)red / 255.0f;
@@ -2485,8 +2501,9 @@ void glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor4f, DLIST_FUNC_F32_F32_F32_F32, red, green, blue, alpha))
+	if (_vgl_enqueue_list_func(glColor4f, DLIST_FUNC_F32_F32_F32_F32, red, green, blue, alpha)) {
 		return;
+	}
 #endif
 	// Setting current color value
 	current_vtx.clr.r = red;
@@ -2519,8 +2536,9 @@ void glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor4ub, DLIST_FUNC_U8_U8_U8_U8, red, green, blue, alpha))
+	if (_vgl_enqueue_list_func(glColor4ub, DLIST_FUNC_U8_U8_U8_U8, red, green, blue, alpha)) {
 		return;
+	}
 #endif
 	current_vtx.clr.r = (float)red / 255.0f;
 	current_vtx.clr.g = (float)green / 255.0f;
@@ -2579,8 +2597,9 @@ void glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColor4x, DLIST_FUNC_I32_I32_I32_I32, red, green, blue, alpha))
+	if (_vgl_enqueue_list_func(glColor4x, DLIST_FUNC_I32_I32_I32_I32, red, green, blue, alpha)) {
 		return;
+	}
 #endif
 
 	// Setting current color value
@@ -2598,8 +2617,9 @@ void glNormal3f(GLfloat x, GLfloat y, GLfloat z) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glNormal3f, DLIST_FUNC_F32_F32_F32, x, y, z))
+	if (_vgl_enqueue_list_func(glNormal3f, DLIST_FUNC_F32_F32_F32, x, y, z)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -2647,8 +2667,9 @@ void glTexCoord2f(GLfloat s, GLfloat t) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTexCoord2f, DLIST_FUNC_F32_F32, s, t))
+	if (_vgl_enqueue_list_func(glTexCoord2f, DLIST_FUNC_F32_F32, s, t)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -2678,8 +2699,9 @@ void glMultiTexCoord2f(GLenum target, GLfloat s, GLfloat t) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glMultiTexCoord2f, DLIST_FUNC_U32_F32_F32, target, s, t))
+	if (_vgl_enqueue_list_func(glMultiTexCoord2f, DLIST_FUNC_U32_F32_F32, target, s, t)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -2715,8 +2737,9 @@ void glBegin(GLenum mode) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glBegin, DLIST_FUNC_U32, mode))
+	if (_vgl_enqueue_list_func(glBegin, DLIST_FUNC_U32, mode)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -2743,8 +2766,9 @@ void glEnd(void) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glEnd, DLIST_FUNC_VOID))
+	if (_vgl_enqueue_list_func(glEnd, DLIST_FUNC_VOID)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -2876,12 +2900,13 @@ void glEnd(void) {
 	sceGxmDraw(gxm_context, prim, SCE_GXM_INDEX_FORMAT_U16, ptr, index_count);
 
 	// Moving legacy pool address offset
-	if (texture_units[1].state)
+	if (texture_units[1].state) {
 		legacy_pool += vertex_count * LEGACY_MT_VERTEX_STRIDE;
-	else if (texture_units[0].state)
+	} else if (texture_units[0].state) {
 		legacy_pool += vertex_count * LEGACY_VERTEX_STRIDE;
-	else
+	} else {
 		legacy_pool += vertex_count * LEGACY_NT_VERTEX_STRIDE;
+	}
 
 #ifndef SKIP_ERROR_HANDLING
 	// Checking for out of bounds of the immediate mode vertex pool
@@ -3018,8 +3043,9 @@ void glTexEnvxv(GLenum target, GLenum pname, GLfixed *param) {
 inline void glTexEnvi(GLenum target, GLenum pname, GLint param) {
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glTexEnvf, DLIST_FUNC_U32_U32_I32, target, pname, param))
+	if (_vgl_enqueue_list_func(glTexEnvf, DLIST_FUNC_U32_U32_I32, target, pname, param)) {
 		return;
+	}
 #endif
 	// Aliasing texture unit for cleaner code
 	texture_unit *tex_unit = &texture_units[server_texture_unit];
@@ -3821,8 +3847,9 @@ void glFogf(GLenum pname, GLfloat param) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glFogf, DLIST_FUNC_U32_F32, pname, param))
+	if (_vgl_enqueue_list_func(glFogf, DLIST_FUNC_U32_F32, pname, param)) {
 		return;
+	}
 #endif
 	switch (pname) {
 	case GL_FOG_MODE:
@@ -3854,8 +3881,9 @@ void glFogx(GLenum pname, GLfixed param) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glFogx, DLIST_FUNC_U32_I32, pname, param))
+	if (_vgl_enqueue_list_func(glFogx, DLIST_FUNC_U32_I32, pname, param)) {
 		return;
+	}
 #endif
 	switch (pname) {
 	case GL_FOG_MODE:
@@ -3994,8 +4022,9 @@ void glFogi(GLenum pname, const GLint param) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glFogi, DLIST_FUNC_U32_I32, pname, param))
+	if (_vgl_enqueue_list_func(glFogi, DLIST_FUNC_U32_I32, pname, param)) {
 		return;
+	}
 #endif
 	switch (pname) {
 	case GL_FOG_MODE:
@@ -4109,8 +4138,9 @@ void glShadeModel(GLenum mode) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glShadeModel, DLIST_FUNC_U32, mode))
+	if (_vgl_enqueue_list_func(glShadeModel, DLIST_FUNC_U32, mode)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling
@@ -4144,8 +4174,9 @@ void glColorMaterial(GLenum face, GLenum mode) {
 
 #ifdef HAVE_DLISTS
 	// Enqueueing function to a display list if one is being compiled
-	if (_vgl_enqueue_list_func(glColorMaterial, DLIST_FUNC_U32_U32, face, mode))
+	if (_vgl_enqueue_list_func(glColorMaterial, DLIST_FUNC_U32_U32, face, mode)) {
 		return;
+	}
 #endif
 #ifndef SKIP_ERROR_HANDLING
 	// Error handling

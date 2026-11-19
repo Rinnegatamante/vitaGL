@@ -280,12 +280,15 @@ void update_scissor_test() {
 	region.y = active_h - region.gl_y - region.gl_h;
 	
 	// Optimizing region
-	if (region.y < 0)
+	if (region.y < 0) {
 		region.y = 0;
-	if (region.x + region.w > active_w)
+	}
+	if (region.x + region.w > active_w) {
 		region.w = active_w - region.x;
-	if (region.y + region.h > active_h)
+	}
+	if (region.y + region.h > active_h) {
 		region.h = active_h - region.y;
+	}
 
 #ifndef DISABLE_TILE_CLIPPER
 	// Invalidating internal tile based region clip
