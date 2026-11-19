@@ -2759,6 +2759,11 @@ void glUniformBlockBinding(GLuint prog, GLuint uniformBlockIndex, GLuint uniform
 }
 
 GLint glGetUniformLocation(GLuint prog, const GLchar *name) {
+#ifndef SKIP_ERROR_HANDLING
+	if (!prog || progs[prog - 1].status != PROG_LINKED) {
+		SET_GL_ERROR_WITH_RET(GL_INVALID_OPERATION, -1)
+	}
+#endif
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 
