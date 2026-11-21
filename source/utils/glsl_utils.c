@@ -1439,7 +1439,7 @@ void glsl_translator_process(shader *s) {
 			size += strlen("varying in float vgl_Face : FACE;\n");
 		}
 		if (hasFragCoord) {
-			size += strlen("varying in float4 gl_FragCoord : WPOS;\n");
+			size += strlen("varying in float4 vgl_FragCoord : WPOS;\nuniform float2 vgl_FragCoordFlip;\n#define gl_FragCoord float4(vgl_FragCoord.x, vgl_FragCoord.y * vgl_FragCoordFlip.x + vgl_FragCoordFlip.y, vgl_FragCoord.zw)\n");
 		}
 		if (hasFragDepth) {
 			size += strlen("varying out float gl_FragDepth : DEPTH;\n");
@@ -1476,7 +1476,7 @@ void glsl_translator_process(shader *s) {
 			strcat(s->source, "varying in float vgl_Face : FACE;\n");
 		}
 		if (hasFragCoord) {
-			strcat(s->source, "varying in float4 gl_FragCoord : WPOS;\n");
+			strcat(s->source, "varying in float4 vgl_FragCoord : WPOS;\nuniform float2 vgl_FragCoordFlip;\n#define gl_FragCoord float4(vgl_FragCoord.x, vgl_FragCoord.y * vgl_FragCoordFlip.x + vgl_FragCoordFlip.y, vgl_FragCoord.zw)\n");
 		}
 		if (hasFragDepth) {
 			strcat(s->source, "varying out float gl_FragDepth : DEPTH;\n");

@@ -136,6 +136,23 @@ char vgl_file_cache_path[256];
 		disable_draw_attrib(i) \
 	}
 
+// WPOS has its origin at the top left of the render target: gl_FragCoord.y = WPOS.y * flip.x + flip.y
+#ifdef HAVE_UNFLIPPED_FBOS
+#define FRAG_COORD_FLIPPED GL_TRUE
+#else
+#define FRAG_COORD_FLIPPED is_rendering_display
+#endif
+#define update_frag_coord_flip() \
+	if (p->frag_coord_flip) { \
+		float flip_scale = FRAG_COORD_FLIPPED ? -1.0f : 1.0f; \
+		float flip_offset = FRAG_COORD_FLIPPED ? (float)(is_rendering_display ? DISPLAY_HEIGHT : in_use_framebuffer->height) : 0.0f; \
+		if (p->frag_coord_flip[0] != flip_scale || p->frag_coord_flip[1] != flip_offset) { \
+			p->frag_coord_flip[0] = flip_scale; \
+			p->frag_coord_flip[1] = flip_offset; \
+			dirty_shader_frag_unifs = GL_TRUE; \
+		} \
+	}
+
 #ifndef HAVE_FFP_SHADER_SUPPORT
 #define upload_uniforms() \
 	if (p->vert_uniforms && dirty_shader_vert_unifs) { \
@@ -143,6 +160,7 @@ char vgl_file_cache_path[256];
 		vgl_fast_memcpy(buffer, p->unif_vbuffer, p->vshader->unif_buf_size); \
 		dirty_shader_vert_unifs = GL_FALSE; \
 	} \
+	update_frag_coord_flip() \
 	if (p->frag_uniforms && dirty_shader_frag_unifs) { \
 		void *buffer = vglReserveFragmentUniformBuffer(p->fshader->unif_buf_size); \
 		vgl_fast_memcpy(buffer, p->unif_fbuffer, p->fshader->unif_buf_size); \
@@ -194,6 +212,7 @@ char vgl_file_cache_path[256];
 		vgl_fast_memcpy(buffer, p->unif_vbuffer, p->vshader->unif_buf_size); \
 		dirty_shader_vert_unifs = GL_FALSE; \
 	} \
+	update_frag_coord_flip() \
 	if (p->frag_uniforms && dirty_shader_frag_unifs) { \
 		void *buffer = vglReserveFragmentUniformBuffer(p->fshader->unif_buf_size); \
 		vgl_fast_memcpy(buffer, p->unif_fbuffer, p->fshader->unif_buf_size); \
@@ -370,6 +389,7 @@ typedef struct {
 #ifdef HAVE_GLSL_TEXTURE_SIZE
 	float **samplers_ptr;
 #endif
+	float *frag_coord_flip; // Data of vgl_FragCoordFlip in unif_fbuffer if the fragment shader uses gl_FragCoord
 	uniform *vert_uniforms;
 	uniform *frag_uniforms;
 	uint32_t vert_uniforms_num;
@@ -2214,6 +2234,7 @@ GLuint glCreateProgram(void) {
 				progs[i].ffp_binds[j] = NULL;
 			}
 #endif
+			progs[i].frag_coord_flip = NULL;
 			progs[i].vshader = NULL;
 			progs[i].fshader = NULL;
 			progs[i].vert_uniforms = NULL;
@@ -2664,6 +2685,8 @@ void glLinkProgram(GLuint progr) {
 			}
 		}
 #endif
+		const SceGxmProgramParameter *flip = sceGxmProgramFindParameterByName(p->fshader->prog, "vgl_FragCoordFlip");
+		p->frag_coord_flip = flip ? (float *)((uint8_t *)p->unif_fbuffer + sceGxmProgramParameterGetResourceIndex(flip) * 4) : NULL;
 	}
 
 	// Analyzing vertex shader
