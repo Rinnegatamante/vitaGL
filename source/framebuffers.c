@@ -762,7 +762,11 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 		}
 		src = (uint8_t *)active_read_fb->data;
 		stride = active_read_fb->stride;
+#ifdef HAVE_UNFLIPPED_FBOS
 		y = (active_read_fb->height - (height + y)) * stride;
+#else
+		y = y * stride;
+#endif
 	} else {
 		if (display_read_mode == GL_BACK) {
 			src = (uint8_t *)gxm_color_surfaces_addr[gxm_back_buffer_index];
