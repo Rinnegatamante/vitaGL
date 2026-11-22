@@ -302,7 +302,7 @@ extern int NEW_DISPLAY_HEIGHT; // Requested new display height in pixels
 
 // Custom shaders pipeline shader cache settings
 #ifdef HAVE_SHADER_CACHE
-#define SHADER_CACHE_MAGIC 4
+#define SHADER_CACHE_MAGIC 5
 extern char vgl_shader_cache_path[256];
 #endif
 
@@ -798,7 +798,8 @@ typedef struct {
 
 // Uniform block struct
 typedef struct {
-	char name[128];
+	char name[128]; // Instance name
+	char block_name[128];
 	uint8_t idx;
 	void *chain;
 } block_uniform;

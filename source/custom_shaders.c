@@ -692,7 +692,7 @@ static inline __attribute__((always_inline)) size_t serialized_shader_size(shade
 	sz += sizeof(uint8_t);
 	block_uniform *b = s->unif_blk;
 	while (b) {
-		sz += sizeof(uint8_t) + strlen(b->name) + 1;
+		sz += sizeof(uint8_t) + strlen(b->name) + 1 + strlen(b->block_name) + 1;
 		b = (block_uniform *)b->chain;
 	}
 	return sz;
@@ -735,6 +735,9 @@ void *serialize_shader(void *out, size_t *sz, shader *s, GLboolean save_bindings
 		size_t len = strlen(b->name) + 1;
 		vgl_fast_memcpy(buf, b->name, len);
 		buf += len;
+		len = strlen(b->block_name) + 1;
+		vgl_fast_memcpy(buf, b->block_name, len);
+		buf += len;
 		*blocks_num = *blocks_num + 1;
 		b = (block_uniform *)b->chain;
 	}
@@ -765,6 +768,9 @@ void unserialize_shader(void *in, size_t sz, shader *s, GLboolean load_bindings)
 		b->idx = *buf++;
 		size_t len = strlen((const char *)buf) + 1;
 		vgl_fast_memcpy(b->name, buf, len);
+		buf += len;
+		len = strlen((const char *)buf) + 1;
+		vgl_fast_memcpy(b->block_name, buf, len);
 		buf += len;
 		b->chain = s->unif_blk;
 		s->unif_blk = b;
@@ -820,6 +826,9 @@ static inline __attribute__((always_inline)) void compile_shader(shader *s, GLbo
 				block_uniform *b = (block_uniform *)vglMalloc(sizeof(block_uniform));
 				b->idx = sceShaccCgGetParameterBufferIndex(param);
 				strcpy(b->name, sceShaccCgGetParameterName(param));
+				// The user type is the block name
+				const char *block_name = sceShaccCgGetParameterUserType(param);
+				strcpy(b->block_name, block_name ? block_name : "");
 				b->chain = s->unif_blk;
 				s->unif_blk = b;
 			}
@@ -2811,22 +2820,24 @@ GLuint glGetUniformBlockIndex(GLuint prog, const GLchar *uniformBlockName) {
 	// Grabbing passed program
 	program *p = &progs[prog - 1];
 
-	// Getting the desired location
-	ubo *j = p->vert_ubos;
-	while (j) {
-		block_uniform *b = (block_uniform *)j->ptr;
-		if (!strcmp(b->name, uniformBlockName)) {
-			return j->alias ? (GLuint)j->alias : (GLuint)j;
+	// Getting the desired location, by instance name first and then by block name
+	for (int by_block_name = 0; by_block_name < 2; by_block_name++) {
+		ubo *j = p->vert_ubos;
+		while (j) {
+			block_uniform *b = (block_uniform *)j->ptr;
+			if (!strcmp(by_block_name ? b->block_name : b->name, uniformBlockName)) {
+				return j->alias ? (GLuint)j->alias : (GLuint)j;
+			}
+			j = j->chain;
 		}
-		j = j->chain;
-	}
-	j = p->frag_ubos;
-	while (j) {
-		block_uniform *b = (block_uniform *)j->ptr;
-		if (!strcmp(b->name, uniformBlockName)) {
-			return (GLuint)j;
+		j = p->frag_ubos;
+		while (j) {
+			block_uniform *b = (block_uniform *)j->ptr;
+			if (!strcmp(by_block_name ? b->block_name : b->name, uniformBlockName)) {
+				return (GLuint)j;
+			}
+			j = j->chain;
 		}
-		j = j->chain;
 	}
 
 	return GL_INVALID_INDEX;
