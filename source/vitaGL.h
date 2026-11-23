@@ -882,6 +882,7 @@ void glMatrixScalef(GLenum matrixMode, GLfloat x, GLfloat y, GLfloat z);
 void glMatrixTranslated(GLenum matrixMode, GLdouble x, GLdouble y, GLdouble z);
 void glMatrixTranslatef(GLenum matrixMode, GLfloat x, GLfloat y, GLfloat z);
 void glMultiDrawArrays(GLenum mode, const GLint *first, const GLsizei *count, GLsizei drawcount);
+void glMultiDrawElements(GLenum mode, const GLsizei *count, GLenum type, const GLvoid *const *indices, GLsizei drawcount);
 void glMultiTexCoord2f(GLenum target, GLfloat s, GLfloat t);
 void glMultiTexCoord2fv(GLenum target, GLfloat *f);
 void glMultiTexCoord2i(GLenum target, GLint s, GLint t);
