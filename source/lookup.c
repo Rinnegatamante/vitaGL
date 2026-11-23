@@ -196,6 +196,7 @@ static const struct {
 	{"glIsProgram", (void *)glIsProgram},
 	{"glIsQuery", (void *)glIsQuery},
 	{"glIsRenderbuffer", (void *)glIsRenderbuffer},
+	{"glIsShader", (void *)glIsShader},
 	{"glIsTexture", (void *)glIsTexture},
 	{"glLightfv", (void *)glLightfv},
 	{"glLightModelfv", (void *)glLightModelfv},

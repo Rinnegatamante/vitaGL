@@ -845,6 +845,7 @@ GLboolean glIsFramebuffer(GLuint fb);
 GLboolean glIsProgram(GLuint program);
 GLboolean glIsQuery(GLuint id);
 GLboolean glIsRenderbuffer(GLuint rb);
+GLboolean glIsShader(GLuint shader);
 GLboolean glIsTexture(GLuint texture);
 void glLightfv(GLenum light, GLenum pname, const GLfloat *params);
 void glLightModelfv(GLenum pname, const GLfloat *params);
