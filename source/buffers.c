@@ -779,6 +779,43 @@ void glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params) {
 	glGetNamedBufferParameteriv((GLuint)gpu_buf, pname, params);
 }
 
+inline void glGetNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizeiptr size, void *data) {
+	THREAD_SAFE()
+
+	vbo *gpu_buf = (vbo *)buffer;
+#ifndef SKIP_ERROR_HANDLING
+	if (!gpu_buf || gpu_buf->mapped) {
+		SET_GL_ERROR(GL_INVALID_OPERATION)
+	} else if (offset < 0 || size < 0 || offset + size > gpu_buf->size) {
+		SET_GL_ERROR(GL_INVALID_VALUE)
+	}
+#endif
+	if (size > 0) {
+		vgl_memcpy(data, (uint8_t *)gpu_buf->ptr + offset, size);
+	}
+}
+
+void glGetBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, void *data) {
+	THREAD_SAFE()
+
+	vbo *gpu_buf;
+	switch (target) {
+	case GL_ARRAY_BUFFER:
+		gpu_buf = (vbo *)vertex_array_unit;
+		break;
+	case GL_ELEMENT_ARRAY_BUFFER:
+		gpu_buf = (vbo *)cur_vao->index_array_unit;
+		break;
+	case GL_UNIFORM_BUFFER:
+		gpu_buf = (vbo *)uniform_array_unit;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+
+	glGetNamedBufferSubData((GLuint)gpu_buf, offset, size, data);
+}
+
 // VGL_EXT_gpu_objects_array extension implementation
 
 void vglVertexPointer(GLint size, GLenum type, GLsizei stride, GLuint count, const GLvoid *pointer) {
