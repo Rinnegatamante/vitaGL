@@ -1326,6 +1326,160 @@ LOOP_START:
 	return GL_TRUE;
 }
 
+static inline __attribute__((always_inline)) GLboolean glsl_is_ident_char(char c) {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+}
+
+static inline __attribute__((always_inline)) GLboolean glsl_is_stpq_swizzle(const char *s, int len) {
+	if (len < 1 || len > 4) {
+		return GL_FALSE;
+	}
+	for (int i = 0; i < len; i++) {
+		if (s[i] != 's' && s[i] != 't' && s[i] != 'p' && s[i] != 'q') {
+			return GL_FALSE;
+		}
+	}
+	return GL_TRUE;
+}
+
+static char *glsl_skip_comment(char *txt) {
+	if (txt[0] == '/' && txt[1] == '/') {
+		while (*txt && *txt != '\n') {
+			txt++;
+		}
+	} else if (txt[0] == '/' && txt[1] == '*') {
+		char *end = strstr(txt + 2, "*/");
+		txt = end ? end + 2 : txt + strlen(txt);
+	}
+	return txt;
+}
+
+static inline __attribute__((always_inline)) void glsl_stpq_to_xyzw(char *s, int len) {
+	for (int i = 0; i < len; i++) {
+		s[i] = s[i] == 's' ? 'x' : s[i] == 't' ? 'y' : s[i] == 'p' ? 'z' : 'w';
+	}
+}
+
+static char *glsl_prev_ident(char *txt, char *p, int *len) {
+	char *b = p - 1;
+	while (b >= txt && (*b == ' ' || *b == '\t' || *b == '\r' || *b == '\n')) {
+		b--;
+	}
+	char *e = b;
+	while (b >= txt && glsl_is_ident_char(*b)) {
+		b--;
+	}
+	*len = e - b;
+	return b + 1;
+}
+
+// Names the translator header used to define as the x and y swizzles
+static inline __attribute__((always_inline)) GLboolean glsl_is_st_name(const char *s, int len) {
+	return len <= 2 && glsl_is_stpq_swizzle(s, len) && (s[0] == 's' || s[0] == 't') && (len == 1 || s[1] == 's' || s[1] == 't');
+}
+
+// Cg only knows the xyzw and rgba swizzles, so the stpq ones are rewritten in place to xyzw. Members of structs and
+// of blocks with an instance name named s, t, st, ts, ss or tt get the xyzw name, like they did with the defines this
+// replaces, while members with other stpq names keep them and their accesses through a dot are left alone.
+static void glsl_translate_stpq_swizzles(char *txt) {
+	char members[32][5];
+	int members_num = 0;
+	int depth = 0, body_depth = -1;
+	char *body = NULL;
+	GLboolean is_struct = GL_FALSE;
+	char *p = txt;
+	while (*p) {
+		char *next = glsl_skip_comment(p);
+		if (next != p) {
+			p = next;
+			continue;
+		}
+		if (*p == '{') {
+			// A body that follows a name (and not a closing parenthesis) is a struct or a block
+			int len, prev_len;
+			char *name = glsl_prev_ident(txt, p, &len);
+			if (body_depth < 0 && len > 0 && !(len == 4 && !strncmp(name, "else", 4)) && !(len == 2 && !strncmp(name, "do", 2))) {
+				char *prev = glsl_prev_ident(txt, name, &prev_len);
+				is_struct = (len == 6 && !strncmp(name, "struct", 6)) || (prev_len == 6 && !strncmp(prev, "struct", 6));
+				body_depth = depth + 1;
+				body = p;
+			}
+			depth++;
+		} else if (*p == '}') {
+			if (depth == body_depth) {
+				// Members of anonymous blocks are used without a dot, so they keep their names
+				char *a = p + 1;
+				while (*a == ' ' || *a == '\t' || *a == '\r' || *a == '\n') {
+					a++;
+				}
+				if (is_struct || glsl_is_ident_char(*a)) {
+					for (char *m = body + 1; m < p;) {
+						if (!glsl_is_ident_char(*m)) {
+							m++;
+							continue;
+						}
+						char *start = m;
+						while (glsl_is_ident_char(*m)) {
+							m++;
+						}
+						int len = m - start;
+						if (glsl_is_st_name(start, len)) {
+							glsl_stpq_to_xyzw(start, len);
+						} else if (glsl_is_stpq_swizzle(start, len) && members_num < 32) {
+							memcpy(members[members_num], start, len);
+							members[members_num++][len] = 0;
+						}
+					}
+				}
+				body_depth = -1;
+			}
+			depth--;
+		}
+		p++;
+	}
+
+	p = txt;
+	while (*p) {
+		char *next = glsl_skip_comment(p);
+		if (next != p) {
+			p = next;
+			continue;
+		}
+		if (*p != '.') {
+			p++;
+			continue;
+		}
+		// Skipping numbers like 1.5, where the dot doesn't select a member
+		char *b = p - 1;
+		while (b >= txt && glsl_is_ident_char(*b)) {
+			b--;
+		}
+		GLboolean is_number = b + 1 < p ? (b[1] >= '0' && b[1] <= '9') : (p[1] >= '0' && p[1] <= '9');
+		p++;
+		while (*p == ' ' || *p == '\t') {
+			p++;
+		}
+		char *start = p;
+		while (glsl_is_ident_char(*p)) {
+			p++;
+		}
+		int len = p - start;
+		if (is_number || !glsl_is_stpq_swizzle(start, len)) {
+			continue;
+		}
+		GLboolean is_member = GL_FALSE;
+		for (int i = 0; i < members_num && !glsl_is_st_name(start, len); i++) {
+			if (!strncmp(members[i], start, len) && !members[i][len]) {
+				is_member = GL_TRUE;
+				break;
+			}
+		}
+		if (!is_member) {
+			glsl_stpq_to_xyzw(start, len);
+		}
+	}
+}
+
 void glsl_translator_process(shader *s) {
 #ifdef HAVE_FIXED_ATTRIBUTES
 	glsl_attributes_num = 0;
@@ -1398,6 +1552,8 @@ void glsl_translator_process(shader *s) {
 		str = strstr(str, "gl_FragData[0]");
 	}	
 	
+	glsl_translate_stpq_swizzles(out);
+
 	if (s->type == GL_VERTEX_SHADER) {
 		hasPointSize = strstr(out, "gl_PointSize") ? GL_TRUE : GL_FALSE;
 		hasInstanceID = strstr(out, "gl_InstanceID") ? GL_TRUE : GL_FALSE;

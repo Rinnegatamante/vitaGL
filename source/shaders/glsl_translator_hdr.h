@@ -119,12 +119,6 @@ inline float4 texture2DProjLod(sampler2D x, float4 coord, float lod) { return te
 inline float4 textureCubeLod(samplerCUBE x, float3 coord, float lod) { return texCUBElod(x, float4(coord, lod)); }
 #define dFdx(a) ddx(a)
 #define dFdy(a) ddy(a)
-#define s x
-#define t y
-#define st xy
-#define ts yx
-#define ss xx
-#define tt yy
 #define texture2D glslTexture2D
 #define lowp
 #define mediump
