@@ -2283,6 +2283,13 @@ GLboolean glIsProgram(GLuint i) {
 	return GL_FALSE;
 }
 
+GLboolean glIsShader(GLuint shad) {
+	if (shad > 0 && shad <= MAX_CUSTOM_SHADERS && shaders[shad - 1]) {
+		return GL_TRUE;
+	}
+	return GL_FALSE;
+}
+
 void glGetProgramBinary(GLuint prog, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary) {
 	THREAD_SAFE()
 
