@@ -246,6 +246,38 @@ void glGetQueryObjectuiv(GLuint id, GLenum pname, GLuint *params) {
 	}
 }
 
+void glGetQueryiv(GLenum target, GLenum pname, GLint *params) {
+	THREAD_SAFE()
+
+	switch (target) {
+	case GL_SAMPLES_PASSED:
+	case GL_ANY_SAMPLES_PASSED:
+	case GL_ANY_SAMPLES_PASSED_CONSERVATIVE:
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, target)
+	}
+
+	switch (pname) {
+	case GL_CURRENT_QUERY:
+		*params = (active_query && active_query->mode == target) ? (GLint)active_query : 0;
+		break;
+	case GL_QUERY_COUNTER_BITS:
+		*params = 32;
+		break;
+	default:
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, pname)
+	}
+}
+
+GLboolean glIsQuery(GLuint id) {
+	// Query names are the address of their slot in the queries pool
+	if (id < (GLuint)queries || id >= (GLuint)&queries[MAX_QUERIES_NUM] || (id - (GLuint)queries) % sizeof(query)) {
+		return GL_FALSE;
+	}
+	return ((query *)id)->id != 0xFF;
+}
+
 void glGenVertexArrays(GLsizei n, GLuint *res) {
 	THREAD_SAFE()
 

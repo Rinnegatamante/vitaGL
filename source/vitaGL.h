@@ -423,6 +423,8 @@ extern "C" {
 #define GL_RGBA16F                                      0x881A
 #define GL_BLEND_EQUATION_ALPHA                         0x883D
 #define GL_POINT_SPRITE                                 0x8861
+#define GL_QUERY_COUNTER_BITS                           0x8864
+#define GL_CURRENT_QUERY                                0x8865
 #define GL_QUERY_RESULT                                 0x8866
 #define GL_QUERY_RESULT_AVAILABLE                       0x8867
 #define GL_MAX_VERTEX_ATTRIBS                           0x8869
@@ -822,6 +824,7 @@ void glGetPointerv(GLenum pname, void **params);
 void glGetProgramBinary(GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary);
 void glGetProgramInfoLog(GLuint program, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
 void glGetProgramiv(GLuint program, GLenum pname, GLint *params);
+void glGetQueryiv(GLenum target, GLenum pname, GLint *params);
 void glGetQueryObjectiv(GLuint id, GLenum pname, GLint *params);
 void glGetQueryObjectuiv(GLuint id, GLenum pname, GLuint *params);
 void glGetShaderInfoLog(GLuint handle, GLsizei maxLength, GLsizei *length, GLchar *infoLog);
@@ -840,6 +843,7 @@ void glInterleavedArrays(GLenum format, GLsizei stride, const void *pointer);
 GLboolean glIsEnabled(GLenum cap);
 GLboolean glIsFramebuffer(GLuint fb);
 GLboolean glIsProgram(GLuint program);
+GLboolean glIsQuery(GLuint id);
 GLboolean glIsRenderbuffer(GLuint rb);
 GLboolean glIsTexture(GLuint texture);
 void glLightfv(GLenum light, GLenum pname, const GLfloat *params);
