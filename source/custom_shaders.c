@@ -170,7 +170,7 @@ char vgl_file_cache_path[256];
 		ubo *u = p->vert_ubos; \
 		while (u) { \
 			ubo *b = u->alias ? u->alias : u; \
-			sceGxmSetVertexUniformBuffer(gxm_context, b->idx, (uint8_t *)ubo_buf[b->bind]->ptr + ubo_offset[b->bind]); \
+			sceGxmSetVertexUniformBuffer(gxm_context, u->idx, (uint8_t *)ubo_buf[b->bind]->ptr + ubo_offset[b->bind]); \
 			ubo_buf[b->bind]->last_frame = vgl_framecount; \
 			u = (ubo *)u->chain; \
 		} \
@@ -222,7 +222,7 @@ char vgl_file_cache_path[256];
 		ubo *u = p->vert_ubos; \
 		while (u) { \
 			ubo *b = u->alias ? u->alias : u; \
-			sceGxmSetVertexUniformBuffer(gxm_context, b->idx, (uint8_t *)ubo_buf[b->bind]->ptr + ubo_offset[b->bind]); \
+			sceGxmSetVertexUniformBuffer(gxm_context, u->idx, (uint8_t *)ubo_buf[b->bind]->ptr + ubo_offset[b->bind]); \
 			ubo_buf[b->bind]->last_frame = vgl_framecount; \
 			u = (ubo *)u->chain; \
 		} \
