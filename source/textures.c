@@ -81,7 +81,13 @@ void *color_table = NULL; // Current in-use color table
 int8_t server_texture_unit = 0; // Current in use server side texture unit
 int unpack_row_len = 0; // Current setting for GL_UNPACK_ROW_LENGTH
 
+// Maximum anisotropy ratio (1.0 - 16.0) to sceGxm anisotropy control (0 = off, 1-4 = 2x-16x)
+static inline __attribute__((always_inline)) uint32_t gl_aniso_to_gxm(GLint ratio) {
+	return ratio >= 16 ? 4 : ratio >= 8 ? 3 : ratio >= 4 ? 2 : ratio >= 2 ? 1 : 0;
+}
+
 static inline __attribute__((always_inline)) void _glTexParameterx(texture *tex, GLenum target, GLenum pname, GLfixed param) {
+	uint32_t aniso; // Anisotropy level kept across min filter changes
 	switch (target) {
 	case GL_TEXTURE_CUBE_MAP:
 		switch (pname) {
@@ -160,12 +166,17 @@ static inline __attribute__((always_inline)) void _glTexParameterx(texture *tex,
 		switch (pname) {
 		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
 #ifndef SKIP_ERROR_HANDLING
-			if (param != 65536) {
+			if (param < 65536) {
 				SET_GL_ERROR(GL_INVALID_VALUE)
 			}
 #endif
+			tex->min_filter = (tex->min_filter & ~VGL_ANISO_MASK) | (gl_aniso_to_gxm(param / 65536) << VGL_ANISO_SHIFT);
+			if (tex->status == TEX_VALID) {
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+			}
 			break;
 		case GL_TEXTURE_MIN_FILTER: // Min filter
+			aniso = tex->min_filter & VGL_ANISO_MASK;
 			switch (param) {
 			case GL_NEAREST: // Point
 				tex->use_mips = GL_FALSE;
@@ -200,6 +211,7 @@ static inline __attribute__((always_inline)) void _glTexParameterx(texture *tex,
 			default:
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
+			tex->min_filter |= aniso;
 			if (tex->status == TEX_VALID) {
 				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
@@ -281,6 +293,7 @@ static inline __attribute__((always_inline)) void _glTexParameterx(texture *tex,
 }
 
 static inline __attribute__((always_inline)) void _glTexParameteri(texture *tex, GLenum target, GLenum pname, GLint param) {
+	uint32_t aniso; // Anisotropy level kept across min filter changes
 	switch (target) {
 	case GL_TEXTURE_CUBE_MAP:
 		switch (pname) {
@@ -359,12 +372,17 @@ static inline __attribute__((always_inline)) void _glTexParameteri(texture *tex,
 		switch (pname) {
 		case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
 #ifndef SKIP_ERROR_HANDLING
-			if (param != 1) {
+			if (param < 1) {
 				SET_GL_ERROR(GL_INVALID_VALUE)
 			}
 #endif
+			tex->min_filter = (tex->min_filter & ~VGL_ANISO_MASK) | (gl_aniso_to_gxm(param) << VGL_ANISO_SHIFT);
+			if (tex->status == TEX_VALID) {
+				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
+			}
 			break;
 		case GL_TEXTURE_MIN_FILTER: // Min filter
+			aniso = tex->min_filter & VGL_ANISO_MASK;
 			switch (param) {
 			case GL_NEAREST: // Point
 				tex->use_mips = GL_FALSE;
@@ -399,6 +417,7 @@ static inline __attribute__((always_inline)) void _glTexParameteri(texture *tex,
 			default:
 				SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 			}
+			tex->min_filter |= aniso;
 			if (tex->status == TEX_VALID) {
 				vglSetTexMinFilter(&tex->gxm_tex, tex->min_filter);
 				vglSetTexMipFilter(&tex->gxm_tex, tex->mip_filter);
@@ -2629,16 +2648,19 @@ void glSamplerParameteri(GLuint target, GLenum pname, GLint param) {
 
 	// Setting some aliases to make code more readable
 	sampler *smp = (sampler *)target;
+	uint32_t aniso; // Anisotropy level kept across min filter changes
 
 	switch (pname) {
 	case GL_TEXTURE_MAX_ANISOTROPY_EXT: // Anisotropic Filter
 #ifndef SKIP_ERROR_HANDLING
-		if (param != 1) {
+		if (param < 1) {
 			SET_GL_ERROR(GL_INVALID_VALUE)
 		}
 #endif
+		smp->min_filter = (smp->min_filter & ~VGL_ANISO_MASK) | (gl_aniso_to_gxm(param) << VGL_ANISO_SHIFT);
 		break;
 	case GL_TEXTURE_MIN_FILTER: // Min filter
+		aniso = smp->min_filter & VGL_ANISO_MASK;
 		switch (param) {
 		case GL_NEAREST: // Point
 			smp->use_mips = GL_FALSE;
@@ -2673,6 +2695,7 @@ void glSamplerParameteri(GLuint target, GLenum pname, GLint param) {
 		default:
 			SET_GL_ERROR_WITH_VALUE(GL_INVALID_ENUM, param)
 		}
+		smp->min_filter |= aniso;
 		break;
 	case GL_TEXTURE_MAG_FILTER: // Mag Filter
 		switch (param) {

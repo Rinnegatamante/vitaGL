@@ -58,6 +58,7 @@ static GLubyte *extensions[] = {
 	"GL_EXT_texture_compression_dxt5",
 	"GL_EXT_texture_compression_s3tc",
 	"GL_EXT_texture_env_add",
+	"GL_EXT_texture_filter_anisotropic",
 #ifndef DISABLE_TEXTURE_COMBINER
 	"GL_EXT_texture_env_combine",
 	"GL_ARB_texture_env_dot3",
@@ -340,7 +341,7 @@ void glGetFloatv(GLenum pname, GLfloat *data) {
 		*data = GENERIC_STACK_DEPTH;
 		break;
 	case GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT:
-		*data = 1.0f;
+		*data = 16.0f;
 		break;
 	case GL_DEPTH_BITS:
 		*data = 32;
@@ -405,7 +406,7 @@ void glGetDoublev(GLenum pname, GLdouble *data) {
 		*data = GENERIC_STACK_DEPTH;
 		break;
 	case GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT:
-		*data = 1.0f;
+		*data = 16.0f;
 		break;
 	case GL_DEPTH_BITS:
 		*data = 32;
