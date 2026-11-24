@@ -401,6 +401,23 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_in
 	restore_polygon_mode(gxm_p);
 }
 
+void glMultiDrawElements(GLenum mode, const GLsizei *count, GLenum type, const GLvoid *const *indices, GLsizei drawcount) {
+	THREAD_SAFE()
+
+#ifndef SKIP_ERROR_HANDLING
+	if (drawcount < 0) {
+		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, drawcount)
+	}
+#endif
+	// TODO: This could be optimized by avoiding double state change checks.
+	for (GLsizei i = 0; i < drawcount; i++) {
+		// Empty draws are legal in GL but glDrawElements would flag them as an error
+		if (count[i] != 0) {
+			glDrawElements(mode, count[i], type, indices[i]);
+		}
+	}
+}
+
 void glDrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type, const GLvoid *gl_indices, GLint baseVertex) {
 	THREAD_SAFE()
 

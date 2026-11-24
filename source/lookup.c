@@ -238,6 +238,7 @@ static const struct {
 	{"glMatrixTranslated", (void *)glMatrixTranslated},
 	{"glMatrixTranslatef", (void *)glMatrixTranslatef},
 	{"glMultiDrawArrays", (void *)glMultiDrawArrays},
+	{"glMultiDrawElements", (void *)glMultiDrawElements},
 	{"glMultiTexCoord2f", (void *)glMultiTexCoord2f},
 	{"glMultiTexCoord2fv", (void *)glMultiTexCoord2fv},
 	{"glMultiTexCoord2i", (void *)glMultiTexCoord2i},
