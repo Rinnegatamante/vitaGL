@@ -409,6 +409,7 @@ void glMultiDrawElements(GLenum mode, const GLsizei *count, GLenum type, const G
 		SET_GL_ERROR_WITH_VALUE(GL_INVALID_VALUE, drawcount)
 	}
 #endif
+	// TODO: This could be optimized by avoiding double state change checks.
 	for (GLsizei i = 0; i < drawcount; i++) {
 		// Empty draws are legal in GL but glDrawElements would flag them as an error
 		if (count[i] != 0) {
