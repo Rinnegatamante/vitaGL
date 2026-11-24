@@ -172,6 +172,7 @@ static const struct {
 	{"glGetFloatv", (void *)glGetFloatv},
 	{"glGetFramebufferAttachmentParameteriv", (void *)glGetFramebufferAttachmentParameteriv},
 	{"glGetIntegerv", (void *)glGetIntegerv},
+	{"glGetNamedBufferSubData", (void *)glGetNamedBufferSubData},
 	{"glGetPointerv", (void *)glGetPointerv},
 	{"glGetProgramBinary", (void *)glGetProgramBinary},
 	{"glGetProgramInfoLog", (void *)glGetProgramInfoLog},
