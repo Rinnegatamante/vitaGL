@@ -185,9 +185,9 @@ void *gpu_alloc_mapped_aligned_for_cpu(size_t alignment, size_t size) {
 
 #ifdef LOG_ERRORS
 	if (!res) {
-		vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe_for_cpu failed with a requested size of %u bytes even after draining garbage collector.\n", __FILE__, __LINE__, size);
+		vgl_log("%s:%d gpu_alloc_mapped_aligned_for_cpu failed with a requested size of %u bytes even after draining garbage collector.\n", __FILE__, __LINE__, size);
 	} else {
-		vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe_for_cpu successfully allocated the requested memory after draining garbage collector.\n", __FILE__, __LINE__);
+		vgl_log("%s:%d gpu_alloc_mapped_aligned_for_cpu successfully allocated the requested memory after draining garbage collector.\n", __FILE__, __LINE__);
 	}
 #endif
 
@@ -228,7 +228,7 @@ void *gpu_alloc_mapped_aligned_for_gpu(size_t alignment, size_t size) {
 	if (!res) {
 		vgl_log("%s:%d gpu_alloc_mapped_aligned_for_gpu failed with a requested size of %u bytes even after draining garbage collector.\n", __FILE__, __LINE__, size);
 	} else {
-		vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe_for_gpu successfully allocated the requested memory after draining garbage collector.\n", __FILE__, __LINE__);
+		vgl_log("%s:%d gpu_alloc_mapped_aligned_for_gpu successfully allocated the requested memory after draining garbage collector.\n", __FILE__, __LINE__);
 	}
 #endif
 

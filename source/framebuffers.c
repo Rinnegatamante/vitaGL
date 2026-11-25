@@ -685,6 +685,11 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 	uint8_t *src;
 	int stride, src_bpp, dst_bpp;
 	if (active_read_fb) {
+		// Double check that colorsurface and source texture are synced 
+		if (sceGxmColorSurfaceGetData(&active_read_fb->colorbuffer) != active_read_fb->tex->data) {
+			_glFramebufferTexture2D(active_read_fb, GL_COLOR_ATTACHMENT0, active_read_fb->tex, 1);
+		}
+		
 		switch (active_read_fb->format) {
 		case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
 			if ((format == GL_RGBA || format == GL_RGBA8) && type == GL_UNSIGNED_BYTE) {
@@ -903,6 +908,11 @@ void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format
 
 void vglReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *data) {
 	THREAD_SAFE()
+
+	// Double check that colorsurface and source texture are synced 
+	if (active_read_fb && sceGxmColorSurfaceGetData(&active_read_fb->colorbuffer) != active_read_fb->tex->data) {
+		_glFramebufferTexture2D(active_read_fb, GL_COLOR_ATTACHMENT0, active_read_fb->tex, 1);
+	}
 
 	GLboolean res = _glReadPixels_gpu(x, y, width, height, format, type, data, GL_TRUE);
 #ifndef SKIP_ERROR_HANDLING

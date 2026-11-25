@@ -1369,7 +1369,7 @@ static inline __attribute__((always_inline)) void _glFramebufferTexture2D(frameb
 		fb->format = tex->format;
 
 		// Clearing previously attached texture
-		if (fb->tex) {
+		if (fb->tex && (fb->tex != tex || tex_idx == 0)) {
 			fb->tex->ref_counter--;
 			if (fb->tex->dirty && fb->tex->ref_counter == 0) {
 				gpu_free_texture(fb->tex);
@@ -1398,8 +1398,10 @@ static inline __attribute__((always_inline)) void _glFramebufferTexture2D(frameb
 		}
 
 		// Increasing texture reference counter
-		fb->tex = tex;
-		tex->ref_counter++;
+		if (fb->tex != tex) {
+			fb->tex = tex;
+			tex->ref_counter++;
+		}
 
 		// Checking if the framebuffer requires extended register size
 		fb->is_float = tex->format == SCE_GXM_TEXTURE_FORMAT_F16F16F16F16_ABGR;
