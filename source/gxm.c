@@ -67,6 +67,7 @@ GLboolean dirty_query = GL_FALSE; // Flag whether occlusion queries needs result
 static GLboolean needs_end_scene = GL_FALSE; // Flag for gxm end scene requirement at scene reset
 static GLboolean needs_scene_reset = GL_TRUE; // Flag for when a scene reset is required
 static GLboolean scene_not_flushed = GL_FALSE; // Flag for when a scene had been forcibly flushed as last operation
+GLboolean is_gxm_state_safe = GL_TRUE;
 
 SceGxmContext *gxm_context; // sceGxm context instance
 GLenum vgl_error = GL_NO_ERROR; // Error returned by glGetError
@@ -302,12 +303,9 @@ static void garbage_collect(int slot) {
 	vgl_memset(frame_rt_purge_list[slot], 0, i * sizeof (void *));
 }
 
-#ifdef HAVE_GC_ON_FINISH
-static void drain_garbage_collector(void) {
+void drain_garbage_collector(void) {
 #ifndef HAVE_SINGLE_THREADED_GC
-	if (sceKernelWaitSema(gc_mutex[1], FRAME_PURGE_FREQ, NULL) < 0) {
-		return;
-	}
+	sceKernelWaitSema(gc_mutex[1], FRAME_PURGE_FREQ, NULL);
 #endif
 	for (int i = 0; i < FRAME_PURGE_FREQ; i++) {
 		garbage_collect(i);
@@ -319,7 +317,6 @@ static void drain_garbage_collector(void) {
 	sceKernelSignalSema(gc_mutex[1], FRAME_PURGE_FREQ);
 #endif
 }
-#endif
 
 // Garbage collector
 #if defined(HAVE_PTHREAD) && !defined(HAVE_SINGLE_THREADED_GC)
@@ -536,6 +533,7 @@ static void init_depth_stencil_buffer(uint32_t w, uint32_t h, SceGxmDepthStencil
 	} else if (samples == SCE_GXM_MULTISAMPLE_4X) {
 		depth_stencil_samples *= 4;
 	}
+	is_gxm_state_safe = GL_FALSE;
 
 	// Allocating depth surface
 	void *depth_buffer = gpu_alloc_mapped_aligned_for_gpu(SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT, 4 * depth_stencil_samples);
@@ -566,6 +564,7 @@ static void init_depth_stencil_buffer(uint32_t w, uint32_t h, SceGxmDepthStencil
 #ifdef STORE_DEPTH_STENCIL
 	vglDepthStencilSurfaceSetForceStoreLoadMode(surface, GL_TRUE, GL_TRUE);
 #endif
+	is_gxm_state_safe = GL_TRUE;
 }
 
 void init_display_depth_stencil_surfaces(void) {
@@ -681,7 +680,9 @@ void scene_reset(void) {
 #endif
 		} else {
 #ifdef HAVE_TEX_CACHE
+			is_gxm_state_safe = GL_FALSE;
 			restore_tex_cache(active_write_fb->tex);
+			is_gxm_state_safe = GL_TRUE;
 #endif
 #ifndef TEXTURES_SPEEDHACK
 			active_write_fb->tex->last_frame = vgl_framecount;

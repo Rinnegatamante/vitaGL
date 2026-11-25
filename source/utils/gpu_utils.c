@@ -44,6 +44,8 @@ uint32_t vgl_tex_cache_freq = 3600; // Number of frames prior a texture becomes 
 		return res; \
 	}
 
+extern GLboolean is_gxm_state_safe;
+
 // VRAM usage setting
 uint8_t use_vram_for_usse = GL_FALSE;
 
@@ -156,58 +158,6 @@ static inline __attribute__((always_inline)) uint32_t vgl_cache_old_textures(siz
 }
 #endif
 
-int unsafe_allocator_counter = 0;
-void *gpu_alloc_mapped_aligned_unsafe_for_cpu(size_t alignment, size_t size) {
-	// Performing a garbage collection cycle prior to attempting to allocate the memory again
-	unsafe_allocator_counter++;
-	if (unsafe_allocator_counter == 1) {
-		glFinish();
-	}
-#if defined(HAVE_SINGLE_THREADED_GC) && !defined(HAVE_PTHREAD)
-	garbage_collector(0, NULL);
-#else
-	sceKernelWaitSema(gc_mutex[1], 1, NULL);
-	sceKernelSignalSema(gc_mutex[0], 1);
-	sceKernelDelayThread(1000000);
-#endif
-
-	// Allocating requested memblock
-	void *res = gpu_alloc_mapped_aligned_for_cpu_inner(alignment, size);
-
-	// Iterating for as many as possible max pending garbage collector cycles
-	if (!res && unsafe_allocator_counter < FRAME_PURGE_FREQ) {
-		res = gpu_alloc_mapped_aligned_unsafe_for_cpu(alignment, size);
-	}
-
-	return res;
-}
-
-void *gpu_alloc_mapped_aligned_unsafe_for_gpu(size_t alignment, size_t size) {
-	// Performing a garbage collection cycle prior to attempting to allocate the memory again
-	unsafe_allocator_counter++;
-	if (unsafe_allocator_counter == 1) {
-		// Ideally we'd want glFinish here, but this would cause a circular dependency if the allocation failing is related to a depthstencil surface allocation
-		sceGxmFinish(gxm_context);
-	}
-#if defined(HAVE_SINGLE_THREADED_GC) && !defined(HAVE_PTHREAD)
-	garbage_collector(0, NULL);
-#else
-	sceKernelWaitSema(gc_mutex[1], 1, NULL);
-	sceKernelSignalSema(gc_mutex[0], 1);
-	sceKernelDelayThread(1000000);
-#endif
-
-	// Allocating requested memblock
-	void *res = gpu_alloc_mapped_aligned_for_gpu_inner(alignment, size);
-
-	// Iterating for as many as possible max pending garbage collector cycles
-	if (!res && unsafe_allocator_counter < FRAME_PURGE_FREQ) {
-		res = gpu_alloc_mapped_aligned_unsafe_for_gpu(alignment, size);
-	}
-
-	return res;
-}
-
 void *gpu_alloc_mapped_aligned_for_cpu(size_t alignment, size_t size) {
 	void *res = gpu_alloc_mapped_aligned_for_cpu_inner(alignment, size);
 	if (res) {
@@ -224,14 +174,20 @@ void *gpu_alloc_mapped_aligned_for_cpu(size_t alignment, size_t size) {
 #ifdef LOG_ERRORS
 	vgl_log("%s:%d gpu_alloc_mapped_aligned_for_cpu failed with a requested size of %u bytes, attempting to forcefully free required memory.\n", __FILE__, __LINE__, size);
 #endif
-	unsafe_allocator_counter = 0;
-	res = gpu_alloc_mapped_aligned_unsafe_for_cpu(alignment, size);
+
+	// Draining garbage collector and attempting to allocate the memory again
+	glFinish();
+#ifndef HAVE_GC_ON_FINISH
+	// glFinish already calls drain_garbage_collector internally with HAVE_GC_ON_FINISH
+	drain_garbage_collector();
+#endif
+	res = gpu_alloc_mapped_aligned_for_cpu_inner(alignment, size);
 
 #ifdef LOG_ERRORS
 	if (!res) {
-		vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe_for_cpu failed with a requested size of %u bytes.\n", __FILE__, __LINE__, size);
+		vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe_for_cpu failed with a requested size of %u bytes even after draining garbage collector.\n", __FILE__, __LINE__, size);
 	} else {
-		vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe_for_cpu successfully allocated the requested memory after forcing %d garbage collection cycles.\n", __FILE__, __LINE__, unsafe_allocator_counter);
+		vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe_for_cpu successfully allocated the requested memory after draining garbage collector.\n", __FILE__, __LINE__);
 	}
 #endif
 
@@ -254,14 +210,25 @@ void *gpu_alloc_mapped_aligned_for_gpu(size_t alignment, size_t size) {
 #ifdef LOG_ERRORS
 	vgl_log("%s:%d gpu_alloc_mapped_aligned_for_gpu failed with a requested size of %u bytes, attempting to forcefully free required memory.\n", __FILE__, __LINE__, size);
 #endif
-	unsafe_allocator_counter = 0;
-	res = gpu_alloc_mapped_aligned_unsafe_for_gpu(alignment, size);
+	
+	// Draining garbage collector and attempting to allocate the memory again
+	if (is_gxm_state_safe) {
+		glFinish();
+#ifndef HAVE_GC_ON_FINISH
+		// glFinish already calls drain_garbage_collector internally with HAVE_GC_ON_FINISH
+		drain_garbage_collector();
+#endif		
+	} else {
+		sceGxmFinish(gxm_context); 
+		drain_garbage_collector();
+	}
+	res = gpu_alloc_mapped_aligned_for_gpu_inner(alignment, size);
 
 #ifdef LOG_ERRORS
 	if (!res) {
-		vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe_for_gpu failed with a requested size of %u bytes.\n", __FILE__, __LINE__, size);
+		vgl_log("%s:%d gpu_alloc_mapped_aligned_for_gpu failed with a requested size of %u bytes even after draining garbage collector.\n", __FILE__, __LINE__, size);
 	} else {
-		vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe_for_gpu successfully allocated the requested memory after forcing %d garbage collection cycles.\n", __FILE__, __LINE__, unsafe_allocator_counter);
+		vgl_log("%s:%d gpu_alloc_mapped_aligned_unsafe_for_gpu successfully allocated the requested memory after draining garbage collector.\n", __FILE__, __LINE__);
 	}
 #endif
 
