@@ -336,6 +336,22 @@ typedef struct {
 	uint8_t sampler_index;
 } uniform;
 
+#ifdef HAVE_GLSL_TEXTURE_SIZE
+static inline __attribute__((always_inline)) void update_texture_size_uniform(uniform *u, texture *tex) {
+	if (u->sampler) {
+		uint32_t width, height;
+		vglGetTexSizes(&tex->gxm_tex, &width, &height);
+		float *sizes = (float *)u->fptr;
+		float w = width, h = height;
+		if (sizes[0] != w || sizes[1] != h) {
+			sizes[0] = w;
+			sizes[1] = h;
+			dirty_shader_frag_unifs = GL_TRUE;
+		}
+	}
+}
+#endif
+
 // Program status enum
 typedef enum {
 	PROG_INVALID,
@@ -919,14 +935,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 			}
 			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
 #ifdef HAVE_GLSL_TEXTURE_SIZE
-			glsl_samplers_info *info = p->frag_texunits[i]->sampler;
-			if (info) {
-				uint32_t sizes[2];
-				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
-				float fsizes[2] = {sizes[0], sizes[1]};
-				vglSetUniformData(p->frag_texunits[i]->fptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, fsizes, SCE_GXM_PARAMETER_TYPE_F32);
-				dirty_shader_frag_unifs = GL_TRUE;
-			}
+			update_texture_size_uniform(p->frag_texunits[i], tex);
 #endif
 #ifndef SAMPLERS_SPEEDHACK
 		}
@@ -1180,14 +1189,7 @@ GLboolean _glDrawArrays_CustomShadersIMPL(GLint first, GLsizei count, GLboolean 
 			}
 			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
 #ifdef HAVE_GLSL_TEXTURE_SIZE
-			glsl_samplers_info *info = p->frag_texunits[i]->sampler;
-			if (info) {
-				uint32_t sizes[2];
-				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
-				float fsizes[2] = {sizes[0], sizes[1]};
-				vglSetUniformData(p->frag_texunits[i]->fptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, fsizes, SCE_GXM_PARAMETER_TYPE_F32);
-				dirty_shader_frag_unifs = GL_TRUE;
-			}
+			update_texture_size_uniform(p->frag_texunits[i], tex);
 #endif
 #ifndef SAMPLERS_SPEEDHACK
 		}
@@ -1468,14 +1470,7 @@ GLboolean _glDrawElements_CustomShadersIMPL(uint16_t *idx_buf, GLsizei count, ui
 			}
 			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
 #ifdef HAVE_GLSL_TEXTURE_SIZE
-			glsl_samplers_info *info = p->frag_texunits[i]->sampler;
-			if (info) {
-				uint32_t sizes[2];
-				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
-				float fsizes[2] = {sizes[0], sizes[1]};
-				vglSetUniformData(p->frag_texunits[i]->fptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, fsizes, SCE_GXM_PARAMETER_TYPE_F32);
-				dirty_shader_frag_unifs = GL_TRUE;
-			}
+			update_texture_size_uniform(p->frag_texunits[i], tex);
 #endif
 #ifndef SAMPLERS_SPEEDHACK
 		}
@@ -1802,14 +1797,7 @@ void _vglDrawObjects_CustomShadersIMPL() {
 #endif
 			sceGxmSetFragmentTexture(gxm_context, i, &tex->gxm_tex);
 #ifdef HAVE_GLSL_TEXTURE_SIZE
-			glsl_samplers_info *info = p->frag_texunits[i]->sampler;
-			if (info) {
-				uint32_t sizes[2];
-				vglGetTexSizes(&tex->gxm_tex, &sizes[0], &sizes[1]);
-				float fsizes[2] = {sizes[0], sizes[1]};
-				vglSetUniformData(p->frag_texunits[i]->fptr, SCE_GXM_PARAMETER_TYPE_F32, 0, 1, 2, fsizes, SCE_GXM_PARAMETER_TYPE_F32);
-				dirty_shader_frag_unifs = GL_TRUE;
-			}
+			update_texture_size_uniform(p->frag_texunits[i], tex);
 #endif
 #ifndef SAMPLERS_SPEEDHACK
 		}
