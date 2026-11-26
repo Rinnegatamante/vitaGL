@@ -82,6 +82,10 @@ typedef struct {
 	uint32_t control_words[4];
 } SceGxmTextureInternal;
 
+// Anisotropic filtering level stored in the min filter values of textures and samplers
+#define VGL_ANISO_SHIFT 4
+#define VGL_ANISO_MASK (0x7 << VGL_ANISO_SHIFT)
+
 // Faster variants with stripped error handling
 static inline __attribute__((always_inline)) void *vglGetTexData(SceGxmTexture *texture) {
 	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
@@ -112,7 +116,13 @@ static inline __attribute__((always_inline)) void vglSetTexVMode(SceGxmTexture *
 }
 static inline __attribute__((always_inline)) void vglSetTexMinFilter(SceGxmTexture *texture, SceGxmTextureFilter minFilter) {
 	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
-	tex->control_words[0] = ((minFilter << 10) & 0xC00) | tex->control_words[0] & 0xFFFFF3FF;
+	// Bits 4-6 of minFilter hold the anisotropy control (0 = off, 1-4 = 2x-16x, see VGL_ANISO_SHIFT):
+	// a linear min filter then becomes the anisotropic one (2) with that control in bits 14-16
+	uint32_t aniso = (minFilter >> VGL_ANISO_SHIFT) & 0x7;
+	if (aniso && (minFilter & 0x3) == SCE_GXM_TEXTURE_FILTER_LINEAR)
+		tex->control_words[0] = (2 << 10) | (aniso << 14) | tex->control_words[0] & 0xFFFE33FF;
+	else
+		tex->control_words[0] = ((minFilter << 10) & 0xC00) | tex->control_words[0] & 0xFFFE33FF;
 }
 static inline __attribute__((always_inline)) void vglSetTexMagFilter(SceGxmTexture *texture, SceGxmTextureFilter magFilter) {
 	SceGxmTextureInternal *tex = (SceGxmTextureInternal *)texture;
