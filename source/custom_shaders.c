@@ -985,7 +985,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #endif
 		void *ptrs[VERTEX_ATTRIBS_NUM];
 		SceGxmVertexStream *streams = layout_entry->stream;
-		vertex_layout_setup_ptrs(p, layout_entry->is_packed, lowest, highest - lowest, highest, ptrs);
+		vertex_layout_setup_ptrs(p, layout_entry->is_packed, lowest, highest - lowest, highest - lowest, ptrs);
 		p->vprog = layout_entry->vprog;
 		sceGxmSetVertexProgram(gxm_context, p->vprog);
 		upload_uniforms();
@@ -998,6 +998,8 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 					} else {
 						sceGxmSetVertexStream(gxm_context, i, ptrs[i] + (first[j] - lowest) * streams[i].stride);
 					}
+				} else if (!j) {
+					sceGxmSetVertexStream(gxm_context, i, cur_vao->vertex_attrib_value[attr_idx]);
 				}
 			}
 			sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, idx_ptr, count[j]);
@@ -1022,13 +1024,23 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 	vbo *target_vbo = (vbo *)cur_vao->vertex_attrib_vbo[p->attr_map[0]];
 #ifdef STRICT_DRAW_COMPLIANCE
 	GLboolean is_packed[VERTEX_ATTRIBS_NUM];
-	__builtin_memset(is_packed, GL_TRUE, VERTEX_ATTRIBS_NUM);
+	GLboolean packed_compatible = cur_vao->vertex_attrib_state & (1 << p->attr_map[0]) ? GL_TRUE : GL_FALSE;
+	if (packed_compatible) {
+		__builtin_memset(is_packed, GL_TRUE, VERTEX_ATTRIBS_NUM);
+	} else {
+		__builtin_memset(is_packed, GL_FALSE, VERTEX_ATTRIBS_NUM);
+	}
 #else
-	GLboolean is_packed = p->attr_num > 1;
+	GLboolean is_packed = p->attr_num > 1 && (cur_vao->vertex_attrib_state & (1 << p->attr_map[0]));
 	if (is_packed) {
 #endif
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
+#ifdef STRICT_DRAW_COMPLIANCE
+			if (!(cur_vao->vertex_attrib_state & (1 << attr_idx))) {
+				continue;
+			}
+#endif
 			vbo *attr_vbo = (vbo *)cur_vao->vertex_attrib_vbo[attr_idx];
 			if (attr_vbo) {
 #ifdef STRICT_DRAW_COMPLIANCE
@@ -1042,8 +1054,8 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #endif
 #ifdef STRICT_DRAW_COMPLIANCE
 			} else {
-				if (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[attr_idx] && cur_vao->vertex_attrib_offsets[attr_idx] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]])) {
-					is_packed[attr_idx] = GL_FALSE;
+				if (packed_compatible && (!(cur_vao->vertex_attrib_offsets[p->attr_map[0]] + streams[0].stride > cur_vao->vertex_attrib_offsets[attr_idx] && cur_vao->vertex_attrib_offsets[attr_idx] >= cur_vao->vertex_attrib_offsets[p->attr_map[0]]))) {
+					is_packed[i] = GL_FALSE;
 				}
 #endif
 			}
@@ -1057,8 +1069,8 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 #ifdef STRICT_DRAW_COMPLIANCE
 	// Gathering real attribute data pointers
 	if (is_packed[0]) {
-		ptrs[0] = gpu_alloc_mapped_temp(highest * streams[0].stride);
-		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]] + lowest * streams[0].stride, highest * streams[0].stride);
+		ptrs[0] = gpu_alloc_mapped_temp((highest - lowest) * streams[0].stride);
+		vgl_fast_memcpy(ptrs[0], (void *)cur_vao->vertex_attrib_offsets[p->attr_map[0]] + lowest * streams[0].stride, (highest - lowest) * streams[0].stride);
 	}
 	for (int i = 0; i < p->attr_num; i++) {
 		uint8_t attr_idx = p->attr_map[i];
@@ -1066,7 +1078,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 		if (is_packed[i]) {
 			handle_packed_attrib();
 		} else {
-			handle_unpacked_attrib(lowest, highest);
+			handle_unpacked_attrib(lowest, highest - lowest);
 		}
 	}
 #else
@@ -1093,7 +1105,7 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 		for (int i = 0; i < p->attr_num; i++) {
 			uint8_t attr_idx = p->attr_map[i];
 			attributes[i].regIndex = p->attr[attr_idx].regIndex;
-			handle_unpacked_attrib(lowest, highest);
+			handle_unpacked_attrib(lowest, highest - lowest);
 		}
 	}
 #endif
@@ -1133,10 +1145,23 @@ void _glMultiDrawArrays_CustomShadersIMPL(SceGxmPrimitiveType gxm_p, uint16_t *i
 					sceGxmSetVertexStream(gxm_context, i, ptrs[i] + (first[j] - lowest) * streams[i].stride);
 				}
 #endif
+			} else if (!j) {
+				sceGxmSetVertexStream(gxm_context, i, cur_vao->vertex_attrib_value[attr_idx]);
 			}
 		}
 		
 		sceGxmDraw(gxm_context, gxm_p, SCE_GXM_INDEX_FORMAT_U16, idx_ptr, count[j]);
+	}
+	if (!p->has_unaligned_attrs) {
+		for (int i = 0; i < p->attr_num; i++) {
+			uint8_t attr_idx = p->attr_map[i];
+			attributes[i].regIndex = i;
+			if (!(cur_vao->vertex_attrib_state & (1 << attr_idx))) {
+				streams[i].stride = orig_stride[i];
+				attributes[i].componentCount = orig_size[i];
+				attributes[i].format = orig_fmt[i];
+			}
+		}
 	}
 #ifdef HAVE_PROFILING
 	shaders_draw_profiler_cnt += sceKernelGetProcessTimeLow() - draw_start;
