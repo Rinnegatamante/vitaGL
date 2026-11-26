@@ -200,6 +200,7 @@ void update_polygon_offset() {
 }
 
 static enum {
+	GL_CW_FRONT = GL_CW + GL_FRONT,
 	GL_CW_BACK = GL_CW + GL_BACK,
 	GL_CCW_BACK = GL_CCW + GL_BACK,
 #ifndef HAVE_UNFLIPPED_FBOS
@@ -216,6 +217,7 @@ void change_cull_mode() {
 			no_polygons_mode = GL_FALSE;
 			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CCW);
 			break;
+		case GL_CW_FRONT:
 		case GL_CCW_BACK:
 			no_polygons_mode = GL_FALSE;
 			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CW);
@@ -231,6 +233,7 @@ void change_cull_mode() {
 			no_polygons_mode = GL_FALSE;
 			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CW);
 			break;
+		case GL_CW_FRONT:
 		case GL_CCW_BACK:
 			no_polygons_mode = GL_FALSE;
 			sceGxmSetCullMode(gxm_context, SCE_GXM_CULL_CCW);

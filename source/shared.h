@@ -1369,7 +1369,7 @@ static inline __attribute__((always_inline)) void _glFramebufferTexture2D(frameb
 		fb->format = tex->format;
 
 		// Clearing previously attached texture
-		if (fb->tex && (fb->tex != tex || tex_idx == 0)) {
+		if (fb->tex && (fb->tex != tex || tex_id == 0)) {
 			fb->tex->ref_counter--;
 			if (fb->tex->dirty && fb->tex->ref_counter == 0) {
 				gpu_free_texture(fb->tex);
