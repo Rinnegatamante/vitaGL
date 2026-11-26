@@ -26,9 +26,6 @@
 
 static GLboolean vgl_inited = GL_FALSE;
 
-extern int unsafe_allocator_counter;
-void *gpu_alloc_mapped_aligned_unsafe_for_cpu(size_t alignment, size_t size);
-
 #ifdef HAVE_SHADER_CACHE
 static char shader_cache_root[128] = {};
 #endif
@@ -498,7 +495,7 @@ GLboolean vglInitWithCustomSizes(int pool_size, int width, int height, int ram_p
 	}
 
 	// Init purge lists
-	for (int i = 0; i < FRAME_PURGE_FREQ; i++) {
+	for (int i = 0; i < FRAME_PURGE_SLOTS; i++) {
 		frame_purge_list[i][0] = NULL;
 		frame_rt_purge_list[i][0] = NULL;
 	}
@@ -656,13 +653,12 @@ void *vglMalloc(uint32_t size) {
 
 	if (!res) {
 		vgl_log("%s:%d: vglMalloc failed allocating %u bytes (Call generated from 0x%08X). Attempting to recover enough memory to go past it.\n", __FILE__, __LINE__, size, __builtin_return_address(0));
-		unsafe_allocator_counter = 0;
-		res = gpu_alloc_mapped_aligned_unsafe_for_cpu(MEM_ALIGNMENT, size);
+		res = gpu_alloc_mapped_aligned_for_cpu(MEM_ALIGNMENT, size);
 #ifdef LOG_ERRORS
 		if (!res) {
 			vgl_log("%s:%d vglMalloc failed with a requested size of %u bytes.\n", __FILE__, __LINE__, size);
 		} else {
-			vgl_log("%s:%d vglMalloc successfully allocated the requested memory after forcing %d garbage collection cycles.\n", __FILE__, __LINE__, unsafe_allocator_counter);
+			vgl_log("%s:%d vglMalloc successfully allocated the requested memory after draining garbage collector.\n", __FILE__, __LINE__);
 		}
 #endif
 	}
@@ -704,13 +700,12 @@ void *vglMemalign(uint32_t alignment, uint32_t size) {
 
 	if (!res) {
 		vgl_log("%s:%d: vglMemalign failed allocating 0x%X bytes with 0x%X alignment.\n", __FILE__, __LINE__, size, alignment);
-		unsafe_allocator_counter = 0;
-		res = gpu_alloc_mapped_aligned_unsafe_for_cpu(alignment, size);
+		res = gpu_alloc_mapped_aligned_for_cpu(alignment, size);
 #ifdef LOG_ERRORS
 		if (!res) {
 			vgl_log("%s:%d vglMemalign failed with a requested size of %u bytes.\n", __FILE__, __LINE__, size);
 		} else {
-			vgl_log("%s:%d vglMemalign successfully allocated the requested memory after forcing %d garbage collection cycles.\n", __FILE__, __LINE__, unsafe_allocator_counter);
+			vgl_log("%s:%d vglMemalign successfully allocated the requested memory after draining garbage collector.\n", __FILE__, __LINE__);
 		}
 #endif
 	}
@@ -748,13 +743,12 @@ void *vglCalloc(uint32_t nmember, uint32_t size) {
 
 	if (!res) {
 		vgl_log("%s:%d: vglCalloc failed allocating 0x%X blocks of 0x%X bytes.\n", __FILE__, __LINE__, nmember, size);
-		unsafe_allocator_counter = 0;
-		res = gpu_alloc_mapped_aligned_unsafe_for_cpu(MEM_ALIGNMENT, size * nmember);
+		res = gpu_alloc_mapped_aligned_for_cpu(MEM_ALIGNMENT, size * nmember);
 		if (!res) {
 			vgl_log("%s:%d vglCalloc failed with a requested size of %u bytes.\n", __FILE__, __LINE__, size);
 		} else {
 			sceClibMemset(res, 0, size * nmember);
-			vgl_log("%s:%d vglCalloc successfully allocated the requested memory after forcing %d garbage collection cycles.\n", __FILE__, __LINE__, unsafe_allocator_counter);
+			vgl_log("%s:%d vglCalloc successfully allocated the requested memory after draining garbage collector.\n", __FILE__, __LINE__);
 		}
 	}
 

@@ -109,12 +109,12 @@ float *legacy_pool_end = NULL; // Address of the end of the GL1 immediate draw p
 #endif
 uint32_t vgl_framecount = 0; // Current frame number since application started
 
-void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
-void *frame_rt_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_RENDERTARGETS_LIST_SIZE]; // Purge list for rendertargets
+void *frame_purge_list[FRAME_PURGE_SLOTS][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
+void *frame_rt_purge_list[FRAME_PURGE_SLOTS][FRAME_PURGE_RENDERTARGETS_LIST_SIZE]; // Purge list for rendertargets
 int frame_purge_idx = 0; // Index for currently populatable purge list
 int frame_elem_purge_idx = 0; // Index for currently populatable purge list element
 int frame_rt_purge_idx = 0; // Index for currently populatable purge list rendertarget
-static int frame_purge_clean_idx = 1;
+static int frame_purge_clean_idx = FRAME_PURGE_SLOTS - FRAME_PURGE_FREQ + 1;
 SceUID gc_mutex[2];
 static int gc_thread_priority = 0x10000100;
 static int gc_thread_affinity = 0;
@@ -305,16 +305,16 @@ static void garbage_collect(int slot) {
 
 void drain_garbage_collector(void) {
 #ifndef HAVE_SINGLE_THREADED_GC
-	sceKernelWaitSema(gc_mutex[1], FRAME_PURGE_FREQ, NULL);
+	sceKernelWaitSema(gc_mutex[1], FRAME_PURGE_MAX_PENDING, NULL);
 #endif
-	for (int i = 0; i < FRAME_PURGE_FREQ; i++) {
+	for (int i = 0; i < FRAME_PURGE_SLOTS; i++) {
 		garbage_collect(i);
 	}
 
 	frame_elem_purge_idx = 0;
 	frame_rt_purge_idx = 0;
 #ifndef HAVE_SINGLE_THREADED_GC
-	sceKernelSignalSema(gc_mutex[1], FRAME_PURGE_FREQ);
+	sceKernelSignalSema(gc_mutex[1], FRAME_PURGE_MAX_PENDING);
 #endif
 }
 
@@ -331,10 +331,7 @@ int garbage_collector(unsigned int args, void *arg) {
 #endif
 		// Purging all elements marked for deletion
 		garbage_collect(frame_purge_clean_idx);
-		frame_purge_clean_idx = (frame_purge_clean_idx + 1) % FRAME_PURGE_FREQ;
-		frame_purge_idx = (frame_purge_idx + 1) % FRAME_PURGE_FREQ;
-		frame_elem_purge_idx = 0;
-		frame_rt_purge_idx = 0;
+		frame_purge_clean_idx = (frame_purge_clean_idx + 1) % FRAME_PURGE_SLOTS;
 #ifndef HAVE_SINGLE_THREADED_GC
 		sceKernelSignalSema(gc_mutex[1], 1);
 	}
@@ -393,8 +390,8 @@ void init_gxm(void) {
 
 #ifndef HAVE_SINGLE_THREADED_GC
 	// Initializing garbage collector
-	gc_mutex[0] = sceKernelCreateSema("vitaGL GC Sema Push", 0, 0, FRAME_PURGE_FREQ, NULL);
-	gc_mutex[1] = sceKernelCreateSema("vitaGL GC Sema Pull", 0, FRAME_PURGE_FREQ, FRAME_PURGE_FREQ, NULL);
+	gc_mutex[0] = sceKernelCreateSema("vitaGL GC Sema Push", 0, 0, FRAME_PURGE_MAX_PENDING, NULL);
+	gc_mutex[1] = sceKernelCreateSema("vitaGL GC Sema Pull", 0, FRAME_PURGE_MAX_PENDING, FRAME_PURGE_MAX_PENDING, NULL);
 #ifdef HAVE_PTHREAD
 	pthread_create(&gc_thread, NULL, garbage_collector, NULL);
 	pthread_setaffinity_np(gc_thread, 4, &gc_thread_affinity);
@@ -1043,6 +1040,11 @@ void vglSwapBuffers(GLboolean has_commondialog) {
 	garbage_collector(0, NULL);
 #else
 	sceKernelWaitSema(gc_mutex[1], 1, NULL);
+#endif
+	frame_purge_idx = (frame_purge_idx + 1) % FRAME_PURGE_SLOTS;
+	frame_elem_purge_idx = 0;
+	frame_rt_purge_idx = 0;
+#ifndef HAVE_SINGLE_THREADED_GC
 	sceKernelSignalSema(gc_mutex[0], 1);
 #endif
 }

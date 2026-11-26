@@ -44,8 +44,8 @@ extern vglMemType VGL_MEM_MAIN; // Flag for VRAM usage for allocations
 #endif
 
 // Garbage collector related stuffs
-extern void *frame_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
-extern void *frame_rt_purge_list[FRAME_PURGE_FREQ][FRAME_PURGE_RENDERTARGETS_LIST_SIZE]; // Purge list for rendertargets
+extern void *frame_purge_list[FRAME_PURGE_SLOTS][FRAME_PURGE_LIST_SIZE]; // Purge list for internal elements
+extern void *frame_rt_purge_list[FRAME_PURGE_SLOTS][FRAME_PURGE_RENDERTARGETS_LIST_SIZE]; // Purge list for rendertargets
 extern int frame_purge_idx; // Index for currently populatable purge list
 extern int frame_elem_purge_idx; // Index for currently populatable purge list element
 extern int frame_rt_purge_idx; // Index for currently populatable purge list rendertarget

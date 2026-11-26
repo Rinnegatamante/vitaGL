@@ -47,6 +47,12 @@
 #define FRAME_PURGE_LIST_SIZE 16384 // Number of elements a single frame can hold
 #define FRAME_PURGE_RENDERTARGETS_LIST_SIZE 128 // Number of rendertargets a single frame can hold
 #define FRAME_PURGE_FREQ 4 // Frequency in frames for garbage collection
+#ifdef HAVE_SINGLE_THREADED_GC
+#define FRAME_PURGE_SLOTS FRAME_PURGE_FREQ
+#else
+#define FRAME_PURGE_MAX_PENDING 3 // Maximum number of pending garbage collection cycles
+#define FRAME_PURGE_SLOTS (FRAME_PURGE_FREQ + FRAME_PURGE_MAX_PENDING)
+#endif
 #define BUFFERS_NUM 256 // Maximum amount of framebuffers objects usable
 #ifdef HAVE_HIGH_FFP_TEXUNITS
 #define FFP_VERTEX_ATTRIBS_NUM 9 // Number of attributes used in ffp shaders
